@@ -899,7 +899,7 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, NewAttributeValueString("somestr"), a2.SliceVal().At(0))
 
 	// Insert the second array as a child.
-	a1.SliceVal().AppendEmpty().SetArrayVal(a2.SliceVal())
+	a1.SliceVal().AppendEmpty().SetSliceVal(a2.SliceVal())
 	assert.EqualValues(t, 2, a1.SliceVal().Len())
 	assert.EqualValues(t, NewAttributeValueDouble(123), a1.SliceVal().At(0))
 	assert.EqualValues(t, a2, a1.SliceVal().At(1))

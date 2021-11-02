@@ -197,7 +197,7 @@ func (a AttributeValue) MapVal() AttributeMap {
 	return newAttributeMap(&kvlist.Values)
 }
 
-// SliceVal returns the array value associated with this AttributeValue.
+// SliceVal returns the slice value associated with this AttributeValue.
 // If the Type() is not AttributeValueTypeArray then returns an empty slice. Note that modifying
 // such empty slice has no effect on this AttributeValue.
 //
@@ -262,10 +262,10 @@ func (a AttributeValue) SetMapVal(v AttributeMap) {
 	a.orig.Value = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: *v.orig}}
 }
 
-// SetArrayVal replaces the AttributeSlice value associated with this AttributeValue,
+// SetSliceVal replaces the AttributeSlice value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeArray.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetArrayVal(v AttributeSlice) {
+func (a AttributeValue) SetSliceVal(v AttributeSlice) {
 	a.orig.Value = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: *v.orig}}
 }
 
