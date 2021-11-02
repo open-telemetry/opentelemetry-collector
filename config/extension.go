@@ -23,9 +23,6 @@ type Extension interface {
 	privateConfigExtension()
 }
 
-// Extensions is a map of names to extensions.
-type Extensions map[ComponentID]Extension
-
 // ExtensionSettings defines common settings for a component.Extension configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 //

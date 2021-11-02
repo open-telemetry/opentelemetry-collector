@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove `config.Receivers`, `config.Exporters`, `config.Processors`, and `config.Extensions`. Use map directly (#4344)
 - Remove `component.BaseProcessorFactory`, use `processorhelper.NewFactory` instead (#4175)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
 - Remove `config.Pipeline.Name` (#4326)

@@ -23,9 +23,6 @@ type Processor interface {
 	privateConfigProcessor()
 }
 
-// Processors is a map of names to Processors.
-type Processors map[ComponentID]Processor
-
 // ProcessorSettings defines common settings for a component.Processor configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 //
