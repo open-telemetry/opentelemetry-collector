@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove `component.BaseProcessorFactory`, use `processorhelper.NewFactory` instead (#4175)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
 - Rename `pdata.AnyValueArray` to `AttributeSlice` (#4325)
 

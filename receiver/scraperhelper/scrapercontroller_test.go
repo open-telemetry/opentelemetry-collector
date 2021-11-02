@@ -201,9 +201,9 @@ func TestScrapeController(t *testing.T) {
 
 				spans := tt.SpanRecorder.Ended()
 				assertReceiverSpan(t, spans)
-				assertReceiverViews(t, sink)
+				assertReceiverViews(t, tt, sink)
 				assertScraperSpan(t, test.scrapeErr, spans)
-				assertScraperViews(t, test.scrapeErr, sink)
+				assertScraperViews(t, tt, test.scrapeErr, sink)
 			}
 
 			err = mr.Shutdown(context.Background())
@@ -285,12 +285,12 @@ func assertReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	assert.True(t, receiverSpan)
 }
 
-func assertReceiverViews(t *testing.T, sink *consumertest.MetricsSink) {
+func assertReceiverViews(t *testing.T, tt obsreporttest.TestTelemetry, sink *consumertest.MetricsSink) {
 	dataPointCount := 0
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
 	}
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(config.NewComponentID("receiver"), "", int64(dataPointCount), 0))
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, config.NewComponentID("receiver"), "", int64(dataPointCount), 0))
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
@@ -313,7 +313,7 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnl
 	assert.True(t, scraperSpan)
 }
 
-func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.MetricsSink) {
+func assertScraperViews(t *testing.T, tt obsreporttest.TestTelemetry, expectedErr error, sink *consumertest.MetricsSink) {
 	expectedScraped := int64(sink.DataPointCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
@@ -325,7 +325,7 @@ func assertScraperViews(t *testing.T, expectedErr error, sink *consumertest.Metr
 		}
 	}
 
-	require.NoError(t, obsreporttest.CheckScraperMetrics(config.NewComponentID("receiver"), config.NewComponentID("scraper"), expectedScraped, expectedErrored))
+	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, config.NewComponentID("receiver"), config.NewComponentID("scraper"), expectedScraped, expectedErrored))
 }
 
 func TestSingleScrapePerTick(t *testing.T) {

@@ -33,20 +33,20 @@ const (
 	// Skip 0, start errors codes from 1.
 	_ configErrorCode = iota
 
-	errUnknownType
-	errUnmarshalTopLevelStructureError
+	errUnmarshalTopLevelStructure
+	errUnmarshalExtension
+	errUnmarshalReceiver
+	errUnmarshalProcessor
+	errUnmarshalExporter
+	errUnmarshalService
 )
 
 type configError struct {
-	// Human readable error message.
-	msg string
+	// the original error.
+	error
 
-	// Internal error code.
+	// internal error code.
 	code configErrorCode
-}
-
-func (e *configError) Error() string {
-	return e.msg
 }
 
 // YAML top-level configuration keys.
@@ -72,13 +72,7 @@ type configSettings struct {
 	Processors map[config.ComponentID]map[string]interface{} `mapstructure:"processors"`
 	Exporters  map[config.ComponentID]map[string]interface{} `mapstructure:"exporters"`
 	Extensions map[config.ComponentID]map[string]interface{} `mapstructure:"extensions"`
-	Service    serviceSettings                               `mapstructure:"service"`
-}
-
-type serviceSettings struct {
-	Telemetry  config.ServiceTelemetry                 `mapstructure:"telemetry"`
-	Extensions []config.ComponentID                    `mapstructure:"extensions"`
-	Pipelines  map[config.ComponentID]*config.Pipeline `mapstructure:"pipelines"`
+	Service    map[string]interface{}                        `mapstructure:"service"`
 }
 
 type defaultUnmarshaler struct{}
@@ -97,76 +91,63 @@ func (*defaultUnmarshaler) Unmarshal(v *config.Map, factories component.Factorie
 	// Unmarshal the config.
 
 	// Struct to validate top level sections.
-	rawCfg := configSettings{
-		// Setup default telemetry values as in service/logger.go.
-		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
-		Service: serviceSettings{
-			Telemetry: config.ServiceTelemetry{
-				Logs: config.ServiceTelemetryLogs{
-					Level:       zapcore.InfoLevel,
-					Development: false,
-					Encoding:    "console",
-				},
-			},
-		},
-	}
+	rawCfg := configSettings{}
 	if err := v.UnmarshalExact(&rawCfg); err != nil {
 		return nil, &configError{
-			code: errUnmarshalTopLevelStructureError,
-			msg:  fmt.Sprintf("error reading top level configuration sections: %s", err.Error()),
+			error: fmt.Errorf("error reading top level configuration sections: %w", err),
+			code:  errUnmarshalTopLevelStructure,
 		}
 	}
 
 	// Start with the service extensions.
-
-	extensions, err := unmarshalExtensions(rawCfg.Extensions, factories.Extensions)
-	if err != nil {
-		return nil, err
+	var err error
+	if cfg.Extensions, err = unmarshalExtensions(rawCfg.Extensions, factories.Extensions); err != nil {
+		return nil, &configError{
+			error: err,
+			code:  errUnmarshalExtension,
+		}
 	}
-	cfg.Extensions = extensions
 
 	// Unmarshal data components (receivers, exporters, and processors).
 
-	receivers, err := unmarshalReceivers(rawCfg.Receivers, factories.Receivers)
-	if err != nil {
-		return nil, err
+	if cfg.Receivers, err = unmarshalReceivers(rawCfg.Receivers, factories.Receivers); err != nil {
+		return nil, &configError{
+			error: err,
+			code:  errUnmarshalReceiver,
+		}
 	}
-	cfg.Receivers = receivers
 
-	exporters, err := unmarshalExporters(rawCfg.Exporters, factories.Exporters)
-	if err != nil {
-		return nil, err
+	if cfg.Processors, err = unmarshalProcessors(rawCfg.Processors, factories.Processors); err != nil {
+		return nil, &configError{
+			error: err,
+			code:  errUnmarshalProcessor,
+		}
 	}
-	cfg.Exporters = exporters
 
-	processors, err := unmarshalProcessors(rawCfg.Processors, factories.Processors)
-	if err != nil {
-		return nil, err
+	if cfg.Exporters, err = unmarshalExporters(rawCfg.Exporters, factories.Exporters); err != nil {
+		return nil, &configError{
+			error: err,
+			code:  errUnmarshalExporter,
+		}
 	}
-	cfg.Processors = processors
 
 	// Unmarshal the service and its data pipelines.
-	service, err := unmarshalService(rawCfg.Service)
-	if err != nil {
-		return nil, err
+	if cfg.Service, err = unmarshalService(rawCfg.Service); err != nil {
+		return nil, &configError{
+			error: err,
+			code:  errUnmarshalService,
+		}
 	}
-	cfg.Service = service
 
 	return &cfg, nil
 }
 
 func errorUnknownType(component string, id config.ComponentID) error {
-	return &configError{
-		code: errUnknownType,
-		msg:  fmt.Sprintf("unknown %s type %q for %v", component, id.Type(), id),
-	}
+	return fmt.Errorf("unknown %s type %q for %v", component, id.Type(), id)
 }
 
 func errorUnmarshalError(component string, id config.ComponentID, err error) error {
-	return &configError{
-		code: errUnmarshalTopLevelStructureError,
-		msg:  fmt.Sprintf("error reading %s configuration for %v: %v", component, id, err),
-	}
+	return fmt.Errorf("error reading %s configuration for %v: %w", component, id, err)
 }
 
 func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ExtensionFactory) (config.Extensions, error) {
@@ -200,18 +181,35 @@ func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, fac
 	return extensions, nil
 }
 
-func unmarshalService(rawService serviceSettings) (config.Service, error) {
-	var ret config.Service
+func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
+	// Setup default telemetry values as in service/logger.go.
+	// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
+	srv := config.Service{
+		Telemetry: config.ServiceTelemetry{
+			Logs: config.ServiceTelemetryLogs{
+				Level:       zapcore.InfoLevel,
+				Development: false,
+				Encoding:    "console",
+			},
+		},
+	}
 
-	ret.Telemetry = rawService.Telemetry
-	ret.Extensions = rawService.Extensions
+	if err := unmarshal(config.NewMapFromStringMap(srvRaw), &srv); err != nil {
+		return srv, fmt.Errorf("error reading service configuration for: %w", err)
+	}
 
-	// Process the pipelines first so in case of error on them it can be properly
-	// reported.
-	pipelines, err := unmarshalPipelines(rawService.Pipelines)
-	ret.Pipelines = pipelines
-
-	return ret, err
+	for id, pipeline := range srv.Pipelines {
+		pipeline.Name = id.String()
+		pipeline.InputType = config.DataType(id.Type())
+		switch pipeline.InputType {
+		case config.TracesDataType:
+		case config.MetricsDataType:
+		case config.LogsDataType:
+		default:
+			return srv, fmt.Errorf("unknown %s datatype %q for %v", pipelinesKeyName, id.Type(), id)
+		}
+	}
+	return srv, nil
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.
@@ -317,23 +315,6 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 	}
 
 	return processors, nil
-}
-
-func unmarshalPipelines(pipelines map[config.ComponentID]*config.Pipeline) (config.Pipelines, error) {
-	// Iterate over input map and create a config for each.
-	for id, pipeline := range pipelines {
-		pipeline.Name = id.String()
-		pipeline.InputType = config.DataType(id.Type())
-		switch pipeline.InputType {
-		case config.TracesDataType:
-		case config.MetricsDataType:
-		case config.LogsDataType:
-		default:
-			return nil, errorUnknownType(pipelinesKeyName, id)
-		}
-	}
-
-	return pipelines, nil
 }
 
 // expandEnvLoadedConfig is a utility function that goes recursively through a config object

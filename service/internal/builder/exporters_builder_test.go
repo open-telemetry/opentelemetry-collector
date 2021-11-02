@@ -118,7 +118,7 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 			Pipelines: map[config.ComponentID]*config.Pipeline{
 				config.NewComponentID("logs"): {
 					Name:      "logs",
-					InputType: "logs",
+					InputType: config.LogsDataType,
 					Exporters: []config.ComponentID{config.NewComponentID("exampleexporter")},
 				},
 			},
