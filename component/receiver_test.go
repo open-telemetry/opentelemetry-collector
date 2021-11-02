@@ -15,43 +15,21 @@
 package component
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 )
 
 type TestReceiverFactory struct {
+	ReceiverFactory
 	name config.Type
 }
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *TestReceiverFactory) Type() config.Type {
 	return f.name
-}
-
-// CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *TestReceiverFactory) CreateDefaultConfig() config.Receiver {
-	return nil
-}
-
-// CreateTracesReceiver creates a trace receiver based on this config.
-func (f *TestReceiverFactory) CreateTracesReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Traces) (TracesReceiver, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestReceiverFactory) CreateMetricsReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Metrics) (MetricsReceiver, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsReceiver creates a metrics receiver based on this config.
-func (f *TestReceiverFactory) CreateLogsReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Logs) (LogsReceiver, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 func TestBuildReceivers(t *testing.T) {
@@ -63,18 +41,18 @@ func TestBuildReceivers(t *testing.T) {
 	testCases := []testCase{
 		{
 			in: []ReceiverFactory{
-				&TestReceiverFactory{"e1"},
-				&TestReceiverFactory{"e2"},
+				&TestReceiverFactory{name: "e1"},
+				&TestReceiverFactory{name: "e2"},
 			},
 			out: map[config.Type]ReceiverFactory{
-				"e1": &TestReceiverFactory{"e1"},
-				"e2": &TestReceiverFactory{"e2"},
+				"e1": &TestReceiverFactory{name: "e1"},
+				"e2": &TestReceiverFactory{name: "e2"},
 			},
 		},
 		{
 			in: []ReceiverFactory{
-				&TestReceiverFactory{"e1"},
-				&TestReceiverFactory{"e1"},
+				&TestReceiverFactory{name: "e1"},
+				&TestReceiverFactory{name: "e1"},
 			},
 		},
 	}

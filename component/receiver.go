@@ -99,6 +99,9 @@ type ReceiverCreateSettings struct {
 
 // ReceiverFactory can create TracesReceiver, MetricsReceiver and
 // and LogsReceiver. This is the new preferred factory type to create receivers.
+//
+// This interface cannot be directly implemented. Implementations must
+// use the receiverhelper.NewFactory to implement it.
 type ReceiverFactory interface {
 	Factory
 
