@@ -15,47 +15,23 @@
 package component
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 var _ ProcessorFactory = (*TestProcessorFactory)(nil)
 
 type TestProcessorFactory struct {
-	internalinterface.BaseInternal
+	ProcessorFactory
 	name string
 }
 
 // Type gets the type of the Processor config created by this factory.
 func (f *TestProcessorFactory) Type() config.Type {
 	return config.Type(f.name)
-}
-
-// CreateDefaultConfig creates the default configuration for the Processor.
-func (f *TestProcessorFactory) CreateDefaultConfig() config.Processor {
-	return nil
-}
-
-// CreateTracesProcessor default implemented as not supported data type.
-func (f *TestProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Traces) (TracesProcessor, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsProcessor default implemented as not supported data type.
-func (f *TestProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateLogsProcessor default implemented as not supported data type.
-func (f *TestProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Logs) (LogsProcessor, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 func TestMakeProcessorFactoryMap(t *testing.T) {
