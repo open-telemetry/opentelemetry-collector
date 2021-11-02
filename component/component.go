@@ -73,6 +73,9 @@ const (
 )
 
 // Factory is implemented by all component factories.
+//
+// This interface cannot be directly implemented. Implementations must
+// use the factory helpers for the appropriate component type.
 type Factory interface {
 	internalinterface.InternalInterface
 	// Type gets the type of the component created by this factory.
