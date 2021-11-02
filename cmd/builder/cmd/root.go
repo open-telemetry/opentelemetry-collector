@@ -37,7 +37,7 @@ var (
 		Short: "Version of opentelemetry-collector-builder",
 		Long:  "Prints the version of opentelemetry-collector-builder binary",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(version)
+			cmd.Println(fmt.Sprintf("%s version %s", cmd.Parent().Name(), version))
 		},
 	}
 )
@@ -47,7 +47,7 @@ func Execute() error {
 	cobra.OnInitialize(initConfig)
 
 	cmd := &cobra.Command{
-		Use:  "opentelemetry-collector-builder",
+		Use:  "builder",
 		Long: fmt.Sprintf("OpenTelemetry Collector distribution builder (%s)", version),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -99,25 +99,27 @@ func Execute() error {
 func initConfig() {
 	cfg.Logger.Info("OpenTelemetry Collector distribution builder", zap.String("version", version), zap.String("date", date))
 
+	vp := viper.New()
+
 	// a couple of Viper goodies, to make it easier to use env vars when flags are not desirable
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.AutomaticEnv()
+	vp.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	vp.AutomaticEnv()
 
 	// load values from config file -- required for the modules configuration
 	if cfgFile != "" {
-		viper.SetConfigFile(cfgFile)
+		vp.SetConfigFile(cfgFile)
 	} else {
-		viper.AddConfigPath("$HOME")
-		viper.SetConfigName(".otelcol-builder")
+		vp.AddConfigPath("$HOME")
+		vp.SetConfigName(".otelcol-builder")
 	}
 
 	// load the config file
-	if err := viper.ReadInConfig(); err == nil {
-		cfg.Logger.Info("Using config file", zap.String("path", viper.ConfigFileUsed()))
+	if err := vp.ReadInConfig(); err == nil {
+		cfg.Logger.Info("Using config file", zap.String("path", vp.ConfigFileUsed()))
 	}
 
 	// convert Viper's internal state into our configuration object
-	if err := viper.Unmarshal(&cfg); err != nil {
+	if err := vp.Unmarshal(&cfg); err != nil {
 		cfg.Logger.Error("failed to parse the config", zap.Error(err))
 		cobra.CheckErr(err)
 		return
