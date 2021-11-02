@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/config"
 )
 
 // MapProvider is an interface that helps providing configuration's parser.
@@ -35,7 +37,7 @@ type MapProvider interface {
 // Retrieved holds the result of a call to the Retrieve method of a Session object.
 type Retrieved interface {
 	// Get returns the Map.
-	Get() *Map
+	Get() *config.Map
 }
 
 // WatchableRetrieved is an extension for Retrieved that if implemented,

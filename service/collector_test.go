@@ -35,7 +35,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -266,7 +265,7 @@ type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Retrieve(_ context.Context) (config.Retrieved, error) {
+func (epl *errParserLoader) Retrieve(_ context.Context) (configmapprovider.Retrieved, error) {
 	return nil, epl.err
 }
 
@@ -282,7 +281,7 @@ func TestCollector_reloadService(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		parserProvider config.MapProvider
+		parserProvider configmapprovider.MapProvider
 		service        *service
 	}{
 		{

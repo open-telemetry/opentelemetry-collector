@@ -43,7 +43,7 @@ type errProvider struct {
 	err error
 }
 
-func (epl *errProvider) Retrieve(context.Context) (config.Retrieved, error) {
+func (epl *errProvider) Retrieve(context.Context) (Retrieved, error) {
 	if epl.err == nil {
 		return &simpleRetrieved{confMap: config.NewMap()}, nil
 	}

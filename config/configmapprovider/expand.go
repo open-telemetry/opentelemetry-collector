@@ -17,23 +17,21 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 import (
 	"context"
 	"os"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 type expandMapProvider struct {
-	base config.MapProvider
+	base MapProvider
 }
 
-// NewExpandMapProvider returns a config.MapProvider, that expands all environment variables for a
-// config.Map provided by the given config.MapProvider.
-func NewExpandMapProvider(base config.MapProvider) config.MapProvider {
+// NewExpandMapProvider returns a MapProvider, that expands all environment variables for a
+// config.Map provided by the given MapProvider.
+func NewExpandMapProvider(base MapProvider) MapProvider {
 	return &expandMapProvider{
 		base: base,
 	}
 }
 
-func (emp *expandMapProvider) Retrieve(ctx context.Context) (config.Retrieved, error) {
+func (emp *expandMapProvider) Retrieve(ctx context.Context) (Retrieved, error) {
 	retr, err := emp.base.Retrieve(ctx)
 	if err != nil {
 		return nil, err

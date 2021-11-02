@@ -35,6 +35,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/extension/ballastextension"
@@ -194,7 +195,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	// If the retrieved value is watchable start a goroutine watching for updates.
-	if watchable, ok := ret.(config.WatchableRetrieved); ok {
+	if watchable, ok := ret.(configmapprovider.WatchableRetrieved); ok {
 		go col.watchForConfigUpdates(ctx, watchable)
 	}
 
@@ -281,7 +282,7 @@ func (col *Collector) reloadService(ctx context.Context) error {
 	return nil
 }
 
-func (col *Collector) watchForConfigUpdates(ctx context.Context, watchable config.WatchableRetrieved) {
+func (col *Collector) watchForConfigUpdates(ctx context.Context, watchable configmapprovider.WatchableRetrieved) {
 	err := watchable.WatchForUpdate()
 	if errors.Is(err, configsource.ErrSessionClosed) {
 		// This is the case of shutdown of the whole collector server, nothing to do.
