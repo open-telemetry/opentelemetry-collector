@@ -74,7 +74,6 @@ func createExampleConfig(dataType string) *config.Config {
 		Service: config.Service{
 			Pipelines: map[config.ComponentID]*config.Pipeline{
 				config.NewComponentID(config.Type(dataType)): {
-					InputType:  config.DataType(dataType),
 					Receivers:  []config.ComponentID{config.NewComponentID(exampleReceiverFactory.Type())},
 					Processors: []config.ComponentID{config.NewComponentID(exampleProcessorFactory.Type())},
 					Exporters:  []config.ComponentID{config.NewComponentID(exampleExporterFactory.Type())},
