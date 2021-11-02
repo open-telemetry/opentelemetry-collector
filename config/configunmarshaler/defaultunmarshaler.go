@@ -198,13 +198,8 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 		return srv, fmt.Errorf("error reading service configuration for: %w", err)
 	}
 
-	for id, pipeline := range srv.Pipelines {
-		pipeline.InputType = config.DataType(id.Type())
-		switch pipeline.InputType {
-		case config.TracesDataType:
-		case config.MetricsDataType:
-		case config.LogsDataType:
-		default:
+	for id := range srv.Pipelines {
+		if id.Type() != config.TracesDataType && id.Type() != config.MetricsDataType && id.Type() != config.LogsDataType {
 			return srv, fmt.Errorf("unknown %s datatype %q for %v", pipelinesKeyName, id.Type(), id)
 		}
 	}

@@ -126,7 +126,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 
 	// Take into consideration the Capabilities for the exporter as well.
 	mutatesConsumedData := false
-	switch pipelineCfg.InputType {
+	switch pipelineID.Type() {
 	case config.TracesDataType:
 		tc = pb.buildFanoutExportersTracesConsumer(pipelineCfg.Exporters)
 		mutatesConsumedData = tc.Capabilities().MutatesData
@@ -172,7 +172,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 			BuildInfo: pb.buildInfo,
 		}
 
-		switch pipelineCfg.InputType {
+		switch pipelineID.Type() {
 		case config.TracesDataType:
 			var proc component.TracesProcessor
 			if proc, err = factory.CreateTracesProcessor(ctx, set, procCfg, tc); err != nil {
@@ -213,12 +213,12 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 
 		default:
 			return nil, fmt.Errorf("error creating processor %q in pipeline %q, data type %s is not supported",
-				procID, pipelineID, pipelineCfg.InputType)
+				procID, pipelineID, pipelineID.Type())
 		}
 	}
 
-	pipelineLogger := pb.settings.Logger.With(zap.Stringer("pipeline_id", pipelineID),
-		zap.String("pipeline_datatype", string(pipelineCfg.InputType)))
+	pipelineLogger := pb.settings.Logger.With(zap.String(components.ZapNameKey, components.ZapKindPipeline),
+		zap.String(components.ZapNameKey, pipelineID.String()))
 	pipelineLogger.Info("Pipeline was built.")
 
 	bp := &builtPipeline{

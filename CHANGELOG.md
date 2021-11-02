@@ -10,6 +10,7 @@
 - Force usage of `extensionhelper.NewFactory` to implement `component.ExtensionFactory` (#4338)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
 - Remove `config.Pipeline.Name` (#4326)
+- Remove `config.Pipeline.InputDataType` (#4343)
 
 ## v0.38.0 Beta
 
