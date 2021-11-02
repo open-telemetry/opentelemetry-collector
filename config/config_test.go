@@ -259,7 +259,6 @@ func generateConfig() *Config {
 			Extensions: []ComponentID{NewComponentID("nop")},
 			Pipelines: map[ComponentID]*Pipeline{
 				NewComponentID("traces"): {
-					Name:       "traces",
 					InputType:  TracesDataType,
 					Receivers:  []ComponentID{NewComponentID("nop")},
 					Processors: []ComponentID{NewComponentID("nop")},

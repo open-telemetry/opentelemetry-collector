@@ -59,7 +59,6 @@ func TestLoadConfig(t *testing.T) {
 	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
 		&config.Pipeline{
-			Name:       "traces",
 			InputType:  config.TracesDataType,
 			Receivers:  []config.ComponentID{config.NewComponentID("nop")},
 			Processors: []config.ComponentID{config.NewComponentID("nop")},
