@@ -51,7 +51,6 @@ func TestBuildExporters(t *testing.T) {
 		Service: config.Service{
 			Pipelines: map[config.ComponentID]*config.Pipeline{
 				config.NewComponentID("traces"): {
-					Name:      "traces",
 					InputType: config.TracesDataType,
 					Exporters: []config.ComponentID{config.NewComponentID("otlp")},
 				},
@@ -117,7 +116,6 @@ func TestBuildExporters_BuildLogs(t *testing.T) {
 		Service: config.Service{
 			Pipelines: map[config.ComponentID]*config.Pipeline{
 				config.NewComponentID("logs"): {
-					Name:      "logs",
 					InputType: config.LogsDataType,
 					Exporters: []config.ComponentID{config.NewComponentID("exampleexporter")},
 				},

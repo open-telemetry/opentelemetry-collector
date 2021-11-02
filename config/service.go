@@ -82,7 +82,6 @@ const (
 
 // Pipeline defines a single pipeline.
 type Pipeline struct {
-	Name       string
 	InputType  DataType
 	Receivers  []ComponentID `mapstructure:"receivers"`
 	Processors []ComponentID `mapstructure:"processors"`
