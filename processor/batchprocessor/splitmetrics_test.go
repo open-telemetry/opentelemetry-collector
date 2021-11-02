@@ -40,10 +40,10 @@ func TestSplitMetrics_noop(t *testing.T) {
 func TestSplitMetrics(t *testing.T) {
 	md := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	dataPointCount := metricDataPointCount(metrics.At(0))
+	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	cp := pdata.NewMetrics()
 	cpMetrics := cp.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
@@ -86,10 +86,10 @@ func TestSplitMetrics(t *testing.T) {
 func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 	md := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	dataPointCount := metricDataPointCount(metrics.At(0))
+	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	// add second index to resource metrics
 	testdata.GenerateMetricsManyMetricsSameResource(20).
@@ -111,10 +111,10 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *testing.T) {
 	td := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := td.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	dataPointCount := metricDataPointCount(metrics.At(0))
+	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	// add second index to resource metrics
 	testdata.GenerateMetricsManyMetricsSameResource(20).
@@ -142,7 +142,7 @@ func TestSplitMetricsUneven(t *testing.T) {
 	dataPointCount := 2
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 
 	splitSize := 9
@@ -169,7 +169,7 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 	dataPointCount := 2
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 
 	splitSize := 1
@@ -197,10 +197,10 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 func TestSplitMetricsMultipleILM(t *testing.T) {
 	md := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	dataPointCount := metricDataPointCount(metrics.At(0))
+	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	// add second index to ilm
 	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).
@@ -238,7 +238,7 @@ func BenchmarkSplitMetrics(b *testing.B) {
 		b.Skipf("SKIP: b.N too high, set -benchtime=<n>x with n < 100000")
 	}
 
-	dataPointCount := metricDataPointCount(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
+	dataPointCount := metricDPC(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
 	clones := make([]pdata.Metrics, b.N)
 	for n := 0; n < b.N; n++ {
 		clones[n] = md.Clone()

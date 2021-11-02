@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // Component is either a receiver, exporter, processor, or an extension.
@@ -72,7 +73,11 @@ const (
 )
 
 // Factory is implemented by all component factories.
+//
+// This interface cannot be directly implemented. Implementations must
+// use the factory helpers for the appropriate component type.
 type Factory interface {
+	internalinterface.InternalInterface
 	// Type gets the type of the component created by this factory.
 	Type() config.Type
 }
