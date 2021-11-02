@@ -395,7 +395,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	cfg := Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Timeout:           100 * time.Millisecond,
-		SendBatchSize:     100,
+		SendBatchSize:     101,
 	}
 	requestCount := 5
 	metricsPerRequest := 10
