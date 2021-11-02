@@ -150,9 +150,9 @@ func errorUnmarshalError(component string, id config.ComponentID, err error) err
 	return fmt.Errorf("error reading %s configuration for %v: %w", component, id, err)
 }
 
-func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ExtensionFactory) (config.Extensions, error) {
+func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ExtensionFactory) (map[config.ComponentID]config.Extension, error) {
 	// Prepare resulting map.
-	extensions := make(config.Extensions)
+	extensions := make(map[config.ComponentID]config.Extension)
 
 	// Iterate over extensions and create a config for each.
 	for id, value := range exts {
@@ -222,9 +222,9 @@ func LoadReceiver(componentConfig *config.Map, id config.ComponentID, factory co
 	return receiverCfg, nil
 }
 
-func unmarshalReceivers(recvs map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ReceiverFactory) (config.Receivers, error) {
+func unmarshalReceivers(recvs map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ReceiverFactory) (map[config.ComponentID]config.Receiver, error) {
 	// Prepare resulting map.
-	receivers := make(config.Receivers)
+	receivers := make(map[config.ComponentID]config.Receiver)
 
 	// Iterate over input map and create a config for each.
 	for id, value := range recvs {
@@ -249,9 +249,9 @@ func unmarshalReceivers(recvs map[config.ComponentID]map[string]interface{}, fac
 	return receivers, nil
 }
 
-func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ExporterFactory) (config.Exporters, error) {
+func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ExporterFactory) (map[config.ComponentID]config.Exporter, error) {
 	// Prepare resulting map.
-	exporters := make(config.Exporters)
+	exporters := make(map[config.ComponentID]config.Exporter)
 
 	// Iterate over Exporters and create a config for each.
 	for id, value := range exps {
@@ -280,9 +280,9 @@ func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, fact
 	return exporters, nil
 }
 
-func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ProcessorFactory) (config.Processors, error) {
+func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ProcessorFactory) (map[config.ComponentID]config.Processor, error) {
 	// Prepare resulting map.
-	processors := make(config.Processors)
+	processors := make(map[config.ComponentID]config.Processor)
 
 	// Iterate over processors and create a config for each.
 	for id, value := range procs {

@@ -23,9 +23,6 @@ type Exporter interface {
 	privateConfigExporter()
 }
 
-// Exporters is a map of names to Exporters.
-type Exporters map[ComponentID]Exporter
-
 // ExporterSettings defines common settings for a component.Exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
 //
