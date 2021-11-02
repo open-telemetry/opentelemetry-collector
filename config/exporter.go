@@ -41,17 +41,18 @@ func NewExporterSettings(id ComponentID) ExporterSettings {
 var _ Exporter = (*ExporterSettings)(nil)
 
 // ID returns the receiver ComponentID.
-func (rs *ExporterSettings) ID() ComponentID {
-	return rs.id
+func (es *ExporterSettings) ID() ComponentID {
+	return es.id
 }
 
 // SetIDName sets the receiver name.
-func (rs *ExporterSettings) SetIDName(idName string) {
-	rs.id.nameVal = idName
+func (es *ExporterSettings) SetIDName(idName string) {
+	es.id.nameVal = idName
 }
 
-func (rs *ExporterSettings) Validate() error {
+// Validate validates the configuration and returns an error if invalid.
+func (es *ExporterSettings) Validate() error {
 	return nil
 }
 
-func (rs *ExporterSettings) privateConfigExporter() {}
+func (es *ExporterSettings) privateConfigExporter() {}

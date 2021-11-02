@@ -41,18 +41,18 @@ func NewProcessorSettings(id ComponentID) ProcessorSettings {
 var _ Processor = (*ProcessorSettings)(nil)
 
 // ID returns the receiver ComponentID.
-func (rs *ProcessorSettings) ID() ComponentID {
-	return rs.id
+func (ps *ProcessorSettings) ID() ComponentID {
+	return ps.id
 }
 
 // SetIDName sets the receiver name.
-func (rs *ProcessorSettings) SetIDName(idName string) {
-	rs.id.nameVal = idName
+func (ps *ProcessorSettings) SetIDName(idName string) {
+	ps.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (rs *ProcessorSettings) Validate() error {
+func (ps *ProcessorSettings) Validate() error {
 	return nil
 }
 
-func (rs *ProcessorSettings) privateConfigProcessor() {}
+func (ps *ProcessorSettings) privateConfigProcessor() {}
