@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package batchprocessor
+package batchprocessor // import "go.opentelemetry.io/collector/processor/batchprocessor"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
@@ -32,32 +32,38 @@ func splitTraces(size int, src pdata.Traces) pdata.Traces {
 			return false
 		}
 
+		// If it fully fits
+		srcRsSC := resourceSC(srcRs)
+		if (totalCopiedSpans + srcRsSC) <= size {
+			totalCopiedSpans += srcRsSC
+			srcRs.MoveTo(dest.ResourceSpans().AppendEmpty())
+			return true
+		}
+
 		destRs := dest.ResourceSpans().AppendEmpty()
 		srcRs.Resource().CopyTo(destRs.Resource())
-
 		srcRs.InstrumentationLibrarySpans().RemoveIf(func(srcIls pdata.InstrumentationLibrarySpans) bool {
 			// If we are done skip everything else.
 			if totalCopiedSpans == size {
 				return false
 			}
 
-			destIls := destRs.InstrumentationLibrarySpans().AppendEmpty()
-			srcIls.InstrumentationLibrary().CopyTo(destIls.InstrumentationLibrary())
-
 			// If possible to move all metrics do that.
-			srcSpansLen := srcIls.Spans().Len()
-			if size-totalCopiedSpans >= srcSpansLen {
-				totalCopiedSpans += srcSpansLen
-				srcIls.Spans().MoveAndAppendTo(destIls.Spans())
+			srcIlsSC := srcIls.Spans().Len()
+			if size-totalCopiedSpans >= srcIlsSC {
+				totalCopiedSpans += srcIlsSC
+				srcIls.MoveTo(destRs.InstrumentationLibrarySpans().AppendEmpty())
 				return true
 			}
 
+			destIls := destRs.InstrumentationLibrarySpans().AppendEmpty()
+			srcIls.InstrumentationLibrary().CopyTo(destIls.InstrumentationLibrary())
 			srcIls.Spans().RemoveIf(func(srcSpan pdata.Span) bool {
 				// If we are done skip everything else.
 				if totalCopiedSpans == size {
 					return false
 				}
-				srcSpan.CopyTo(destIls.Spans().AppendEmpty())
+				srcSpan.MoveTo(destIls.Spans().AppendEmpty())
 				totalCopiedSpans++
 				return true
 			})
@@ -67,4 +73,12 @@ func splitTraces(size int, src pdata.Traces) pdata.Traces {
 	})
 
 	return dest
+}
+
+// resourceSC calculates the total number of spans in the pdata.ResourceSpans.
+func resourceSC(rs pdata.ResourceSpans) (count int) {
+	for k := 0; k < rs.InstrumentationLibrarySpans().Len(); k++ {
+		count += rs.InstrumentationLibrarySpans().At(k).Spans().Len()
+	}
+	return
 }

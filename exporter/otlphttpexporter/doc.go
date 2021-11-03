@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package otlphttpexporter exports data by using the OTLP format to an HTTP endpoint.
-package otlphttpexporter
+package otlphttpexporter // import "go.opentelemetry.io/collector/exporter/otlphttpexporter"

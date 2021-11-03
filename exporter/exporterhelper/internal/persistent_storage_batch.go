@@ -15,7 +15,7 @@
 //go:build enable_unstable
 // +build enable_unstable
 
-package internal
+package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
 import (
 	"bytes"

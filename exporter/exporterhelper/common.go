@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporterhelper
+package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
 	"context"
@@ -182,7 +182,7 @@ func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, 
 		Level:                  set.MetricsLevel,
 		ExporterID:             cfg.ID(),
 		ExporterCreateSettings: set,
-	})
+	}, globalInstruments)
 	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 

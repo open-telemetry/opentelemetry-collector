@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package service
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
 
-	"go.opentelemetry.io/collector/service/parserprovider"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 )
 
 type WindowsService struct {
@@ -133,7 +133,7 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 
 func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Collector, error) {
 	if set.ConfigMapProvider == nil {
-		set.ConfigMapProvider = parserprovider.NewDefaultMapProvider(getConfigFlag(), getSetFlag())
+		set.ConfigMapProvider = configmapprovider.NewDefaultMapProvider(getConfigFlag(), getSetFlag())
 	}
 	set.LoggingOptions = append(
 		set.LoggingOptions,

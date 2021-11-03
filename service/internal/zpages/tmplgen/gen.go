@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tmplgen
+package tmplgen // import "go.opentelemetry.io/collector/service/internal/zpages/tmplgen"
 
 //go:generate esc -pkg tmplgen -o resources.go -modtime "0" ../templates/
 //go:generate addlicense -y "" -c "The OpenTelemetry Authors" resources.go

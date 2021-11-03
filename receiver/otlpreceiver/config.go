@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlpreceiver
+package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 import (
 	"fmt"
@@ -65,7 +65,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 		return err
 	}
 
-	// next manually search for protocols in the config.Map, if a protocol is not present it means it is disable.
+	// next manually search for protocols in the config.Map, if a protocol is not present it means it is disabled.
 	protocols, err := componentParser.Sub(protocolsFieldName)
 	if err != nil {
 		return err

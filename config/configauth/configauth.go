@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth
+package configauth // import "go.opentelemetry.io/collector/config/configauth"
 
 import (
 	"errors"
@@ -23,25 +23,39 @@ import (
 )
 
 var (
-	errAuthenticatorNotFound = errors.New("authenticator not found")
+	errAuthenticatorNotFound  = errors.New("authenticator not found")
+	errNotClientAuthenticator = errors.New("requested authenticator is not a client authenticator")
+	errNotServerAuthenticator = errors.New("requested authenticator is not a server authenticator")
 )
 
 // Authentication defines the auth settings for the receiver.
 type Authentication struct {
-	// AuthenticatorName specifies the name of the extension to use in order to authenticate the incoming data point.
-	AuthenticatorName string `mapstructure:"authenticator"`
+	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
+	AuthenticatorID config.ComponentID `mapstructure:"authenticator"`
 }
 
-// GetServerAuthenticator attempts to select the appropriate from the list of extensions, based on the requested extension name.
-// If an authenticator is not found, an error is returned.
-func GetServerAuthenticator(extensions map[config.ComponentID]component.Extension, componentID config.ComponentID) (ServerAuthenticator, error) {
-	for id, ext := range extensions {
+// GetServerAuthenticator attempts to select the appropriate ServerAuthenticator from the list of extensions,
+// based on the requested extension name. If an authenticator is not found, an error is returned.
+func (a Authentication) GetServerAuthenticator(extensions map[config.ComponentID]component.Extension) (ServerAuthenticator, error) {
+	if ext, found := extensions[a.AuthenticatorID]; found {
 		if auth, ok := ext.(ServerAuthenticator); ok {
-			if id == componentID {
-				return auth, nil
-			}
+			return auth, nil
 		}
+		return nil, errNotServerAuthenticator
 	}
 
-	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", componentID.String(), errAuthenticatorNotFound)
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
+}
+
+// GetClientAuthenticator attempts to select the appropriate ClientAuthenticator from the list of extensions,
+// based on the component id of the extension. If an authenticator is not found, an error is returned.
+// This should be only used by HTTP clients.
+func (a Authentication) GetClientAuthenticator(extensions map[config.ComponentID]component.Extension) (ClientAuthenticator, error) {
+	if ext, found := extensions[a.AuthenticatorID]; found {
+		if auth, ok := ext.(ClientAuthenticator); ok {
+			return auth, nil
+		}
+		return nil, errNotClientAuthenticator
+	}
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config // import "go.opentelemetry.io/collector/config"
 
 // Extension is the configuration of a component.Extension. Specific extensions must implement
 // this interface and must embed ExtensionSettings struct or a struct that extends it.
@@ -22,9 +22,6 @@ type Extension interface {
 
 	privateConfigExtension()
 }
-
-// Extensions is a map of names to extensions.
-type Extensions map[ComponentID]Extension
 
 // ExtensionSettings defines common settings for a component.Extension configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
@@ -44,18 +41,18 @@ func NewExtensionSettings(id ComponentID) ExtensionSettings {
 var _ Extension = (*ExtensionSettings)(nil)
 
 // ID returns the receiver ComponentID.
-func (rs *ExtensionSettings) ID() ComponentID {
-	return rs.id
+func (es *ExtensionSettings) ID() ComponentID {
+	return es.id
 }
 
 // SetIDName sets the receiver name.
-func (rs *ExtensionSettings) SetIDName(idName string) {
-	rs.id.nameVal = idName
+func (es *ExtensionSettings) SetIDName(idName string) {
+	es.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (rs *ExtensionSettings) Validate() error {
+func (es *ExtensionSettings) Validate() error {
 	return nil
 }
 
-func (rs *ExtensionSettings) privateConfigExtension() {}
+func (es *ExtensionSettings) privateConfigExtension() {}

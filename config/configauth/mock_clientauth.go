@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth
+package configauth // import "go.opentelemetry.io/collector/config/configauth"
 
 import (
 	"context"
@@ -25,9 +25,8 @@ import (
 )
 
 var (
-	_            HTTPClientAuthenticator = (*MockClientAuthenticator)(nil)
-	_            GRPCClientAuthenticator = (*MockClientAuthenticator)(nil)
-	errMockError                         = errors.New("mock Error")
+	_            ClientAuthenticator = (*MockClientAuthenticator)(nil)
+	errMockError                     = errors.New("mock Error")
 )
 
 // MockClientAuthenticator provides a mock implementation of GRPCClientAuthenticator and HTTPClientAuthenticator interfaces

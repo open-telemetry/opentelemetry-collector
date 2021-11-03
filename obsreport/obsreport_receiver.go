@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreport
+package obsreport // import "go.opentelemetry.io/collector/obsreport"
 
 import (
 	"context"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -47,7 +47,8 @@ type ReceiverSettings struct {
 	// Typically the long lived context is associated to a connection,
 	// eg.: a gRPC stream, for which many batches of data are received in individual
 	// operations without a corresponding new context per operation.
-	LongLivedCtx bool
+	LongLivedCtx           bool
+	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
 // NewReceiver creates a new Receiver.
@@ -60,7 +61,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
 			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
 		},
-		tracer: otel.GetTracerProvider().Tracer(cfg.ReceiverID.String()),
+		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
 	}
 }
 

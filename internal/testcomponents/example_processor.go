@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testcomponents
+package testcomponents // import "go.opentelemetry.io/collector/internal/testcomponents"
 
 import (
 	"context"

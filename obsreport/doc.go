@@ -114,4 +114,4 @@
 //
 // `processor/batch/batch_size_trigger_send{processor="batch/dev",...}`
 //
-package obsreport
+package obsreport // import "go.opentelemetry.io/collector/obsreport"

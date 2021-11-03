@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"flag"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
 var (
@@ -45,13 +44,7 @@ func (s *stringArrayValue) String() string {
 
 func flags() *flag.FlagSet {
 	flagSet := new(flag.FlagSet)
-	addFlagsFns := []func(*flag.FlagSet){
-		configtelemetry.Flags,
-		telemetrylogs.Flags,
-	}
-	for _, addFlags := range addFlagsFns {
-		addFlags(flagSet)
-	}
+	configtelemetry.Flags(flagSet)
 
 	configFlag = flagSet.String("config", defaultConfig, "Path to the config file")
 

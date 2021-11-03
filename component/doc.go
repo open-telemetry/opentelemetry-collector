@@ -16,4 +16,4 @@
 // and provides a foundation for the component’s creation and
 // termination process. A component can be either a receiver, exporter,
 // processor, or an extension.
-package component
+package component // import "go.opentelemetry.io/collector/component"

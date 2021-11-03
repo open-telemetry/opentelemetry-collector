@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package extensionhelper
+package extensionhelper // import "go.opentelemetry.io/collector/extension/extensionhelper"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // FactoryOption apply changes to ExporterOptions.
@@ -31,6 +32,7 @@ type CreateDefaultConfig func() config.Extension
 type CreateServiceExtension func(context.Context, component.ExtensionCreateSettings, config.Extension) (component.Extension, error)
 
 type factory struct {
+	internalinterface.BaseInternal
 	cfgType                config.Type
 	createDefaultConfig    CreateDefaultConfig
 	createServiceExtension CreateServiceExtension
