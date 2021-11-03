@@ -11,7 +11,7 @@
 - Force usage of `extensionhelper.NewFactory` to implement `component.ExtensionFactory` (#4338)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
 - Renamed slice-valued `pdata` types and functions for consistency. (#4325)
-  - Rename `pdata.AnyValueArray` to `AttributeSlice`
+  - Rename `pdata.AnyValueArray` to `pdata.AttributeValueSlice`
   - Rename `ArrayVal()` to `SliceVal()`
   - Rename `SetArrayVal()` to `SetSliceVal()`
 - Remove `config.Pipeline.Name` (#4326)
