@@ -232,9 +232,13 @@ func newUserAgentRoundTripper(next http.RoundTripper, userAgent string) *userAge
 }
 
 func (r *userAgentRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	body, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return nil, err
+	body, readErr := ioutil.ReadAll(req.Body)
+	closeErr := req.Body.Close()
+	if readErr != nil {
+		return nil, readErr
+	}
+	if closeErr != nil {
+		return nil, closeErr
 	}
 	requestClone := req.Clone(req.Context())
 	requestClone.Body = ioutil.NopCloser(bytes.NewReader(body))
