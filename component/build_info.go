@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component
+package component // import "go.opentelemetry.io/collector/component"
 
 // BuildInfo is the information that is logged at the application start and
 // passed into each component. This information can be overridden in custom builds.

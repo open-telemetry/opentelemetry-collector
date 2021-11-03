@@ -16,10 +16,14 @@ package otlphttpexporter
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -39,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
@@ -290,6 +295,56 @@ func TestLogsRoundTrip(t *testing.T) {
 			assert.EqualValues(t, md, allLogs[0])
 		})
 	}
+}
+
+func TestIssue_4221(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() { assert.NoError(t, r.Body.Close()) }()
+		data, err := ioutil.ReadAll(r.Body)
+		require.NoError(t, err)
+		base64Data := base64.StdEncoding.EncodeToString(data)
+		// Verify same base64 encoded string is received.
+		assert.Equal(t, "CscBCkkKIAoMc2VydmljZS5uYW1lEhAKDnVvcC5zdGFnZS1ldS0xCiUKGW91dHN5c3RlbXMubW9kdWxlLnZlcnNpb24SCAoGOTAzMzg2EnoKEQoMdW9wX2NhbmFyaWVzEgExEmUKEEMDhT8Ib0+Mhs8Zi2VR34QSCOVRPDJ5XEG5IgA5QE41aASRrxZBQE41aASRrxZKEAoKc3Bhbl9pbmRleBICGANKHwoNY29kZS5mdW5jdGlvbhIOCgxteUZ1bmN0aW9uMzZ6AA==", base64Data)
+		unbase64Data, err := base64.StdEncoding.DecodeString(base64Data)
+		require.NoError(t, err)
+		tr, err := otlpgrpc.UnmarshalTracesRequest(unbase64Data)
+		require.NoError(t, err)
+		span := tr.Traces().ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
+		assert.Equal(t, "e5513c32795c41b9", span.SpanID().HexString())
+	}))
+
+	exp := startTracesExporter(t, "", svr.URL)
+
+	md := pdata.NewTraces()
+	rms := md.ResourceSpans().AppendEmpty()
+	rms.Resource().Attributes().UpsertString("service.name", "uop.stage-eu-1")
+	rms.Resource().Attributes().UpsertString("outsystems.module.version", "903386")
+	ils := rms.InstrumentationLibrarySpans().AppendEmpty()
+	ils.InstrumentationLibrary().SetName("uop_canaries")
+	ils.InstrumentationLibrary().SetVersion("1")
+	span := ils.Spans().AppendEmpty()
+
+	var traceIDBytes [16]byte
+	traceIDBytesSlice, err := hex.DecodeString("4303853f086f4f8c86cf198b6551df84")
+	require.NoError(t, err)
+	copy(traceIDBytes[:], traceIDBytesSlice)
+	span.SetTraceID(pdata.NewTraceID(traceIDBytes))
+	assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
+
+	var spanIDBytes [8]byte
+	spanIDBytesSlice, err := hex.DecodeString("e5513c32795c41b9")
+	require.NoError(t, err)
+	copy(spanIDBytes[:], spanIDBytesSlice)
+	span.SetSpanID(pdata.NewSpanID(spanIDBytes))
+	assert.Equal(t, "e5513c32795c41b9", span.SpanID().HexString())
+
+	span.SetEndTimestamp(1634684637873000000)
+	span.Attributes().UpsertInt("span_index", 3)
+	span.Attributes().UpsertString("code.function", "myFunction36")
+	span.SetStartTimestamp(1634684637873000000)
+
+	assert.NoError(t, exp.ConsumeTraces(context.Background(), md))
 }
 
 func startTracesExporter(t *testing.T, baseURL string, overrideURL string) component.TracesExporter {

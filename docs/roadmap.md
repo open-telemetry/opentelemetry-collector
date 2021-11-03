@@ -13,7 +13,7 @@ Metrics correctness tests|In progress|[#652](https://github.com/open-telemetry/o
 | |
 **New Formats**|
 Complete OTLP/HTTP support| |[#882](https://github.com/open-telemetry/opentelemetry-collector/issues/882)
-Add logs support for all primary core processors (attributes, batch, k8s_tagger, etc)|In progress|
+Add logs support for all primary core processors (attributes, batch, k8sattributes, etc)|In progress|
 | |
 **5 Min to Value**|
 Distribution packages for most common targets (e.g. Docker, RPM, Windows, etc)|

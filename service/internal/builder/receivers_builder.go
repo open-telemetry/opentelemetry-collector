@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package builder // import "go.opentelemetry.io/collector/service/internal/builder"
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
 
@@ -40,7 +41,7 @@ type builtReceiver struct {
 
 // Start starts the receiver.
 func (rcv *builtReceiver) Start(ctx context.Context, host component.Host) error {
-	return rcv.receiver.Start(ctx, host)
+	return rcv.receiver.Start(ctx, components.NewHostWrapper(host, rcv.logger))
 }
 
 // Shutdown stops the receiver.
@@ -66,7 +67,7 @@ func (rcvs Receivers) StartAll(ctx context.Context, host component.Host) error {
 	for _, rcv := range rcvs {
 		rcv.logger.Info("Receiver is starting...")
 
-		if err := rcv.Start(ctx, newHostWrapper(host, rcv.logger)); err != nil {
+		if err := rcv.Start(ctx, host); err != nil {
 			return err
 		}
 		rcv.logger.Info("Receiver started.")
@@ -95,7 +96,9 @@ func BuildReceivers(
 	for recvID, recvCfg := range cfg.Receivers {
 		set := component.ReceiverCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
-				Logger:         settings.Logger.With(zap.String(zapKindKey, zapKindReceiver), zap.String(zapNameKey, recvID.String())),
+				Logger: settings.Logger.With(
+					zap.String(components.ZapKindKey, components.ZapKindReceiver),
+					zap.String(components.ZapNameKey, recvID.String())),
 				TracerProvider: settings.TracerProvider,
 				MeterProvider:  settings.MeterProvider,
 			},
@@ -134,27 +137,23 @@ func (rb *receiversBuilder) findPipelinesToAttach(receiverID config.ComponentID)
 	// attached to this receiver according to configuration.
 
 	pipelinesToAttach := make(attachedPipelines)
-	pipelinesToAttach[config.TracesDataType] = make([]*builtPipeline, 0)
-	pipelinesToAttach[config.MetricsDataType] = make([]*builtPipeline, 0)
 
 	// Iterate over all pipelines.
-	for _, pipelineCfg := range rb.config.Service.Pipelines {
+	for pipelineID, pipelineCfg := range rb.config.Service.Pipelines {
 		// Get the first processor of the pipeline.
-		pipelineProcessor := rb.builtPipelines[pipelineCfg]
+		pipelineProcessor := rb.builtPipelines[pipelineID]
 		if pipelineProcessor == nil {
-			return nil, fmt.Errorf("cannot find pipeline processor for pipeline %s",
-				pipelineCfg.Name)
+			return nil, fmt.Errorf("cannot find pipeline %q", pipelineID)
 		}
 
 		// Is this receiver attached to the pipeline?
 		if hasReceiver(pipelineCfg, receiverID) {
-			if _, exists := pipelinesToAttach[pipelineCfg.InputType]; !exists {
-				pipelinesToAttach[pipelineCfg.InputType] = make([]*builtPipeline, 0)
+			if _, exists := pipelinesToAttach[pipelineID.Type()]; !exists {
+				pipelinesToAttach[pipelineID.Type()] = make([]*builtPipeline, 0)
 			}
 
 			// Yes, add it to the list of pipelines of corresponding data type.
-			pipelinesToAttach[pipelineCfg.InputType] =
-				append(pipelinesToAttach[pipelineCfg.InputType], pipelineProcessor)
+			pipelinesToAttach[pipelineID.Type()] = append(pipelinesToAttach[pipelineID.Type()], pipelineProcessor)
 		}
 	}
 

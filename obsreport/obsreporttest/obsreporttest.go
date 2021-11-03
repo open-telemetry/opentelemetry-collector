@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreporttest
+package obsreporttest // import "go.opentelemetry.io/collector/obsreport/obsreporttest"
 
 import (
 	"context"
@@ -102,7 +102,7 @@ func SetupTelemetry() (TestTelemetry, error) {
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckExporterTraces(exporter config.ComponentID, acceptedSpans, droppedSpans int64) error {
+func CheckExporterTraces(_ TestTelemetry, exporter config.ComponentID, acceptedSpans, droppedSpans int64) error {
 	exporterTags := tagsForExporterView(exporter)
 	if err := checkValueForView(exporterTags, acceptedSpans, "exporter/sent_spans"); err != nil {
 		return err
@@ -112,7 +112,7 @@ func CheckExporterTraces(exporter config.ComponentID, acceptedSpans, droppedSpan
 
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckExporterMetrics(exporter config.ComponentID, acceptedMetricsPoints, droppedMetricsPoints int64) error {
+func CheckExporterMetrics(_ TestTelemetry, exporter config.ComponentID, acceptedMetricsPoints, droppedMetricsPoints int64) error {
 	exporterTags := tagsForExporterView(exporter)
 	if err := checkValueForView(exporterTags, acceptedMetricsPoints, "exporter/sent_metric_points"); err != nil {
 		return err
@@ -122,7 +122,7 @@ func CheckExporterMetrics(exporter config.ComponentID, acceptedMetricsPoints, dr
 
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckExporterLogs(exporter config.ComponentID, acceptedLogRecords, droppedLogRecords int64) error {
+func CheckExporterLogs(_ TestTelemetry, exporter config.ComponentID, acceptedLogRecords, droppedLogRecords int64) error {
 	exporterTags := tagsForExporterView(exporter)
 	if err := checkValueForView(exporterTags, acceptedLogRecords, "exporter/sent_log_records"); err != nil {
 		return err
@@ -132,7 +132,7 @@ func CheckExporterLogs(exporter config.ComponentID, acceptedLogRecords, droppedL
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckProcessorTraces(processor config.ComponentID, acceptedSpans, refusedSpans, droppedSpans int64) error {
+func CheckProcessorTraces(_ TestTelemetry, processor config.ComponentID, acceptedSpans, refusedSpans, droppedSpans int64) error {
 	processorTags := tagsForProcessorView(processor)
 	if err := checkValueForView(processorTags, acceptedSpans, "processor/accepted_spans"); err != nil {
 		return err
@@ -145,7 +145,7 @@ func CheckProcessorTraces(processor config.ComponentID, acceptedSpans, refusedSp
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckProcessorMetrics(processor config.ComponentID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
+func CheckProcessorMetrics(_ TestTelemetry, processor config.ComponentID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
 	processorTags := tagsForProcessorView(processor)
 	if err := checkValueForView(processorTags, acceptedMetricPoints, "processor/accepted_metric_points"); err != nil {
 		return err
@@ -158,7 +158,7 @@ func CheckProcessorMetrics(processor config.ComponentID, acceptedMetricPoints, r
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckProcessorLogs(processor config.ComponentID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
+func CheckProcessorLogs(_ TestTelemetry, processor config.ComponentID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
 	processorTags := tagsForProcessorView(processor)
 	if err := checkValueForView(processorTags, acceptedLogRecords, "processor/accepted_log_records"); err != nil {
 		return err
@@ -171,7 +171,7 @@ func CheckProcessorLogs(processor config.ComponentID, acceptedLogRecords, refuse
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckReceiverTraces(receiver config.ComponentID, protocol string, acceptedSpans, droppedSpans int64) error {
+func CheckReceiverTraces(_ TestTelemetry, receiver config.ComponentID, protocol string, acceptedSpans, droppedSpans int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	if err := checkValueForView(receiverTags, acceptedSpans, "receiver/accepted_spans"); err != nil {
 		return err
@@ -181,7 +181,7 @@ func CheckReceiverTraces(receiver config.ComponentID, protocol string, acceptedS
 
 // CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckReceiverLogs(receiver config.ComponentID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
+func CheckReceiverLogs(_ TestTelemetry, receiver config.ComponentID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	if err := checkValueForView(receiverTags, acceptedLogRecords, "receiver/accepted_log_records"); err != nil {
 		return err
@@ -191,7 +191,7 @@ func CheckReceiverLogs(receiver config.ComponentID, protocol string, acceptedLog
 
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckReceiverMetrics(receiver config.ComponentID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
+func CheckReceiverMetrics(_ TestTelemetry, receiver config.ComponentID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	if err := checkValueForView(receiverTags, acceptedMetricPoints, "receiver/accepted_metric_points"); err != nil {
 		return err
@@ -201,7 +201,7 @@ func CheckReceiverMetrics(receiver config.ComponentID, protocol string, accepted
 
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckScraperMetrics(receiver config.ComponentID, scraper config.ComponentID, scrapedMetricPoints, erroredMetricPoints int64) error {
+func CheckScraperMetrics(_ TestTelemetry, receiver config.ComponentID, scraper config.ComponentID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	scraperTags := tagsForScraperView(receiver, scraper)
 	if err := checkValueForView(scraperTags, scrapedMetricPoints, "scraper/scraped_metric_points"); err != nil {
 		return err

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreportconfig
+package obsreportconfig // import "go.opentelemetry.io/collector/internal/obsreportconfig"
 
 import (
 	"go.opencensus.io/stats"
@@ -77,13 +77,10 @@ func allViews() *ObsMetrics {
 	measures = []*stats.Int64Measure{
 		obsmetrics.ExporterSentSpans,
 		obsmetrics.ExporterFailedToSendSpans,
-		obsmetrics.ExporterFailedToEnqueueSpans,
 		obsmetrics.ExporterSentMetricPoints,
 		obsmetrics.ExporterFailedToSendMetricPoints,
-		obsmetrics.ExporterFailedToEnqueueMetricPoints,
 		obsmetrics.ExporterSentLogRecords,
 		obsmetrics.ExporterFailedToSendLogRecords,
-		obsmetrics.ExporterFailedToEnqueueLogRecords,
 	}
 	tagKeys = []tag.Key{obsmetrics.TagKeyExporter}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)

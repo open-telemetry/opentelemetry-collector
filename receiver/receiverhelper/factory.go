@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package receiverhelper
+package receiverhelper // import "go.opentelemetry.io/collector/receiver/receiverhelper"
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // FactoryOption apply changes to ReceiverOptions.
@@ -60,6 +61,7 @@ type CreateMetricsReceiver func(context.Context, component.ReceiverCreateSetting
 type CreateLogsReceiver func(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Logs) (component.LogsReceiver, error)
 
 type factory struct {
+	internalinterface.BaseInternal
 	cfgType               config.Type
 	createDefaultConfig   CreateDefaultConfig
 	createTracesReceiver  CreateTracesReceiver

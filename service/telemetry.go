@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"fmt"
@@ -47,6 +47,11 @@ var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
 // AddCollectorVersionTag indicates if the collector version tag should be added to all telemetry metrics
 const AddCollectorVersionTag = true
 
+const (
+	zapKeyTelemetryAddress = "address"
+	zapKeyTelemetryLevel   = "level"
+)
+
 type collectorTelemetryExporter interface {
 	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
 	shutdown() error
@@ -72,14 +77,19 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 }
 
 func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
-	logger.Info("Setting up own telemetry...")
-
 	level := configtelemetry.GetMetricsLevelFlagValue()
 	metricsAddr := getMetricsAddr()
 
 	if level == configtelemetry.LevelNone || metricsAddr == "" {
+		logger.Info(
+			"Skipping telemetry setup.",
+			zap.String(zapKeyTelemetryAddress, metricsAddr),
+			zap.String(zapKeyTelemetryLevel, level.String()),
+		)
 		return nil
 	}
+
+	logger.Info("Setting up own telemetry...")
 
 	var instanceID string
 
@@ -105,8 +115,8 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 
 	logger.Info(
 		"Serving Prometheus metrics",
-		zap.String("address", metricsAddr),
-		zap.Int8("level", int8(level)), // TODO: make it human friendly
+		zap.String(zapKeyTelemetryAddress, metricsAddr),
+		zap.String(zapKeyTelemetryLevel, level.String()),
 		zap.String(semconv.AttributeServiceInstanceID, instanceID),
 		zap.String(semconv.AttributeServiceVersion, version.Version),
 	)

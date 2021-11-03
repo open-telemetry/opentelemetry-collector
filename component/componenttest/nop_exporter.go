@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest
+package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // NewNopExporterCreateSettings returns a new nop settings for Create*Exporter functions.
@@ -36,7 +37,9 @@ type nopExporterConfig struct {
 }
 
 // nopExporterFactory is factory for nopExporter.
-type nopExporterFactory struct{}
+type nopExporterFactory struct {
+	internalinterface.BaseInternal
+}
 
 var nopExporterFactoryInstance = &nopExporterFactory{}
 

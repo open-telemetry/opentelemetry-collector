@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
@@ -47,7 +48,9 @@ func TestValidateConfigFromFactories_Failure(t *testing.T) {
 
 // badConfigExtensionFactory was created to force error path from factory returning
 // a config not satisfying the validation.
-type badConfigExtensionFactory struct{}
+type badConfigExtensionFactory struct {
+	internalinterface.BaseInternal
+}
 
 func (b badConfigExtensionFactory) Type() config.Type {
 	return "bad_config"

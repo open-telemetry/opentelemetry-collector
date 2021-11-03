@@ -9,12 +9,23 @@ as well as investigate issues.
 
 Logs can be helpful in identifying issues. Always start by checking the log
 output and looking for potential issues.
+The verbosity level defaults to `INFO` and can be adjusted.
 
-The verbosity level, which defaults to `INFO` can also be adjusted by passing
-the `--log-level` flag to the `otelcol` process. See `--help` for more details.
+#### Version 0.35 and below:
+Pass `--log-level` flag to the `otelcol` process. See `--help` for more details.
 
 ```bash
 $ otelcol --log-level DEBUG
+```
+
+#### Version 0.36 and above:
+Set the log level in the config `service::telemetry::logs`
+
+```yaml
+service:
+  telemetry:
+    logs:
+      level: "debug"
 ```
 
 ### Metrics

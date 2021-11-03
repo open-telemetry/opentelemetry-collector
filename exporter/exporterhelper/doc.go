@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package exporterhelper provides helper functions for exporters.
-package exporterhelper
+package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"

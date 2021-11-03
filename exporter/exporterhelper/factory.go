@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exporterhelper
+package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // FactoryOption apply changes to ExporterOptions.
@@ -38,6 +39,7 @@ type CreateMetricsExporter func(context.Context, component.ExporterCreateSetting
 type CreateLogsExporter func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error)
 
 type factory struct {
+	internalinterface.BaseInternal
 	cfgType               config.Type
 	createDefaultConfig   CreateDefaultConfig
 	createTracesExporter  CreateTracesExporter

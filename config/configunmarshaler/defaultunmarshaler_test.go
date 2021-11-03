@@ -109,13 +109,11 @@ func TestDecodeConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&config.Pipeline{
-			Name:       "traces",
-			InputType:  config.TracesDataType,
 			Receivers:  []config.ComponentID{config.NewComponentID("examplereceiver")},
 			Processors: []config.ComponentID{config.NewComponentID("exampleprocessor")},
 			Exporters:  []config.ComponentID{config.NewComponentID("exampleexporter")},
 		},
-		cfg.Service.Pipelines["traces"],
+		cfg.Service.Pipelines[config.NewComponentID("traces")],
 		"Did not load pipeline config correctly")
 }
 
@@ -126,47 +124,47 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		expected        configErrorCode // expected error (if nil any error is acceptable)
 		expectedMessage string          // string that the error must contain
 	}{
-		{name: "invalid-extension-type", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-receiver-type", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-exporter-type", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-processor-type", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-pipeline-type", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-extension-type", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-receiver-type", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-processor-type", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-exporter-type", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-pipeline-type", expected: errUnmarshalService},
 
-		{name: "invalid-extension-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-receiver-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-exporter-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-processor-name-after-slash", expected: errInvalidTypeAndNameKey},
-		{name: "invalid-pipeline-name-after-slash", expected: errInvalidTypeAndNameKey},
+		{name: "invalid-extension-name-after-slash", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-receiver-name-after-slash", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-processor-name-after-slash", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-exporter-name-after-slash", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-pipeline-name-after-slash", expected: errUnmarshalService},
 
-		{name: "unknown-extension-type", expected: errUnknownType, expectedMessage: "extensions"},
-		{name: "unknown-receiver-type", expected: errUnknownType, expectedMessage: "receivers"},
-		{name: "unknown-exporter-type", expected: errUnknownType, expectedMessage: "exporters"},
-		{name: "unknown-processor-type", expected: errUnknownType, expectedMessage: "processors"},
-		{name: "unknown-pipeline-type", expected: errUnknownType, expectedMessage: "pipelines"},
+		{name: "unknown-extension-type", expected: errUnmarshalExtension, expectedMessage: "extensions"},
+		{name: "unknown-receiver-type", expected: errUnmarshalReceiver, expectedMessage: "receivers"},
+		{name: "unknown-processor-type", expected: errUnmarshalProcessor, expectedMessage: "processors"},
+		{name: "unknown-exporter-type", expected: errUnmarshalExporter, expectedMessage: "exporters"},
+		{name: "unknown-pipeline-type", expected: errUnmarshalService, expectedMessage: "pipelines"},
 
-		{name: "duplicate-extension", expected: errDuplicateName, expectedMessage: "extensions"},
-		{name: "duplicate-receiver", expected: errDuplicateName, expectedMessage: "receivers"},
-		{name: "duplicate-exporter", expected: errDuplicateName, expectedMessage: "exporters"},
-		{name: "duplicate-processor", expected: errDuplicateName, expectedMessage: "processors"},
-		{name: "duplicate-pipeline", expected: errDuplicateName, expectedMessage: "pipelines"},
+		{name: "duplicate-extension", expected: errUnmarshalTopLevelStructure, expectedMessage: "duplicate name"},
+		{name: "duplicate-receiver", expected: errUnmarshalTopLevelStructure, expectedMessage: "duplicate name"},
+		{name: "duplicate-processor", expected: errUnmarshalTopLevelStructure, expectedMessage: "duplicate name"},
+		{name: "duplicate-exporter", expected: errUnmarshalTopLevelStructure, expectedMessage: "duplicate name"},
+		{name: "duplicate-pipeline", expected: errUnmarshalService, expectedMessage: "duplicate name"},
 
-		{name: "invalid-top-level-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "top level"},
-		{name: "invalid-extension-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "extensions"},
-		{name: "invalid-receiver-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "receivers"},
-		{name: "invalid-processor-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "processors"},
-		{name: "invalid-exporter-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "exporters"},
-		{name: "invalid-service-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "service"},
-		{name: "invalid-service-extensions-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "service"},
-		{name: "invalid-pipeline-section", expected: errUnmarshalTopLevelStructureError, expectedMessage: "pipelines"},
-		{name: "invalid-sequence-value", expected: errUnmarshalTopLevelStructureError, expectedMessage: "pipelines"},
+		{name: "invalid-top-level-section", expected: errUnmarshalTopLevelStructure, expectedMessage: "top level"},
+		{name: "invalid-extension-section", expected: errUnmarshalExtension, expectedMessage: "extensions"},
+		{name: "invalid-receiver-section", expected: errUnmarshalReceiver, expectedMessage: "receivers"},
+		{name: "invalid-processor-section", expected: errUnmarshalProcessor, expectedMessage: "processors"},
+		{name: "invalid-exporter-section", expected: errUnmarshalExporter, expectedMessage: "exporters"},
+		{name: "invalid-service-section", expected: errUnmarshalService},
+		{name: "invalid-service-extensions-section", expected: errUnmarshalService},
+		{name: "invalid-pipeline-section", expected: errUnmarshalService, expectedMessage: "pipelines"},
+		{name: "invalid-sequence-value", expected: errUnmarshalService, expectedMessage: "pipelines"},
 
-		{name: "invalid-extension-sub-config", expected: errUnmarshalTopLevelStructureError},
-		{name: "invalid-exporter-sub-config", expected: errUnmarshalTopLevelStructureError},
-		{name: "invalid-processor-sub-config", expected: errUnmarshalTopLevelStructureError},
-		{name: "invalid-receiver-sub-config", expected: errUnmarshalTopLevelStructureError},
-		{name: "invalid-pipeline-sub-config", expected: errUnmarshalTopLevelStructureError},
+		{name: "invalid-extension-sub-config", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-receiver-sub-config", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-processor-sub-config", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-exporter-sub-config", expected: errUnmarshalTopLevelStructure},
+		{name: "invalid-pipeline-sub-config", expected: errUnmarshalService},
 
-		{name: "invalid-logs-level", expected: errInvalidLogsLevel},
+		{name: "invalid-logs-level", expected: errUnmarshalService},
 	}
 
 	factories, err := testcomponents.ExampleComponents()

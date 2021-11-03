@@ -66,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 					"another":                "somevalue",
 				},
 				Endpoint: "https://1.2.3.4:1234",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile:   "/var/lib/mycert.pem",
 						CertFile: "certfile",

@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processorhelper
+package processorhelper // import "go.opentelemetry.io/collector/processor/processorhelper"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // FactoryOption apply changes to ProcessorOptions.
@@ -38,7 +40,7 @@ type CreateMetricsProcessor func(context.Context, component.ProcessorCreateSetti
 type CreateLogsProcessor func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Logs) (component.LogsProcessor, error)
 
 type factory struct {
-	component.BaseProcessorFactory
+	internalinterface.BaseInternal
 	cfgType                config.Type
 	createDefaultConfig    CreateDefaultConfig
 	createTracesProcessor  CreateTracesProcessor
@@ -100,7 +102,7 @@ func (f *factory) CreateTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	if f.createTracesProcessor == nil {
-		return f.BaseProcessorFactory.CreateTracesProcessor(ctx, set, cfg, nextConsumer)
+		return nil, componenterror.ErrDataTypeIsNotSupported
 	}
 	return f.createTracesProcessor(ctx, set, cfg, nextConsumer)
 }
@@ -113,7 +115,7 @@ func (f *factory) CreateMetricsProcessor(
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	if f.createMetricsProcessor == nil {
-		return f.BaseProcessorFactory.CreateMetricsProcessor(ctx, set, cfg, nextConsumer)
+		return nil, componenterror.ErrDataTypeIsNotSupported
 	}
 	return f.createMetricsProcessor(ctx, set, cfg, nextConsumer)
 }
@@ -126,7 +128,7 @@ func (f *factory) CreateLogsProcessor(
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	if f.createLogsProcessor == nil {
-		return f.BaseProcessorFactory.CreateLogsProcessor(ctx, set, cfg, nextConsumer)
+		return nil, componenterror.ErrDataTypeIsNotSupported
 	}
 	return f.createLogsProcessor(ctx, set, cfg, nextConsumer)
 }

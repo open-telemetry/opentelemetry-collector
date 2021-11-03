@@ -155,6 +155,65 @@ func (DataPointFlags) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_3c3112f9fa006917, []int{1}
 }
 
+// MetricsData represents the metrics data that can be stored in a persistent
+// storage, OR can be embedded by other protocols that transfer OTLP metrics
+// data but do not implement the OTLP protocol.
+//
+// The main difference between this message and collector protocol is that
+// in this message there will not be any "control" or "metadata" specific to
+// OTLP protocol.
+//
+// When new fields are added into this message, the OTLP request MUST be updated
+// as well.
+type MetricsData struct {
+	// An array of ResourceMetrics.
+	// For data coming from a single resource this array will typically contain
+	// one element. Intermediary nodes that receive data from multiple origins
+	// typically batch the data before forwarding further and in that case this
+	// array will contain multiple elements.
+	ResourceMetrics []*ResourceMetrics `protobuf:"bytes,1,rep,name=resource_metrics,json=resourceMetrics,proto3" json:"resource_metrics,omitempty"`
+}
+
+func (m *MetricsData) Reset()         { *m = MetricsData{} }
+func (m *MetricsData) String() string { return proto.CompactTextString(m) }
+func (*MetricsData) ProtoMessage()    {}
+func (*MetricsData) Descriptor() ([]byte, []int) {
+	return fileDescriptor_3c3112f9fa006917, []int{0}
+}
+func (m *MetricsData) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MetricsData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MetricsData.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MetricsData) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MetricsData.Merge(m, src)
+}
+func (m *MetricsData) XXX_Size() int {
+	return m.Size()
+}
+func (m *MetricsData) XXX_DiscardUnknown() {
+	xxx_messageInfo_MetricsData.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MetricsData proto.InternalMessageInfo
+
+func (m *MetricsData) GetResourceMetrics() []*ResourceMetrics {
+	if m != nil {
+		return m.ResourceMetrics
+	}
+	return nil
+}
+
 // A collection of InstrumentationLibraryMetrics from a Resource.
 type ResourceMetrics struct {
 	// The resource for the metrics in this message.
@@ -172,7 +231,7 @@ func (m *ResourceMetrics) Reset()         { *m = ResourceMetrics{} }
 func (m *ResourceMetrics) String() string { return proto.CompactTextString(m) }
 func (*ResourceMetrics) ProtoMessage()    {}
 func (*ResourceMetrics) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{0}
+	return fileDescriptor_3c3112f9fa006917, []int{1}
 }
 func (m *ResourceMetrics) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -238,7 +297,7 @@ func (m *InstrumentationLibraryMetrics) Reset()         { *m = InstrumentationLi
 func (m *InstrumentationLibraryMetrics) String() string { return proto.CompactTextString(m) }
 func (*InstrumentationLibraryMetrics) ProtoMessage()    {}
 func (*InstrumentationLibraryMetrics) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{1}
+	return fileDescriptor_3c3112f9fa006917, []int{2}
 }
 func (m *InstrumentationLibraryMetrics) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -392,6 +451,7 @@ type Metric struct {
 	//	*Metric_Sum
 	//	*Metric_IntHistogram
 	//	*Metric_Histogram
+	//	*Metric_ExponentialHistogram
 	//	*Metric_Summary
 	Data isMetric_Data `protobuf_oneof:"data"`
 }
@@ -400,7 +460,7 @@ func (m *Metric) Reset()         { *m = Metric{} }
 func (m *Metric) String() string { return proto.CompactTextString(m) }
 func (*Metric) ProtoMessage()    {}
 func (*Metric) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{2}
+	return fileDescriptor_3c3112f9fa006917, []int{3}
 }
 func (m *Metric) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -453,17 +513,21 @@ type Metric_IntHistogram struct {
 type Metric_Histogram struct {
 	Histogram *Histogram `protobuf:"bytes,9,opt,name=histogram,proto3,oneof" json:"histogram,omitempty"`
 }
+type Metric_ExponentialHistogram struct {
+	ExponentialHistogram *ExponentialHistogram `protobuf:"bytes,10,opt,name=exponential_histogram,json=exponentialHistogram,proto3,oneof" json:"exponential_histogram,omitempty"`
+}
 type Metric_Summary struct {
 	Summary *Summary `protobuf:"bytes,11,opt,name=summary,proto3,oneof" json:"summary,omitempty"`
 }
 
-func (*Metric_IntGauge) isMetric_Data()     {}
-func (*Metric_Gauge) isMetric_Data()        {}
-func (*Metric_IntSum) isMetric_Data()       {}
-func (*Metric_Sum) isMetric_Data()          {}
-func (*Metric_IntHistogram) isMetric_Data() {}
-func (*Metric_Histogram) isMetric_Data()    {}
-func (*Metric_Summary) isMetric_Data()      {}
+func (*Metric_IntGauge) isMetric_Data()             {}
+func (*Metric_Gauge) isMetric_Data()                {}
+func (*Metric_IntSum) isMetric_Data()               {}
+func (*Metric_Sum) isMetric_Data()                  {}
+func (*Metric_IntHistogram) isMetric_Data()         {}
+func (*Metric_Histogram) isMetric_Data()            {}
+func (*Metric_ExponentialHistogram) isMetric_Data() {}
+func (*Metric_Summary) isMetric_Data()              {}
 
 func (m *Metric) GetData() isMetric_Data {
 	if m != nil {
@@ -538,6 +602,13 @@ func (m *Metric) GetHistogram() *Histogram {
 	return nil
 }
 
+func (m *Metric) GetExponentialHistogram() *ExponentialHistogram {
+	if x, ok := m.GetData().(*Metric_ExponentialHistogram); ok {
+		return x.ExponentialHistogram
+	}
+	return nil
+}
+
 func (m *Metric) GetSummary() *Summary {
 	if x, ok := m.GetData().(*Metric_Summary); ok {
 		return x.Summary
@@ -554,6 +625,7 @@ func (*Metric) XXX_OneofWrappers() []interface{} {
 		(*Metric_Sum)(nil),
 		(*Metric_IntHistogram)(nil),
 		(*Metric_Histogram)(nil),
+		(*Metric_ExponentialHistogram)(nil),
 		(*Metric_Summary)(nil),
 	}
 }
@@ -575,7 +647,7 @@ func (m *Gauge) Reset()         { *m = Gauge{} }
 func (m *Gauge) String() string { return proto.CompactTextString(m) }
 func (*Gauge) ProtoMessage()    {}
 func (*Gauge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{3}
+	return fileDescriptor_3c3112f9fa006917, []int{4}
 }
 func (m *Gauge) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -626,7 +698,7 @@ func (m *Sum) Reset()         { *m = Sum{} }
 func (m *Sum) String() string { return proto.CompactTextString(m) }
 func (*Sum) ProtoMessage()    {}
 func (*Sum) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{4}
+	return fileDescriptor_3c3112f9fa006917, []int{5}
 }
 func (m *Sum) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -689,7 +761,7 @@ func (m *Histogram) Reset()         { *m = Histogram{} }
 func (m *Histogram) String() string { return proto.CompactTextString(m) }
 func (*Histogram) ProtoMessage()    {}
 func (*Histogram) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{5}
+	return fileDescriptor_3c3112f9fa006917, []int{6}
 }
 func (m *Histogram) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -732,6 +804,62 @@ func (m *Histogram) GetAggregationTemporality() AggregationTemporality {
 	return AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED
 }
 
+// ExponentialHistogram represents the type of a metric that is calculated by aggregating
+// as a ExponentialHistogram of all reported double measurements over a time interval.
+type ExponentialHistogram struct {
+	DataPoints []*ExponentialHistogramDataPoint `protobuf:"bytes,1,rep,name=data_points,json=dataPoints,proto3" json:"data_points,omitempty"`
+	// aggregation_temporality describes if the aggregator reports delta changes
+	// since last report time, or cumulative changes since a fixed start time.
+	AggregationTemporality AggregationTemporality `protobuf:"varint,2,opt,name=aggregation_temporality,json=aggregationTemporality,proto3,enum=opentelemetry.proto.metrics.v1.AggregationTemporality" json:"aggregation_temporality,omitempty"`
+}
+
+func (m *ExponentialHistogram) Reset()         { *m = ExponentialHistogram{} }
+func (m *ExponentialHistogram) String() string { return proto.CompactTextString(m) }
+func (*ExponentialHistogram) ProtoMessage()    {}
+func (*ExponentialHistogram) Descriptor() ([]byte, []int) {
+	return fileDescriptor_3c3112f9fa006917, []int{7}
+}
+func (m *ExponentialHistogram) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ExponentialHistogram) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ExponentialHistogram.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ExponentialHistogram) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExponentialHistogram.Merge(m, src)
+}
+func (m *ExponentialHistogram) XXX_Size() int {
+	return m.Size()
+}
+func (m *ExponentialHistogram) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExponentialHistogram.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ExponentialHistogram proto.InternalMessageInfo
+
+func (m *ExponentialHistogram) GetDataPoints() []*ExponentialHistogramDataPoint {
+	if m != nil {
+		return m.DataPoints
+	}
+	return nil
+}
+
+func (m *ExponentialHistogram) GetAggregationTemporality() AggregationTemporality {
+	if m != nil {
+		return m.AggregationTemporality
+	}
+	return AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED
+}
+
 // Summary metric data are used to convey quantile summaries,
 // a Prometheus (see: https://prometheus.io/docs/concepts/metric_types/#summary)
 // and OpenMetrics (see: https://github.com/OpenObservability/OpenMetrics/blob/4dbf6075567ab43296eed941037c12951faafb92/protos/prometheus.proto#L45)
@@ -746,7 +874,7 @@ func (m *Summary) Reset()         { *m = Summary{} }
 func (m *Summary) String() string { return proto.CompactTextString(m) }
 func (*Summary) ProtoMessage()    {}
 func (*Summary) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{6}
+	return fileDescriptor_3c3112f9fa006917, []int{8}
 }
 func (m *Summary) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -798,7 +926,7 @@ type NumberDataPoint struct {
 	// This field will be removed in ~3 months, on July 1, 2021.
 	Labels []v11.StringKeyValue `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels"` // Deprecated: Do not use.
 	// StartTimeUnixNano is optional but strongly encouraged, see the
-	// the detiled comments above Metric.
+	// the detailed comments above Metric.
 	//
 	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
 	// 1970.
@@ -827,7 +955,7 @@ func (m *NumberDataPoint) Reset()         { *m = NumberDataPoint{} }
 func (m *NumberDataPoint) String() string { return proto.CompactTextString(m) }
 func (*NumberDataPoint) ProtoMessage()    {}
 func (*NumberDataPoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{7}
+	return fileDescriptor_3c3112f9fa006917, []int{9}
 }
 func (m *NumberDataPoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -968,7 +1096,7 @@ type HistogramDataPoint struct {
 	// This field will be removed in ~3 months, on July 1, 2021.
 	Labels []v11.StringKeyValue `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels"` // Deprecated: Do not use.
 	// StartTimeUnixNano is optional but strongly encouraged, see the
-	// the detiled comments above Metric.
+	// the detailed comments above Metric.
 	//
 	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
 	// 1970.
@@ -983,8 +1111,7 @@ type HistogramDataPoint struct {
 	// histogram is provided.
 	Count uint64 `protobuf:"fixed64,4,opt,name=count,proto3" json:"count,omitempty"`
 	// sum of the values in the population. If count is zero then this field
-	// must be zero. This value must be equal to the sum of the "sum" fields in
-	// buckets if a histogram is provided.
+	// must be zero.
 	//
 	// Note: Sum should only be filled out when measuring non-negative discrete
 	// events, and is assumed to be monotonic over the values of these events.
@@ -1026,7 +1153,7 @@ func (m *HistogramDataPoint) Reset()         { *m = HistogramDataPoint{} }
 func (m *HistogramDataPoint) String() string { return proto.CompactTextString(m) }
 func (*HistogramDataPoint) ProtoMessage()    {}
 func (*HistogramDataPoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{8}
+	return fileDescriptor_3c3112f9fa006917, []int{10}
 }
 func (m *HistogramDataPoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1126,6 +1253,252 @@ func (m *HistogramDataPoint) GetFlags() uint32 {
 	return 0
 }
 
+// ExponentialHistogramDataPoint is a single data point in a timeseries that describes the
+// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
+// summary statistics for a population of values, it may optionally contain the
+// distribution of those values across a set of buckets.
+//
+type ExponentialHistogramDataPoint struct {
+	// The set of key/value pairs that uniquely identify the timeseries from
+	// where this point belongs. The list may be empty (may contain 0 elements).
+	Attributes []v11.KeyValue `protobuf:"bytes,1,rep,name=attributes,proto3" json:"attributes"`
+	// StartTimeUnixNano is optional but strongly encouraged, see the
+	// the detailed comments above Metric.
+	//
+	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+	// 1970.
+	StartTimeUnixNano uint64 `protobuf:"fixed64,2,opt,name=start_time_unix_nano,json=startTimeUnixNano,proto3" json:"start_time_unix_nano,omitempty"`
+	// TimeUnixNano is required, see the detailed comments above Metric.
+	//
+	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
+	// 1970.
+	TimeUnixNano uint64 `protobuf:"fixed64,3,opt,name=time_unix_nano,json=timeUnixNano,proto3" json:"time_unix_nano,omitempty"`
+	// count is the number of values in the population. Must be
+	// non-negative. This value must be equal to the sum of the "bucket_counts"
+	// values in the positive and negative Buckets plus the "zero_count" field.
+	Count uint64 `protobuf:"fixed64,4,opt,name=count,proto3" json:"count,omitempty"`
+	// sum of the values in the population. If count is zero then this field
+	// must be zero.
+	//
+	// Note: Sum should only be filled out when measuring non-negative discrete
+	// events, and is assumed to be monotonic over the values of these events.
+	// Negative events *can* be recorded, but sum should not be filled out when
+	// doing so.  This is specifically to enforce compatibility w/ OpenMetrics,
+	// see: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
+	Sum float64 `protobuf:"fixed64,5,opt,name=sum,proto3" json:"sum,omitempty"`
+	// scale describes the resolution of the histogram.  Boundaries are
+	// located at powers of the base, where:
+	//
+	//   base = (2^(2^-scale))
+	//
+	// The histogram bucket identified by `index`, a signed integer,
+	// contains values that are greater than or equal to (base^index) and
+	// less than (base^(index+1)).
+	//
+	// The positive and negative ranges of the histogram are expressed
+	// separately.  Negative values are mapped by their absolute value
+	// into the negative range using the same scale as the positive range.
+	//
+	// scale is not restricted by the protocol, as the permissible
+	// values depend on the range of the data.
+	Scale int32 `protobuf:"zigzag32,6,opt,name=scale,proto3" json:"scale,omitempty"`
+	// zero_count is the count of values that are either exactly zero or
+	// within the region considered zero by the instrumentation at the
+	// tolerated degree of precision.  This bucket stores values that
+	// cannot be expressed using the standard exponential formula as
+	// well as values that have been rounded to zero.
+	//
+	// Implementations MAY consider the zero bucket to have probability
+	// mass equal to (zero_count / count).
+	ZeroCount uint64 `protobuf:"fixed64,7,opt,name=zero_count,json=zeroCount,proto3" json:"zero_count,omitempty"`
+	// positive carries the positive range of exponential bucket counts.
+	Positive ExponentialHistogramDataPoint_Buckets `protobuf:"bytes,8,opt,name=positive,proto3" json:"positive"`
+	// negative carries the negative range of exponential bucket counts.
+	Negative ExponentialHistogramDataPoint_Buckets `protobuf:"bytes,9,opt,name=negative,proto3" json:"negative"`
+	// Flags that apply to this specific data point.  See DataPointFlags
+	// for the available flags and their meaning.
+	Flags uint32 `protobuf:"varint,10,opt,name=flags,proto3" json:"flags,omitempty"`
+	// (Optional) List of exemplars collected from
+	// measurements that were used to form the data point
+	Exemplars []Exemplar `protobuf:"bytes,11,rep,name=exemplars,proto3" json:"exemplars"`
+}
+
+func (m *ExponentialHistogramDataPoint) Reset()         { *m = ExponentialHistogramDataPoint{} }
+func (m *ExponentialHistogramDataPoint) String() string { return proto.CompactTextString(m) }
+func (*ExponentialHistogramDataPoint) ProtoMessage()    {}
+func (*ExponentialHistogramDataPoint) Descriptor() ([]byte, []int) {
+	return fileDescriptor_3c3112f9fa006917, []int{11}
+}
+func (m *ExponentialHistogramDataPoint) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ExponentialHistogramDataPoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ExponentialHistogramDataPoint.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ExponentialHistogramDataPoint) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExponentialHistogramDataPoint.Merge(m, src)
+}
+func (m *ExponentialHistogramDataPoint) XXX_Size() int {
+	return m.Size()
+}
+func (m *ExponentialHistogramDataPoint) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExponentialHistogramDataPoint.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ExponentialHistogramDataPoint proto.InternalMessageInfo
+
+func (m *ExponentialHistogramDataPoint) GetAttributes() []v11.KeyValue {
+	if m != nil {
+		return m.Attributes
+	}
+	return nil
+}
+
+func (m *ExponentialHistogramDataPoint) GetStartTimeUnixNano() uint64 {
+	if m != nil {
+		return m.StartTimeUnixNano
+	}
+	return 0
+}
+
+func (m *ExponentialHistogramDataPoint) GetTimeUnixNano() uint64 {
+	if m != nil {
+		return m.TimeUnixNano
+	}
+	return 0
+}
+
+func (m *ExponentialHistogramDataPoint) GetCount() uint64 {
+	if m != nil {
+		return m.Count
+	}
+	return 0
+}
+
+func (m *ExponentialHistogramDataPoint) GetSum() float64 {
+	if m != nil {
+		return m.Sum
+	}
+	return 0
+}
+
+func (m *ExponentialHistogramDataPoint) GetScale() int32 {
+	if m != nil {
+		return m.Scale
+	}
+	return 0
+}
+
+func (m *ExponentialHistogramDataPoint) GetZeroCount() uint64 {
+	if m != nil {
+		return m.ZeroCount
+	}
+	return 0
+}
+
+func (m *ExponentialHistogramDataPoint) GetPositive() ExponentialHistogramDataPoint_Buckets {
+	if m != nil {
+		return m.Positive
+	}
+	return ExponentialHistogramDataPoint_Buckets{}
+}
+
+func (m *ExponentialHistogramDataPoint) GetNegative() ExponentialHistogramDataPoint_Buckets {
+	if m != nil {
+		return m.Negative
+	}
+	return ExponentialHistogramDataPoint_Buckets{}
+}
+
+func (m *ExponentialHistogramDataPoint) GetFlags() uint32 {
+	if m != nil {
+		return m.Flags
+	}
+	return 0
+}
+
+func (m *ExponentialHistogramDataPoint) GetExemplars() []Exemplar {
+	if m != nil {
+		return m.Exemplars
+	}
+	return nil
+}
+
+// Buckets are a set of bucket counts, encoded in a contiguous array
+// of counts.
+type ExponentialHistogramDataPoint_Buckets struct {
+	// Offset is the bucket index of the first entry in the bucket_counts array.
+	//
+	// Note: This uses a varint encoding as a simple form of compression.
+	Offset int32 `protobuf:"zigzag32,1,opt,name=offset,proto3" json:"offset,omitempty"`
+	// Count is an array of counts, where count[i] carries the count
+	// of the bucket at index (offset+i).  count[i] is the count of
+	// values greater than or equal to base^(offset+i) and less than
+	// base^(offset+i+1).
+	//
+	// Note: By contrast, the explicit HistogramDataPoint uses
+	// fixed64.  This field is expected to have many buckets,
+	// especially zeros, so uint64 has been selected to ensure
+	// varint encoding.
+	BucketCounts []uint64 `protobuf:"varint,2,rep,packed,name=bucket_counts,json=bucketCounts,proto3" json:"bucket_counts,omitempty"`
+}
+
+func (m *ExponentialHistogramDataPoint_Buckets) Reset()         { *m = ExponentialHistogramDataPoint_Buckets{} }
+func (m *ExponentialHistogramDataPoint_Buckets) String() string { return proto.CompactTextString(m) }
+func (*ExponentialHistogramDataPoint_Buckets) ProtoMessage()    {}
+func (*ExponentialHistogramDataPoint_Buckets) Descriptor() ([]byte, []int) {
+	return fileDescriptor_3c3112f9fa006917, []int{11, 0}
+}
+func (m *ExponentialHistogramDataPoint_Buckets) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ExponentialHistogramDataPoint_Buckets) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ExponentialHistogramDataPoint_Buckets.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ExponentialHistogramDataPoint_Buckets) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExponentialHistogramDataPoint_Buckets.Merge(m, src)
+}
+func (m *ExponentialHistogramDataPoint_Buckets) XXX_Size() int {
+	return m.Size()
+}
+func (m *ExponentialHistogramDataPoint_Buckets) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExponentialHistogramDataPoint_Buckets.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ExponentialHistogramDataPoint_Buckets proto.InternalMessageInfo
+
+func (m *ExponentialHistogramDataPoint_Buckets) GetOffset() int32 {
+	if m != nil {
+		return m.Offset
+	}
+	return 0
+}
+
+func (m *ExponentialHistogramDataPoint_Buckets) GetBucketCounts() []uint64 {
+	if m != nil {
+		return m.BucketCounts
+	}
+	return nil
+}
+
 // SummaryDataPoint is a single data point in a timeseries that describes the
 // time-varying values of a Summary metric.
 type SummaryDataPoint struct {
@@ -1142,7 +1515,7 @@ type SummaryDataPoint struct {
 	// This field will be removed in ~3 months, on July 1, 2021.
 	Labels []v11.StringKeyValue `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels"` // Deprecated: Do not use.
 	// StartTimeUnixNano is optional but strongly encouraged, see the
-	// the detiled comments above Metric.
+	// the detailed comments above Metric.
 	//
 	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
 	// 1970.
@@ -1175,7 +1548,7 @@ func (m *SummaryDataPoint) Reset()         { *m = SummaryDataPoint{} }
 func (m *SummaryDataPoint) String() string { return proto.CompactTextString(m) }
 func (*SummaryDataPoint) ProtoMessage()    {}
 func (*SummaryDataPoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{9}
+	return fileDescriptor_3c3112f9fa006917, []int{12}
 }
 func (m *SummaryDataPoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1283,7 +1656,7 @@ func (m *SummaryDataPoint_ValueAtQuantile) Reset()         { *m = SummaryDataPoi
 func (m *SummaryDataPoint_ValueAtQuantile) String() string { return proto.CompactTextString(m) }
 func (*SummaryDataPoint_ValueAtQuantile) ProtoMessage()    {}
 func (*SummaryDataPoint_ValueAtQuantile) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{9, 0}
+	return fileDescriptor_3c3112f9fa006917, []int{12, 0}
 }
 func (m *SummaryDataPoint_ValueAtQuantile) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1372,7 +1745,7 @@ func (m *Exemplar) Reset()         { *m = Exemplar{} }
 func (m *Exemplar) String() string { return proto.CompactTextString(m) }
 func (*Exemplar) ProtoMessage()    {}
 func (*Exemplar) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{10}
+	return fileDescriptor_3c3112f9fa006917, []int{13}
 }
 func (m *Exemplar) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1475,7 +1848,7 @@ type IntDataPoint struct {
 	// The set of labels that uniquely identify this timeseries.
 	Labels []v11.StringKeyValue `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels"`
 	// StartTimeUnixNano is optional but strongly encouraged, see the
-	// the detiled comments above Metric.
+	// the detailed comments above Metric.
 	//
 	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
 	// 1970.
@@ -1496,7 +1869,7 @@ func (m *IntDataPoint) Reset()         { *m = IntDataPoint{} }
 func (m *IntDataPoint) String() string { return proto.CompactTextString(m) }
 func (*IntDataPoint) ProtoMessage()    {}
 func (*IntDataPoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{11}
+	return fileDescriptor_3c3112f9fa006917, []int{14}
 }
 func (m *IntDataPoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1571,7 +1944,7 @@ func (m *IntGauge) Reset()         { *m = IntGauge{} }
 func (m *IntGauge) String() string { return proto.CompactTextString(m) }
 func (*IntGauge) ProtoMessage()    {}
 func (*IntGauge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{12}
+	return fileDescriptor_3c3112f9fa006917, []int{15}
 }
 func (m *IntGauge) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1623,7 +1996,7 @@ func (m *IntSum) Reset()         { *m = IntSum{} }
 func (m *IntSum) String() string { return proto.CompactTextString(m) }
 func (*IntSum) ProtoMessage()    {}
 func (*IntSum) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{13}
+	return fileDescriptor_3c3112f9fa006917, []int{16}
 }
 func (m *IntSum) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1680,7 +2053,7 @@ type IntHistogramDataPoint struct {
 	// The set of labels that uniquely identify this timeseries.
 	Labels []v11.StringKeyValue `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels"`
 	// StartTimeUnixNano is optional but strongly encouraged, see the
-	// the detiled comments above Metric.
+	// the detailed comments above Metric.
 	//
 	// Value is UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January
 	// 1970.
@@ -1729,7 +2102,7 @@ func (m *IntHistogramDataPoint) Reset()         { *m = IntHistogramDataPoint{} }
 func (m *IntHistogramDataPoint) String() string { return proto.CompactTextString(m) }
 func (*IntHistogramDataPoint) ProtoMessage()    {}
 func (*IntHistogramDataPoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{14}
+	return fileDescriptor_3c3112f9fa006917, []int{17}
 }
 func (m *IntHistogramDataPoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1829,7 +2202,7 @@ func (m *IntHistogram) Reset()         { *m = IntHistogram{} }
 func (m *IntHistogram) String() string { return proto.CompactTextString(m) }
 func (*IntHistogram) ProtoMessage()    {}
 func (*IntHistogram) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{15}
+	return fileDescriptor_3c3112f9fa006917, []int{18}
 }
 func (m *IntHistogram) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1901,7 +2274,7 @@ func (m *IntExemplar) Reset()         { *m = IntExemplar{} }
 func (m *IntExemplar) String() string { return proto.CompactTextString(m) }
 func (*IntExemplar) ProtoMessage()    {}
 func (*IntExemplar) Descriptor() ([]byte, []int) {
-	return fileDescriptor_3c3112f9fa006917, []int{16}
+	return fileDescriptor_3c3112f9fa006917, []int{19}
 }
 func (m *IntExemplar) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1954,15 +2327,19 @@ func (m *IntExemplar) GetValue() int64 {
 func init() {
 	proto.RegisterEnum("opentelemetry.proto.metrics.v1.AggregationTemporality", AggregationTemporality_name, AggregationTemporality_value)
 	proto.RegisterEnum("opentelemetry.proto.metrics.v1.DataPointFlags", DataPointFlags_name, DataPointFlags_value)
+	proto.RegisterType((*MetricsData)(nil), "opentelemetry.proto.metrics.v1.MetricsData")
 	proto.RegisterType((*ResourceMetrics)(nil), "opentelemetry.proto.metrics.v1.ResourceMetrics")
 	proto.RegisterType((*InstrumentationLibraryMetrics)(nil), "opentelemetry.proto.metrics.v1.InstrumentationLibraryMetrics")
 	proto.RegisterType((*Metric)(nil), "opentelemetry.proto.metrics.v1.Metric")
 	proto.RegisterType((*Gauge)(nil), "opentelemetry.proto.metrics.v1.Gauge")
 	proto.RegisterType((*Sum)(nil), "opentelemetry.proto.metrics.v1.Sum")
 	proto.RegisterType((*Histogram)(nil), "opentelemetry.proto.metrics.v1.Histogram")
+	proto.RegisterType((*ExponentialHistogram)(nil), "opentelemetry.proto.metrics.v1.ExponentialHistogram")
 	proto.RegisterType((*Summary)(nil), "opentelemetry.proto.metrics.v1.Summary")
 	proto.RegisterType((*NumberDataPoint)(nil), "opentelemetry.proto.metrics.v1.NumberDataPoint")
 	proto.RegisterType((*HistogramDataPoint)(nil), "opentelemetry.proto.metrics.v1.HistogramDataPoint")
+	proto.RegisterType((*ExponentialHistogramDataPoint)(nil), "opentelemetry.proto.metrics.v1.ExponentialHistogramDataPoint")
+	proto.RegisterType((*ExponentialHistogramDataPoint_Buckets)(nil), "opentelemetry.proto.metrics.v1.ExponentialHistogramDataPoint.Buckets")
 	proto.RegisterType((*SummaryDataPoint)(nil), "opentelemetry.proto.metrics.v1.SummaryDataPoint")
 	proto.RegisterType((*SummaryDataPoint_ValueAtQuantile)(nil), "opentelemetry.proto.metrics.v1.SummaryDataPoint.ValueAtQuantile")
 	proto.RegisterType((*Exemplar)(nil), "opentelemetry.proto.metrics.v1.Exemplar")
@@ -1979,99 +2356,148 @@ func init() {
 }
 
 var fileDescriptor_3c3112f9fa006917 = []byte{
-	// 1458 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe4, 0x58, 0x5b, 0x6f, 0x1b, 0xc5,
-	0x17, 0xf7, 0xda, 0xf1, 0xed, 0x38, 0x17, 0xff, 0xe7, 0x1f, 0x52, 0x2b, 0x52, 0xd2, 0xd4, 0x85,
-	0x26, 0x94, 0x62, 0xd3, 0xa0, 0x72, 0x55, 0xa5, 0xda, 0xb1, 0x9b, 0x58, 0x71, 0x2e, 0xdd, 0x38,
-	0x41, 0x45, 0xa5, 0xab, 0xb1, 0x3d, 0x75, 0x47, 0xec, 0xce, 0x9a, 0xdd, 0xd9, 0x28, 0xf9, 0x00,
-	0xe5, 0x89, 0x07, 0xc4, 0x3b, 0x9f, 0x80, 0x2f, 0xd2, 0x37, 0xca, 0x1b, 0x02, 0xa9, 0x42, 0x0d,
-	0x4f, 0xf0, 0xc0, 0x13, 0x3c, 0xa3, 0x99, 0xd9, 0xb5, 0x9d, 0xc4, 0x89, 0x1d, 0x9a, 0x4a, 0xad,
-	0xfa, 0x36, 0x73, 0xe6, 0x9c, 0xdf, 0x9e, 0xfb, 0x99, 0x59, 0xb8, 0x66, 0xb7, 0x09, 0xe3, 0xc4,
-	0x24, 0x16, 0xe1, 0xce, 0x7e, 0xbe, 0xed, 0xd8, 0xdc, 0xce, 0x8b, 0x35, 0x6d, 0xb8, 0xf9, 0xdd,
-	0xeb, 0xc1, 0x32, 0x27, 0x0f, 0xd0, 0xec, 0x21, 0x6e, 0x45, 0xcc, 0x05, 0x2c, 0xbb, 0xd7, 0xa7,
-	0x27, 0x5b, 0x76, 0xcb, 0x56, 0x18, 0x62, 0xa5, 0x18, 0xa6, 0xaf, 0xf6, 0xfb, 0x46, 0xc3, 0xb6,
-	0x2c, 0x9b, 0x89, 0x4f, 0xa8, 0x95, 0xcf, 0x9b, 0xeb, 0xc7, 0xeb, 0x10, 0xd7, 0xf6, 0x9c, 0x06,
-	0x11, 0xdc, 0xc1, 0x5a, 0xf1, 0x67, 0x1f, 0x85, 0x61, 0x42, 0xf7, 0x49, 0x6b, 0x4a, 0x11, 0xb4,
-	0x0a, 0x89, 0x80, 0x2b, 0xa3, 0xcd, 0x69, 0x0b, 0xa9, 0xc5, 0xb7, 0x73, 0xfd, 0x14, 0xef, 0x40,
-	0xed, 0x5e, 0xcf, 0x05, 0x18, 0xc5, 0x91, 0xc7, 0x4f, 0x2f, 0x86, 0xf4, 0x0e, 0x00, 0x7a, 0xa4,
-	0xc1, 0x45, 0xca, 0x5c, 0xee, 0x78, 0x16, 0x61, 0x1c, 0x73, 0x6a, 0x33, 0xc3, 0xa4, 0x75, 0x07,
-	0x3b, 0xfb, 0x86, 0x6f, 0x79, 0x26, 0x3c, 0x17, 0x59, 0x48, 0x2d, 0xde, 0xcc, 0x9d, 0xee, 0x9d,
-	0x5c, 0xe5, 0x30, 0x4c, 0x55, 0xa1, 0xf8, 0x5a, 0xeb, 0x33, 0xf4, 0xb4, 0x63, 0x34, 0x03, 0xe0,
-	0x36, 0x1e, 0x12, 0x0b, 0x1b, 0x9e, 0x63, 0x66, 0x22, 0x73, 0xda, 0x42, 0x52, 0x4f, 0x2a, 0xca,
-	0xb6, 0x63, 0x66, 0xff, 0xd1, 0x60, 0xe6, 0x54, 0x7c, 0xc4, 0xe1, 0xc2, 0x09, 0x76, 0xf8, 0x4e,
-	0xba, 0xd1, 0x57, 0x7f, 0x3f, 0x3a, 0x27, 0xaa, 0xef, 0x3b, 0x6c, 0xaa, 0xbf, 0xf6, 0xe8, 0x16,
-	0xc4, 0x0f, 0x7b, 0xe9, 0xca, 0x20, 0x2f, 0x29, 0x7d, 0xf5, 0x40, 0x6c, 0x90, 0xe1, 0x3f, 0x8e,
-	0x40, 0x4c, 0x89, 0x20, 0x04, 0x23, 0x0c, 0x5b, 0x2a, 0xe6, 0x49, 0x5d, 0xae, 0xd1, 0x1c, 0xa4,
-	0x9a, 0xc4, 0x6d, 0x38, 0xb4, 0x2d, 0xb4, 0xca, 0x84, 0xe5, 0x51, 0x2f, 0x49, 0x48, 0x79, 0x8c,
-	0x72, 0x1f, 0x59, 0xae, 0xd1, 0x2a, 0x24, 0x29, 0xe3, 0x46, 0x0b, 0x7b, 0x2d, 0x92, 0x19, 0x91,
-	0xde, 0x59, 0x18, 0x1c, 0x5d, 0xbe, 0x2c, 0xf8, 0x8b, 0xe1, 0x8c, 0xb6, 0x12, 0xd2, 0x13, 0xd4,
-	0xdf, 0xa3, 0x9b, 0x10, 0x55, 0x40, 0x51, 0x09, 0xf4, 0xd6, 0x20, 0x20, 0x29, 0xb5, 0x12, 0xd2,
-	0x95, 0x14, 0x2a, 0x43, 0x5c, 0xe8, 0xe2, 0x7a, 0x56, 0x26, 0x26, 0x01, 0xae, 0x0c, 0xa1, 0xc9,
-	0x96, 0x67, 0xf9, 0x7a, 0xc4, 0xa8, 0xdc, 0xa1, 0x0f, 0x21, 0x22, 0x20, 0xe2, 0x12, 0xe2, 0xf2,
-	0x20, 0x88, 0x2d, 0xcf, 0x5a, 0x09, 0xe9, 0x42, 0x02, 0x7d, 0x06, 0x63, 0xe2, 0xfb, 0x0f, 0xa9,
-	0xcb, 0xed, 0x96, 0x83, 0xad, 0x4c, 0x42, 0x42, 0x5c, 0x1b, 0x42, 0x8b, 0x95, 0x40, 0xc6, 0xd7,
-	0x65, 0x94, 0xf6, 0xd0, 0x50, 0x05, 0x92, 0x5d, 0xd0, 0xe4, 0x29, 0x75, 0xda, 0x03, 0xda, 0x91,
-	0x5e, 0x09, 0xe9, 0x5d, 0x69, 0xb4, 0x04, 0x71, 0xd7, 0xb3, 0x2c, 0x91, 0xcb, 0x29, 0x09, 0x34,
-	0x3f, 0x84, 0x81, 0x82, 0x7d, 0x25, 0xa4, 0x07, 0x92, 0xc5, 0x18, 0x8c, 0x34, 0x31, 0xc7, 0xd9,
-	0xbb, 0x10, 0x55, 0x81, 0xdb, 0x84, 0x94, 0x20, 0x18, 0x6d, 0x9b, 0x32, 0xee, 0x66, 0x34, 0x99,
-	0xbf, 0xf9, 0x41, 0xc8, 0xeb, 0x9e, 0x55, 0x27, 0x4e, 0x09, 0x73, 0xbc, 0x29, 0xe4, 0x74, 0x68,
-	0x06, 0x4b, 0x37, 0xfb, 0xa7, 0x06, 0x11, 0x11, 0x8c, 0x73, 0x47, 0x46, 0x36, 0x5c, 0xc0, 0xad,
-	0x96, 0x43, 0x5a, 0xaa, 0xb2, 0x39, 0xb1, 0xda, 0xb6, 0x83, 0x4d, 0xca, 0xf7, 0x65, 0xce, 0x8f,
-	0x2f, 0x7e, 0x30, 0x08, 0xbd, 0xd0, 0x15, 0xaf, 0x75, 0xa5, 0xf5, 0x29, 0xdc, 0x97, 0x8e, 0x2e,
-	0xc1, 0x28, 0x75, 0x0d, 0xcb, 0x66, 0x36, 0xb7, 0x19, 0x6d, 0xc8, 0xf2, 0x49, 0xe8, 0x29, 0xea,
-	0xae, 0x05, 0xa4, 0xec, 0x4f, 0x1a, 0x24, 0xbb, 0xe1, 0xde, 0xea, 0x67, 0xf3, 0xe2, 0xd0, 0x01,
-	0x7f, 0x39, 0xcc, 0xce, 0xde, 0x83, 0xb8, 0x9f, 0x3a, 0xe8, 0x4e, 0x3f, 0x83, 0xde, 0x1b, 0x32,
-	0xf1, 0xfa, 0xe7, 0xc7, 0x0f, 0x11, 0x98, 0x38, 0x12, 0x65, 0xb4, 0x06, 0x80, 0x39, 0x77, 0x68,
-	0xdd, 0xe3, 0xc4, 0xcd, 0xc4, 0xe5, 0x57, 0xe6, 0x07, 0xb4, 0xea, 0x55, 0xb2, 0xbf, 0x83, 0x4d,
-	0x2f, 0x98, 0x66, 0x3d, 0x00, 0x68, 0x0d, 0x62, 0x26, 0xae, 0x13, 0x33, 0x50, 0xf8, 0xdd, 0x01,
-	0x50, 0x5b, 0xdc, 0xa1, 0xac, 0xd5, 0x01, 0x8c, 0x09, 0xc0, 0x8c, 0xa6, 0xfb, 0x20, 0x28, 0x0f,
-	0x93, 0x2e, 0xc7, 0x0e, 0x37, 0x38, 0xb5, 0x88, 0xe1, 0x31, 0xba, 0x67, 0x30, 0xcc, 0x6c, 0xe9,
-	0xfd, 0x98, 0xfe, 0x3f, 0x79, 0x56, 0xa3, 0x16, 0xd9, 0x66, 0x74, 0x6f, 0x1d, 0x33, 0x1b, 0xbd,
-	0x09, 0xe3, 0x47, 0x58, 0x23, 0x92, 0x75, 0x94, 0xf7, 0x72, 0xcd, 0x40, 0x12, 0xbb, 0x46, 0xd3,
-	0xf6, 0xea, 0xa6, 0x6a, 0xc0, 0xb2, 0xa5, 0x62, 0xb7, 0x24, 0x29, 0xe8, 0x02, 0xc4, 0xb0, 0x6b,
-	0x50, 0xc6, 0x65, 0x4b, 0x4c, 0x8b, 0x66, 0x89, 0xdd, 0x0a, 0xe3, 0xa8, 0x0a, 0x49, 0xb2, 0x47,
-	0xac, 0xb6, 0x89, 0x1d, 0x37, 0x13, 0x95, 0x06, 0x0e, 0x6c, 0xdc, 0x65, 0x5f, 0xc0, 0x77, 0x56,
-	0x17, 0x00, 0x4d, 0x42, 0xf4, 0x81, 0x89, 0x5b, 0xae, 0x6c, 0x79, 0x63, 0xba, 0xda, 0x14, 0xe3,
-	0x10, 0xdd, 0x15, 0xbe, 0xc8, 0x1e, 0x44, 0x00, 0x1d, 0xcf, 0xcf, 0x23, 0x01, 0x4b, 0xbe, 0x1e,
-	0x01, 0x9b, 0x84, 0x68, 0xc3, 0xf6, 0x18, 0x97, 0xc1, 0x8a, 0xe9, 0x6a, 0x83, 0xd2, 0x6a, 0xe8,
-	0x88, 0xc1, 0xa7, 0xa9, 0x69, 0x72, 0x19, 0xc6, 0xea, 0x5e, 0xe3, 0x4b, 0xc2, 0x0d, 0xc9, 0xe1,
-	0x66, 0x62, 0x73, 0x11, 0x01, 0xa6, 0x88, 0x4b, 0x92, 0x86, 0xe6, 0x61, 0x82, 0xec, 0xb5, 0x4d,
-	0xda, 0xa0, 0xdc, 0xa8, 0xdb, 0x1e, 0x6b, 0xaa, 0xbc, 0xd7, 0xf4, 0xf1, 0x80, 0x5c, 0x94, 0xd4,
-	0xc3, 0xe1, 0x4e, 0x9c, 0x5b, 0xb8, 0xa1, 0x27, 0xdc, 0xd9, 0xbf, 0x23, 0x90, 0x3e, 0x5a, 0xb4,
-	0xaf, 0x67, 0x51, 0x0e, 0x1b, 0x63, 0x0a, 0x13, 0x5f, 0x79, 0x98, 0x71, 0x6a, 0x12, 0x43, 0x56,
-	0x8a, 0x8a, 0x72, 0x6a, 0xf1, 0xd6, 0x59, 0x9b, 0x63, 0x4e, 0xda, 0x57, 0xe0, 0x77, 0x7c, 0x38,
-	0x7d, 0x3c, 0x00, 0x96, 0x07, 0x27, 0x54, 0xe8, 0xf4, 0x12, 0x4c, 0x1c, 0x11, 0x44, 0xd3, 0x90,
-	0x08, 0x44, 0xe5, 0xfd, 0x50, 0xd3, 0x3b, 0x7b, 0x01, 0x22, 0xd5, 0x94, 0xfe, 0xd1, 0x74, 0xbf,
-	0xba, 0xff, 0x88, 0x40, 0x22, 0xc8, 0x15, 0x74, 0x1f, 0xfe, 0xff, 0x80, 0x9a, 0x9c, 0x38, 0xa4,
-	0x69, 0x3c, 0x6f, 0xe0, 0x51, 0x80, 0x54, 0xe8, 0x26, 0xc0, 0x7d, 0x98, 0xe8, 0xe0, 0x9f, 0x47,
-	0x26, 0x8c, 0x07, 0x68, 0x55, 0x95, 0x11, 0xc7, 0x03, 0x1c, 0x1e, 0xd4, 0x75, 0x23, 0xc3, 0x77,
-	0xdd, 0xbb, 0x10, 0x77, 0xdb, 0x98, 0x19, 0xb4, 0x29, 0x53, 0x63, 0xb4, 0x78, 0x4b, 0xa8, 0xf1,
-	0xcb, 0xd3, 0x8b, 0x1f, 0xb5, 0xec, 0x23, 0xfa, 0x53, 0xf1, 0xf2, 0x33, 0x4d, 0xd2, 0xe0, 0xb6,
-	0x93, 0xb7, 0xec, 0x26, 0x31, 0xf3, 0x94, 0x71, 0xe2, 0x30, 0x6c, 0xe6, 0xc5, 0x20, 0xcc, 0x6d,
-	0xb5, 0x31, 0xab, 0x94, 0xf4, 0x98, 0x00, 0xac, 0x34, 0xd1, 0x3d, 0x48, 0x70, 0x07, 0x37, 0x88,
-	0xc0, 0x8e, 0x4a, 0xec, 0x82, 0x8f, 0xfd, 0xf1, 0xd9, 0xb1, 0x6b, 0x02, 0xa9, 0x52, 0xd2, 0xe3,
-	0x12, 0xb2, 0xd2, 0xec, 0xb6, 0xf2, 0xef, 0xc3, 0x30, 0x5a, 0x61, 0xbc, 0x5b, 0xe0, 0xab, 0xcf,
-	0x57, 0x91, 0x2a, 0xd2, 0x2f, 0xbe, 0x1e, 0x55, 0xde, 0x0a, 0xa7, 0xa7, 0xfd, 0xbc, 0x45, 0x1b,
-	0xc7, 0x47, 0xe0, 0x3b, 0x43, 0xdc, 0xd5, 0x4f, 0x6c, 0x8b, 0x9f, 0x84, 0x33, 0x5a, 0xf6, 0x0b,
-	0x48, 0x04, 0xef, 0x1b, 0xb4, 0xd6, 0xef, 0xde, 0x33, 0xcc, 0x73, 0xa0, 0xef, 0x9d, 0x47, 0xc2,
-	0xff, 0xa5, 0x41, 0x4c, 0xbd, 0x5a, 0xce, 0x19, 0xfd, 0x65, 0xbc, 0x17, 0x4b, 0x8b, 0xbf, 0x8e,
-	0xc0, 0x1b, 0xbd, 0x2f, 0xa4, 0x57, 0x2e, 0xf3, 0x4e, 0x9f, 0x04, 0xe9, 0x17, 0x31, 0xed, 0x37,
-	0x8e, 0x4f, 0xfb, 0xe7, 0xcf, 0xec, 0x5f, 0x35, 0x59, 0xf9, 0xdd, 0x77, 0xca, 0x4e, 0xbf, 0x04,
-	0xbc, 0x71, 0x96, 0xd7, 0xee, 0xcb, 0x91, 0x89, 0xd2, 0xba, 0xdf, 0xc3, 0x90, 0xea, 0x71, 0x01,
-	0xba, 0x77, 0x4e, 0x73, 0x46, 0xb9, 0xf2, 0xbf, 0x4d, 0x99, 0x4e, 0xdb, 0x8a, 0xf4, 0xb6, 0xad,
-	0x57, 0x75, 0x86, 0x08, 0x37, 0x5f, 0xfd, 0x46, 0x83, 0xa9, 0xfe, 0xd1, 0x41, 0xf3, 0x70, 0xb9,
-	0xb0, 0xbc, 0xac, 0x97, 0x97, 0x0b, 0xb5, 0xca, 0xc6, 0xba, 0x51, 0x2b, 0xaf, 0x6d, 0x6e, 0xe8,
-	0x85, 0x6a, 0xa5, 0x76, 0xd7, 0xd8, 0x5e, 0xdf, 0xda, 0x2c, 0x2f, 0x55, 0x6e, 0x57, 0xca, 0xa5,
-	0x74, 0x08, 0x5d, 0x82, 0x99, 0x93, 0x18, 0x4b, 0xe5, 0x6a, 0xad, 0x90, 0xd6, 0xd0, 0x15, 0xc8,
-	0x9e, 0xc4, 0xb2, 0xb4, 0xbd, 0xb6, 0x5d, 0x2d, 0xd4, 0x2a, 0x3b, 0xe5, 0x74, 0xf8, 0xea, 0xa7,
-	0x30, 0xde, 0xc9, 0xc1, 0xdb, 0xe2, 0x46, 0x84, 0xc6, 0x20, 0x79, 0xbb, 0x5a, 0x58, 0x36, 0xd6,
-	0x37, 0xd6, 0xcb, 0xe9, 0x10, 0x9a, 0x86, 0x29, 0x7f, 0x6b, 0xe8, 0xe5, 0xa5, 0x0d, 0xbd, 0x54,
-	0x2e, 0x19, 0x3b, 0x85, 0xea, 0x76, 0x39, 0xad, 0x15, 0xbf, 0xd3, 0x1e, 0x3f, 0x9b, 0xd5, 0x9e,
-	0x3c, 0x9b, 0xd5, 0x7e, 0x7b, 0x36, 0xab, 0x7d, 0x7b, 0x30, 0x1b, 0x7a, 0x72, 0x30, 0x1b, 0xfa,
-	0xf9, 0x60, 0x36, 0x04, 0x97, 0xa8, 0x3d, 0x20, 0x47, 0x8b, 0xa3, 0xfe, 0xef, 0xc6, 0x4d, 0x71,
-	0xb0, 0xa9, 0x7d, 0x5e, 0x3e, 0xb3, 0x87, 0xd5, 0x3f, 0xdf, 0x16, 0x61, 0x3d, 0xbf, 0xa1, 0xeb,
-	0x31, 0x49, 0x7c, 0xff, 0xdf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x7e, 0xcf, 0x32, 0xca, 0xaf, 0x16,
-	0x00, 0x00,
+	// 1652 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe4, 0x59, 0x4b, 0x6f, 0x1b, 0xc9,
+	0x11, 0xe6, 0x90, 0xe2, 0xab, 0xa8, 0x07, 0xdd, 0x91, 0x65, 0x42, 0x80, 0x64, 0x99, 0x4e, 0x2c,
+	0xc5, 0x71, 0xc8, 0x58, 0x89, 0xf3, 0x84, 0x01, 0x93, 0x22, 0x25, 0x11, 0xa2, 0x1e, 0x1e, 0x51,
+	0x0a, 0x6c, 0x38, 0x1e, 0x34, 0xc9, 0x16, 0xdd, 0xf0, 0x3c, 0x98, 0x99, 0x1e, 0x41, 0xca, 0xdd,
+	0x39, 0xe5, 0x10, 0xe4, 0x1e, 0x20, 0xf7, 0xfc, 0x85, 0xfc, 0x00, 0x1f, 0x9d, 0x5b, 0x90, 0x05,
+	0x8c, 0x85, 0xb5, 0xc0, 0x02, 0xbb, 0x87, 0x3d, 0xed, 0x9e, 0x17, 0xdd, 0x3d, 0x43, 0x52, 0xd4,
+	0x48, 0xa4, 0x2c, 0x19, 0x2b, 0xc3, 0xb7, 0xee, 0x9a, 0xaa, 0xaf, 0xeb, 0xd9, 0x55, 0x33, 0x03,
+	0xf7, 0xac, 0x36, 0x31, 0x19, 0xd1, 0x89, 0x41, 0x98, 0x7d, 0x98, 0x6f, 0xdb, 0x16, 0xb3, 0xf2,
+	0x7c, 0x4d, 0x1b, 0x4e, 0x7e, 0xff, 0xbe, 0xbf, 0xcc, 0x89, 0x07, 0x68, 0xf6, 0x18, 0xb7, 0x24,
+	0xe6, 0x7c, 0x96, 0xfd, 0xfb, 0xd3, 0x93, 0x2d, 0xab, 0x65, 0x49, 0x0c, 0xbe, 0x92, 0x0c, 0xd3,
+	0x77, 0x83, 0xce, 0x68, 0x58, 0x86, 0x61, 0x99, 0xfc, 0x08, 0xb9, 0xf2, 0x78, 0x73, 0x41, 0xbc,
+	0x36, 0x71, 0x2c, 0xd7, 0x6e, 0x10, 0xce, 0xed, 0xaf, 0x25, 0x7f, 0x96, 0x42, 0x6a, 0x5d, 0x9e,
+	0x5f, 0xc2, 0x0c, 0xa3, 0xa7, 0x90, 0xf6, 0x19, 0x34, 0x4f, 0xaf, 0x8c, 0x32, 0x17, 0x59, 0x48,
+	0x2d, 0xe6, 0x73, 0x67, 0xeb, 0x9e, 0x53, 0x3d, 0x39, 0x0f, 0x4e, 0x9d, 0xb0, 0x8f, 0x13, 0xb2,
+	0xaf, 0xc2, 0x30, 0xd1, 0xc7, 0x84, 0xd6, 0x20, 0xe1, 0xb3, 0x65, 0x94, 0x39, 0x65, 0x21, 0xb5,
+	0xf8, 0xd3, 0xc0, 0x73, 0x3a, 0x5a, 0xf7, 0x1c, 0x54, 0x1c, 0x79, 0xfd, 0xf6, 0x66, 0x48, 0xed,
+	0x00, 0xa0, 0x57, 0x0a, 0xdc, 0xa4, 0xa6, 0xc3, 0x6c, 0xd7, 0x20, 0x26, 0xc3, 0x8c, 0x5a, 0xa6,
+	0xa6, 0xd3, 0xba, 0x8d, 0xed, 0xc3, 0x8e, 0x31, 0x61, 0x61, 0xcc, 0xc3, 0x41, 0xc6, 0x54, 0x8e,
+	0xc3, 0x54, 0x25, 0x8a, 0x6f, 0xda, 0x0c, 0x3d, 0xeb, 0x31, 0x9a, 0x01, 0x70, 0x1a, 0x2f, 0x88,
+	0x81, 0x35, 0xd7, 0xd6, 0x33, 0x91, 0x39, 0x65, 0x21, 0xa9, 0x26, 0x25, 0x65, 0xc7, 0xd6, 0xb3,
+	0xdf, 0x29, 0x30, 0x73, 0x26, 0x3e, 0x62, 0x70, 0xe3, 0x14, 0x3b, 0x3c, 0x27, 0x3d, 0x08, 0xd4,
+	0xdf, 0x4b, 0x84, 0x53, 0xd5, 0xf7, 0x1c, 0x36, 0x15, 0xac, 0x3d, 0x7a, 0x04, 0xf1, 0xe3, 0x5e,
+	0xba, 0x33, 0xc8, 0x4b, 0x52, 0x5f, 0xd5, 0x17, 0x1b, 0x64, 0xf8, 0x7f, 0xa2, 0x10, 0x93, 0x22,
+	0x08, 0xc1, 0x88, 0x89, 0x0d, 0x19, 0xf3, 0xa4, 0x2a, 0xd6, 0x68, 0x0e, 0x52, 0x4d, 0xe2, 0x34,
+	0x6c, 0xda, 0xe6, 0x5a, 0x65, 0xc2, 0xe2, 0x51, 0x2f, 0x89, 0x4b, 0xb9, 0x26, 0x65, 0x1e, 0xb2,
+	0x58, 0xa3, 0x35, 0x48, 0x52, 0x93, 0x69, 0x2d, 0xec, 0xb6, 0x48, 0x66, 0x44, 0x78, 0x67, 0x61,
+	0x70, 0x74, 0xd9, 0x0a, 0xe7, 0x2f, 0x86, 0x33, 0xca, 0x6a, 0x48, 0x4d, 0x50, 0x6f, 0x8f, 0x1e,
+	0x42, 0x54, 0x02, 0x45, 0x05, 0xd0, 0x4f, 0x06, 0x01, 0x09, 0xa9, 0xd5, 0x90, 0x2a, 0xa5, 0x50,
+	0x19, 0xe2, 0x5c, 0x17, 0xc7, 0x35, 0x32, 0x31, 0x01, 0x70, 0x67, 0x08, 0x4d, 0xb6, 0x5d, 0xc3,
+	0xd3, 0x23, 0x46, 0xc5, 0x0e, 0xfd, 0x06, 0x22, 0x1c, 0x22, 0x2e, 0x20, 0x6e, 0x0f, 0x82, 0xd8,
+	0x76, 0x8d, 0xd5, 0x90, 0xca, 0x25, 0xd0, 0x1f, 0x61, 0x8c, 0x9f, 0xff, 0x82, 0x3a, 0xcc, 0x6a,
+	0xd9, 0xd8, 0xc8, 0x24, 0x04, 0xc4, 0xbd, 0x21, 0xb4, 0x58, 0xf5, 0x65, 0x3c, 0x5d, 0x46, 0x69,
+	0x0f, 0x0d, 0x55, 0x20, 0xd9, 0x05, 0x4d, 0x9e, 0x51, 0xa7, 0x3d, 0xa0, 0x1d, 0xe9, 0xd5, 0x90,
+	0xda, 0x95, 0x46, 0x2f, 0xe1, 0x3a, 0x39, 0x68, 0x5b, 0x26, 0x31, 0x19, 0xc5, 0x7a, 0x8f, 0xae,
+	0x20, 0x60, 0x7f, 0x35, 0x08, 0xb6, 0xdc, 0x15, 0xee, 0x3d, 0x61, 0x92, 0x04, 0xd0, 0xd1, 0x12,
+	0xc4, 0x1d, 0xd7, 0x30, 0x78, 0xe1, 0xa4, 0x04, 0xfc, 0xfc, 0x10, 0xde, 0xe4, 0xec, 0xab, 0x21,
+	0xd5, 0x97, 0x2c, 0xc6, 0x60, 0xa4, 0x89, 0x19, 0xce, 0x3e, 0x81, 0xa8, 0xcc, 0x92, 0x2d, 0x48,
+	0x71, 0x82, 0xd6, 0xb6, 0xa8, 0xc9, 0x86, 0xbe, 0x1f, 0x37, 0x5c, 0xa3, 0x4e, 0x6c, 0x7e, 0xcb,
+	0x6e, 0x71, 0x39, 0x15, 0x9a, 0xfe, 0xd2, 0xc9, 0x7e, 0xad, 0x40, 0x84, 0x47, 0xfe, 0xd2, 0x91,
+	0x91, 0x05, 0x37, 0x70, 0xab, 0x65, 0x93, 0x96, 0xbc, 0x46, 0x18, 0x31, 0xda, 0x96, 0x8d, 0x75,
+	0xca, 0x0e, 0x45, 0x81, 0x8d, 0x2f, 0xfe, 0x7a, 0x10, 0x7a, 0xa1, 0x2b, 0x5e, 0xeb, 0x4a, 0xab,
+	0x53, 0x38, 0x90, 0x8e, 0x6e, 0xc1, 0x28, 0x75, 0x34, 0xc3, 0x32, 0x2d, 0x66, 0x99, 0xb4, 0x21,
+	0x6a, 0x35, 0xa1, 0xa6, 0xa8, 0xb3, 0xee, 0x93, 0xb2, 0xff, 0x55, 0x20, 0xd9, 0x8d, 0xd1, 0x76,
+	0x90, 0xcd, 0x8b, 0x43, 0x67, 0xd7, 0xd5, 0x30, 0x3b, 0xfb, 0xa5, 0x02, 0x93, 0x41, 0xa9, 0x89,
+	0x9e, 0x07, 0x99, 0xf7, 0xf0, 0x7d, 0xb2, 0xfc, 0x8a, 0x58, 0xfa, 0x0c, 0xe2, 0x5e, 0x91, 0xa0,
+	0xc7, 0x41, 0xb6, 0xfd, 0x62, 0xc8, 0x12, 0x0b, 0xae, 0x84, 0x7f, 0x47, 0x60, 0xa2, 0x2f, 0x9f,
+	0xd1, 0x3a, 0x00, 0x66, 0xcc, 0xa6, 0x75, 0x97, 0x11, 0x27, 0x13, 0x17, 0xa7, 0xcc, 0x0f, 0xe8,
+	0x80, 0x6b, 0xe4, 0x70, 0x17, 0xeb, 0xae, 0x3f, 0x24, 0xf4, 0x00, 0xa0, 0x75, 0x88, 0xe9, 0xb8,
+	0x4e, 0x74, 0x5f, 0xe1, 0x9f, 0x0f, 0x80, 0xda, 0x66, 0x36, 0x35, 0x5b, 0x1d, 0xc0, 0x18, 0x07,
+	0xcc, 0x28, 0xaa, 0x07, 0x82, 0xf2, 0x30, 0xe9, 0x30, 0x6c, 0x33, 0x8d, 0x51, 0x83, 0x68, 0xae,
+	0x49, 0x0f, 0x34, 0x13, 0x9b, 0x96, 0xf0, 0x7e, 0x4c, 0xbd, 0x26, 0x9e, 0xd5, 0xa8, 0x41, 0x76,
+	0x4c, 0x7a, 0xb0, 0x81, 0x4d, 0x0b, 0xfd, 0x18, 0xc6, 0xfb, 0x58, 0x23, 0x82, 0x75, 0x94, 0xf5,
+	0x72, 0xcd, 0x40, 0x12, 0x3b, 0x5a, 0xd3, 0x72, 0xeb, 0xba, 0xec, 0x6b, 0xa2, 0x53, 0x61, 0xa7,
+	0x24, 0x28, 0xe8, 0x06, 0xc4, 0xb0, 0xa3, 0x51, 0x93, 0x89, 0x4e, 0x93, 0xe6, 0x3d, 0x08, 0x3b,
+	0x15, 0x93, 0xa1, 0x2a, 0x24, 0xc9, 0x01, 0x31, 0xda, 0x3a, 0xb6, 0x9d, 0x4c, 0x54, 0x18, 0xb8,
+	0x30, 0x38, 0xdb, 0xa4, 0x80, 0xe7, 0xac, 0x2e, 0x00, 0x9a, 0x84, 0xe8, 0x9e, 0x8e, 0x5b, 0x8e,
+	0xe8, 0x24, 0x63, 0xaa, 0xdc, 0x14, 0xe3, 0x10, 0xdd, 0xe7, 0xbe, 0xc8, 0x1e, 0x45, 0x00, 0x9d,
+	0xcc, 0xcf, 0xbe, 0x80, 0x25, 0x3f, 0x8d, 0x80, 0x4d, 0x42, 0xb4, 0x61, 0xb9, 0x26, 0x13, 0xc1,
+	0x8a, 0xa9, 0x72, 0x83, 0xd2, 0xb2, 0x97, 0xf3, 0x79, 0x42, 0x91, 0x4d, 0xfa, 0x36, 0x8c, 0xd5,
+	0xdd, 0xc6, 0x4b, 0xc2, 0x34, 0xc1, 0xe1, 0x64, 0x62, 0x73, 0x11, 0x0e, 0x26, 0x89, 0x4b, 0x82,
+	0x86, 0xe6, 0x61, 0x82, 0x1c, 0xb4, 0x75, 0xda, 0xa0, 0x4c, 0xab, 0x5b, 0xae, 0xd9, 0x94, 0x79,
+	0xaf, 0xa8, 0xe3, 0x3e, 0xb9, 0x28, 0xa8, 0xc7, 0xc3, 0x9d, 0xb8, 0xb4, 0x70, 0x43, 0x4f, 0xb8,
+	0xb3, 0xff, 0x8a, 0xc2, 0xcc, 0x99, 0x17, 0x52, 0x5f, 0xc0, 0x95, 0x8b, 0x06, 0xfc, 0x07, 0x8e,
+	0xd0, 0x24, 0x44, 0x9d, 0x06, 0xd6, 0x89, 0x28, 0xad, 0x6b, 0xaa, 0xdc, 0xf0, 0xe1, 0xf6, 0x2f,
+	0xc4, 0xb6, 0x64, 0xd4, 0xc4, 0x70, 0x16, 0x53, 0x93, 0x9c, 0x22, 0x42, 0x86, 0x5a, 0x90, 0x68,
+	0x5b, 0x0e, 0x65, 0x74, 0x9f, 0x78, 0x63, 0x57, 0xf9, 0x42, 0x97, 0x7c, 0xae, 0x28, 0xf2, 0xc1,
+	0xf1, 0xdf, 0x72, 0x7c, 0x70, 0x7e, 0x90, 0x29, 0xae, 0xe5, 0x7d, 0xe2, 0x8d, 0x62, 0x97, 0x7b,
+	0x90, 0x0f, 0x1e, 0x9c, 0x0c, 0xc7, 0x13, 0x2e, 0x75, 0xc1, 0x84, 0x9b, 0x5e, 0x86, 0xb8, 0x77,
+	0x3c, 0x9a, 0x82, 0x98, 0xb5, 0xb7, 0xe7, 0x10, 0x26, 0x5e, 0x0a, 0xae, 0xa9, 0xde, 0xee, 0x64,
+	0xbd, 0xf0, 0x97, 0x93, 0x91, 0xe3, 0xf5, 0x92, 0xfd, 0x36, 0x02, 0xe9, 0xfe, 0xbe, 0xf2, 0x69,
+	0xf6, 0x8d, 0x61, 0x93, 0x9c, 0xc2, 0xc4, 0x9f, 0x5d, 0x6c, 0x32, 0xaa, 0x13, 0x4d, 0x5c, 0xe6,
+	0xf2, 0x22, 0x4a, 0x2d, 0x3e, 0x3a, 0x6f, 0xff, 0xce, 0x09, 0xfb, 0x0a, 0xec, 0xb1, 0x07, 0xa7,
+	0x8e, 0xfb, 0xc0, 0xe2, 0xc1, 0x29, 0x4d, 0x64, 0x7a, 0x09, 0x26, 0xfa, 0x04, 0xd1, 0x34, 0x24,
+	0x7c, 0x51, 0x91, 0x04, 0x8a, 0xda, 0xd9, 0x73, 0x10, 0xa1, 0xa6, 0xf0, 0x8f, 0xa2, 0x7a, 0x0d,
+	0xe8, 0xab, 0x08, 0x24, 0xfc, 0xec, 0x42, 0xcf, 0xe1, 0x47, 0x7b, 0x54, 0x67, 0xc4, 0x26, 0x4d,
+	0xed, 0xa2, 0x81, 0x47, 0x3e, 0x52, 0xa1, 0x9b, 0x00, 0xcf, 0x61, 0xa2, 0x83, 0x7f, 0x19, 0x99,
+	0x30, 0xee, 0xa3, 0x55, 0x65, 0x46, 0x9c, 0x0c, 0x70, 0x78, 0xd0, 0x60, 0x10, 0x19, 0x7e, 0x30,
+	0x78, 0x02, 0x71, 0xa7, 0x8d, 0x4d, 0x8d, 0x36, 0x45, 0x6a, 0x8c, 0x16, 0x1f, 0x71, 0x35, 0xfe,
+	0xff, 0xf6, 0xe6, 0x6f, 0x5b, 0x56, 0x9f, 0xfe, 0xd4, 0xca, 0x37, 0x2c, 0x5d, 0x27, 0x0d, 0x66,
+	0xd9, 0x79, 0xc3, 0x6a, 0x12, 0x3d, 0x4f, 0x4d, 0x46, 0x6c, 0x13, 0xeb, 0x79, 0x3e, 0xab, 0xe5,
+	0xb6, 0xdb, 0xd8, 0xac, 0x94, 0xd4, 0x18, 0x07, 0xac, 0x34, 0xd1, 0x33, 0x48, 0x30, 0x1b, 0x37,
+	0x08, 0xc7, 0x8e, 0x0a, 0xec, 0x82, 0x87, 0xfd, 0xbb, 0xf3, 0x63, 0xd7, 0x38, 0x52, 0xa5, 0xa4,
+	0xc6, 0x05, 0x64, 0xa5, 0xd9, 0x9d, 0x36, 0xfe, 0x19, 0x86, 0xd1, 0x8a, 0xc9, 0xba, 0x05, 0xbe,
+	0x76, 0xb1, 0x8a, 0x94, 0x91, 0xfe, 0xf0, 0xf5, 0x28, 0xf3, 0x96, 0x3b, 0x3d, 0xed, 0xe5, 0x2d,
+	0xda, 0x3c, 0x39, 0xa5, 0xfd, 0x6c, 0x88, 0xb7, 0xf4, 0x53, 0x2f, 0xd2, 0xdf, 0x87, 0x33, 0x4a,
+	0xf6, 0x4f, 0x90, 0xf0, 0xbf, 0x6c, 0xa0, 0xf5, 0xa0, 0xd1, 0x7c, 0x98, 0x0f, 0x01, 0x81, 0x63,
+	0xb9, 0x80, 0xff, 0x46, 0x81, 0x98, 0xfc, 0x5e, 0x71, 0xc9, 0xe8, 0x57, 0xf1, 0x25, 0x55, 0x58,
+	0xfc, 0xd7, 0x08, 0x5c, 0xef, 0xfd, 0x36, 0xf2, 0xd1, 0x65, 0xde, 0xd9, 0x9d, 0x20, 0xfd, 0x21,
+	0x06, 0xd2, 0xcd, 0x93, 0x03, 0xe9, 0xc5, 0x33, 0xfb, 0x33, 0x45, 0x54, 0x7e, 0xf7, 0xad, 0x7a,
+	0x37, 0x28, 0x01, 0x1f, 0x9c, 0xe7, 0x3b, 0xd7, 0xd5, 0xc8, 0x44, 0x61, 0xdd, 0x17, 0x61, 0x48,
+	0xf5, 0xb8, 0x00, 0x3d, 0xbb, 0xa4, 0x3e, 0x23, 0x5d, 0xf9, 0x7e, 0x5d, 0xa6, 0x73, 0x6d, 0x45,
+	0x7a, 0xaf, 0xad, 0x8f, 0xb5, 0x87, 0x70, 0x37, 0xdf, 0xfd, 0x9b, 0x02, 0x53, 0xc1, 0xd1, 0x41,
+	0xf3, 0x70, 0xbb, 0xb0, 0xb2, 0xa2, 0x96, 0x57, 0x0a, 0xb5, 0xca, 0xe6, 0x86, 0x56, 0x2b, 0xaf,
+	0x6f, 0x6d, 0xaa, 0x85, 0x6a, 0xa5, 0xf6, 0x44, 0xdb, 0xd9, 0xd8, 0xde, 0x2a, 0x2f, 0x55, 0x96,
+	0x2b, 0xe5, 0x52, 0x3a, 0x84, 0x6e, 0xc1, 0xcc, 0x69, 0x8c, 0xa5, 0x72, 0xb5, 0x56, 0x48, 0x2b,
+	0xe8, 0x0e, 0x64, 0x4f, 0x63, 0x59, 0xda, 0x59, 0xdf, 0xa9, 0x16, 0x6a, 0x95, 0xdd, 0x72, 0x3a,
+	0x7c, 0xf7, 0x0f, 0x30, 0xde, 0xc9, 0xc1, 0x65, 0x31, 0x5a, 0x8f, 0x41, 0x72, 0xb9, 0x5a, 0x58,
+	0xd1, 0x36, 0x36, 0x37, 0xca, 0xe9, 0x10, 0x9a, 0x86, 0x29, 0x6f, 0xab, 0xa9, 0xe5, 0xa5, 0x4d,
+	0xb5, 0x54, 0x2e, 0x69, 0xbb, 0x85, 0xea, 0x4e, 0x39, 0xad, 0x14, 0xff, 0xa1, 0xbc, 0x7e, 0x37,
+	0xab, 0xbc, 0x79, 0x37, 0xab, 0x7c, 0xfe, 0x6e, 0x56, 0xf9, 0xfb, 0xd1, 0x6c, 0xe8, 0xcd, 0xd1,
+	0x6c, 0xe8, 0x7f, 0x47, 0xb3, 0x21, 0xb8, 0x45, 0xad, 0x01, 0x39, 0x5a, 0x1c, 0xf5, 0x7e, 0x34,
+	0x6c, 0xf1, 0x07, 0x5b, 0xca, 0xd3, 0xf2, 0xb9, 0x3d, 0x2c, 0x7f, 0x2c, 0xb5, 0x88, 0xd9, 0xf3,
+	0xaf, 0xab, 0x1e, 0x13, 0xc4, 0x5f, 0x7e, 0x1f, 0x00, 0x00, 0xff, 0xff, 0x3b, 0xe0, 0x1c, 0x00,
+	0x14, 0x1b, 0x00, 0x00,
+}
+
+func (m *MetricsData) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MetricsData) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MetricsData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ResourceMetrics) > 0 {
+		for iNdEx := len(m.ResourceMetrics) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ResourceMetrics[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintMetrics(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ResourceMetrics) Marshal() (dAtA []byte, err error) {
@@ -2361,6 +2787,27 @@ func (m *Metric_Histogram) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	return len(dAtA) - i, nil
 }
+func (m *Metric_ExponentialHistogram) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Metric_ExponentialHistogram) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.ExponentialHistogram != nil {
+		{
+			size, err := m.ExponentialHistogram.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMetrics(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x52
+	}
+	return len(dAtA) - i, nil
+}
 func (m *Metric_Summary) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
@@ -2487,6 +2934,48 @@ func (m *Histogram) MarshalTo(dAtA []byte) (int, error) {
 }
 
 func (m *Histogram) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.AggregationTemporality != 0 {
+		i = encodeVarintMetrics(dAtA, i, uint64(m.AggregationTemporality))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.DataPoints) > 0 {
+		for iNdEx := len(m.DataPoints) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.DataPoints[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintMetrics(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ExponentialHistogram) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExponentialHistogram) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExponentialHistogram) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -2722,9 +3211,9 @@ func (m *HistogramDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	if len(m.ExplicitBounds) > 0 {
 		for iNdEx := len(m.ExplicitBounds) - 1; iNdEx >= 0; iNdEx-- {
-			f10 := math.Float64bits(float64(m.ExplicitBounds[iNdEx]))
+			f11 := math.Float64bits(float64(m.ExplicitBounds[iNdEx]))
 			i -= 8
-			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f10))
+			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f11))
 		}
 		i = encodeVarintMetrics(dAtA, i, uint64(len(m.ExplicitBounds)*8))
 		i--
@@ -2776,6 +3265,163 @@ func (m *HistogramDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i--
 			dAtA[i] = 0xa
 		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ExponentialHistogramDataPoint) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExponentialHistogramDataPoint) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExponentialHistogramDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Exemplars) > 0 {
+		for iNdEx := len(m.Exemplars) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Exemplars[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintMetrics(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x5a
+		}
+	}
+	if m.Flags != 0 {
+		i = encodeVarintMetrics(dAtA, i, uint64(m.Flags))
+		i--
+		dAtA[i] = 0x50
+	}
+	{
+		size, err := m.Negative.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintMetrics(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x4a
+	{
+		size, err := m.Positive.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintMetrics(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x42
+	if m.ZeroCount != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.ZeroCount))
+		i--
+		dAtA[i] = 0x39
+	}
+	if m.Scale != 0 {
+		i = encodeVarintMetrics(dAtA, i, uint64((uint32(m.Scale)<<1)^uint32((m.Scale>>31))))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.Sum != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.Sum))))
+		i--
+		dAtA[i] = 0x29
+	}
+	if m.Count != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.Count))
+		i--
+		dAtA[i] = 0x21
+	}
+	if m.TimeUnixNano != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.TimeUnixNano))
+		i--
+		dAtA[i] = 0x19
+	}
+	if m.StartTimeUnixNano != 0 {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(m.StartTimeUnixNano))
+		i--
+		dAtA[i] = 0x11
+	}
+	if len(m.Attributes) > 0 {
+		for iNdEx := len(m.Attributes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Attributes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintMetrics(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ExponentialHistogramDataPoint_Buckets) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExponentialHistogramDataPoint_Buckets) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExponentialHistogramDataPoint_Buckets) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.BucketCounts) > 0 {
+		dAtA15 := make([]byte, len(m.BucketCounts)*10)
+		var j14 int
+		for _, num := range m.BucketCounts {
+			for num >= 1<<7 {
+				dAtA15[j14] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j14++
+			}
+			dAtA15[j14] = uint8(num)
+			j14++
+		}
+		i -= j14
+		copy(dAtA[i:], dAtA15[:j14])
+		i = encodeVarintMetrics(dAtA, i, uint64(j14))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Offset != 0 {
+		i = encodeVarintMetrics(dAtA, i, uint64((uint32(m.Offset)<<1)^uint32((m.Offset>>31))))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -3215,9 +3861,9 @@ func (m *IntHistogramDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	if len(m.ExplicitBounds) > 0 {
 		for iNdEx := len(m.ExplicitBounds) - 1; iNdEx >= 0; iNdEx-- {
-			f11 := math.Float64bits(float64(m.ExplicitBounds[iNdEx]))
+			f16 := math.Float64bits(float64(m.ExplicitBounds[iNdEx]))
 			i -= 8
-			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f11))
+			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f16))
 		}
 		i = encodeVarintMetrics(dAtA, i, uint64(len(m.ExplicitBounds)*8))
 		i--
@@ -3395,6 +4041,21 @@ func encodeVarintMetrics(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *MetricsData) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.ResourceMetrics) > 0 {
+		for _, e := range m.ResourceMetrics {
+			l = e.Size()
+			n += 1 + l + sovMetrics(uint64(l))
+		}
+	}
+	return n
+}
+
 func (m *ResourceMetrics) Size() (n int) {
 	if m == nil {
 		return 0
@@ -3533,6 +4194,18 @@ func (m *Metric_Histogram) Size() (n int) {
 	}
 	return n
 }
+func (m *Metric_ExponentialHistogram) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ExponentialHistogram != nil {
+		l = m.ExponentialHistogram.Size()
+		n += 1 + l + sovMetrics(uint64(l))
+	}
+	return n
+}
 func (m *Metric_Summary) Size() (n int) {
 	if m == nil {
 		return 0
@@ -3582,6 +4255,24 @@ func (m *Sum) Size() (n int) {
 }
 
 func (m *Histogram) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.DataPoints) > 0 {
+		for _, e := range m.DataPoints {
+			l = e.Size()
+			n += 1 + l + sovMetrics(uint64(l))
+		}
+	}
+	if m.AggregationTemporality != 0 {
+		n += 1 + sovMetrics(uint64(m.AggregationTemporality))
+	}
+	return n
+}
+
+func (m *ExponentialHistogram) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -3715,6 +4406,71 @@ func (m *HistogramDataPoint) Size() (n int) {
 	}
 	if m.Flags != 0 {
 		n += 1 + sovMetrics(uint64(m.Flags))
+	}
+	return n
+}
+
+func (m *ExponentialHistogramDataPoint) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Attributes) > 0 {
+		for _, e := range m.Attributes {
+			l = e.Size()
+			n += 1 + l + sovMetrics(uint64(l))
+		}
+	}
+	if m.StartTimeUnixNano != 0 {
+		n += 9
+	}
+	if m.TimeUnixNano != 0 {
+		n += 9
+	}
+	if m.Count != 0 {
+		n += 9
+	}
+	if m.Sum != 0 {
+		n += 9
+	}
+	if m.Scale != 0 {
+		n += 1 + sozMetrics(uint64(m.Scale))
+	}
+	if m.ZeroCount != 0 {
+		n += 9
+	}
+	l = m.Positive.Size()
+	n += 1 + l + sovMetrics(uint64(l))
+	l = m.Negative.Size()
+	n += 1 + l + sovMetrics(uint64(l))
+	if m.Flags != 0 {
+		n += 1 + sovMetrics(uint64(m.Flags))
+	}
+	if len(m.Exemplars) > 0 {
+		for _, e := range m.Exemplars {
+			l = e.Size()
+			n += 1 + l + sovMetrics(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *ExponentialHistogramDataPoint_Buckets) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Offset != 0 {
+		n += 1 + sozMetrics(uint64(m.Offset))
+	}
+	if len(m.BucketCounts) > 0 {
+		l = 0
+		for _, e := range m.BucketCounts {
+			l += sovMetrics(uint64(e))
+		}
+		n += 1 + sovMetrics(uint64(l)) + l
 	}
 	return n
 }
@@ -3978,6 +4734,90 @@ func sovMetrics(x uint64) (n int) {
 }
 func sozMetrics(x uint64) (n int) {
 	return sovMetrics(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *MetricsData) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMetrics
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MetricsData: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MetricsData: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResourceMetrics", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ResourceMetrics = append(m.ResourceMetrics, &ResourceMetrics{})
+			if err := m.ResourceMetrics[len(m.ResourceMetrics)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMetrics(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *ResourceMetrics) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -4612,6 +5452,41 @@ func (m *Metric) Unmarshal(dAtA []byte) error {
 			}
 			m.Data = &Metric_Histogram{v}
 			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExponentialHistogram", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ExponentialHistogram{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Data = &Metric_ExponentialHistogram{v}
+			iNdEx = postIndex
 		case 11:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Summary", wireType)
@@ -4934,6 +5809,109 @@ func (m *Histogram) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.DataPoints = append(m.DataPoints, &HistogramDataPoint{})
+			if err := m.DataPoints[len(m.DataPoints)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AggregationTemporality", wireType)
+			}
+			m.AggregationTemporality = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AggregationTemporality |= AggregationTemporality(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMetrics(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExponentialHistogram) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMetrics
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExponentialHistogram: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExponentialHistogram: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataPoints", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DataPoints = append(m.DataPoints, &ExponentialHistogramDataPoint{})
 			if err := m.DataPoints[len(m.DataPoints)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -5571,6 +6549,428 @@ func (m *HistogramDataPoint) Unmarshal(dAtA []byte) error {
 				if b < 0x80 {
 					break
 				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMetrics(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExponentialHistogramDataPoint) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMetrics
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExponentialHistogramDataPoint: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExponentialHistogramDataPoint: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Attributes = append(m.Attributes, v11.KeyValue{})
+			if err := m.Attributes[len(m.Attributes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartTimeUnixNano", wireType)
+			}
+			m.StartTimeUnixNano = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StartTimeUnixNano = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 3:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeUnixNano", wireType)
+			}
+			m.TimeUnixNano = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TimeUnixNano = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 4:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Count", wireType)
+			}
+			m.Count = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Count = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 5:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sum", wireType)
+			}
+			var v uint64
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+			m.Sum = float64(math.Float64frombits(v))
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scale", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			v = int32((uint32(v) >> 1) ^ uint32(((v&1)<<31)>>31))
+			m.Scale = v
+		case 7:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ZeroCount", wireType)
+			}
+			m.ZeroCount = 0
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ZeroCount = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Positive", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Positive.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Negative", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Negative.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Flags", wireType)
+			}
+			m.Flags = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Flags |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Exemplars", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Exemplars = append(m.Exemplars, Exemplar{})
+			if err := m.Exemplars[len(m.Exemplars)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMetrics(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMetrics
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExponentialHistogramDataPoint_Buckets) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMetrics
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Buckets: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Buckets: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Offset", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetrics
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			v = int32((uint32(v) >> 1) ^ uint32(((v&1)<<31)>>31))
+			m.Offset = v
+		case 2:
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowMetrics
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.BucketCounts = append(m.BucketCounts, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowMetrics
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthMetrics
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthMetrics
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA[iNdEx:postIndex] {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.BucketCounts) == 0 {
+					m.BucketCounts = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowMetrics
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.BucketCounts = append(m.BucketCounts, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
 			}
 		default:
 			iNdEx = preIndex

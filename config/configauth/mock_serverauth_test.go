@@ -23,7 +23,7 @@ import (
 
 func TestAuthenticateFunc(t *testing.T) {
 	// prepare
-	m := &MockAuthenticator{}
+	m := &MockServerAuthenticator{}
 	called := false
 	m.AuthenticateFunc = func(c context.Context, m map[string][]string) (context.Context, error) {
 		called = true
@@ -41,7 +41,7 @@ func TestAuthenticateFunc(t *testing.T) {
 
 func TestNilOperations(t *testing.T) {
 	// prepare
-	m := &MockAuthenticator{}
+	m := &MockServerAuthenticator{}
 
 	// test and verify
 	origCtx := context.Background()
