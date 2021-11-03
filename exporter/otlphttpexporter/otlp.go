@@ -49,7 +49,6 @@ type exporter struct {
 	metricsURL string
 	logsURL    string
 	logger     *zap.Logger
-	buildInfo  component.BuildInfo
 }
 
 const (
@@ -61,6 +60,11 @@ const (
 func newExporter(cfg config.Exporter, logger *zap.Logger, buildInfo component.BuildInfo) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
+	// Configure default user-agent header
+	oCfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
+		return newUserAgentRoundTripper(next, exporterhelper.DefaultUserAgent(buildInfo)), nil
+	}
+
 	if oCfg.Endpoint != "" {
 		_, err := url.Parse(oCfg.Endpoint)
 		if err != nil {
@@ -70,9 +74,8 @@ func newExporter(cfg config.Exporter, logger *zap.Logger, buildInfo component.Bu
 
 	// client construction is deferred to start
 	return &exporter{
-		config:    oCfg,
-		logger:    logger,
-		buildInfo: buildInfo,
+		config: oCfg,
+		logger: logger,
 	}, nil
 }
 
@@ -83,8 +86,6 @@ func (e *exporter) start(_ context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
-
-	client.Transport = NewUserAgentRoundTripper(client.Transport, exporterhelper.DefaultUserAgent(e.buildInfo))
 
 	if e.config.Compression != "" {
 		if strings.ToLower(e.config.Compression) == configgrpc.CompressionGzip {
@@ -218,19 +219,27 @@ func readResponse(resp *http.Response) *status.Status {
 	return respStatus
 }
 
-type UserAgentRoundTripper struct {
+type userAgentRoundTripper struct {
 	next      http.RoundTripper
 	userAgent string
 }
 
-func NewUserAgentRoundTripper(next http.RoundTripper, userAgent string) *UserAgentRoundTripper {
-	return &UserAgentRoundTripper{
+func newUserAgentRoundTripper(next http.RoundTripper, userAgent string) *userAgentRoundTripper {
+	return &userAgentRoundTripper{
 		next,
 		userAgent,
 	}
 }
 
-func (r *UserAgentRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", r.userAgent)
-	return r.next.RoundTrip(req)
+func (r *userAgentRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+	requestClone := req.Clone(req.Context())
+	requestClone.Body = ioutil.NopCloser(bytes.NewReader(body))
+	if requestClone.Header.Get("User-Agent") == "" {
+		requestClone.Header.Set("User-Agent", r.userAgent)
+	}
+	return r.next.RoundTrip(requestClone)
 }
