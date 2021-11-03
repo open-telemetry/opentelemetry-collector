@@ -152,8 +152,6 @@ func shouldRetry(code codes.Code) bool {
 	switch code {
 	case codes.Canceled,
 		codes.DeadlineExceeded,
-		codes.PermissionDenied,
-		codes.Unauthenticated,
 		codes.ResourceExhausted,
 		codes.Aborted,
 		codes.OutOfRange,
