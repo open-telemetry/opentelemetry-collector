@@ -20,8 +20,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/client"
 	"google.golang.org/grpc/peer"
+
+	"go.opentelemetry.io/collector/client"
 )
 
 func TestContextWithClient(t *testing.T) {

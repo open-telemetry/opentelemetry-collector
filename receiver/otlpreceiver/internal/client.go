@@ -17,8 +17,9 @@ package internal // import "go.opentelemetry.io/collector/receiver/otlpreceiver/
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/client"
 	"google.golang.org/grpc/peer"
+
+	"go.opentelemetry.io/collector/client"
 )
 
 // ContextWithClient returns a context with either a new or an existing client.Client,
