@@ -48,7 +48,6 @@ func (srv *service) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 }
 
 func (srv *service) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm() // nolint:errcheck
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "service"})
 	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
@@ -66,11 +65,12 @@ func (srv *service) handleServicezRequest(w http.ResponseWriter, r *http.Request
 }
 
 func (srv *service) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm() // nolint:errcheck
+	qValues := r.URL.Query()
+	pipelineName := qValues.Get(zPipelineName)
+	componentName := qValues.Get(zComponentName)
+	componentKind := qValues.Get(zComponentKind)
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	pipelineName := r.Form.Get(zPipelineName)
-	componentName := r.Form.Get(zComponentName)
-	componentKind := r.Form.Get(zComponentKind)
 	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Pipelines"})
 	zpages.WriteHTMLPipelinesSummaryTable(w, srv.getPipelinesSummaryTableData())
 	if pipelineName != "" && componentName != "" && componentKind != "" {
@@ -124,9 +124,9 @@ func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableD
 }
 
 func handleExtensionzRequest(host component.Host, w http.ResponseWriter, r *http.Request) {
-	r.ParseForm() // nolint:errcheck
+	extensionName := r.URL.Query().Get(zExtensionName)
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	extensionName := r.Form.Get(zExtensionName)
 	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Extensions"})
 	zpages.WriteHTMLExtensionsSummaryTable(w, getExtensionsSummaryTableData(host))
 	if extensionName != "" {
