@@ -33,7 +33,7 @@ import (
 // was not accepted. There are 2 types of possible errors: Permanent and non-Permanent.
 // The receiver must check the type of the error using IsPermanent() helper.
 //
-// If the error is Permanent than the nextConsumer.Consume*() call should not be
+// If the error is Permanent then the nextConsumer.Consume*() call should not be
 // retried with the same data. This typically happens when the data cannot be
 // serialized by the exporter that is attached to the pipeline or when the destination
 // refuses the data because it cannot decode it. The receiver must indicate to
