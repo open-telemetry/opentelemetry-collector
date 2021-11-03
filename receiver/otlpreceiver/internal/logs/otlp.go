@@ -17,12 +17,12 @@ package logs // import "go.opentelemetry.io/collector/receiver/otlpreceiver/inte
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal"
 )
 
 const (
@@ -56,10 +56,7 @@ func (r *Receiver) Export(ctx context.Context, req otlpgrpc.LogsRequest) (otlpgr
 		return otlpgrpc.NewLogsResponse(), nil
 	}
 
-	if c, ok := client.FromGRPC(ctx); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
+	ctx = internal.ContextWithClient(ctx)
 	ctx = r.obsrecv.StartLogsOp(ctx)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
 	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)

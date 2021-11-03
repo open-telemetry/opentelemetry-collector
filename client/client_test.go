@@ -17,44 +17,65 @@ package client
 
 import (
 	"context"
-	"net"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc/peer"
 )
 
-func TestClientContext(t *testing.T) {
-	ips := []string{
-		"1.1.1.1", "127.0.0.1", "1111", "ip",
-	}
-	for _, ip := range ips {
-		ctx := NewContext(context.Background(), &Client{IP: ip})
-		c, ok := FromContext(ctx)
-		assert.True(t, ok)
-		assert.NotNil(t, c)
-		assert.Equal(t, c.IP, ip)
-	}
-}
-
-func TestParsingGRPC(t *testing.T) {
-	grpcCtx := peer.NewContext(context.Background(), &peer.Peer{
-		Addr: &net.TCPAddr{
-			IP:   net.ParseIP("192.168.1.1"),
-			Port: 80,
+func TestNewContext(t *testing.T) {
+	testCases := []struct {
+		desc string
+		cl   *Client
+	}{
+		{
+			desc: "valid client",
+			cl: &Client{
+				IP: "1.2.3.4",
+			},
 		},
-	})
+		{
+			desc: "nil client",
+			cl:   nil,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			ctx := NewContext(context.Background(), tC.cl)
+			assert.Equal(t, ctx.Value(ctxKey{}), tC.cl)
 
-	client, ok := FromGRPC(grpcCtx)
-	assert.True(t, ok)
-	assert.NotNil(t, client)
-	assert.Equal(t, client.IP, "192.168.1.1")
+		})
+	}
 }
 
-func TestParsingHTTP(t *testing.T) {
-	client, ok := FromHTTP(&http.Request{RemoteAddr: "192.168.1.2"})
-	assert.True(t, ok)
-	assert.NotNil(t, client)
-	assert.Equal(t, client.IP, "192.168.1.2")
+func TestFromContext(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		input    context.Context
+		expected *Client
+	}{
+		{
+			desc: "context with client",
+			input: context.WithValue(context.Background(), ctxKey{}, &Client{
+				IP: "1.2.3.4",
+			}),
+			expected: &Client{
+				IP: "1.2.3.4",
+			},
+		},
+		{
+			desc:     "context without client",
+			input:    context.Background(),
+			expected: &Client{},
+		},
+		{
+			desc:     "context with something else in the key",
+			input:    context.WithValue(context.Background(), ctxKey{}, "unexpected!"),
+			expected: &Client{},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			assert.Equal(t, FromContext(tC.input), tC.expected)
+		})
+	}
 }

@@ -17,10 +17,6 @@ package client // import "go.opentelemetry.io/collector/client"
 
 import (
 	"context"
-	"net"
-	"net/http"
-
-	"google.golang.org/grpc/peer"
 )
 
 type ctxKey struct{}
@@ -31,77 +27,30 @@ type Client struct {
 	Auth AuthData
 }
 
+// AuthData represents the authentication data as seen by authenticators.
 type AuthData interface {
-	Equal(AuthData) bool
+	// Equal determines whether another authentication data is equal to this one.
+	// The actual semantics might be defined by the concrete implementations.
+	Equal(interface{}) bool
+
+	// GetAttribute returns the value for the given attribute.
 	GetAttribute(string) interface{}
+
+	// GetAttributes returns the names of all attributes in this authentication data.
 	GetAttributeNames() []string
 }
 
-// NewContext takes an existing context and derives a new context with the client value stored on it
+// NewContext takes an existing context and derives a new context with the client value stored on it.
 func NewContext(ctx context.Context, c *Client) context.Context {
 	return context.WithValue(ctx, ctxKey{}, c)
 }
 
-// FromContext takes a context and returns a Client value from it, if present.
-func FromContext(ctx context.Context) (*Client, bool) {
+// FromContext takes a context and returns a Client from it. When a client isn't present, a new
+// empty one is returned.
+func FromContext(ctx context.Context) *Client {
 	c, ok := ctx.Value(ctxKey{}).(*Client)
-	return c, ok
-}
-
-// ContextWithAuth adds authentication data to either an existing client or a new one if none is present
-// returning the resulting context.
-func ContextWithAuth(ctx context.Context, auth AuthData) context.Context {
-	c, ok := FromContext(ctx)
 	if !ok {
-		c = &Client{Auth: auth}
-		return NewContext(ctx, c)
+		c = &Client{}
 	}
-
-	c.Auth = auth
-	return ctx
-}
-
-// FromGRPC takes a GRPC context and tries to extract client information from it
-func FromGRPC(ctx context.Context) (*Client, bool) {
-	cl, ok := FromContext(ctx)
-	if !ok {
-		cl = &Client{}
-	}
-
-	if p, ok := peer.FromContext(ctx); ok {
-		ip := parseIP(p.Addr.String())
-		if ip != "" {
-			cl.IP = ip
-			return cl, true
-		}
-	}
-	return nil, false
-}
-
-// FromHTTP takes a net/http Request object and tries to extract client information from it
-func FromHTTP(r *http.Request) (*Client, bool) {
-	cl, ok := FromContext(r.Context())
-	if !ok {
-		cl = &Client{}
-	}
-
-	ip := parseIP(r.RemoteAddr)
-	if ip == "" {
-		return nil, false
-	}
-
-	cl.IP = ip
-	return cl, true
-}
-
-func parseIP(source string) string {
-	ipstr, _, err := net.SplitHostPort(source)
-	if err == nil {
-		return ipstr
-	}
-	ip := net.ParseIP(source)
-	if ip != nil {
-		return ip.String()
-	}
-	return ""
+	return c
 }

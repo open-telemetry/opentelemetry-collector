@@ -17,12 +17,12 @@ package metrics // import "go.opentelemetry.io/collector/receiver/otlpreceiver/i
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal"
 )
 
 const (
@@ -56,10 +56,7 @@ func (r *Receiver) Export(ctx context.Context, req otlpgrpc.MetricsRequest) (otl
 		return otlpgrpc.NewMetricsResponse(), nil
 	}
 
-	if c, ok := client.FromGRPC(ctx); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
+	ctx = internal.ContextWithClient(ctx)
 	ctx = r.obsrecv.StartMetricsOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)

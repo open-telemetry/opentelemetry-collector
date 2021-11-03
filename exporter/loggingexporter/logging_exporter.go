@@ -21,7 +21,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -38,16 +37,8 @@ type loggingExporter struct {
 	tracesMarshaler  pdata.TracesMarshaler
 }
 
-func (s *loggingExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
+func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
-
-	cl, ok := client.FromContext(ctx)
-	if !ok || cl == nil {
-		s.logger.Info("Client auth data is empty")
-		return nil
-	} else {
-		s.logger.Info("Client auth data", zap.Any("raw", cl.Auth.GetAttribute("raw")))
-	}
 
 	if !s.debug {
 		return nil

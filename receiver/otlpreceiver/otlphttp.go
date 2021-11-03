@@ -15,6 +15,7 @@
 package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 
@@ -23,6 +24,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -45,11 +47,7 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 		return
 	}
 
-	ctx := req.Context()
-	if c, ok := client.FromHTTP(req); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
+	ctx := contextWithClient(req)
 	otlpResp, err := tracesReceiver.Export(ctx, otlpReq)
 	if err != nil {
 		writeError(resp, encoder, err, http.StatusInternalServerError)
@@ -76,11 +74,7 @@ func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver 
 		return
 	}
 
-	ctx := req.Context()
-	if c, ok := client.FromHTTP(req); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
+	ctx := contextWithClient(req)
 	otlpResp, err := metricsReceiver.Export(ctx, otlpReq)
 	if err != nil {
 		writeError(resp, encoder, err, http.StatusInternalServerError)
@@ -107,11 +101,7 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 		return
 	}
 
-	ctx := req.Context()
-	if c, ok := client.FromHTTP(req); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
+	ctx := contextWithClient(req)
 	otlpResp, err := logsReceiver.Export(ctx, otlpReq)
 	if err != nil {
 		writeError(resp, encoder, err, http.StatusInternalServerError)
@@ -186,4 +176,14 @@ func errorMsgToStatus(errMsg string, statusCode int) *status.Status {
 		return status.New(codes.InvalidArgument, errMsg)
 	}
 	return status.New(codes.Unknown, errMsg)
+}
+
+func contextWithClient(r *http.Request) context.Context {
+	cl := client.FromContext(r.Context())
+	ip := internal.ParseIP(r.RemoteAddr)
+	if ip != "" {
+		cl.IP = ip
+	}
+
+	return client.NewContext(r.Context(), cl)
 }
