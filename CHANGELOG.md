@@ -18,6 +18,9 @@
 - Remove `config.Pipeline.InputDataType` (#4343)
 - otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
 
+## 💡 Enhancements 💡
+- Supports more compression methods(`snappy` and `zstd`) for configgrpc, in addition to current `gzip` (#4088)
+
 ## v0.38.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -58,7 +61,6 @@
 
 ## 💡 Enhancements 💡
 
-- Supports more compression methods(`lz4`, `snappy` and `zstd`) for configgrpc, in addition to current `gzip` (#4088)
 - Add Gen dependabot into CI (#4083)
 - Update OTLP to v0.10.0 (#4045).
 - Add Flags field to NumberDataPoint, HistogramDataPoint, SummaryDataPoint (#4081).

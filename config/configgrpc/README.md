@@ -16,7 +16,7 @@ configuration. For more information, see [configtls
 README](../configtls/README.md).
 
 - [`balancer_name`](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md)
-- `compression` Compression type to use among `gzip`, `lz4`, `snappy` and `zstd`
+- `compression` Compression type to use among `gzip`, `snappy` and `zstd`
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
 - `headers`: name/value pairs added to the request

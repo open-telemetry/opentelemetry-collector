@@ -109,15 +109,6 @@ func TestCreateTracesExporter(t *testing.T) {
 			},
 		},
 		{
-			name: "Lz4Compression",
-			config: Config{
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint:    endpoint,
-					Compression: configgrpc.CompressionLz4,
-				},
-			},
-		},
-		{
 			name: "SnappyCompression",
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
