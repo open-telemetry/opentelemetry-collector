@@ -40,10 +40,10 @@ func TestSplitMetrics_noop(t *testing.T) {
 func TestSplitMetrics(t *testing.T) {
 	md := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	dataPointCount := metricDataPointCount(metrics.At(0))
+	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	cp := pdata.NewMetrics()
 	cpMetrics := cp.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
@@ -86,10 +86,10 @@ func TestSplitMetrics(t *testing.T) {
 func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 	md := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	dataPointCount := metricDataPointCount(metrics.At(0))
+	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	// add second index to resource metrics
 	testdata.GenerateMetricsManyMetricsSameResource(20).
@@ -111,10 +111,10 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *testing.T) {
 	td := testdata.GenerateMetricsManyMetricsSameResource(20)
 	metrics := td.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	dataPointCount := metricDataPointCount(metrics.At(0))
+	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	// add second index to resource metrics
 	testdata.GenerateMetricsManyMetricsSameResource(20).
@@ -136,56 +136,13 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 	assert.Equal(t, "test-metric-int-1-4", split.ResourceMetrics().At(1).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Name())
 }
 
-func BenchmarkSplitMetrics(b *testing.B) {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	for i := 0; i < 20; i++ {
-		testdata.GenerateMetricsManyMetricsSameResource(20).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-		ms := rms.At(rms.Len() - 1).InstrumentationLibraryMetrics().At(0).Metrics()
-		for i := 0; i < ms.Len(); i++ {
-			ms.At(i).SetName(getTestMetricName(1, i))
-		}
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		cloneReq := md.Clone()
-		split := splitMetrics(128, cloneReq)
-		if split.MetricCount() != 128 || cloneReq.MetricCount() != 400-128 {
-			b.Fail()
-		}
-	}
-}
-
-func BenchmarkCloneMetrics(b *testing.B) {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	for i := 0; i < 20; i++ {
-		testdata.GenerateMetricsManyMetricsSameResource(20).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-		ms := rms.At(rms.Len() - 1).InstrumentationLibraryMetrics().At(0).Metrics()
-		for i := 0; i < ms.Len(); i++ {
-			ms.At(i).SetName(getTestMetricName(1, i))
-		}
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		cloneReq := md.Clone()
-		if cloneReq.MetricCount() != 400 {
-			b.Fail()
-		}
-	}
-}
-
 func TestSplitMetricsUneven(t *testing.T) {
 	md := testdata.GenerateMetricsManyMetricsSameResource(10)
 	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	dataPointCount := 2
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 
 	splitSize := 9
@@ -212,7 +169,7 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 	dataPointCount := 2
 	for i := 0; i < metrics.Len(); i++ {
 		metrics.At(i).SetName(getTestMetricName(0, i))
-		assert.Equal(t, dataPointCount, metricDataPointCount(metrics.At(i)))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 
 	splitSize := 1
@@ -235,4 +192,64 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-1", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+}
+
+func TestSplitMetricsMultipleILM(t *testing.T) {
+	md := testdata.GenerateMetricsManyMetricsSameResource(20)
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	dataPointCount := metricDPC(metrics.At(0))
+	for i := 0; i < metrics.Len(); i++ {
+		metrics.At(i).SetName(getTestMetricName(0, i))
+		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
+	}
+	// add second index to ilm
+	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).
+		CopyTo(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().AppendEmpty())
+
+	// add a third index to ilm
+	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).
+		CopyTo(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().AppendEmpty())
+	metrics = md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(2).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		metrics.At(i).SetName(getTestMetricName(2, i))
+	}
+
+	splitMetricCount := 40
+	splitSize := splitMetricCount * dataPointCount
+	split := splitMetrics(splitSize, md)
+	assert.Equal(t, splitMetricCount, split.MetricCount())
+	assert.Equal(t, 20, md.MetricCount())
+	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Name())
+}
+
+func BenchmarkSplitMetrics(b *testing.B) {
+	md := pdata.NewMetrics()
+	rms := md.ResourceMetrics()
+	for i := 0; i < 20; i++ {
+		testdata.GenerateMetricsManyMetricsSameResource(20).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+		ms := rms.At(rms.Len() - 1).InstrumentationLibraryMetrics().At(0).Metrics()
+		for i := 0; i < ms.Len(); i++ {
+			ms.At(i).SetName(getTestMetricName(1, i))
+		}
+	}
+
+	if b.N > 100000 {
+		b.Skipf("SKIP: b.N too high, set -benchtime=<n>x with n < 100000")
+	}
+
+	dataPointCount := metricDPC(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
+	clones := make([]pdata.Metrics, b.N)
+	for n := 0; n < b.N; n++ {
+		clones[n] = md.Clone()
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		cloneReq := clones[n]
+		split := splitMetrics(128*dataPointCount, cloneReq)
+		if split.MetricCount() != 128 || cloneReq.MetricCount() != 400-128 {
+			b.Fail()
+		}
+	}
 }

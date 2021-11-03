@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // NewNopProcessorCreateSettings returns a new nop settings for Create*Processor functions.
@@ -38,7 +39,7 @@ type nopProcessorConfig struct {
 
 // nopProcessorFactory is factory for nopProcessor.
 type nopProcessorFactory struct {
-	component.BaseProcessorFactory
+	internalinterface.BaseInternal
 }
 
 var nopProcessorFactoryInstance = &nopProcessorFactory{}

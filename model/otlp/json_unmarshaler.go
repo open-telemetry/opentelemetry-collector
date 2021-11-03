@@ -20,9 +20,9 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 
 	"go.opentelemetry.io/collector/model/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
-	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
-	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
+	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
+	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -50,8 +50,7 @@ func newJSONUnmarshaler() *jsonUnmarshaler {
 }
 
 func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
-	ld := &otlpcollectorlog.ExportLogsServiceRequest{}
-
+	ld := &otlplogs.LogsData{}
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), ld); err != nil {
 		return pdata.Logs{}, err
 	}
@@ -59,8 +58,7 @@ func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
 }
 
 func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
-	md := &otlpcollectormetrics.ExportMetricsServiceRequest{}
-
+	md := &otlpmetrics.MetricsData{}
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), md); err != nil {
 		return pdata.Metrics{}, err
 	}
@@ -68,7 +66,7 @@ func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
 }
 
 func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
-	td := &otlpcollectortrace.ExportTraceServiceRequest{}
+	td := &otlptrace.TracesData{}
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), td); err != nil {
 		return pdata.Traces{}, err
 	}

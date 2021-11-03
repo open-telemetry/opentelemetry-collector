@@ -137,27 +137,23 @@ func (rb *receiversBuilder) findPipelinesToAttach(receiverID config.ComponentID)
 	// attached to this receiver according to configuration.
 
 	pipelinesToAttach := make(attachedPipelines)
-	pipelinesToAttach[config.TracesDataType] = make([]*builtPipeline, 0)
-	pipelinesToAttach[config.MetricsDataType] = make([]*builtPipeline, 0)
 
 	// Iterate over all pipelines.
-	for _, pipelineCfg := range rb.config.Service.Pipelines {
+	for pipelineID, pipelineCfg := range rb.config.Service.Pipelines {
 		// Get the first processor of the pipeline.
-		pipelineProcessor := rb.builtPipelines[pipelineCfg]
+		pipelineProcessor := rb.builtPipelines[pipelineID]
 		if pipelineProcessor == nil {
-			return nil, fmt.Errorf("cannot find pipeline processor for pipeline %s",
-				pipelineCfg.Name)
+			return nil, fmt.Errorf("cannot find pipeline %q", pipelineID)
 		}
 
 		// Is this receiver attached to the pipeline?
 		if hasReceiver(pipelineCfg, receiverID) {
-			if _, exists := pipelinesToAttach[pipelineCfg.InputType]; !exists {
-				pipelinesToAttach[pipelineCfg.InputType] = make([]*builtPipeline, 0)
+			if _, exists := pipelinesToAttach[pipelineID.Type()]; !exists {
+				pipelinesToAttach[pipelineID.Type()] = make([]*builtPipeline, 0)
 			}
 
 			// Yes, add it to the list of pipelines of corresponding data type.
-			pipelinesToAttach[pipelineCfg.InputType] =
-				append(pipelinesToAttach[pipelineCfg.InputType], pipelineProcessor)
+			pipelinesToAttach[pipelineID.Type()] = append(pipelinesToAttach[pipelineID.Type()], pipelineProcessor)
 		}
 	}
 

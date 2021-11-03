@@ -23,7 +23,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"go.opentelemetry.io/collector/model/internal"
-	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -52,17 +51,17 @@ func TestSpanCount(t *testing.T) {
 }
 
 func TestSpanCountWithEmpty(t *testing.T) {
-	assert.EqualValues(t, 0, Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
+	assert.EqualValues(t, 0, Traces{orig: &otlptrace.TracesData{
 		ResourceSpans: []*otlptrace.ResourceSpans{{}},
 	}}.SpanCount())
-	assert.EqualValues(t, 0, Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
+	assert.EqualValues(t, 0, Traces{orig: &otlptrace.TracesData{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
 				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{{}},
 			},
 		},
 	}}.SpanCount())
-	assert.EqualValues(t, 1, Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
+	assert.EqualValues(t, 1, Traces{orig: &otlptrace.TracesData{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
 				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
@@ -105,7 +104,7 @@ func TestSpanStatusCode(t *testing.T) {
 }
 
 func TestToFromOtlp(t *testing.T) {
-	otlp := &otlpcollectortrace.ExportTraceServiceRequest{}
+	otlp := &otlptrace.TracesData{}
 	td := TracesFromInternalRep(internal.TracesFromOtlp(otlp))
 	assert.EqualValues(t, NewTraces(), td)
 	assert.EqualValues(t, otlp, internal.TracesToOtlp(td.InternalRep()))

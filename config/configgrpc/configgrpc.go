@@ -30,7 +30,6 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -223,12 +222,7 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOp
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
-		componentID, cperr := config.NewComponentIDFromString(gcs.Auth.AuthenticatorName)
-		if cperr != nil {
-			return nil, cperr
-		}
-
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(host.GetExtensions(), componentID)
+		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticator(host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -325,16 +319,11 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 		}
 	}
 
-	uInterceptors := []grpc.UnaryServerInterceptor{}
-	sInterceptors := []grpc.StreamServerInterceptor{}
+	var uInterceptors []grpc.UnaryServerInterceptor
+	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth != nil {
-		componentID, cperr := config.NewComponentIDFromString(gss.Auth.AuthenticatorName)
-		if cperr != nil {
-			return nil, cperr
-		}
-
-		authenticator, err := configauth.GetServerAuthenticator(host.GetExtensions(), componentID)
+		authenticator, err := gss.Auth.GetServerAuthenticator(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}

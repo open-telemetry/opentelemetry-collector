@@ -164,7 +164,7 @@ func testReceivers(t *testing.T, test testCase) {
 
 		// Validate metrics.
 		if test.hasMetrics {
-			metricsConsumer := exporter.getMetricExporter().(*testcomponents.ExampleExporterConsumer)
+			metricsConsumer := exporter.getMetricsExporter().(*testcomponents.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
 			assert.EqualValues(t, md, metricsConsumer.Metrics[0])
 		}
@@ -230,7 +230,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 			// First check that there are no traces in the exporters yet.
 			for _, exporter := range exporters {
-				consumer := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
+				consumer := exporter.getLogsExporter().(*testcomponents.ExampleExporterConsumer)
 				require.Equal(t, len(consumer.Logs), 0)
 			}
 
@@ -245,7 +245,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 				exporter := allExporters[expID]
 
 				// Validate exported data.
-				consumer := exporter.getLogExporter().(*testcomponents.ExampleExporterConsumer)
+				consumer := exporter.getLogsExporter().(*testcomponents.ExampleExporterConsumer)
 				require.Equal(t, 1, len(consumer.Logs))
 				assert.EqualValues(t, log, consumer.Logs[0])
 			}
