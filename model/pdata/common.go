@@ -202,12 +202,12 @@ func (a AttributeValue) MapVal() AttributeMap {
 // such empty slice has no effect on this AttributeValue.
 //
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SliceVal() AttributeSlice {
+func (a AttributeValue) SliceVal() AttributeValueSlice {
 	arr := a.orig.GetArrayValue()
 	if arr == nil {
-		return NewAttributeSlice()
+		return NewAttributeValueSlice()
 	}
-	return newAttributeSlice(&arr.Values)
+	return newAttributeValueSlice(&arr.Values)
 }
 
 // BytesVal returns the []byte value associated with this AttributeValue.
@@ -262,10 +262,10 @@ func (a AttributeValue) SetMapVal(v AttributeMap) {
 	a.orig.Value = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: *v.orig}}
 }
 
-// SetSliceVal replaces the AttributeSlice value associated with this AttributeValue,
+// SetSliceVal replaces the AttributeValueSlice value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeArray.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetSliceVal(v AttributeSlice) {
+func (a AttributeValue) SetSliceVal(v AttributeValueSlice) {
 	a.orig.Value = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: *v.orig}}
 }
 
@@ -295,7 +295,7 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 			return
 		}
 		// Deep copy to dest.
-		newAttributeSlice(&v.ArrayValue.Values).CopyTo(newAttributeSlice(&av.ArrayValue.Values))
+		newAttributeValueSlice(&v.ArrayValue.Values).CopyTo(newAttributeValueSlice(&av.ArrayValue.Values))
 	default:
 		// Primitive immutable type, no need for deep copy.
 		dest.Value = a.orig.Value
@@ -840,8 +840,8 @@ func (am AttributeMap) AsRaw() map[string]interface{} {
 	return rawMap
 }
 
-// asRaw creates a slice out of a AttributeSlice.
-func (es AttributeSlice) asRaw() []interface{} {
+// asRaw creates a slice out of a AttributeValueSlice.
+func (es AttributeValueSlice) asRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		v := es.At(i)

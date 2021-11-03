@@ -884,7 +884,7 @@ func generateTestBytesAttributeMap() AttributeMap {
 func TestAttributeValueArray(t *testing.T) {
 	a1 := NewAttributeValueArray()
 	assert.EqualValues(t, AttributeValueTypeArray, a1.Type())
-	assert.EqualValues(t, NewAttributeSlice(), a1.SliceVal())
+	assert.EqualValues(t, NewAttributeValueSlice(), a1.SliceVal())
 	assert.EqualValues(t, 0, a1.SliceVal().Len())
 
 	a1.SliceVal().AppendEmpty().SetDoubleVal(123)
@@ -915,7 +915,7 @@ func TestAttributeValueArray(t *testing.T) {
 
 	// Test nil values case for SliceVal() func.
 	a1 = AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}}
-	assert.EqualValues(t, NewAttributeSlice(), a1.SliceVal())
+	assert.EqualValues(t, NewAttributeValueSlice(), a1.SliceVal())
 }
 
 func TestAttributeSliceWithNilValues(t *testing.T) {
@@ -923,7 +923,7 @@ func TestAttributeSliceWithNilValues(t *testing.T) {
 		{},
 		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 	}
-	sm := AttributeSlice{
+	sm := AttributeValueSlice{
 		orig: &origWithNil,
 	}
 

@@ -77,34 +77,34 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 	dest.SetVersion(ms.Version())
 }
 
-// AttributeSlice logically represents a slice of AttributeValue.
+// AttributeValueSlice logically represents a slice of AttributeValue.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewAttributeSlice function to create new instances.
+// Must use NewAttributeValueSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type AttributeSlice struct {
+type AttributeValueSlice struct {
 	// orig points to the slice otlpcommon.AnyValue field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]otlpcommon.AnyValue
 }
 
-func newAttributeSlice(orig *[]otlpcommon.AnyValue) AttributeSlice {
-	return AttributeSlice{orig}
+func newAttributeValueSlice(orig *[]otlpcommon.AnyValue) AttributeValueSlice {
+	return AttributeValueSlice{orig}
 }
 
-// NewAttributeSlice creates a AttributeSlice with 0 elements.
+// NewAttributeValueSlice creates a AttributeValueSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewAttributeSlice() AttributeSlice {
+func NewAttributeValueSlice() AttributeValueSlice {
 	orig := []otlpcommon.AnyValue(nil)
-	return AttributeSlice{&orig}
+	return AttributeValueSlice{&orig}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewAttributeSlice()".
-func (es AttributeSlice) Len() int {
+// Returns "0" for a newly instance created with "NewAttributeValueSlice()".
+func (es AttributeValueSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -115,12 +115,12 @@ func (es AttributeSlice) Len() int {
 //       e := es.At(i)
 //       ... // Do something with the element
 //   }
-func (es AttributeSlice) At(ix int) AttributeValue {
+func (es AttributeValueSlice) At(ix int) AttributeValue {
 	return newAttributeValue(&(*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice to the dest.
-func (es AttributeSlice) CopyTo(dest AttributeSlice) {
+func (es AttributeValueSlice) CopyTo(dest AttributeValueSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
@@ -138,14 +138,14 @@ func (es AttributeSlice) CopyTo(dest AttributeSlice) {
 // 1. If the newCap <= cap then no change in capacity.
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
-// Here is how a new AttributeSlice can be initialized:
-//   es := NewAttributeSlice()
+// Here is how a new AttributeValueSlice can be initialized:
+//   es := NewAttributeValueSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
 //       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es AttributeSlice) EnsureCapacity(newCap int) {
+func (es AttributeValueSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -158,14 +158,14 @@ func (es AttributeSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty AttributeValue.
 // It returns the newly added AttributeValue.
-func (es AttributeSlice) AppendEmpty() AttributeValue {
+func (es AttributeValueSlice) AppendEmpty() AttributeValue {
 	*es.orig = append(*es.orig, otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es AttributeSlice) MoveAndAppendTo(dest AttributeSlice) {
+func (es AttributeValueSlice) MoveAndAppendTo(dest AttributeValueSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -177,7 +177,7 @@ func (es AttributeSlice) MoveAndAppendTo(dest AttributeSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es AttributeSlice) RemoveIf(f func(AttributeValue) bool) {
+func (es AttributeValueSlice) RemoveIf(f func(AttributeValue) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {

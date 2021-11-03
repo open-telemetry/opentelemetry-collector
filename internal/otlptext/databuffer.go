@@ -211,7 +211,7 @@ func attributeValueToString(av pdata.AttributeValue) string {
 	case pdata.AttributeValueTypeInt:
 		return strconv.FormatInt(av.IntVal(), 10)
 	case pdata.AttributeValueTypeArray:
-		return attributeValueArrayToString(av.SliceVal())
+		return attributeValueSliceToString(av.SliceVal())
 	case pdata.AttributeValueTypeMap:
 		return attributeMapToString(av.MapVal())
 	default:
@@ -219,7 +219,7 @@ func attributeValueToString(av pdata.AttributeValue) string {
 	}
 }
 
-func attributeValueArrayToString(av pdata.AttributeSlice) string {
+func attributeValueSliceToString(av pdata.AttributeValueSlice) string {
 	var b strings.Builder
 	b.WriteByte('[')
 	for i := 0; i < av.Len(); i++ {
