@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	{{- if .Distribution.IncludeCore}}
-	"go.opentelemetry.io/collector/internal/defaultcomponents"
+	"go.opentelemetry.io/collector/service/defaultcomponents"
 	{{- end}}
 
 	// extensions
