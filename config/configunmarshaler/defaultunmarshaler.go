@@ -84,13 +84,11 @@ func NewDefault() ConfigUnmarshaler {
 }
 
 // Unmarshal the Config from a config.Map.
-// After the config is unmarshaled, `Validate()` must be called to validate.
+// After the config is unmarshalled, `Validate()` must be called to validate.
 func (*defaultUnmarshaler) Unmarshal(v *config.Map, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 
-	// Unmarshal the config.
-
-	// Struct to validate top level sections.
+	// Unmarshal top level sections and validate.
 	rawCfg := configSettings{}
 	if err := v.UnmarshalExact(&rawCfg); err != nil {
 		return nil, &configError{
@@ -99,7 +97,6 @@ func (*defaultUnmarshaler) Unmarshal(v *config.Map, factories component.Factorie
 		}
 	}
 
-	// Start with the service extensions.
 	var err error
 	if cfg.Extensions, err = unmarshalExtensions(rawCfg.Extensions, factories.Extensions); err != nil {
 		return nil, &configError{
@@ -107,8 +104,6 @@ func (*defaultUnmarshaler) Unmarshal(v *config.Map, factories component.Factorie
 			code:  errUnmarshalExtension,
 		}
 	}
-
-	// Unmarshal data components (receivers, exporters, and processors).
 
 	if cfg.Receivers, err = unmarshalReceivers(rawCfg.Receivers, factories.Receivers); err != nil {
 		return nil, &configError{
@@ -131,7 +126,6 @@ func (*defaultUnmarshaler) Unmarshal(v *config.Map, factories component.Factorie
 		}
 	}
 
-	// Unmarshal the service and its data pipelines.
 	if cfg.Service, err = unmarshalService(rawCfg.Service); err != nil {
 		return nil, &configError{
 			error: err,
@@ -142,22 +136,12 @@ func (*defaultUnmarshaler) Unmarshal(v *config.Map, factories component.Factorie
 	return &cfg, nil
 }
 
-func errorUnknownType(component string, id config.ComponentID) error {
-	return fmt.Errorf("unknown %s type %q for %v", component, id.Type(), id)
-}
-
-func errorUnmarshalError(component string, id config.ComponentID, err error) error {
-	return fmt.Errorf("error reading %s configuration for %v: %w", component, id, err)
-}
-
 func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ExtensionFactory) (map[config.ComponentID]config.Extension, error) {
 	// Prepare resulting map.
 	extensions := make(map[config.ComponentID]config.Extension)
 
 	// Iterate over extensions and create a config for each.
 	for id, value := range exts {
-		componentConfig := config.NewMapFromStringMap(value)
-
 		// Find extension factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
@@ -171,7 +155,7 @@ func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, fac
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := unmarshal(componentConfig, extensionCfg); err != nil {
+		if err := unmarshal(config.NewMapFromStringMap(value), extensionCfg); err != nil {
 			return nil, errorUnmarshalError(extensionsKeyName, id, err)
 		}
 
@@ -195,12 +179,12 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 	}
 
 	if err := unmarshal(config.NewMapFromStringMap(srvRaw), &srv); err != nil {
-		return srv, fmt.Errorf("error reading service configuration for: %w", err)
+		return srv, fmt.Errorf("error reading service configuration: %w", err)
 	}
 
 	for id := range srv.Pipelines {
 		if id.Type() != config.TracesDataType && id.Type() != config.MetricsDataType && id.Type() != config.LogsDataType {
-			return srv, fmt.Errorf("unknown %s datatype %q for %v", pipelinesKeyName, id.Type(), id)
+			return srv, fmt.Errorf("unknown %q datatype %q for %v", pipelinesKeyName, id.Type(), id)
 		}
 	}
 	return srv, nil
@@ -228,16 +212,13 @@ func unmarshalReceivers(recvs map[config.ComponentID]map[string]interface{}, fac
 
 	// Iterate over input map and create a config for each.
 	for id, value := range recvs {
-		componentConfig := config.NewMapFromStringMap(value)
-
 		// Find receiver factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
 			return nil, errorUnknownType(receiversKeyName, id)
 		}
 
-		receiverCfg, err := LoadReceiver(componentConfig, id, factory)
-
+		receiverCfg, err := LoadReceiver(config.NewMapFromStringMap(value), id, factory)
 		if err != nil {
 			// LoadReceiver already wraps the error.
 			return nil, err
@@ -255,8 +236,6 @@ func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, fact
 
 	// Iterate over Exporters and create a config for each.
 	for id, value := range exps {
-		componentConfig := config.NewMapFromStringMap(value)
-
 		// Find exporter factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
@@ -270,7 +249,7 @@ func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, fact
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := unmarshal(componentConfig, exporterCfg); err != nil {
+		if err := unmarshal(config.NewMapFromStringMap(value), exporterCfg); err != nil {
 			return nil, errorUnmarshalError(exportersKeyName, id, err)
 		}
 
@@ -286,8 +265,6 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 
 	// Iterate over processors and create a config for each.
 	for id, value := range procs {
-		componentConfig := config.NewMapFromStringMap(value)
-
 		// Find processor factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
@@ -301,7 +278,7 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := unmarshal(componentConfig, processorCfg); err != nil {
+		if err := unmarshal(config.NewMapFromStringMap(value), processorCfg); err != nil {
 			return nil, errorUnmarshalError(processorsKeyName, id, err)
 		}
 
@@ -375,4 +352,12 @@ func unmarshal(componentSection *config.Map, intoCfg interface{}) error {
 	}
 
 	return componentSection.UnmarshalExact(intoCfg)
+}
+
+func errorUnknownType(component string, id config.ComponentID) error {
+	return fmt.Errorf("unknown %s type %q for %q", component, id.Type(), id)
+}
+
+func errorUnmarshalError(component string, id config.ComponentID, err error) error {
+	return fmt.Errorf("error reading %s configuration for %q: %w", component, id, err)
 }
