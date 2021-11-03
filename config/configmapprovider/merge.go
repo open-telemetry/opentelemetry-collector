@@ -15,45 +15,16 @@
 package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
 
 import (
-	"context"
-
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/config"
 )
 
-// TODO: Add support to "merge" watchable interface.
-
-type mergeMapProvider struct {
-	providers []Provider
-}
-
-// NewMerge returns a Provider, that merges the result from multiple Provider.
+// NewMerge returns a Provider, that merges the result from multiple Provider(s).
 //
 // The ConfigMaps are merged in the given order, by merging all of them in order into an initial empty map.
 func NewMerge(ps ...Provider) Provider {
-	return &mergeMapProvider{providers: ps}
+	return NewComposite(mergeConfig, ps...)
 }
 
-func (mp *mergeMapProvider) Retrieve(ctx context.Context) (Retrieved, error) {
-	retCfgMap := config.NewMap()
-	for _, p := range mp.providers {
-		retr, err := p.Retrieve(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if err = retCfgMap.Merge(retr.Get()); err != nil {
-			return nil, err
-		}
-	}
-	return &simpleRetrieved{confMap: retCfgMap}, nil
-}
-
-func (mp *mergeMapProvider) Close(ctx context.Context) error {
-	var errs error
-	for _, p := range mp.providers {
-		errs = multierr.Append(errs, p.Close(ctx))
-	}
-
-	return errs
+func mergeConfig(orig *config.Map, add *config.Map) error {
+	return orig.Merge(add)
 }

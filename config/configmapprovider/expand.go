@@ -15,36 +15,22 @@
 package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
 
 import (
-	"context"
 	"os"
+
+	"go.opentelemetry.io/collector/config"
 )
 
-type expandMapProvider struct {
-	base Provider
-}
-
 // NewExpand returns a Provider, that expands all environment variables for a
-// config.Map provided by the given Provider.
+// config.Map provided by the given config.MapProvider.
 func NewExpand(base Provider) Provider {
-	return &expandMapProvider{
-		base: base,
-	}
+	return NewComposite(expandConfigValues, base)
 }
 
-func (emp *expandMapProvider) Retrieve(ctx context.Context) (Retrieved, error) {
-	retr, err := emp.base.Retrieve(ctx)
-	if err != nil {
-		return nil, err
+func expandConfigValues(orig *config.Map, add *config.Map) error {
+	for _, k := range add.AllKeys() {
+		orig.Set(k, expandStringValues(add.Get(k)))
 	}
-	cfgMap := retr.Get()
-	for _, k := range cfgMap.AllKeys() {
-		cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
-	}
-	return &simpleRetrieved{confMap: cfgMap}, nil
-}
-
-func (emp *expandMapProvider) Close(ctx context.Context) error {
-	return emp.base.Close(ctx)
+	return nil
 }
 
 func expandStringValues(value interface{}) interface{} {
