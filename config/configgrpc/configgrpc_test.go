@@ -17,6 +17,7 @@ package configgrpc
 import (
 	"context"
 	"io/ioutil"
+	"net"
 	"os"
 	"path"
 	"runtime"
@@ -26,7 +27,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -538,6 +541,59 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	assert.NotNil(t, resp)
 	cancelFunc()
 	s.Stop()
+}
+
+func TestContextWithClient(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		input    context.Context
+		expected *client.Client
+	}{
+		{
+			desc:     "no peer information, empty client",
+			input:    context.Background(),
+			expected: &client.Client{},
+		},
+		{
+			desc: "existing client with IP, no peer information",
+			input: client.NewContext(context.Background(), &client.Client{
+				IP: "1.2.3.4",
+			}),
+			expected: &client.Client{
+				IP: "1.2.3.4",
+			},
+		},
+		{
+			desc: "empty client, with peer information",
+			input: peer.NewContext(context.Background(), &peer.Peer{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			}),
+			expected: &client.Client{
+				IP: "1.2.3.4",
+			},
+		},
+		{
+			desc: "existing client, existing IP gets overridden with peer information",
+			input: peer.NewContext(client.NewContext(context.Background(), &client.Client{
+				IP: "1.2.3.4",
+			}), &peer.Peer{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 5),
+				},
+			}),
+			expected: &client.Client{
+				IP: "1.2.3.5",
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			cl := client.FromContext(contextWithClient(tC.input))
+			assert.Equal(t, tC.expected, cl)
+		})
+	}
 }
 
 type grpcTraceServer struct{}

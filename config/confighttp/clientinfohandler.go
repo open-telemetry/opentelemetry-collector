@@ -12,25 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "go.opentelemetry.io/collector/receiver/otlpreceiver/internal"
+package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
 	"context"
-
-	"google.golang.org/grpc/peer"
+	"net/http"
 
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/config/internal"
 )
 
-// ContextWithClient returns a context with either a new or an existing client.Client,
-// enhanced with the client IP address extracted from the provided context.
-func ContextWithClient(ctx context.Context) context.Context {
-	cl := client.FromContext(ctx)
-	if p, ok := peer.FromContext(ctx); ok {
-		ip := ParseIP(p.Addr.String())
-		if ip != "" {
-			cl.IP = ip
-		}
+var _ http.Handler = (*clientInfoHandler)(nil)
+
+type clientInfoHandler struct {
+	next http.Handler
+}
+
+func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	req = req.WithContext(contextWithClient(req))
+	h.next.ServeHTTP(w, req)
+}
+
+func contextWithClient(req *http.Request) context.Context {
+	cl := client.FromContext(req.Context())
+
+	ip := internal.ParseIP(req.RemoteAddr)
+	if ip != "" {
+		cl.IP = ip
 	}
-	return client.NewContext(ctx, cl)
+
+	ctx := client.NewContext(req.Context(), cl)
+	return ctx
 }

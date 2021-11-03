@@ -221,6 +221,10 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 		}),
 	)
 
+	handler = &clientInfoHandler{
+		next: handler,
+	}
+
 	return &http.Server{
 		Handler: handler,
 	}

@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal"
 )
 
 const (
@@ -56,7 +55,6 @@ func (r *Receiver) Export(ctx context.Context, req otlpgrpc.MetricsRequest) (otl
 		return otlpgrpc.NewMetricsResponse(), nil
 	}
 
-	ctx = internal.ContextWithClient(ctx)
 	ctx = r.obsrecv.StartMetricsOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
