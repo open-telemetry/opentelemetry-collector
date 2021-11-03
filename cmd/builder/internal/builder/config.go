@@ -66,7 +66,6 @@ type Module struct {
 	GoMod  string `mapstructure:"gomod"`  // a gomod-compatible spec for the module
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
 	Core   *bool  `mapstructure:"core"`   // whether this module comes from core. For this property isn't referred from anywhere, it might be removed. please see #15.
-
 }
 
 // DefaultConfig creates a new config, with default values

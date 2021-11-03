@@ -108,7 +108,7 @@ func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableD
 		}
 		row := zpages.SummaryPipelinesTableRowData{
 			FullName:    c.String(),
-			InputType:   string(p.Config.InputType),
+			InputType:   string(c.Type()),
 			MutatesData: p.MutatesData,
 			Receivers:   recvs,
 			Processors:  procs,

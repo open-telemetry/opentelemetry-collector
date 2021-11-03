@@ -34,7 +34,7 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 		}
 
 		// If it fully fits
-		srcRsDataPointCount := resourceMetricsDataPointCount(srcRs)
+		srcRsDataPointCount := resourceMetricsDPC(srcRs)
 		if (totalCopiedDataPoints + srcRsDataPointCount) <= size {
 			totalCopiedDataPoints += srcRsDataPointCount
 			srcRs.MoveTo(dest.ResourceMetrics().AppendEmpty())
@@ -43,7 +43,6 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 
 		destRs := dest.ResourceMetrics().AppendEmpty()
 		srcRs.Resource().CopyTo(destRs.Resource())
-
 		srcRs.InstrumentationLibraryMetrics().RemoveIf(func(srcIlm pdata.InstrumentationLibraryMetrics) bool {
 			// If we are done skip everything else.
 			if totalCopiedDataPoints == size {
@@ -51,21 +50,29 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 			}
 
 			// If possible to move all metrics do that.
-			srcDataPointCount := metricSliceDataPointCount(srcIlm.Metrics())
-			if size-totalCopiedDataPoints >= srcDataPointCount {
-				totalCopiedDataPoints += srcDataPointCount
+			srcIlmDataPointCount := instrumentationLibraryMetricsDPC(srcIlm)
+			if srcIlmDataPointCount+totalCopiedDataPoints <= size {
+				totalCopiedDataPoints += srcIlmDataPointCount
 				srcIlm.MoveTo(destRs.InstrumentationLibraryMetrics().AppendEmpty())
 				return true
 			}
 
 			destIlm := destRs.InstrumentationLibraryMetrics().AppendEmpty()
 			srcIlm.InstrumentationLibrary().CopyTo(destIlm.InstrumentationLibrary())
-
 			srcIlm.Metrics().RemoveIf(func(srcMetric pdata.Metric) bool {
 				// If we are done skip everything else.
 				if totalCopiedDataPoints == size {
 					return false
 				}
+
+				// If possible to move all points do that.
+				srcMetricDataPointCount := metricDPC(srcMetric)
+				if srcMetricDataPointCount+totalCopiedDataPoints <= size {
+					totalCopiedDataPoints += srcMetricDataPointCount
+					srcMetric.MoveTo(destIlm.Metrics().AppendEmpty())
+					return true
+				}
+
 				// If the metric has more data points than free slots we should split it.
 				copiedDataPoints, remove := splitMetric(srcMetric, destIlm.Metrics().AppendEmpty(), size-totalCopiedDataPoints)
 				totalCopiedDataPoints += copiedDataPoints
@@ -79,27 +86,28 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 	return dest
 }
 
-// resourceMetricsDataPointCount calculates the total number of  data points.
-func resourceMetricsDataPointCount(rs pdata.ResourceMetrics) int {
+// resourceMetricsDPC calculates the total number of data points in the pdata.ResourceMetrics.
+func resourceMetricsDPC(rs pdata.ResourceMetrics) int {
 	dataPointCount := 0
 	ilms := rs.InstrumentationLibraryMetrics()
 	for k := 0; k < ilms.Len(); k++ {
-		dataPointCount += metricSliceDataPointCount(ilms.At(k).Metrics())
+		dataPointCount += instrumentationLibraryMetricsDPC(ilms.At(k))
 	}
 	return dataPointCount
 }
 
-// metricSliceDataPointCount calculates the total number of  data points.
-func metricSliceDataPointCount(ms pdata.MetricSlice) int {
+// instrumentationLibraryMetricsDPC calculates the total number of data points in the pdata.InstrumentationLibraryMetrics.
+func instrumentationLibraryMetricsDPC(ilm pdata.InstrumentationLibraryMetrics) int {
 	dataPointCount := 0
+	ms := ilm.Metrics()
 	for k := 0; k < ms.Len(); k++ {
-		dataPointCount += metricDataPointCount(ms.At(k))
+		dataPointCount += metricDPC(ms.At(k))
 	}
 	return dataPointCount
 }
 
-// metricDataPointCount calculates the total number of  data points.
-func metricDataPointCount(ms pdata.Metric) int {
+// metricDPC calculates the total number of data points in the pdata.Metric.
+func metricDPC(ms pdata.Metric) int {
 	switch ms.DataType() {
 	case pdata.MetricDataTypeGauge:
 		return ms.Gauge().DataPoints().Len()
@@ -116,12 +124,6 @@ func metricDataPointCount(ms pdata.Metric) int {
 // splitMetric removes metric points from the input data and moves data of the specified size to destination.
 // Returns size of moved data and boolean describing, whether the metric should be removed from original slice.
 func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
-	mdDPC := metricDataPointCount(ms)
-	if mdDPC <= size {
-		ms.MoveTo(dest)
-		return mdDPC, true
-	}
-
 	dest.SetDataType(ms.DataType())
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())

@@ -20,5 +20,6 @@ const (
 	ZapKindProcessor   = "processor"
 	ZapKindLogExporter = "exporter"
 	ZapKindExtension   = "extension"
+	ZapKindPipeline    = "pipeline"
 	ZapNameKey         = "name"
 )

@@ -23,9 +23,6 @@ type Receiver interface {
 	privateConfigReceiver()
 }
 
-// Receivers is a map of names to Receivers.
-type Receivers map[ComponentID]Receiver
-
 // ReceiverSettings defines common settings for a component.Receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 //
