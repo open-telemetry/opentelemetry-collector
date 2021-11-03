@@ -233,18 +233,18 @@ func TestAttributeValueEqual(t *testing.T) {
 	assert.True(t, av1.Equal(av2))
 
 	av1 = NewAttributeValueArray()
-	av1.ArrayVal().AppendEmpty().SetIntVal(123)
+	av1.SliceVal().AppendEmpty().SetIntVal(123)
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av2 = NewAttributeValueArray()
-	av2.ArrayVal().AppendEmpty().SetDoubleVal(123)
+	av2.SliceVal().AppendEmpty().SetDoubleVal(123)
 	assert.False(t, av1.Equal(av2))
 
-	NewAttributeValueInt(123).CopyTo(av2.ArrayVal().At(0))
+	NewAttributeValueInt(123).CopyTo(av2.SliceVal().At(0))
 	assert.True(t, av1.Equal(av2))
 
-	av1.CopyTo(av2.ArrayVal().AppendEmpty())
+	av1.CopyTo(av2.SliceVal().AppendEmpty())
 	assert.False(t, av1.Equal(av2))
 	assert.True(t, av1.Equal(av1))
 
@@ -628,7 +628,7 @@ func TestAttributeValue_CopyTo(t *testing.T) {
 	AttributeValue{orig: orig}.CopyTo(dest)
 	assert.Nil(t, dest.orig.Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
 
-	// Test nil ArrayValue case for ArrayVal() func.
+	// Test nil ArrayValue case for SliceVal() func.
 	dest = NewAttributeValueEmpty()
 	orig = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
 	AttributeValue{orig: orig}.CopyTo(dest)
@@ -884,46 +884,46 @@ func generateTestBytesAttributeMap() AttributeMap {
 func TestAttributeValueArray(t *testing.T) {
 	a1 := NewAttributeValueArray()
 	assert.EqualValues(t, AttributeValueTypeArray, a1.Type())
-	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
-	assert.EqualValues(t, 0, a1.ArrayVal().Len())
+	assert.EqualValues(t, NewAttributeValueSlice(), a1.SliceVal())
+	assert.EqualValues(t, 0, a1.SliceVal().Len())
 
-	a1.ArrayVal().AppendEmpty().SetDoubleVal(123)
-	assert.EqualValues(t, 1, a1.ArrayVal().Len())
-	assert.EqualValues(t, NewAttributeValueDouble(123), a1.ArrayVal().At(0))
+	a1.SliceVal().AppendEmpty().SetDoubleVal(123)
+	assert.EqualValues(t, 1, a1.SliceVal().Len())
+	assert.EqualValues(t, NewAttributeValueDouble(123), a1.SliceVal().At(0))
 	// Create a second array.
 	a2 := NewAttributeValueArray()
-	assert.EqualValues(t, 0, a2.ArrayVal().Len())
+	assert.EqualValues(t, 0, a2.SliceVal().Len())
 
-	a2.ArrayVal().AppendEmpty().SetStringVal("somestr")
-	assert.EqualValues(t, 1, a2.ArrayVal().Len())
-	assert.EqualValues(t, NewAttributeValueString("somestr"), a2.ArrayVal().At(0))
+	a2.SliceVal().AppendEmpty().SetStringVal("somestr")
+	assert.EqualValues(t, 1, a2.SliceVal().Len())
+	assert.EqualValues(t, NewAttributeValueString("somestr"), a2.SliceVal().At(0))
 
 	// Insert the second array as a child.
-	a1.ArrayVal().AppendEmpty().SetArrayVal(a2.ArrayVal())
-	assert.EqualValues(t, 2, a1.ArrayVal().Len())
-	assert.EqualValues(t, NewAttributeValueDouble(123), a1.ArrayVal().At(0))
-	assert.EqualValues(t, a2, a1.ArrayVal().At(1))
+	a1.SliceVal().AppendEmpty().SetSliceVal(a2.SliceVal())
+	assert.EqualValues(t, 2, a1.SliceVal().Len())
+	assert.EqualValues(t, NewAttributeValueDouble(123), a1.SliceVal().At(0))
+	assert.EqualValues(t, a2, a1.SliceVal().At(1))
 
 	// Check that the array was correctly inserted.
-	childArray := a1.ArrayVal().At(1)
+	childArray := a1.SliceVal().At(1)
 	assert.EqualValues(t, AttributeValueTypeArray, childArray.Type())
-	assert.EqualValues(t, 1, childArray.ArrayVal().Len())
+	assert.EqualValues(t, 1, childArray.SliceVal().Len())
 
-	v := childArray.ArrayVal().At(0)
+	v := childArray.SliceVal().At(0)
 	assert.EqualValues(t, AttributeValueTypeString, v.Type())
 	assert.EqualValues(t, "somestr", v.StringVal())
 
-	// Test nil values case for ArrayVal() func.
+	// Test nil values case for SliceVal() func.
 	a1 = AttributeValue{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}}
-	assert.EqualValues(t, NewAnyValueArray(), a1.ArrayVal())
+	assert.EqualValues(t, NewAttributeValueSlice(), a1.SliceVal())
 }
 
-func TestAnyValueArrayWithNilValues(t *testing.T) {
+func TestAttributeSliceWithNilValues(t *testing.T) {
 	origWithNil := []otlpcommon.AnyValue{
 		{},
 		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 	}
-	sm := AnyValueArray{
+	sm := AttributeValueSlice{
 		orig: &origWithNil,
 	}
 
@@ -1008,11 +1008,11 @@ func TestAsString(t *testing.T) {
 
 func TestAsRaw(t *testing.T) {
 	arr := NewAttributeValueArray()
-	arr.ArrayVal().AppendEmpty().SetBoolVal(false)
-	arr.ArrayVal().AppendEmpty().SetBytesVal([]byte("test"))
-	arr.ArrayVal().AppendEmpty().SetDoubleVal(12.9)
-	arr.ArrayVal().AppendEmpty().SetIntVal(91)
-	arr.ArrayVal().AppendEmpty().SetStringVal("another string")
+	arr.SliceVal().AppendEmpty().SetBoolVal(false)
+	arr.SliceVal().AppendEmpty().SetBytesVal([]byte("test"))
+	arr.SliceVal().AppendEmpty().SetDoubleVal(12.9)
+	arr.SliceVal().AppendEmpty().SetIntVal(91)
+	arr.SliceVal().AppendEmpty().SetStringVal("another string")
 
 	tests := []struct {
 		name     string
@@ -1068,7 +1068,7 @@ func simpleAttributeValueMap() AttributeValue {
 
 func simpleAttributeValueArray() AttributeValue {
 	ret := NewAttributeValueArray()
-	attrArr := ret.ArrayVal()
+	attrArr := ret.SliceVal()
 	attrArr.AppendEmpty().SetStringVal("strVal")
 	attrArr.AppendEmpty().SetIntVal(7)
 	attrArr.AppendEmpty().SetDoubleVal(18.6)
@@ -1086,7 +1086,7 @@ func constructTestAttributeSubmap() AttributeValue {
 
 func constructTestAttributeSubarray() AttributeValue {
 	value := NewAttributeValueArray()
-	value.ArrayVal().AppendEmpty().SetStringVal("strOne")
-	value.ArrayVal().AppendEmpty().SetStringVal("strTwo")
+	value.SliceVal().AppendEmpty().SetStringVal("strOne")
+	value.SliceVal().AppendEmpty().SetStringVal("strTwo")
 	return value
 }
