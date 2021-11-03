@@ -24,8 +24,10 @@ func TestSpanID(t *testing.T) {
 	sid := InvalidSpanID()
 	assert.EqualValues(t, [8]byte{}, sid.Bytes())
 	assert.True(t, sid.IsEmpty())
+	assert.Equal(t, "", sid.HexString())
 
 	sid = NewSpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
 	assert.EqualValues(t, [8]byte{1, 2, 3, 4, 4, 3, 2, 1}, sid.Bytes())
 	assert.False(t, sid.IsEmpty())
+	assert.Equal(t, "0102030404030201", sid.HexString())
 }
