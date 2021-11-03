@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configgrpc
+package configgrpc // import "go.opentelemetry.io/collector/config/configgrpc"
 
 import (
 	"crypto/tls"
@@ -33,7 +33,6 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -81,7 +80,7 @@ type GRPCClientSettings struct {
 	Compression string `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
@@ -189,8 +188,6 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
 func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
-	var tlsCfg *tls.Config
-	var err error
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
 			opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))
@@ -198,19 +195,17 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOp
 			return nil, fmt.Errorf("unsupported compression type %q", gcs.Compression)
 		}
 	}
-	tlsDialOption := grpc.WithInsecure()
-	if gcs.TLSSetting != nil {
-		tlsCfg, err = gcs.TLSSetting.LoadTLSConfig()
-		if err != nil {
-			return nil, err
-		}
+
+	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, err
 	}
+	tlsDialOption := grpc.WithInsecure()
 	if tlsCfg != nil {
 		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))
 	} else if gcs.isSchemeHTTPS() {
 		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
 	}
-
 	opts = append(opts, tlsDialOption)
 
 	if gcs.ReadBufferSize > 0 {
@@ -235,19 +230,14 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOp
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
-		componentID, cperr := config.NewComponentIDFromString(gcs.Auth.AuthenticatorName)
-		if cperr != nil {
-			return nil, cperr
-		}
-
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(host.GetExtensions(), componentID)
+		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticator(host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}
 
 		perRPCCredentials, perr := grpcAuthenticator.PerRPCCredentials()
 		if perr != nil {
-			return nil, perr
+			return nil, err
 		}
 		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}
@@ -337,16 +327,11 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 		}
 	}
 
-	uInterceptors := []grpc.UnaryServerInterceptor{}
-	sInterceptors := []grpc.StreamServerInterceptor{}
+	var uInterceptors []grpc.UnaryServerInterceptor
+	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth != nil {
-		componentID, cperr := config.NewComponentIDFromString(gss.Auth.AuthenticatorName)
-		if cperr != nil {
-			return nil, cperr
-		}
-
-		authenticator, err := configauth.GetServerAuthenticator(host.GetExtensions(), componentID)
+		authenticator, err := gss.Auth.GetServerAuthenticator(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}

@@ -16,12 +16,10 @@ package exporterhelper
 
 import (
 	"context"
-	"reflect"
-	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats/view"
+	"go.opencensus.io/metric"
 	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/config"
@@ -31,72 +29,48 @@ import (
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
-	set, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer set.Shutdown(context.Background())
+	defer tt.Shutdown(context.Background())
 
 	exporter := config.NewComponentID("fakeExporter")
 
+	insts := newInstruments(metric.NewRegistry())
 	obsrep := newObsExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
-		ExporterCreateSettings: set.ToExporterCreateSettings(),
-	})
+		ExporterCreateSettings: tt.ToExporterCreateSettings(),
+	}, insts)
 
-	logRecords := 7
+	logRecords := int64(7)
 	obsrep.recordLogsEnqueueFailure(context.Background(), logRecords)
-	checkExporterEnqueueFailedLogsStats(t, exporter, int64(logRecords))
+	checkExporterEnqueueFailedLogsStats(t, insts, exporter, logRecords)
 
-	spans := 12
+	spans := int64(12)
 	obsrep.recordTracesEnqueueFailure(context.Background(), spans)
-	checkExporterEnqueueFailedTracesStats(t, exporter, int64(spans))
+	checkExporterEnqueueFailedTracesStats(t, insts, exporter, spans)
 
-	metricPoints := 21
+	metricPoints := int64(21)
 	obsrep.recordMetricsEnqueueFailure(context.Background(), metricPoints)
-	checkExporterEnqueueFailedMetricsStats(t, exporter, int64(metricPoints))
+	checkExporterEnqueueFailedMetricsStats(t, insts, exporter, metricPoints)
 }
 
 // checkExporterEnqueueFailedTracesStats checks that reported number of spans failed to enqueue match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func checkExporterEnqueueFailedTracesStats(t *testing.T, exporter config.ComponentID, spans int64) {
-	exporterTags := tagsForExporterView(exporter)
-	checkValueForView(t, exporterTags, spans, "exporter/enqueue_failed_spans")
+func checkExporterEnqueueFailedTracesStats(t *testing.T, insts *instruments, exporter config.ComponentID, spans int64) {
+	checkValueForProducer(t, insts.registry, tagsForExporterView(exporter), spans, "exporter/enqueue_failed_spans")
 }
 
 // checkExporterEnqueueFailedMetricsStats checks that reported number of metric points failed to enqueue match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func checkExporterEnqueueFailedMetricsStats(t *testing.T, exporter config.ComponentID, metricPoints int64) {
-	exporterTags := tagsForExporterView(exporter)
-	checkValueForView(t, exporterTags, metricPoints, "exporter/enqueue_failed_metric_points")
+func checkExporterEnqueueFailedMetricsStats(t *testing.T, insts *instruments, exporter config.ComponentID, metricPoints int64) {
+	checkValueForProducer(t, insts.registry, tagsForExporterView(exporter), metricPoints, "exporter/enqueue_failed_metric_points")
 }
 
 // checkExporterEnqueueFailedLogsStats checks that reported number of log records failed to enqueue match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func checkExporterEnqueueFailedLogsStats(t *testing.T, exporter config.ComponentID, logRecords int64) {
-	exporterTags := tagsForExporterView(exporter)
-	checkValueForView(t, exporterTags, logRecords, "exporter/enqueue_failed_log_records")
-}
-
-// checkValueForView checks that for the current exported value in the view with the given name
-// for {LegacyTagKeyReceiver: receiverName} is equal to "value".
-func checkValueForView(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
-	// Make sure the tags slice is sorted by tag keys.
-	sortTags(wantTags)
-
-	rows, err := view.RetrieveData(vName)
-	require.NoError(t, err)
-
-	for _, row := range rows {
-		// Make sure the tags slice is sorted by tag keys.
-		sortTags(row.Tags)
-		if reflect.DeepEqual(wantTags, row.Tags) {
-			sum := row.Data.(*view.SumData)
-			require.Equal(t, float64(value), sum.Value)
-			return
-		}
-	}
-
-	require.Failf(t, "could not find tags", "wantTags: %s in rows %v", wantTags, rows)
+func checkExporterEnqueueFailedLogsStats(t *testing.T, insts *instruments, exporter config.ComponentID, logRecords int64) {
+	checkValueForProducer(t, insts.registry, tagsForExporterView(exporter), logRecords, "exporter/enqueue_failed_log_records")
 }
 
 // tagsForExporterView returns the tags that are needed for the exporter views.
@@ -104,10 +78,4 @@ func tagsForExporterView(exporter config.ComponentID) []tag.Tag {
 	return []tag.Tag{
 		{Key: exporterTag, Value: exporter.String()},
 	}
-}
-
-func sortTags(tags []tag.Tag) {
-	sort.SliceStable(tags, func(i, j int) bool {
-		return tags[i].Key.Name() < tags[j].Key.Name()
-	})
 }

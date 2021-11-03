@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config // import "go.opentelemetry.io/collector/config"
 
 // Processor is the configuration of a component.Processor. Specific extensions must implement
 // this interface and must embed ProcessorSettings struct or a struct that extends it.
@@ -22,9 +22,6 @@ type Processor interface {
 
 	privateConfigProcessor()
 }
-
-// Processors is a map of names to Processors.
-type Processors map[ComponentID]Processor
 
 // ProcessorSettings defines common settings for a component.Processor configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
@@ -44,18 +41,18 @@ func NewProcessorSettings(id ComponentID) ProcessorSettings {
 var _ Processor = (*ProcessorSettings)(nil)
 
 // ID returns the receiver ComponentID.
-func (rs *ProcessorSettings) ID() ComponentID {
-	return rs.id
+func (ps *ProcessorSettings) ID() ComponentID {
+	return ps.id
 }
 
 // SetIDName sets the receiver name.
-func (rs *ProcessorSettings) SetIDName(idName string) {
-	rs.id.nameVal = idName
+func (ps *ProcessorSettings) SetIDName(idName string) {
+	ps.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (rs *ProcessorSettings) Validate() error {
+func (ps *ProcessorSettings) Validate() error {
 	return nil
 }
 
-func (rs *ProcessorSettings) privateConfigProcessor() {}
+func (ps *ProcessorSettings) privateConfigProcessor() {}

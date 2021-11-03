@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package scraperhelper provides utilities for scrapers.
-package scraperhelper
+package scraperhelper // import "go.opentelemetry.io/collector/receiver/scraperhelper"

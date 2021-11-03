@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"flag"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
 var (
@@ -52,13 +51,7 @@ func (s *stringArrayValue) String() string {
 
 func flags() *flag.FlagSet {
 	flagSet := new(flag.FlagSet)
-	addFlagsFns := []func(*flag.FlagSet){
-		configtelemetry.Flags,
-		telemetrylogs.Flags,
-	}
-	for _, addFlags := range addFlagsFns {
-		addFlags(flagSet)
-	}
+	configtelemetry.Flags(flagSet)
 
 	// At least until we can use a generic, i.e.: OpenCensus, metrics exporter
 	// we default to Prometheus at port 8888, if not otherwise specified.

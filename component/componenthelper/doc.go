@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package componenthelper assists with the creation of a new component.Component.
-package componenthelper
+package componenthelper // import "go.opentelemetry.io/collector/component/componenthelper"

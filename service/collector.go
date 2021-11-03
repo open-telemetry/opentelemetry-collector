@@ -14,7 +14,7 @@
 
 // Package service handles the command-line, configuration, and runs the
 // OpenTelemetry Collector.
-package service
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
@@ -34,12 +34,12 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
-	"go.opentelemetry.io/collector/service/parserprovider"
 )
 
 // State defines Collector's state.
@@ -153,14 +153,14 @@ func (col *Collector) runAndWaitForShutdownEvent() {
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	cp, err := col.set.ConfigMapProvider.Get(ctx)
+	ret, err := col.set.ConfigMapProvider.Retrieve(ctx)
 	if err != nil {
-		return fmt.Errorf("cannot load configuration's parser: %w", err)
+		return fmt.Errorf("cannot retrieve the configuration: %w", err)
 	}
 
-	cfg, err := col.set.ConfigUnmarshaler.Unmarshal(cp, col.set.Factories)
-	if err != nil {
-		return fmt.Errorf("cannot load configuration: %w", err)
+	var cfg *config.Config
+	if cfg, err = col.set.ConfigUnmarshaler.Unmarshal(ret.Get(), col.set.Factories); err != nil {
+		return fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
 	if err = cfg.Validate(); err != nil {
@@ -193,9 +193,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return err
 	}
 
-	// If provider is watchable start a goroutine watching for updates.
-	if watchable, ok := col.set.ConfigMapProvider.(parserprovider.Watchable); ok {
-		go col.watchForConfigUpdates(watchable)
+	// If the retrieved value is watchable start a goroutine watching for updates.
+	if watchable, ok := ret.(config.WatchableRetrieved); ok {
+		go col.watchForConfigUpdates(ctx, watchable)
 	}
 
 	return nil
@@ -266,10 +266,6 @@ func (col *Collector) Run(ctx context.Context) error {
 // to the latest configuration. It requires that col.parserProvider and col.factories
 // are properly populated to finish successfully.
 func (col *Collector) reloadService(ctx context.Context) error {
-	if err := col.set.ConfigMapProvider.Close(ctx); err != nil {
-		return fmt.Errorf("failed close current config provider: %w", err)
-	}
-
 	if col.service != nil {
 		retiringService := col.service
 		col.service = nil
@@ -285,7 +281,7 @@ func (col *Collector) reloadService(ctx context.Context) error {
 	return nil
 }
 
-func (col *Collector) watchForConfigUpdates(watchable parserprovider.Watchable) {
+func (col *Collector) watchForConfigUpdates(ctx context.Context, watchable config.WatchableRetrieved) {
 	err := watchable.WatchForUpdate()
 	if errors.Is(err, configsource.ErrSessionClosed) {
 		// This is the case of shutdown of the whole collector server, nothing to do.
@@ -293,7 +289,10 @@ func (col *Collector) watchForConfigUpdates(watchable parserprovider.Watchable) 
 		return
 	}
 	col.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
-	if err = col.reloadService(context.Background()); err != nil {
+	if err = watchable.Close(ctx); err != nil {
+		col.asyncErrorChannel <- err
+	}
+	if err = col.reloadService(ctx); err != nil {
 		col.asyncErrorChannel <- err
 	}
 }

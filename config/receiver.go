@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config // import "go.opentelemetry.io/collector/config"
 
 // Receiver is the configuration of a component.Receiver. Specific extensions must implement
 // this interface and must embed ReceiverSettings struct or a struct that extends it.
@@ -22,9 +22,6 @@ type Receiver interface {
 
 	privateConfigReceiver()
 }
-
-// Receivers is a map of names to Receivers.
-type Receivers map[ComponentID]Receiver
 
 // ReceiverSettings defines common settings for a component.Receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.

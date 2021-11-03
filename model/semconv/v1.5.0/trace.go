@@ -14,7 +14,7 @@
 
 // Code generated from semantic convention specification. DO NOT EDIT.
 
-package semconv
+package semconv // import "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 // Span attributes used by AWS Lambda (in addition to general `faas` attributes).
 const (

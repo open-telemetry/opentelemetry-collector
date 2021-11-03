@@ -14,7 +14,7 @@
 
 // Package fanoutconsumer contains implementations of Traces/Metrics/Logs consumers
 // that fan out the data to multiple other consumers.
-package fanoutconsumer
+package fanoutconsumer // import "go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 
 import (
 	"context"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata
+package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains data structures that are common for all telemetry types,
 // such as timestamps, attributes, etc.
@@ -197,17 +197,17 @@ func (a AttributeValue) MapVal() AttributeMap {
 	return newAttributeMap(&kvlist.Values)
 }
 
-// ArrayVal returns the array value associated with this AttributeValue.
-// If the Type() is not AttributeValueTypeArray then returns an empty array. Note that modifying
-// such empty array has no effect on this AttributeValue.
+// SliceVal returns the slice value associated with this AttributeValue.
+// If the Type() is not AttributeValueTypeArray then returns an empty slice. Note that modifying
+// such empty slice has no effect on this AttributeValue.
 //
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) ArrayVal() AnyValueArray {
+func (a AttributeValue) SliceVal() AttributeValueSlice {
 	arr := a.orig.GetArrayValue()
 	if arr == nil {
-		return NewAnyValueArray()
+		return NewAttributeValueSlice()
 	}
-	return newAnyValueArray(&arr.Values)
+	return newAttributeValueSlice(&arr.Values)
 }
 
 // BytesVal returns the []byte value associated with this AttributeValue.
@@ -262,10 +262,10 @@ func (a AttributeValue) SetMapVal(v AttributeMap) {
 	a.orig.Value = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: *v.orig}}
 }
 
-// SetArrayVal replaces the AnyValueArray value associated with this AttributeValue,
+// SetSliceVal replaces the AttributeValueSlice value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeArray.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetArrayVal(v AnyValueArray) {
+func (a AttributeValue) SetSliceVal(v AttributeValueSlice) {
 	a.orig.Value = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: *v.orig}}
 }
 
@@ -295,7 +295,7 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 			return
 		}
 		// Deep copy to dest.
-		newAnyValueArray(&v.ArrayValue.Values).CopyTo(newAnyValueArray(&av.ArrayValue.Values))
+		newAttributeValueSlice(&v.ArrayValue.Values).CopyTo(newAttributeValueSlice(&av.ArrayValue.Values))
 	default:
 		// Primitive immutable type, no need for deep copy.
 		dest.Value = a.orig.Value
@@ -406,7 +406,7 @@ func (a AttributeValue) AsString() string {
 		return base64.StdEncoding.EncodeToString(a.BytesVal())
 
 	case AttributeValueTypeArray:
-		jsonStr, _ := json.Marshal(a.ArrayVal().asRaw())
+		jsonStr, _ := json.Marshal(a.SliceVal().asRaw())
 		return string(jsonStr)
 
 	default:
@@ -833,15 +833,15 @@ func (am AttributeMap) AsRaw() map[string]interface{} {
 		case AttributeValueTypeMap:
 			rawMap[k] = v.MapVal().AsRaw()
 		case AttributeValueTypeArray:
-			rawMap[k] = v.ArrayVal().asRaw()
+			rawMap[k] = v.SliceVal().asRaw()
 		}
 		return true
 	})
 	return rawMap
 }
 
-// asRaw creates a slice out of a AnyValueArray.
-func (es AnyValueArray) asRaw() []interface{} {
+// asRaw creates a slice out of a AttributeValueSlice.
+func (es AttributeValueSlice) asRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		v := es.At(i)

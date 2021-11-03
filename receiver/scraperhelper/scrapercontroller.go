@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package scraperhelper
+package scraperhelper // import "go.opentelemetry.io/collector/receiver/scraperhelper"
 
 import (
 	"context"
@@ -186,14 +186,22 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 	metrics := pdata.NewMetrics()
 
 	for _, scraper := range sc.scrapers {
-		md, err := scraper.Scrape(ctx, sc.id, sc.recvSettings)
+		scrp := obsreport.NewScraper(obsreport.ScraperSettings{
+			ReceiverID:             sc.id,
+			Scraper:                scraper.ID(),
+			ReceiverCreateSettings: sc.recvSettings,
+		})
+		ctx = scrp.StartMetricsOp(ctx)
+		md, err := scraper.Scrape(ctx)
+
 		if err != nil {
 			sc.logger.Error("Error scraping metrics", zap.Error(err), zap.Stringer("scraper", scraper.ID()))
-
 			if !scrapererror.IsPartialScrapeError(err) {
+				scrp.EndMetricsOp(ctx, 0, err)
 				continue
 			}
 		}
+		scrp.EndMetricsOp(ctx, md.MetricCount(), err)
 		md.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 

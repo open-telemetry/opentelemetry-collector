@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component
+package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // Processor defines the common functions that must be implemented by TracesProcessor
@@ -57,9 +57,10 @@ type ProcessorCreateSettings struct {
 // ProcessorFactory is factory interface for processors. This is the
 // new factory type that can create new style processors.
 //
-// This interface cannot be directly implemented. Implementations need to embed
-// the BaseProcessorFactory or use the processorhelper.NewFactory to implement it.
+// This interface cannot be directly implemented. Implementations must
+// use the processorhelper.NewFactory to implement it.
 type ProcessorFactory interface {
+	internalinterface.InternalInterface
 	Factory
 
 	// CreateDefaultConfig creates the default configuration for the Processor.
@@ -100,39 +101,4 @@ type ProcessorFactory interface {
 		cfg config.Processor,
 		nextConsumer consumer.Logs,
 	) (LogsProcessor, error)
-
-	// unexportedProcessor is a dummy method to force this interface to not be implemented.
-	unexportedProcessor()
 }
-
-// BaseProcessorFactory is the interface that must be embedded by all ProcessorFactory implementations.
-type BaseProcessorFactory struct{}
-
-var _ ProcessorFactory = (*BaseProcessorFactory)(nil)
-
-// Type must be overridden.
-func (b BaseProcessorFactory) Type() config.Type {
-	panic("implement me")
-}
-
-// CreateDefaultConfig must be overridden.
-func (b BaseProcessorFactory) CreateDefaultConfig() config.Processor {
-	panic("implement me")
-}
-
-// CreateTracesProcessor default implemented as not supported data type.
-func (b BaseProcessorFactory) CreateTracesProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Traces) (TracesProcessor, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsProcessor default implemented as not supported data type.
-func (b BaseProcessorFactory) CreateMetricsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateLogsProcessor default implemented as not supported data type.
-func (b BaseProcessorFactory) CreateLogsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Logs) (LogsProcessor, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-func (b BaseProcessorFactory) unexportedProcessor() {}

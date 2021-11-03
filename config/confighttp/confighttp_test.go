@@ -57,7 +57,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			name: "all_valid_settings",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
 				ReadBufferSize:     1024,
@@ -70,7 +70,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			name: "error_round_tripper_returned",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
 				ReadBufferSize:     1024,
@@ -105,7 +105,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
 			settings: HTTPClientSettings{
 				Endpoint: "",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/doesnt/exist",
 					},
@@ -118,7 +118,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
 			settings: HTTPClientSettings{
 				Endpoint: "",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "/doesnt/exist",
 					},
@@ -131,14 +131,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"dummy\": authenticator not found",
 			settings: HTTPClientSettings{
 				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
-			},
-		},
-		{
-			err: "idStr must have non empty type",
-			settings: HTTPClientSettings{
-				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Authentication{AuthenticatorName: ""},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
 			},
 		},
 	}
@@ -174,7 +167,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
 			},
 			shouldErr: true,
 			extensionMap: map[config.ComponentID]component.Extension{
@@ -185,7 +178,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension_map",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "dummy"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
 			},
 			shouldErr: true,
 		},
@@ -193,7 +186,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("mock")},
 			},
 			shouldErr: false,
 			extensionMap: map[config.ComponentID]component.Extension{
@@ -204,7 +197,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_err_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorName: "mock"},
+				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("mock")},
 			},
 			shouldErr: true,
 			extensionMap: map[config.ComponentID]component.Extension{
@@ -407,7 +400,7 @@ func TestHttpReception(t *testing.T) {
 
 			hcs := &HTTPClientSettings{
 				Endpoint:   prefix + ln.Addr().String(),
-				TLSSetting: tt.tlsClientCreds,
+				TLSSetting: *tt.tlsClientCreds,
 			}
 			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
 			assert.NoError(t, errClient)
@@ -582,7 +575,7 @@ func TestHttpHeaders(t *testing.T) {
 			serverURL, _ := url.Parse(server.URL)
 			setting := HTTPClientSettings{
 				Endpoint:        serverURL.String(),
-				TLSSetting:      &configtls.TLSClientSetting{},
+				TLSSetting:      configtls.TLSClientSetting{},
 				ReadBufferSize:  0,
 				WriteBufferSize: 0,
 				Timeout:         0,

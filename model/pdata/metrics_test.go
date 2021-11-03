@@ -23,7 +23,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"go.opentelemetry.io/collector/model/internal"
-	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/model/internal/data/protogen/resource/v1"
@@ -216,7 +215,7 @@ func TestDataPointCountWithNilDataPoints(t *testing.T) {
 }
 
 func TestOtlpToInternalReadOnly(t *testing.T) {
-	md := Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
+	md := Metrics{orig: &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -304,7 +303,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 }
 
 func TestOtlpToFromInternalReadOnly(t *testing.T) {
-	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -318,7 +317,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 		},
 	}))
 	// Test that nothing changed
-	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
+	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -336,7 +335,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	newAttributes := NewAttributeMapFromMap(map[string]AttributeValue{"k": NewAttributeValueString("v")})
 
-	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -376,7 +375,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	assert.EqualValues(t, newAttributes, gaugeDataPoints.At(0).Attributes())
 
 	// Test that everything is updated.
-	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
+	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -419,7 +418,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	newAttributes := NewAttributeMapFromMap(map[string]AttributeValue{"k": NewAttributeValueString("v")})
 
-	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -460,7 +459,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	assert.EqualValues(t, newAttributes, doubleDataPoints.At(0).Attributes())
 
 	// Test that everything is updated.
-	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
+	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -504,7 +503,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	newAttributes := NewAttributeMapFromMap(map[string]AttributeValue{"k": NewAttributeValueString("v")})
 
-	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -545,7 +544,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).ExplicitBounds())
 	histogramDataPoints.At(0).SetBucketCounts([]uint64{21, 32})
 	// Test that everything is updated.
-	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{
+	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -618,7 +617,7 @@ func BenchmarkMetricsClone(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
-	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+	req := &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -643,7 +642,7 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
-	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+	req := &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -669,7 +668,7 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
-	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+	req := &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -695,7 +694,7 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
-	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+	req := &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -858,13 +857,13 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 }
 
 func generateMetricsEmptyResource() Metrics {
-	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}},
 	}}
 }
 
 func generateMetricsEmptyInstrumentation() Metrics {
-	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{{}},
@@ -874,7 +873,7 @@ func generateMetricsEmptyInstrumentation() Metrics {
 }
 
 func generateMetricsEmptyMetrics() Metrics {
-	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -888,7 +887,7 @@ func generateMetricsEmptyMetrics() Metrics {
 }
 
 func generateMetricsEmptyDataPoints() Metrics {
-	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
+	return Metrics{orig: &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{

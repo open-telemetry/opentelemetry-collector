@@ -12,43 +12,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zpages
+package zpages // import "go.opentelemetry.io/collector/service/internal/zpages"
 
 import (
+	_ "embed"
+	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"log"
-
-	"go.opentelemetry.io/collector/service/internal/zpages/tmplgen"
 )
 
 var (
-	fs                = tmplgen.FS(false)
 	templateFunctions = template.FuncMap{
 		"even":     even,
 		"getKey":   getKey,
 		"getValue": getValue,
 	}
-	componentHeaderTemplate = parseTemplate("component_header")
-	extensionsTableTemplate = parseTemplate("extensions_table")
-	headerTemplate          = parseTemplate("header")
-	footerTemplate          = parseTemplate("footer")
-	pipelinesTableTemplate  = parseTemplate("pipelines_table")
-	propertiesTableTemplate = parseTemplate("properties_table")
+
+	//go:embed templates/component_header.html
+	componentHeaderBytes    []byte
+	componentHeaderTemplate = parseTemplate("component_header", componentHeaderBytes)
+
+	//go:embed templates/extensions_table.html
+	extensionsTableBytes    []byte
+	extensionsTableTemplate = parseTemplate("extensions_table", extensionsTableBytes)
+
+	//go:embed templates/header.html
+	headerBytes    []byte
+	headerTemplate = parseTemplate("header", headerBytes)
+
+	//go:embed templates/footer.html
+	footerBytes    []byte
+	footerTemplate = parseTemplate("footer", footerBytes)
+
+	//go:embed templates/pipelines_table.html
+	pipelinesTableBytes    []byte
+	pipelinesTableTemplate = parseTemplate("pipelines_table", pipelinesTableBytes)
+
+	//go:embed templates/properties_table.html
+	propertiesTableBytes    []byte
+	propertiesTableTemplate = parseTemplate("properties_table", propertiesTableBytes)
 )
 
-func parseTemplate(name string) *template.Template {
-	f, err := fs.Open("/templates/" + name + ".html")
-	if err != nil {
-		log.Panicf("%v: %v", name, err)
-	}
-	defer f.Close()
-	text, err := ioutil.ReadAll(f)
-	if err != nil {
-		log.Panicf("%v: %v", name, err)
-	}
-	return template.Must(template.New(name).Funcs(templateFunctions).Parse(string(text)))
+func parseTemplate(name string, bytes []byte) *template.Template {
+	fmt.Println(string(bytes))
+	return template.Must(template.New(name).Funcs(templateFunctions).Parse(string(bytes)))
 }
 
 // HeaderData contains data for the header template.

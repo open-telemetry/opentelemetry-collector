@@ -4,11 +4,57 @@
 
 ## 🛑 Breaking changes 🛑
 
-- Move configcheck.ValidateConfigFromFactories as internal function in service package (#3876)
+- Remove `config.Receivers`, `config.Exporters`, `config.Processors`, and `config.Extensions`. Use map directly (#4344)
+- Remove `component.BaseProcessorFactory`, use `processorhelper.NewFactory` instead (#4175)
+- Force usage of `exporterhelper.NewFactory` to implement `component.ExporterFactory` (#4338)
+- Force usage of `receiverhelper.NewFactory` to implement `component.ReceiverFactory` (#4338)
+- Force usage of `extensionhelper.NewFactory` to implement `component.ExtensionFactory` (#4338)
+- Move `service/parserprovider` package to `config/configmapprovider` (#4206)
+- Renamed slice-valued `pdata` types and functions for consistency. (#4325)
+  - Rename `pdata.AnyValueArray` to `pdata.AttributeValueSlice`
+  - Rename `ArrayVal()` to `SliceVal()`
+  - Rename `SetArrayVal()` to `SetSliceVal()`
+- Remove `config.Pipeline.Name` (#4326)
+- Remove `config.Pipeline.InputDataType` (#4343)
+- otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
+
+## v0.38.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Removed `configauth.HTTPClientAuthenticator` and `configauth.GRPCClientAuthenticator` in favor of `configauth.ClientAuthenticator`. (#4255)
+- Rename `parserprovider.MapProvider` as `config.MapProvider`. (#4178)
+- Rename `parserprovider.Watchable` as `config.WatchableMapProvider`. (#4178)
+- Remove deprecated no-op flags to setup Collector's logging "--log-level", "--log-profile", "--log-format". (#4213)
+- Move `cmd/pdatagen` as internal package `model/internal/cmd/pdatagen`. (#4243)
+- Use directly the ComponentID in configauth. (#4238)
+- Refactor configauth, getters use the map instead of iteration. (#4234)
+- Change scraperhelper to follow the recommended append model for pdata. (#4202)
+
+## 💡 Enhancements 💡
+
+- Update proto to 0.11.0. (#4209)
+- Change pdata to use the newly added [Traces|Metrics|Logs]Data. (#4214)
+- Add ExponentialHistogram field to pdata. (#4219)
+- Make sure otlphttp exporter tests include TraceID and SpanID. (#4268)
+- Use multimod tool in release process. (#4229)
+- Change queue metrics to use opencensus metrics instead of stats, close to otel-go. (#4220)
+- Make receiver data delivery guarantees explicit (#4262)
+- Simplify unmarshal logic by adding more supported hooks. (#4237)
+- Add unmarshaler for otlpgrpc.[*]Request and otlpgrp.[*]Response (#4215)
+
+## v0.37.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Move `configcheck.ValidateConfigFromFactories` as internal function in service package (#3876)
 - Rename `configparser.Parser` as `config.Map` (#4075)
 - Rename `component.DefaultBuildInfo()` to `component.NewDefaultBuildInfo()` (#4129)
-- Rename consumererror.Permanent to consumererror.NewPermanent (#4118)
+- Rename `consumererror.Permanent` to `consumererror.NewPermanent` (#4118)
 - Rename `config.NewID` to `config.NewComponentID` and `config.NewIDFromString` to `config.NewComponentIDFromString` (#4137)
+- Rename `config.NewIDWithName` to `config.NewComponentIDWithName` (#4151)
+- Move `extension/storage` to `extension/experimental/storage` (#4082)
+- Rename `obsreporttest.SetupRecordedMetricsTest()` to `obsreporttest.SetupTelemetry()` and `obsreporttest.TestTelemetrySettings` to `obsreporttest.TestTelemetry` (#4157)
 
 ## 💡 Enhancements 💡
 
@@ -16,6 +62,12 @@
 - Add Gen dependabot into CI (#4083)
 - Update OTLP to v0.10.0 (#4045).
 - Add Flags field to NumberDataPoint, HistogramDataPoint, SummaryDataPoint (#4081).
+- Add feature gate library (#4108)
+- Add version to the internal telemetry metrics (#4140)
+
+## 🧰 Bug fixes 🧰
+
+- Fix panic when not using `service.NewCommand` (#4139)
 
 ## v0.36.0 Beta
 

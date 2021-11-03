@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package metrics // import "go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 
 import (
 	"context"

@@ -17,4 +17,4 @@
 // sources retrieve values from their respective storages. A configuration parser/loader
 // can inject these values in the configuration data used by the collector.
 // ATTENTION: the package is still experimental and subject to changes without advanced notice.
-package configsource
+package configsource // import "go.opentelemetry.io/collector/config/experimental/configsource"

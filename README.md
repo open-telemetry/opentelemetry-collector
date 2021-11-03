@@ -102,7 +102,7 @@ Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-te
 - [Alex Boten](https://github.com/codeboten), Lightstep
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Owais Lone](https://github.com/owais), Splunk
 
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
