@@ -17,7 +17,6 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -37,7 +36,14 @@ import (
 type exporter struct {
 	// Input configuration.
 	config *Config
-	w      *grpcSender
+
+	// gRPC clients and connection.
+	traceExporter  otlpgrpc.TracesClient
+	metricExporter otlpgrpc.MetricsClient
+	logExporter    otlpgrpc.LogsClient
+	clientConn     *grpc.ClientConn
+	metadata       metadata.MD
+	callOptions    []grpc.CallOption
 }
 
 // Crete new exporter and start it. The exporter will begin connecting but
@@ -55,97 +61,54 @@ func newExporter(cfg config.Exporter) (*exporter, error) {
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	e.w, err = newGrpcSender(e.config, host)
+	dialOpts, err := e.config.GRPCClientSettings.ToDialOptions(host)
+	if err != nil {
+		return err
+	}
+
+	if e.clientConn, err = grpc.Dial(e.config.GRPCClientSettings.SanitizedEndpoint(), dialOpts...); err != nil {
+		return err
+	}
+
+	e.traceExporter = otlpgrpc.NewTracesClient(e.clientConn)
+	e.metricExporter = otlpgrpc.NewMetricsClient(e.clientConn)
+	e.logExporter = otlpgrpc.NewLogsClient(e.clientConn)
+	e.metadata = metadata.New(e.config.GRPCClientSettings.Headers)
+	e.callOptions = []grpc.CallOption{
+		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
+	}
+
 	return
 }
 
 func (e *exporter) shutdown(context.Context) error {
-	return e.w.stop()
+	return e.clientConn.Close()
 }
 
 func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	if err := e.w.exportTrace(ctx, td); err != nil {
-		return fmt.Errorf("failed to push trace data via OTLP exporter: %w", err)
-	}
-	return nil
+	req := otlpgrpc.NewTracesRequest()
+	req.SetTraces(td)
+	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	return processError(err)
 }
 
 func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
-	if err := e.w.exportMetrics(ctx, md); err != nil {
-		return fmt.Errorf("failed to push metrics data via OTLP exporter: %w", err)
-	}
-	return nil
+	req := otlpgrpc.NewMetricsRequest()
+	req.SetMetrics(md)
+	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	return processError(err)
 }
 
 func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
-	if err := e.w.exportLogs(ctx, ld); err != nil {
-		return fmt.Errorf("failed to push log data via OTLP exporter: %w", err)
-	}
-	return nil
-}
-
-type grpcSender struct {
-	// gRPC clients and connection.
-	traceExporter  otlpgrpc.TracesClient
-	metricExporter otlpgrpc.MetricsClient
-	logExporter    otlpgrpc.LogsClient
-	clientConn     *grpc.ClientConn
-	metadata       metadata.MD
-	callOptions    []grpc.CallOption
-}
-
-func newGrpcSender(config *Config, host component.Host) (*grpcSender, error) {
-	dialOpts, err := config.GRPCClientSettings.ToDialOptions(host)
-	if err != nil {
-		return nil, err
-	}
-
-	var clientConn *grpc.ClientConn
-	if clientConn, err = grpc.Dial(config.GRPCClientSettings.SanitizedEndpoint(), dialOpts...); err != nil {
-		return nil, err
-	}
-
-	gs := &grpcSender{
-		traceExporter:  otlpgrpc.NewTracesClient(clientConn),
-		metricExporter: otlpgrpc.NewMetricsClient(clientConn),
-		logExporter:    otlpgrpc.NewLogsClient(clientConn),
-		clientConn:     clientConn,
-		metadata:       metadata.New(config.GRPCClientSettings.Headers),
-		callOptions: []grpc.CallOption{
-			grpc.WaitForReady(config.GRPCClientSettings.WaitForReady),
-		},
-	}
-	return gs, nil
-}
-
-func (gs *grpcSender) stop() error {
-	return gs.clientConn.Close()
-}
-
-func (gs *grpcSender) exportTrace(ctx context.Context, td pdata.Traces) error {
-	req := otlpgrpc.NewTracesRequest()
-	req.SetTraces(td)
-	_, err := gs.traceExporter.Export(gs.enhanceContext(ctx), req, gs.callOptions...)
-	return processError(err)
-}
-
-func (gs *grpcSender) exportMetrics(ctx context.Context, md pdata.Metrics) error {
-	req := otlpgrpc.NewMetricsRequest()
-	req.SetMetrics(md)
-	_, err := gs.metricExporter.Export(gs.enhanceContext(ctx), req, gs.callOptions...)
-	return processError(err)
-}
-
-func (gs *grpcSender) exportLogs(ctx context.Context, ld pdata.Logs) error {
 	req := otlpgrpc.NewLogsRequest()
 	req.SetLogs(ld)
-	_, err := gs.logExporter.Export(gs.enhanceContext(ctx), req, gs.callOptions...)
+	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
-func (gs *grpcSender) enhanceContext(ctx context.Context) context.Context {
-	if gs.metadata.Len() > 0 {
-		return metadata.NewOutgoingContext(ctx, gs.metadata)
+func (e *exporter) enhanceContext(ctx context.Context) context.Context {
+	if e.metadata.Len() > 0 {
+		return metadata.NewOutgoingContext(ctx, e.metadata)
 	}
 	return ctx
 }
