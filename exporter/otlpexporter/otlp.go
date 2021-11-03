@@ -187,11 +187,6 @@ func processError(err error) error {
 
 func shouldRetry(code codes.Code) bool {
 	switch code {
-	case codes.OK:
-		// Success. This function should not be called for this code, the best we
-		// can do is tell the caller not to retry.
-		return false
-
 	case codes.Canceled,
 		codes.DeadlineExceeded,
 		codes.PermissionDenied,
@@ -203,21 +198,9 @@ func shouldRetry(code codes.Code) bool {
 		codes.DataLoss:
 		// These are retryable errors.
 		return true
-
-	case codes.Unknown,
-		codes.InvalidArgument,
-		codes.NotFound,
-		codes.AlreadyExists,
-		codes.FailedPrecondition,
-		codes.Unimplemented,
-		codes.Internal:
-		// These are fatal errors, don't retry.
-		return false
-
-	default:
-		// Don't retry on unknown codes.
-		return false
 	}
+	// Don't retry on any other code.
+	return false
 }
 
 func getThrottleDuration(status *status.Status) time.Duration {
