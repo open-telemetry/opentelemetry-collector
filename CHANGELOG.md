@@ -12,6 +12,7 @@
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
 - Remove `config.Pipeline.Name` (#4326)
 - Remove `config.Pipeline.InputDataType` (#4343)
+- otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
 
 ## v0.38.0 Beta
 
