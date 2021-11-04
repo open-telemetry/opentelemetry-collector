@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/model/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 )
 
@@ -50,17 +49,17 @@ func TestLogRecordCount(t *testing.T) {
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, NewLogs().LogRecordCount())
-	assert.Zero(t, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
+	assert.Zero(t, Logs{orig: &otlplogs.LogsData{
 		ResourceLogs: []*otlplogs.ResourceLogs{{}},
 	}}.LogRecordCount())
-	assert.Zero(t, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
+	assert.Zero(t, Logs{orig: &otlplogs.LogsData{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{{}},
 			},
 		},
 	}}.LogRecordCount())
-	assert.Equal(t, 1, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
+	assert.Equal(t, 1, Logs{orig: &otlplogs.LogsData{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
@@ -74,10 +73,10 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 }
 
 func TestToFromLogProto(t *testing.T) {
-	wrapper := internal.LogsFromOtlp(&otlpcollectorlog.ExportLogsServiceRequest{})
+	wrapper := internal.LogsFromOtlp(&otlplogs.LogsData{})
 	ld := LogsFromInternalRep(wrapper)
 	assert.EqualValues(t, NewLogs(), ld)
-	assert.EqualValues(t, &otlpcollectorlog.ExportLogsServiceRequest{}, ld.orig)
+	assert.EqualValues(t, &otlplogs.LogsData{}, ld.orig)
 }
 
 func TestLogsClone(t *testing.T) {

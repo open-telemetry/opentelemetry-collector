@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlptext
+package otlptext // import "go.opentelemetry.io/collector/internal/otlptext"
 
 import (
 	"bytes"
@@ -211,7 +211,7 @@ func attributeValueToString(av pdata.AttributeValue) string {
 	case pdata.AttributeValueTypeInt:
 		return strconv.FormatInt(av.IntVal(), 10)
 	case pdata.AttributeValueTypeArray:
-		return attributeValueArrayToString(av.ArrayVal())
+		return attributeValueSliceToString(av.SliceVal())
 	case pdata.AttributeValueTypeMap:
 		return attributeMapToString(av.MapVal())
 	default:
@@ -219,7 +219,7 @@ func attributeValueToString(av pdata.AttributeValue) string {
 	}
 }
 
-func attributeValueArrayToString(av pdata.AnyValueArray) string {
+func attributeValueSliceToString(av pdata.AttributeValueSlice) string {
 	var b strings.Builder
 	b.WriteByte('[')
 	for i := 0; i < av.Len(); i++ {

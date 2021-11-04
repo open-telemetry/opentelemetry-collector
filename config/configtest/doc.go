@@ -14,4 +14,4 @@
 
 // Package configtest loads the configuration to test packages
 // implementing the config package interfaces.
-package configtest
+package configtest // import "go.opentelemetry.io/collector/config/configtest"

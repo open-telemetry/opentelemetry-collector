@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memorylimiterprocessor
+package memorylimiterprocessor // import "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 
 import (
 	"context"
@@ -54,7 +54,7 @@ func createTracesProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	ml, err := newMemoryLimiter(set.Logger, cfg.(*Config))
+	ml, err := newMemoryLimiter(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func createMetricsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	ml, err := newMemoryLimiter(set.Logger, cfg.(*Config))
+	ml, err := newMemoryLimiter(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func createLogsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	ml, err := newMemoryLimiter(set.Logger, cfg.(*Config))
+	ml, err := newMemoryLimiter(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}

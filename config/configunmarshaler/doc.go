@@ -15,4 +15,4 @@
 // Package configunmarshaler implements configuration unmarshalling from a config.Map.
 // The implementation relies on registered factories that allow creating
 // default configuration for each type of receiver/exporter/processor.
-package configunmarshaler
+package configunmarshaler // import "go.opentelemetry.io/collector/config/configunmarshaler"

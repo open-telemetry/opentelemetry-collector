@@ -122,16 +122,16 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer set.Shutdown(context.Background())
+	defer tt.Shutdown(context.Background())
 
 	rCfg := DefaultRetrySettings()
 	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewTracesExporter(&fakeTracesExporterConfig, set.ToExporterCreateSettings(), newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, tt.ToExporterCreateSettings(), newTraceDataPusher(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -142,7 +142,7 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	}
 
 	// 2 batched must be in queue, and 5 batches (10 spans) rejected due to queue overflow
-	checkExporterEnqueueFailedTracesStats(t, fakeTracesExporterName, int64(10))
+	checkExporterEnqueueFailedTracesStats(t, globalInstruments, fakeTracesExporterName, int64(10))
 }
 
 func TestTracesExporter_WithSpan(t *testing.T) {
@@ -206,9 +206,9 @@ func newTraceDataPusher(retError error) consumerhelper.ConsumeTracesFunc {
 }
 
 func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExporter, wantError error) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer set.Shutdown(context.Background())
+	defer tt.Shutdown(context.Background())
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
 	const numBatches = 7
@@ -218,9 +218,9 @@ func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExpo
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		require.NoError(t, obsreporttest.CheckExporterTraces(fakeTracesExporterName, 0, int64(numBatches*td.SpanCount())))
+		require.NoError(t, obsreporttest.CheckExporterTraces(tt, fakeTracesExporterName, 0, int64(numBatches*td.SpanCount())))
 	} else {
-		require.NoError(t, obsreporttest.CheckExporterTraces(fakeTracesExporterName, int64(numBatches*td.SpanCount()), 0))
+		require.NoError(t, obsreporttest.CheckExporterTraces(tt, fakeTracesExporterName, int64(numBatches*td.SpanCount()), 0))
 	}
 }
 

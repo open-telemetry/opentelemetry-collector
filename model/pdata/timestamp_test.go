@@ -28,9 +28,11 @@ func TestUnixNanosConverters(t *testing.T) {
 	assert.EqualValues(t, uint64(1585012403000000789), tun)
 	assert.EqualValues(t, tun, NewTimestampFromTime(t1))
 	assert.EqualValues(t, t1, NewTimestampFromTime(t1).AsTime())
+	assert.Equal(t, "2020-03-24 01:13:23.000000789 +0000 UTC", t1.String())
 }
 
 func TestZeroTimestamp(t *testing.T) {
 	assert.Equal(t, time.Unix(0, 0).UTC(), Timestamp(0).AsTime())
 	assert.Zero(t, NewTimestampFromTime(time.Unix(0, 0).UTC()))
+	assert.Equal(t, "1970-01-01 00:00:00 +0000 UTC", Timestamp(0).String())
 }

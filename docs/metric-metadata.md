@@ -4,7 +4,7 @@ Receivers can contain a `metadata.yaml` file that documents the metrics that may
 
 Current examples:
 
-* [hostmetricsreceiver](../receiver/hostmetricsreceiver/metadata.yaml)
+* hostmetricsreceiver scrapers like the [cpuscraper](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/metadata.yaml)
 
 See [metric-metadata.yaml](metric-metadata.yaml) for file format documentation.
 
@@ -16,4 +16,4 @@ When `go generate` is run (it is run automatically in the make build targets) th
 
 `make install-tools` results in `cmd/mdatagen` being installed to `GOBIN`
 
-[/receiver/hostmetricsreceiver/codegen.go](../receiver/hostmetricsreceiver/codegen.go) Runs `mdatagen` for the `hostmetricsreceiver` metadata.yaml which generates [/receiver/hostmetricsreceiver/internal/metadata](../receiver/hostmetricsreceiver/internal/metadata) package which has Go files containing metric and label metadata.
+[/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/codegen.go](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/codegen.go) runs `mdatagen` for the `hostmetricsreceiver` metadata.yaml which generates the [/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata) package which has Go files containing metric and label metadata.

@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package otlpexporter exports data by using the OTLP format to a gPRC endpoint.
-package otlpexporter
+package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexporter"

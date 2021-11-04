@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package obsreport
+package obsreport // import "go.opentelemetry.io/collector/obsreport"
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -48,8 +49,9 @@ type Processor struct {
 
 // ProcessorSettings are settings for creating a Processor.
 type ProcessorSettings struct {
-	Level       configtelemetry.Level
-	ProcessorID config.ComponentID
+	Level                   configtelemetry.Level
+	ProcessorID             config.ComponentID
+	ProcessorCreateSettings component.ProcessorCreateSettings
 }
 
 // NewProcessor creates a new Processor.

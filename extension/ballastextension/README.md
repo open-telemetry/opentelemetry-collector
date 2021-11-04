@@ -1,7 +1,7 @@
 # Memory Ballast
 
 Memory Ballast extension enables applications to configure memory ballast for the process. For more details see:
-- [Go memory ballast blogpost](https://blog.twitch.tv/go-memory-ballast-how-i-learnt-to-stop-worrying-and-love-the-heap-26c2462549a2)
+- [Go memory ballast blogpost](https://web.archive.org/web/20210929130001/https://blog.twitch.tv/en/2019/04/10/go-memory-ballast-how-i-learnt-to-stop-worrying-and-love-the-heap-26c2462549a2/)
 - [Golang issue related to this](https://github.com/golang/go/issues/23044)
 
 The following settings can be configured:
@@ -24,7 +24,7 @@ When `size_in_percentage` is enabled with the value(1-100), the absolute `ballas
    been set for the collector process or the running container in cgroup. Then the `totalMemory` will be determined in next step.
    
 3. if there is no memory limit set in cgroup for the collector process or container where the collector is running. The total memory will be
-   calculated by `github.com/shirou/gopsutil/mem`[[link]](https://github.com/shirou/gopsutil/) on `mem.VirtualMemory().total` which is supported in multiple OS systems.
+   calculated by `github.com/shirou/gopsutil/v3/mem`[[link]](https://github.com/shirou/gopsutil/) on `mem.VirtualMemory().total` which is supported in multiple OS systems.
 
 
 Example:

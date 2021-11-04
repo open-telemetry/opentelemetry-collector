@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenterror
+package componenterror // import "go.opentelemetry.io/collector/component/componenterror"
 
 import (
 	"errors"

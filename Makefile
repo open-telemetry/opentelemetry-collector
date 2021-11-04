@@ -71,6 +71,10 @@ gotest-with-cover:
 	@$(MAKE) for-all CMD="make test-with-cover"
 	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
+.PHONY: goporto
+goporto:
+	@$(MAKE) for-all CMD="make porto"
+
 .PHONY: golint
 golint:
 	@$(MAKE) for-all CMD="make lint lint-unstable"
@@ -126,7 +130,6 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
 	cd $(TOOLS_MOD_DIR) && go install github.com/google/go-licenses
-	cd $(TOOLS_MOD_DIR) && go install github.com/mjibson/esc
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
@@ -135,6 +138,8 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/semconvgen
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
 	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && go install github.com/jcchavezs/porto/cmd/porto
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: otelcol
 otelcol:
@@ -310,6 +315,9 @@ gendependabot: $(eval SHELL:=/bin/bash)
 # The source directory for OTLP ProtoBufs.
 OPENTELEMETRY_PROTO_SRC_DIR=model/internal/opentelemetry-proto
 
+# The SHA matching the current version of the proto to use
+OPENTELEMETRY_PROTO_VERSION=v0.11.0
+
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
 
@@ -326,13 +334,18 @@ DOCKER_PROTOBUF ?= otel/build-protobuf:0.4.1
 PROTOC := docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
 PROTO_INCLUDES := -I/usr/include/github.com/gogo/protobuf -I./
 
+# Cleanup temporary directory
+genproto-cleanup:
+	rm -Rf ${OPENTELEMETRY_PROTO_SRC_DIR}
+
 # Generate OTLP Protobuf Go files. This will place generated files in PROTO_TARGET_GEN_DIR.
-genproto:
-	git submodule update --init
-	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated after the submodule
-	# files are present.
+genproto: genproto-cleanup
+	mkdir -p ${OPENTELEMETRY_PROTO_SRC_DIR}
+	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
+	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
 	$(MAKE) genproto_sub
 	$(MAKE) fmt
+	$(MAKE) genproto-cleanup
 
 genproto_sub:
 	@echo Generating code for the following files:
@@ -363,7 +376,7 @@ genproto_sub:
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
 genpdata:
-	go run cmd/pdatagen/main.go
+	go run model/internal/cmd/pdatagen/main.go
 	$(MAKE) fmt
 
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
@@ -422,3 +435,12 @@ endif
 .PHONY: apidiff-compare
 apidiff-compare:
 	@$(foreach pkg,$(ALL_PKGS),$(call exec-command,./internal/buildscripts/compare-apidiff.sh -p $(pkg)))
+
+.PHONY: multimod-verify
+multimod-verify: install-tools
+	@echo "Validating versions.yaml"
+	multimod verify
+
+.PHONY: multimod-prerelease
+multimod-prerelease: install-tools
+	multimod prerelease -v ./versions.yaml -m collector-base

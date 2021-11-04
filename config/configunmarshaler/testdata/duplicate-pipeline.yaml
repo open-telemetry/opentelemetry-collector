@@ -6,11 +6,11 @@ processors:
   exampleprocessor:
 service:
   pipelines:
-    traces/default:
+    traces /pipe:
       receivers: [examplereceiver]
       exporters: [exampleexporter]
       processors: [exampleprocessor]
-    traces/ default:
+    traces/ pipe :
       receivers: [examplereceiver]
       exporters: [exampleexporter]
       processors: [exampleprocessor]

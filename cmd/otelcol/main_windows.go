@@ -27,7 +27,7 @@ import (
 )
 
 func run(set service.CollectorSettings) error {
-	if useInteractiveMode, err := checkUseInteractiveMode(); err != nil {
+	if useInteractiveMode, err := checkWindowsService(); err != nil {
 		return err
 	} else if useInteractiveMode {
 		return runInteractive(set)
@@ -36,7 +36,7 @@ func run(set service.CollectorSettings) error {
 	}
 }
 
-func checkUseInteractiveMode() (bool, error) {
+func checkWindowsService() (bool, error) {
 	// If environment variable NO_WINDOWS_SERVICE is set with any value other
 	// than 0, use interactive mode instead of running as a service. This should
 	// be set in case running as a service is not possible or desired even
@@ -45,10 +45,10 @@ func checkUseInteractiveMode() (bool, error) {
 		return true, nil
 	}
 
-	if isInteractiveSession, err := svc.IsAnInteractiveSession(); err != nil {
-		return false, fmt.Errorf("failed to determine if we are running in an interactive session %w", err)
+	if isWindowsService, err := svc.IsWindowsService(); err != nil {
+		return false, fmt.Errorf("failed to determine if we are running as a Windows service %w", err)
 	} else {
-		return isInteractiveSession, nil
+		return isWindowsService, nil
 	}
 }
 

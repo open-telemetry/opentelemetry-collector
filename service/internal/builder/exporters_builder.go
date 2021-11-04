@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package builder // import "go.opentelemetry.io/collector/service/internal/builder"
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/service/internal/components"
 )
 
 // builtExporter is an exporter that is built based on a config. It can have
@@ -36,11 +37,16 @@ type builtExporter struct {
 // Start the exporter.
 func (bexp *builtExporter) Start(ctx context.Context, host component.Host) error {
 	var errs error
+	bexp.logger.Info("Exporter is starting...")
 	for _, exporter := range bexp.expByDataType {
-		errs = multierr.Append(errs, exporter.Start(ctx, host))
+		errs = multierr.Append(errs, exporter.Start(ctx, components.NewHostWrapper(host, bexp.logger)))
 	}
 
-	return errs
+	if errs != nil {
+		return errs
+	}
+	bexp.logger.Info("Exporter started.")
+	return nil
 }
 
 // Shutdown the trace component and the metrics component of an exporter.
@@ -61,7 +67,7 @@ func (bexp *builtExporter) getTracesExporter() component.TracesExporter {
 	return exp.(component.TracesExporter)
 }
 
-func (bexp *builtExporter) getMetricExporter() component.MetricsExporter {
+func (bexp *builtExporter) getMetricsExporter() component.MetricsExporter {
 	exp := bexp.expByDataType[config.MetricsDataType]
 	if exp == nil {
 		return nil
@@ -69,7 +75,7 @@ func (bexp *builtExporter) getMetricExporter() component.MetricsExporter {
 	return exp.(component.MetricsExporter)
 }
 
-func (bexp *builtExporter) getLogExporter() component.LogsExporter {
+func (bexp *builtExporter) getLogsExporter() component.LogsExporter {
 	exp := bexp.expByDataType[config.LogsDataType]
 	if exp == nil {
 		return nil
@@ -83,12 +89,9 @@ type Exporters map[config.ComponentID]*builtExporter
 // StartAll starts all exporters.
 func (exps Exporters) StartAll(ctx context.Context, host component.Host) error {
 	for _, exp := range exps {
-		exp.logger.Info("Exporter is starting...")
-
-		if err := exp.Start(ctx, newHostWrapper(host, exp.logger)); err != nil {
+		if err := exp.Start(ctx, host); err != nil {
 			return err
 		}
-		exp.logger.Info("Exporter started.")
 	}
 	return nil
 }
@@ -120,13 +123,8 @@ func (exps Exporters) ToMapByDataType() map[config.DataType]map[config.Component
 	return exportersMap
 }
 
-type dataTypeRequirement struct {
-	// Pipeline that requires the data type.
-	requiredBy *config.Pipeline
-}
-
-// Map of data type requirements.
-type dataTypeRequirements map[config.DataType]dataTypeRequirement
+// Map of config.DataType to the id of the Pipeline that requires the data type.
+type dataTypeRequirements map[config.DataType]config.ComponentID
 
 // Data type requirements for all exporters.
 type exportersRequiredDataTypes map[config.ComponentID]dataTypeRequirements
@@ -138,7 +136,7 @@ func BuildExporters(
 	cfg *config.Config,
 	factories map[config.Type]component.ExporterFactory,
 ) (Exporters, error) {
-	logger := settings.Logger.With(zap.String(zapKindKey, zapKindLogExporter))
+	logger := settings.Logger.With(zap.String(components.ZapKindKey, components.ZapKindLogExporter))
 
 	// We need to calculate required input data types for each exporter so that we know
 	// which data type must be started for each exporter.
@@ -146,11 +144,11 @@ func BuildExporters(
 
 	exporters := make(Exporters)
 
-	// Build exporters exporters based on configuration and required input data types.
+	// Build exporters based on configuration and required input data types.
 	for expID, expCfg := range cfg.Exporters {
 		set := component.ExporterCreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
-				Logger:         logger.With(zap.String(zapNameKey, expID.String())),
+				Logger:         logger.With(zap.String(components.ZapNameKey, expID.String())),
 				TracerProvider: settings.TracerProvider,
 				MeterProvider:  settings.MeterProvider,
 			},
@@ -186,7 +184,7 @@ func calcExportersRequiredDataTypes(cfg *config.Config) exportersRequiredDataTyp
 	result := make(exportersRequiredDataTypes)
 
 	// Iterate over pipelines.
-	for _, pipeline := range cfg.Service.Pipelines {
+	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Iterate over all exporters for this pipeline.
 		for _, expID := range pipeline.Exporters {
 			// Create the data type requirement for the expCfg if it does not exist.
@@ -196,7 +194,7 @@ func calcExportersRequiredDataTypes(cfg *config.Config) exportersRequiredDataTyp
 
 			// Remember that this data type is required for the expCfg and also which
 			// pipeline the requirement is coming from.
-			result[expID][pipeline.InputType] = dataTypeRequirement{pipeline}
+			result[expID][pipelineID.Type()] = pipelineID
 		}
 	}
 	return result
@@ -221,7 +219,7 @@ func buildExporter(
 
 	var err error
 	var createdExporter component.Exporter
-	for dataType, requirement := range inputDataTypes {
+	for dataType, pipelineID := range inputDataTypes {
 		switch dataType {
 		case config.TracesDataType:
 			createdExporter, err = factory.CreateTracesExporter(ctx, set, cfg)
@@ -234,13 +232,13 @@ func buildExporter(
 
 		default:
 			// Could not create because this exporter does not support this data type.
-			return nil, exporterTypeMismatchErr(cfg, requirement.requiredBy, dataType)
+			return nil, exporterTypeMismatchErr(cfg, pipelineID, dataType)
 		}
 
 		if err != nil {
 			if err == componenterror.ErrDataTypeIsNotSupported {
 				// Could not create because this exporter does not support this data type.
-				return nil, exporterTypeMismatchErr(cfg, requirement.requiredBy, dataType)
+				return nil, exporterTypeMismatchErr(cfg, pipelineID, dataType)
 			}
 			return nil, fmt.Errorf("error creating %v exporter: %w", cfg.ID(), err)
 		}
@@ -260,11 +258,11 @@ func buildExporter(
 
 func exporterTypeMismatchErr(
 	config config.Exporter,
-	requiredByPipeline *config.Pipeline,
+	pipelineID config.ComponentID,
 	dataType config.DataType,
 ) error {
 	return fmt.Errorf(
 		"pipeline %q of data type %q has an exporter %v, which does not support that data type",
-		requiredByPipeline.Name, dataType, config.ID(),
+		pipelineID, dataType, config.ID(),
 	)
 }

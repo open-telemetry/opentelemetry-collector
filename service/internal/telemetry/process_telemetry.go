@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetry
+package telemetry // import "go.opentelemetry.io/collector/service/internal/telemetry"
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 )

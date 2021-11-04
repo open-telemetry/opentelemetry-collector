@@ -72,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "on",
-				TLSSetting: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/var/lib/mycert.pem",
 					},
@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorName: "nop"},
+				Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("nop")},
 			},
 		})
 }

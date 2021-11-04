@@ -14,4 +14,4 @@
 
 // Package componenterror provides helper functions to create and process
 // OpenTelemetry component errors.
-package componenterror
+package componenterror // import "go.opentelemetry.io/collector/component/componenterror"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"net/http"
@@ -48,9 +48,8 @@ func (srv *service) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 }
 
 func (srv *service) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm() // nolint:errcheck
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "service"})
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "service"})
 	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
 		Name:              "Pipelines",
 		ComponentEndpoint: pipelinezPath,
@@ -62,16 +61,17 @@ func (srv *service) handleServicezRequest(w http.ResponseWriter, r *http.Request
 		Link:              true,
 	})
 	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build And Runtime", Properties: version.RuntimeVar()})
-	zpages.WriteHTMLFooter(w)
+	zpages.WriteHTMLPageFooter(w)
 }
 
 func (srv *service) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm() // nolint:errcheck
+	qValues := r.URL.Query()
+	pipelineName := qValues.Get(zPipelineName)
+	componentName := qValues.Get(zComponentName)
+	componentKind := qValues.Get(zComponentKind)
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	pipelineName := r.Form.Get(zPipelineName)
-	componentName := r.Form.Get(zComponentName)
-	componentKind := r.Form.Get(zComponentKind)
-	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Pipelines"})
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Pipelines"})
 	zpages.WriteHTMLPipelinesSummaryTable(w, srv.getPipelinesSummaryTableData())
 	if pipelineName != "" && componentName != "" && componentKind != "" {
 		fullName := componentName
@@ -83,32 +83,30 @@ func (srv *service) handlePipelinezRequest(w http.ResponseWriter, r *http.Reques
 		})
 		// TODO: Add config + status info.
 	}
-	zpages.WriteHTMLFooter(w)
+	zpages.WriteHTMLPageFooter(w)
 }
 
 func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
-	data := zpages.SummaryPipelinesTableData{
-		ComponentEndpoint: pipelinezPath,
-	}
+	data := zpages.SummaryPipelinesTableData{}
 
 	data.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(srv.builtPipelines))
 	for c, p := range srv.builtPipelines {
 		// TODO: Change the template to use ID.
 		var recvs []string
-		for _, recvID := range c.Receivers {
+		for _, recvID := range p.Config.Receivers {
 			recvs = append(recvs, recvID.String())
 		}
 		var procs []string
-		for _, procID := range c.Processors {
+		for _, procID := range p.Config.Processors {
 			procs = append(procs, procID.String())
 		}
 		var exps []string
-		for _, expID := range c.Exporters {
+		for _, expID := range p.Config.Exporters {
 			exps = append(exps, expID.String())
 		}
 		row := zpages.SummaryPipelinesTableRowData{
-			FullName:    c.Name,
-			InputType:   string(c.InputType),
+			FullName:    c.String(),
+			InputType:   string(c.Type()),
 			MutatesData: p.MutatesData,
 			Receivers:   recvs,
 			Processors:  procs,
@@ -124,10 +122,10 @@ func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableD
 }
 
 func handleExtensionzRequest(host component.Host, w http.ResponseWriter, r *http.Request) {
-	r.ParseForm() // nolint:errcheck
+	extensionName := r.URL.Query().Get(zExtensionName)
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	extensionName := r.Form.Get(zExtensionName)
-	zpages.WriteHTMLHeader(w, zpages.HeaderData{Title: "Extensions"})
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Extensions"})
 	zpages.WriteHTMLExtensionsSummaryTable(w, getExtensionsSummaryTableData(host))
 	if extensionName != "" {
 		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
@@ -135,18 +133,16 @@ func handleExtensionzRequest(host component.Host, w http.ResponseWriter, r *http
 		})
 		// TODO: Add config + status info.
 	}
-	zpages.WriteHTMLFooter(w)
+	zpages.WriteHTMLPageFooter(w)
 }
 
 func getExtensionsSummaryTableData(host component.Host) zpages.SummaryExtensionsTableData {
-	data := zpages.SummaryExtensionsTableData{
-		ComponentEndpoint: extensionzPath,
-	}
+	data := zpages.SummaryExtensionsTableData{}
 
 	extensions := host.GetExtensions()
 	data.Rows = make([]zpages.SummaryExtensionsTableRowData, 0, len(extensions))
 	for c := range extensions {
-		row := zpages.SummaryExtensionsTableRowData{FullName: c.Name()}
+		row := zpages.SummaryExtensionsTableRowData{FullName: c.String()}
 		data.Rows = append(data.Rows, row)
 	}
 

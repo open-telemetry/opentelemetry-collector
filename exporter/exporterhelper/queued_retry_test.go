@@ -300,13 +300,13 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
-	set, err := obsreporttest.SetupRecordedMetricsTest()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer set.Shutdown(context.Background())
+	defer tt.Shutdown(context.Background())
 
 	qCfg := DefaultQueueSettings()
 	rCfg := DefaultRetrySettings()
-	be := newBaseExporter(&defaultExporterCfg, set.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -346,10 +346,10 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		require.NoError(t, be.sender.send(newErrorRequest(context.Background())))
 	}
-	checkValueForProducer(t, defaultExporterTags, int64(7), "exporter/queue_size")
+	checkValueForGlobalManager(t, defaultExporterTags, int64(7), "exporter/queue_size")
 
 	assert.NoError(t, be.Shutdown(context.Background()))
-	checkValueForProducer(t, defaultExporterTags, int64(0), "exporter/queue_size")
+	checkValueForGlobalManager(t, defaultExporterTags, int64(0), "exporter/queue_size")
 }
 
 func TestNoCancellationContext(t *testing.T) {
@@ -486,24 +486,30 @@ func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, wan
 	assert.EqualValues(t, want, atomic.LoadInt64(&ocs.droppedItemsCount))
 }
 
-// checkValueForProducer checks that the given metrics with wantTags is reported by one of the
+// checkValueForGlobalManager checks that the given metrics with wantTags is reported by one of the
 // metric producers
-func checkValueForProducer(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
+func checkValueForGlobalManager(t *testing.T, wantTags []tag.Tag, value int64, vName string) {
 	producers := metricproducer.GlobalManager().GetAll()
 	for _, producer := range producers {
-		for _, metric := range producer.Read() {
-			if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {
-				lastValue := metric.TimeSeries[len(metric.TimeSeries)-1]
-				if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, lastValue.LabelValues) {
-					require.Equal(t, value, lastValue.Points[len(lastValue.Points)-1].Value.(int64))
-					return
-				}
+		if checkValueForProducer(t, producer, wantTags, value, vName) {
+			return
+		}
+	}
+	require.Fail(t, fmt.Sprintf("could not find metric %v with tags %s reported", vName, wantTags))
+}
 
+// checkValueForProducer checks that the given metrics with wantTags is reported by the metric producer
+func checkValueForProducer(t *testing.T, producer metricproducer.Producer, wantTags []tag.Tag, value int64, vName string) bool {
+	for _, metric := range producer.Read() {
+		if metric.Descriptor.Name == vName && len(metric.TimeSeries) > 0 {
+			lastValue := metric.TimeSeries[len(metric.TimeSeries)-1]
+			if tagsMatchLabelKeys(wantTags, metric.Descriptor.LabelKeys, lastValue.LabelValues) {
+				require.Equal(t, value, lastValue.Points[len(lastValue.Points)-1].Value.(int64))
+				return true
 			}
 		}
 	}
-
-	require.Fail(t, fmt.Sprintf("could not find metric %v with tags %s reported", vName, wantTags))
+	return false
 }
 
 // tagsMatchLabelKeys returns true if provided tags match keys and values

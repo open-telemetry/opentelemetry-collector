@@ -48,3 +48,6 @@ s+repeated IntExemplar exemplars = \(.*\);+repeated IntExemplar exemplars = \1\
 
 s+repeated Exemplar exemplars = \(.*\);+repeated Exemplar exemplars = \1\
   [ (gogoproto.nullable) = false ];+g
+
+s+Buckets \(.*\)tive = \(.*\);+Buckets \1tive = \2\
+  [ (gogoproto.nullable) = false ];+g

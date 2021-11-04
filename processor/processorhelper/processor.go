@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processorhelper
+package processorhelper // import "go.opentelemetry.io/collector/processor/processorhelper"
 
 import (
 	"errors"

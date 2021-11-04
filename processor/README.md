@@ -31,14 +31,14 @@ processor documentation for more information.
 
 1. [memory_limiter](memorylimiterprocessor/README.md)
 2. *any sampling processors*
-3. Any processor relying on sending source from `Context` (e.g. `k8s_tagger`)
+3. Any processor relying on sending source from `Context` (e.g. `k8sattributes`)
 3. [batch](batchprocessor/README.md)
 4. *any other processors*
 
 ### Metrics
 
 1. [memory_limiter](memorylimiterprocessor/README.md)
-2. Any processor relying on sending source from `Context` (e.g. `k8s_tagger`)
+2. Any processor relying on sending source from `Context` (e.g. `k8sattributes`)
 3. [batch](batchprocessor/README.md)
 4. *any other processors*
 

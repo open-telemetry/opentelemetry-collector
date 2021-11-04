@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+package testutil // import "go.opentelemetry.io/collector/internal/testutil"
 
 import (
 	"net"
@@ -75,7 +75,7 @@ func GetAvailablePort(t *testing.T) uint16 {
 		}
 	}
 
-	portInt, err := strconv.Atoi(port)
+	portInt, err := strconv.ParseUint(port, 10, 16)
 	require.NoError(t, err)
 
 	return uint16(portInt)

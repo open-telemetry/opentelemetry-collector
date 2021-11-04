@@ -16,4 +16,4 @@
 // that typically live under the "go.opentelemetry.io/collector/config" package but aren't stable yet
 // to be published there.
 // ATTENTION: the package is still experimental and subject to changes without advanced notice.
-package config
+package config // import "go.opentelemetry.io/collector/config/experimental/config"
