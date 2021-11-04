@@ -120,7 +120,6 @@ func TestCollector_Start(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	const testPrefix = "a_test"
 	metricsPort := testutil.GetAvailablePort(t)
 	require.NoError(t, flags().Parse([]string{
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),

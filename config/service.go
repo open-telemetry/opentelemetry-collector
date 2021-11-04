@@ -17,8 +17,9 @@ package config // import "go.opentelemetry.io/collector/config"
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 // Service defines the configurable components of the service.
