@@ -557,10 +557,14 @@ func TestContextWithClient(t *testing.T) {
 		{
 			desc: "existing client with IP, no peer information",
 			input: client.NewContext(context.Background(), &client.ClientInfo{
-				IP: "1.2.3.4",
+				IP: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
 			}),
 			expected: &client.ClientInfo{
-				IP: "1.2.3.4",
+				IP: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
 			},
 		},
 		{
@@ -571,20 +575,26 @@ func TestContextWithClient(t *testing.T) {
 				},
 			}),
 			expected: &client.ClientInfo{
-				IP: "1.2.3.4",
+				IP: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
 			},
 		},
 		{
 			desc: "existing client, existing IP gets overridden with peer information",
 			input: peer.NewContext(client.NewContext(context.Background(), &client.ClientInfo{
-				IP: "1.2.3.4",
+				IP: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
 			}), &peer.Peer{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 5),
 				},
 			}),
 			expected: &client.ClientInfo{
-				IP: "1.2.3.5",
+				IP: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 5),
+				},
 			},
 		},
 	}

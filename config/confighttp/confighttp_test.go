@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -610,7 +611,9 @@ func TestContextWithClient(t *testing.T) {
 				RemoteAddr: "1.2.3.4:55443",
 			},
 			expected: &client.ClientInfo{
-				IP: "1.2.3.4",
+				IP: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
 			},
 		},
 	}

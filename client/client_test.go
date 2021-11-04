@@ -17,6 +17,7 @@ package client
 
 import (
 	"context"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,9 @@ func TestNewContext(t *testing.T) {
 		{
 			desc: "valid client",
 			cl: &ClientInfo{
-				IP: "1.2.3.4",
+				IP: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
 			},
 		},
 		{
@@ -56,10 +59,14 @@ func TestFromContext(t *testing.T) {
 		{
 			desc: "context with client",
 			input: context.WithValue(context.Background(), ctxKey{}, &ClientInfo{
-				IP: "1.2.3.4",
+				IP: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
 			}),
 			expected: &ClientInfo{
-				IP: "1.2.3.4",
+				IP: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
 			},
 		},
 		{

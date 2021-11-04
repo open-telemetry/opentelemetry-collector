@@ -19,6 +19,7 @@ package client // import "go.opentelemetry.io/collector/client"
 
 import (
 	"context"
+	"net"
 )
 
 type ctxKey struct{}
@@ -27,7 +28,7 @@ type ctxKey struct{}
 type ClientInfo struct {
 	// IP for the client connecting to this collector. Available in a best-effort basis, and generally reliable
 	// for receivers making use of confighttp.ToServer and configgrpc.ToServerOption.
-	IP string
+	IP *net.IPAddr
 
 	// Auth information from the incoming request as provided by configauth.ServerAuthenticator implementations
 	// tied to the receiver for this connection.

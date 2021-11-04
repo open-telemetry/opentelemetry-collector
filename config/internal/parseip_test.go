@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,27 +25,31 @@ func TestParseIP(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		input    string
-		expected string
+		expected *net.IPAddr
 	}{
 		{
-			desc:     "addr",
-			input:    "1.2.3.4",
-			expected: "1.2.3.4",
+			desc:  "addr",
+			input: "1.2.3.4",
+			expected: &net.IPAddr{
+				IP: net.IPv4(1, 2, 3, 4),
+			},
 		},
 		{
-			desc:     "addr:port",
-			input:    "1.2.3.4:33455",
-			expected: "1.2.3.4",
+			desc:  "addr:port",
+			input: "1.2.3.4:33455",
+			expected: &net.IPAddr{
+				IP: net.IPv4(1, 2, 3, 4),
+			},
 		},
 		{
 			desc:     "protocol://addr:port",
 			input:    "http://1.2.3.4:33455",
-			expected: "",
+			expected: nil,
 		},
 		{
 			desc:     "addr/path",
 			input:    "1.2.3.4/orders",
-			expected: "",
+			expected: nil,
 		},
 	}
 	for _, tC := range testCases {

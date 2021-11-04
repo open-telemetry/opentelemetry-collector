@@ -18,14 +18,16 @@ import "net"
 
 // ParseIP parses the given string for an IP address. The input string might contain the port,
 // but must not contain a protocol or path. Suitable for getting the IP part of a client connection.
-func ParseIP(source string) string {
+func ParseIP(source string) *net.IPAddr {
 	ipstr, _, err := net.SplitHostPort(source)
 	if err == nil {
-		return ipstr
+		source = ipstr
 	}
 	ip := net.ParseIP(source)
 	if ip != nil {
-		return ip.String()
+		return &net.IPAddr{
+			IP: ip,
+		}
 	}
-	return ""
+	return nil
 }
