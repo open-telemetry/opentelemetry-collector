@@ -20,12 +20,12 @@ import (
 )
 
 type expandMapProvider struct {
-	base MapProvider
+	base Provider
 }
 
-// NewExpandMapProvider returns a MapProvider, that expands all environment variables for a
-// config.Map provided by the given MapProvider.
-func NewExpandMapProvider(base MapProvider) MapProvider {
+// NewExpandMapProvider returns a Provider, that expands all environment variables for a
+// config.Map provided by the given Provider.
+func NewExpandMapProvider(base Provider) Provider {
 	return &expandMapProvider{
 		base: base,
 	}

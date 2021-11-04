@@ -11,7 +11,8 @@
 - Force usage of `extensionhelper.NewFactory` to implement `component.ExtensionFactory` (#4338)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
 - Remove `config.Pipeline.Name` (#4326)
-- Move `config.Mapprovider`, `config.WatchableRetrieved` and `config.Retrieved` interfaces to `config/configmapprovider` package (#4337)
+- Rename `config.Mapprovider` as `configmapprovider.Provider` (#4337)
+- Move `config.WatchableRetrieved` and `config.Retrieved` interfaces to `config/configmapprovider` package (#4337)
 - Remove `config.Pipeline.InputDataType` (#4343)
 
 ## v0.38.0 Beta

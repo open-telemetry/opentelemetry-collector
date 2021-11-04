@@ -281,7 +281,7 @@ func TestCollector_reloadService(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		parserProvider configmapprovider.MapProvider
+		parserProvider configmapprovider.Provider
 		service        *service
 	}{
 		{

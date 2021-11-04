@@ -20,9 +20,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// MapProvider is an interface that helps providing configuration's parser.
+// Provider is an interface that helps providing configuration's parser.
 // Implementations may load the parser from a file, a database or any other source.
-type MapProvider interface {
+type Provider interface {
 	// Retrieve goes to the configuration source and retrieves the selected data which
 	// contains the value to be injected in the configuration and the corresponding watcher that
 	// will be used to monitor for updates of the retrieved value.
