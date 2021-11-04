@@ -10,6 +10,10 @@
 - Force usage of `receiverhelper.NewFactory` to implement `component.ReceiverFactory` (#4338)
 - Force usage of `extensionhelper.NewFactory` to implement `component.ExtensionFactory` (#4338)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
+- Renamed slice-valued `pdata` types and functions for consistency. (#4325)
+  - Rename `pdata.AnyValueArray` to `pdata.AttributeValueSlice`
+  - Rename `ArrayVal()` to `SliceVal()`
+  - Rename `SetArrayVal()` to `SetSliceVal()`
 - Remove `config.Pipeline.Name` (#4326)
 - Remove `config.Pipeline.InputDataType` (#4343)
 - otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
