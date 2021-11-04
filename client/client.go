@@ -24,8 +24,8 @@ import (
 
 type ctxKey struct{}
 
-// ClientInfo contains data related to the clients connecting to receivers.
-type ClientInfo struct {
+// Info contains data related to the clients connecting to receivers.
+type Info struct {
 	// IP for the client connecting to this collector. Available in a best-effort basis, and generally reliable
 	// for receivers making use of confighttp.ToServer and configgrpc.ToServerOption.
 	IP *net.IPAddr
@@ -49,16 +49,16 @@ type AuthData interface {
 }
 
 // NewContext takes an existing context and derives a new context with the ClientInfo value stored on it.
-func NewContext(ctx context.Context, c *ClientInfo) context.Context {
+func NewContext(ctx context.Context, c *Info) context.Context {
 	return context.WithValue(ctx, ctxKey{}, c)
 }
 
 // FromContext takes a context and returns a ClientInfo from it. When a ClientInfo isn't present, a new
 // empty one is returned.
-func FromContext(ctx context.Context) *ClientInfo {
-	c, ok := ctx.Value(ctxKey{}).(*ClientInfo)
+func FromContext(ctx context.Context) *Info {
+	c, ok := ctx.Value(ctxKey{}).(*Info)
 	if !ok {
-		c = &ClientInfo{}
+		c = &Info{}
 	}
 	return c
 }
