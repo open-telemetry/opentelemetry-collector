@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove deprecated config (already no-op) `ballast_size_mib` in memorylimiterprocessor (#4365)
 - Remove `config.Receivers`, `config.Exporters`, `config.Processors`, and `config.Extensions`. Use map directly (#4344)
 - Remove `component.BaseProcessorFactory`, use `processorhelper.NewFactory` instead (#4175)
 - Force usage of `exporterhelper.NewFactory` to implement `component.ExporterFactory` (#4338)

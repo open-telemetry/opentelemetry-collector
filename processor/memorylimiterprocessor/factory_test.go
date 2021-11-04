@@ -59,7 +59,6 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg := cfg.(*Config)
 	pCfg.MemoryLimitMiB = 5722
 	pCfg.MemorySpikeLimitMiB = 1907
-	pCfg.BallastSizeMiB = 2048
 	pCfg.CheckInterval = 100 * time.Millisecond
 
 	tp, err = factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
