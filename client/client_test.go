@@ -25,11 +25,11 @@ import (
 func TestNewContext(t *testing.T) {
 	testCases := []struct {
 		desc string
-		cl   *Client
+		cl   *ClientInfo
 	}{
 		{
 			desc: "valid client",
-			cl: &Client{
+			cl: &ClientInfo{
 				IP: "1.2.3.4",
 			},
 		},
@@ -51,26 +51,26 @@ func TestFromContext(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		input    context.Context
-		expected *Client
+		expected *ClientInfo
 	}{
 		{
 			desc: "context with client",
-			input: context.WithValue(context.Background(), ctxKey{}, &Client{
+			input: context.WithValue(context.Background(), ctxKey{}, &ClientInfo{
 				IP: "1.2.3.4",
 			}),
-			expected: &Client{
+			expected: &ClientInfo{
 				IP: "1.2.3.4",
 			},
 		},
 		{
 			desc:     "context without client",
 			input:    context.Background(),
-			expected: &Client{},
+			expected: &ClientInfo{},
 		},
 		{
 			desc:     "context with something else in the key",
 			input:    context.WithValue(context.Background(), ctxKey{}, "unexpected!"),
-			expected: &Client{},
+			expected: &ClientInfo{},
 		},
 	}
 	for _, tC := range testCases {

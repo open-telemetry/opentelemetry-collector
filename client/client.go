@@ -21,13 +21,13 @@ import (
 
 type ctxKey struct{}
 
-// Client represents a generic client that sends data to any receiver supported by the OT receiver
-type Client struct {
+// ClientInfo represents a generic client that sends data to any receiver supported by the OT receiver
+type ClientInfo struct {
 	IP   string
 	Auth AuthData
 }
 
-// AuthData represents the authentication data as seen by authenticators.
+// AuthData represents the authentication data as seen by authenticators tied to the receivers.
 type AuthData interface {
 	// Equal determines whether another authentication data is equal to this one.
 	// The actual semantics might be defined by the concrete implementations.
@@ -40,17 +40,17 @@ type AuthData interface {
 	GetAttributeNames() []string
 }
 
-// NewContext takes an existing context and derives a new context with the client value stored on it.
-func NewContext(ctx context.Context, c *Client) context.Context {
+// NewContext takes an existing context and derives a new context with the ClientInfo value stored on it.
+func NewContext(ctx context.Context, c *ClientInfo) context.Context {
 	return context.WithValue(ctx, ctxKey{}, c)
 }
 
-// FromContext takes a context and returns a Client from it. When a client isn't present, a new
+// FromContext takes a context and returns a ClientInfo from it. When a ClientInfo isn't present, a new
 // empty one is returned.
-func FromContext(ctx context.Context) *Client {
-	c, ok := ctx.Value(ctxKey{}).(*Client)
+func FromContext(ctx context.Context) *ClientInfo {
+	c, ok := ctx.Value(ctxKey{}).(*ClientInfo)
 	if !ok {
-		c = &Client{}
+		c = &ClientInfo{}
 	}
 	return c
 }

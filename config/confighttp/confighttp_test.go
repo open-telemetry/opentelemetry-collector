@@ -597,19 +597,19 @@ func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		input    *http.Request
-		expected *client.Client
+		expected *client.ClientInfo
 	}{
 		{
 			desc:     "request without client IP",
 			input:    &http.Request{},
-			expected: &client.Client{},
+			expected: &client.ClientInfo{},
 		},
 		{
 			desc: "request without client IP",
 			input: &http.Request{
 				RemoteAddr: "1.2.3.4:55443",
 			},
-			expected: &client.Client{
+			expected: &client.ClientInfo{
 				IP: "1.2.3.4",
 			},
 		},
