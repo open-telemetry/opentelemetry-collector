@@ -260,10 +260,8 @@ func generateConfig() *Config {
 			Telemetry: ServiceTelemetry{
 				Logs: ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"},
 				Metrics: ServiceTelemetryMetrics{
-					Level:         configtelemetry.LevelNormal,
-					Address:       ":8080",
-					Prefix:        "otelcol",
-					AddInstanceID: true,
+					Level:   configtelemetry.LevelNormal,
+					Address: ":8080",
 				},
 			},
 			Extensions: []ComponentID{NewComponentID("nop")},

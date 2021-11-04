@@ -124,7 +124,6 @@ func TestCollector_Start(t *testing.T) {
 	metricsPort := testutil.GetAvailablePort(t)
 	require.NoError(t, flags().Parse([]string{
 		"--metrics-addr=localhost:" + strconv.FormatUint(uint64(metricsPort), 10),
-		"--metrics-prefix=" + testPrefix,
 	}))
 
 	colDone := make(chan struct{})
@@ -147,7 +146,7 @@ func TestCollector_Start(t *testing.T) {
 	mandatoryLabels := []string{
 		"service_instance_id",
 	}
-	assertMetrics(t, testPrefix, metricsPort, mandatoryLabels)
+	assertMetrics(t, metricsPort, mandatoryLabels)
 
 	assertZPages(t)
 
@@ -200,7 +199,7 @@ func TestCollector_ReportError(t *testing.T) {
 	assert.Equal(t, Closed, <-col.GetStateChannel())
 }
 
-func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLabels []string) {
+func assertMetrics(t *testing.T, metricsPort uint16, mandatoryLabels []string) {
 	client := &http.Client{}
 	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/metrics", metricsPort))
 	require.NoError(t, err)
@@ -212,6 +211,7 @@ func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLab
 	parsed, err := parser.TextToMetricFamilies(reader)
 	require.NoError(t, err)
 
+	prefix := "otelcol"
 	for metricName, metricFamily := range parsed {
 		// require is used here so test fails with a single message.
 		require.True(
