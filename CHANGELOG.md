@@ -21,7 +21,8 @@
   - New `service::telemetry::metrics` structure added to configuration
   - Existing metrics configuration CLI flags are deprecated and to be
     removed in the future.
-  - `--metrics-prefix` is no longer operative; the prefix is fixed to 'otelcol'.
+  - `--metrics-prefix` is no longer operative; the prefix is determined by
+    the value of `service.buildInfo.Command`.
   - `--add-instance-id` is no longer operative; an instance ID will always be added.
 
 ## v0.38.0 Beta

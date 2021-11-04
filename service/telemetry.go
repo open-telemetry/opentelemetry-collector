@@ -33,7 +33,6 @@ import (
 	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/version"
@@ -54,7 +53,7 @@ const (
 )
 
 type collectorTelemetryExporter interface {
-	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, cfg config.ServiceTelemetry) error
+	init(col *Collector) error
 	shutdown() error
 }
 
@@ -64,11 +63,11 @@ type colTelemetry struct {
 	doInitOnce sync.Once
 }
 
-func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, cfg config.ServiceTelemetry) error {
+func (tel *colTelemetry) init(col *Collector) error {
 	var err error
 	tel.doInitOnce.Do(
 		func() {
-			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger, cfg)
+			err = tel.initOnce(col)
 		},
 	)
 	if err != nil {
@@ -77,7 +76,10 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	return nil
 }
 
-func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger, cfg config.ServiceTelemetry) error {
+func (tel *colTelemetry) initOnce(col *Collector) error {
+	logger := col.logger
+	cfg := col.service.config.Telemetry
+
 	level := cfg.Metrics.Level
 	metricsAddr := cfg.Metrics.Address
 
@@ -103,7 +105,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 		}
 		pe = otelHandler
 	} else {
-		ocHandler, err := tel.initOpenCensus(cfg, instanceID, ballastSizeBytes)
+		ocHandler, err := tel.initOpenCensus(col, instanceID)
 		if err != nil {
 			return err
 		}
@@ -129,21 +131,21 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 	go func() {
 		serveErr := tel.server.ListenAndServe()
 		if serveErr != nil && serveErr != http.ErrServerClosed {
-			asyncErrorChannel <- serveErr
+			col.asyncErrorChannel <- serveErr
 		}
 	}()
 
 	return nil
 }
 
-func (tel *colTelemetry) initOpenCensus(cfg config.ServiceTelemetry, instanceID string, ballastSizeBytes uint64) (http.Handler, error) {
-	processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
+func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http.Handler, error) {
+	processMetricsViews, err := telemetry2.NewProcessMetricsViews(getBallastSize(col.service))
 	if err != nil {
 		return nil, err
 	}
 
 	var views []*view.View
-	obsMetrics := obsreportconfig.Configure(cfg.Metrics.Level)
+	obsMetrics := obsreportconfig.Configure(col.service.config.Telemetry.Metrics.Level)
 	views = append(views, batchprocessor.MetricViews()...)
 	views = append(views, obsMetrics.Views...)
 	views = append(views, processMetricsViews.Views()...)
@@ -157,7 +159,7 @@ func (tel *colTelemetry) initOpenCensus(cfg config.ServiceTelemetry, instanceID 
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := prometheus.Options{
-		Namespace: "otelcol",
+		Namespace: col.service.buildInfo.Command,
 	}
 
 	opts.ConstLabels = make(map[string]string)

@@ -224,7 +224,7 @@ func (col *Collector) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := collectorTelemetry.init(col.asyncErrorChannel, getBallastSize(col.service), col.logger, col.service.config.Telemetry); err != nil {
+	if err := collectorTelemetry.init(col); err != nil {
 		return err
 	}
 

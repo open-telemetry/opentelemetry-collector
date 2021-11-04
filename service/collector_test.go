@@ -162,7 +162,7 @@ func TestCollector_Start(t *testing.T) {
 
 type mockColTelemetry struct{}
 
-func (tel *mockColTelemetry) init(chan<- error, uint64, *zap.Logger, config.ServiceTelemetry) error {
+func (tel *mockColTelemetry) init(*Collector) error {
 	return nil
 }
 
