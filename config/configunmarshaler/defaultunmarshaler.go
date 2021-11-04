@@ -214,16 +214,9 @@ func defaultServiceTelemetryMetricsSettings() config.ServiceTelemetryMetrics {
 		addr = configtelemetry.GetMetricsAddrDefault()
 	}
 
-	prefix := configtelemetry.GetMetricsPrefix()
-	if prefix == "" {
-		prefix = configtelemetry.GetMetricsPrefixDefault()
-	}
-
 	return config.ServiceTelemetryMetrics{
-		Level:         configtelemetry.GetMetricsLevelFlagValue(),
-		Address:       addr,
-		Prefix:        prefix,
-		AddInstanceID: configtelemetry.GetAddInstanceID(),
+		Level:   configtelemetry.GetMetricsLevelFlagValue(),
+		Address: addr,
 	}
 }
 

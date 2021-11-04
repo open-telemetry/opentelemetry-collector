@@ -28,8 +28,6 @@ service:
     metrics:
       level: "normal"
       address: ":8081"
-      prefix: "otelcoltest"
-      add_instance_id: false
   extensions: [exampleextension/0, exampleextension/1]
   pipelines:
     traces:

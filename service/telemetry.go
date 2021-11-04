@@ -92,12 +92,8 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 
 	logger.Info("Setting up own telemetry...")
 
-	var instanceID string
-
-	if cfg.Metrics.AddInstanceID {
-		instanceUUID, _ := uuid.NewRandom()
-		instanceID = instanceUUID.String()
-	}
+	instanceUUID, _ := uuid.NewRandom()
+	instanceID := instanceUUID.String()
 
 	var pe http.Handler
 	if configtelemetry.UseOpenTelemetryForInternalMetrics {
@@ -161,14 +157,12 @@ func (tel *colTelemetry) initOpenCensus(cfg config.ServiceTelemetry, instanceID 
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := prometheus.Options{
-		Namespace: cfg.Metrics.Prefix,
+		Namespace: "otelcol",
 	}
 
 	opts.ConstLabels = make(map[string]string)
 
-	if cfg.Metrics.AddInstanceID {
-		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
-	}
+	opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
 
 	if AddCollectorVersionTag {
 		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceVersion)] = version.Version
@@ -184,18 +178,18 @@ func (tel *colTelemetry) initOpenCensus(cfg config.ServiceTelemetry, instanceID 
 }
 
 func (tel *colTelemetry) initOpenTelemetry() (http.Handler, error) {
-	config := otelprometheus.Config{}
+	cfg := otelprometheus.Config{}
 	c := controller.New(
 		processor.NewFactory(
 			selector.NewWithHistogramDistribution(
-				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
+				histogram.WithExplicitBoundaries(cfg.DefaultHistogramBoundaries),
 			),
 			export.CumulativeExportKindSelector(),
 			processor.WithMemory(true),
 		),
 	)
 
-	pe, err := otelprometheus.New(config, c)
+	pe, err := otelprometheus.New(cfg, c)
 	if err != nil {
 		return nil, err
 	}

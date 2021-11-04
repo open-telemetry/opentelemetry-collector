@@ -67,12 +67,12 @@ func Flags(flags *flag.FlagSet) {
 	metricsPrefixPtr = flags.String(
 		metricsPrefixCfg,
 		GetMetricsPrefixDefault(),
-		"Deprecated. Define the metrics configuration as part of the configuration file, under the 'service' section.")
+		"Deprecated.")
 
 	addInstanceIDPtr = flags.Bool(
 		"add-instance-id",
 		GetAddInstanceIDDefault(),
-		"Deprecated. Define the metrics configuration as part of the configuration file, under the 'service' section.")
+		"Deprecated.")
 }
 
 // Level is the level of internal telemetry (metrics, logs, traces about the component itself)

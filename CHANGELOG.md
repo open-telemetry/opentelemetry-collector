@@ -17,6 +17,12 @@
 - Remove `config.Pipeline.Name` (#4326)
 - Remove `config.Pipeline.InputDataType` (#4343)
 - otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
+- Enable configuring collector metrics through service config file. (#4069)
+  - New `service::telemetry::metrics` structure added to configuration
+  - Existing metrics configuration CLI flags are deprecated and to be
+    removed in the future.
+  - `--metrics-prefix` is no longer operative; the prefix is fixed to 'otelcol'.
+  - `--add-instance-id` is no longer operative; an instance ID will always be added.
 
 ## v0.38.0 Beta
 

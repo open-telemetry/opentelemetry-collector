@@ -101,10 +101,8 @@ func TestDecodeConfig(t *testing.T) {
 	assert.Equal(t, config.ServiceTelemetry{
 		Logs: config.ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"},
 		Metrics: config.ServiceTelemetryMetrics{
-			Level:         configtelemetry.LevelNormal,
-			Address:       ":8081",
-			Prefix:        "otelcoltest",
-			AddInstanceID: false,
+			Level:   configtelemetry.LevelNormal,
+			Address: ":8081",
 		},
 	}, cfg.Service.Telemetry)
 
