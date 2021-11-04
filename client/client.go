@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package client contains generic representations of clients connecting to different receivers
+// Package client contains generic representations of clients connecting to different receivers. Components,
+// such as processors or exporters, can make use of this information to make decisions related to
+// grouping of batches, tenancy, load balancing, tagging, among others.
 package client // import "go.opentelemetry.io/collector/client"
 
 import (
@@ -21,9 +23,14 @@ import (
 
 type ctxKey struct{}
 
-// ClientInfo represents a generic client that sends data to any receiver supported by the OT receiver
+// ClientInfo contains data related to the clients connecting to receivers.
 type ClientInfo struct {
-	IP   string
+	// IP for the client connecting to this collector. Available in a best-effort basis, and generally reliable
+	// for receivers making use of confighttp.ToServer and configgrpc.ToServerOption.
+	IP string
+
+	// Auth information from the incoming request as provided by configauth.ServerAuthenticator implementations
+	// tied to the receiver for this connection.
 	Auth AuthData
 }
 
