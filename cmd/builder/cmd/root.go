@@ -114,9 +114,10 @@ func initConfig() {
 	}
 
 	// load the config file
-	if err := vp.ReadInConfig(); err == nil {
-		cfg.Logger.Info("Using config file", zap.String("path", vp.ConfigFileUsed()))
+	if err := vp.ReadInConfig(); err != nil {
+		cobra.CheckErr(err)
 	}
+	cfg.Logger.Info("Using config file", zap.String("path", vp.ConfigFileUsed()))
 
 	// convert Viper's internal state into our configuration object
 	if err := vp.Unmarshal(&cfg); err != nil {
