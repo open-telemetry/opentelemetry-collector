@@ -48,8 +48,8 @@ func main() {
 	}
 
 	info := component.BuildInfo{
-		Command:  "{{ .Distribution.ExeName }}",
-		Description: "{{ .Distribution.LongName }}",
+		Command:  "{{ .Distribution.Name }}",
+		Description: "{{ .Distribution.Description }}",
 		Version:  "{{ .Distribution.Version }}",
 	}
 

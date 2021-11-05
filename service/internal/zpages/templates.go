@@ -37,11 +37,11 @@ var (
 	extensionsTableBytes    []byte
 	extensionsTableTemplate = parseTemplate("extensions_table", extensionsTableBytes)
 
-	//go:embed templates/header.html
+	//go:embed templates/page_header.html
 	headerBytes    []byte
 	headerTemplate = parseTemplate("header", headerBytes)
 
-	//go:embed templates/footer.html
+	//go:embed templates/page_footer.html
 	footerBytes    []byte
 	footerTemplate = parseTemplate("footer", footerBytes)
 
@@ -64,8 +64,8 @@ type HeaderData struct {
 	Title string
 }
 
-// WriteHTMLHeader writes the header.
-func WriteHTMLHeader(w io.Writer, hd HeaderData) {
+// WriteHTMLPageHeader writes the header.
+func WriteHTMLPageHeader(w io.Writer, hd HeaderData) {
 	if err := headerTemplate.Execute(w, hd); err != nil {
 		log.Printf("zpages: executing template: %v", err)
 	}
@@ -73,8 +73,7 @@ func WriteHTMLHeader(w io.Writer, hd HeaderData) {
 
 // SummaryExtensionsTableData contains data for extensions summary table template.
 type SummaryExtensionsTableData struct {
-	ComponentEndpoint string
-	Rows              []SummaryExtensionsTableRowData
+	Rows []SummaryExtensionsTableRowData
 }
 
 // SummaryExtensionsTableRowData contains data for one row in extensions summary table template.
@@ -93,8 +92,7 @@ func WriteHTMLExtensionsSummaryTable(w io.Writer, spd SummaryExtensionsTableData
 
 // SummaryPipelinesTableData contains data for pipelines summary table template.
 type SummaryPipelinesTableData struct {
-	ComponentEndpoint string
-	Rows              []SummaryPipelinesTableRowData
+	Rows []SummaryPipelinesTableRowData
 }
 
 // SummaryPipelinesTableRowData contains data for one row in pipelines summary table template.
@@ -142,8 +140,8 @@ func WriteHTMLPropertiesTable(w io.Writer, chd PropertiesTableData) {
 	}
 }
 
-// WriteHTMLFooter writes the footer.
-func WriteHTMLFooter(w io.Writer) {
+// WriteHTMLPageFooter writes the footer.
+func WriteHTMLPageFooter(w io.Writer) {
 	if err := footerTemplate.Execute(w, nil); err != nil {
 		log.Printf("zpages: executing template: %v", err)
 	}
