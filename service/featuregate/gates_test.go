@@ -51,13 +51,17 @@ func TestGlobalRegistry(t *testing.T) {
 
 	assert.NotContains(t, List(), gate)
 	assert.False(t, IsEnabled(gate.ID))
+	assert.False(t, GlobalRegistry().IsEnabled(gate.ID))
 
 	assert.NotPanics(t, func() { Register(gate) })
 	assert.Contains(t, List(), gate)
+	assert.Contains(t, GlobalRegistry().List(), gate)
 	assert.True(t, IsEnabled(gate.ID))
+	assert.True(t, GlobalRegistry().IsEnabled(gate.ID))
 
 	Apply(map[string]bool{gate.ID: false})
 	assert.False(t, IsEnabled(gate.ID))
+	assert.False(t, GlobalRegistry().IsEnabled(gate.ID))
 
 	assert.Panics(t, func() { Register(gate) })
 	reg.Lock()
