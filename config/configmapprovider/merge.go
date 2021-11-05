@@ -28,10 +28,10 @@ type mergeMapProvider struct {
 	providers []Provider
 }
 
-// NewMergeMapProvider returns a Provider, that merges the result from multiple Provider.
+// NewMerge returns a Provider, that merges the result from multiple Provider.
 //
 // The ConfigMaps are merged in the given order, by merging all of them in order into an initial empty map.
-func NewMergeMapProvider(ps ...Provider) Provider {
+func NewMerge(ps ...Provider) Provider {
 	return &mergeMapProvider{providers: ps}
 }
 

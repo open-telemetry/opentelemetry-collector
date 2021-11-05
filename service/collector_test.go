@@ -77,7 +77,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -114,7 +114,7 @@ func TestCollector_Start(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		ConfigMapProvider: configmapprovider.NewFile("testdata/otelcol-config.yaml"),
 		LoggingOptions:    []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
@@ -181,7 +181,7 @@ func TestCollector_ReportError(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		ConfigMapProvider: configmapprovider.NewFile("testdata/otelcol-config.yaml"),
 	})
 	require.NoError(t, err)
 
@@ -301,7 +301,7 @@ func TestCollector_reloadService(t *testing.T) {
 		},
 		{
 			name:           "retire_service_ok_load_ok",
-			parserProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+			parserProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
 			service: &service{
 				telemetry:       componenttest.NewNopTelemetrySettings(),
 				builtExporters:  builder.Exporters{},

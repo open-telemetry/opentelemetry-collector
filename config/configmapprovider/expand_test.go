@@ -56,7 +56,7 @@ func TestExpand(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			// Retrieve the config
-			emp := NewExpandMapProvider(NewFileMapProvider(path.Join("testdata", test.name)))
+			emp := NewExpand(NewFile(path.Join("testdata", test.name)))
 			cp, err := emp.Retrieve(context.Background())
 			require.NoError(t, err, "Unable to get config")
 
@@ -74,7 +74,7 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 	}()
 
 	// Retrieve the config
-	emp := NewExpandMapProvider(NewFileMapProvider(path.Join("testdata", "expand-escaped-env.yaml")))
+	emp := NewExpand(NewFile(path.Join("testdata", "expand-escaped-env.yaml")))
 	cp, err := emp.Retrieve(context.Background())
 	require.NoError(t, err, "Unable to get config")
 
