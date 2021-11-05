@@ -137,7 +137,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	}
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("mock"): &configauth.MockAuthenticator{},
+			config.NewComponentID("mock"): &configauth.MockServerAuthenticator{},
 		},
 	}
 	opts, err := gss.ToServerOption(host, componenttest.NewNopTelemetrySettings())
@@ -328,6 +328,22 @@ func TestGetGRPCCompressionKey(t *testing.T) {
 
 	if GetGRPCCompressionKey("Gzip") != CompressionGzip {
 		t.Error("Capitalization of CompressionGzip should not matter")
+	}
+
+	if GetGRPCCompressionKey("snappy") != CompressionSnappy {
+		t.Error("snappy is marked as supported but returned unsupported")
+	}
+
+	if GetGRPCCompressionKey("Snappy") != CompressionSnappy {
+		t.Error("Capitalization of CompressionSnappy should not matter")
+	}
+
+	if GetGRPCCompressionKey("zstd") != CompressionZstd {
+		t.Error("zstd is marked as supported but returned unsupported")
+	}
+
+	if GetGRPCCompressionKey("Zstd") != CompressionZstd {
+		t.Error("Capitalization of CompressionZstd should not matter")
 	}
 
 	if GetGRPCCompressionKey("badType") != CompressionUnsupported {

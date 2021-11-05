@@ -23,48 +23,62 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 	if src.LogRecordCount() <= size {
 		return src
 	}
-	totalCopiedLogs := 0
+	totalCopiedLogRecords := 0
 	dest := pdata.NewLogs()
 
-	src.ResourceLogs().RemoveIf(func(srcRs pdata.ResourceLogs) bool {
+	src.ResourceLogs().RemoveIf(func(srcRl pdata.ResourceLogs) bool {
 		// If we are done skip everything else.
-		if totalCopiedLogs == size {
+		if totalCopiedLogRecords == size {
 			return false
 		}
 
-		destRs := dest.ResourceLogs().AppendEmpty()
-		srcRs.Resource().CopyTo(destRs.Resource())
+		// If it fully fits
+		srcRlLRC := resourceLRC(srcRl)
+		if (totalCopiedLogRecords + srcRlLRC) <= size {
+			totalCopiedLogRecords += srcRlLRC
+			srcRl.MoveTo(dest.ResourceLogs().AppendEmpty())
+			return true
+		}
 
-		srcRs.InstrumentationLibraryLogs().RemoveIf(func(srcIlm pdata.InstrumentationLibraryLogs) bool {
+		destRl := dest.ResourceLogs().AppendEmpty()
+		srcRl.Resource().CopyTo(destRl.Resource())
+		srcRl.InstrumentationLibraryLogs().RemoveIf(func(srcIll pdata.InstrumentationLibraryLogs) bool {
 			// If we are done skip everything else.
-			if totalCopiedLogs == size {
+			if totalCopiedLogRecords == size {
 				return false
 			}
 
-			destIlm := destRs.InstrumentationLibraryLogs().AppendEmpty()
-			srcIlm.InstrumentationLibrary().CopyTo(destIlm.InstrumentationLibrary())
-
 			// If possible to move all metrics do that.
-			srcLogsLen := srcIlm.Logs().Len()
-			if size >= srcLogsLen+totalCopiedLogs {
-				totalCopiedLogs += srcLogsLen
-				srcIlm.Logs().MoveAndAppendTo(destIlm.Logs())
+			srcIllLRC := srcIll.Logs().Len()
+			if size >= srcIllLRC+totalCopiedLogRecords {
+				totalCopiedLogRecords += srcIllLRC
+				srcIll.MoveTo(destRl.InstrumentationLibraryLogs().AppendEmpty())
 				return true
 			}
 
-			srcIlm.Logs().RemoveIf(func(srcMetric pdata.LogRecord) bool {
+			destIll := destRl.InstrumentationLibraryLogs().AppendEmpty()
+			srcIll.InstrumentationLibrary().CopyTo(destIll.InstrumentationLibrary())
+			srcIll.Logs().RemoveIf(func(srcMetric pdata.LogRecord) bool {
 				// If we are done skip everything else.
-				if totalCopiedLogs == size {
+				if totalCopiedLogRecords == size {
 					return false
 				}
-				srcMetric.CopyTo(destIlm.Logs().AppendEmpty())
-				totalCopiedLogs++
+				srcMetric.MoveTo(destIll.Logs().AppendEmpty())
+				totalCopiedLogRecords++
 				return true
 			})
 			return false
 		})
-		return srcRs.InstrumentationLibraryLogs().Len() == 0
+		return srcRl.InstrumentationLibraryLogs().Len() == 0
 	})
 
 	return dest
+}
+
+// resourceLRC calculates the total number of log records in the pdata.ResourceLogs.
+func resourceLRC(rs pdata.ResourceLogs) (count int) {
+	for k := 0; k < rs.InstrumentationLibraryLogs().Len(); k++ {
+		count += rs.InstrumentationLibraryLogs().At(k).Logs().Len()
+	}
+	return
 }

@@ -15,42 +15,21 @@
 package component
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 )
 
 type TestExporterFactory struct {
+	ExporterFactory
 	name string
 }
 
 // Type gets the type of the Exporter config created by this factory.
 func (f *TestExporterFactory) Type() config.Type {
 	return config.Type(f.name)
-}
-
-// CreateDefaultConfig creates the default configuration for the Exporter.
-func (f *TestExporterFactory) CreateDefaultConfig() config.Exporter {
-	return nil
-}
-
-// CreateTracesExporter creates a trace exporter based on this config.
-func (f *TestExporterFactory) CreateTracesExporter(context.Context, ExporterCreateSettings, config.Exporter) (TracesExporter, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *TestExporterFactory) CreateMetricsExporter(context.Context, ExporterCreateSettings, config.Exporter) (MetricsExporter, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateLogsExporter creates a logs exporter based on this config.
-func (f *TestExporterFactory) CreateLogsExporter(context.Context, ExporterCreateSettings, config.Exporter) (LogsExporter, error) {
-	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 func TestBuildExporters(t *testing.T) {
@@ -62,18 +41,18 @@ func TestBuildExporters(t *testing.T) {
 	testCases := []testCase{
 		{
 			in: []ExporterFactory{
-				&TestExporterFactory{"exp1"},
-				&TestExporterFactory{"exp2"},
+				&TestExporterFactory{name: "exp1"},
+				&TestExporterFactory{name: "exp2"},
 			},
 			out: map[config.Type]ExporterFactory{
-				"exp1": &TestExporterFactory{"exp1"},
-				"exp2": &TestExporterFactory{"exp2"},
+				"exp1": &TestExporterFactory{name: "exp1"},
+				"exp2": &TestExporterFactory{name: "exp2"},
 			},
 		},
 		{
 			in: []ExporterFactory{
-				&TestExporterFactory{"exp1"},
-				&TestExporterFactory{"exp1"},
+				&TestExporterFactory{name: "exp1"},
+				&TestExporterFactory{name: "exp1"},
 			},
 		},
 	}

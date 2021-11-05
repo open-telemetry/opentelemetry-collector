@@ -15,8 +15,6 @@
 package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
 import (
-	"errors"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -33,16 +31,6 @@ func NewTraces(err error, failed pdata.Traces) error {
 		error:  err,
 		failed: failed,
 	}
-}
-
-// AsTraces finds the first error in err's chain that can be assigned to target. If such an error is found,
-// it is assigned to target and true is returned, otherwise false is returned.
-// Deprecated: Use `errors.As(err, target)` instead.
-func AsTraces(err error, target *Traces) bool {
-	if err == nil {
-		return false
-	}
-	return errors.As(err, target)
 }
 
 // GetTraces returns failed traces from the associated error.
@@ -70,16 +58,6 @@ func NewLogs(err error, failed pdata.Logs) error {
 	}
 }
 
-// AsLogs finds the first error in err's chain that can be assigned to target. If such an error is found,
-// it is assigned to target and true is returned, otherwise false is returned.
-// Deprecated: Use `errors.As(err, target)` instead.
-func AsLogs(err error, target *Logs) bool {
-	if err == nil {
-		return false
-	}
-	return errors.As(err, target)
-}
-
 // GetLogs returns failed logs from the associated error.
 func (err Logs) GetLogs() pdata.Logs {
 	return err.failed
@@ -103,16 +81,6 @@ func NewMetrics(err error, failed pdata.Metrics) error {
 		error:  err,
 		failed: failed,
 	}
-}
-
-// AsMetrics finds the first error in err's chain that can be assigned to target. If such an error is found,
-// it is assigned to target and true is returned, otherwise false is returned.
-// Deprecated: Use `errors.As(err, target)` instead.
-func AsMetrics(err error, target *Metrics) bool {
-	if err == nil {
-		return false
-	}
-	return errors.As(err, target)
 }
 
 // GetMetrics returns failed metrics from the associated error.

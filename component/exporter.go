@@ -54,6 +54,9 @@ type ExporterCreateSettings struct {
 
 // ExporterFactory can create MetricsExporter, TracesExporter and
 // LogsExporter. This is the new preferred factory type to create exporters.
+//
+// This interface cannot be directly implemented. Implementations must
+// use the exporterhelper.NewFactory to implement it.
 type ExporterFactory interface {
 	Factory
 

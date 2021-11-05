@@ -65,7 +65,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 		return err
 	}
 
-	// next manually search for protocols in the config.Map, if a protocol is not present it means it is disable.
+	// next manually search for protocols in the config.Map, if a protocol is not present it means it is disabled.
 	protocols, err := componentParser.Sub(protocolsFieldName)
 	if err != nil {
 		return err

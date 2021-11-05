@@ -114,7 +114,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-receiver-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines["traces"]
+				pipe := cfg.Service.Pipelines[NewComponentID("traces")]
 				pipe.Receivers = append(pipe.Receivers, NewComponentIDWithName("nop", "2"))
 				return cfg
 			},
@@ -124,7 +124,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-processor-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines["traces"]
+				pipe := cfg.Service.Pipelines[NewComponentID("traces")]
 				pipe.Processors = append(pipe.Processors, NewComponentIDWithName("nop", "2"))
 				return cfg
 			},
@@ -134,7 +134,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-exporter-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines["traces"]
+				pipe := cfg.Service.Pipelines[NewComponentID("traces")]
 				pipe.Exporters = append(pipe.Exporters, NewComponentIDWithName("nop", "2"))
 				return cfg
 			},
@@ -144,7 +144,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-receivers",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines["traces"]
+				pipe := cfg.Service.Pipelines[NewComponentID("traces")]
 				pipe.Receivers = nil
 				return cfg
 			},
@@ -154,7 +154,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-exporters",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines["traces"]
+				pipe := cfg.Service.Pipelines[NewComponentID("traces")]
 				pipe.Exporters = nil
 				return cfg
 			},
@@ -257,10 +257,8 @@ func generateConfig() *Config {
 		Service: Service{
 			Telemetry:  ServiceTelemetry{Logs: ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"}},
 			Extensions: []ComponentID{NewComponentID("nop")},
-			Pipelines: map[string]*Pipeline{
-				"traces": {
-					Name:       "traces",
-					InputType:  TracesDataType,
+			Pipelines: map[ComponentID]*Pipeline{
+				NewComponentID("traces"): {
 					Receivers:  []ComponentID{NewComponentID("nop")},
 					Processors: []ComponentID{NewComponentID("nop")},
 					Exporters:  []ComponentID{NewComponentID("nop")},

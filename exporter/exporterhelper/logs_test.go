@@ -125,16 +125,16 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	set, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer set.Shutdown(context.Background())
+	defer tt.Shutdown(context.Background())
 
 	rCfg := DefaultRetrySettings()
 	qCfg := DefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")
-	te, err := NewLogsExporter(&fakeLogsExporterConfig, set.ToExporterCreateSettings(), newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
+	te, err := NewLogsExporter(&fakeLogsExporterConfig, tt.ToExporterCreateSettings(), newPushLogsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -205,9 +205,9 @@ func newPushLogsData(retError error) consumerhelper.ConsumeLogsFunc {
 }
 
 func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter, wantError error) {
-	set, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer set.Shutdown(context.Background())
+	defer tt.Shutdown(context.Background())
 
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	const numBatches = 7
@@ -217,9 +217,9 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		require.NoError(t, obsreporttest.CheckExporterLogs(fakeLogsExporterName, 0, int64(numBatches*ld.LogRecordCount())))
+		require.NoError(t, obsreporttest.CheckExporterLogs(tt, fakeLogsExporterName, 0, int64(numBatches*ld.LogRecordCount())))
 	} else {
-		require.NoError(t, obsreporttest.CheckExporterLogs(fakeLogsExporterName, int64(numBatches*ld.LogRecordCount()), 0))
+		require.NoError(t, obsreporttest.CheckExporterLogs(tt, fakeLogsExporterName, int64(numBatches*ld.LogRecordCount()), 0))
 	}
 }
 
