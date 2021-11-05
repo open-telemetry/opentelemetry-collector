@@ -4,16 +4,23 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove deprecated config (already no-op) `ballast_size_mib` in memorylimiterprocessor (#4365)
 - Remove `config.Receivers`, `config.Exporters`, `config.Processors`, and `config.Extensions`. Use map directly (#4344)
 - Remove `component.BaseProcessorFactory`, use `processorhelper.NewFactory` instead (#4175)
 - Force usage of `exporterhelper.NewFactory` to implement `component.ExporterFactory` (#4338)
 - Force usage of `receiverhelper.NewFactory` to implement `component.ReceiverFactory` (#4338)
 - Force usage of `extensionhelper.NewFactory` to implement `component.ExtensionFactory` (#4338)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
+- Renamed slice-valued `pdata` types and functions for consistency. (#4325)
+  - Rename `pdata.AnyValueArray` to `pdata.AttributeValueSlice`
+  - Rename `ArrayVal()` to `SliceVal()`
+  - Rename `SetArrayVal()` to `SetSliceVal()`
 - Remove `config.Pipeline.Name` (#4326)
 - Rename `config.Mapprovider` as `configmapprovider.Provider` (#4337)
 - Move `config.WatchableRetrieved` and `config.Retrieved` interfaces to `config/configmapprovider` package (#4337)
 - Remove `config.Pipeline.InputDataType` (#4343)
+- otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
+- Remove deprecated funcs `consumererror.As[Traces|Metrics|Logs]` (#4364)
 
 ## v0.38.0 Beta
 
