@@ -19,6 +19,7 @@
 - Remove `config.Pipeline.InputDataType` (#4343)
 - otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
 - Remove deprecated funcs `consumererror.As[Traces|Metrics|Logs]` (#4364)
+- Remove support to expand env variables in default configs (#4366)
 
 ## v0.38.0 Beta
 
