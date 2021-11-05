@@ -29,18 +29,13 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmapprovider"
-	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
-	"go.opentelemetry.io/collector/service/internal/builder"
-	"go.opentelemetry.io/collector/service/internal/extensions"
 )
 
 const configStr = `
@@ -150,9 +145,6 @@ func TestCollector_Start(t *testing.T) {
 
 	assertZPages(t)
 
-	// Trigger another configuration load.
-	require.NoError(t, col.reloadService(context.Background()))
-
 	col.signalsChannel <- syscall.SIGTERM
 	<-colDone
 	assert.Equal(t, Closing, <-col.GetStateChannel())
@@ -258,79 +250,5 @@ func assertZPages(t *testing.T) {
 
 	for _, path := range paths {
 		testZPagePathFn(t, path)
-	}
-}
-
-type errParserLoader struct {
-	err error
-}
-
-func (epl *errParserLoader) Retrieve(_ context.Context) (configmapprovider.Retrieved, error) {
-	return nil, epl.err
-}
-
-func (epl *errParserLoader) Close(context.Context) error {
-	return nil
-}
-
-func TestCollector_reloadService(t *testing.T) {
-	factories, err := defaultcomponents.Components()
-	require.NoError(t, err)
-	ctx := context.Background()
-	sentinelError := errors.New("sentinel error")
-
-	tests := []struct {
-		name           string
-		parserProvider configmapprovider.Provider
-		service        *service
-	}{
-		{
-			name:           "first_load_err",
-			parserProvider: &errParserLoader{err: sentinelError},
-		},
-		{
-			name:           "retire_service_ok_load_err",
-			parserProvider: &errParserLoader{err: sentinelError},
-			service: &service{
-				telemetry:       componenttest.NewNopTelemetrySettings(),
-				builtExporters:  builder.Exporters{},
-				builtPipelines:  builder.BuiltPipelines{},
-				builtReceivers:  builder.Receivers{},
-				builtExtensions: extensions.Extensions{},
-			},
-		},
-		{
-			name:           "retire_service_ok_load_ok",
-			parserProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
-			service: &service{
-				telemetry:       componenttest.NewNopTelemetrySettings(),
-				builtExporters:  builder.Exporters{},
-				builtPipelines:  builder.BuiltPipelines{},
-				builtReceivers:  builder.Receivers{},
-				builtExtensions: extensions.Extensions{},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			col := Collector{
-				set: CollectorSettings{
-					ConfigMapProvider: tt.parserProvider,
-					ConfigUnmarshaler: configunmarshaler.NewDefault(),
-					Factories:         factories,
-				},
-				logger:         zap.NewNop(),
-				tracerProvider: trace.NewNoopTracerProvider(),
-				service:        tt.service,
-			}
-
-			if err = col.reloadService(ctx); err != nil {
-				assert.ErrorIs(t, err, sentinelError)
-				return
-			}
-
-			// If successful need to shutdown active service.
-			assert.NoError(t, col.service.Shutdown(ctx))
-		})
 	}
 }
