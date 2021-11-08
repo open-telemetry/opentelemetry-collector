@@ -38,7 +38,7 @@ func contextWithClient(req *http.Request) context.Context {
 
 	ip := internal.ParseIP(req.RemoteAddr)
 	if ip != nil {
-		cl.IP = ip
+		cl.Addr = ip
 	}
 
 	ctx := client.NewContext(req.Context(), cl)

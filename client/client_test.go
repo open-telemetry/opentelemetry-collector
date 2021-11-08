@@ -31,7 +31,7 @@ func TestNewContext(t *testing.T) {
 		{
 			desc: "valid client",
 			cl: &Info{
-				IP: &net.IPAddr{
+				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
 			},
@@ -59,12 +59,12 @@ func TestFromContext(t *testing.T) {
 		{
 			desc: "context with client",
 			input: context.WithValue(context.Background(), ctxKey{}, &Info{
-				IP: &net.IPAddr{
+				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
 			}),
 			expected: &Info{
-				IP: &net.IPAddr{
+				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
 			},

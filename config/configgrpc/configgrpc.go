@@ -388,7 +388,7 @@ func contextWithClient(ctx context.Context) context.Context {
 	if p, ok := peer.FromContext(ctx); ok {
 		ip := internal.ParseIP(p.Addr.String())
 		if ip != nil {
-			cl.IP = ip
+			cl.Addr = ip
 		}
 	}
 	return client.NewContext(ctx, cl)

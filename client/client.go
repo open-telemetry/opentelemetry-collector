@@ -26,9 +26,9 @@ type ctxKey struct{}
 
 // Info contains data related to the clients connecting to receivers.
 type Info struct {
-	// IP for the client connecting to this collector. Available in a best-effort basis, and generally reliable
+	// Addr for the client connecting to this collector. Available in a best-effort basis, and generally reliable
 	// for receivers making use of confighttp.ToServer and configgrpc.ToServerOption.
-	IP *net.IPAddr
+	Addr net.Addr
 
 	// Auth information from the incoming request as provided by configauth.ServerAuthenticator implementations
 	// tied to the receiver for this connection.
@@ -37,10 +37,6 @@ type Info struct {
 
 // AuthData represents the authentication data as seen by authenticators tied to the receivers.
 type AuthData interface {
-	// Equal determines whether another authentication data is equal to this one.
-	// The actual semantics might be defined by the concrete implementations.
-	Equal(interface{}) bool
-
 	// GetAttribute returns the value for the given attribute.
 	GetAttribute(string) interface{}
 
