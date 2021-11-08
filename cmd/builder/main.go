@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"os"
 
-	"go.opentelemetry.io/collector/cmd/builder/cmd"
+	"go.opentelemetry.io/collector/cmd/builder/internal"
 )
 
 func main() {
-	if err := cmd.Execute(); err != nil {
+	if err := internal.Execute(); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}

@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove deprecated config (already no-op) `ballast_size_mib` in memorylimiterprocessor (#4365)
 - Remove `config.Receivers`, `config.Exporters`, `config.Processors`, and `config.Extensions`. Use map directly (#4344)
 - Remove `component.BaseProcessorFactory`, use `processorhelper.NewFactory` instead (#4175)
 - Force usage of `exporterhelper.NewFactory` to implement `component.ExporterFactory` (#4338)
@@ -24,6 +25,10 @@
   - `--metrics-prefix` is no longer operative; the prefix is determined by
     the value of `service.buildInfo.Command`.
   - `--add-instance-id` is no longer operative; an instance ID will always be added.
+- Remove deprecated funcs `consumererror.As[Traces|Metrics|Logs]` (#4364)
+
+## 💡 Enhancements 💡
+- Supports more compression methods(`snappy` and `zstd`) for configgrpc, in addition to current `gzip` (#4088)
 
 ## v0.38.0 Beta
 

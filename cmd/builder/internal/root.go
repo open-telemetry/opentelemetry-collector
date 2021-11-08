@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd // import "go.opentelemetry.io/collector/cmd/builder/cmd"
+package internal // import "go.opentelemetry.io/collector/cmd/builder/internal"
 
 import (
 	"fmt"
@@ -70,8 +70,8 @@ func Execute() error {
 
 	// the distribution parameters, which we accept as CLI flags as well
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, "skip-compilation", false, "Whether builder should only generate go code with no compile of the collector (default false)")
-	cmd.Flags().StringVar(&cfg.Distribution.ExeName, "name", "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
-	cmd.Flags().StringVar(&cfg.Distribution.LongName, "description", "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
+	cmd.Flags().StringVar(&cfg.Distribution.Name, "name", "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
+	cmd.Flags().StringVar(&cfg.Distribution.Description, "description", "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.Version, "version", "1.0.0", "The version for the OpenTelemetry Collector distribution")
 	cmd.Flags().BoolVar(&cfg.Distribution.IncludeCore, "include-core", true, "Whether the core components should be included in the distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, "otelcol-version", cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
@@ -114,9 +114,10 @@ func initConfig() {
 	}
 
 	// load the config file
-	if err := vp.ReadInConfig(); err == nil {
-		cfg.Logger.Info("Using config file", zap.String("path", vp.ConfigFileUsed()))
+	if err := vp.ReadInConfig(); err != nil {
+		cobra.CheckErr(err)
 	}
+	cfg.Logger.Info("Using config file", zap.String("path", vp.ConfigFileUsed()))
 
 	// convert Viper's internal state into our configuration object
 	if err := vp.Unmarshal(&cfg); err != nil {
