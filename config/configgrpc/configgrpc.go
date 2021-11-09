@@ -38,7 +38,6 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/config/internal"
 )
 
 // Compression gRPC keys for supported compression types within collector.
@@ -386,10 +385,7 @@ func enhanceStreamWithClientInformation(srv interface{}, ss grpc.ServerStream, i
 func contextWithClient(ctx context.Context) context.Context {
 	cl := client.FromContext(ctx)
 	if p, ok := peer.FromContext(ctx); ok {
-		ip := internal.ParseIP(p.Addr.String())
-		if ip != nil {
-			cl.Addr = ip
-		}
+		cl.Addr = p.Addr
 	}
 	return client.NewContext(ctx, cl)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
 	"net"
@@ -54,7 +54,7 @@ func TestParseIP(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			assert.Equal(t, tC.expected, ParseIP(tC.input))
+			assert.Equal(t, tC.expected, parseIP(tC.input))
 		})
 	}
 }
