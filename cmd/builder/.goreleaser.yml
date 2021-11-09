@@ -1,6 +1,9 @@
 before:
   hooks:
     - go mod download
+monorepo:
+  tag_prefix: cmd/builder/
+  dir: cmd/builder
 builds:
   - flags:
       - -trimpath
@@ -26,8 +29,4 @@ checksum:
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
+  skip: true

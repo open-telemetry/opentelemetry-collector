@@ -3,9 +3,8 @@
 Collector build and testing is currently fully automated. However there are still certain operations that need to be performed manually in order to make a release.
 
 We release both core and contrib collectors with the same versions where the contrib release uses the core release as a dependency. We’ve divided this process into four sections. A release engineer must release:
-1. The [Core](#releasing-opentelemetry-collector) collector.
+1. The [Core](#releasing-opentelemetry-collector) collector, including the collector builder CLI tool.
 1. The [Contrib](#releasing-opentelemetry-collector-contrib) collector.
-1. The collector [Builder](#releasing-opentelemetry-collector-builder).
 1. The [artifacts](#producing-the-artifacts)
 
 **Important Note:** You’ll need to be able to sign git commits/tags in order to be able to release a collector version. Follow [this guide](https://docs.github.com/en/github/authenticating-to-github/signing-commits) to setup it up.
@@ -23,6 +22,7 @@ We release both core and contrib collectors with the same versions where the con
     * Use multimod to update the version of the collector package
       * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/versions.yaml)
       * Run `make multimod-prerelease`
+    * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
 
 1. Make sure the current main branch build successfully passes (Core and Contrib). For Contrib also check that the spawn-stability-tests-job triggered by the main build-publish job also passes. Check that the corresponding "-dev" images exist in Dockerhub (Core and Contrib).
 
@@ -30,7 +30,7 @@ We release both core and contrib collectors with the same versions where the con
 
 1. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.4.0`). Push them to origin (not your fork) with `git push --tags origin` (assuming origin refers to upstream open-telemetry project). Wait for the new tag build to pass successfully.
 
-1. Create a new Github release from the new version tag and copy release notes from the CHANGELOG.md file to the release. This step should be automated. CI can pull the release notes from the change log and use it as the body when creating the new release.
+1. The release script for the collector builder should create a new GitHub release. Wait until the workflow "Builder - Release" has completed and change the release's description to include the release notes from the CHANGELOG.md file.
 
 ## Releasing opentelemetry-collector-contrib
 
@@ -48,21 +48,13 @@ We release both core and contrib collectors with the same versions where the con
 
 1. Create a new Github release from the new version tag and copy release notes from the CHANGELOG.md file to the release. This step should be automated. CI can pull the release notes from the change log and use it as the body when creating the new release.
 
-## Releasing opentelemetry-collector-builder
-
-The collector release process uses the `opentelemetry-collector-builder` to produce the artifacts of the collector. This may require that the `opentelemetry-collector-builder` be updated to support new features. If so, follow these steps using the [opentelemetry-collector-builder](https://github.com/open-telemetry/opentelemetry-collector-builder) repo:
-
-1. Update the collector version to the new release in `./internal/builder/config.go`
-
-1. Create a pull request with the change and ensure the build completes successfully.
-
 ## Producing the artifacts
 
 The last step of the release process creates artifacts for the new version of the collector and publishes images to Dockerhub. The steps in this portion of the release are done in the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repo.
 
 1. Update `./distribution/otelcol/manifest.yaml` to include the new release version.
 
-1. If a new version of the builder has been created, update the builder version in `OTELCOL_BUILDER_VERSION` to the new release in the `Makefile`.
+1. Update the builder version in `OTELCOL_BUILDER_VERSION` to the new release in the `Makefile`. While this might not be strictly necessary for every release, this is a good practice.
 
 1. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/17/files).
 
