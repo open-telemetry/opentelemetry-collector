@@ -5,7 +5,7 @@ builds:
   - flags:
       - -trimpath
     ldflags:
-      - -s -w -X go.opentelemetry.io/collector/builder/cmd.version={{.Version}} -X go.opentelemetry.io/collector/builder/cmd.date={{.Date}}
+      - -s -w -X go.opentelemetry.io/collector/cmd/builder/internal.version={{.Version}} -X go.opentelemetry.io/collector/cmd/builder/internal.date={{.Date}}
     env:
       - CGO_ENABLED=0
     goos:
