@@ -44,7 +44,7 @@ type AuthData interface {
 	GetAttributeNames() []string
 }
 
-// NewContext takes an existing context and derives a new context with the ClientInfo value stored on it.
+// NewContext takes an existing context and derives a new context with the client.Info value stored on it.
 func NewContext(ctx context.Context, c *Info) context.Context {
 	return context.WithValue(ctx, ctxKey{}, c)
 }
