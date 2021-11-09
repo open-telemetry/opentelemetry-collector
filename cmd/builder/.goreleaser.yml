@@ -1,11 +1,14 @@
 before:
   hooks:
     - go mod download
+monorepo:
+  tag_prefix: cmd/builder/
+  dir: cmd/builder
 builds:
   - flags:
       - -trimpath
     ldflags:
-      - -s -w -X go.opentelemetry.io/collector/builder/cmd.version={{.Version}} -X go.opentelemetry.io/collector/builder/cmd.date={{.Date}}
+      - -s -w -X go.opentelemetry.io/collector/cmd/builder/internal.version={{.Version}} -X go.opentelemetry.io/collector/cmd/builder/internal.date={{.Date}}
     env:
       - CGO_ENABLED=0
     goos:
@@ -26,8 +29,4 @@ checksum:
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
+  skip: true

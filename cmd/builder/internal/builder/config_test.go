@@ -67,12 +67,12 @@ func TestModuleFromCore(t *testing.T) {
 	cfg := Config{
 		Extensions: []Module{ // see issue-12
 			{
-				Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
-				GoMod:  "go.opentelemetry.io/collector v0.37.0",
+				Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
+				GoMod:  "go.opentelemetry.io/collector v0.38.0",
 			},
 			{
-				Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
-				GoMod:  "go.opentelemetry.io/collector v0.37.0",
+				Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
+				GoMod:  "go.opentelemetry.io/collector v0.38.0",
 				Core:   nil,
 			},
 		},
@@ -83,7 +83,7 @@ func TestModuleFromCore(t *testing.T) {
 	assert.NoError(t, err)
 
 	// verify
-	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Name, "jaegerreceiver"))
+	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Name, "otlpreceiver"))
 }
 
 func TestDeprecatedCore(t *testing.T) {
