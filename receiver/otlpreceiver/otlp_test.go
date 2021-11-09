@@ -440,10 +440,6 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func createSingleSpanTrace() pdata.Traces {
-	return testdata.GenerateTracesOneSpan()
-}
-
 // TestOTLPReceiverTrace_HandleNextConsumerResponse checks if the trace receiver
 // is returning the proper response (return and metrics) when the next consumer
 // in the pipeline reports error. The test changes the responses returned by the
@@ -483,7 +479,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	addr := testutil.GetAvailableLocalAddress(t)
-	req := createSingleSpanTrace()
+	req := testdata.GenerateTracesOneSpan()
 
 	exporters := []struct {
 		receiverTag string
@@ -772,12 +768,12 @@ loop:
 			break loop
 		default:
 		}
-		senderFn(createSingleSpanTrace())
+		senderFn(testdata.GenerateTracesOneSpan())
 	}
 
 	// After getting the signal to stop, send one more span and then
 	// finally stop. We should never receive this last span.
-	senderFn(createSingleSpanTrace())
+	senderFn(testdata.GenerateTracesOneSpan())
 
 	// Indicate that we are done.
 	close(doneSignal)
