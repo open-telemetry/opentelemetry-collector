@@ -50,8 +50,9 @@ type exporter struct {
 	metricsURL string
 	logsURL    string
 	logger     *zap.Logger
+
 	// Default user-agent header.
-	userAgent  string
+	userAgent string
 }
 
 const (
