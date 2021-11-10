@@ -59,7 +59,6 @@ func Generate(cfg Config) error {
 			return fmt.Errorf("failed to create output path: %w", err)
 		}
 	} else if err != nil {
-		// something else happened
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
@@ -79,7 +78,6 @@ func Generate(cfg Config) error {
 			"main_windows.go",
 			scaffold.MainWindows,
 		},
-		// components.go
 		{
 			"components.go",
 			scaffold.Components,

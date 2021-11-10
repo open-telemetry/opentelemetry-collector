@@ -85,6 +85,7 @@ func DefaultConfig() Config {
 		Distribution: Distribution{
 			OutputPath:     outputDir,
 			OtelColVersion: defaultOtelColVersion,
+			Module:         "go.opentelemetry.io/collector/cmd/builder",
 		},
 	}
 }
