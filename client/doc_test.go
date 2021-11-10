@@ -43,10 +43,10 @@ func Example_receiver() {
 	}
 
 	// When you are done, propagate the context down the pipeline to the next consumer
-	next.ConsumeTraces(ctx, td)
+	next.ConsumeTraces(ctx, td) // nolint
 }
 
-func Example_authenticator() (context.Context, error) {
+func Example_authenticator() {
 	// Your configauth.AuthenticateFunc receives a context
 	ctx := context.Background()
 
@@ -60,7 +60,7 @@ func Example_authenticator() (context.Context, error) {
 	}
 
 	// Your configauth.AuthenticateFunc should return this new context
-	return client.NewContext(ctx, cl), nil
+	_ = client.NewContext(ctx, cl)
 }
 
 func Example_processor() {
