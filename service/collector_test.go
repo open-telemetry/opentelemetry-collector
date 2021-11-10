@@ -35,7 +35,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -78,7 +77,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -115,7 +114,7 @@ func TestCollector_Start(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		ConfigMapProvider: configmapprovider.NewFile("testdata/otelcol-config.yaml"),
 		LoggingOptions:    []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
@@ -182,7 +181,7 @@ func TestCollector_ReportError(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		ConfigMapProvider: configmapprovider.NewFile("testdata/otelcol-config.yaml"),
 	})
 	require.NoError(t, err)
 
@@ -266,7 +265,7 @@ type errParserLoader struct {
 	err error
 }
 
-func (epl *errParserLoader) Retrieve(_ context.Context) (config.Retrieved, error) {
+func (epl *errParserLoader) Retrieve(_ context.Context) (configmapprovider.Retrieved, error) {
 	return nil, epl.err
 }
 
@@ -282,7 +281,7 @@ func TestCollector_reloadService(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		parserProvider config.MapProvider
+		parserProvider configmapprovider.Provider
 		service        *service
 	}{
 		{
@@ -302,7 +301,7 @@ func TestCollector_reloadService(t *testing.T) {
 		},
 		{
 			name:           "retire_service_ok_load_ok",
-			parserProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+			parserProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
 			service: &service{
 				telemetry:       componenttest.NewNopTelemetrySettings(),
 				builtExporters:  builder.Exporters{},

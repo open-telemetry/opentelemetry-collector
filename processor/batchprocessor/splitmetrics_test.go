@@ -174,24 +174,36 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 
 	splitSize := 1
 	split := splitMetrics(splitSize, md)
+	splitMetric := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 2, md.MetricCount())
-	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, splitMetric.Sum().AggregationTemporality())
+	assert.Equal(t, true, splitMetric.Sum().IsMonotonic())
+	assert.Equal(t, "test-metric-int-0-0", splitMetric.Name())
 
 	split = splitMetrics(splitSize, md)
+	splitMetric = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
-	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, splitMetric.Sum().AggregationTemporality())
+	assert.Equal(t, true, splitMetric.Sum().IsMonotonic())
+	assert.Equal(t, "test-metric-int-0-0", splitMetric.Name())
 
 	split = splitMetrics(splitSize, md)
+	splitMetric = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
-	assert.Equal(t, "test-metric-int-0-1", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, splitMetric.Sum().AggregationTemporality())
+	assert.Equal(t, true, splitMetric.Sum().IsMonotonic())
+	assert.Equal(t, "test-metric-int-0-1", splitMetric.Name())
 
 	split = splitMetrics(splitSize, md)
+	splitMetric = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
-	assert.Equal(t, "test-metric-int-0-1", split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, splitMetric.Sum().AggregationTemporality())
+	assert.Equal(t, true, splitMetric.Sum().IsMonotonic())
+	assert.Equal(t, "test-metric-int-0-1", splitMetric.Name())
 }
 
 func TestSplitMetricsMultipleILM(t *testing.T) {
