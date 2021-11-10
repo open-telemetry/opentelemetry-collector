@@ -125,7 +125,7 @@ misspell-correction:
 	$(MISSPELL_CORRECTION) $(ALL_DOC)
 
 .PHONY: install-tools
-install-tools: ./internal/tools/go.mod
+install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
 	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
