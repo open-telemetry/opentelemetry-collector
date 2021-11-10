@@ -133,8 +133,11 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 	case pdata.MetricDataTypeGauge:
 		return splitNumberDataPoints(ms.Gauge().DataPoints(), dest.Gauge().DataPoints(), size)
 	case pdata.MetricDataTypeSum:
+		dest.Sum().SetAggregationTemporality(ms.Sum().AggregationTemporality())
+		dest.Sum().SetIsMonotonic(ms.Sum().IsMonotonic())
 		return splitNumberDataPoints(ms.Sum().DataPoints(), dest.Sum().DataPoints(), size)
 	case pdata.MetricDataTypeHistogram:
+		dest.Histogram().SetAggregationTemporality(ms.Histogram().AggregationTemporality())
 		return splitHistogramDataPoints(ms.Histogram().DataPoints(), dest.Histogram().DataPoints(), size)
 	case pdata.MetricDataTypeSummary:
 		return splitSummaryDataPoints(ms.Summary().DataPoints(), dest.Summary().DataPoints(), size)
