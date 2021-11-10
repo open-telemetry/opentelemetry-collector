@@ -5,6 +5,7 @@ go 1.17
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0
 	github.com/cenkalti/backoff/v4 v4.1.1
+	github.com/drone/envsubst v1.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0

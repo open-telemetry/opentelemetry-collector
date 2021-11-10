@@ -16,7 +16,10 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"context"
+	"fmt"
 	"os"
+
+	"github.com/drone/envsubst"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -85,6 +88,10 @@ func expandEnv(s string) string {
 		if str == "$" {
 			return "$"
 		}
-		return os.Getenv(str)
+		result, err := envsubst.EvalEnv(fmt.Sprintf("${%s}", str))
+		if err != nil {
+			return ""
+		}
+		return result
 	})
 }

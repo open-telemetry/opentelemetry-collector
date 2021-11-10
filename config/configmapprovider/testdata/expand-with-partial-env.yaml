@@ -6,3 +6,4 @@ test_map:
   extra_list:
     - "some list value_1"
     - "$EXTRA_LIST_VALUE_2"
+    - "substituted var"

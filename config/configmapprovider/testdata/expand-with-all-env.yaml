@@ -6,4 +6,5 @@ test_map:
   extra_list:
     - "$EXTRA_LIST_VALUE_1"
     - "${EXTRA_LIST_VALUE_2}"
+    - "${VARIABLE_NOT_EXIST:-substituted var}"
     
