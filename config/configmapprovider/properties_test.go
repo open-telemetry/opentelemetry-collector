@@ -30,7 +30,7 @@ func TestPropertiesProvider(t *testing.T) {
 		"exporters.kafka.brokers=foo:9200,foo2:9200",
 	}
 
-	pmp := NewPropertiesMapProvider(setFlagStr)
+	pmp := NewProperties(setFlagStr)
 	retr, err := pmp.Retrieve(context.Background())
 	require.NoError(t, err)
 	cfgMap := retr.Get()
@@ -44,7 +44,7 @@ func TestPropertiesProvider(t *testing.T) {
 }
 
 func TestPropertiesProvider_empty(t *testing.T) {
-	pmp := NewPropertiesMapProvider(nil)
+	pmp := NewProperties(nil)
 	retr, err := pmp.Retrieve(context.Background())
 	require.NoError(t, err)
 	cfgMap := retr.Get()
