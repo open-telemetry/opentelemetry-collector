@@ -24,15 +24,20 @@ import (
 
 var _ http.Handler = (*clientInfoHandler)(nil)
 
+// clientInfoHandler is an http.Handler that enhances the incoming request context with client.Info.
 type clientInfoHandler struct {
 	next http.Handler
 }
 
+// ServeHTTP intercepts incoming HTTP requests, replacing the request's context with one that contains
+// a client.Info containing the client's IP address.
 func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	req = req.WithContext(contextWithClient(req))
 	h.next.ServeHTTP(w, req)
 }
 
+// contextWithClient attempts to add the client IP address to the client.Info from the context. When no
+// client.Info exists in the context, one is created.
 func contextWithClient(req *http.Request) context.Context {
 	cl := client.FromContext(req.Context())
 

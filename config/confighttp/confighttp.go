@@ -221,6 +221,7 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 		}),
 	)
 
+	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
 		next: handler,
 	}
