@@ -99,12 +99,30 @@ func TestCreateTracesExporter(t *testing.T) {
 			},
 		},
 		{
-			name: "Compression",
+			name: "GzipCompression",
 			config: Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: configgrpc.CompressionGzip,
+				},
+			},
+		},
+		{
+			name: "SnappyCompression",
+			config: Config{
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint:    endpoint,
+					Compression: configgrpc.CompressionSnappy,
+				},
+			},
+		},
+		{
+			name: "ZstdCompression",
+			config: Config{
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint:    endpoint,
+					Compression: configgrpc.CompressionZstd,
 				},
 			},
 		},
