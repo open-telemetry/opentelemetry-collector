@@ -28,6 +28,10 @@
 ## 💡 Enhancements 💡
 - Supports more compression methods(`snappy` and `zstd`) for configgrpc, in addition to current `gzip` (#4088)
 
+## 🧰 Bug fixes 🧰
+
+- Fix AggregationTemporality and IsMonotonic when metric descriptors are split in the batch processor (#4389)
+
 ## v0.38.0 Beta
 
 ## 🛑 Breaking changes 🛑
