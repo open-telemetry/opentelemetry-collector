@@ -3,8 +3,8 @@ dist:
   name: cmd-otelcol
   description: OpenTelemetry Collector Replacing cmd/otelcol
   version: 0.38.0-dev
-  otelcol_version: 0.37.0
+  otelcol_version: 0.38.0
 
 replaces:
-  - go.opentelemetry.io/collector => ../../
-  - go.opentelemetry.io/collector/model => ../../model
+  - go.opentelemetry.io/collector => ../
+  - go.opentelemetry.io/collector/model => ../model

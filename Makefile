@@ -125,14 +125,13 @@ misspell-correction:
 	$(MISSPELL_CORRECTION) $(ALL_DOC)
 
 .PHONY: install-tools
-install-tools:
+install-tools: ./internal/tools/go.mod
 	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
 	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && go install github.com/open-telemetry/opentelemetry-collector-builder
 	cd $(TOOLS_MOD_DIR) && go install github.com/wadey/gocovmerge
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/semconvgen
@@ -277,8 +276,8 @@ build-binary-internal-unstable:
 # Builds a collector binary of the removed cmd/otelcol directory
 .PHONY: build-binary-cmd-otelcol
 build-binary-cmd-otelcol:
-	mkdir -p ./bin/otelcol_$(GOOS)_$(GOARCH)
-	opentelemetry-collector-builder --config ./internal/buildscripts/builder-config.yaml --output-path ./bin/otelcol_$(GOOS)_$(GOARCH)
+	mkdir -p ./bin
+	pushd cmd/builder/ && go run ./ --config ../../internal/buildscripts/builder-config.yaml --output-path ../../bin && popd
 
 .PHONY: genmdata
 genmdata:
