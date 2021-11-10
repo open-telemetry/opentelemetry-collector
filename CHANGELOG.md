@@ -23,6 +23,7 @@
 - Remove `config.Pipeline.InputDataType` (#4343)
 - otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
 - Remove deprecated funcs `consumererror.As[Traces|Metrics|Logs]` (#4364)
+- Remove support to expand env variables in default configs (#4366)
 
 ## 💡 Enhancements 💡
 - Supports more compression methods(`snappy` and `zstd`) for configgrpc, in addition to current `gzip` (#4088)
