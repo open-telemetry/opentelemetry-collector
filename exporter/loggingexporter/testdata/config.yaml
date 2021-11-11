@@ -8,6 +8,7 @@ exporters:
   logging:
   logging/2:
     loglevel: debug
+    format: json
     sampling_initial: 10
     sampling_thereafter: 50
 

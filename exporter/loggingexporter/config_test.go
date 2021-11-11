@@ -46,6 +46,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			LogLevel:           zapcore.DebugLevel,
+			Format:             "json",
 			SamplingInitial:    10,
 			SamplingThereafter: 50,
 		})

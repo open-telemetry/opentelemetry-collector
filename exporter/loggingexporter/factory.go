@@ -46,6 +46,7 @@ func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		LogLevel:           zapcore.InfoLevel,
+		Format:             "text",
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 	}
@@ -59,7 +60,12 @@ func createTracesExporter(_ context.Context, set component.ExporterCreateSetting
 		return nil, err
 	}
 
-	return newTracesExporter(config, exporterLogger, set)
+	marshaler, err := newMarshaler(cfg.Format)
+	if err != nil {
+		return nil, err
+	}
+
+	return newTracesExporter(config, marshaler, exporterLogger, set)
 }
 
 func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
@@ -70,7 +76,12 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		return nil, err
 	}
 
-	return newMetricsExporter(config, exporterLogger, set)
+	marshaler, err := newMarshaler(cfg.Format)
+	if err != nil {
+		return nil, err
+	}
+
+	return newMetricsExporter(config, marshaler, exporterLogger, set)
 }
 
 func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
@@ -81,7 +92,12 @@ func createLogsExporter(_ context.Context, set component.ExporterCreateSettings,
 		return nil, err
 	}
 
-	return newLogsExporter(config, exporterLogger, set)
+	marshaler, err := newMarshaler(cfg.Format)
+	if err != nil {
+		return nil, err
+	}
+
+	return newLogsExporter(config, marshaler, exporterLogger, set)
 }
 
 func createLogger(cfg *Config) (*zap.Logger, error) {

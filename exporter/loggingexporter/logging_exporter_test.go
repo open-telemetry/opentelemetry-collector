@@ -30,7 +30,7 @@ import (
 )
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
-	lte, err := newTracesExporter(&config.ExporterSettings{}, zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	lte, err := newTracesExporter(&config.ExporterSettings{}, newTextMarshaler(), zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -41,7 +41,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := newMetricsExporter(&config.ExporterSettings{}, zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	lme, err := newMetricsExporter(&config.ExporterSettings{}, newTextMarshaler(), zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -54,7 +54,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
-	lle, err := newLogsExporter(&config.ExporterSettings{}, zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	lle, err := newLogsExporter(&config.ExporterSettings{}, newTextMarshaler(), zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 
@@ -67,13 +67,13 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 }
 
 func TestLoggingExporterErrors(t *testing.T) {
-	le := newLoggingExporter(zaptest.NewLogger(t))
+	le := newLoggingExporter(newTextMarshaler(), zaptest.NewLogger(t))
 	require.NotNil(t, le)
 
 	errWant := errors.New("my error")
-	le.tracesMarshaler = &errMarshaler{err: errWant}
-	le.metricsMarshaler = &errMarshaler{err: errWant}
-	le.logsMarshaler = &errMarshaler{err: errWant}
+	le.marshaler.TracesMarshaler = &errMarshaler{err: errWant}
+	le.marshaler.MetricsMarshaler = &errMarshaler{err: errWant}
+	le.marshaler.LogsMarshaler = &errMarshaler{err: errWant}
 	assert.Equal(t, errWant, le.pushTraces(context.Background(), pdata.NewTraces()))
 	assert.Equal(t, errWant, le.pushMetrics(context.Background(), pdata.NewMetrics()))
 	assert.Equal(t, errWant, le.pushLogs(context.Background(), pdata.NewLogs()))

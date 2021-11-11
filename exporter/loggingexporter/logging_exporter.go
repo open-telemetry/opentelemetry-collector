@@ -25,15 +25,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/otlptext"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type loggingExporter struct {
-	logger           *zap.Logger
-	logsMarshaler    pdata.LogsMarshaler
-	metricsMarshaler pdata.MetricsMarshaler
-	tracesMarshaler  pdata.TracesMarshaler
+	logger    *zap.Logger
+	marshaler *marshaler
 }
 
 func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
@@ -42,7 +39,7 @@ func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 		return nil
 	}
 
-	buf, err := s.tracesMarshaler.MarshalTraces(td)
+	buf, err := s.marshaler.MarshalTraces(td)
 	if err != nil {
 		return err
 	}
@@ -57,7 +54,7 @@ func (s *loggingExporter) pushMetrics(_ context.Context, md pdata.Metrics) error
 		return nil
 	}
 
-	buf, err := s.metricsMarshaler.MarshalMetrics(md)
+	buf, err := s.marshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
 	}
@@ -72,7 +69,7 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
 		return nil
 	}
 
-	buf, err := s.logsMarshaler.MarshalLogs(ld)
+	buf, err := s.marshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
 	}
@@ -80,19 +77,17 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
 	return nil
 }
 
-func newLoggingExporter(logger *zap.Logger) *loggingExporter {
+func newLoggingExporter(marshaler *marshaler, logger *zap.Logger) *loggingExporter {
 	return &loggingExporter{
-		logger:           logger,
-		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
-		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
-		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
+		logger:    logger,
+		marshaler: marshaler,
 	}
 }
 
 // newTracesExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTracesExporter(config config.Exporter, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-	s := newLoggingExporter(logger)
+func newTracesExporter(config config.Exporter, marshaler *marshaler, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+	s := newLoggingExporter(marshaler, logger)
 	return exporterhelper.NewTracesExporter(
 		config,
 		set,
@@ -108,8 +103,8 @@ func newTracesExporter(config config.Exporter, logger *zap.Logger, set component
 
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func newMetricsExporter(config config.Exporter, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
-	s := newLoggingExporter(logger)
+func newMetricsExporter(config config.Exporter, marshaler *marshaler, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+	s := newLoggingExporter(marshaler, logger)
 	return exporterhelper.NewMetricsExporter(
 		config,
 		set,
@@ -125,8 +120,8 @@ func newMetricsExporter(config config.Exporter, logger *zap.Logger, set componen
 
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func newLogsExporter(config config.Exporter, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
-	s := newLoggingExporter(logger)
+func newLogsExporter(config config.Exporter, marshaler *marshaler, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
+	s := newLoggingExporter(marshaler, logger)
 	return exporterhelper.NewLogsExporter(
 		config,
 		set,

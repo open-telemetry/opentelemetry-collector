@@ -11,6 +11,8 @@ The following settings are optional:
 - `loglevel` (default = `info`): the log level of the logging export
   (debug|info|warn|error). When set to `debug`, pipeline data is verbosely
   logged.
+- `format` (default = `text`): the serialization format of the logging export (text|json).
+  When set to `json`, pipeline data is serialized and logged as JSON.
 - `sampling_initial` (default = `2`): number of messages initially logged each
   second.
 - `sampling_thereafter` (default = `500`): sampling rate after the initial
@@ -24,6 +26,7 @@ Example:
 exporters:
   logging:
     loglevel: debug
+    format: json
     sampling_initial: 5
     sampling_thereafter: 200
 ```
