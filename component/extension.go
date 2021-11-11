@@ -53,6 +53,9 @@ type ExtensionCreateSettings struct {
 }
 
 // ExtensionFactory is a factory interface for extensions to the service.
+//
+// This interface cannot be directly implemented. Implementations must
+// use the extensionhelper.NewFactory to implement it.
 type ExtensionFactory interface {
 	Factory
 

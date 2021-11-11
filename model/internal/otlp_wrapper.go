@@ -15,10 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/model/internal"
 
 import (
-	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
-	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
-	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
+	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
@@ -27,26 +25,26 @@ import (
 // as a way to prevent certain functions of pdata.Metrics data type to be callable by
 // any code outside of this module.
 type MetricsWrapper struct {
-	req *otlpcollectormetrics.ExportMetricsServiceRequest
+	req *otlpmetrics.MetricsData
 }
 
 // MetricsToOtlp internal helper to convert MetricsWrapper to protobuf representation.
-func MetricsToOtlp(mw MetricsWrapper) *otlpcollectormetrics.ExportMetricsServiceRequest {
+func MetricsToOtlp(mw MetricsWrapper) *otlpmetrics.MetricsData {
 	return mw.req
 }
 
 // MetricsFromOtlp internal helper to convert protobuf representation to MetricsWrapper.
-func MetricsFromOtlp(req *otlpcollectormetrics.ExportMetricsServiceRequest) MetricsWrapper {
-	MetricsCompatibilityChanges(req)
+func MetricsFromOtlp(req *otlpmetrics.MetricsData) MetricsWrapper {
+	metricsCompatibilityChanges(req)
 	return MetricsWrapper{req: req}
 }
 
-// MetricsCompatibilityChanges performs backward compatibility conversion on Metrics:
+// metricsCompatibilityChanges performs backward compatibility conversion on Metrics:
 // - Convert IntHistogram to Histogram. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L170
 // - Convert IntGauge to Gauge. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L156
 // - Convert IntSum to Sum. See https://github.com/open-telemetry/opentelemetry-proto/blob/f3b0ee0861d304f8f3126686ba9b01c106069cb0/opentelemetry/proto/metrics/v1/metrics.proto#L156
 // - Converts Labels to Attributes. See https://github.com/open-telemetry/opentelemetry-proto/blob/8672494217bfc858e2a82a4e8c623d4a5530473a/opentelemetry/proto/metrics/v1/metrics.proto#L385
-func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceRequest) {
+func metricsCompatibilityChanges(req *otlpmetrics.MetricsData) {
 	for _, rsm := range req.ResourceMetrics {
 		for _, ilm := range rsm.InstrumentationLibraryMetrics {
 			for _, metric := range ilm.Metrics {
@@ -76,25 +74,25 @@ func MetricsCompatibilityChanges(req *otlpcollectormetrics.ExportMetricsServiceR
 // as a way to prevent certain functions of pdata.Traces data type to be callable by
 // any code outside of this module.
 type TracesWrapper struct {
-	req *otlpcollectortrace.ExportTraceServiceRequest
+	req *otlptrace.TracesData
 }
 
 // TracesToOtlp internal helper to convert TracesWrapper to protobuf representation.
-func TracesToOtlp(mw TracesWrapper) *otlpcollectortrace.ExportTraceServiceRequest {
+func TracesToOtlp(mw TracesWrapper) *otlptrace.TracesData {
 	return mw.req
 }
 
 // TracesFromOtlp internal helper to convert protobuf representation to TracesWrapper.
-func TracesFromOtlp(req *otlpcollectortrace.ExportTraceServiceRequest) TracesWrapper {
-	TracesCompatibilityChanges(req)
+func TracesFromOtlp(req *otlptrace.TracesData) TracesWrapper {
+	tracesCompatibilityChanges(req)
 	return TracesWrapper{req: req}
 }
 
-// TracesCompatibilityChanges performs backward compatibility conversion of Span Status code according to
+// tracesCompatibilityChanges performs backward compatibility conversion of Span Status code according to
 // OTLP specification as we are a new receiver and sender (we are pushing data to the pipelines):
 // See https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L239
 // See https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L253
-func TracesCompatibilityChanges(req *otlpcollectortrace.ExportTraceServiceRequest) {
+func tracesCompatibilityChanges(req *otlptrace.TracesData) {
 	for _, rss := range req.ResourceSpans {
 		for _, ils := range rss.InstrumentationLibrarySpans {
 			for _, span := range ils.Spans {
@@ -118,16 +116,16 @@ func TracesCompatibilityChanges(req *otlpcollectortrace.ExportTraceServiceReques
 // as a way to prevent certain functions of pdata.Logs data type to be callable by
 // any code outside of this module.
 type LogsWrapper struct {
-	req *otlpcollectorlog.ExportLogsServiceRequest
+	req *otlplogs.LogsData
 }
 
 // LogsToOtlp internal helper to convert LogsWrapper to protobuf representation.
-func LogsToOtlp(l LogsWrapper) *otlpcollectorlog.ExportLogsServiceRequest {
+func LogsToOtlp(l LogsWrapper) *otlplogs.LogsData {
 	return l.req
 }
 
 // LogsFromOtlp internal helper to convert protobuf representation to LogsWrapper.
-func LogsFromOtlp(req *otlpcollectorlog.ExportLogsServiceRequest) LogsWrapper {
+func LogsFromOtlp(req *otlplogs.LogsData) LogsWrapper {
 	return LogsWrapper{req: req}
 }
 

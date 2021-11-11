@@ -27,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -179,13 +178,12 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.Er
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+	require.NoError(t, err, "Error posting trace to http server: %v", err)
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
+		t.Errorf("Error reading response from trace http server, %v", err)
 	}
-	respStr := string(respBytes)
 	err = resp.Body.Close()
 	if err != nil {
 		t.Errorf("Error closing response body, %v", err)
@@ -194,17 +192,14 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.Er
 	allTraces := sink.AllTraces()
 	if expectedErr == nil {
 		assert.Equal(t, 200, resp.StatusCode)
-		var respJSON map[string]interface{}
-		assert.NoError(t, json.Unmarshal([]byte(respStr), &respJSON))
-		assert.Len(t, respJSON, 0, "Got unexpected response from trace grpc-gateway")
+		_, err = otlpgrpc.UnmarshalJSONTracesResponse(respBytes)
+		assert.NoError(t, err, "Unable to unmarshal response to TracesResponse")
 
 		require.Len(t, allTraces, 1)
-
-		got := allTraces[0]
-		assert.EqualValues(t, got, traceOtlp)
+		assert.EqualValues(t, allTraces[0], traceOtlp)
 	} else {
 		errStatus := &spb.Status{}
-		assert.NoError(t, json.Unmarshal([]byte(respStr), errStatus))
+		assert.NoError(t, json.Unmarshal(respBytes, errStatus))
 		if s, ok := status.FromError(expectedErr); ok {
 			assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 			assert.True(t, proto.Equal(errStatus, s.Proto()))
@@ -326,10 +321,8 @@ func testHTTPProtobufRequest(
 
 	if expectedErr == nil {
 		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
-		// TODO: Parse otlp response here instead of empty proto when pdata allows that.
-		tmp := &types.Empty{}
-		err := tmp.Unmarshal(respBytes)
-		require.NoError(t, err, "Unable to unmarshal response to ExportTraceServiceResponse proto")
+		_, err = otlpgrpc.UnmarshalTracesResponse(respBytes)
+		require.NoError(t, err, "Unable to unmarshal response to TracesResponse")
 
 		require.Len(t, allTraces, 1)
 		assert.EqualValues(t, allTraces[0], wantData)
@@ -447,10 +440,6 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func createSingleSpanTrace() pdata.Traces {
-	return testdata.GenerateTracesOneSpan()
-}
-
 // TestOTLPReceiverTrace_HandleNextConsumerResponse checks if the trace receiver
 // is returning the proper response (return and metrics) when the next consumer
 // in the pipeline reports error. The test changes the responses returned by the
@@ -490,7 +479,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	addr := testutil.GetAvailableLocalAddress(t)
-	req := createSingleSpanTrace()
+	req := testdata.GenerateTracesOneSpan()
 
 	exporters := []struct {
 		receiverTag string
@@ -504,11 +493,11 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		},
 	}
 	for _, exporter := range exporters {
-		for _, tt := range tests {
-			t.Run(tt.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				set, err := obsreporttest.SetupTelemetry()
+		for _, test := range tests {
+			t.Run(test.name+"/"+exporter.receiverTag, func(t *testing.T) {
+				tt, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer set.Shutdown(context.Background())
+				defer tt.Shutdown(context.Background())
 
 				sink := &internalconsumertest.ErrOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
@@ -521,11 +510,11 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, err)
 				defer cc.Close()
 
-				for _, ingestionState := range tt.ingestionStates {
+				for _, ingestionState := range test.ingestionStates {
 					if ingestionState.okToIngest {
 						sink.SetConsumeError(nil)
 					} else {
-						sink.SetConsumeError(fmt.Errorf("%q: consumer error", tt.name))
+						sink.SetConsumeError(fmt.Errorf("%q: consumer error", test.name))
 					}
 
 					err = exporter.exportFn(cc, req)
@@ -535,9 +524,9 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 					assert.Equal(t, ingestionState.expectedCode, status.Code())
 				}
 
-				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
+				require.Equal(t, test.expectedReceivedBatches, len(sink.AllTraces()))
 
-				require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentIDWithName(typeStr, exporter.receiverTag), "grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
+				require.NoError(t, obsreporttest.CheckReceiverTraces(tt, config.NewComponentIDWithName(typeStr, exporter.receiverTag), "grpc", int64(test.expectedReceivedBatches), int64(test.expectedIngestionBlockedRPCs)))
 			})
 		}
 	}
@@ -590,7 +579,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
 	require.NoError(t, err)
 
-	td := testdata.GenerateTracesManySpansSameResource(500000)
+	td := testdata.GenerateTracesManySpansSameResource(50000)
 	require.Error(t, exportTraces(cc, td))
 	cc.Close()
 	require.NoError(t, ocr.Shutdown(context.Background()))
@@ -606,7 +595,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, err)
 	defer cc.Close()
 
-	td = testdata.GenerateTracesManySpansSameResource(500000)
+	td = testdata.GenerateTracesManySpansSameResource(50000)
 	require.NoError(t, exportTraces(cc, td))
 	require.Len(t, sink.AllTraces(), 1)
 	assert.Equal(t, td, sink.AllTraces()[0])
@@ -779,12 +768,12 @@ loop:
 			break loop
 		default:
 		}
-		senderFn(createSingleSpanTrace())
+		senderFn(testdata.GenerateTracesOneSpan())
 	}
 
 	// After getting the signal to stop, send one more span and then
 	// finally stop. We should never receive this last span.
-	senderFn(createSingleSpanTrace())
+	senderFn(testdata.GenerateTracesOneSpan())
 
 	// Indicate that we are done.
 	close(doneSignal)

@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // NewNopExtensionCreateSettings returns a new nop settings for Create*Extension functions.
@@ -35,7 +36,9 @@ type nopExtensionConfig struct {
 }
 
 // nopExtensionFactory is factory for nopExtension.
-type nopExtensionFactory struct{}
+type nopExtensionFactory struct {
+	internalinterface.BaseInternal
+}
 
 var nopExtensionFactoryInstance = &nopExtensionFactory{}
 

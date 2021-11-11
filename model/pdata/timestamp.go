@@ -19,7 +19,7 @@ import (
 )
 
 // Timestamp is a time specified as UNIX Epoch time in nanoseconds since
-// 00:00:00 UTC on 1 January 1970.
+// 1970-01-01 00:00:00 +0000 UTC.
 type Timestamp uint64
 
 // NewTimestampFromTime constructs a new Timestamp from the provided time.Time.

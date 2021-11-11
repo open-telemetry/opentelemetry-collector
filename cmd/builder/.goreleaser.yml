@@ -1,0 +1,32 @@
+before:
+  hooks:
+    - go mod download
+monorepo:
+  tag_prefix: cmd/builder/
+  dir: cmd/builder
+builds:
+  - flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X go.opentelemetry.io/collector/cmd/builder/internal.version={{.Version}} -X go.opentelemetry.io/collector/cmd/builder/internal.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - 6
+      - 7
+archives:
+  - format: binary
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  skip: true

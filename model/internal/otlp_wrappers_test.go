@@ -19,8 +19,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
-	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
@@ -90,7 +88,7 @@ func TestDeprecatedStatusCode(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.sendCode.String()+"/"+test.sendDeprecatedCode.String(), func(t *testing.T) {
-			req := &otlpcollectortrace.ExportTraceServiceRequest{
+			req := &otlptrace.TracesData{
 				ResourceSpans: []*otlptrace.ResourceSpans{
 					{
 						InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
@@ -109,7 +107,7 @@ func TestDeprecatedStatusCode(t *testing.T) {
 				},
 			}
 
-			TracesCompatibilityChanges(req)
+			tracesCompatibilityChanges(req)
 			spanProto := req.ResourceSpans[0].InstrumentationLibrarySpans[0].Spans[0]
 			// Check that DeprecatedCode is passed as is.
 			assert.EqualValues(t, test.expectedRcvCode, spanProto.Status.Code)
@@ -269,7 +267,7 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.inputMetrics[0].Description, func(t *testing.T) {
-			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+			req := &otlpmetrics.MetricsData{
 				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 					{
 						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -279,7 +277,7 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 						}},
 				},
 			}
-			MetricsCompatibilityChanges(req)
+			metricsCompatibilityChanges(req)
 			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
 		})
 	}
@@ -372,7 +370,7 @@ func TestDeprecatedIntGauge(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.inputMetrics[0].Description, func(t *testing.T) {
-			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+			req := &otlpmetrics.MetricsData{
 				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 					{
 						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -382,7 +380,7 @@ func TestDeprecatedIntGauge(t *testing.T) {
 						}},
 				},
 			}
-			MetricsCompatibilityChanges(req)
+			metricsCompatibilityChanges(req)
 			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
 		})
 	}
@@ -598,7 +596,7 @@ func TestDeprecatedIntSum(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.inputMetrics[0].Description, func(t *testing.T) {
-			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+			req := &otlpmetrics.MetricsData{
 				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 					{
 						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -608,7 +606,7 @@ func TestDeprecatedIntSum(t *testing.T) {
 						}},
 				},
 			}
-			MetricsCompatibilityChanges(req)
+			metricsCompatibilityChanges(req)
 			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
 		})
 	}
@@ -737,7 +735,7 @@ func TestAttributesAndLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.inputMetrics[0].Description, func(t *testing.T) {
-			req := &otlpcollectormetrics.ExportMetricsServiceRequest{
+			req := &otlpmetrics.MetricsData{
 				ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 					{
 						InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
@@ -747,7 +745,7 @@ func TestAttributesAndLabels(t *testing.T) {
 						}},
 				},
 			}
-			MetricsCompatibilityChanges(req)
+			metricsCompatibilityChanges(req)
 			assert.EqualValues(t, test.outputMetrics, req.ResourceMetrics[0].InstrumentationLibraryMetrics[0].Metrics)
 		})
 	}

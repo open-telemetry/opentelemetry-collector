@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // NewNopReceiverCreateSettings returns a new nop settings for Create*Receiver functions.
@@ -36,7 +37,9 @@ type nopReceiverConfig struct {
 }
 
 // nopReceiverFactory is factory for nopReceiver.
-type nopReceiverFactory struct{}
+type nopReceiverFactory struct {
+	internalinterface.BaseInternal
+}
 
 var nopReceiverFactoryInstance = &nopReceiverFactory{}
 

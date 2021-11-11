@@ -22,10 +22,12 @@ import (
 
 func TestTraceID(t *testing.T) {
 	tid := InvalidTraceID()
-	assert.EqualValues(t, [16]byte{}, tid.Bytes())
+	assert.Equal(t, [16]byte{}, tid.Bytes())
 	assert.True(t, tid.IsEmpty())
+	assert.Equal(t, "", tid.HexString())
 
 	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	assert.EqualValues(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
+	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
 	assert.False(t, tid.IsEmpty())
+	assert.Equal(t, "01020304050607080807060504030201", tid.HexString())
 }

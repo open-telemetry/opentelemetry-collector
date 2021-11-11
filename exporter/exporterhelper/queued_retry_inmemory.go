@@ -99,7 +99,7 @@ func onTemporaryFailure(logger *zap.Logger, req request, err error) error {
 }
 
 // start is invoked during service startup.
-func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) error {
+func (qrs *queuedRetrySender) start(context.Context, component.Host) error {
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		req := item.(request)
 		_ = qrs.consumerSender.send(req)
@@ -108,7 +108,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 
 	// Start reporting queue length metric
 	if qrs.cfg.Enabled {
-		err := queueSizeGauge.UpsertEntry(func() int64 {
+		err := globalInstruments.queueSize.UpsertEntry(func() int64 {
 			return int64(qrs.queue.Size())
 		}, metricdata.NewLabelValue(qrs.fullName))
 		if err != nil {
@@ -123,7 +123,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 func (qrs *queuedRetrySender) shutdown() {
 	// Cleanup queue metrics reporting
 	if qrs.cfg.Enabled {
-		_ = queueSizeGauge.UpsertEntry(func() int64 {
+		_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
 			return int64(0)
 		}, metricdata.NewLabelValue(qrs.fullName))
 	}

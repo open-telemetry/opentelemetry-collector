@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mostynb/go-grpc-compression/snappy"
+	"github.com/mostynb/go-grpc-compression/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -30,7 +32,6 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -40,12 +41,16 @@ import (
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
+	CompressionSnappy      = "snappy"
+	CompressionZstd        = "zstd"
 )
 
 var (
 	// Map of opentelemetry compression types to grpc registered compression types.
 	gRPCCompressionKeyMap = map[string]string{
-		CompressionGzip: gzip.Name,
+		CompressionGzip:   gzip.Name,
+		CompressionSnappy: snappy.Name,
+		CompressionZstd:   zstd.Name,
 	}
 )
 
@@ -68,8 +73,7 @@ type GRPCClientSettings struct {
 	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// The compression key for supported compression types within
-	// collector. Currently the only supported mode is `gzip`.
+	// The compression key for supported compression types within collector.
 	Compression string `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
@@ -223,12 +227,7 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOp
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
-		componentID, cperr := config.NewComponentIDFromString(gcs.Auth.AuthenticatorName)
-		if cperr != nil {
-			return nil, cperr
-		}
-
-		grpcAuthenticator, cerr := configauth.GetGRPCClientAuthenticator(host.GetExtensions(), componentID)
+		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticator(host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -325,16 +324,11 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 		}
 	}
 
-	uInterceptors := []grpc.UnaryServerInterceptor{}
-	sInterceptors := []grpc.StreamServerInterceptor{}
+	var uInterceptors []grpc.UnaryServerInterceptor
+	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth != nil {
-		componentID, cperr := config.NewComponentIDFromString(gss.Auth.AuthenticatorName)
-		if cperr != nil {
-			return nil, cperr
-		}
-
-		authenticator, err := configauth.GetServerAuthenticator(host.GetExtensions(), componentID)
+		authenticator, err := gss.Auth.GetServerAuthenticator(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}

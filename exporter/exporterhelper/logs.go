@@ -112,7 +112,7 @@ func NewLogsExporter(
 		req := newLogsRequest(ctx, ld, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {
-			be.obsrep.recordLogsEnqueueFailure(req.context(), req.count())
+			be.obsrep.recordLogsEnqueueFailure(req.context(), int64(req.count()))
 		}
 		return err
 	}, bs.consumerOptions...)

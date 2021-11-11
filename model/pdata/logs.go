@@ -16,7 +16,6 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 import (
 	"go.opentelemetry.io/collector/model/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 )
 
@@ -48,12 +47,12 @@ type LogsSizer interface {
 // Must use NewLogs functions to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Logs struct {
-	orig *otlpcollectorlog.ExportLogsServiceRequest
+	orig *otlplogs.LogsData
 }
 
 // NewLogs creates a new Logs.
 func NewLogs() Logs {
-	return Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
+	return Logs{orig: &otlplogs.LogsData{}}
 }
 
 // LogsFromInternalRep creates the internal Logs representation from the ProtoBuf. Should

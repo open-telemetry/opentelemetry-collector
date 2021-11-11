@@ -24,17 +24,17 @@ import (
 
 func TestNestedArraySerializesCorrectly(t *testing.T) {
 	ava := pdata.NewAttributeValueArray()
-	ava.ArrayVal().AppendEmpty().SetStringVal("foo")
-	ava.ArrayVal().AppendEmpty().SetIntVal(42)
+	ava.SliceVal().AppendEmpty().SetStringVal("foo")
+	ava.SliceVal().AppendEmpty().SetIntVal(42)
 
 	ava2 := pdata.NewAttributeValueArray()
-	ava2.ArrayVal().AppendEmpty().SetStringVal("bar")
-	ava2.CopyTo(ava.ArrayVal().AppendEmpty())
+	ava2.SliceVal().AppendEmpty().SetStringVal("bar")
+	ava2.CopyTo(ava.SliceVal().AppendEmpty())
 
-	ava.ArrayVal().AppendEmpty().SetBoolVal(true)
-	ava.ArrayVal().AppendEmpty().SetDoubleVal(5.5)
+	ava.SliceVal().AppendEmpty().SetBoolVal(true)
+	ava.SliceVal().AppendEmpty().SetDoubleVal(5.5)
 
-	assert.Equal(t, 5, ava.ArrayVal().Len())
+	assert.Equal(t, 5, ava.SliceVal().Len())
 	assert.Equal(t, "[foo, 42, [bar], true, 5.5]", attributeValueToString(ava))
 }
 

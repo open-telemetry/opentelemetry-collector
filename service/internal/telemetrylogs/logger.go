@@ -15,38 +15,11 @@
 package telemetrylogs // import "go.opentelemetry.io/collector/service/internal/telemetrylogs"
 
 import (
-	"flag"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config"
 )
-
-const (
-	logLevelCfg   = "log-level"
-	logProfileCfg = "log-profile"
-	logFormatCfg  = "log-format"
-)
-
-var (
-	defaultLogValue = "deprecated"
-	// Command line pointer to logger level flag configuration.
-	loggerLevelPtr   = &defaultLogValue
-	loggerProfilePtr = &defaultLogValue
-	loggerFormatPtr  = &defaultLogValue
-)
-
-// Flags adds flags related to service telemetry logs to the given flagset.
-// Deprecated: keep this flag for preventing the breaking change. Use `service::telemetry::logs` in config instead.
-func Flags(flags *flag.FlagSet) {
-	loggerLevelPtr = flags.String(logLevelCfg, defaultLogValue, "Deprecated. Define the logging configuration as part of the configuration file, under the 'service' section.")
-
-	loggerProfilePtr = flags.String(logProfileCfg, defaultLogValue, "Deprecated. Define the logging configuration as part of the configuration file, under the 'service' section.")
-
-	// Note: we use "console" by default for more human-friendly mode of logging (tab delimited, formatted timestamps).
-	loggerFormatPtr = flags.String(logFormatCfg, defaultLogValue, "Deprecated. Define the logging configuration as part of the configuration file, under the 'service' section.")
-}
 
 func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logger, error) {
 	// Copied from NewProductionConfig.
@@ -72,20 +45,5 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 	if err != nil {
 		return nil, err
 	}
-	logDeprecatedMessages(logger)
 	return logger, nil
-}
-
-func logDeprecatedMessages(logger *zap.Logger) {
-	if *loggerLevelPtr != defaultLogValue {
-		logger.Warn("`log-level` command line option has been deprecated. Use `service::telemetry::logs` in config instead!")
-	}
-
-	if *loggerProfilePtr != defaultLogValue {
-		logger.Warn("`log-profile` command line option has been deprecated. Use `service::telemetry::logs` in config instead!")
-	}
-
-	if *loggerFormatPtr != defaultLogValue {
-		logger.Warn("`log-format` command line option has been deprecated. Use `service::telemetry::logs` in config instead!")
-	}
 }
