@@ -178,13 +178,14 @@ func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
 
 // NewResourceSpans creates a new empty ResourceSpans.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewResourceSpans() ResourceSpans {
 	return newResourceSpans(&otlptrace.ResourceSpans{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.ResourceSpans{}
@@ -372,13 +373,14 @@ func newInstrumentationLibrarySpans(orig *otlptrace.InstrumentationLibrarySpans)
 
 // NewInstrumentationLibrarySpans creates a new empty InstrumentationLibrarySpans.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
 	return newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms InstrumentationLibrarySpans) MoveTo(dest InstrumentationLibrarySpans) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.InstrumentationLibrarySpans{}
@@ -567,13 +569,14 @@ func newSpan(orig *otlptrace.Span) Span {
 
 // NewSpan creates a new empty Span.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewSpan() Span {
 	return newSpan(&otlptrace.Span{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms Span) MoveTo(dest Span) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.Span{}
@@ -884,13 +887,14 @@ func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
 
 // NewSpanEvent creates a new empty SpanEvent.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewSpanEvent() SpanEvent {
 	return newSpanEvent(&otlptrace.Span_Event{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms SpanEvent) MoveTo(dest SpanEvent) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.Span_Event{}
@@ -1096,13 +1100,14 @@ func newSpanLink(orig *otlptrace.Span_Link) SpanLink {
 
 // NewSpanLink creates a new empty SpanLink.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewSpanLink() SpanLink {
 	return newSpanLink(&otlptrace.Span_Link{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms SpanLink) MoveTo(dest SpanLink) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.Span_Link{}
@@ -1181,13 +1186,14 @@ func newSpanStatus(orig *otlptrace.Status) SpanStatus {
 
 // NewSpanStatus creates a new empty SpanStatus.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewSpanStatus() SpanStatus {
 	return newSpanStatus(&otlptrace.Status{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms SpanStatus) MoveTo(dest SpanStatus) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlptrace.Status{}

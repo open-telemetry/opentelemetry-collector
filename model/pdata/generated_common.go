@@ -39,13 +39,14 @@ func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) Instrume
 
 // NewInstrumentationLibrary creates a new empty InstrumentationLibrary.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewInstrumentationLibrary() InstrumentationLibrary {
 	return newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms InstrumentationLibrary) MoveTo(dest InstrumentationLibrary) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpcommon.InstrumentationLibrary{}
