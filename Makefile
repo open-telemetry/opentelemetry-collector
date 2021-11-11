@@ -141,8 +141,8 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: run
-run:
-	@echo "Target currently deactivated"
+run: build-binary-cmd-otelcol
+	./bin/cmd-otelcol --config ${RUN_CONFIG} ${RUN_ARGS}
 
 
 .PHONY: docker-component # Not intended to be used directly
