@@ -281,7 +281,7 @@ func (d MetricDataPointFlags) String() string {
 type MetricDataPointFlag uint32
 
 const (
-	// MetricDataPointFlagsNoRecordedValue is flag for a metric aggregator which reports changes since last report time.
+	// MetricDataPointFlagNoRecordedValue is flag for a metric aggregator which reports changes since last report time.
 	MetricDataPointFlagNoRecordedValue = MetricDataPointFlag(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 )
 
