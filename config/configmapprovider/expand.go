@@ -31,20 +31,23 @@ func NewExpand(base Provider) Provider {
 	}
 }
 
-func (emp *expandMapProvider) Retrieve(ctx context.Context) (Retrieved, error) {
-	retr, err := emp.base.Retrieve(ctx)
+func (emp *expandMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
+	retr, err := emp.base.Retrieve(ctx, onChange)
 	if err != nil {
 		return nil, err
 	}
-	cfgMap := retr.Get()
+	cfgMap, err := retr.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
 	for _, k := range cfgMap.AllKeys() {
 		cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
 	}
 	return &simpleRetrieved{confMap: cfgMap}, nil
 }
 
-func (emp *expandMapProvider) Close(ctx context.Context) error {
-	return emp.base.Close(ctx)
+func (emp *expandMapProvider) Shutdown(ctx context.Context) error {
+	return emp.base.Shutdown(ctx)
 }
 
 func expandStringValues(value interface{}) interface{} {
