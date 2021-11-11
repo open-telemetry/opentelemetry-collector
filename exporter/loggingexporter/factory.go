@@ -45,7 +45,7 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-		LogLevel:           "info",
+		LogLevel:           zapcore.InfoLevel,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 	}
@@ -59,7 +59,7 @@ func createTracesExporter(_ context.Context, set component.ExporterCreateSetting
 		return nil, err
 	}
 
-	return newTracesExporter(config, cfg.LogLevel, exporterLogger, set)
+	return newTracesExporter(config, exporterLogger, set)
 }
 
 func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
@@ -70,7 +70,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		return nil, err
 	}
 
-	return newMetricsExporter(config, cfg.LogLevel, exporterLogger, set)
+	return newMetricsExporter(config, exporterLogger, set)
 }
 
 func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
@@ -81,20 +81,14 @@ func createLogsExporter(_ context.Context, set component.ExporterCreateSettings,
 		return nil, err
 	}
 
-	return newLogsExporter(config, cfg.LogLevel, exporterLogger, set)
+	return newLogsExporter(config, exporterLogger, set)
 }
 
 func createLogger(cfg *Config) (*zap.Logger, error) {
-	var level zapcore.Level
-	err := (&level).UnmarshalText([]byte(cfg.LogLevel))
-	if err != nil {
-		return nil, err
-	}
-
 	// We take development config as the base since it matches the purpose
 	// of logging exporter being used for debugging reasons (so e.g. console encoder)
 	conf := zap.NewDevelopmentConfig()
-	conf.Level = zap.NewAtomicLevelAt(level)
+	conf.Level = zap.NewAtomicLevelAt(cfg.LogLevel)
 	conf.Sampling = &zap.SamplingConfig{
 		Initial:    cfg.SamplingInitial,
 		Thereafter: cfg.SamplingThereafter,
