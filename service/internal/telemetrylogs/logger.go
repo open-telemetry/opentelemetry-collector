@@ -15,6 +15,7 @@
 package telemetrylogs // import "go.opentelemetry.io/collector/service/internal/telemetrylogs"
 
 import (
+	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -45,5 +46,10 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 	if err != nil {
 		return nil, err
 	}
+
+	if cfg.EnableGrpcLogs {
+		grpcZap.ReplaceGrpcLoggerV2(logger)
+	}
+
 	return logger, nil
 }
