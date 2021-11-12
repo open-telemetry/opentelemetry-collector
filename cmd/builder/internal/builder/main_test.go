@@ -20,6 +20,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,6 +55,6 @@ func TestGenerateAndCompileDefault(t *testing.T) {
 	// we override this version, otherwise this would break during releases
 	cfg.Distribution.OtelColVersion = "0.38.0"
 
-	cfg.Validate()
+	assert.NoError(t, cfg.Validate())
 	require.NoError(t, GenerateAndCompile(cfg))
 }
