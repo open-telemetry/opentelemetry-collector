@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.39.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Remove deprecated config (already no-op) `ballast_size_mib` in memorylimiterprocessor (#4365)
@@ -27,6 +29,7 @@
 
 ## 💡 Enhancements 💡
 - Supports more compression methods(`snappy` and `zstd`) for configgrpc, in addition to current `gzip` (#4088)
+- Moved the OpenTelemetry Collector Builder to core (#4307)
 
 ## 🧰 Bug fixes 🧰
 
