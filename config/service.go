@@ -57,7 +57,7 @@ type ServiceTelemetryLogs struct {
 	Encoding string `mapstructure:"encoding"`
 
 	// EnableGRPCLogging sets grpc logger to collector logger
-	// TODO: WIP Suggestion is to not use this structure. Using this flag for the time being.
+	// TODO: WIP - Will remove once we find right place. Using this flag for the time being.
 	EnableGRPCLogging bool `mapstructure:"enable_grpc_logs"`
 }
 
