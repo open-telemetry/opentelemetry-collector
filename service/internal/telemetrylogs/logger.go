@@ -15,6 +15,7 @@
 package telemetrylogs // import "go.opentelemetry.io/collector/service/internal/telemetrylogs"
 
 import (
+	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -40,10 +41,14 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 		// Human-readable timestamps for console format of logs.
 		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
-
+	
 	logger, err := zapCfg.Build(options...)
 	if err != nil {
 		return nil, err
 	}
+
+	// WIP TODO - Figure how to expose this as configuration
+	grpcZap.ReplaceGrpcLoggerV2(logger)
+
 	return logger, nil
 }
