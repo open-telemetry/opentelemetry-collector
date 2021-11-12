@@ -249,16 +249,12 @@ func TestAttributeValueEqual(t *testing.T) {
 	assert.True(t, av1.Equal(av1))
 
 	av1 = NewAttributeValueMap()
-	av1.MapVal().InitFromMap(map[string]AttributeValue{
-		"foo": NewAttributeValueString("bar"),
-	})
+	av1.MapVal().UpsertString("foo", "bar")
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av2 = NewAttributeValueMap()
-	av2.MapVal().InitFromMap(map[string]AttributeValue{
-		"foo": NewAttributeValueString("bar"),
-	})
+	av2.MapVal().UpsertString("foo", "bar")
 	assert.True(t, av1.Equal(av2))
 
 	fooVal, ok := av2.MapVal().Get("foo")
