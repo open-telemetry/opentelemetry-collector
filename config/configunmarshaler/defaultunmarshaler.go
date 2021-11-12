@@ -171,6 +171,7 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 				Level:       zapcore.InfoLevel,
 				Development: false,
 				Encoding:    "console",
+				EnableGRPCLogging: false,
 			},
 		},
 	}
