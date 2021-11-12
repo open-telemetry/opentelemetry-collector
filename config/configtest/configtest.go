@@ -35,12 +35,16 @@ var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 // LoadConfig loads a config from file, and does NOT validate the configuration.
 func LoadConfig(fileName string, factories component.Factories) (*config.Config, error) {
 	// Read yaml config from file
-	cp, err := configmapprovider.NewExpand(configmapprovider.NewFile(fileName)).Retrieve(context.Background())
+	cp, err := configmapprovider.NewExpand(configmapprovider.NewFile(fileName)).Retrieve(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
 	// Unmarshal the config using the given factories.
-	return configunmarshaler.NewDefault().Unmarshal(cp.Get(), factories)
+	m, err := cp.Get(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return configunmarshaler.NewDefault().Unmarshal(m, factories)
 }
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.

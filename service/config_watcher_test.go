@@ -33,15 +33,18 @@ import (
 )
 
 type errConfigMapProvider struct {
-	ret configmapprovider.Retrieved
+	ret *errRetrieved
 	err error
 }
 
-func (ecmp *errConfigMapProvider) Retrieve(context.Context) (configmapprovider.Retrieved, error) {
+func (ecmp *errConfigMapProvider) Retrieve(_ context.Context, onChange func(*configmapprovider.ChangeEvent)) (configmapprovider.Retrieved, error) {
+	if ecmp.ret != nil {
+		ecmp.ret.onChange = onChange
+	}
 	return ecmp.ret, ecmp.err
 }
 
-func (ecmp *errConfigMapProvider) Close(context.Context) error {
+func (ecmp *errConfigMapProvider) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -54,17 +57,15 @@ func (ecu *errConfigUnmarshaler) Unmarshal(*config.Map, component.Factories) (*c
 }
 
 type errRetrieved struct {
-	retM *config.Map
-	errW error
-	errC error
+	retM     *config.Map
+	errW     error
+	errC     error
+	onChange func(event *configmapprovider.ChangeEvent)
 }
 
-func (er *errRetrieved) Get() *config.Map {
-	return er.retM
-}
-
-func (er *errRetrieved) WatchForUpdate() error {
-	return er.errW
+func (er *errRetrieved) Get(ctx context.Context) (*config.Map, error) {
+	er.onChange(&configmapprovider.ChangeEvent{Error: er.errW})
+	return er.retM, nil
 }
 
 func (er *errRetrieved) Close(context.Context) error {
@@ -104,9 +105,11 @@ func TestConfigWatcher(t *testing.T) {
 		{
 			name: "watch_err",
 			parserProvider: func() configmapprovider.Provider {
-				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background())
+				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 				require.NoError(t, err)
-				return &errConfigMapProvider{ret: &errRetrieved{retM: ret.Get(), errW: errors.New("watch_err")}}
+				m, err := ret.Get(context.Background())
+				require.NoError(t, err)
+				return &errConfigMapProvider{ret: &errRetrieved{retM: m, errW: errors.New("watch_err")}}
 			}(),
 			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectWatchErr:    true,
@@ -114,9 +117,11 @@ func TestConfigWatcher(t *testing.T) {
 		{
 			name: "close_err",
 			parserProvider: func() configmapprovider.Provider {
-				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background())
+				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 				require.NoError(t, err)
-				return &errConfigMapProvider{ret: &errRetrieved{retM: ret.Get(), errC: errors.New("close_err")}}
+				m, err := ret.Get(context.Background())
+				require.NoError(t, err)
+				return &errConfigMapProvider{ret: &errRetrieved{retM: m, errC: errors.New("close_err")}}
 			}(),
 			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectCloseErr:    true,
@@ -125,9 +130,11 @@ func TestConfigWatcher(t *testing.T) {
 			name: "ok",
 			parserProvider: func() configmapprovider.Provider {
 				// Use errRetrieved with nil errors to have Watchable interface implemented.
-				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background())
+				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 				require.NoError(t, err)
-				return &errConfigMapProvider{ret: &errRetrieved{retM: ret.Get()}}
+				m, err := ret.Get(context.Background())
+				require.NoError(t, err)
+				return &errConfigMapProvider{ret: &errRetrieved{retM: m}}
 			}(),
 			configUnmarshaler: configunmarshaler.NewDefault(),
 		},
@@ -196,9 +203,11 @@ func TestConfigWatcherWhenClosed(t *testing.T) {
 	set := CollectorSettings{
 		ConfigMapProvider: func() configmapprovider.Provider {
 			// Use errRetrieved with nil errors to have Watchable interface implemented.
-			ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background())
+			ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 			require.NoError(t, err)
-			return &errConfigMapProvider{ret: &errRetrieved{retM: ret.Get(), errW: configsource.ErrSessionClosed}}
+			m, err := ret.Get(context.Background())
+			require.NoError(t, err)
+			return &errConfigMapProvider{ret: &errRetrieved{retM: m, errW: configsource.ErrSessionClosed}}
 		}(),
 		ConfigUnmarshaler: configunmarshaler.NewDefault(),
 		Factories:         factories,
