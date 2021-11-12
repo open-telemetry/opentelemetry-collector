@@ -41,7 +41,7 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 		// Human-readable timestamps for console format of logs.
 		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
-	
+
 	logger, err := zapCfg.Build(options...)
 	if err != nil {
 		return nil, err
