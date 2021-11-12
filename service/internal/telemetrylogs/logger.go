@@ -47,9 +47,8 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 		return nil, err
 	}
 
-	// WIP TODO - Figure how to expose this as configuration properly. Using config.ServiceTelemetryLogs for the time
-	// being.
-	if cfg.EnableGRPCLogging {
+	// replace grpc default logger to collectors logger in development mode
+	if cfg.Development {
 		grpcZap.ReplaceGrpcLoggerV2(logger)
 	}
 

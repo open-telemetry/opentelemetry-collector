@@ -55,10 +55,6 @@ type ServiceTelemetryLogs struct {
 	// Encoding sets the logger's encoding.
 	// Valid values are "json" and "console".
 	Encoding string `mapstructure:"encoding"`
-
-	// EnableGRPCLogging sets grpc logger to collector logger
-	// TODO: WIP - Will remove once we find right place. Using this flag for the time being.
-	EnableGRPCLogging bool `mapstructure:"enable_grpc_logs"`
 }
 
 func (srvTL *ServiceTelemetryLogs) validate() error {
