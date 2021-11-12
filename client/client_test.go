@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package client contains generic representations of clients connecting to different receivers
+// Package client contains generic representations of clients connecting to
+// different receivers
 package client
 
 import (
@@ -25,16 +26,66 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-func TestClientContext(t *testing.T) {
-	ips := []string{
-		"1.1.1.1", "127.0.0.1", "1111", "ip",
+func TestNewContext(t *testing.T) {
+	testCases := []struct {
+		desc string
+		cl   Info
+	}{
+		{
+			desc: "valid client",
+			cl: Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			},
+		},
+		{
+			desc: "nil client",
+			cl:   Info{},
+		},
 	}
-	for _, ip := range ips {
-		ctx := NewContext(context.Background(), &Client{ip})
-		c, ok := FromContext(ctx)
-		assert.True(t, ok)
-		assert.NotNil(t, c)
-		assert.Equal(t, c.IP, ip)
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			ctx := NewContext(context.Background(), tC.cl)
+			assert.Equal(t, ctx.Value(ctxKey{}), tC.cl)
+		})
+	}
+}
+
+func TestFromContext(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		input    context.Context
+		expected Info
+	}{
+		{
+			desc: "context with client",
+			input: context.WithValue(context.Background(), ctxKey{}, Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			}),
+			expected: Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			},
+		},
+		{
+			desc:     "context without client",
+			input:    context.Background(),
+			expected: Info{},
+		},
+		{
+			desc:     "context with something else in the key",
+			input:    context.WithValue(context.Background(), ctxKey{}, "unexpected!"),
+			expected: Info{},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			assert.Equal(t, FromContext(tC.input), tC.expected)
+		})
 	}
 }
 
@@ -49,12 +100,12 @@ func TestParsingGRPC(t *testing.T) {
 	client, ok := FromGRPC(grpcCtx)
 	assert.True(t, ok)
 	assert.NotNil(t, client)
-	assert.Equal(t, client.IP, "192.168.1.1")
+	assert.Equal(t, client.Addr.String(), "192.168.1.1")
 }
 
 func TestParsingHTTP(t *testing.T) {
 	client, ok := FromHTTP(&http.Request{RemoteAddr: "192.168.1.2"})
 	assert.True(t, ok)
 	assert.NotNil(t, client)
-	assert.Equal(t, client.IP, "192.168.1.2")
+	assert.Equal(t, client.Addr.String(), "192.168.1.2")
 }
