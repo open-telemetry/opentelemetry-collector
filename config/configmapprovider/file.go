@@ -33,7 +33,7 @@ func NewFile(fileName string) Provider {
 	}
 }
 
-func (fmp *fileMapProvider) Retrieve(context.Context) (Retrieved, error) {
+func (fmp *fileMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (Retrieved, error) {
 	if fmp.fileName == "" {
 		return nil, errors.New("config file not specified")
 	}
@@ -46,6 +46,6 @@ func (fmp *fileMapProvider) Retrieve(context.Context) (Retrieved, error) {
 	return &simpleRetrieved{confMap: cp}, nil
 }
 
-func (*fileMapProvider) Close(context.Context) error {
+func (*fileMapProvider) Shutdown(context.Context) error {
 	return nil
 }

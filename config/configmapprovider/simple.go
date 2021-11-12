@@ -15,6 +15,8 @@
 package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -23,6 +25,10 @@ type simpleRetrieved struct {
 	confMap *config.Map
 }
 
-func (sr *simpleRetrieved) Get() *config.Map {
-	return sr.confMap
+func (sr *simpleRetrieved) Get(ctx context.Context) (*config.Map, error) {
+	return sr.confMap, nil
+}
+
+func (sr *simpleRetrieved) Close(ctx context.Context) error {
+	return nil
 }

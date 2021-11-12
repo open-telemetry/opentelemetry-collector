@@ -254,7 +254,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to close config provider watcher: %w", err))
 	}
 
-	if err := col.set.ConfigMapProvider.Close(ctx); err != nil {
+	if err := col.set.ConfigMapProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
 	}
 

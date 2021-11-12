@@ -28,7 +28,7 @@ import (
 func TestMerge_GetError(t *testing.T) {
 	pl := NewMerge(&errProvider{err: nil}, &errProvider{errors.New("my error")})
 	require.NotNil(t, pl)
-	cp, err := pl.Retrieve(context.Background())
+	cp, err := pl.Retrieve(context.Background(), nil)
 	assert.Error(t, err)
 	assert.Nil(t, cp)
 }
@@ -36,20 +36,20 @@ func TestMerge_GetError(t *testing.T) {
 func TestMerge_CloseError(t *testing.T) {
 	pl := NewMerge(&errProvider{err: nil}, &errProvider{errors.New("my error")})
 	require.NotNil(t, pl)
-	assert.Error(t, pl.Close(context.Background()))
+	assert.Error(t, pl.Shutdown(context.Background()))
 }
 
 type errProvider struct {
 	err error
 }
 
-func (epl *errProvider) Retrieve(context.Context) (Retrieved, error) {
+func (epl *errProvider) Retrieve(context.Context, func(*ChangeEvent)) (Retrieved, error) {
 	if epl.err == nil {
 		return &simpleRetrieved{confMap: config.NewMap()}, nil
 	}
 	return nil, epl.err
 }
 
-func (epl *errProvider) Close(context.Context) error {
+func (epl *errProvider) Shutdown(context.Context) error {
 	return epl.err
 }
