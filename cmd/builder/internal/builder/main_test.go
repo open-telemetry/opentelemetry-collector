@@ -42,7 +42,7 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to create output path")
 }
 
-func TestGenerateAmdCompileDefault(t *testing.T) {
+func TestGenerateAndCompileDefault(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "default")
 	if err != nil {
 		log.Fatal(err)
@@ -50,6 +50,10 @@ func TestGenerateAmdCompileDefault(t *testing.T) {
 	defer os.RemoveAll(dir)
 	cfg := DefaultConfig()
 	cfg.Distribution.OutputPath = dir
+
+	// we override this version, otherwise this would break during releases
+	cfg.Distribution.OtelColVersion = "0.38.0"
+
 	cfg.Validate()
 	require.NoError(t, GenerateAndCompile(cfg))
 }
