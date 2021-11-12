@@ -269,6 +269,11 @@ func (hss *HTTPServerSettings) ToServer(_ component.Host, settings component.Tel
 		}),
 	)
 
+	// wrap the current handler in an interceptor that will add client.Info to the request's context
+	handler = &clientInfoHandler{
+		next: handler,
+	}
+
 	return &http.Server{
 		Handler: handler,
 	}, nil
