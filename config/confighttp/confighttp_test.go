@@ -49,6 +49,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 	}
 	maxIdleConns := 50
+	maxIdleConnsPerHost := 40
+	maxConnsPerHost := 45
 	idleConnTimeout := 30 * time.Second
 	tests := []struct {
 		name        string
@@ -65,8 +67,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				ReadBufferSize:      1024,
 				WriteBufferSize:     512,
 				MaxIdleConns:        &maxIdleConns,
-				MaxIdleConnsPerHost: 40,
-				MaxConnsPerHost:     45,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 			},

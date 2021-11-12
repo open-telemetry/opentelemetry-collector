@@ -60,18 +60,20 @@ type HTTPClientSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// Here pointer is used to differentiate `no input` from `zero value input`
+	// There's an already set value, and we want to override it only if an explicit value provided
 	MaxIdleConns *int `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host"`
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states.
-	MaxConnsPerHost int `mapstructure:"max_conns_per_host"`
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxConnsPerHost *int `mapstructure:"max_conns_per_host"`
 
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
-	// Here pointer is used to differentiate `no input` from `zero value input`
+	// There's an already set value, and we want to override it only if an explicit value provided
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 }
 
@@ -96,8 +98,13 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 		transport.MaxIdleConns = *hcs.MaxIdleConns
 	}
 
-	transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
-	transport.MaxConnsPerHost = hcs.MaxConnsPerHost
+	if hcs.MaxIdleConnsPerHost != nil {
+		transport.MaxIdleConnsPerHost = *hcs.MaxIdleConnsPerHost
+	}
+
+	if hcs.MaxConnsPerHost != nil {
+		transport.MaxConnsPerHost = *hcs.MaxConnsPerHost
+	}
 
 	if hcs.IdleConnTimeout != nil {
 		transport.IdleConnTimeout = *hcs.IdleConnTimeout
