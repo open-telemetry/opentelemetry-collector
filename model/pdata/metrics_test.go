@@ -62,6 +62,22 @@ func TestCopyData(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "ExponentialHistogram",
+			src: &otlpmetrics.Metric{
+				Data: &otlpmetrics.Metric_ExponentialHistogram{
+					ExponentialHistogram: &otlpmetrics.ExponentialHistogram{},
+				},
+			},
+		},
+		{
+			name: "Summary",
+			src: &otlpmetrics.Metric{
+				Data: &otlpmetrics.Metric_Summary{
+					Summary: &otlpmetrics.Summary{},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -77,14 +93,22 @@ func TestCopyData(t *testing.T) {
 
 func TestDataType(t *testing.T) {
 	m := NewMetric()
+	assert.Equal(t, "None", MetricDataTypeNone.String())
 	assert.Equal(t, MetricDataTypeNone, m.DataType())
 	m.SetDataType(MetricDataTypeGauge)
+	assert.Equal(t, "Gauge", MetricDataTypeGauge.String())
 	assert.Equal(t, MetricDataTypeGauge, m.DataType())
 	m.SetDataType(MetricDataTypeSum)
+	assert.Equal(t, "Sum", MetricDataTypeSum.String())
 	assert.Equal(t, MetricDataTypeSum, m.DataType())
 	m.SetDataType(MetricDataTypeHistogram)
+	assert.Equal(t, "Histogram", MetricDataTypeHistogram.String())
 	assert.Equal(t, MetricDataTypeHistogram, m.DataType())
+	m.SetDataType(MetricDataTypeExponentialHistogram)
+	assert.Equal(t, "ExponentialHistogram", MetricDataTypeExponentialHistogram.String())
+	assert.Equal(t, MetricDataTypeExponentialHistogram, m.DataType())
 	m.SetDataType(MetricDataTypeSummary)
+	assert.Equal(t, "Summary", MetricDataTypeSummary.String())
 	assert.Equal(t, MetricDataTypeSummary, m.DataType())
 }
 
@@ -189,10 +213,26 @@ func TestMetricAndDataPointCount(t *testing.T) {
 		ilm.AppendEmpty()
 	}
 	assert.EqualValues(t, 0, md.DataPointCount())
-	ilm.At(1).SetDataType(MetricDataTypeGauge)
-	doubleGauge := ilm.At(1).Gauge()
-	doubleGauge.DataPoints().AppendEmpty()
+
+	ilm.At(0).SetDataType(MetricDataTypeGauge)
+	ilm.At(0).Gauge().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 1, md.DataPointCount())
+
+	ilm.At(1).SetDataType(MetricDataTypeSum)
+	ilm.At(1).Sum().DataPoints().AppendEmpty()
+	assert.EqualValues(t, 2, md.DataPointCount())
+
+	ilm.At(2).SetDataType(MetricDataTypeHistogram)
+	ilm.At(2).Histogram().DataPoints().AppendEmpty()
+	assert.EqualValues(t, 3, md.DataPointCount())
+
+	ilm.At(3).SetDataType(MetricDataTypeExponentialHistogram)
+	ilm.At(3).ExponentialHistogram().DataPoints().AppendEmpty()
+	assert.EqualValues(t, 4, md.DataPointCount())
+
+	ilm.At(4).SetDataType(MetricDataTypeSummary)
+	ilm.At(4).Summary().DataPoints().AppendEmpty()
+	assert.EqualValues(t, 5, md.DataPointCount())
 }
 
 func TestDataPointCountWithEmpty(t *testing.T) {
