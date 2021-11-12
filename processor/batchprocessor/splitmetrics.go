@@ -115,6 +115,8 @@ func metricDPC(ms pdata.Metric) int {
 		return ms.Sum().DataPoints().Len()
 	case pdata.MetricDataTypeHistogram:
 		return ms.Histogram().DataPoints().Len()
+	case pdata.MetricDataTypeExponentialHistogram:
+		return ms.ExponentialHistogram().DataPoints().Len()
 	case pdata.MetricDataTypeSummary:
 		return ms.Summary().DataPoints().Len()
 	}
@@ -139,6 +141,9 @@ func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
 	case pdata.MetricDataTypeHistogram:
 		dest.Histogram().SetAggregationTemporality(ms.Histogram().AggregationTemporality())
 		return splitHistogramDataPoints(ms.Histogram().DataPoints(), dest.Histogram().DataPoints(), size)
+	case pdata.MetricDataTypeExponentialHistogram:
+		dest.ExponentialHistogram().SetAggregationTemporality(ms.ExponentialHistogram().AggregationTemporality())
+		return splitExponentialHistogramDataPoints(ms.ExponentialHistogram().DataPoints(), dest.ExponentialHistogram().DataPoints(), size)
 	case pdata.MetricDataTypeSummary:
 		return splitSummaryDataPoints(ms.Summary().DataPoints(), dest.Summary().DataPoints(), size)
 	}
@@ -163,6 +168,20 @@ func splitHistogramDataPoints(src, dst pdata.HistogramDataPointSlice, size int) 
 	dst.EnsureCapacity(size)
 	i := 0
 	src.RemoveIf(func(dp pdata.HistogramDataPoint) bool {
+		if i < size {
+			dp.MoveTo(dst.AppendEmpty())
+			i++
+			return true
+		}
+		return false
+	})
+	return size, false
+}
+
+func splitExponentialHistogramDataPoints(src, dst pdata.ExponentialHistogramDataPointSlice, size int) (int, bool) {
+	dst.EnsureCapacity(size)
+	i := 0
+	src.RemoveIf(func(dp pdata.ExponentialHistogramDataPoint) bool {
 		if i < size {
 			dp.MoveTo(dst.AppendEmpty())
 			i++
