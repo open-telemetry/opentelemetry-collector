@@ -91,7 +91,17 @@ func TestCopyData(t *testing.T) {
 	}
 }
 
-func TestDataType(t *testing.T) {
+func TestMetricDataTypeString(t *testing.T) {
+	assert.Equal(t, "None", MetricDataTypeNone.String())
+	assert.Equal(t, "Gauge", MetricDataTypeGauge.String())
+	assert.Equal(t, "Sum", MetricDataTypeSum.String())
+	assert.Equal(t, "Histogram", MetricDataTypeHistogram.String())
+	assert.Equal(t, "ExponentialHistogram", MetricDataTypeExponentialHistogram.String())
+	assert.Equal(t, "Summary", MetricDataTypeSummary.String())
+	assert.Equal(t, "", (MetricDataTypeSummary + 1).String())
+}
+
+func TestMetricDataType(t *testing.T) {
 	m := NewMetric()
 	assert.Equal(t, "None", MetricDataTypeNone.String())
 	assert.Equal(t, MetricDataTypeNone, m.DataType())
@@ -110,6 +120,31 @@ func TestDataType(t *testing.T) {
 	m.SetDataType(MetricDataTypeSummary)
 	assert.Equal(t, "Summary", MetricDataTypeSummary.String())
 	assert.Equal(t, MetricDataTypeSummary, m.DataType())
+}
+
+func TestPointMetricValueTypeString(t *testing.T) {
+	assert.Equal(t, "None", MetricValueTypeNone.String())
+	assert.Equal(t, "Int", MetricValueTypeInt.String())
+	assert.Equal(t, "Double", MetricValueTypeDouble.String())
+	assert.Equal(t, "", (MetricValueTypeDouble + 1).String())
+}
+
+func TestPointMetricValueType(t *testing.T) {
+	m := NewNumberDataPoint()
+	assert.Equal(t, MetricValueTypeNone, m.Type())
+	m.SetIntVal(10)
+	assert.Equal(t, MetricValueTypeInt, m.Type())
+	m.SetDoubleVal(10.0)
+	assert.Equal(t, MetricValueTypeDouble, m.Type())
+}
+
+func TestExemplarMetricValueType(t *testing.T) {
+	m := NewExemplar()
+	assert.Equal(t, MetricValueTypeNone, m.Type())
+	m.SetIntVal(10)
+	assert.Equal(t, MetricValueTypeInt, m.Type())
+	m.SetDoubleVal(10.0)
+	assert.Equal(t, MetricValueTypeDouble, m.Type())
 }
 
 func TestResourceMetricsWireCompatibility(t *testing.T) {

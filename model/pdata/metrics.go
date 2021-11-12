@@ -314,12 +314,22 @@ const (
 	MetricValueTypeDouble
 )
 
+// String returns the string representation of the MetricValueType.
+func (mdt MetricValueType) String() string {
+	switch mdt {
+	case MetricValueTypeNone:
+		return "None"
+	case MetricValueTypeInt:
+		return "Int"
+	case MetricValueTypeDouble:
+		return "Double"
+	}
+	return ""
+}
+
 // Type returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
 func (ms NumberDataPoint) Type() MetricValueType {
-	if ms.orig.Value == nil {
-		return MetricValueTypeNone
-	}
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		return MetricValueTypeDouble
@@ -332,9 +342,6 @@ func (ms NumberDataPoint) Type() MetricValueType {
 // Type returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
 func (ms Exemplar) Type() MetricValueType {
-	if ms.orig.Value == nil {
-		return MetricValueTypeNone
-	}
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		return MetricValueTypeDouble
