@@ -246,7 +246,6 @@ func TestAttributeValueEqual(t *testing.T) {
 
 	av1.CopyTo(av2.SliceVal().AppendEmpty())
 	assert.False(t, av1.Equal(av2))
-	assert.True(t, av1.Equal(av1))
 
 	av1 = NewAttributeValueMap()
 	av1.MapVal().InitFromMap(map[string]AttributeValue{

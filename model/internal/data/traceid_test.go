@@ -41,14 +41,12 @@ func TestTraceIDHexString(t *testing.T) {
 
 func TestTraceIDEqual(t *testing.T) {
 	tid := NewTraceID([16]byte{})
-	assert.True(t, tid.Equal(tid))
 	assert.True(t, tid.Equal(NewTraceID([16]byte{})))
 	assert.False(t, tid.Equal(NewTraceID([16]byte{1})))
 
 	tid = NewTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78})
-	assert.True(t, tid.Equal(tid))
-	assert.False(t, tid.Equal(NewTraceID([16]byte{})))
 	assert.True(t, tid.Equal(NewTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78})))
+	assert.False(t, tid.Equal(NewTraceID([16]byte{})))
 }
 
 func TestTraceIDMarshal(t *testing.T) {
