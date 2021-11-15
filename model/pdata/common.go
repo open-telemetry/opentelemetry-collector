@@ -255,20 +255,6 @@ func (a AttributeValue) SetBytesVal(v []byte) {
 	a.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: v}
 }
 
-// SetMapVal replaces the AttributeMap value associated with this AttributeValue,
-// it also changes the type to be AttributeValueTypeMap.
-// Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetMapVal(v AttributeMap) {
-	a.orig.Value = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: *v.orig}}
-}
-
-// SetSliceVal replaces the AttributeValueSlice value associated with this AttributeValue,
-// it also changes the type to be AttributeValueTypeArray.
-// Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetSliceVal(v AttributeValueSlice) {
-	a.orig.Value = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: *v.orig}}
-}
-
 // copyTo copies the value to AnyValue. Will panic if dest is nil.
 func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 	switch v := a.orig.Value.(type) {
