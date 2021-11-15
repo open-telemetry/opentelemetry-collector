@@ -492,28 +492,6 @@ func newAttributeMap(orig *[]otlpcommon.KeyValue) AttributeMap {
 	return AttributeMap{orig}
 }
 
-// InitFromMap overwrites the entire AttributeMap and reconstructs the AttributeMap
-// with values from the given map[string]AttributeValue.
-//
-// Returns the same instance to allow nicer code like:
-//   assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{...}), actual)
-// Deprecated: use NewAttributeMapFromMap instead.
-func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeMap {
-	if len(attrMap) == 0 {
-		*am.orig = []otlpcommon.KeyValue(nil)
-		return am
-	}
-	origs := make([]otlpcommon.KeyValue, len(attrMap))
-	ix := 0
-	for k, v := range attrMap {
-		origs[ix].Key = k
-		v.copyTo(&origs[ix].Value)
-		ix++
-	}
-	*am.orig = origs
-	return am
-}
-
 // Clear erases any existing entries in this AttributeMap instance.
 func (am AttributeMap) Clear() {
 	*am.orig = nil

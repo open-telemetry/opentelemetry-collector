@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove `pdata.AttributeMap.InitFromMap` (#4429)
+
 ## v0.39.0 Beta
 
 ## 🛑 Breaking changes 🛑
