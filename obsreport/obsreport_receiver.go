@@ -53,6 +53,11 @@ type ReceiverSettings struct {
 
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
+	traceProvider := cfg.ReceiverCreateSettings.TracerProvider
+	if traceProvider == nil {
+		traceProvider = trace.NewNoopTracerProvider()
+	}
+
 	return &Receiver{
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
@@ -61,7 +66,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
 			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
 		},
-		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
+		tracer: traceProvider.Tracer(cfg.ReceiverID.String()),
 	}
 }
 
