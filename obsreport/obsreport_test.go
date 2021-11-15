@@ -51,6 +51,14 @@ type testParams struct {
 	err   error
 }
 
+func TestNewReceiverSuccess(t *testing.T) {
+	rec := NewReceiver(ReceiverSettings{
+		ReceiverID: receiver,
+		Transport:  transport,
+	})
+	require.NotNil(t, rec)
+}
+
 func TestReceiveTraceDataOp(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
