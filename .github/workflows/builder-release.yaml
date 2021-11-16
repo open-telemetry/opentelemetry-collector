@@ -1,9 +1,9 @@
-name: goreleaser
+name: Builder - Release
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'cmd/builder/v*'
 
 jobs:
   goreleaser:
@@ -23,8 +23,9 @@ jobs:
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
+          distribution: goreleaser-pro
           version: latest
           args: release --rm-dist
-          workdir: cmd/builder
         env:
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

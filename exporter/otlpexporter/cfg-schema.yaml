@@ -64,7 +64,7 @@ fields:
   kind: string
   doc: |
     The compression key for supported compression types within
-    collector. Currently the only supported mode is `gzip`.
+    collector. Supports `gzip`, `snappy` and `zstd`.
 - name: ca_file
   kind: string
   doc: |

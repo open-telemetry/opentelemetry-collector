@@ -52,6 +52,5 @@ func TestLoadConfig(t *testing.T) {
 			CheckInterval:       5 * time.Second,
 			MemoryLimitMiB:      4000,
 			MemorySpikeLimitMiB: 500,
-			BallastSizeMiB:      2000,
 		})
 }

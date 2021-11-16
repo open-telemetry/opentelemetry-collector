@@ -20,11 +20,6 @@ processors:
     # The maximum, in MiB, spike expected between the measurements of memory usage.
     spike_limit_mib: 500
 
-    # BallastSizeMiB is the size, in MiB, of the ballast size being used by the process.
-    # This must match the value of mem-ballast-size-mib command line option (if used)
-    # otherwise the memory limiter will not work correctly.
-    ballast_size_mib: 2000
-
 exporters:
   nop:
 

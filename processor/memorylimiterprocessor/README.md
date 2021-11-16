@@ -32,11 +32,6 @@ value (otherwise memory usage may exceed the hard limit - even if temporarily).
 A good starting point for `spike_limit_mib` is 20% of the hard limit. Bigger
 `spike_limit_mib` values may be necessary for spiky traffic or for longer check intervals.
 
-In addition, if the ballast size is specified in [ballastextension](../../extension/ballastextension), 
-the same value that is provided via the `ballastextension` will be used in `memory_limitor` for
-calculating the total allocated memory for the collector. 
-The `memory_limiter.ballast_size_mib` config has been deprecated and will be removed soon.
-
 Note that while the processor can help mitigate out of memory situations,
 it is not a replacement for properly sizing and configuring the
 collector. Keep in mind that if the soft limit is crossed, the collector will

@@ -29,39 +29,31 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmapprovider"
-	"go.opentelemetry.io/collector/config/configunmarshaler"
-	"go.opentelemetry.io/collector/internal/defaultcomponents"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/service/internal/builder"
-	"go.opentelemetry.io/collector/service/internal/extensions"
 )
 
 const configStr = `
 receivers:
-  otlp:
-    protocols:
-      grpc:
-exporters:
-  otlp:
-    endpoint: "localhost:4317"
+  examplereceiver:
 processors:
-  batch:
+  exampleprocessor:
+exporters:
+  exampleexporter:
 extensions:
+  exampleextension:
 service:
-  extensions:
+  extensions: [exampleextension]
   pipelines:
     traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp]
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
 `
 
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
@@ -72,13 +64,13 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	collectorTelemetry = &colTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.ExampleComponents()
 	require.NoError(t, err)
 
 	set := CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
+		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -103,7 +95,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 }
 
 func TestCollector_Start(t *testing.T) {
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.OtelColConfigComponents()
 	require.NoError(t, err)
 
 	loggingHookCalled := false
@@ -115,7 +107,7 @@ func TestCollector_Start(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		ConfigMapProvider: configmapprovider.NewFile("testdata/otelcol-config.yaml"),
 		LoggingOptions:    []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
@@ -151,9 +143,6 @@ func TestCollector_Start(t *testing.T) {
 
 	assertZPages(t)
 
-	// Trigger another configuration load.
-	require.NoError(t, col.reloadService(context.Background()))
-
 	col.signalsChannel <- syscall.SIGTERM
 	<-colDone
 	assert.Equal(t, Closing, <-col.GetStateChannel())
@@ -176,13 +165,13 @@ func TestCollector_ReportError(t *testing.T) {
 	collectorTelemetry = &mockColTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.ExampleComponents()
 	require.NoError(t, err)
 
 	col, err := New(CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFileMapProvider("testdata/otelcol-config.yaml"),
+		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
 	})
 	require.NoError(t, err)
 
@@ -259,79 +248,5 @@ func assertZPages(t *testing.T) {
 
 	for _, path := range paths {
 		testZPagePathFn(t, path)
-	}
-}
-
-type errParserLoader struct {
-	err error
-}
-
-func (epl *errParserLoader) Retrieve(_ context.Context) (config.Retrieved, error) {
-	return nil, epl.err
-}
-
-func (epl *errParserLoader) Close(context.Context) error {
-	return nil
-}
-
-func TestCollector_reloadService(t *testing.T) {
-	factories, err := defaultcomponents.Components()
-	require.NoError(t, err)
-	ctx := context.Background()
-	sentinelError := errors.New("sentinel error")
-
-	tests := []struct {
-		name           string
-		parserProvider config.MapProvider
-		service        *service
-	}{
-		{
-			name:           "first_load_err",
-			parserProvider: &errParserLoader{err: sentinelError},
-		},
-		{
-			name:           "retire_service_ok_load_err",
-			parserProvider: &errParserLoader{err: sentinelError},
-			service: &service{
-				telemetry:       componenttest.NewNopTelemetrySettings(),
-				builtExporters:  builder.Exporters{},
-				builtPipelines:  builder.BuiltPipelines{},
-				builtReceivers:  builder.Receivers{},
-				builtExtensions: extensions.Extensions{},
-			},
-		},
-		{
-			name:           "retire_service_ok_load_ok",
-			parserProvider: configmapprovider.NewInMemoryMapProvider(strings.NewReader(configStr)),
-			service: &service{
-				telemetry:       componenttest.NewNopTelemetrySettings(),
-				builtExporters:  builder.Exporters{},
-				builtPipelines:  builder.BuiltPipelines{},
-				builtReceivers:  builder.Receivers{},
-				builtExtensions: extensions.Extensions{},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			col := Collector{
-				set: CollectorSettings{
-					ConfigMapProvider: tt.parserProvider,
-					ConfigUnmarshaler: configunmarshaler.NewDefault(),
-					Factories:         factories,
-				},
-				logger:         zap.NewNop(),
-				tracerProvider: trace.NewNoopTracerProvider(),
-				service:        tt.service,
-			}
-
-			if err = col.reloadService(ctx); err != nil {
-				assert.ErrorIs(t, err, sentinelError)
-				return
-			}
-
-			// If successful need to shutdown active service.
-			assert.NoError(t, col.service.Shutdown(ctx))
-		})
 	}
 }

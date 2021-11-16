@@ -26,7 +26,7 @@ BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
-COMP_REL_PATH=internal/defaultcomponents/defaults.go
+COMP_REL_PATH=service/defaultcomponents/defaults.go
 MOD_NAME=go.opentelemetry.io/collector
 
 ADDLICENSE=addlicense
@@ -129,7 +129,6 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
 	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && go install github.com/mjibson/esc
 	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
@@ -273,6 +272,12 @@ build-binary-internal-unstable:
 	$(MAKE) binaries-linux_$(ARCH)
 	docker build -t otelcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcol-fpm
+
+# Builds a collector binary of the removed cmd/otelcol directory
+.PHONY: build-binary-cmd-otelcol
+build-binary-cmd-otelcol:
+	mkdir -p ./bin
+	pushd cmd/builder/ && go run ./ --config ../../internal/buildscripts/builder-config.yaml --output-path ../../bin && popd
 
 .PHONY: genmdata
 genmdata:

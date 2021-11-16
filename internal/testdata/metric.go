@@ -32,12 +32,13 @@ var (
 )
 
 const (
-	TestGaugeDoubleMetricName     = "gauge-double"
-	TestGaugeIntMetricName        = "gauge-int"
-	TestSumDoubleMetricName       = "counter-double"
-	TestSumIntMetricName          = "counter-int"
-	TestDoubleHistogramMetricName = "double-histogram"
-	TestDoubleSummaryMetricName   = "double-summary"
+	TestGaugeDoubleMetricName          = "gauge-double"
+	TestGaugeIntMetricName             = "gauge-int"
+	TestSumDoubleMetricName            = "sum-double"
+	TestSumIntMetricName               = "sum-int"
+	TestHistogramMetricName            = "histogram"
+	TestExponentialHistogramMetricName = "exponential-histogram"
+	TestSummaryMetricName              = "summary"
 )
 
 func GenerateMetricsOneEmptyResourceMetrics() pdata.Metrics {
@@ -86,7 +87,7 @@ func GenerateMetricsOneCounterOneSummaryMetrics() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	initDoubleSummaryMetric(rm0ils0.Metrics().AppendEmpty())
+	initSummaryMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
@@ -106,8 +107,8 @@ func GenerateMetricsAllTypesNoDataPoints() pdata.Metrics {
 	initMetric(ms.AppendEmpty(), TestGaugeIntMetricName, pdata.MetricDataTypeGauge)
 	initMetric(ms.AppendEmpty(), TestSumDoubleMetricName, pdata.MetricDataTypeSum)
 	initMetric(ms.AppendEmpty(), TestSumIntMetricName, pdata.MetricDataTypeSum)
-	initMetric(ms.AppendEmpty(), TestDoubleHistogramMetricName, pdata.MetricDataTypeHistogram)
-	initMetric(ms.AppendEmpty(), TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
+	initMetric(ms.AppendEmpty(), TestHistogramMetricName, pdata.MetricDataTypeHistogram)
+	initMetric(ms.AppendEmpty(), TestSummaryMetricName, pdata.MetricDataTypeSummary)
 	return md
 }
 
@@ -129,10 +130,10 @@ func GenerateMetricsAllTypesEmptyDataPoint() pdata.Metrics {
 	initMetric(intSum, TestSumIntMetricName, pdata.MetricDataTypeSum)
 	intSum.Sum().DataPoints().AppendEmpty()
 	histogram := ms.AppendEmpty()
-	initMetric(histogram, TestDoubleHistogramMetricName, pdata.MetricDataTypeHistogram)
+	initMetric(histogram, TestHistogramMetricName, pdata.MetricDataTypeHistogram)
 	histogram.Histogram().DataPoints().AppendEmpty()
 	summary := ms.AppendEmpty()
-	initMetric(summary, TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
+	initMetric(summary, TestSummaryMetricName, pdata.MetricDataTypeSummary)
 	summary.Summary().DataPoints().AppendEmpty()
 	return md
 }
@@ -153,9 +154,9 @@ func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
 	initGaugeDoubleMetric(ms.AppendEmpty())
 	initSumIntMetric(ms.AppendEmpty())
 	initSumDoubleMetric(ms.AppendEmpty())
-	initDoubleHistogramMetric(ms.AppendEmpty())
-	initDoubleSummaryMetric(ms.AppendEmpty())
-
+	initHistogramMetric(ms.AppendEmpty())
+	initExponentialHistogramMetric(ms.AppendEmpty())
+	initSummaryMetric(ms.AppendEmpty())
 	return md
 }
 
@@ -224,8 +225,8 @@ func initSumDoubleMetric(dm pdata.Metric) {
 	ddp1.SetDoubleVal(4.56)
 }
 
-func initDoubleHistogramMetric(hm pdata.Metric) {
-	initMetric(hm, TestDoubleHistogramMetricName, pdata.MetricDataTypeHistogram)
+func initHistogramMetric(hm pdata.Metric) {
+	initMetric(hm, TestHistogramMetricName, pdata.MetricDataTypeHistogram)
 
 	hdps := hm.Histogram().DataPoints()
 	hdp0 := hdps.AppendEmpty()
@@ -234,6 +235,7 @@ func initDoubleHistogramMetric(hm pdata.Metric) {
 	hdp0.SetTimestamp(TestMetricTimestamp)
 	hdp0.SetCount(1)
 	hdp0.SetSum(15)
+
 	hdp1 := hdps.AppendEmpty()
 	initMetricAttributes2(hdp1.Attributes())
 	hdp1.SetStartTimestamp(TestMetricStartTimestamp)
@@ -248,8 +250,33 @@ func initDoubleHistogramMetric(hm pdata.Metric) {
 	hdp1.SetExplicitBounds([]float64{1})
 }
 
-func initDoubleSummaryMetric(sm pdata.Metric) {
-	initMetric(sm, TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
+func initExponentialHistogramMetric(hm pdata.Metric) {
+	initMetric(hm, TestExponentialHistogramMetricName, pdata.MetricDataTypeExponentialHistogram)
+
+	hdps := hm.ExponentialHistogram().DataPoints()
+	hdp0 := hdps.AppendEmpty()
+	initMetricAttributes13(hdp0.Attributes())
+	hdp0.SetStartTimestamp(TestMetricStartTimestamp)
+	hdp0.SetTimestamp(TestMetricTimestamp)
+	hdp0.SetCount(2)
+	hdp0.SetSum(15)
+	hdp0.SetZeroCount(1)
+	hdp1 := hdps.AppendEmpty()
+
+	initMetricAttributes2(hdp1.Attributes())
+	hdp1.SetStartTimestamp(TestMetricStartTimestamp)
+	hdp1.SetTimestamp(TestMetricTimestamp)
+	hdp1.SetCount(2)
+	hdp1.SetSum(15)
+	hdp1.SetZeroCount(1)
+	exemplar := hdp1.Exemplars().AppendEmpty()
+	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
+	exemplar.SetDoubleVal(15)
+	initMetricAttachment(exemplar.FilteredAttributes())
+}
+
+func initSummaryMetric(sm pdata.Metric) {
+	initMetric(sm, TestSummaryMetricName, pdata.MetricDataTypeSummary)
 
 	sdps := sm.Summary().DataPoints()
 	sdp0 := sdps.AppendEmpty()
@@ -258,6 +285,7 @@ func initDoubleSummaryMetric(sm pdata.Metric) {
 	sdp0.SetTimestamp(TestMetricTimestamp)
 	sdp0.SetCount(1)
 	sdp0.SetSum(15)
+
 	sdp1 := sdps.AppendEmpty()
 	initMetricAttributes2(sdp1.Attributes())
 	sdp1.SetStartTimestamp(TestMetricStartTimestamp)
@@ -283,6 +311,9 @@ func initMetric(m pdata.Metric, name string, ty pdata.MetricDataType) {
 	case pdata.MetricDataTypeHistogram:
 		histo := m.Histogram()
 		histo.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	case pdata.MetricDataTypeExponentialHistogram:
+		histo := m.ExponentialHistogram()
+		histo.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 	}
 }
 
