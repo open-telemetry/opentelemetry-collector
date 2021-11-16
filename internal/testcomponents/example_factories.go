@@ -15,12 +15,13 @@
 package testcomponents // import "go.opentelemetry.io/collector/internal/testcomponents"
 
 import (
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.uber.org/multierr"
 )
 
 // ExampleComponents registers example factories. This is only used by tests.
