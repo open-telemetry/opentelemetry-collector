@@ -144,14 +144,6 @@ install-tools:
 run: build-binary-cmd-otelcol
 	./bin/cmd-otelcol --config ${RUN_CONFIG} ${RUN_ARGS}
 
-
-.PHONY: docker-component # Not intended to be used directly
-docker-component: check-component
-	GOOS=linux $(MAKE) $(COMPONENT)
-	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
-	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
-	rm ./cmd/$(COMPONENT)/$(COMPONENT)
-
 .PHONY: for-all
 for-all:
 	@echo "running $${CMD} in root"
