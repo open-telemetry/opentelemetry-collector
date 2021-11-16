@@ -173,20 +173,20 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	}
 
 	splitSize := 2
-	// Start with 6 metric types, and 2 points per-metric. Split out the first,
+	// Start with 7 metric types, and 2 points per-metric. Split out the first,
 	// and then split by 2 for the rest so that each metric is split in half.
 	// Verify that descriptors are preserved for all data types across splits.
 
 	split := splitMetrics(1, md)
 	assert.Equal(t, 1, split.MetricCount())
-	assert.Equal(t, 6, md.MetricCount())
+	assert.Equal(t, 7, md.MetricCount())
 	gaugeInt := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, gaugeInt.Gauge().DataPoints().Len())
 	assert.Equal(t, "test-metric-int-0-0", gaugeInt.Name())
 
 	split = splitMetrics(splitSize, md)
 	assert.Equal(t, 2, split.MetricCount())
-	assert.Equal(t, 5, md.MetricCount())
+	assert.Equal(t, 6, md.MetricCount())
 	gaugeInt = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	gaugeDouble := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1)
 	assert.Equal(t, 1, gaugeInt.Gauge().DataPoints().Len())
@@ -196,7 +196,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 
 	split = splitMetrics(splitSize, md)
 	assert.Equal(t, 2, split.MetricCount())
-	assert.Equal(t, 4, md.MetricCount())
+	assert.Equal(t, 5, md.MetricCount())
 	gaugeDouble = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	sumInt := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1)
 	assert.Equal(t, 1, gaugeDouble.Gauge().DataPoints().Len())
@@ -208,7 +208,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 
 	split = splitMetrics(splitSize, md)
 	assert.Equal(t, 2, split.MetricCount())
-	assert.Equal(t, 3, md.MetricCount())
+	assert.Equal(t, 4, md.MetricCount())
 	sumInt = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 	sumDouble := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1)
 	assert.Equal(t, 1, sumInt.Sum().DataPoints().Len())
@@ -222,32 +222,44 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 
 	split = splitMetrics(splitSize, md)
 	assert.Equal(t, 2, split.MetricCount())
-	assert.Equal(t, 2, md.MetricCount())
+	assert.Equal(t, 3, md.MetricCount())
 	sumDouble = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-	doubleHistogram := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1)
+	histogram := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1)
 	assert.Equal(t, 1, sumDouble.Sum().DataPoints().Len())
 	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, sumDouble.Sum().AggregationTemporality())
 	assert.Equal(t, true, sumDouble.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-3", sumDouble.Name())
-	assert.Equal(t, 1, doubleHistogram.Histogram().DataPoints().Len())
-	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, doubleHistogram.Histogram().AggregationTemporality())
-	assert.Equal(t, "test-metric-int-0-4", doubleHistogram.Name())
+	assert.Equal(t, 1, histogram.Histogram().DataPoints().Len())
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, histogram.Histogram().AggregationTemporality())
+	assert.Equal(t, "test-metric-int-0-4", histogram.Name())
+
+	split = splitMetrics(splitSize, md)
+	assert.Equal(t, 2, split.MetricCount())
+	assert.Equal(t, 2, md.MetricCount())
+	histogram = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	exponentialHistogram := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1)
+	assert.Equal(t, 1, histogram.Histogram().DataPoints().Len())
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, histogram.Histogram().AggregationTemporality())
+	assert.Equal(t, "test-metric-int-0-4", histogram.Name())
+	assert.Equal(t, 1, exponentialHistogram.ExponentialHistogram().DataPoints().Len())
+	assert.Equal(t, pdata.MetricAggregationTemporalityDelta, exponentialHistogram.ExponentialHistogram().AggregationTemporality())
+	assert.Equal(t, "test-metric-int-0-5", exponentialHistogram.Name())
 
 	split = splitMetrics(splitSize, md)
 	assert.Equal(t, 2, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
-	doubleHistogram = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-	doubleSummary := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1)
-	assert.Equal(t, 1, doubleHistogram.Histogram().DataPoints().Len())
-	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, doubleHistogram.Histogram().AggregationTemporality())
-	assert.Equal(t, "test-metric-int-0-4", doubleHistogram.Name())
-	assert.Equal(t, 1, doubleSummary.Summary().DataPoints().Len())
-	assert.Equal(t, "test-metric-int-0-5", doubleSummary.Name())
+	exponentialHistogram = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	summary := split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(1)
+	assert.Equal(t, 1, exponentialHistogram.ExponentialHistogram().DataPoints().Len())
+	assert.Equal(t, pdata.MetricAggregationTemporalityDelta, exponentialHistogram.ExponentialHistogram().AggregationTemporality())
+	assert.Equal(t, "test-metric-int-0-5", exponentialHistogram.Name())
+	assert.Equal(t, 1, summary.Summary().DataPoints().Len())
+	assert.Equal(t, "test-metric-int-0-6", summary.Name())
 
 	split = splitMetrics(splitSize, md)
-	doubleSummary = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-	assert.Equal(t, 1, doubleSummary.Summary().DataPoints().Len())
-	assert.Equal(t, "test-metric-int-0-5", doubleSummary.Name())
+	summary = split.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, 1, summary.Summary().DataPoints().Len())
+	assert.Equal(t, "test-metric-int-0-6", summary.Name())
 }
 
 func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {

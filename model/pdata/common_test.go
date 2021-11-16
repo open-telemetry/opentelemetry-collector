@@ -246,19 +246,14 @@ func TestAttributeValueEqual(t *testing.T) {
 
 	av1.CopyTo(av2.SliceVal().AppendEmpty())
 	assert.False(t, av1.Equal(av2))
-	assert.True(t, av1.Equal(av1))
 
 	av1 = NewAttributeValueMap()
-	av1.MapVal().InitFromMap(map[string]AttributeValue{
-		"foo": NewAttributeValueString("bar"),
-	})
+	av1.MapVal().UpsertString("foo", "bar")
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av2 = NewAttributeValueMap()
-	av2.MapVal().InitFromMap(map[string]AttributeValue{
-		"foo": NewAttributeValueString("bar"),
-	})
+	av2.MapVal().UpsertString("foo", "bar")
 	assert.True(t, av1.Equal(av2))
 
 	fooVal, ok := av2.MapVal().Get("foo")
@@ -899,7 +894,7 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, NewAttributeValueString("somestr"), a2.SliceVal().At(0))
 
 	// Insert the second array as a child.
-	a1.SliceVal().AppendEmpty().SetSliceVal(a2.SliceVal())
+	a2.CopyTo(a1.SliceVal().AppendEmpty())
 	assert.EqualValues(t, 2, a1.SliceVal().Len())
 	assert.EqualValues(t, NewAttributeValueDouble(123), a1.SliceVal().At(0))
 	assert.EqualValues(t, a2, a1.SliceVal().At(1))

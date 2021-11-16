@@ -15,6 +15,8 @@
 package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggingexporter"
 
 import (
+	"go.uber.org/zap/zapcore"
+
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -23,7 +25,7 @@ type Config struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
-	LogLevel string `mapstructure:"loglevel"`
+	LogLevel zapcore.Level `mapstructure:"loglevel"`
 
 	// SamplingInitial defines how many samples are initially logged during each second.
 	SamplingInitial int `mapstructure:"sampling_initial"`
