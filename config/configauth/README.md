@@ -3,7 +3,7 @@
 This module defines necessary interfaces to implement 
 
 - Server type authenticators for gRPC and HTTP receivers to perform authentication for requests and/or RPCs. Each server type is responsible for getting the request/RPC metadata and passing down to the authenticator.
-- Client type authenticators such as gRPC and HTTP exporters to perform client side authentication. 
+- Client type authenticators for gRPC and HTTP exporters to perform client side authentication. 
 
 Few such authenticators that are implemented currently:
 
