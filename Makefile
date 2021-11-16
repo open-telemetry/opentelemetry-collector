@@ -198,10 +198,6 @@ delete-tag:
 	 	git tag -d "$${dir:2}/$${TAG}" ); \
 	done
 
-.PHONY: docker-otelcol
-docker-otelcol:
-	COMPONENT=otelcol $(MAKE) docker-component
-
 .PHONY: genmdata
 genmdata:
 	$(MAKE) for-all CMD="go generate ./..."
