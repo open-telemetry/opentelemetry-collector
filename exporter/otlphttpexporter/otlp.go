@@ -19,6 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/internal/middleware"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -33,10 +35,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/middleware"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -82,11 +82,15 @@ func (e *exporter) start(_ context.Context, host component.Host) error {
 		return err
 	}
 
-	if e.config.Compression != "" {
-		if strings.ToLower(e.config.Compression) == configgrpc.CompressionGzip {
-			client.Transport = middleware.NewCompressRoundTripper(client.Transport)
+	if cp := strings.ToLower(e.config.HTTPClientSettings.Compression); cp != "" {
+		if cp == confighttp.CompressionGzip {
+			client.Transport = middleware.NewCompressGzipRoundTripper(client.Transport)
+		} else if cp == confighttp.CompressionSnappy {
+			client.Transport = middleware.NewCompressSnappyRoundTripper(client.Transport)
+		} else if cp == confighttp.CompressionZstd {
+			client.Transport = middleware.NewCompressZstdRoundTripper(client.Transport)
 		} else {
-			return fmt.Errorf("unsupported compression type %q", e.config.Compression)
+			return fmt.Errorf("unsupported compression type %q", e.config.HTTPClientSettings.Compression)
 		}
 	}
 	e.client = client

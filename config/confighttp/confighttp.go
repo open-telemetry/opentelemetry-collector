@@ -32,6 +32,13 @@ import (
 	"go.opentelemetry.io/collector/internal/middleware"
 )
 
+// Compression HTTP keys for supported compression types within collector.
+const (
+	CompressionGzip        = "gzip"
+	CompressionSnappy      = "snappy"
+	CompressionZstd        = "zstd"
+)
+
 // HTTPClientSettings defines settings for creating an HTTP client.
 type HTTPClientSettings struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
@@ -58,6 +65,9 @@ type HTTPClientSettings struct {
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+
+	// The compression key for supported compression types within collector.
+	Compression string `mapstructure:"compression"`
 }
 
 // ToClient creates an HTTP client.

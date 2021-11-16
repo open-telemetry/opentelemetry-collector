@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"github.com/golang/snappy"
+	"github.com/klauspost/compress/zstd"
 	"io"
 	"net/http"
 )
@@ -25,20 +27,35 @@ import (
 const (
 	headerContentEncoding = "Content-Encoding"
 	headerValueGZIP       = "gzip"
+	headerValueSnappy	  = "snappy"
+	headerValueZstd		  = "zstd"
 )
 
-type CompressRoundTripper struct {
-	http.RoundTripper
-}
+type (
+	CompressGzipRoundTripper struct {
+		http.RoundTripper
+	}
 
-func NewCompressRoundTripper(rt http.RoundTripper) *CompressRoundTripper {
-	return &CompressRoundTripper{
+	CompressSnappyRoundTripper struct {
+		http.RoundTripper
+	}
+
+	CompressZstdRoundTripper struct {
+		http.RoundTripper
+	}
+
+	noOpReadCloser struct {
+		io.Reader
+	}
+)
+
+func NewCompressGzipRoundTripper(rt http.RoundTripper) *CompressGzipRoundTripper {
+	return &CompressGzipRoundTripper{
 		RoundTripper: rt,
 	}
 }
 
-func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-
+func (r *CompressGzipRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.Header.Get(headerContentEncoding) != "" {
 		// If the header already specifies a content encoding then skip compression
 		// since we don't want to compress it again. This is a safeguard that normally
@@ -74,6 +91,98 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	// Clone the headers and add gzip encoding header.
 	cReq.Header = req.Header.Clone()
 	cReq.Header.Add(headerContentEncoding, headerValueGZIP)
+
+	return r.RoundTripper.RoundTrip(cReq)
+}
+
+func NewCompressSnappyRoundTripper(rt http.RoundTripper) *CompressSnappyRoundTripper {
+	return &CompressSnappyRoundTripper{
+		RoundTripper: rt,
+	}
+}
+
+func (r *CompressSnappyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get(headerContentEncoding) != "" {
+		// If the header already specifies a content encoding then skip compression
+		// since we don't want to compress it again. This is a safeguard that normally
+		// should not happen since CompressRoundTripper is not intended to be used
+		// with http clients which already do their own compression.
+		return r.RoundTripper.RoundTrip(req)
+	}
+
+	// Compress the body with Snappy.
+	buf := bytes.NewBuffer([]byte{})
+	snappyWriter := snappy.NewBufferedWriter(buf)
+	_, copyErr := io.Copy(snappyWriter, req.Body)
+	closeErr := req.Body.Close()
+
+	if err := snappyWriter.Close(); err != nil {
+		return nil, err
+	}
+
+	if copyErr != nil {
+		return nil, copyErr
+	}
+	if closeErr != nil {
+		return nil, closeErr
+	}
+
+	// Create a new request since the docs say that we cannot modify the "req"
+	// (see https://golang.org/pkg/net/http/#RoundTripper).
+	cReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Clone the headers and add snappy as an encoding header.
+	cReq.Header = req.Header.Clone()
+	cReq.Header.Add(headerContentEncoding, headerValueSnappy)
+
+	return r.RoundTripper.RoundTrip(cReq)
+}
+
+func NewCompressZstdRoundTripper(rt http.RoundTripper) *CompressZstdRoundTripper {
+	return &CompressZstdRoundTripper{
+		RoundTripper: rt,
+	}
+}
+
+func (r *CompressZstdRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get(headerContentEncoding) != "" {
+		// If the header already specifies a content encoding then skip compression
+		// since we don't want to compress it again. This is a safeguard that normally
+		// should not happen since CompressRoundTripper is not intended to be used
+		// with http clients which already do their own compression.
+		return r.RoundTripper.RoundTrip(req)
+	}
+
+	// Compress the body with zstd.
+	buf := bytes.NewBuffer([]byte{})
+	zstdWriter, _ := zstd.NewWriter(buf)
+	_, copyErr := io.Copy(zstdWriter, req.Body)
+	closeErr := req.Body.Close()
+
+	if err := zstdWriter.Close(); err != nil {
+		return nil, err
+	}
+
+	if copyErr != nil {
+		return nil, copyErr
+	}
+	if closeErr != nil {
+		return nil, closeErr
+	}
+
+	// Create a new request since the docs say that we cannot modify the "req"
+	// (see https://golang.org/pkg/net/http/#RoundTripper).
+	cReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Clone the headers and add zstd as an encoding header.
+	cReq.Header = req.Header.Clone()
+	cReq.Header.Add(headerContentEncoding, headerValueZstd)
 
 	return r.RoundTripper.RoundTrip(cReq)
 }
@@ -142,6 +251,15 @@ func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 			return nil, err
 		}
 		return zr, nil
+	case "snappy":
+		sr := io.NopCloser(snappy.NewReader(r.Body))
+		return sr, nil
+	case "zstd":
+		zr, err := zstd.NewReader(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		return zr.IOReadCloser(), nil
 	}
 	return nil, nil
 }
