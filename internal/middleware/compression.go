@@ -18,17 +18,18 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
-	"github.com/golang/snappy"
-	"github.com/klauspost/compress/zstd"
 	"io"
 	"net/http"
+
+	"github.com/golang/snappy"
+	"github.com/klauspost/compress/zstd"
 )
 
 const (
 	headerContentEncoding = "Content-Encoding"
 	headerValueGZIP       = "gzip"
-	headerValueSnappy	  = "snappy"
-	headerValueZstd		  = "zstd"
+	headerValueSnappy     = "snappy"
+	headerValueZstd       = "zstd"
 )
 
 type (
@@ -42,10 +43,6 @@ type (
 
 	CompressZstdRoundTripper struct {
 		http.RoundTripper
-	}
-
-	noOpReadCloser struct {
-		io.Reader
 	}
 )
 

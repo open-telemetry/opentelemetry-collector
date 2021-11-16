@@ -80,7 +80,7 @@ func TestHTTPClientCompression(t *testing.T) {
 
 			client := http.Client{}
 			if tt.encoding == "gzip" {
-				client.Transport = NewCompressRoundTripper(http.DefaultTransport)
+				client.Transport = NewCompressGzipRoundTripper(http.DefaultTransport)
 			}
 			res, err := client.Do(req)
 			require.NoError(t, err)

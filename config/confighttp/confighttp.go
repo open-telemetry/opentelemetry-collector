@@ -34,9 +34,9 @@ import (
 
 // Compression HTTP keys for supported compression types within collector.
 const (
-	CompressionGzip        = "gzip"
-	CompressionSnappy      = "snappy"
-	CompressionZstd        = "zstd"
+	CompressionGzip   = "gzip"
+	CompressionSnappy = "snappy"
+	CompressionZstd   = "zstd"
 )
 
 // HTTPClientSettings defines settings for creating an HTTP client.
