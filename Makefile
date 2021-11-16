@@ -190,6 +190,12 @@ delete-tag:
 	 	git tag -d "$${dir:2}/$${TAG}" ); \
 	done
 
+# Builds a collector binary of the removed cmd/otelcol directory
+.PHONY: build-binary-cmd-otelcol
+build-binary-cmd-otelcol:
+	mkdir -p ./bin
+	pushd cmd/builder/ && go run ./ --config ../../internal/buildscripts/builder-config.yaml --output-path ../../bin && popd
+
 .PHONY: genmdata
 genmdata:
 	$(MAKE) for-all CMD="go generate ./..."
