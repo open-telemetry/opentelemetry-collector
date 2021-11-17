@@ -29,7 +29,7 @@ import (
 
 func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
 	retErr := errors.New("test error")
-	er := NewExpand(mockProvider{retrieveErr: retErr})
+	er := NewExpand(&mockProvider{retrieveErr: retErr})
 	_, err := er.Retrieve(context.Background(), nil)
 	require.Error(t, err)
 	require.ErrorIs(t, err, retErr)
@@ -37,7 +37,7 @@ func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
 
 func TestBaseRetrieveFailsOnGet(t *testing.T) {
 	getErr := errors.New("test error")
-	er := NewExpand(mockProvider{retrieved: &mockRetrieved{getErr: getErr}})
+	er := NewExpand(&mockProvider{retrieved: &mockRetrieved{getErr: getErr}})
 	_, err := er.Retrieve(context.Background(), nil)
 	require.Error(t, err)
 	require.ErrorIs(t, err, getErr)

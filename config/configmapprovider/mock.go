@@ -26,6 +26,8 @@ type mockProvider struct {
 	retrieveErr error
 }
 
+var _ Provider = &mockProvider{}
+
 func (m *mockProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
 	return m.retrieved, m.retrieveErr
 }
@@ -36,6 +38,8 @@ type mockRetrieved struct {
 	got    *config.Map
 	getErr error
 }
+
+var _ Retrieved = &mockRetrieved{}
 
 func (sr *mockRetrieved) Get(ctx context.Context) (*config.Map, error) {
 	return sr.got, sr.getErr
