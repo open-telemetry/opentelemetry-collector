@@ -32,13 +32,6 @@ import (
 	"go.opentelemetry.io/collector/internal/middleware"
 )
 
-// Compression HTTP keys for supported compression types within collector.
-const (
-	CompressionGzip   = "gzip"
-	CompressionSnappy = "snappy"
-	CompressionZstd   = "zstd"
-)
-
 // HTTPClientSettings defines settings for creating an HTTP client.
 type HTTPClientSettings struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
@@ -93,6 +86,12 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 			transport: transport,
 			headers:   hcs.Headers,
 		}
+	}
+
+	// Compress the body using specified compression methods if non-empty string is provided.
+	// Supporting Gzip, zlib, snappy, and zstd.
+	if hcs.Compression != "" {
+		clientTransport = middleware.NewCompressRoundTripper(clientTransport, hcs.Compression)
 	}
 
 	if hcs.Auth != nil {

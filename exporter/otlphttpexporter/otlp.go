@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -33,10 +32,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/middleware"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -80,19 +77,6 @@ func (e *exporter) start(_ context.Context, host component.Host) error {
 	client, err := e.config.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
-	}
-
-	switch strings.ToLower(e.config.HTTPClientSettings.Compression) {
-	case confighttp.CompressionGzip:
-		client.Transport = middleware.NewCompressGzipRoundTripper(client.Transport)
-	case confighttp.CompressionSnappy:
-		client.Transport = middleware.NewCompressSnappyRoundTripper(client.Transport)
-	case confighttp.CompressionZstd:
-		client.Transport = middleware.NewCompressZstdRoundTripper(client.Transport)
-	case "":
-		break
-	default:
-		return fmt.Errorf("unsupported compression type %q", e.config.HTTPClientSettings.Compression)
 	}
 	e.client = client
 	return nil

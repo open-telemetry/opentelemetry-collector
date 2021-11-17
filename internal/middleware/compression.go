@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -27,53 +28,54 @@ import (
 
 const (
 	headerContentEncoding = "Content-Encoding"
-	headerValueGZIP       = "gzip"
-	headerValueSnappy     = "snappy"
-	headerValueZstd       = "zstd"
+	CompressionGzip       = "gzip"
+	CompressionZlib       = "zlib"
+	CompressionDeflate    = "deflate"
+	CompressionSnappy     = "snappy"
+	CompressionZstd       = "zstd"
 )
 
 type (
-	CompressGzipRoundTripper struct {
-		http.RoundTripper
-	}
-
-	CompressSnappyRoundTripper struct {
-		http.RoundTripper
-	}
-
-	CompressZstdRoundTripper struct {
-		http.RoundTripper
+	CompressRoundTripper struct {
+		rt              http.RoundTripper
+		compressionType string
 	}
 )
 
-func NewCompressGzipRoundTripper(rt http.RoundTripper) *CompressGzipRoundTripper {
-	return &CompressGzipRoundTripper{
-		RoundTripper: rt,
+func NewCompressRoundTripper(rt http.RoundTripper, compressionType string) *CompressRoundTripper {
+	return &CompressRoundTripper{
+		rt:              rt,
+		compressionType: compressionType,
 	}
 }
 
-func (r *CompressGzipRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.Header.Get(headerContentEncoding) != "" {
 		// If the header already specifies a content encoding then skip compression
 		// since we don't want to compress it again. This is a safeguard that normally
 		// should not happen since CompressRoundTripper is not intended to be used
 		// with http clients which already do their own compression.
-		return r.RoundTripper.RoundTrip(req)
+		return r.rt.RoundTrip(req)
 	}
 
-	// Gzip the body.
+	// Compress the body.
 	buf := bytes.NewBuffer([]byte{})
-	gzipWriter := gzip.NewWriter(buf)
-	_, copyErr := io.Copy(gzipWriter, req.Body)
+	compressWriter, writerErr := newCompressorWriter(buf, r.compressionType)
+	_, copyErr := io.Copy(compressWriter, req.Body)
 	closeErr := req.Body.Close()
 
-	if err := gzipWriter.Close(); err != nil {
+	if writerErr != nil {
+		return nil, writerErr
+	}
+
+	if err := compressWriter.Close(); err != nil {
 		return nil, err
 	}
 
 	if copyErr != nil {
 		return nil, copyErr
 	}
+
 	if closeErr != nil {
 		return nil, closeErr
 	}
@@ -87,101 +89,24 @@ func (r *CompressGzipRoundTripper) RoundTrip(req *http.Request) (*http.Response,
 
 	// Clone the headers and add gzip encoding header.
 	cReq.Header = req.Header.Clone()
-	cReq.Header.Add(headerContentEncoding, headerValueGZIP)
+	cReq.Header.Add(headerContentEncoding, r.compressionType)
 
-	return r.RoundTripper.RoundTrip(cReq)
+	return r.rt.RoundTrip(cReq)
 }
 
-func NewCompressSnappyRoundTripper(rt http.RoundTripper) *CompressSnappyRoundTripper {
-	return &CompressSnappyRoundTripper{
-		RoundTripper: rt,
+func newCompressorWriter(buf *bytes.Buffer, compressionType string) (io.WriteCloser, error) {
+	switch compressionType {
+	case CompressionGzip:
+		return gzip.NewWriter(buf), nil
+	case CompressionSnappy:
+		return snappy.NewBufferedWriter(buf), nil
+	case CompressionZstd:
+		return zstd.NewWriter(buf)
+	case CompressionZlib, CompressionDeflate:
+		return zlib.NewWriter(buf), nil
+	default:
+		return nil, fmt.Errorf("unsupported compression type %q", compressionType)
 	}
-}
-
-func (r *CompressSnappyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.Header.Get(headerContentEncoding) != "" {
-		// If the header already specifies a content encoding then skip compression
-		// since we don't want to compress it again. This is a safeguard that normally
-		// should not happen since CompressRoundTripper is not intended to be used
-		// with http clients which already do their own compression.
-		return r.RoundTripper.RoundTrip(req)
-	}
-
-	// Compress the body with Snappy.
-	buf := bytes.NewBuffer([]byte{})
-	snappyWriter := snappy.NewBufferedWriter(buf)
-	_, copyErr := io.Copy(snappyWriter, req.Body)
-	closeErr := req.Body.Close()
-
-	if err := snappyWriter.Close(); err != nil {
-		return nil, err
-	}
-
-	if copyErr != nil {
-		return nil, copyErr
-	}
-	if closeErr != nil {
-		return nil, closeErr
-	}
-
-	// Create a new request since the docs say that we cannot modify the "req"
-	// (see https://golang.org/pkg/net/http/#RoundTripper).
-	cReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), buf)
-	if err != nil {
-		return nil, err
-	}
-
-	// Clone the headers and add snappy as an encoding header.
-	cReq.Header = req.Header.Clone()
-	cReq.Header.Add(headerContentEncoding, headerValueSnappy)
-
-	return r.RoundTripper.RoundTrip(cReq)
-}
-
-func NewCompressZstdRoundTripper(rt http.RoundTripper) *CompressZstdRoundTripper {
-	return &CompressZstdRoundTripper{
-		RoundTripper: rt,
-	}
-}
-
-func (r *CompressZstdRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	if req.Header.Get(headerContentEncoding) != "" {
-		// If the header already specifies a content encoding then skip compression
-		// since we don't want to compress it again. This is a safeguard that normally
-		// should not happen since CompressRoundTripper is not intended to be used
-		// with http clients which already do their own compression.
-		return r.RoundTripper.RoundTrip(req)
-	}
-
-	// Compress the body with zstd.
-	buf := bytes.NewBuffer([]byte{})
-	zstdWriter, _ := zstd.NewWriter(buf)
-	_, copyErr := io.Copy(zstdWriter, req.Body)
-	closeErr := req.Body.Close()
-
-	if err := zstdWriter.Close(); err != nil {
-		return nil, err
-	}
-
-	if copyErr != nil {
-		return nil, copyErr
-	}
-	if closeErr != nil {
-		return nil, closeErr
-	}
-
-	// Create a new request since the docs say that we cannot modify the "req"
-	// (see https://golang.org/pkg/net/http/#RoundTripper).
-	cReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), buf)
-	if err != nil {
-		return nil, err
-	}
-
-	// Clone the headers and add zstd as an encoding header.
-	cReq.Header = req.Header.Clone()
-	cReq.Header.Add(headerContentEncoding, headerValueZstd)
-
-	return r.RoundTripper.RoundTrip(cReq)
 }
 
 type ErrorHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
