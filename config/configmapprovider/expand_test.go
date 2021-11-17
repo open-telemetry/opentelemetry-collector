@@ -16,6 +16,7 @@ package configmapprovider
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path"
 	"testing"
@@ -25,6 +26,22 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 )
+
+func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
+	retErr := errors.New("test error")
+	er := NewExpand(mockProvider{retrieveErr: retErr})
+	_, err := er.Retrieve(context.Background(), nil)
+	require.Error(t, err)
+	require.ErrorIs(t, err, retErr)
+}
+
+func TestBaseRetrieveFailsOnGet(t *testing.T) {
+	getErr := errors.New("test error")
+	er := NewExpand(mockProvider{retrieved: &mockRetrieved{getErr: getErr}})
+	_, err := er.Retrieve(context.Background(), nil)
+	require.Error(t, err)
+	require.ErrorIs(t, err, getErr)
+}
 
 func TestExpand(t *testing.T) {
 	var testCases = []struct {
