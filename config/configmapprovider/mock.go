@@ -20,12 +20,13 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+// mockProvider is a mock implementation of Provider, useful for testing.
 type mockProvider struct {
 	retrieved   Retrieved
 	retrieveErr error
 }
 
-func (m mockProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
+func (m *mockProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
 	return m.retrieved, m.retrieveErr
 }
 
