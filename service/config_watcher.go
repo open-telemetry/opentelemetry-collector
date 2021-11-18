@@ -24,25 +24,34 @@ import (
 )
 
 type configWatcher struct {
-	cfg     *config.Config
-	ret     configmapprovider.Retrieved
+	ctx     context.Context
+	set     CollectorSettings
 	watcher chan error
 }
 
 func newConfigWatcher(ctx context.Context, set CollectorSettings) (*configWatcher, error) {
-	cm := &configWatcher{watcher: make(chan error, 1)}
+	cm := &configWatcher{
+		ctx:     ctx,
+		watcher: make(chan error, 1),
+		set:     set,
+	}
 
-	ret, err := set.ConfigMapProvider.Retrieve(ctx, cm.onChange)
+	return cm, nil
+}
+
+func (cm *configWatcher) get() (*config.Config, error) {
+	var cfg *config.Config
+	ret, err := cm.set.ConfigMapProvider.Retrieve(cm.ctx, cm.onChange)
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
 	}
 
-	var cfg *config.Config
-	m, err := ret.Get(ctx)
+	m, err := ret.Get(cm.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get the configuration: %w", err)
 	}
-	if cfg, err = set.ConfigUnmarshaler.Unmarshal(m, set.Factories); err != nil {
+
+	if cfg, err = cm.set.ConfigUnmarshaler.Unmarshal(m, cm.set.Factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
@@ -50,10 +59,7 @@ func newConfigWatcher(ctx context.Context, set CollectorSettings) (*configWatche
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	cm.cfg = cfg
-	cm.ret = ret
-
-	return cm, nil
+	return cfg, nil
 }
 
 func (cm *configWatcher) onChange(event *configmapprovider.ChangeEvent) {
@@ -62,7 +68,6 @@ func (cm *configWatcher) onChange(event *configmapprovider.ChangeEvent) {
 	}
 }
 
-func (cm *configWatcher) close(ctx context.Context) error {
+func (cm *configWatcher) close() {
 	close(cm.watcher)
-	return cm.ret.Close(ctx)
 }

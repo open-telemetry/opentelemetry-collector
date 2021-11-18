@@ -40,7 +40,7 @@ func NewProperties(properties []string) Provider {
 	}
 }
 
-func (pmp *propertiesMapProvider) Retrieve(_ context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
+func (pmp *propertiesMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (Retrieved, error) {
 	if len(pmp.properties) == 0 {
 		return &simpleRetrieved{confMap: config.NewMap()}, nil
 	}

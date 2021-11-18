@@ -35,13 +35,13 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
-// State defines Collector's state.
 type State int
 
 const (
@@ -106,7 +106,6 @@ func New(set CollectorSettings) (*Collector, error) {
 		set:   set,
 		state: state,
 	}, nil
-
 }
 
 // GetState returns current state of the collector server.
@@ -147,16 +146,24 @@ LOOP:
 		select {
 		case err := <-col.cfgW.watcher:
 			col.logger.Warn("Config updated", zap.Error(err))
+			if err != nil {
+				goto LOOP
+			}
+
+			// Get the config and ensure that it is valid. If it is not, keep running in the last valid state and
+			// keep trying until the configuration is fixed.
+			cfg, err := col.cfgW.get()
+			if err != nil {
+				col.logger.Error("unable to parse configuration", zap.Error(err))
+				goto LOOP
+			}
 
 			col.setCollectorState(Closing)
-
-			if err = col.cfgW.close(ctx); err != nil {
-				return fmt.Errorf("failed to close config watcher: %w", err)
-			}
 			if err = col.service.Shutdown(ctx); err != nil {
 				return fmt.Errorf("failed to shutdown the retiring config: %w", err)
 			}
-			if err = col.setupConfigurationComponents(ctx); err != nil {
+
+			if err = col.setupConfigurationComponents(ctx, cfg); err != nil {
 				return fmt.Errorf("failed to setup configuration components: %w", err)
 			}
 		case err := <-col.asyncErrorChannel:
@@ -175,24 +182,20 @@ LOOP:
 
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
-func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	col.setCollectorState(Starting)
-
+func (col *Collector) setupConfigurationComponents(ctx context.Context, cfg *config.Config) error {
 	var err error
-	if col.cfgW, err = newConfigWatcher(ctx, col.set); err != nil {
-		return err
-	}
 
-	if col.logger, err = telemetrylogs.NewLogger(col.cfgW.cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
+	if col.logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
 
 	col.logger.Info("Applying configuration...")
+	col.setCollectorState(Starting)
 
 	col.service, err = newService(&svcSettings{
 		BuildInfo: col.set.BuildInfo,
 		Factories: col.set.Factories,
-		Config:    col.cfgW.cfg,
+		Config:    cfg,
 		Telemetry: component.TelemetrySettings{
 			Logger:         col.logger,
 			TracerProvider: col.tracerProvider,
@@ -210,6 +213,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	return nil
+
 }
 
 // Run starts the collector according to the given configuration given, and waits for it to complete.
@@ -228,7 +232,18 @@ func (col *Collector) Run(ctx context.Context) error {
 
 	col.asyncErrorChannel = make(chan error)
 
-	if err := col.setupConfigurationComponents(ctx); err != nil {
+	// set up config watcher
+	var err error
+	if col.cfgW, err = newConfigWatcher(ctx, col.set); err != nil {
+		return err
+	}
+
+	cfg, err := col.cfgW.get()
+	if err != nil {
+		return fmt.Errorf("unable to get config: %w", err)
+	}
+
+	if err := col.setupConfigurationComponents(ctx, cfg); err != nil {
 		return err
 	}
 
@@ -254,9 +269,8 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if err := col.cfgW.close(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to close config provider watcher: %w", err))
-	}
+	// Close the config watcher
+	col.cfgW.close()
 
 	if err := col.set.ConfigMapProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))

@@ -105,7 +105,7 @@ func TestConfigWatcher(t *testing.T) {
 		{
 			name: "watch_err",
 			parserProvider: func() configmapprovider.Provider {
-				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
+				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), onChange)
 				require.NoError(t, err)
 				m, err := ret.Get(context.Background())
 				require.NoError(t, err)
@@ -117,7 +117,7 @@ func TestConfigWatcher(t *testing.T) {
 		{
 			name: "close_err",
 			parserProvider: func() configmapprovider.Provider {
-				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
+				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), onChange)
 				require.NoError(t, err)
 				m, err := ret.Get(context.Background())
 				require.NoError(t, err)
@@ -130,7 +130,7 @@ func TestConfigWatcher(t *testing.T) {
 			name: "ok",
 			parserProvider: func() configmapprovider.Provider {
 				// Use errRetrieved with nil errors to have Watchable interface implemented.
-				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
+				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), onChange)
 				require.NoError(t, err)
 				m, err := ret.Get(context.Background())
 				require.NoError(t, err)
@@ -147,12 +147,15 @@ func TestConfigWatcher(t *testing.T) {
 				Factories:         factories,
 			}
 
-			cfgW, errN := newConfigWatcher(context.Background(), set)
+			cfgW, _ := newConfigWatcher(context.Background(), set)
+			_, errN := cfgW.get()
+
 			if tt.expectNewErr {
 				assert.Error(t, errN)
 				return
 			}
 			assert.NoError(t, errN)
+			cfgW.close()
 
 			errW := <-cfgW.watcher
 			if tt.expectWatchErr {
@@ -160,13 +163,6 @@ func TestConfigWatcher(t *testing.T) {
 				return
 			}
 			assert.NoError(t, errW)
-
-			errC := cfgW.close(context.Background())
-			if tt.expectCloseErr {
-				assert.Error(t, errC)
-				return
-			}
-			assert.NoError(t, errC)
 		})
 	}
 }
@@ -193,7 +189,7 @@ func TestConfigWatcherNoWatcher(t *testing.T) {
 		watcherWG.Done()
 	}()
 
-	assert.NoError(t, cfgW.close(context.Background()))
+	cfgW.close()
 	watcherWG.Wait()
 }
 
@@ -203,7 +199,7 @@ func TestConfigWatcherWhenClosed(t *testing.T) {
 	set := CollectorSettings{
 		ConfigMapProvider: func() configmapprovider.Provider {
 			// Use errRetrieved with nil errors to have Watchable interface implemented.
-			ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
+			ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), onChange)
 			require.NoError(t, err)
 			m, err := ret.Get(context.Background())
 			require.NoError(t, err)
@@ -217,6 +213,10 @@ func TestConfigWatcherWhenClosed(t *testing.T) {
 	cfgW, errN := newConfigWatcher(context.Background(), set)
 	assert.NoError(t, errN)
 
+	cfg, err := cfgW.get()
+	assert.NotNil(t, cfg)
+	assert.Nil(t, err)
+
 	watcherWG.Add(1)
 	go func() {
 		errW, ok := <-cfgW.watcher
@@ -226,6 +226,8 @@ func TestConfigWatcherWhenClosed(t *testing.T) {
 		watcherWG.Done()
 	}()
 
-	assert.NoError(t, cfgW.close(context.Background()))
+	cfgW.close()
 	watcherWG.Wait()
 }
+
+func onChange(event *configmapprovider.ChangeEvent) {}
