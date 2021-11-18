@@ -37,15 +37,15 @@ const (
 
 type (
 	CompressRoundTripper struct {
-		rt              http.RoundTripper
-		compressionType string
+		RoundTripper    http.RoundTripper
+		CompressionType string
 	}
 )
 
 func NewCompressRoundTripper(rt http.RoundTripper, compressionType string) *CompressRoundTripper {
 	return &CompressRoundTripper{
-		rt:              rt,
-		compressionType: compressionType,
+		RoundTripper:            rt,
+		CompressionType: compressionType,
 	}
 }
 
@@ -55,18 +55,17 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 		// since we don't want to compress it again. This is a safeguard that normally
 		// should not happen since CompressRoundTripper is not intended to be used
 		// with http clients which already do their own compression.
-		return r.rt.RoundTrip(req)
+		return r.RoundTripper.RoundTrip(req)
 	}
 
 	// Compress the body.
 	buf := bytes.NewBuffer([]byte{})
-	compressWriter, writerErr := newCompressorWriter(buf, r.compressionType)
-	_, copyErr := io.Copy(compressWriter, req.Body)
-	closeErr := req.Body.Close()
-
+	compressWriter, writerErr := newCompressorWriter(buf, r.CompressionType)
 	if writerErr != nil {
 		return nil, writerErr
 	}
+	_, copyErr := io.Copy(compressWriter, req.Body)
+	closeErr := req.Body.Close()
 
 	if err := compressWriter.Close(); err != nil {
 		return nil, err
@@ -89,9 +88,9 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Clone the headers and add gzip encoding header.
 	cReq.Header = req.Header.Clone()
-	cReq.Header.Add(headerContentEncoding, r.compressionType)
+	cReq.Header.Add(headerContentEncoding, r.CompressionType)
 
-	return r.rt.RoundTrip(cReq)
+	return r.RoundTripper.RoundTrip(cReq)
 }
 
 func newCompressorWriter(buf *bytes.Buffer, compressionType string) (io.WriteCloser, error) {

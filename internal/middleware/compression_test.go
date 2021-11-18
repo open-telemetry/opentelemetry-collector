@@ -19,6 +19,8 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"fmt"
+	"github.com/golang/snappy"
+	"github.com/klauspost/compress/zstd"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -33,22 +35,60 @@ import (
 
 func TestHTTPClientCompression(t *testing.T) {
 	testBody := []byte("uncompressed_text")
-	compressedBody, _ := compressGzip(testBody)
+	compressedGzipBody, _ := compressGzip(testBody)
+	compressedZlibBody, _ := compressZlib(testBody)
+	compressedDeflateBody, _ := compressZlib(testBody)
+	compressedSnappyBody, _ := compressSnappy(testBody)
+	compressedZstdBody, _ := compressZstd(testBody)
+
 
 	tests := []struct {
 		name     string
 		encoding string
 		reqBody  []byte
+		shouldError bool
 	}{
 		{
 			name:     "NoCompression",
 			encoding: "",
 			reqBody:  testBody,
+			shouldError: false,
 		},
 		{
 			name:     "ValidGzip",
 			encoding: "gzip",
-			reqBody:  compressedBody.Bytes(),
+			reqBody:  compressedGzipBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:     "ValidZlib",
+			encoding: "zlib",
+			reqBody:  compressedZlibBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:     "Validdeflate",
+			encoding: "deflate",
+			reqBody:  compressedDeflateBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:     "ValidSnappy",
+			encoding: "snappy",
+			reqBody:  compressedSnappyBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:     "ValidZstd",
+			encoding: "zstd",
+			reqBody:  compressedZstdBody.Bytes(),
+			shouldError: false,
+		},
+		{
+			name:     "invalid",
+			encoding: "ggip",
+			reqBody:  testBody,
+			shouldError: true,
 		},
 	}
 	for _, tt := range tests {
@@ -79,11 +119,16 @@ func TestHTTPClientCompression(t *testing.T) {
 			require.NoError(t, err, "failed to create request to test handler")
 
 			client := http.Client{}
-			if tt.encoding == "gzip" {
+			if tt.encoding != "" {
 				client.Transport = NewCompressRoundTripper(http.DefaultTransport, tt.encoding)
 			}
 			res, err := client.Do(req)
-			require.NoError(t, err)
+			if tt.shouldError {
+				assert.Error(t, err)
+				return
+			} else {
+				require.NoError(t, err)
+			}
 
 			_, err = ioutil.ReadAll(res.Body)
 			require.NoError(t, err)
@@ -92,6 +137,7 @@ func TestHTTPClientCompression(t *testing.T) {
 		})
 	}
 }
+
 
 func TestHTTPContentDecompressionHandler(t *testing.T) {
 	testBody := []byte("uncompressed_text")
@@ -127,6 +173,22 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: 200,
 		},
 		{
+			name:     "ValidSnappy",
+			encoding: "snappy",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return compressSnappy(testBody)
+			},
+			respCode: 200,
+		},
+		{
+			name:     "ValidZstd",
+			encoding: "zstd",
+			reqBodyFunc: func() (*bytes.Buffer, error) {
+				return compressZstd(testBody)
+			},
+			respCode: 200,
+		},
+		{
 			name:     "InvalidGzip",
 			encoding: "gzip",
 			reqBodyFunc: func() (*bytes.Buffer, error) {
@@ -135,7 +197,6 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: 400,
 			respBody: "gzip: invalid header\n",
 		},
-
 		{
 			name:     "InvalidZlib",
 			encoding: "zlib",
@@ -145,6 +206,24 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: 400,
 			respBody: "zlib: invalid header\n",
 		},
+		//{
+		//	name:     "InvalidSnappy",
+		//	encoding: "snappy",
+		//	reqBodyFunc: func() (*bytes.Buffer, error) {
+		//		return bytes.NewBuffer(testBody), nil
+		//	},
+		//	respCode: 400,
+		//	respBody: "snappy: invalid header\n",
+		//},
+		//{
+		//	name:     "InvalidZstd",
+		//	encoding: "zstd",
+		//	reqBodyFunc: func() (*bytes.Buffer, error) {
+		//		return bytes.NewBuffer(testBody), nil
+		//	},
+		//	respCode: 400,
+		//	respBody: "zstd: invalid header\n",
+		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -208,6 +287,34 @@ func compressZlib(body []byte) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
 	zw := zlib.NewWriter(&buf)
+	defer zw.Close()
+
+	_, err := zw.Write(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
+
+func compressSnappy(body []byte) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+
+	sw := snappy.NewBufferedWriter(&buf)
+	defer sw.Close()
+
+	_, err := sw.Write(body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
+
+func compressZstd(body []byte) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+
+	zw, _ := zstd.NewWriter(&buf)
 	defer zw.Close()
 
 	_, err := zw.Write(body)

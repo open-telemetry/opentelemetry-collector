@@ -17,6 +17,7 @@ package confighttp
 import (
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/internal/middleware"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -63,6 +64,21 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				ReadBufferSize:     1024,
 				WriteBufferSize:    512,
 				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression: "",
+			},
+			shouldError: false,
+		},
+		{
+			name: "all_valid_settings_with_gzip_compression",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression: "gzip",
 			},
 			shouldError: false,
 		},
@@ -89,9 +105,14 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			transport := client.Transport.(*http.Transport)
-			assert.EqualValues(t, 1024, transport.ReadBufferSize)
-			assert.EqualValues(t, 512, transport.WriteBufferSize)
+			if test.settings.Compression != "" {
+				transport := client.Transport.(*middleware.CompressRoundTripper)
+				assert.EqualValues(t, "gzip", transport.CompressionType)
+			} else {
+				transport := client.Transport.(*http.Transport)
+				assert.EqualValues(t, 1024, transport.ReadBufferSize)
+				assert.EqualValues(t, 512, transport.WriteBufferSize)
+			}
 		})
 	}
 }
