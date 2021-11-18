@@ -21,7 +21,7 @@ import (
 
 const traceIDSize = 16
 
-var errInvalidTraceIDSize = errors.New("invalid length for SpanID")
+var errInvalidTraceIDSize = errors.New("invalid length for TraceID")
 
 // TraceID is a custom data type that is used for all trace_id fields in OTLP
 // Protobuf messages.

@@ -34,9 +34,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
-	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
@@ -72,6 +70,7 @@ type Collector struct {
 	meterProvider       metric.MeterProvider
 	zPagesSpanProcessor *zpages.SpanProcessor
 
+	cfgW         *configWatcher
 	service      *service
 	stateChannel chan State
 
@@ -128,7 +127,7 @@ func (col *Collector) Shutdown() {
 }
 
 // runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
-func (col *Collector) runAndWaitForShutdownEvent() {
+func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 	col.logger.Info("Everything is ready. Begin running and processing data.")
 
 	col.signalsChannel = make(chan os.Signal, 1)
@@ -139,35 +138,48 @@ func (col *Collector) runAndWaitForShutdownEvent() {
 
 	col.shutdownChan = make(chan struct{})
 	col.stateChannel <- Running
-	select {
-	case err := <-col.asyncErrorChannel:
-		col.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
-	case s := <-col.signalsChannel:
-		col.logger.Info("Received signal from OS", zap.String("signal", s.String()))
-	case <-col.shutdownChan:
-		col.logger.Info("Received shutdown request")
+LOOP:
+	for {
+		select {
+		case err := <-col.cfgW.watcher:
+			col.logger.Warn("Config updated", zap.Error(err))
+
+			col.stateChannel <- Closing
+
+			if err = col.cfgW.close(ctx); err != nil {
+				return fmt.Errorf("failed to close config watcher: %w", err)
+			}
+			if err = col.service.Shutdown(ctx); err != nil {
+				return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+			}
+			if err = col.setupConfigurationComponents(ctx); err != nil {
+				return fmt.Errorf("failed to setup configuration components: %w", err)
+			}
+		case err := <-col.asyncErrorChannel:
+			col.logger.Error("Asynchronous error received, terminating process", zap.Error(err))
+			break LOOP
+		case s := <-col.signalsChannel:
+			col.logger.Info("Received signal from OS", zap.String("signal", s.String()))
+			break LOOP
+		case <-col.shutdownChan:
+			col.logger.Info("Received shutdown request")
+			break LOOP
+		}
 	}
-	col.stateChannel <- Closing
+	return col.shutdown(ctx)
 }
 
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	ret, err := col.set.ConfigMapProvider.Retrieve(ctx)
-	if err != nil {
-		return fmt.Errorf("cannot retrieve the configuration: %w", err)
+	col.stateChannel <- Starting
+
+	var err error
+	if col.cfgW, err = newConfigWatcher(ctx, col.set); err != nil {
+		return err
 	}
 
-	var cfg *config.Config
-	if cfg, err = col.set.ConfigUnmarshaler.Unmarshal(ret.Get(), col.set.Factories); err != nil {
-		return fmt.Errorf("cannot unmarshal the configuration: %w", err)
-	}
-
-	if err = cfg.Validate(); err != nil {
-		return fmt.Errorf("invalid configuration: %w", err)
-	}
-
-	if col.logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
+	if col.logger, err = telemetrylogs.NewLogger(col.cfgW.cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
 
@@ -176,12 +188,12 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.service, err = newService(&svcSettings{
 		BuildInfo: col.set.BuildInfo,
 		Factories: col.set.Factories,
-		Config:    cfg,
+		Config:    col.cfgW.cfg,
 		Telemetry: component.TelemetrySettings{
 			Logger:         col.logger,
 			TracerProvider: col.tracerProvider,
 			MeterProvider:  col.meterProvider,
-			MetricsLevel:   cfg.Telemetry.Metrics.Level,
+			MetricsLevel:   col.cfgW.cfg.Telemetry.Metrics.Level,
 		},
 		ZPagesSpanProcessor: col.zPagesSpanProcessor,
 		AsyncErrorChannel:   col.asyncErrorChannel,
@@ -192,11 +204,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 
 	if err = col.service.Start(ctx); err != nil {
 		return err
-	}
-
-	// If the retrieved value is watchable start a goroutine watching for updates.
-	if watchable, ok := ret.(config.WatchableRetrieved); ok {
-		go col.watchForConfigUpdates(ctx, watchable)
 	}
 
 	return nil
@@ -216,8 +223,6 @@ func (col *Collector) Run(ctx context.Context) error {
 
 	col.meterProvider = metric.NewNoopMeterProvider()
 
-	col.stateChannel <- Starting
-
 	col.asyncErrorChannel = make(chan error)
 
 	if err := col.setupConfigurationComponents(ctx); err != nil {
@@ -234,7 +239,11 @@ func (col *Collector) Run(ctx context.Context) error {
 	)
 
 	// Everything is ready, now run until an event requiring shutdown happens.
-	col.runAndWaitForShutdownEvent()
+	return col.runAndWaitForShutdownEvent(ctx)
+}
+
+func (col *Collector) shutdown(ctx context.Context) error {
+	col.stateChannel <- Closing
 
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
@@ -242,14 +251,16 @@ func (col *Collector) Run(ctx context.Context) error {
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if err := col.set.ConfigMapProvider.Close(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to close config: %w", err))
+	if err := col.cfgW.close(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to close config provider watcher: %w", err))
 	}
 
-	if col.service != nil {
-		if err := col.service.Shutdown(ctx); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service: %w", err))
-		}
+	if err := col.set.ConfigMapProvider.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
+	}
+
+	if err := col.service.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service: %w", err))
 	}
 
 	if err := collectorTelemetry.shutdown(); err != nil {
@@ -261,41 +272,6 @@ func (col *Collector) Run(ctx context.Context) error {
 	close(col.stateChannel)
 
 	return errs
-}
-
-// reloadService shutdowns the current col.service and setups a new one according
-// to the latest configuration. It requires that col.parserProvider and col.factories
-// are properly populated to finish successfully.
-func (col *Collector) reloadService(ctx context.Context) error {
-	if col.service != nil {
-		retiringService := col.service
-		col.service = nil
-		if err := retiringService.Shutdown(ctx); err != nil {
-			return fmt.Errorf("failed to shutdown the retiring config: %w", err)
-		}
-	}
-
-	if err := col.setupConfigurationComponents(ctx); err != nil {
-		return fmt.Errorf("failed to setup configuration components: %w", err)
-	}
-
-	return nil
-}
-
-func (col *Collector) watchForConfigUpdates(ctx context.Context, watchable config.WatchableRetrieved) {
-	err := watchable.WatchForUpdate()
-	if errors.Is(err, configsource.ErrSessionClosed) {
-		// This is the case of shutdown of the whole collector server, nothing to do.
-		col.logger.Info("Config WatchForUpdate closed", zap.Error(err))
-		return
-	}
-	col.logger.Warn("Config WatchForUpdated exited", zap.Error(err))
-	if err = watchable.Close(ctx); err != nil {
-		col.asyncErrorChannel <- err
-	}
-	if err = col.reloadService(ctx); err != nil {
-		col.asyncErrorChannel <- err
-	}
 }
 
 func getBallastSize(host component.Host) uint64 {

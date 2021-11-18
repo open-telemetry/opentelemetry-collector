@@ -39,13 +39,14 @@ func newResource(orig *otlpresource.Resource) Resource {
 
 // NewResource creates a new empty Resource.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewResource() Resource {
 	return newResource(&otlpresource.Resource{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms Resource) MoveTo(dest Resource) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpresource.Resource{}

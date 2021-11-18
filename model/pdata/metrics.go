@@ -111,6 +111,8 @@ func (md Metrics) DataPointCount() (dataPointCount int) {
 					dataPointCount += m.Sum().DataPoints().Len()
 				case MetricDataTypeHistogram:
 					dataPointCount += m.Histogram().DataPoints().Len()
+				case MetricDataTypeExponentialHistogram:
+					dataPointCount += m.ExponentialHistogram().DataPoints().Len()
 				case MetricDataTypeSummary:
 					dataPointCount += m.Summary().DataPoints().Len()
 				}
@@ -128,6 +130,7 @@ const (
 	MetricDataTypeGauge
 	MetricDataTypeSum
 	MetricDataTypeHistogram
+	MetricDataTypeExponentialHistogram
 	MetricDataTypeSummary
 )
 
@@ -142,6 +145,8 @@ func (mdt MetricDataType) String() string {
 		return "Sum"
 	case MetricDataTypeHistogram:
 		return "Histogram"
+	case MetricDataTypeExponentialHistogram:
+		return "ExponentialHistogram"
 	case MetricDataTypeSummary:
 		return "Summary"
 	}
@@ -158,6 +163,8 @@ func (ms Metric) DataType() MetricDataType {
 		return MetricDataTypeSum
 	case *otlpmetrics.Metric_Histogram:
 		return MetricDataTypeHistogram
+	case *otlpmetrics.Metric_ExponentialHistogram:
+		return MetricDataTypeExponentialHistogram
 	case *otlpmetrics.Metric_Summary:
 		return MetricDataTypeSummary
 	}
@@ -174,6 +181,8 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 		ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 	case MetricDataTypeHistogram:
 		ms.orig.Data = &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
+	case MetricDataTypeExponentialHistogram:
+		ms.orig.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: &otlpmetrics.ExponentialHistogram{}}
 	case MetricDataTypeSummary:
 		ms.orig.Data = &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}
 	}
@@ -200,6 +209,13 @@ func (ms Metric) Histogram() Histogram {
 	return newHistogram(ms.orig.Data.(*otlpmetrics.Metric_Histogram).Histogram)
 }
 
+// ExponentialHistogram returns the data as ExponentialHistogram.
+// Calling this function when DataType() != MetricDataTypeExponentialHistogram will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) ExponentialHistogram() ExponentialHistogram {
+	return newExponentialHistogram(ms.orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram)
+}
+
 // Summary returns the data as Summary.
 // Calling this function when DataType() != MetricDataTypeSummary will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -220,6 +236,10 @@ func copyData(src, dest *otlpmetrics.Metric) {
 	case *otlpmetrics.Metric_Histogram:
 		data := &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
 		newHistogram(srcData.Histogram).CopyTo(newHistogram(data.Histogram))
+		dest.Data = data
+	case *otlpmetrics.Metric_ExponentialHistogram:
+		data := &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: &otlpmetrics.ExponentialHistogram{}}
+		newExponentialHistogram(srcData.ExponentialHistogram).CopyTo(newExponentialHistogram(data.ExponentialHistogram))
 		dest.Data = data
 	case *otlpmetrics.Metric_Summary:
 		data := &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}
@@ -281,7 +301,7 @@ func (d MetricDataPointFlags) String() string {
 type MetricDataPointFlag uint32
 
 const (
-	// MetricDataPointFlagsNoRecordedValue is flag for a metric aggregator which reports changes since last report time.
+	// MetricDataPointFlagNoRecordedValue is flag for a metric aggregator which reports changes since last report time.
 	MetricDataPointFlagNoRecordedValue = MetricDataPointFlag(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 )
 
@@ -294,12 +314,22 @@ const (
 	MetricValueTypeDouble
 )
 
+// String returns the string representation of the MetricValueType.
+func (mdt MetricValueType) String() string {
+	switch mdt {
+	case MetricValueTypeNone:
+		return "None"
+	case MetricValueTypeInt:
+		return "Int"
+	case MetricValueTypeDouble:
+		return "Double"
+	}
+	return ""
+}
+
 // Type returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
 func (ms NumberDataPoint) Type() MetricValueType {
-	if ms.orig.Value == nil {
-		return MetricValueTypeNone
-	}
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		return MetricValueTypeDouble
@@ -312,9 +342,6 @@ func (ms NumberDataPoint) Type() MetricValueType {
 // Type returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
 func (ms Exemplar) Type() MetricValueType {
-	if ms.orig.Value == nil {
-		return MetricValueTypeNone
-	}
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		return MetricValueTypeDouble

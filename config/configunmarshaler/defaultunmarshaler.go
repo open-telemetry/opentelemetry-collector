@@ -16,8 +16,6 @@ package configunmarshaler // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"fmt"
-	"os"
-	"reflect"
 
 	"go.uber.org/zap/zapcore"
 
@@ -152,7 +150,6 @@ func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, fac
 		// Create the default config for this extension.
 		extensionCfg := factory.CreateDefaultConfig()
 		extensionCfg.SetIDName(id.Name())
-		expandEnvLoadedConfig(extensionCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
@@ -209,7 +206,6 @@ func LoadReceiver(componentConfig *config.Map, id config.ComponentID, factory co
 	// Create the default config for this receiver.
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(id.Name())
-	expandEnvLoadedConfig(receiverCfg)
 
 	// Now that the default config struct is created we can Unmarshal into it,
 	// and it will apply user-defined config on top of the default.
@@ -259,7 +255,6 @@ func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, fact
 		// Create the default config for this exporter.
 		exporterCfg := factory.CreateDefaultConfig()
 		exporterCfg.SetIDName(id.Name())
-		expandEnvLoadedConfig(exporterCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
@@ -288,7 +283,6 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 		// Create the default config for this processor.
 		processorCfg := factory.CreateDefaultConfig()
 		processorCfg.SetIDName(id.Name())
-		expandEnvLoadedConfig(processorCfg)
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
@@ -300,64 +294,6 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 	}
 
 	return processors, nil
-}
-
-// expandEnvLoadedConfig is a utility function that goes recursively through a config object
-// and tries to expand environment variables in its string fields.
-func expandEnvLoadedConfig(s interface{}) {
-	expandEnvLoadedConfigPointer(s)
-}
-
-func expandEnvLoadedConfigPointer(s interface{}) {
-	// Check that the value given is indeed a pointer, otherwise safely stop the search here
-	value := reflect.ValueOf(s)
-	if value.Kind() != reflect.Ptr {
-		return
-	}
-	// Run expandLoadedConfigValue on the value behind the pointer.
-	expandEnvLoadedConfigValue(value.Elem())
-}
-
-func expandEnvLoadedConfigValue(value reflect.Value) {
-	// The value given is a string, we expand it (if allowed).
-	if value.Kind() == reflect.String && value.CanSet() {
-		value.SetString(expandEnv(value.String()))
-	}
-	// The value given is a struct, we go through its fields.
-	if value.Kind() == reflect.Struct {
-		for i := 0; i < value.NumField(); i++ {
-			// Returns the content of the field.
-			field := value.Field(i)
-
-			// Only try to modify a field if it can be modified (eg. skip unexported private fields).
-			if field.CanSet() {
-				switch field.Kind() {
-				case reflect.String:
-					// The current field is a string, expand env variables in the string.
-					field.SetString(expandEnv(field.String()))
-				case reflect.Ptr:
-					// The current field is a pointer, run the expansion function on the pointer.
-					expandEnvLoadedConfigPointer(field.Interface())
-				case reflect.Struct:
-					// The current field is a nested struct, go through the nested struct
-					expandEnvLoadedConfigValue(field)
-				}
-			}
-		}
-	}
-}
-
-func expandEnv(s string) string {
-	return os.Expand(s, func(str string) string {
-		// This allows escaping environment variable substitution via $$, e.g.
-		// - $FOO will be substituted with env var FOO
-		// - $$FOO will be replaced with $FOO
-		// - $$$FOO will be replaced with $ + substituted env var FOO
-		if str == "$" {
-			return "$"
-		}
-		return os.Getenv(str)
-	})
 }
 
 func unmarshal(componentSection *config.Map, intoCfg interface{}) error {

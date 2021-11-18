@@ -17,36 +17,37 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 import (
 	"context"
 	"os"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 type expandMapProvider struct {
-	base config.MapProvider
+	base Provider
 }
 
-// NewExpandMapProvider returns a config.MapProvider, that expands all environment variables for a
-// config.Map provided by the given config.MapProvider.
-func NewExpandMapProvider(base config.MapProvider) config.MapProvider {
+// NewExpand returns a Provider, that expands all environment variables for a
+// config.Map provided by the given Provider.
+func NewExpand(base Provider) Provider {
 	return &expandMapProvider{
 		base: base,
 	}
 }
 
-func (emp *expandMapProvider) Retrieve(ctx context.Context) (config.Retrieved, error) {
-	retr, err := emp.base.Retrieve(ctx)
+func (emp *expandMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
+	retr, err := emp.base.Retrieve(ctx, onChange)
 	if err != nil {
 		return nil, err
 	}
-	cfgMap := retr.Get()
+	cfgMap, err := retr.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
 	for _, k := range cfgMap.AllKeys() {
 		cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
 	}
 	return &simpleRetrieved{confMap: cfgMap}, nil
 }
 
-func (emp *expandMapProvider) Close(ctx context.Context) error {
-	return emp.base.Close(ctx)
+func (emp *expandMapProvider) Shutdown(ctx context.Context) error {
+	return emp.base.Shutdown(ctx)
 }
 
 func expandStringValues(value interface{}) interface{} {

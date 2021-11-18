@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.37.0"
+const defaultOtelColVersion = "0.39.0"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
@@ -85,6 +85,7 @@ func DefaultConfig() Config {
 		Distribution: Distribution{
 			OutputPath:     outputDir,
 			OtelColVersion: defaultOtelColVersion,
+			Module:         "go.opentelemetry.io/collector/cmd/builder",
 		},
 	}
 }

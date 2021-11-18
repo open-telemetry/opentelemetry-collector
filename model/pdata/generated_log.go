@@ -178,13 +178,14 @@ func newResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
 
 // NewResourceLogs creates a new empty ResourceLogs.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewResourceLogs() ResourceLogs {
 	return newResourceLogs(&otlplogs.ResourceLogs{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlplogs.ResourceLogs{}
@@ -372,13 +373,14 @@ func newInstrumentationLibraryLogs(orig *otlplogs.InstrumentationLibraryLogs) In
 
 // NewInstrumentationLibraryLogs creates a new empty InstrumentationLibraryLogs.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewInstrumentationLibraryLogs() InstrumentationLibraryLogs {
 	return newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms InstrumentationLibraryLogs) MoveTo(dest InstrumentationLibraryLogs) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlplogs.InstrumentationLibraryLogs{}
@@ -567,13 +569,14 @@ func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
 
 // NewLogRecord creates a new empty LogRecord.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewLogRecord() LogRecord {
 	return newLogRecord(&otlplogs.LogRecord{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms LogRecord) MoveTo(dest LogRecord) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlplogs.LogRecord{}
