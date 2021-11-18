@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove `defaultcomponents` from core (#4087)
+
 ## 🛑 Breaking changes 🛑
 
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
@@ -30,7 +32,6 @@
 - otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
 - Remove deprecated funcs `consumererror.As[Traces|Metrics|Logs]` (#4364)
 - Remove support to expand env variables in default configs (#4366)
-- Remove `defaultcomponents` from core (#4087)
 
 ## 💡 Enhancements 💡
 - Supports more compression methods(`snappy` and `zstd`) for configgrpc, in addition to current `gzip` (#4088)
