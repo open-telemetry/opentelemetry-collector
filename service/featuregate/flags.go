@@ -92,8 +92,3 @@ func (f FlagValue) SetSlice(s []string) error {
 
 	return nil
 }
-
-// Apply sets the feature gate statuses encoded in FlagValue on the provided Registry
-func (f FlagValue) Apply(r *Registry) {
-	r.Apply(f)
-}

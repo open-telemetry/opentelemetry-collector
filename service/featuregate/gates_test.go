@@ -21,7 +21,7 @@ import (
 )
 
 func TestRegistry(t *testing.T) {
-	r := Registry{gates: map[string]Gate{}}
+	r := registry{gates: map[string]Gate{}}
 
 	gate := Gate{
 		ID:          "foo",
@@ -29,17 +29,17 @@ func TestRegistry(t *testing.T) {
 		Enabled:     true,
 	}
 
-	assert.Empty(t, r.List())
-	assert.False(t, r.IsEnabled(gate.ID))
+	assert.Empty(t, r.list())
+	assert.False(t, r.isEnabled(gate.ID))
 
-	assert.NoError(t, r.Add(gate))
-	assert.Len(t, r.List(), 1)
-	assert.True(t, r.IsEnabled(gate.ID))
+	assert.NoError(t, r.add(gate))
+	assert.Len(t, r.list(), 1)
+	assert.True(t, r.isEnabled(gate.ID))
 
-	r.Apply(map[string]bool{gate.ID: false})
-	assert.False(t, r.IsEnabled(gate.ID))
+	r.apply(map[string]bool{gate.ID: false})
+	assert.False(t, r.isEnabled(gate.ID))
 
-	assert.Error(t, r.Add(gate))
+	assert.Error(t, r.add(gate))
 }
 
 func TestGlobalRegistry(t *testing.T) {
