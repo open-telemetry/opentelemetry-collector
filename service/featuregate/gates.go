@@ -53,18 +53,11 @@ func Apply(cfg map[string]bool) {
 	reg.Apply(cfg)
 }
 
-// GlobalRegistry returns the Registry instance used by package-global functions in this package.
-func GlobalRegistry() *Registry {
-	return reg
-}
-
 type Registry struct {
 	sync.RWMutex
 	gates map[string]Gate
 }
 
-// Apply a configuration in the form of a map of Gate identifiers to boolean values.
-// Sets only those values provided in the map, other gate values are not changed.
 func (r *Registry) Apply(cfg map[string]bool) {
 	r.Lock()
 	defer r.Unlock()
@@ -76,8 +69,6 @@ func (r *Registry) Apply(cfg map[string]bool) {
 	}
 }
 
-// Add a Gate. May only be called in an init() function.
-// Returns an error if a Gate with the same ID is already registered.
 func (r *Registry) Add(g Gate) error {
 	r.Lock()
 	defer r.Unlock()
@@ -89,7 +80,6 @@ func (r *Registry) Add(g Gate) error {
 	return nil
 }
 
-// IsEnabled returns true if a registered feature gate is enabled and false otherwise.
 func (r *Registry) IsEnabled(id string) bool {
 	r.RLock()
 	defer r.RUnlock()
@@ -97,7 +87,6 @@ func (r *Registry) IsEnabled(id string) bool {
 	return ok && g.Enabled
 }
 
-// List returns a slice of copies of all registered Gates.
 func (r *Registry) List() []Gate {
 	r.RLock()
 	defer r.RUnlock()
