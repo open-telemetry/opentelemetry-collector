@@ -4,8 +4,9 @@
 This program generates a custom OpenTelemetry Collector binary based on a given configuration.
 
 ## TL;DR
+
 ```console
-$ GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder
+$ GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@latest
 $ cat > ~/.otelcol-builder.yaml <<EOF
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.37.0"
@@ -29,7 +30,7 @@ service:
     traces:
       receivers:
       - otlp
-      processors: 
+      processors:
       - batch
       exporters:
       - logging

@@ -31,7 +31,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			featuregate.Apply(featuregate.GetFlags())
 			if set.ConfigMapProvider == nil {
-				set.ConfigMapProvider = configmapprovider.NewDefaultMapProvider(getConfigFlag(), getSetFlag())
+				set.ConfigMapProvider = configmapprovider.NewDefault(getConfigFlag(), getSetFlag())
 			}
 			col, err := New(set)
 			if err != nil {

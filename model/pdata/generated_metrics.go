@@ -178,13 +178,14 @@ func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
 
 // NewResourceMetrics creates a new empty ResourceMetrics.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewResourceMetrics() ResourceMetrics {
 	return newResourceMetrics(&otlpmetrics.ResourceMetrics{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.ResourceMetrics{}
@@ -372,13 +373,14 @@ func newInstrumentationLibraryMetrics(orig *otlpmetrics.InstrumentationLibraryMe
 
 // NewInstrumentationLibraryMetrics creates a new empty InstrumentationLibraryMetrics.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
 	return newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms InstrumentationLibraryMetrics) MoveTo(dest InstrumentationLibraryMetrics) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.InstrumentationLibraryMetrics{}
@@ -567,13 +569,14 @@ func newMetric(orig *otlpmetrics.Metric) Metric {
 
 // NewMetric creates a new empty Metric.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewMetric() Metric {
 	return newMetric(&otlpmetrics.Metric{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms Metric) MoveTo(dest Metric) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Metric{}
@@ -635,13 +638,14 @@ func newGauge(orig *otlpmetrics.Gauge) Gauge {
 
 // NewGauge creates a new empty Gauge.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewGauge() Gauge {
 	return newGauge(&otlpmetrics.Gauge{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms Gauge) MoveTo(dest Gauge) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Gauge{}
@@ -675,13 +679,14 @@ func newSum(orig *otlpmetrics.Sum) Sum {
 
 // NewSum creates a new empty Sum.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewSum() Sum {
 	return newSum(&otlpmetrics.Sum{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms Sum) MoveTo(dest Sum) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Sum{}
@@ -737,13 +742,14 @@ func newHistogram(orig *otlpmetrics.Histogram) Histogram {
 
 // NewHistogram creates a new empty Histogram.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewHistogram() Histogram {
 	return newHistogram(&otlpmetrics.Histogram{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms Histogram) MoveTo(dest Histogram) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Histogram{}
@@ -789,13 +795,14 @@ func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) Exponential
 
 // NewExponentialHistogram creates a new empty ExponentialHistogram.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogram() ExponentialHistogram {
 	return newExponentialHistogram(&otlpmetrics.ExponentialHistogram{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.ExponentialHistogram{}
@@ -840,13 +847,14 @@ func newSummary(orig *otlpmetrics.Summary) Summary {
 
 // NewSummary creates a new empty Summary.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewSummary() Summary {
 	return newSummary(&otlpmetrics.Summary{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms Summary) MoveTo(dest Summary) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Summary{}
@@ -1017,13 +1025,14 @@ func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
 
 // NewNumberDataPoint creates a new empty NumberDataPoint.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewNumberDataPoint() NumberDataPoint {
 	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.NumberDataPoint{}
@@ -1264,13 +1273,14 @@ func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPo
 
 // NewHistogramDataPoint creates a new empty HistogramDataPoint.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewHistogramDataPoint() HistogramDataPoint {
 	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.HistogramDataPoint{}
@@ -1527,13 +1537,14 @@ func newExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramData
 
 // NewExponentialHistogramDataPoint creates a new empty ExponentialHistogramDataPoint.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
 	return newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoint) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint{}
@@ -1662,13 +1673,14 @@ func newBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) Buckets
 
 // NewBuckets creates a new empty Buckets.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewBuckets() Buckets {
 	return newBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms Buckets) MoveTo(dest Buckets) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
@@ -1855,13 +1867,14 @@ func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
 
 // NewSummaryDataPoint creates a new empty SummaryDataPoint.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewSummaryDataPoint() SummaryDataPoint {
 	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.SummaryDataPoint{}
@@ -2093,13 +2106,14 @@ func newValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) Valu
 
 // NewValueAtQuantile creates a new empty ValueAtQuantile.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewValueAtQuantile() ValueAtQuantile {
 	return newValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms ValueAtQuantile) MoveTo(dest ValueAtQuantile) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
@@ -2270,13 +2284,14 @@ func newExemplar(orig *otlpmetrics.Exemplar) Exemplar {
 
 // NewExemplar creates a new empty Exemplar.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func NewExemplar() Exemplar {
 	return newExemplar(&otlpmetrics.Exemplar{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms Exemplar) MoveTo(dest Exemplar) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpmetrics.Exemplar{}

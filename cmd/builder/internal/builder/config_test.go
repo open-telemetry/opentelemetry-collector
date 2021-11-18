@@ -68,11 +68,11 @@ func TestModuleFromCore(t *testing.T) {
 		Extensions: []Module{ // see issue-12
 			{
 				Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
-				GoMod:  "go.opentelemetry.io/collector v0.38.0",
+				GoMod:  "go.opentelemetry.io/collector v0.0.0",
 			},
 			{
 				Import: "go.opentelemetry.io/collector/receiver/otlpreceiver",
-				GoMod:  "go.opentelemetry.io/collector v0.38.0",
+				GoMod:  "go.opentelemetry.io/collector v0.0.0",
 				Core:   nil,
 			},
 		},
@@ -111,16 +111,53 @@ func TestDeprecatedCore(t *testing.T) {
 }
 
 func TestInvalidModule(t *testing.T) {
+	type invalidModuleTest struct {
+		cfg Config
+		err error
+	}
 	// prepare
-	cfg := Config{
-		Extensions: []Module{{
-			Import: "go.opentelemetry.io/collector/receiver/jaegerreceiver",
-		}},
+	configurations := []invalidModuleTest{
+		{
+			cfg: Config{
+				Extensions: []Module{{
+					Import: "invalid",
+				}},
+			},
+			err: ErrInvalidGoMod,
+		},
+		{
+			cfg: Config{
+				Receivers: []Module{{
+					Import: "invalid",
+				}},
+			},
+			err: ErrInvalidGoMod,
+		},
+		{
+			cfg: Config{
+				Exporters: []Module{{
+					Import: "invali",
+				}},
+			},
+			err: ErrInvalidGoMod,
+		},
+		{
+			cfg: Config{
+				Processors: []Module{{
+					Import: "invalid",
+				}},
+			},
+			err: ErrInvalidGoMod,
+		},
 	}
 
-	// test
-	err := cfg.ParseModules()
+	for _, test := range configurations {
+		assert.True(t, errors.Is(test.cfg.ParseModules(), test.err))
+	}
+}
 
-	// verify
-	assert.True(t, errors.Is(err, ErrInvalidGoMod))
+func TestDefaultConfig(t *testing.T) {
+	cfg := DefaultConfig()
+	require.NoError(t, cfg.ParseModules())
+	require.NoError(t, cfg.Validate())
 }

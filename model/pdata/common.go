@@ -255,20 +255,6 @@ func (a AttributeValue) SetBytesVal(v []byte) {
 	a.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: v}
 }
 
-// SetMapVal replaces the AttributeMap value associated with this AttributeValue,
-// it also changes the type to be AttributeValueTypeMap.
-// Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetMapVal(v AttributeMap) {
-	a.orig.Value = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: *v.orig}}
-}
-
-// SetSliceVal replaces the AttributeValueSlice value associated with this AttributeValue,
-// it also changes the type to be AttributeValueTypeArray.
-// Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetSliceVal(v AttributeValueSlice) {
-	a.orig.Value = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: *v.orig}}
-}
-
 // copyTo copies the value to AnyValue. Will panic if dest is nil.
 func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 	switch v := a.orig.Value.(type) {
@@ -490,28 +476,6 @@ func NewAttributeMapFromMap(attrMap map[string]AttributeValue) AttributeMap {
 
 func newAttributeMap(orig *[]otlpcommon.KeyValue) AttributeMap {
 	return AttributeMap{orig}
-}
-
-// InitFromMap overwrites the entire AttributeMap and reconstructs the AttributeMap
-// with values from the given map[string]AttributeValue.
-//
-// Returns the same instance to allow nicer code like:
-//   assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{...}), actual)
-// Deprecated: use NewAttributeMapFromMap instead.
-func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeMap {
-	if len(attrMap) == 0 {
-		*am.orig = []otlpcommon.KeyValue(nil)
-		return am
-	}
-	origs := make([]otlpcommon.KeyValue, len(attrMap))
-	ix := 0
-	for k, v := range attrMap {
-		origs[ix].Key = k
-		v.copyTo(&origs[ix].Value)
-		ix++
-	}
-	*am.orig = origs
-	return am
 }
 
 // Clear erases any existing entries in this AttributeMap instance.
