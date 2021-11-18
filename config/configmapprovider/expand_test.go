@@ -29,16 +29,18 @@ import (
 
 func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
 	retErr := errors.New("test error")
-	er := NewExpand(&mockProvider{retrieveErr: retErr})
-	_, err := er.Retrieve(context.Background(), nil)
+	exp := NewExpand(&mockProvider{retrieveErr: retErr})
+	defer exp.Shutdown(context.Background())
+	_, err := exp.Retrieve(context.Background(), nil)
 	require.Error(t, err)
 	require.ErrorIs(t, err, retErr)
 }
 
 func TestBaseRetrieveFailsOnGet(t *testing.T) {
 	getErr := errors.New("test error")
-	er := NewExpand(&mockProvider{retrieved: &mockRetrieved{getErr: getErr}})
-	_, err := er.Retrieve(context.Background(), nil)
+	exp := NewExpand(&mockProvider{retrieved: &mockRetrieved{getErr: getErr}})
+	defer exp.Shutdown(context.Background())
+	_, err := exp.Retrieve(context.Background(), nil)
 	require.Error(t, err)
 	require.ErrorIs(t, err, getErr)
 }
