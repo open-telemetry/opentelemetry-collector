@@ -6,6 +6,10 @@
 
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 
+## 💡 Enhancements 💡
+
+- Added `feature-gates` CLI flag for controlling feature gate state. (#4368)
+
 ## v0.39.0 Beta
 
 ## 🛑 Breaking changes 🛑

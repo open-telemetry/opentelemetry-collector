@@ -25,6 +25,8 @@ const gatesListCfg = "feature-gates"
 var gatesList = FlagValue{}
 
 // Flags adds CLI flags for managing feature gates to the provided FlagSet
+// Feature gates can be configured with `--feature-gates=foo,-bar`.  This would
+// enable the `foo` feature gate and disable the `bar` feature gate.
 func Flags(flags *flag.FlagSet) {
 	flags.Var(
 		gatesList,
