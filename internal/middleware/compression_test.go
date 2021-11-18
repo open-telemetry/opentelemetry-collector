@@ -19,14 +19,14 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"fmt"
-	"github.com/golang/snappy"
-	"github.com/klauspost/compress/zstd"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/golang/snappy"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -41,53 +41,52 @@ func TestHTTPClientCompression(t *testing.T) {
 	compressedSnappyBody, _ := compressSnappy(testBody)
 	compressedZstdBody, _ := compressZstd(testBody)
 
-
 	tests := []struct {
-		name     string
-		encoding string
-		reqBody  []byte
+		name        string
+		encoding    string
+		reqBody     []byte
 		shouldError bool
 	}{
 		{
-			name:     "NoCompression",
-			encoding: "",
-			reqBody:  testBody,
+			name:        "NoCompression",
+			encoding:    "",
+			reqBody:     testBody,
 			shouldError: false,
 		},
 		{
-			name:     "ValidGzip",
-			encoding: "gzip",
-			reqBody:  compressedGzipBody.Bytes(),
+			name:        "ValidGzip",
+			encoding:    "gzip",
+			reqBody:     compressedGzipBody.Bytes(),
 			shouldError: false,
 		},
 		{
-			name:     "ValidZlib",
-			encoding: "zlib",
-			reqBody:  compressedZlibBody.Bytes(),
+			name:        "ValidZlib",
+			encoding:    "zlib",
+			reqBody:     compressedZlibBody.Bytes(),
 			shouldError: false,
 		},
 		{
-			name:     "Validdeflate",
-			encoding: "deflate",
-			reqBody:  compressedDeflateBody.Bytes(),
+			name:        "Validdeflate",
+			encoding:    "deflate",
+			reqBody:     compressedDeflateBody.Bytes(),
 			shouldError: false,
 		},
 		{
-			name:     "ValidSnappy",
-			encoding: "snappy",
-			reqBody:  compressedSnappyBody.Bytes(),
+			name:        "ValidSnappy",
+			encoding:    "snappy",
+			reqBody:     compressedSnappyBody.Bytes(),
 			shouldError: false,
 		},
 		{
-			name:     "ValidZstd",
-			encoding: "zstd",
-			reqBody:  compressedZstdBody.Bytes(),
+			name:        "ValidZstd",
+			encoding:    "zstd",
+			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
 		{
-			name:     "invalid",
-			encoding: "ggip",
-			reqBody:  testBody,
+			name:        "invalid",
+			encoding:    "ggip",
+			reqBody:     testBody,
 			shouldError: true,
 		},
 	}
@@ -126,9 +125,8 @@ func TestHTTPClientCompression(t *testing.T) {
 			if tt.shouldError {
 				assert.Error(t, err)
 				return
-			} else {
-				require.NoError(t, err)
 			}
+			require.NoError(t, err)
 
 			_, err = ioutil.ReadAll(res.Body)
 			require.NoError(t, err)
@@ -137,7 +135,6 @@ func TestHTTPClientCompression(t *testing.T) {
 		})
 	}
 }
-
 
 func TestHTTPContentDecompressionHandler(t *testing.T) {
 	testBody := []byte("uncompressed_text")
@@ -214,7 +211,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 		//	},
 		//	respCode: 400,
 		//	respBody: "snappy: invalid header\n",
-		//},
+		// },
 		//{
 		//	name:     "InvalidZstd",
 		//	encoding: "zstd",
@@ -223,7 +220,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 		//	},
 		//	respCode: 400,
 		//	respBody: "zstd: invalid header\n",
-		//},
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

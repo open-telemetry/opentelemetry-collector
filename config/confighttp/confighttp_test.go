@@ -17,7 +17,6 @@ package confighttp
 import (
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/internal/middleware"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -34,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 type customRoundTripper struct {
@@ -64,7 +64,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				ReadBufferSize:     1024,
 				WriteBufferSize:    512,
 				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
-				Compression: "",
+				Compression:        "",
 			},
 			shouldError: false,
 		},
@@ -78,7 +78,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				ReadBufferSize:     1024,
 				WriteBufferSize:    512,
 				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
-				Compression: "gzip",
+				Compression:        "gzip",
 			},
 			shouldError: false,
 		},

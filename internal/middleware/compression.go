@@ -44,7 +44,7 @@ type (
 
 func NewCompressRoundTripper(rt http.RoundTripper, compressionType string) *CompressRoundTripper {
 	return &CompressRoundTripper{
-		RoundTripper:            rt,
+		RoundTripper:    rt,
 		CompressionType: compressionType,
 	}
 }
