@@ -17,6 +17,7 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 import (
 	"context"
 	"os"
+	"strings"
 )
 
 type expandMapProvider struct {
@@ -86,6 +87,10 @@ func expandEnv(s string) string {
 		if str == "$" {
 			return "$"
 		}
-		return os.Getenv(str)
+		pair := strings.Split(str, ":")
+		if envValue := os.Getenv(pair[0]); envValue != "" || len(pair) == 1 {
+			return envValue
+		}
+		return pair[1]
 	})
 }

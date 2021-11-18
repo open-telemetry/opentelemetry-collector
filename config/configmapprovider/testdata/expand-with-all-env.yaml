@@ -1,5 +1,11 @@
 test_map:
   extra: "$EXTRA"
+  env:
+    recv.1: "$ENV_VALUE_1"
+    recv.2: "${ENV_VALUE_2:default value for 2 not substituted}"
+    recv.3: "${ENV_VALUE_3:default value for 3 substituted}"
+    recv.4: "${ENV_VALUE_4:}"
+    recv.5: "$ENV_VALUE_5"
   extra_map:
     recv.1: "$EXTRA_MAP_VALUE_1"
     recv.2: "${EXTRA_MAP_VALUE_2}"

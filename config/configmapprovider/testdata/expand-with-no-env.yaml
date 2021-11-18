@@ -1,5 +1,11 @@
 test_map:
   extra: "some string"
+  env:
+    recv.1: "some env value_1"
+    recv.2: "some env value_2"
+    recv.3: "default value for 3 substituted"
+    recv.4: ""
+    recv.5: ""
   extra_map:
     recv.1: "some map value_1"
     recv.2: "some map value_2"

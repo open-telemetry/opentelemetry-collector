@@ -38,16 +38,23 @@ func TestExpand(t *testing.T) {
 	const valueExtra = "some string"
 	const valueExtraMapValue = "some map value"
 	const valueExtraListElement = "some list value"
+	const valueEnv = "some env value"
 	assert.NoError(t, os.Setenv("EXTRA", valueExtra))
 	assert.NoError(t, os.Setenv("EXTRA_MAP_VALUE_1", valueExtraMapValue+"_1"))
 	assert.NoError(t, os.Setenv("EXTRA_MAP_VALUE_2", valueExtraMapValue+"_2"))
 	assert.NoError(t, os.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1"))
 	assert.NoError(t, os.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2"))
+	assert.NoError(t, os.Setenv("ENV_VALUE_1", valueEnv+"_1"))
+	assert.NoError(t, os.Setenv("ENV_VALUE_2", valueEnv+"_2"))
 
 	defer func() {
 		assert.NoError(t, os.Unsetenv("EXTRA"))
-		assert.NoError(t, os.Unsetenv("EXTRA_MAP_VALUE"))
+		assert.NoError(t, os.Unsetenv("EXTRA_MAP_VALUE_1"))
+		assert.NoError(t, os.Unsetenv("EXTRA_MAP_VALUE_2"))
 		assert.NoError(t, os.Unsetenv("EXTRA_LIST_VALUE_1"))
+		assert.NoError(t, os.Unsetenv("EXTRA_LIST_VALUE_2"))
+		assert.NoError(t, os.Unsetenv("ENV_VALUE_1"))
+		assert.NoError(t, os.Unsetenv("ENV_VALUE_2"))
 	}()
 
 	expectedCfgMap, errExpected := config.NewMapFromFile(path.Join("testdata", "expand-with-no-env.yaml"))
@@ -70,9 +77,13 @@ func TestExpand(t *testing.T) {
 
 func TestExpand_EscapedEnvVars(t *testing.T) {
 	const receiverExtraMapValue = "some map value"
+	const receiverEnvValueNotExpanded = "some map value for env FOUR"
 	assert.NoError(t, os.Setenv("MAP_VALUE_2", receiverExtraMapValue))
+	assert.NoError(t, os.Setenv("FOUR", receiverEnvValueNotExpanded))
 	defer func() {
 		assert.NoError(t, os.Unsetenv("MAP_VALUE_2"))
+		assert.NoError(t, os.Unsetenv("THREE"))
+		assert.NoError(t, os.Unsetenv("FOUR"))
 	}()
 
 	// Retrieve the config
@@ -96,6 +107,12 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 			"recv.6": "text$",
 			// escaped $ alone
 			"recv.7": "$",
+			// $$ -> escaped $
+  			"recv.8": "${THREE:DEFAULT_THREE}",
+			// $$$ -> escaped $ + substituted env var (not expanded)
+			"recv.9": "$" + receiverEnvValueNotExpanded,
+			// $$$ -> escaped $ + substituted env var (expanded)
+			"recv.10": "$DEFAULT_FIVE",
 		}}
 	m, err := cp.Get(context.Background())
 	require.NoError(t, err)

@@ -13,3 +13,9 @@ test_map:
   recv.6: "text$$"
   # escaped $ alone
   recv.7: "$$"
+  # $$ -> escaped $
+  recv.8: "$${THREE:DEFAULT_THREE}"
+  # $$$ -> escaped $ + substituted env var (not expanded)
+  recv.9: "$$${FOUR:some map value for env FOUR}"
+  # $$$ -> escaped $ + substituted env var (expanded)
+  recv.10: "$$${FIVE:DEFAULT_FIVE}"
