@@ -66,11 +66,13 @@ const (
 )
 
 type configSettings struct {
-	Receivers  map[config.ComponentID]map[string]interface{} `mapstructure:"receivers"`
-	Processors map[config.ComponentID]map[string]interface{} `mapstructure:"processors"`
-	Exporters  map[config.ComponentID]map[string]interface{} `mapstructure:"exporters"`
-	Extensions map[config.ComponentID]map[string]interface{} `mapstructure:"extensions"`
-	Service    map[string]interface{}                        `mapstructure:"service"`
+	Receivers     map[config.ComponentID]map[string]interface{} `mapstructure:"receivers"`
+	Processors    map[config.ComponentID]map[string]interface{} `mapstructure:"processors"`
+	Exporters     map[config.ComponentID]map[string]interface{} `mapstructure:"exporters"`
+	Extensions    map[config.ComponentID]map[string]interface{} `mapstructure:"extensions"`
+	ConfigSources map[config.ComponentID]map[string]interface{} `mapstructure:"config_sources"`
+	ValueSources  map[config.ComponentID]map[string]interface{} `mapstructure:"value_sources"`
+	Service       map[string]interface{}                        `mapstructure:"service"`
 }
 
 type defaultUnmarshaler struct{}
@@ -84,6 +86,7 @@ func NewDefault() ConfigUnmarshaler {
 // Unmarshal the Config from a config.Map.
 // After the config is unmarshalled, `Validate()` must be called to validate.
 func (*defaultUnmarshaler) Unmarshal(v *config.Map, factories component.Factories) (*config.Config, error) {
+
 	var cfg config.Config
 
 	// Unmarshal top level sections and validate.
@@ -152,7 +155,7 @@ func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, fac
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := unmarshal(config.NewMapFromStringMap(value), extensionCfg); err != nil {
+		if err := Unmarshal(config.NewMapFromStringMap(value), extensionCfg); err != nil {
 			return nil, errorUnmarshalError(extensionsKeyName, id, err)
 		}
 
@@ -175,7 +178,7 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 		},
 	}
 
-	if err := unmarshal(config.NewMapFromStringMap(srvRaw), &srv); err != nil {
+	if err := Unmarshal(config.NewMapFromStringMap(srvRaw), &srv); err != nil {
 		return srv, fmt.Errorf("error reading service configuration: %w", err)
 	}
 
@@ -195,7 +198,7 @@ func LoadReceiver(componentConfig *config.Map, id config.ComponentID, factory co
 
 	// Now that the default config struct is created we can Unmarshal into it,
 	// and it will apply user-defined config on top of the default.
-	if err := unmarshal(componentConfig, receiverCfg); err != nil {
+	if err := Unmarshal(componentConfig, receiverCfg); err != nil {
 		return nil, errorUnmarshalError(receiversKeyName, id, err)
 	}
 
@@ -244,7 +247,7 @@ func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, fact
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := unmarshal(config.NewMapFromStringMap(value), exporterCfg); err != nil {
+		if err := Unmarshal(config.NewMapFromStringMap(value), exporterCfg); err != nil {
 			return nil, errorUnmarshalError(exportersKeyName, id, err)
 		}
 
@@ -272,7 +275,7 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := unmarshal(config.NewMapFromStringMap(value), processorCfg); err != nil {
+		if err := Unmarshal(config.NewMapFromStringMap(value), processorCfg); err != nil {
 			return nil, errorUnmarshalError(processorsKeyName, id, err)
 		}
 
@@ -282,7 +285,7 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 	return processors, nil
 }
 
-func unmarshal(componentSection *config.Map, intoCfg interface{}) error {
+func Unmarshal(componentSection *config.Map, intoCfg interface{}) error {
 	if cu, ok := intoCfg.(config.Unmarshallable); ok {
 		return cu.Unmarshal(componentSection)
 	}

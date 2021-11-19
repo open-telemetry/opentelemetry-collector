@@ -34,6 +34,8 @@ type Factories struct {
 
 	// Extensions maps extension type names in the config to the respective factory.
 	Extensions map[config.Type]ExtensionFactory
+
+	ConfigSources map[config.Type]ConfigSourceFactory
 }
 
 // MakeReceiverFactoryMap takes a list of receiver factories and returns a map

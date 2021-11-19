@@ -37,11 +37,24 @@ func newConfigWatcher(ctx context.Context, set CollectorSettings) (*configWatche
 		return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
 	}
 
-	var cfg *config.Config
 	m, err := ret.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get the configuration: %w", err)
 	}
+
+	//sources, err := set.ConfigUnmarshaler.UnmarshalSources(m, set.Factories)
+	//if err != nil {
+	//	return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
+	//}
+	//
+	//cfgMap := config.NewMap()
+	//err := retrieveFromSources(ctx, cfgMap, sources, cm.onChange)
+	//if err != nil {
+	//	return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
+	//}
+	//err := mergeConfigMap(cfgMap, m)
+
+	var cfg *config.Config
 	if cfg, err = set.ConfigUnmarshaler.Unmarshal(m, set.Factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
@@ -55,6 +68,15 @@ func newConfigWatcher(ctx context.Context, set CollectorSettings) (*configWatche
 
 	return cm, nil
 }
+
+//func retrieveFromSources(ctx context.Context, cfgMap *config.Map, sources []component.ConfigSource, onChange func(*configmapprovider.ChangeEvent)) error {
+//	for _, source := range sources {
+//		retrieved, err := source.Retrieve(ctx, onChange)
+//		m, err := retrieved.Get(ctx)
+//		err := mergeConfigMap(cfgMap, m)
+//	}
+//	return nil
+//}
 
 func (cm *configWatcher) onChange(event *configmapprovider.ChangeEvent) {
 	if event.Error != configsource.ErrSessionClosed {

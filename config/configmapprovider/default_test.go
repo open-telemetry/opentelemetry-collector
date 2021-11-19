@@ -26,7 +26,7 @@ import (
 )
 
 func TestDefaultMapProvider(t *testing.T) {
-	mp := NewDefault("testdata/default-config.yaml", nil)
+	mp := NewLocal("testdata/default-config.yaml", nil)
 	retr, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
@@ -45,7 +45,7 @@ exporters:
 }
 
 func TestDefaultMapProvider_AddNewConfig(t *testing.T) {
-	mp := NewDefault("testdata/default-config.yaml", []string{"processors.batch.timeout=2s"})
+	mp := NewLocal("testdata/default-config.yaml", []string{"processors.batch.timeout=2s"})
 	cp, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
@@ -65,7 +65,7 @@ exporters:
 }
 
 func TestDefaultMapProvider_OverwriteConfig(t *testing.T) {
-	mp := NewDefault(
+	mp := NewLocal(
 		"testdata/default-config.yaml",
 		[]string{"processors.batch.timeout=2s", "exporters.otlp.endpoint=localhost:1234"})
 	cp, err := mp.Retrieve(context.Background(), nil)
@@ -87,7 +87,7 @@ exporters:
 }
 
 func TestDefaultMapProvider_InexistentFile(t *testing.T) {
-	mp := NewDefault("testdata/otelcol-config.yaml", nil)
+	mp := NewLocal("testdata/otelcol-config.yaml", nil)
 	require.NotNil(t, mp)
 	_, err := mp.Retrieve(context.Background(), nil)
 	require.Error(t, err)
@@ -96,7 +96,7 @@ func TestDefaultMapProvider_InexistentFile(t *testing.T) {
 }
 
 func TestDefaultMapProvider_EmptyFileName(t *testing.T) {
-	mp := NewDefault("", nil)
+	mp := NewLocal("", nil)
 	_, err := mp.Retrieve(context.Background(), nil)
 	require.Error(t, err)
 

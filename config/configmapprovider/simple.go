@@ -21,6 +21,23 @@ import (
 )
 
 // TODO: This probably will make sense to be exported, but needs better name and documentation.
+type simpleProvider struct {
+	confMap *config.Map
+}
+
+func (s simpleProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
+	return &simpleRetrieved{confMap: s.confMap}, nil
+}
+
+func (s simpleProvider) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+func NewSimple(confMap *config.Map) Provider {
+	return &simpleProvider{confMap: confMap}
+}
+
+// TODO: This probably will make sense to be exported, but needs better name and documentation.
 type simpleRetrieved struct {
 	confMap *config.Map
 }
