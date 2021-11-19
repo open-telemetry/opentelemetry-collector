@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove `pdata.AttributeMap.InitFromMap` (#4429)
+- Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
+
+## 💡 Enhancements 💡
+
+- Add semconv 1.7.0 and 1.8.0 (#4452)
+
 ## v0.39.0 Beta
 
 ## 🛑 Breaking changes 🛑

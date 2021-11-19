@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0
-	github.com/cenkalti/backoff/v4 v4.1.1
+	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.3.0
@@ -13,7 +13,7 @@ require (
 	github.com/knadh/koanf v1.3.2
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.2
-	github.com/mostynb/go-grpc-compression v1.1.14
+	github.com/mostynb/go-grpc-compression v1.1.15
 	github.com/prometheus/common v0.32.1
 	github.com/rs/cors v1.8.0
 	github.com/shirou/gopsutil/v3 v3.21.10

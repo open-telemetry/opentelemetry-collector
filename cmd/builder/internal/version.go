@@ -12,16 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package internal // import "go.opentelemetry.io/collector/cmd/builder/internal"
 
 import (
-	"github.com/spf13/cobra"
+	"fmt"
 
-	"go.opentelemetry.io/collector/cmd/builder/internal"
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	cmd, err := internal.Command()
-	cobra.CheckErr(err)
-	cobra.CheckErr(cmd.Execute())
+var (
+	version = "dev"
+	date    = "unknown"
+)
+
+func versionCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Version of opentelemetry-collector-builder",
+		Long:  "Prints the version of opentelemetry-collector-builder binary",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Println(fmt.Sprintf("%s version %s", cmd.Parent().Name(), version))
+		},
+	}
 }

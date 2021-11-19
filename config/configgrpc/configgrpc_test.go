@@ -34,20 +34,29 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	gcs := &GRPCClientSettings{
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.ToDialOptions(componenttest.NewNopHost())
+	opts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	gcs := &GRPCClientSettings{
 		Headers: map[string]string{
 			"test": "test",
@@ -75,7 +84,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		},
 	}
 
-	opts, err := gcs.ToDialOptions(host)
+	opts, err := gcs.ToDialOptions(host, tt.TelemetrySettings)
 	assert.NoError(t, err)
 	assert.Len(t, opts, 9)
 }
@@ -149,6 +158,10 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	tests := []struct {
 		settings GRPCClientSettings
 		err      string
@@ -227,7 +240,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToDialOptions(test.host)
+			opts, err := test.settings.ToDialOptions(test.host, tt.TelemetrySettings)
 			assert.Nil(t, opts)
 			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)
@@ -236,6 +249,10 @@ func TestGRPCClientSettingsError(t *testing.T) {
 }
 
 func TestUseSecure(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	gcs := &GRPCClientSettings{
 		Headers:     nil,
 		Endpoint:    "",
@@ -243,7 +260,7 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.ToDialOptions(componenttest.NewNopHost())
+	dialOpts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
 	assert.Len(t, dialOpts, 3)
 }
@@ -352,6 +369,10 @@ func TestGetGRPCCompressionKey(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	tests := []struct {
 		name           string
 		tlsServerCreds *configtls.TLSServerSetting
@@ -456,14 +477,14 @@ func TestHttpReception(t *testing.T) {
 	}
 	// prepare
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			gss := &GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "localhost:0",
 					Transport: "tcp",
 				},
-				TLSSetting: tt.tlsServerCreds,
+				TLSSetting: test.tlsServerCreds,
 			}
 			ln, err := gss.ToListener()
 			assert.NoError(t, err)
@@ -478,16 +499,16 @@ func TestHttpReception(t *testing.T) {
 
 			gcs := &GRPCClientSettings{
 				Endpoint:   ln.Addr().String(),
-				TLSSetting: *tt.tlsClientCreds,
+				TLSSetting: *test.tlsClientCreds,
 			}
-			clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost())
+			clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 			assert.NoError(t, errClient)
 			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 			assert.NoError(t, errDial)
 			client := otlpgrpc.NewTracesClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 			resp, errResp := client.Export(ctx, otlpgrpc.NewTracesRequest(), grpc.WaitForReady(true))
-			if tt.hasError {
+			if test.hasError {
 				assert.Error(t, errResp)
 			} else {
 				assert.NoError(t, errResp)
@@ -503,6 +524,10 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on windows")
 	}
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	defer tt.Shutdown(context.Background())
+
 	socketName := tempSocketName(t)
 	gss := &GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
@@ -527,7 +552,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost())
+	clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, errClient)
 	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 	assert.NoError(t, errDial)

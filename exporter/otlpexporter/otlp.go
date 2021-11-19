@@ -44,24 +44,26 @@ type exporter struct {
 	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
 	callOptions    []grpc.CallOption
+
+	settings component.TelemetrySettings
 }
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg config.Exporter) (*exporter, error) {
+func newExporter(cfg config.Exporter, settings component.TelemetrySettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
 	}
 
-	return &exporter{config: oCfg}, nil
+	return &exporter{config: oCfg, settings: settings}, nil
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	dialOpts, err := e.config.GRPCClientSettings.ToDialOptions(host)
+	dialOpts, err := e.config.GRPCClientSettings.ToDialOptions(host, e.settings)
 	if err != nil {
 		return err
 	}

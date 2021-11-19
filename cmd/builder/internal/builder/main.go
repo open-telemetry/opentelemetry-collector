@@ -24,8 +24,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/cmd/builder/internal/scaffold"
 )
 
 var (
@@ -64,31 +62,31 @@ func Generate(cfg Config) error {
 
 	for _, file := range []struct {
 		outFile string
-		tmpl    string
+		tmpl    *template.Template
 	}{
 		{
 			"main.go",
-			scaffold.Main,
+			mainTemplate,
 		},
 		{
 			"main_others.go",
-			scaffold.MainOthers,
+			mainOthersTemplate,
 		},
 		{
 			"main_windows.go",
-			scaffold.MainWindows,
+			mainWindowsTemplate,
 		},
 		{
 			"components.go",
-			scaffold.Components,
+			componentsTemplate,
 		},
 		{
 			"go.mod",
-			scaffold.Gomod,
+			goModTemplate,
 		},
 	} {
 		if err := processAndWrite(cfg, file.tmpl, file.outFile, cfg); err != nil {
-			return fmt.Errorf("failed to generate source file with destination %q, source: %q: %w", file.outFile, file.tmpl, err)
+			return fmt.Errorf("failed to generate source file with destination %q, source: %q: %w", file.outFile, file.tmpl.Name(), err)
 		}
 	}
 
@@ -144,16 +142,11 @@ func GetModules(cfg Config) error {
 	return fmt.Errorf("failed to download go modules: %s", failReason)
 }
 
-func processAndWrite(cfg Config, tmpl string, outFile string, tmplParams interface{}) error {
-	t, err := template.New("template").Parse(tmpl)
-	if err != nil {
-		return err
-	}
-
+func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams interface{}) error {
 	out, err := os.Create(filepath.Join(cfg.Distribution.OutputPath, outFile))
 	if err != nil {
 		return err
 	}
 
-	return t.Execute(out, tmplParams)
+	return tmpl.Execute(out, tmplParams)
 }
