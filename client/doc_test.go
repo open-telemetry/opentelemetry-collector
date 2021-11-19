@@ -82,9 +82,12 @@ type exampleAuthData struct {
 	username string
 }
 
-func (e *exampleAuthData) GetAttribute(string) interface{} {
+func (e *exampleAuthData) GetAttribute(key string) interface{} {
+	if key == "username" {
+		return e.username
+	}
 	return nil
 }
 func (e *exampleAuthData) GetAttributeNames() []string {
-	return nil
+	return []string{"username"}
 }
