@@ -39,6 +39,7 @@ func TestExpand(t *testing.T) {
 	const valueExtraMapValue = "some map value"
 	const valueExtraListElement = "some list value"
 	const valueEnv = "some env value"
+	const emptyValue = ""
 	assert.NoError(t, os.Setenv("EXTRA", valueExtra))
 	assert.NoError(t, os.Setenv("EXTRA_MAP_VALUE_1", valueExtraMapValue+"_1"))
 	assert.NoError(t, os.Setenv("EXTRA_MAP_VALUE_2", valueExtraMapValue+"_2"))
@@ -46,6 +47,7 @@ func TestExpand(t *testing.T) {
 	assert.NoError(t, os.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2"))
 	assert.NoError(t, os.Setenv("ENV_VALUE_1", valueEnv+"_1"))
 	assert.NoError(t, os.Setenv("ENV_VALUE_2", valueEnv+"_2"))
+	assert.NoError(t, os.Setenv("ENV_VALUE_6", emptyValue))
 
 	defer func() {
 		assert.NoError(t, os.Unsetenv("EXTRA"))
@@ -55,6 +57,7 @@ func TestExpand(t *testing.T) {
 		assert.NoError(t, os.Unsetenv("EXTRA_LIST_VALUE_2"))
 		assert.NoError(t, os.Unsetenv("ENV_VALUE_1"))
 		assert.NoError(t, os.Unsetenv("ENV_VALUE_2"))
+		assert.NoError(t, os.Unsetenv("ENV_VALUE_6"))
 	}()
 
 	expectedCfgMap, errExpected := config.NewMapFromFile(path.Join("testdata", "expand-with-no-env.yaml"))
@@ -108,7 +111,7 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 			// escaped $ alone
 			"recv.7": "$",
 			// $$ -> escaped $
-  			"recv.8": "${THREE:DEFAULT_THREE}",
+			"recv.8": "${THREE:DEFAULT_THREE}",
 			// $$$ -> escaped $ + substituted env var (not expanded)
 			"recv.9": "$" + receiverEnvValueNotExpanded,
 			// $$$ -> escaped $ + substituted env var (expanded)

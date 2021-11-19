@@ -6,6 +6,7 @@ test_map:
     recv.3: "default value for 3 substituted"
     recv.4: ""
     recv.5: ""
+    recv.6: ""
   extra_map:
     recv.1: "some map value_1"
     recv.2: "some map value_2"
