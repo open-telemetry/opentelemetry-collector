@@ -252,3 +252,16 @@ func assertZPages(t *testing.T) {
 		testZPagePathFn(t, path)
 	}
 }
+
+// TestStateChannelFull tests to ensure that a full state channel doesn't block code paths going forward.
+func TestStateChannelFull(t *testing.T) {
+	col := &Collector{stateChannel: make(chan State, Closed+1)}
+	col.setCollectorState(Starting)
+	col.setCollectorState(Running)
+	col.setCollectorState(Closing)
+	col.setCollectorState(Starting)
+	col.setCollectorState(Closing)
+	col.setCollectorState(Closed)
+
+	require.Len(t, col.stateChannel, 4)
+}

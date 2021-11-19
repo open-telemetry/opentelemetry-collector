@@ -106,7 +106,7 @@ func New(set CollectorSettings) (*Collector, error) {
 }
 
 // GetStateChannel returns state channel of the collector server.
-func (col *Collector) GetStateChannel() chan State {
+func (col *Collector) GetStateChannel() <-chan State {
 	return col.stateChannel
 }
 
@@ -137,14 +137,14 @@ func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 	}
 
 	col.shutdownChan = make(chan struct{})
-	col.stateChannel <- Running
+	col.setCollectorState(Running)
 LOOP:
 	for {
 		select {
 		case err := <-col.cfgW.watcher:
 			col.logger.Warn("Config updated", zap.Error(err))
 
-			col.stateChannel <- Closing
+			col.setCollectorState(Closing)
 
 			if err = col.cfgW.close(ctx); err != nil {
 				return fmt.Errorf("failed to close config watcher: %w", err)
@@ -172,7 +172,7 @@ LOOP:
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	col.stateChannel <- Starting
+	col.setCollectorState(Starting)
 
 	var err error
 	if col.cfgW, err = newConfigWatcher(ctx, col.set); err != nil {
@@ -242,7 +242,7 @@ func (col *Collector) Run(ctx context.Context) error {
 }
 
 func (col *Collector) shutdown(ctx context.Context) error {
-	col.stateChannel <- Closing
+	col.setCollectorState(Closing)
 
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
@@ -267,10 +267,18 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	}
 
 	col.logger.Info("Shutdown complete.")
-	col.stateChannel <- Closed
+	col.setCollectorState(Closed)
 	close(col.stateChannel)
 
 	return errs
+}
+
+// setCollectorState provides a non-blocking, drop on the floor approach to sending state information on the state channel
+func (col *Collector) setCollectorState(state State) {
+	select {
+	case col.stateChannel <- state:
+	default:
+	}
 }
 
 func getBallastSize(host component.Host) uint64 {
