@@ -43,3 +43,8 @@ type ConfigSourceFactory interface {
 	ConfigSourceFactoryBase
 	CreateConfigSource(ctx context.Context, set ConfigSourceCreateSettings, cfg config.ConfigSource) (configmapprovider.ConfigSource, error)
 }
+
+type ValueSourceFactory interface {
+	ConfigSourceFactoryBase
+	CreateValueSource(ctx context.Context, set ConfigSourceCreateSettings, cfg config.ConfigSource) (configmapprovider.ValueSource, error)
+}

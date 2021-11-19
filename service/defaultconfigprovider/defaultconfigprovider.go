@@ -43,43 +43,45 @@ func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(eve
 	}
 	rootMap, err := r.Get(ctx)
 
-	sources, err := unmarshalSources(ctx, rootMap, mp.factories)
+	configSources, valueSources, err := unmarshalSources(ctx, rootMap, mp.factories)
 	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
-	sources = append(sources, configmapprovider.NewSimple(rootMap))
-	mp.merged = configmapprovider.NewMerge(sources...)
+	configSources = append(configSources, configmapprovider.NewSimple(rootMap))
+	mp.merged = configmapprovider.NewMerge(configSources...)
 
 	retrieved, err := mp.merged.Retrieve(ctx, onChange)
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrive the configuration: %w", err)
 	}
 
-	return &valueSourceSubstitutor{onChange: onChange, retrieved: retrieved}, nil
+	return &valueSourceSubstitutor{onChange: onChange, retrieved: retrieved, valueSources: valueSources}, nil
 }
 
-func unmarshalSources(ctx context.Context, rootMap *config.Map, factories component.Factories) ([]configmapprovider.ConfigSource, error) {
+func unmarshalSources(ctx context.Context, rootMap *config.Map, factories component.Factories) (
+	configSources []configmapprovider.ConfigSource,
+	valueSources map[config.ComponentID]configmapprovider.ValueSource,
+	err error,
+) {
 	// Unmarshal the "config_sources" section of rootMap and create a Shutdownable for each
 	// config source using the factories.ConfigSources.
 
-	var providers []configmapprovider.ConfigSource
-
 	type RootConfig struct {
 		ConfigSources []map[string]map[string]interface{} `mapstructure:"config_sources"`
-		ValueSources  []map[string]map[string]interface{} `mapstructure:"value_sources"`
+		ValueSources  map[string]map[string]interface{}   `mapstructure:"value_sources"`
 	}
 	var rootCfg RootConfig
-	err := rootMap.Unmarshal(&rootCfg)
+	err = rootMap.Unmarshal(&rootCfg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for _, sourceCfg := range rootCfg.ConfigSources {
 		for sourceType, settings := range sourceCfg {
 			factoryBase, ok := factories.ConfigSources[config.Type(sourceType)]
 			if !ok {
-				return nil, fmt.Errorf("unknown source type %q", sourceType)
+				return nil, nil, fmt.Errorf("unknown source type %q", sourceType)
 			}
 
 			cfg := factoryBase.CreateDefaultConfig()
@@ -88,23 +90,56 @@ func unmarshalSources(ctx context.Context, rootMap *config.Map, factories compon
 			// Now that the default config struct is created we can Unmarshal into it,
 			// and it will apply user-defined config on top of the default.
 			if err := configunmarshaler.Unmarshal(config.NewMapFromStringMap(settings), cfg); err != nil {
-				return nil, fmt.Errorf("error reading config of config source %q: %w", sourceType, err)
+				return nil, nil, fmt.Errorf("error reading config of config source %q: %w", sourceType, err)
 			}
 
 			factory, ok := factoryBase.(component.ConfigSourceFactory)
 			if !ok {
-				return nil, fmt.Errorf("config source %q does not implement ConfigSourceFactory", sourceType)
+				return nil, nil, fmt.Errorf("config source %q does not implement ConfigSourceFactory", sourceType)
 			}
 
 			source, err := factory.CreateConfigSource(ctx, component.ConfigSourceCreateSettings{}, cfg)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
-			providers = append(providers, source)
+			configSources = append(configSources, source)
 		}
 	}
 
-	return providers, nil
+	valueSources = map[config.ComponentID]configmapprovider.ValueSource{}
+	for sourceName, settings := range rootCfg.ValueSources {
+		id, err := config.NewComponentIDFromString(sourceName)
+		if err != nil {
+			return nil, nil, err
+		}
+		sourceType := id.Type()
+		factoryBase, ok := factories.ConfigSources[sourceType]
+		if !ok {
+			return nil, nil, fmt.Errorf("unknown source type %q", sourceType)
+		}
+
+		cfg := factoryBase.CreateDefaultConfig()
+		cfg.SetIDName(id.Name())
+
+		// Now that the default config struct is created we can Unmarshal into it,
+		// and it will apply user-defined config on top of the default.
+		if err := configunmarshaler.Unmarshal(config.NewMapFromStringMap(settings), cfg); err != nil {
+			return nil, nil, fmt.Errorf("error reading config of config source %q: %w", sourceType, err)
+		}
+
+		factory, ok := factoryBase.(component.ValueSourceFactory)
+		if !ok {
+			return nil, nil, fmt.Errorf("config source %q does not implement ValueSourceFactory", sourceType)
+		}
+
+		source, err := factory.CreateValueSource(ctx, component.ConfigSourceCreateSettings{}, cfg)
+		if err != nil {
+			return nil, nil, err
+		}
+		valueSources[cfg.ID()] = source
+	}
+
+	return configSources, valueSources, nil
 }
 
 func (mp *defaultConfigProvider) Shutdown(ctx context.Context) error {

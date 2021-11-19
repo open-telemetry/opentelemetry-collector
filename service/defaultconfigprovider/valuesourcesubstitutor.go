@@ -34,7 +34,7 @@ type (
 type valueSourceSubstitutor struct {
 	onChange     func(event *configmapprovider.ChangeEvent)
 	retrieved    configmapprovider.RetrievedConfig
-	valueSources map[string]configmapprovider.ValueSource
+	valueSources map[config.ComponentID]configmapprovider.ValueSource
 }
 
 func (vp *valueSourceSubstitutor) Get(ctx context.Context) (*config.Map, error) {
@@ -239,8 +239,13 @@ func (vp *valueSourceSubstitutor) parseStringValue(ctx context.Context, s string
 
 // retrieveConfigSourceData retrieves data from the specified config source and injects them into
 // the configuration. The Manager tracks sessions and watcher objects as needed.
-func (vp *valueSourceSubstitutor) retrieveConfigSourceData(ctx context.Context, cfgSrcName, cfgSrcInvocation string) (interface{}, error) {
-	valueSrc, ok := vp.valueSources[cfgSrcName]
+func (vp *valueSourceSubstitutor) retrieveConfigSourceData(ctx context.Context, cfgSrcName string, cfgSrcInvocation string) (interface{}, error) {
+	cfgSrcID, err := config.NewComponentIDFromString(cfgSrcName)
+	if err != nil {
+		return nil, err
+	}
+
+	valueSrc, ok := vp.valueSources[cfgSrcID]
 	if !ok {
 		return nil, newErrUnknownConfigSource(cfgSrcName)
 	}
