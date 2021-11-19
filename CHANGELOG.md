@@ -7,7 +7,7 @@
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 
 ## 💡 Enhancements 💡
-- Support Env substitution if variable is unset (#4458)
+- Support shell-like syntax for environment variable substitution defaults (`${ENV:-default}`) (#4458)
 ## v0.39.0 Beta
 
 ## 🛑 Breaking changes 🛑
