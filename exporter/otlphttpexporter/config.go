@@ -35,11 +35,6 @@ type Config struct {
 
 	// The URL to send logs to. If omitted the Endpoint + "/v1/logs" will be used.
 	LogsEndpoint string `mapstructure:"logs_endpoint"`
-
-	// Deprecated: Compression methods are now defined in confighttp.
-	// The compression key for supported compression types within
-	// collector. Currently the only supported mode is `gzip`.
-	Compression string `mapstructure:"compression"`
 }
 
 var _ config.Exporter = (*Config)(nil)

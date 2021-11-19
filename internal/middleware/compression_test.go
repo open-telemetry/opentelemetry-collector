@@ -170,22 +170,6 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: 200,
 		},
 		{
-			name:     "ValidSnappy",
-			encoding: "snappy",
-			reqBodyFunc: func() (*bytes.Buffer, error) {
-				return compressSnappy(testBody)
-			},
-			respCode: 200,
-		},
-		{
-			name:     "ValidZstd",
-			encoding: "zstd",
-			reqBodyFunc: func() (*bytes.Buffer, error) {
-				return compressZstd(testBody)
-			},
-			respCode: 200,
-		},
-		{
 			name:     "InvalidGzip",
 			encoding: "gzip",
 			reqBodyFunc: func() (*bytes.Buffer, error) {
@@ -203,24 +187,6 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: 400,
 			respBody: "zlib: invalid header\n",
 		},
-		//{
-		//	name:     "InvalidSnappy",
-		//	encoding: "snappy",
-		//	reqBodyFunc: func() (*bytes.Buffer, error) {
-		//		return bytes.NewBuffer(testBody), nil
-		//	},
-		//	respCode: 400,
-		//	respBody: "snappy: invalid header\n",
-		// },
-		//{
-		//	name:     "InvalidZstd",
-		//	encoding: "zstd",
-		//	reqBodyFunc: func() (*bytes.Buffer, error) {
-		//		return bytes.NewBuffer(testBody), nil
-		//	},
-		//	respCode: 400,
-		//	respBody: "zstd: invalid header\n",
-		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

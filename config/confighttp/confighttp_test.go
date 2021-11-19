@@ -105,13 +105,12 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			if test.settings.Compression != "" {
-				transport := client.Transport.(*middleware.CompressRoundTripper)
-				assert.EqualValues(t, "gzip", transport.CompressionType)
-			} else {
-				transport := client.Transport.(*http.Transport)
+			switch transport := client.Transport.(type) {
+			case *http.Transport:
 				assert.EqualValues(t, 1024, transport.ReadBufferSize)
 				assert.EqualValues(t, 512, transport.WriteBufferSize)
+			case *middleware.CompressRoundTripper:
+				assert.EqualValues(t, "gzip", transport.CompressionType)
 			}
 		})
 	}

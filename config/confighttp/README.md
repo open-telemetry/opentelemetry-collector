@@ -20,6 +20,7 @@ README](../configtls/README.md).
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
 - [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
+- `compression`: Compression type to use among `gzip`, `zlib`, `deflate`, `snappy` and `zstd`
 
 Example:
 
@@ -34,6 +35,7 @@ exporter:
     headers:
       test1: "value1"
       "test 2": "value 2"
+    compression: gzip
 ```
 
 ## Server Configuration

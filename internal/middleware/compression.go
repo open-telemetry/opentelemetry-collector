@@ -172,15 +172,6 @@ func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 			return nil, err
 		}
 		return zr, nil
-	case "snappy":
-		sr := io.NopCloser(snappy.NewReader(r.Body))
-		return sr, nil
-	case "zstd":
-		zr, err := zstd.NewReader(r.Body)
-		if err != nil {
-			return nil, err
-		}
-		return zr.IOReadCloser(), nil
 	}
 	return nil, nil
 }
