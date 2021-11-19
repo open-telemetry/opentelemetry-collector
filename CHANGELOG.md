@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
+- Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
 
 ## v0.39.0 Beta
 
