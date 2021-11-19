@@ -116,7 +116,8 @@ func (l *Map) Set(key string, value interface{}) {
 	// koanf doesn't offer a direct setting mechanism so merging is required.
 	merged := koanf.New(KeyDelimiter)
 	_ = merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
-	l.k.Merge(merged)
+	// Ignore error for now; it only fails with strict merge when the types are different
+	_ = l.k.Merge(merged)
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.

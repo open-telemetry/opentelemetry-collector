@@ -124,7 +124,7 @@ func TestTracesExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	rCfg := DefaultRetrySettings()
 	qCfg := DefaultQueueSettings()
@@ -138,7 +138,8 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	td := testdata.GenerateTracesTwoSpansSameResource()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		te.ConsumeTraces(context.Background(), td)
+		// errors are checked in the checkExporterEnqueueFailedTracesStats function below.
+		_ = te.ConsumeTraces(context.Background(), td)
 	}
 
 	// 2 batched must be in queue, and 5 batches (10 spans) rejected due to queue overflow
@@ -208,7 +209,7 @@ func newTraceDataPusher(retError error) consumerhelper.ConsumeTracesFunc {
 func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExporter, wantError error) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
 	const numBatches = 7

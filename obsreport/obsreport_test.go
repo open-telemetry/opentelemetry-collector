@@ -54,7 +54,7 @@ type testParams struct {
 func TestReceiveTraceDataOp(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -102,7 +102,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 func TestReceiveLogsOp(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -150,7 +150,7 @@ func TestReceiveLogsOp(t *testing.T) {
 func TestReceiveMetricsOp(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -199,7 +199,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 func TestScrapeMetricsDataOp(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -257,7 +257,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 func TestExportTraceDataOp(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -307,7 +307,7 @@ func TestExportTraceDataOp(t *testing.T) {
 func TestExportMetricsOp(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -358,7 +358,7 @@ func TestExportMetricsOp(t *testing.T) {
 func TestExportLogsOp(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -409,7 +409,7 @@ func TestExportLogsOp(t *testing.T) {
 func TestReceiveWithLongLivedCtx(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	longLivedCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
@@ -462,7 +462,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 func TestProcessorTraceData(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	const acceptedSpans = 27
 	const refusedSpans = 19
@@ -483,7 +483,7 @@ func TestProcessorTraceData(t *testing.T) {
 func TestProcessorMetricsData(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	const acceptedPoints = 29
 	const refusedPoints = 11
@@ -526,7 +526,7 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 func TestProcessorLogRecords(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 	const acceptedRecords = 29
 	const refusedRecords = 11

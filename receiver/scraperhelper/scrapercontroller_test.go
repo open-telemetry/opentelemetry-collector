@@ -140,7 +140,7 @@ func TestScrapeController(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt, err := obsreporttest.SetupTelemetry()
 			require.NoError(t, err)
-			defer tt.Shutdown(context.Background())
+			defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
 
 			initializeChs := make([]chan bool, test.scrapers)
 			scrapeMetricsChs := make([]chan int, test.scrapers)

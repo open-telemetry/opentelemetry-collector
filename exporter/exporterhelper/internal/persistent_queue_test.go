@@ -52,7 +52,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		ext := createStorageExtension(path)
-		defer ext.Shutdown(context.Background())
+		defer func() { require.NoError(t, ext.Shutdown(context.Background())) }()
 
 		wq := createTestQueue(ext, 5)
 		require.Equal(t, 0, wq.Size())
@@ -85,7 +85,7 @@ func TestPersistentQueue_Close(t *testing.T) {
 	defer os.RemoveAll(path)
 
 	ext := createStorageExtension(path)
-	defer ext.Shutdown(context.Background())
+	defer func() { require.NoError(t, ext.Shutdown(context.Background())) }()
 
 	wq := createTestQueue(ext, 1001)
 	traces := newTraces(1, 10)
@@ -147,7 +147,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 
 			defer os.RemoveAll(path)
 			defer tq.Stop()
-			defer ext.Shutdown(context.Background())
+			defer func() { require.NoError(t, ext.Shutdown(context.Background())) }()
 
 			numMessagesConsumed := int32(0)
 			tq.StartConsumers(c.numConsumers, func(item interface{}) {
