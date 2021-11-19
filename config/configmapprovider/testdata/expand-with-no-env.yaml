@@ -7,6 +7,8 @@ test_map:
     recv.4: ""
     recv.5: ""
     recv.6: ""
+    recv.7: "default value containing :- multiple :-"
+    recv.8: special "double-quotes" :- 'single-quotes' !@#%^&*()$
   extra_map:
     recv.1: "some map value_1"
     recv.2: "some map value_2"

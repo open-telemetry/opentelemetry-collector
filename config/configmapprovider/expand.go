@@ -87,7 +87,7 @@ func expandEnv(s string) string {
 		if str == "$" {
 			return "$"
 		}
-		pair := strings.Split(str, ":")
+		pair := strings.SplitN(str, ":-", 2)
 		if envValue, ok := os.LookupEnv(pair[0]); ok || len(pair) == 1 {
 			return envValue
 		}

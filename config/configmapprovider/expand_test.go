@@ -111,7 +111,7 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 			// escaped $ alone
 			"recv.7": "$",
 			// $$ -> escaped $
-			"recv.8": "${THREE:DEFAULT_THREE}",
+			"recv.8": "${THREE:-DEFAULT_THREE}",
 			// $$$ -> escaped $ + substituted env var (not expanded)
 			"recv.9": "$" + receiverEnvValueNotExpanded,
 			// $$$ -> escaped $ + substituted env var (expanded)

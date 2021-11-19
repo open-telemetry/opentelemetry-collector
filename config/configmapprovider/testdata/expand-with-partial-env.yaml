@@ -2,11 +2,13 @@ test_map:
   extra: "${EXTRA}"
   env:
     recv.1: "some env value_1"
-    recv.2: "${ENV_VALUE_2:default value for 2 not substituted}"
-    recv.3: "${ENV_VALUE_3:default value for 3 substituted}"
-    recv.4: "${ENV_VALUE_4:}"
+    recv.2: "${ENV_VALUE_2:-default value for 2 not substituted}"
+    recv.3: "${ENV_VALUE_3:-default value for 3 substituted}"
+    recv.4: "${ENV_VALUE_4:-}"
     recv.5: ""
     recv.6: "${ENV_VALUE_6}"
+    recv.7: "${ENV_VALUE_7:-default value containing :- multiple :-}"
+    recv.8: "${ENV_VALUE_8:-special \"double-quotes\" :- 'single-quotes' !@#%^&*()$}"
   extra_map:
     recv.1: "${EXTRA_MAP_VALUE_1}"
     recv.2: "some map value_2"
