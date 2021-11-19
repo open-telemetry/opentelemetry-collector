@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Support `Snappy` and `Zstd` for confighttp.go (#4441)
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 - Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
 
