@@ -25,7 +25,7 @@ type simpleProvider struct {
 	confMap *config.Map
 }
 
-func (s simpleProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
+func (s simpleProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (RetrievedConfig, error) {
 	return &simpleRetrieved{confMap: s.confMap}, nil
 }
 
@@ -33,7 +33,7 @@ func (s simpleProvider) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func NewSimple(confMap *config.Map) Provider {
+func NewSimple(confMap *config.Map) ConfigSource {
 	return &simpleProvider{confMap: confMap}
 }
 

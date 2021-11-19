@@ -78,7 +78,7 @@ func TestConfigWatcher(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		parserProvider    configmapprovider.Provider
+		parserProvider    configmapprovider.Shutdownable
 		configUnmarshaler configunmarshaler.ConfigUnmarshaler
 		expectNewErr      bool
 		expectWatchErr    bool
@@ -104,7 +104,7 @@ func TestConfigWatcher(t *testing.T) {
 		},
 		{
 			name: "watch_err",
-			parserProvider: func() configmapprovider.Provider {
+			parserProvider: func() configmapprovider.Shutdownable {
 				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 				require.NoError(t, err)
 				m, err := ret.Get(context.Background())
@@ -116,7 +116,7 @@ func TestConfigWatcher(t *testing.T) {
 		},
 		{
 			name: "close_err",
-			parserProvider: func() configmapprovider.Provider {
+			parserProvider: func() configmapprovider.Shutdownable {
 				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 				require.NoError(t, err)
 				m, err := ret.Get(context.Background())
@@ -128,7 +128,7 @@ func TestConfigWatcher(t *testing.T) {
 		},
 		{
 			name: "ok",
-			parserProvider: func() configmapprovider.Provider {
+			parserProvider: func() configmapprovider.Shutdownable {
 				// Use errRetrieved with nil errors to have Watchable interface implemented.
 				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 				require.NoError(t, err)
@@ -201,7 +201,7 @@ func TestConfigWatcherWhenClosed(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
 	set := CollectorSettings{
-		ConfigMapProvider: func() configmapprovider.Provider {
+		ConfigMapProvider: func() configmapprovider.Shutdownable {
 			// Use errRetrieved with nil errors to have Watchable interface implemented.
 			ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 			require.NoError(t, err)

@@ -16,6 +16,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/collector/service/defaultconfigprovider"
 )
 
 // NewCommand constructs a new cobra.Command using the given Collector.
@@ -28,7 +29,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if set.ConfigMapProvider == nil {
 				//set.ConfigMapProvider = configmapprovider.NewLocal(getConfigFlag(), getSetFlag())
-				set.ConfigMapProvider = NewDefaultConfigProvider(getConfigFlag(), getSetFlag(), set.Factories)
+				set.ConfigMapProvider = defaultconfigprovider.NewDefaultConfigProvider(getConfigFlag(), getSetFlag(), set.Factories)
 			}
 			col, err := New(set)
 			if err != nil {

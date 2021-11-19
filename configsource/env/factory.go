@@ -1,4 +1,4 @@
-package files
+package env
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type factory struct {
 }
 
 func (f factory) Type() config.Type {
-	return "files"
+	return "env"
 }
 
 func (f factory) CreateDefaultConfig() config.ConfigSource {
@@ -26,7 +26,7 @@ func (f factory) CreateDefaultConfig() config.ConfigSource {
 func (f factory) CreateConfigSource(
 	ctx context.Context, set component.ConfigSourceCreateSettings, cfg config.ConfigSource,
 ) (configmapprovider.ConfigSource, error) {
-	return configmapprovider.NewFile(cfg.(*Config).Name), nil
+	return &configSource{}, nil
 }
 
 func NewFactory() component.ConfigSourceFactory {

@@ -29,18 +29,18 @@ type propertiesMapProvider struct {
 	properties []string
 }
 
-// NewProperties returns a Provider, that provides a config.Map from the given properties.
+// NewProperties returns a Shutdownable, that provides a config.Map from the given properties.
 //
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
-func NewProperties(properties []string) Provider {
+func NewProperties(properties []string) ConfigSource {
 	return &propertiesMapProvider{
 		properties: properties,
 	}
 }
 
-func (pmp *propertiesMapProvider) Retrieve(_ context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
+func (pmp *propertiesMapProvider) Retrieve(_ context.Context, onChange func(*ChangeEvent)) (RetrievedConfig, error) {
 	if len(pmp.properties) == 0 {
 		return &simpleRetrieved{confMap: config.NewMap()}, nil
 	}

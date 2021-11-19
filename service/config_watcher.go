@@ -25,7 +25,7 @@ import (
 
 type configWatcher struct {
 	cfg     *config.Config
-	ret     configmapprovider.Retrieved
+	ret     configmapprovider.RetrievedConfig
 	watcher chan error
 }
 
