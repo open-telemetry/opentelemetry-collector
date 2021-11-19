@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sync/atomic"
 	"syscall"
 
 	"go.opentelemetry.io/contrib/zpages"
@@ -70,9 +71,9 @@ type Collector struct {
 	meterProvider       metric.MeterProvider
 	zPagesSpanProcessor *zpages.SpanProcessor
 
-	cfgW         *configWatcher
-	service      *service
-	stateChannel chan State
+	cfgW    *configWatcher
+	service *service
+	state   atomic.Value
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -99,15 +100,18 @@ func New(set CollectorSettings) (*Collector, error) {
 		set.ConfigUnmarshaler = configunmarshaler.NewDefault()
 	}
 
+	state := atomic.Value{}
+	state.Store(Starting)
 	return &Collector{
-		set:          set,
-		stateChannel: make(chan State, Closed+1),
+		set:   set,
+		state: state,
 	}, nil
+
 }
 
-// GetStateChannel returns state channel of the collector server.
-func (col *Collector) GetStateChannel() <-chan State {
-	return col.stateChannel
+// GetState returns current state of the collector server.
+func (col *Collector) GetState() State {
+	return col.state.Load().(State)
 }
 
 // GetLogger returns logger used by the Collector.
@@ -268,17 +272,13 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 	col.logger.Info("Shutdown complete.")
 	col.setCollectorState(Closed)
-	close(col.stateChannel)
 
 	return errs
 }
 
-// setCollectorState provides a non-blocking, drop on the floor approach to sending state information on the state channel
+// setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
-	select {
-	case col.stateChannel <- state:
-	default:
-	}
+	col.state.Store(state)
 }
 
 func getBallastSize(host component.Host) uint64 {

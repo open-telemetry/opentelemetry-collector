@@ -25,6 +25,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
@@ -86,14 +87,16 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 		}
 	}()
 
-	assert.Equal(t, Starting, <-col.GetStateChannel())
-	assert.Equal(t, Running, <-col.GetStateChannel())
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, time.Second*2, time.Second)
 
 	col.Shutdown()
 	col.Shutdown()
 	<-colDone
-	assert.Equal(t, Closing, <-col.GetStateChannel())
-	assert.Equal(t, Closed, <-col.GetStateChannel())
+	assert.Eventually(t, func() bool {
+		return Closed == col.GetState()
+	}, time.Second*2, time.Second)
 }
 
 func TestCollector_Start(t *testing.T) {
@@ -127,8 +130,9 @@ func TestCollector_Start(t *testing.T) {
 		assert.NoError(t, col.Run(context.Background()))
 	}()
 
-	assert.Equal(t, Starting, <-col.GetStateChannel())
-	assert.Equal(t, Running, <-col.GetStateChannel())
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, time.Second*2, time.Second)
 	assert.Equal(t, col.logger, col.GetLogger())
 	assert.True(t, loggingHookCalled)
 
@@ -147,8 +151,9 @@ func TestCollector_Start(t *testing.T) {
 
 	col.signalsChannel <- syscall.SIGTERM
 	<-colDone
-	assert.Equal(t, Closing, <-col.GetStateChannel())
-	assert.Equal(t, Closed, <-col.GetStateChannel())
+	assert.Eventually(t, func() bool {
+		return Closed == col.GetState()
+	}, time.Second*2, time.Second)
 }
 
 type mockColTelemetry struct{}
@@ -183,12 +188,14 @@ func TestCollector_ReportError(t *testing.T) {
 		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
 	}()
 
-	assert.Equal(t, Starting, <-col.GetStateChannel())
-	assert.Equal(t, Running, <-col.GetStateChannel())
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, time.Second*2, time.Second)
 	col.service.ReportFatalError(errors.New("err2"))
 	<-colDone
-	assert.Equal(t, Closing, <-col.GetStateChannel())
-	assert.Equal(t, Closed, <-col.GetStateChannel())
+	assert.Eventually(t, func() bool {
+		return Closed == col.GetState()
+	}, time.Second*2, time.Second)
 }
 
 func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLabels []string) {
@@ -251,17 +258,4 @@ func assertZPages(t *testing.T) {
 	for _, path := range paths {
 		testZPagePathFn(t, path)
 	}
-}
-
-// TestStateChannelFull tests to ensure that a full state channel doesn't block code paths going forward.
-func TestStateChannelFull(t *testing.T) {
-	col := &Collector{stateChannel: make(chan State, Closed+1)}
-	col.setCollectorState(Starting)
-	col.setCollectorState(Running)
-	col.setCollectorState(Closing)
-	col.setCollectorState(Starting)
-	col.setCollectorState(Closing)
-	col.setCollectorState(Closed)
-
-	require.Len(t, col.stateChannel, 4)
 }
