@@ -302,7 +302,7 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 func TestQueuedRetryHappyPath(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	qCfg := DefaultQueueSettings()
 	rCfg := DefaultRetrySettings()

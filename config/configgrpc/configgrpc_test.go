@@ -40,7 +40,7 @@ import (
 func TestDefaultGrpcClientSettings(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	gcs := &GRPCClientSettings{
 		TLSSetting: configtls.TLSClientSetting{
@@ -55,7 +55,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 func TestAllGrpcClientSettings(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	gcs := &GRPCClientSettings{
 		Headers: map[string]string{
@@ -160,7 +160,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 func TestGRPCClientSettingsError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	tests := []struct {
 		settings GRPCClientSettings
@@ -251,7 +251,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 func TestUseSecure(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	gcs := &GRPCClientSettings{
 		Headers:     nil,
@@ -371,7 +371,7 @@ func TestGetGRPCCompressionKey(t *testing.T) {
 func TestHttpReception(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	tests := []struct {
 		name           string
@@ -526,7 +526,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	socketName := tempSocketName(t)
 	gss := &GRPCServerSettings{

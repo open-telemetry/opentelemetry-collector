@@ -127,7 +127,7 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rCfg := DefaultRetrySettings()
 	qCfg := DefaultQueueSettings()
@@ -208,7 +208,7 @@ func newPushLogsData(retError error) consumerhelper.ConsumeLogsFunc {
 func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter, wantError error) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer func() { require.NoError(t, tt.Shutdown(context.Background())) }()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	const numBatches = 7
