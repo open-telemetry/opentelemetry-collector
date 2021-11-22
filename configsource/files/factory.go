@@ -25,7 +25,7 @@ func (f factory) CreateDefaultConfig() config.ConfigSource {
 
 func (f factory) CreateConfigSource(
 	ctx context.Context, set component.ConfigSourceCreateSettings, cfg config.ConfigSource,
-) (configmapprovider.BaseProvider, error) {
+) (configmapprovider.Provider, error) {
 	return configmapprovider.NewFile(cfg.(*Config).Name), nil
 }
 

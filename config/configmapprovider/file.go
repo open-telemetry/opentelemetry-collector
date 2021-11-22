@@ -26,14 +26,14 @@ type fileMapProvider struct {
 	fileName string
 }
 
-// NewFile returns a new Provider that reads the configuration from the given file.
-func NewFile(fileName string) Provider {
+// NewFile returns a new MapProvider that reads the configuration from the given file.
+func NewFile(fileName string) MapProvider {
 	return &fileMapProvider{
 		fileName: fileName,
 	}
 }
 
-func (fmp *fileMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (RetrievedConfig, error) {
+func (fmp *fileMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (RetrievedMap, error) {
 	if fmp.fileName == "" {
 		return nil, errors.New("config file not specified")
 	}

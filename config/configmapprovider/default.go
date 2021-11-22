@@ -14,9 +14,9 @@
 
 package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
 
-// NewLocal returns the default Provider, and it creates configuration from a file
+// NewLocal returns the default MapProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func NewLocal(configFileName string, properties []string) Provider {
+func NewLocal(configFileName string, properties []string) MapProvider {
 	return NewMerge(
 		NewFile(configFileName),
 		NewProperties(properties))

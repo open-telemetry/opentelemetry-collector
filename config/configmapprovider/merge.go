@@ -25,17 +25,17 @@ import (
 // TODO: Add support to "merge" watchable interface.
 
 type mergeMapProvider struct {
-	providers []Provider
+	providers []MapProvider
 }
 
-// NewMerge returns a Provider, that merges the result from multiple Provider(s).
+// NewMerge returns a MapProvider, that merges the result from multiple MapProvider(s).
 //
 // The ConfigMaps are merged in the given order, by merging all of them in order into an initial empty map.
-func NewMerge(ps ...Provider) Provider {
+func NewMerge(ps ...MapProvider) MapProvider {
 	return &mergeMapProvider{providers: ps}
 }
 
-func (mp *mergeMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (RetrievedConfig, error) {
+func (mp *mergeMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (RetrievedMap, error) {
 	retCfgMap := config.NewMap()
 	for _, p := range mp.providers {
 		retr, err := p.Retrieve(ctx, onChange)

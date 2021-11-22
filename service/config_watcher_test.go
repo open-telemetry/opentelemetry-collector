@@ -37,7 +37,7 @@ type errConfigMapProvider struct {
 	err error
 }
 
-func (ecmp *errConfigMapProvider) Retrieve(_ context.Context, onChange func(*configmapprovider.ChangeEvent)) (configmapprovider.RetrievedConfig, error) {
+func (ecmp *errConfigMapProvider) Retrieve(_ context.Context, onChange func(*configmapprovider.ChangeEvent)) (configmapprovider.RetrievedMap, error) {
 	if ecmp.ret != nil {
 		ecmp.ret.onChange = onChange
 	}
@@ -78,7 +78,7 @@ func TestConfigWatcher(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		parserProvider    configmapprovider.Provider
+		parserProvider    configmapprovider.MapProvider
 		configUnmarshaler configunmarshaler.ConfigUnmarshaler
 		expectNewErr      bool
 		expectWatchErr    bool
@@ -104,7 +104,7 @@ func TestConfigWatcher(t *testing.T) {
 		},
 		{
 			name: "watch_err",
-			parserProvider: func() configmapprovider.Provider {
+			parserProvider: func() configmapprovider.MapProvider {
 				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 				require.NoError(t, err)
 				m, err := ret.Get(context.Background())
@@ -116,7 +116,7 @@ func TestConfigWatcher(t *testing.T) {
 		},
 		{
 			name: "close_err",
-			parserProvider: func() configmapprovider.Provider {
+			parserProvider: func() configmapprovider.MapProvider {
 				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 				require.NoError(t, err)
 				m, err := ret.Get(context.Background())
@@ -128,7 +128,7 @@ func TestConfigWatcher(t *testing.T) {
 		},
 		{
 			name: "ok",
-			parserProvider: func() configmapprovider.Provider {
+			parserProvider: func() configmapprovider.MapProvider {
 				// Use errRetrieved with nil errors to have Watchable interface implemented.
 				ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 				require.NoError(t, err)
@@ -201,7 +201,7 @@ func TestConfigWatcherWhenClosed(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
 	set := CollectorSettings{
-		ConfigMapProvider: func() configmapprovider.Provider {
+		ConfigMapProvider: func() configmapprovider.MapProvider {
 			// Use errRetrieved with nil errors to have Watchable interface implemented.
 			ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
 			require.NoError(t, err)

@@ -26,17 +26,17 @@ import (
 )
 
 type defaultConfigProvider struct {
-	initial   configmapprovider.Provider
-	merged    configmapprovider.Provider
+	initial   configmapprovider.MapProvider
+	merged    configmapprovider.MapProvider
 	factories component.Factories
 }
 
-func NewDefaultConfigProvider(configFileName string, properties []string, factories component.Factories) configmapprovider.Provider {
+func NewDefaultConfigProvider(configFileName string, properties []string, factories component.Factories) configmapprovider.MapProvider {
 	localProvider := configmapprovider.NewLocal(configFileName, properties)
 	return &defaultConfigProvider{initial: localProvider, factories: factories}
 }
 
-func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(event *configmapprovider.ChangeEvent)) (configmapprovider.RetrievedConfig, error) {
+func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(event *configmapprovider.ChangeEvent)) (configmapprovider.RetrievedMap, error) {
 	r, err := mp.initial.Retrieve(ctx, onChange)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(eve
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
-	var rootProviders []configmapprovider.Provider
+	var rootProviders []configmapprovider.MapProvider
 	for _, configSource := range mergeConfigs {
 		configSourceID, err := config.NewComponentIDFromString(configSource)
 		if err != nil {
@@ -60,9 +60,9 @@ func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(eve
 			return nil, fmt.Errorf("config source %q must be defined in config_sources section", configSourceID)
 		}
 
-		mapProvider, ok := configSource.(configmapprovider.Provider)
+		mapProvider, ok := configSource.(configmapprovider.MapProvider)
 		if !ok {
-			return nil, fmt.Errorf("config source %q cannot be used in merge_configs section since it does not implement Provider interface", configSourceID)
+			return nil, fmt.Errorf("config source %q cannot be used in merge_configs section since it does not implement MapProvider interface", configSourceID)
 		}
 
 		rootProviders = append(rootProviders, mapProvider)
@@ -80,7 +80,7 @@ func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(eve
 }
 
 func unmarshalSources(ctx context.Context, rootMap *config.Map, factories component.Factories) (
-	configSources map[config.ComponentID]configmapprovider.BaseProvider,
+	configSources map[config.ComponentID]configmapprovider.Provider,
 	mergeConfigs []string,
 	err error,
 ) {
@@ -94,9 +94,9 @@ func unmarshalSources(ctx context.Context, rootMap *config.Map, factories compon
 		return nil, nil, err
 	}
 
-	// Unmarshal the "config_sources" section of rootMap and create a BaseProvider for each
+	// Unmarshal the "config_sources" section of rootMap and create a Provider for each
 	// config source using the factories.ConfigSources.
-	configSources = map[config.ComponentID]configmapprovider.BaseProvider{}
+	configSources = map[config.ComponentID]configmapprovider.Provider{}
 	for _, sourceCfg := range rootCfg.ConfigSources {
 		for sourceName, settings := range sourceCfg {
 			id, err := config.NewComponentIDFromString(sourceName)

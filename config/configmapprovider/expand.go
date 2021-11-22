@@ -22,18 +22,18 @@ import (
 )
 
 type expandMapProvider struct {
-	base Provider
+	base MapProvider
 }
 
-// NewExpand returns a Provider, that expands all environment variables for a
-// config.Map provided by the given Provider.
-func NewExpand(base Provider) Provider {
+// NewExpand returns a MapProvider, that expands all environment variables for a
+// config.Map provided by the given MapProvider.
+func NewExpand(base MapProvider) MapProvider {
 	return &expandMapProvider{
 		base: base,
 	}
 }
 
-func (emp *expandMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (RetrievedConfig, error) {
+func (emp *expandMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (RetrievedMap, error) {
 	retr, err := emp.base.Retrieve(ctx, onChange)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve from base provider: %w", err)

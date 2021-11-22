@@ -23,7 +23,7 @@ import (
 
 // ConfigSource is
 type ConfigSource interface {
-	configmapprovider.BaseProvider
+	configmapprovider.Provider
 }
 
 // ConfigSourceCreateSettings is passed to ExtensionFactory.Create* functions.
@@ -35,5 +35,5 @@ type ConfigSourceCreateSettings struct {
 type ConfigSourceFactory interface {
 	Factory
 	CreateDefaultConfig() config.ConfigSource
-	CreateConfigSource(ctx context.Context, set ConfigSourceCreateSettings, cfg config.ConfigSource) (configmapprovider.BaseProvider, error)
+	CreateConfigSource(ctx context.Context, set ConfigSourceCreateSettings, cfg config.ConfigSource) (configmapprovider.Provider, error)
 }

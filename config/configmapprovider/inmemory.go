@@ -25,12 +25,12 @@ type inMemoryMapProvider struct {
 	buf io.Reader
 }
 
-// NewInMemory returns a new BaseProvider that reads the configuration, from the provided buffer, as YAML.
-func NewInMemory(buf io.Reader) Provider {
+// NewInMemory returns a new Provider that reads the configuration, from the provided buffer, as YAML.
+func NewInMemory(buf io.Reader) MapProvider {
 	return &inMemoryMapProvider{buf: buf}
 }
 
-func (inp *inMemoryMapProvider) Retrieve(_ context.Context, onChange func(*ChangeEvent)) (RetrievedConfig, error) {
+func (inp *inMemoryMapProvider) Retrieve(_ context.Context, onChange func(*ChangeEvent)) (RetrievedMap, error) {
 	cfg, err := config.NewMapFromBuffer(inp.buf)
 	if err != nil {
 		return nil, err

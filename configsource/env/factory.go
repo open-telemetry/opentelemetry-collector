@@ -23,7 +23,7 @@ func (f factory) CreateDefaultConfig() config.ConfigSource {
 	}
 }
 
-func (f factory) CreateConfigSource(ctx context.Context, set component.ConfigSourceCreateSettings, cfg config.ConfigSource) (configmapprovider.BaseProvider, error) {
+func (f factory) CreateConfigSource(ctx context.Context, set component.ConfigSourceCreateSettings, cfg config.ConfigSource) (configmapprovider.Provider, error) {
 	return &configSource{}, nil
 }
 
