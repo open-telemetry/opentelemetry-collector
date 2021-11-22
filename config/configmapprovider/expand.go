@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 )
 
 type expandMapProvider struct {
@@ -80,12 +79,6 @@ func expandStringValues(value interface{}) interface{} {
 }
 
 func expandEnv(s string) string {
-	if strings.Contains(s, ":") {
-		// This uses the extended syntax ${valuesrc:selector} which will be expanded
-		// later by ValueProvider substitutor, so don't touch it.
-		return s
-	}
-
 	return os.Expand(s, func(str string) string {
 		// This allows escaping environment variable substitution via $$, e.g.
 		// - $FOO will be substituted with env var FOO
