@@ -26,7 +26,7 @@ import (
 type ValueProvider interface {
 	Provider
 
-	// Retrieve goes to the configuration source and retrieves the selected data which
+	// RetrieveValue goes to the configuration source and retrieves the selected data which
 	// contains the value to be injected in the configuration and the corresponding watcher that
 	// will be used to monitor for updates of the retrieved value.
 	//
@@ -38,22 +38,22 @@ type ValueProvider interface {
 	//
 	// If ctx is cancelled should return immediately with an error.
 	// Should never be called concurrently with itself or with Shutdown.
-	Retrieve(ctx context.Context, onChange func(*ChangeEvent), selector string, paramsConfigMap *config.Map) (RetrievedValue, error)
+	RetrieveValue(ctx context.Context, onChange func(*ChangeEvent), selector string, paramsConfigMap *config.Map) (RetrievedValue, error)
 }
 
-// RetrievedValue holds the result of a call to the Retrieve method of a ValueProvider object.
+// RetrievedValue holds the result of a call to the RetrieveValue method of a ValueProvider object.
 //
 // The typical usage is the following:
 //
-//		r := valueProvider.Retrieve(selector, params)
+//		r := valueProvider.RetrieveValue(selector, params)
 //		r.Get()
 //		// wait for onChange() to be called.
 //		r.Close()
-//		r = valueProvider.Retrieve(selector, params)
+//		r = valueProvider.RetrieveValue(selector, params)
 //		r.Get()
 //		// wait for onChange() to be called.
 //		r.Close()
-//		// repeat Retrieve/Get/wait/Close cycle until it is time to shut down the Collector process.
+//		// repeat RetrieveValue/Get/wait/Close cycle until it is time to shut down the Collector process.
 //		// ...
 //		mapProvider.Shutdown()
 type RetrievedValue interface {

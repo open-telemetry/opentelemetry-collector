@@ -23,7 +23,7 @@ func (m mapFromValueProvider) Shutdown(ctx context.Context) error {
 func (m mapFromValueProvider) Retrieve(
 	ctx context.Context, onChange func(*configmapprovider.ChangeEvent),
 ) (configmapprovider.RetrievedMap, error) {
-	retrieved, err := m.valueProvider.Retrieve(ctx, onChange, m.selector, m.paramsConfigMap)
+	retrieved, err := m.valueProvider.RetrieveValue(ctx, onChange, m.selector, m.paramsConfigMap)
 	if err != nil {
 		return nil, err
 	}

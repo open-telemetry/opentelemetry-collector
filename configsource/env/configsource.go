@@ -11,7 +11,7 @@ import (
 type configSource struct {
 }
 
-func (c configSource) Retrieve(
+func (c configSource) RetrieveValue(
 	ctx context.Context, onChange func(*configmapprovider.ChangeEvent), selector string, paramsConfigMap *config.Map,
 ) (configmapprovider.RetrievedValue, error) {
 	return &retrieved{selector: selector, paramsConfigMap: paramsConfigMap}, nil

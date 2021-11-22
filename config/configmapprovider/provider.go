@@ -27,9 +27,9 @@ type Provider interface {
 	// any resources that it may have created.
 	//
 	// This method must be called when the Collector service ends, either in case of
-	// success or error. Retrieve cannot be called after Shutdown.
+	// success or error. RetrieveValue cannot be called after Shutdown.
 	//
-	// Should never be called concurrently with itself or with Retrieve.
+	// Should never be called concurrently with itself or with RetrieveValue.
 	// If ctx is cancelled should return immediately with an error.
 	Shutdown(ctx context.Context) error
 }

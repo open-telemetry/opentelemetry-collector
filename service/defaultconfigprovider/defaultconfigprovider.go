@@ -156,6 +156,10 @@ func unmarshalSources(ctx context.Context, rootMap *config.Map, factories compon
 				return nil, nil, fmt.Errorf("error reading config of config source %q: %w", sourceType, err)
 			}
 
+			if err := cfg.Validate(); err != nil {
+				return nil, nil, fmt.Errorf("config of config source %q is invalid: %w", sourceType, err)
+			}
+
 			factory, ok := factoryBase.(component.ConfigSourceFactory)
 			if !ok {
 				return nil, nil, fmt.Errorf("config source %q does not implement ConfigSourceFactory", sourceType)

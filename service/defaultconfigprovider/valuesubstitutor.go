@@ -278,7 +278,7 @@ func (vp *valueSubstitutor) retrieveConfigSourceData(ctx context.Context, cfgSrc
 		}
 	}
 
-	retrieved, err := valueSrc.Retrieve(ctx, vp.onChange, selector, paramsConfigMap)
+	retrieved, err := valueSrc.RetrieveValue(ctx, vp.onChange, selector, paramsConfigMap)
 	if err != nil {
 		return nil, fmt.Errorf("config source %q failed to retrieve value: %w", cfgSrcName, err)
 	}
