@@ -37,6 +37,9 @@ type mapFromValueRetrieved struct {
 
 func (m mapFromValueRetrieved) Get(ctx context.Context) (cfgMap *config.Map, err error) {
 	val, err := m.retrieved.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	switch v := val.(type) {
 	case string:
