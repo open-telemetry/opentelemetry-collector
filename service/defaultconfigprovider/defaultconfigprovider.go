@@ -76,7 +76,7 @@ func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(eve
 		return nil, fmt.Errorf("cannot retrive the configuration: %w", err)
 	}
 
-	return &valueSourceSubstitutor{onChange: onChange, retrieved: retrieved, configSources: configSources}, nil
+	return &valueSubstitutor{onChange: onChange, retrieved: retrieved, configSources: configSources}, nil
 }
 
 func unmarshalSources(ctx context.Context, rootMap *config.Map, factories component.Factories) (

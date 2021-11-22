@@ -31,13 +31,13 @@ type (
 	errUnknownConfigSource struct{ error }
 )
 
-type valueSourceSubstitutor struct {
+type valueSubstitutor struct {
 	onChange      func(event *configmapprovider.ChangeEvent)
 	retrieved     configmapprovider.RetrievedConfig
 	configSources map[config.ComponentID]configmapprovider.BaseProvider
 }
 
-func (vp *valueSourceSubstitutor) Get(ctx context.Context) (*config.Map, error) {
+func (vp *valueSubstitutor) Get(ctx context.Context) (*config.Map, error) {
 	cfgMap, err := vp.retrieved.Get(ctx)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (vp *valueSourceSubstitutor) Get(ctx context.Context) (*config.Map, error) 
 	return vp.substitute(ctx, cfgMap)
 }
 
-func (vp *valueSourceSubstitutor) substitute(ctx context.Context, cfgMap *config.Map) (*config.Map, error) {
+func (vp *valueSubstitutor) substitute(ctx context.Context, cfgMap *config.Map) (*config.Map, error) {
 	for _, k := range cfgMap.AllKeys() {
 		val, err := vp.parseConfigValue(ctx, cfgMap.Get(k))
 		if err != nil {
@@ -58,14 +58,14 @@ func (vp *valueSourceSubstitutor) substitute(ctx context.Context, cfgMap *config
 	return cfgMap, nil
 }
 
-func (vp *valueSourceSubstitutor) Close(ctx context.Context) error {
+func (vp *valueSubstitutor) Close(ctx context.Context) error {
 	return vp.retrieved.Close(ctx)
 }
 
 // parseConfigValue takes the value of a "config node" and process it recursively. The processing consists
 // in transforming invocations of config sources and/or environment variables into literal data that can be
 // used directly from a `config.Map` object.
-func (vp *valueSourceSubstitutor) parseConfigValue(ctx context.Context, value interface{}) (interface{}, error) {
+func (vp *valueSubstitutor) parseConfigValue(ctx context.Context, value interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
 		// Only if the value of the node is a string it can contain an env var or config source
@@ -114,7 +114,7 @@ func (vp *valueSourceSubstitutor) parseConfigValue(ctx context.Context, value in
 
 // parseStringValue transforms environment variables and config sources, if any are present, on
 // the given string in the configuration into an object to be inserted into the resulting configuration.
-func (vp *valueSourceSubstitutor) parseStringValue(ctx context.Context, s string) (interface{}, error) {
+func (vp *valueSubstitutor) parseStringValue(ctx context.Context, s string) (interface{}, error) {
 	// Code based on os.Expand function. All delimiters that are checked against are
 	// ASCII so bytes are fine for this operation.
 	var buf []byte
@@ -239,7 +239,7 @@ func (vp *valueSourceSubstitutor) parseStringValue(ctx context.Context, s string
 
 // retrieveConfigSourceData retrieves data from the specified config source and injects them into
 // the configuration. The Manager tracks sessions and watcher objects as needed.
-func (vp *valueSourceSubstitutor) retrieveConfigSourceData(ctx context.Context, cfgSrcName string, cfgSrcInvocation string) (interface{}, error) {
+func (vp *valueSubstitutor) retrieveConfigSourceData(ctx context.Context, cfgSrcName string, cfgSrcInvocation string) (interface{}, error) {
 	cfgSrcID, err := config.NewComponentIDFromString(cfgSrcName)
 	if err != nil {
 		return nil, err
