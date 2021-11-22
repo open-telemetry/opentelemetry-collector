@@ -26,28 +26,43 @@ import (
 )
 
 type defaultConfigProvider struct {
-	initial   configmapprovider.MapProvider
-	merged    configmapprovider.MapProvider
-	factories component.Factories
+	localRoot  configmapprovider.MapProvider
+	mergedRoot configmapprovider.MapProvider
+	factories  component.Factories
 }
 
+// NewDefaultConfigProvider creates a MapProvider that uses the local config file,
+// the properties and the additional config sources specified in the config_sources
+// and merge_configs sections to build the overall config map.
+//
+// It first loads config maps from all providers that are specified in the merge_configs
+// section, merging them in the order they are specified (i.e. the last in the list has
+// the highest precedence), then merges the local config from the file and properties,
+// then performs substitution of all config values referenced using $ syntax.
 func NewDefaultConfigProvider(configFileName string, properties []string, factories component.Factories) configmapprovider.MapProvider {
 	localProvider := configmapprovider.NewLocal(configFileName, properties)
-	return &defaultConfigProvider{initial: localProvider, factories: factories}
+	return &defaultConfigProvider{localRoot: localProvider, factories: factories}
 }
 
-func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(event *configmapprovider.ChangeEvent)) (configmapprovider.RetrievedMap, error) {
-	r, err := mp.initial.Retrieve(ctx, onChange)
+func (mp *defaultConfigProvider) Retrieve(
+	ctx context.Context,
+	onChange func(event *configmapprovider.ChangeEvent),
+) (configmapprovider.RetrievedMap, error) {
+	// Retrieve the local first.
+	r, err := mp.localRoot.Retrieve(ctx, onChange)
 	if err != nil {
 		return nil, err
 	}
-	rootMap, err := r.Get(ctx)
+	localRootMap, err := r.Get(ctx)
 
-	configSources, mergeConfigs, err := unmarshalSources(ctx, rootMap, mp.factories)
+	// Unmarshal config sources.
+	configSources, mergeConfigs, err := unmarshalSources(ctx, localRootMap, mp.factories)
 	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
+	// Iterate over all sources specified in the merge_configs section and create
+	// a provider for each.
 	var rootProviders []configmapprovider.MapProvider
 	for _, configSource := range mergeConfigs {
 		configSourceID, err := config.NewComponentIDFromString(configSource)
@@ -57,21 +72,24 @@ func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(eve
 
 		configSource, ok := configSources[configSourceID]
 		if !ok {
-			return nil, fmt.Errorf("config source %q must be defined in config_sources section", configSourceID)
+			return nil, fmt.Errorf("config source %q must be defined in config_sources section", configSource)
 		}
 
 		mapProvider, ok := configSource.(configmapprovider.MapProvider)
 		if !ok {
-			return nil, fmt.Errorf("config source %q cannot be used in merge_configs section since it does not implement MapProvider interface", configSourceID)
+			return nil, fmt.Errorf("config source %q cannot be used in merge_configs section since it does not implement MapProvider interface", configSource)
 		}
 
 		rootProviders = append(rootProviders, mapProvider)
 	}
 
-	rootProviders = append(rootProviders, configmapprovider.NewSimple(rootMap))
-	mp.merged = configmapprovider.NewMerge(rootProviders...)
+	// Make the local root map the last (highest-precedence) root MapProvider.
+	rootProviders = append(rootProviders, configmapprovider.NewSimple(localRootMap))
 
-	retrieved, err := mp.merged.Retrieve(ctx, onChange)
+	// Create a merging provider and retrieve the config from it.
+	mp.mergedRoot = configmapprovider.NewMerge(rootProviders...)
+
+	retrieved, err := mp.mergedRoot.Retrieve(ctx, onChange)
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrive the configuration: %w", err)
 	}
@@ -79,16 +97,17 @@ func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(eve
 	return &valueSubstitutor{onChange: onChange, retrieved: retrieved, configSources: configSources}, nil
 }
 
+type rootConfig struct {
+	ConfigSources []map[string]map[string]interface{} `mapstructure:"config_sources"`
+	MergeConfigs  []string                            `mapstructure:"merge_configs"`
+}
+
 func unmarshalSources(ctx context.Context, rootMap *config.Map, factories component.Factories) (
 	configSources map[config.ComponentID]configmapprovider.Provider,
 	mergeConfigs []string,
 	err error,
 ) {
-	type RootConfig struct {
-		ConfigSources []map[string]map[string]interface{} `mapstructure:"config_sources"`
-		MergeConfigs  []string                            `mapstructure:"merge_configs"`
-	}
-	var rootCfg RootConfig
+	var rootCfg rootConfig
 	err = rootMap.Unmarshal(&rootCfg)
 	if err != nil {
 		return nil, nil, err
@@ -105,6 +124,7 @@ func unmarshalSources(ctx context.Context, rootMap *config.Map, factories compon
 			}
 			sourceType := id.Type()
 
+			// See if we have a factory for this config source type.
 			factoryBase, ok := factories.ConfigSources[sourceType]
 			if !ok {
 				return nil, nil, fmt.Errorf("unknown config source type %q (did you register the config source factory?)", sourceType)
@@ -136,8 +156,8 @@ func unmarshalSources(ctx context.Context, rootMap *config.Map, factories compon
 }
 
 func (mp *defaultConfigProvider) Shutdown(ctx context.Context) error {
-	if mp.merged != nil {
-		return mp.merged.Shutdown(ctx)
+	if mp.mergedRoot != nil {
+		return mp.mergedRoot.Shutdown(ctx)
 	}
 	return nil
 }
