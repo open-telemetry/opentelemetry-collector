@@ -18,8 +18,8 @@
 // tenancy, load balancing, tagging, among others.
 //
 // The structs defined here are typically used within the context that is
-// propagated down the pipeline, with the values being produced by receivers,
-// and consumed by processors and exporters.
+// propagated down the pipeline, with the values being produced by
+// authenticators and/or receivers, and consumed by processors and exporters.
 //
 // Producers
 //
@@ -33,6 +33,12 @@
 // enhance the context with the client.Info, such that no actions are needed by
 // receivers that are built using confighttp.HTTPServerSettings or
 // configgrpc.GRPCServerSettings.
+//
+// Authenticators are responsible for obtaining a client.Info from the current
+// context, enhancing the client.Info with an implementation of client.AuthData,
+// and storing a new client.Info into the context that it passes down. The
+// attribute names should be documented with their return types and considered
+// part of the public API for the authenticator.
 //
 // Consumers
 //
@@ -48,8 +54,38 @@
 // - rate limit client calls based on IP addresses
 //
 // Processors and exporters relying on the existence of data from the
-// client.Info, should clearly document this as part of the component's README
-// file.
+// client.Info, especially client.AuthData, should clearly document this as part
+// of the component's README file. The expected pattern for consuming data is to
+// allow users to specify the attribute name to use in the component. The
+// expected data type should also be communicated to users, who should then
+// compare this with the authenticators that are part of the pipeline. For
+// example, assuming that the OIDC authenticator pushes a "subject" string
+// attribute and that we have a hypothetical "authprinter" processor that prints
+// the "username" to the console, this is how an OpenTelemetry Collector
+// configuration would look like:
+//
+//   extensions:
+//     oidc:
+//       issuer_url: http://localhost:8080/auth/realms/opentelemetry
+//       audience: collector
+//   receivers:
+//     otlp:
+//       protocols:
+//         grpc:
+//           auth:
+//             authenticator: oidc
+//   processors:
+//     authprinter:
+//       attribute: subject
+//   exporters:
+//     logging:
+//   service:
+//     extensions: [oidc]
+//     pipelines:
+//       traces:
+//         receivers: [otlp]
+//         processors: [authprinter]
+//         exporters: [logging]
 package client // import "go.opentelemetry.io/collector/client"
 
 import (
@@ -68,6 +104,25 @@ type Info struct {
 	// best-effort basis, and generally reliable for receivers making use of
 	// confighttp.ToServer and configgrpc.ToServerOption.
 	Addr net.Addr
+
+	// Auth information from the incoming request as provided by
+	// configauth.ServerAuthenticator implementations tied to the receiver for
+	// this connection.
+	Auth AuthData
+}
+
+// AuthData represents the authentication data as seen by authenticators tied to
+// the receivers.
+type AuthData interface {
+	// GetAttribute returns the value for the given attribute. Authenticator
+	// implementations might define different data types for different
+	// attributes. While "string" is used most of the time, a key named
+	// "membership" might return a list of strings.
+	GetAttribute(string) interface{}
+
+	// GetAttributes returns the names of all attributes in this authentication
+	// data.
+	GetAttributeNames() []string
 }
 
 // NewContext takes an existing context and derives a new context with the
@@ -91,7 +146,7 @@ func FromGRPC(ctx context.Context) (Info, bool) {
 	if p, ok := peer.FromContext(ctx); ok {
 		ip := parseIP(p.Addr.String())
 		if ip != nil {
-			return Info{ip}, true
+			return Info{Addr: ip}, true
 		}
 	}
 	return Info{}, false
@@ -103,7 +158,7 @@ func FromHTTP(r *http.Request) (Info, bool) {
 	if ip == nil {
 		return Info{}, false
 	}
-	return Info{ip}, true
+	return Info{Addr: ip}, true
 }
 
 func parseIP(source string) net.Addr {
