@@ -26,10 +26,8 @@ type ConfigSource interface {
 	configmapprovider.Provider
 }
 
-// ConfigSourceCreateSettings is passed to ExtensionFactory.Create* functions.
+// ConfigSourceCreateSettings is passed to CreateConfigSource functions.
 type ConfigSourceCreateSettings struct {
-	// BuildInfo can be used by components for informational purposes
-	BuildInfo BuildInfo
 }
 
 type ConfigSourceFactory interface {
