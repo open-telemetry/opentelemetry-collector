@@ -27,7 +27,7 @@ type fileMapProvider struct {
 }
 
 // NewFile returns a new MapProvider that reads the configuration from the given file.
-func NewFile(fileName string) MapProvider {
+func NewFile(fileName string) *fileMapProvider {
 	return &fileMapProvider{
 		fileName: fileName,
 	}
@@ -44,6 +44,21 @@ func (fmp *fileMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (R
 	}
 
 	return &simpleRetrieved{confMap: cp}, nil
+}
+
+func (fmp *fileMapProvider) RetrieveValue(_ context.Context, _ func(*ChangeEvent), selector string, paramsConfigMap *config.Map) (RetrievedValue, error) {
+	if selector == "" {
+		return nil, errors.New("config file not specified")
+	}
+
+	// TODO: support multiple file paths in selector (use some sort of delimiter).
+
+	cp, err := config.NewMapFromFile(selector)
+	if err != nil {
+		return nil, fmt.Errorf("error loading config file %q: %w", fmp.fileName, err)
+	}
+
+	return &simpleRetrievedValue{value: cp}, nil
 }
 
 func (*fileMapProvider) Shutdown(context.Context) error {

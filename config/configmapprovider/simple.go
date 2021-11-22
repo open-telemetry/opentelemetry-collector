@@ -49,3 +49,16 @@ func (sr *simpleRetrieved) Get(ctx context.Context) (*config.Map, error) {
 func (sr *simpleRetrieved) Close(ctx context.Context) error {
 	return nil
 }
+
+// TODO: This probably will make sense to be exported, but needs better name and documentation.
+type simpleRetrievedValue struct {
+	value interface{}
+}
+
+func (sr *simpleRetrievedValue) Get(ctx context.Context) (interface{}, error) {
+	return sr.value, nil
+}
+
+func (sr *simpleRetrievedValue) Close(ctx context.Context) error {
+	return nil
+}
