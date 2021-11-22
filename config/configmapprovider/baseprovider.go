@@ -22,8 +22,8 @@ import (
 // changes to the config map. Implementations may load the config from a file,
 // a database or any other source.
 type BaseProvider interface {
-	// Shutdown signals that the configuration for which this Shutdownable was used to
-	// retrieve values is no longer in use and the Shutdownable should close and release
+	// Shutdown signals that the configuration for which this BaseProvider was used to
+	// retrieve values is no longer in use and the BaseProvider should close and release
 	// any resources that it may have created.
 	//
 	// This method must be called when the Collector service ends, either in case of

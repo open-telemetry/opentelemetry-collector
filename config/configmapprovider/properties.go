@@ -29,7 +29,7 @@ type propertiesMapProvider struct {
 	properties []string
 }
 
-// NewProperties returns a Shutdownable, that provides a config.Map from the given properties.
+// NewProperties returns a Provider, that provides a config.Map from the given properties.
 //
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.

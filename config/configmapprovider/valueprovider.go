@@ -41,7 +41,7 @@ type ValueProvider interface {
 	Retrieve(ctx context.Context, onChange func(*ChangeEvent), selector string, paramsConfigMap *config.Map) (RetrievedValue, error)
 }
 
-// RetrievedValue holds the result of a call to the Retrieve method of a Shutdownable object.
+// RetrievedValue holds the result of a call to the Retrieve method of a ValueProvider object.
 //
 // The typical usage is the following:
 //
