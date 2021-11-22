@@ -65,14 +65,18 @@ const (
 	pipelinesKeyName = "pipelines"
 )
 
+type ConfigSourceSettings struct {
+	ConfigSources []map[string]map[string]interface{} `mapstructure:"config_sources"`
+	MergeConfigs  []string                            `mapstructure:"merge_configs"`
+}
+
 type configSettings struct {
-	Receivers     map[config.ComponentID]map[string]interface{} `mapstructure:"receivers"`
-	Processors    map[config.ComponentID]map[string]interface{} `mapstructure:"processors"`
-	Exporters     map[config.ComponentID]map[string]interface{} `mapstructure:"exporters"`
-	Extensions    map[config.ComponentID]map[string]interface{} `mapstructure:"extensions"`
-	ConfigSources map[config.ComponentID]map[string]interface{} `mapstructure:"config_sources"`
-	MergeConfigs  []string                                      `mapstructure:"merge_configs"`
-	Service       map[string]interface{}                        `mapstructure:"service"`
+	ConfigSourceSettings `mapstructure:",squash"`
+	Receivers            map[config.ComponentID]map[string]interface{} `mapstructure:"receivers"`
+	Processors           map[config.ComponentID]map[string]interface{} `mapstructure:"processors"`
+	Exporters            map[config.ComponentID]map[string]interface{} `mapstructure:"exporters"`
+	Extensions           map[config.ComponentID]map[string]interface{} `mapstructure:"extensions"`
+	Service              map[string]interface{}                        `mapstructure:"service"`
 }
 
 type defaultUnmarshaler struct{}

@@ -97,17 +97,12 @@ func (mp *defaultConfigProvider) Retrieve(
 	return &valueSubstitutor{onChange: onChange, retrieved: retrieved, configSources: configSources}, nil
 }
 
-type rootConfig struct {
-	ConfigSources []map[string]map[string]interface{} `mapstructure:"config_sources"`
-	MergeConfigs  []string                            `mapstructure:"merge_configs"`
-}
-
 func unmarshalSources(ctx context.Context, rootMap *config.Map, factories component.Factories) (
 	configSources map[config.ComponentID]configmapprovider.Provider,
 	mergeConfigs []string,
 	err error,
 ) {
-	var rootCfg rootConfig
+	var rootCfg configunmarshaler.ConfigSourceSettings
 	err = rootMap.Unmarshal(&rootCfg)
 	if err != nil {
 		return nil, nil, err
