@@ -76,16 +76,7 @@ func (mp *defaultConfigProvider) Retrieve(ctx context.Context, onChange func(eve
 		return nil, fmt.Errorf("cannot retrive the configuration: %w", err)
 	}
 
-	// Get list of value sources.
-	valueSources := map[config.ComponentID]configmapprovider.ValueProvider{}
-	for configSourceID, configSource := range configSources {
-		valueSource, ok := configSource.(configmapprovider.ValueProvider)
-		if ok {
-			valueSources[configSourceID] = valueSource
-		}
-	}
-
-	return &valueSourceSubstitutor{onChange: onChange, retrieved: retrieved, valueSources: valueSources}, nil
+	return &valueSourceSubstitutor{onChange: onChange, retrieved: retrieved, configSources: configSources}, nil
 }
 
 func unmarshalSources(ctx context.Context, rootMap *config.Map, factories component.Factories) (

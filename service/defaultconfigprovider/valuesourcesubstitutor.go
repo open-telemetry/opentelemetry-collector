@@ -32,9 +32,9 @@ type (
 )
 
 type valueSourceSubstitutor struct {
-	onChange     func(event *configmapprovider.ChangeEvent)
-	retrieved    configmapprovider.RetrievedConfig
-	valueSources map[config.ComponentID]configmapprovider.ValueProvider
+	onChange      func(event *configmapprovider.ChangeEvent)
+	retrieved     configmapprovider.RetrievedConfig
+	configSources map[config.ComponentID]configmapprovider.BaseProvider
 }
 
 func (vp *valueSourceSubstitutor) Get(ctx context.Context) (*config.Map, error) {
@@ -245,9 +245,14 @@ func (vp *valueSourceSubstitutor) retrieveConfigSourceData(ctx context.Context, 
 		return nil, err
 	}
 
-	valueSrc, ok := vp.valueSources[cfgSrcID]
+	configSrc, ok := vp.configSources[cfgSrcID]
 	if !ok {
 		return nil, newErrUnknownConfigSource(cfgSrcName)
+	}
+
+	valueSrc, ok := configSrc.(configmapprovider.ValueProvider)
+	if !ok {
+		return nil, fmt.Errorf("config source %q is not a ValueProvider, cannot use with ${%v:...} syntax", cfgSrcName, cfgSrcName)
 	}
 
 	cfgSrcName, selector, paramsConfigMap, err := parseCfgSrcInvocation(cfgSrcInvocation)
