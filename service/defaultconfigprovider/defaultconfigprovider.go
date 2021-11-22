@@ -45,49 +45,22 @@ func NewDefaultConfigProvider(configFlagValue string, properties []string, facto
 
 	configFlagParts := strings.SplitN(configFlagValue, ":", 2)
 	if len(configFlagParts) == 1 {
-		rootProvider = configmapprovider.NewLocal(configFlagValue, properties)
+		// The config flag value is just a config file name.
+		fileName := configFlagValue
+		rootProvider = configmapprovider.NewFile(fileName)
 	} else {
+		// The provider is specified directly on the command line. Create it.
 		var err error
-		rootProvider, err = createInlineMapProvider(configFlagParts[0], configFlagValue, factories)
+		rootProvider, err = createInlineMapProvider(configFlagValue, factories)
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	// Merge properties.
+	rootProvider = configmapprovider.NewMerge(rootProvider, configmapprovider.NewProperties(properties))
+
 	return &defaultConfigProvider{localRoot: rootProvider, factories: factories}, nil
-}
-
-func createInlineMapProvider(sourceType string, configFlagValue string, factories component.Factories) (configmapprovider.MapProvider, error) {
-	cfgSrcName, selector, paramsConfigMap, err := parseCfgSrcInvocation(configFlagValue)
-	if err != nil {
-		return nil, fmt.Errorf("invalid format for --config flag value")
-	}
-
-	factory, ok := factories.ConfigSources[config.Type(cfgSrcName)]
-	if !ok {
-		var allTypes []string
-		for t := range factories.ConfigSources {
-			allTypes = append(allTypes, string(t))
-		}
-		return nil, fmt.Errorf("unknown source type %q (try one of %s)", sourceType, strings.Join(allTypes, ","))
-	}
-
-	cfg := factory.CreateDefaultConfig()
-	configSource, err := factory.CreateConfigSource(context.Background(), component.ConfigSourceCreateSettings{}, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	valueProvider, ok := configSource.(configmapprovider.ValueProvider)
-	if !ok {
-		return nil, fmt.Errorf("config source %s cannot be used from command line because it is not a ValueProvider", sourceType)
-	}
-
-	return &mapFromValueProvider{
-		valueProvider:    valueProvider,
-		selector:         selector,
-		paramsConfigMap:  paramsConfigMap,
-		configSourceName: sourceType,
-	}, nil
 }
 
 func (mp *defaultConfigProvider) Retrieve(

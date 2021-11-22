@@ -49,7 +49,7 @@ func (m mapFromValueRetrieved) Get(ctx context.Context) (cfgMap *config.Map, err
 	case *config.Map:
 		cfgMap = v
 	default:
-		err = fmt.Errorf("config source %q returned invalid data (must return a string, []byte or a config.Map", m.configSourceName)
+		err = fmt.Errorf("config source %q returned invalid data (must return a string, []byte or *config.Map", m.configSourceName)
 	}
 
 	return cfgMap, err
