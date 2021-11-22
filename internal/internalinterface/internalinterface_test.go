@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internalinterface // import "go.opentelemetry.io/collector/internal/internalinterface"
+package internalinterface
 
 import (
 	"testing"

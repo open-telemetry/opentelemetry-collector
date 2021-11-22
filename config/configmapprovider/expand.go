@@ -16,6 +16,7 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"context"
+	"fmt"
 	"os"
 )
 
@@ -34,11 +35,11 @@ func NewExpand(base Provider) Provider {
 func (emp *expandMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
 	retr, err := emp.base.Retrieve(ctx, onChange)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve from base provider: %w", err)
 	}
 	cfgMap, err := retr.Get(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get from base provider retrieved: %w", err)
 	}
 	for _, k := range cfgMap.AllKeys() {
 		cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
