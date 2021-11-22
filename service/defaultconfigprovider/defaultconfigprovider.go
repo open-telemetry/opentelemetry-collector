@@ -43,8 +43,7 @@ type defaultConfigProvider struct {
 func NewDefaultConfigProvider(configFlagValue string, properties []string, factories component.Factories) (configmapprovider.MapProvider, error) {
 	var rootProvider configmapprovider.MapProvider
 
-	configFlagParts := strings.SplitN(configFlagValue, ":", 2)
-	if len(configFlagParts) == 1 {
+	if !isValueConfigSourceRef(configFlagValue) {
 		// The config flag value is just a config file name.
 		fileName := configFlagValue
 		rootProvider = configmapprovider.NewFile(fileName)
@@ -61,6 +60,10 @@ func NewDefaultConfigProvider(configFlagValue string, properties []string, facto
 	rootProvider = configmapprovider.NewMerge(rootProvider, configmapprovider.NewProperties(properties))
 
 	return &defaultConfigProvider{localRoot: rootProvider, factories: factories}, nil
+}
+
+func isValueConfigSourceRef(configSourceRef string) bool {
+	return strings.Contains(configSourceRef, ":")
 }
 
 func (mp *defaultConfigProvider) Retrieve(
@@ -86,20 +89,10 @@ func (mp *defaultConfigProvider) Retrieve(
 	// Iterate over all sources specified in the merge_configs section and create
 	// a provider for each.
 	var rootProviders []configmapprovider.MapProvider
-	for _, configSource := range mergeConfigs {
-		configSourceID, err := config.NewComponentIDFromString(configSource)
+	for _, configSourceRef := range mergeConfigs {
+		mapProvider, err := mp.getConfigSourceMapProvider(configSourceRef, configSources)
 		if err != nil {
 			return nil, err
-		}
-
-		configSource, ok := configSources[configSourceID]
-		if !ok {
-			return nil, fmt.Errorf("config source %q must be defined in config_sources section", configSource)
-		}
-
-		mapProvider, ok := configSource.(configmapprovider.MapProvider)
-		if !ok {
-			return nil, fmt.Errorf("config source %q cannot be used in merge_configs section since it does not implement MapProvider interface", configSource)
 		}
 
 		rootProviders = append(rootProviders, mapProvider)
@@ -113,10 +106,79 @@ func (mp *defaultConfigProvider) Retrieve(
 
 	retrieved, err := mp.mergedRoot.Retrieve(ctx, onChange)
 	if err != nil {
-		return nil, fmt.Errorf("cannot retrive the configuration: %w", err)
+		return nil, err
 	}
 
-	return &valueSubstitutor{onChange: onChange, retrieved: retrieved, configSources: configSources}, nil
+	return &valueSubstitutor{
+		onChange: onChange, retrieved: retrieved, configSources: configSources,
+	}, nil
+}
+
+func (mp *defaultConfigProvider) getConfigSourceMapProvider(
+	configSourceRef string, configSources map[config.ComponentID]configmapprovider.Provider,
+) (configmapprovider.MapProvider, error) {
+	if isValueConfigSourceRef(configSourceRef) {
+		cfgSrcName, selector, paramsConfigMap, err := parseCfgSrcInvocation(configSourceRef)
+		if err != nil {
+			return nil, err
+		}
+
+		configSource, err := mp.findConfigSource(cfgSrcName, configSources)
+		if err != nil {
+			return nil, err
+		}
+
+		valueProvider, ok := configSource.(configmapprovider.ValueProvider)
+		if !ok {
+			return nil, fmt.Errorf(
+				"config source %q cannot be used in merge_configs section since it does not implement ValueProvider interface",
+				configSource,
+			)
+		}
+
+		mapProvider := &mapFromValueProvider{
+			valueProvider:    valueProvider,
+			selector:         selector,
+			paramsConfigMap:  paramsConfigMap,
+			configSourceName: cfgSrcName,
+		}
+		return mapProvider, nil
+
+	} else {
+		configSource, err := mp.findConfigSource(configSourceRef, configSources)
+		if err != nil {
+			return nil, err
+		}
+
+		mapProvider, ok := configSource.(configmapprovider.MapProvider)
+		if !ok {
+			return nil, fmt.Errorf(
+				"config source %q cannot be used in merge_configs section since it does not implement MapProvider interface",
+				configSource,
+			)
+		}
+		return mapProvider, nil
+	}
+}
+
+func (mp *defaultConfigProvider) findConfigSource(
+	cfgSrcName string,
+	configSources map[config.ComponentID]configmapprovider.Provider,
+) (configmapprovider.Provider, error) {
+	configSourceID, err := config.NewComponentIDFromString(cfgSrcName)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"invalid ID in config source specifier %q: %w", cfgSrcName, err,
+		)
+	}
+
+	configSource, ok := configSources[configSourceID]
+	if !ok {
+		return nil, fmt.Errorf(
+			"config source %q must be defined in config_sources section", cfgSrcName,
+		)
+	}
+	return configSource, nil
 }
 
 func unmarshalSources(ctx context.Context, rootMap *config.Map, factories component.Factories) (
