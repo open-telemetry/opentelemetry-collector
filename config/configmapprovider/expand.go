@@ -18,15 +18,16 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type expandMapProvider struct {
-	base ConfigSource
+	base Provider
 }
 
 // NewExpand returns a Shutdownable, that expands all environment variables for a
 // config.Map provided by the given Shutdownable.
-func NewExpand(base ConfigSource) ConfigSource {
+func NewExpand(base Provider) Provider {
 	return &expandMapProvider{
 		base: base,
 	}
@@ -79,6 +80,12 @@ func expandStringValues(value interface{}) interface{} {
 }
 
 func expandEnv(s string) string {
+	if strings.Contains(s, ":") {
+		// This uses the extended syntax ${valuesrc:selector} which will be expanded
+		// later by ValueProvider substitutor, so don't touch it.
+		return s
+	}
+
 	return os.Expand(s, func(str string) string {
 		// This allows escaping environment variable substitution via $$, e.g.
 		// - $FOO will be substituted with env var FOO

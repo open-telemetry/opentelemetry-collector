@@ -1,4 +1,18 @@
-package configmapprovider
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
 
 import (
 	"context"
@@ -6,11 +20,11 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// ConfigSource is an interface that helps to retrieve a config map and watch for any
+// ValueProvider is an interface that helps to retrieve a config map and watch for any
 // changes to the config map. Implementations may load the config from a file,
 // a database or any other source.
-type ConfigSource interface {
-	Shutdownable
+type ValueProvider interface {
+	BaseProvider
 
 	// Retrieve goes to the configuration source and retrieves the selected data which
 	// contains the value to be injected in the configuration and the corresponding watcher that
@@ -24,10 +38,10 @@ type ConfigSource interface {
 	//
 	// If ctx is cancelled should return immediately with an error.
 	// Should never be called concurrently with itself or with Shutdown.
-	Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (RetrievedConfig, error)
+	Retrieve(ctx context.Context, onChange func(*ChangeEvent), selector string, paramsConfigMap *config.Map) (RetrievedValue, error)
 }
 
-// RetrievedConfig holds the result of a call to the Retrieve method of a ConfigSource object.
+// RetrievedValue holds the result of a call to the Retrieve method of a Shutdownable object.
 //
 // The typical usage is the following:
 //
@@ -42,13 +56,13 @@ type ConfigSource interface {
 //		// repeat Retrieve/Get/wait/Close cycle until it is time to shut down the Collector process.
 //		// ...
 //		mapProvider.Shutdown()
-type RetrievedConfig interface {
+type RetrievedValue interface {
 	// Get returns the config Map.
 	// If Close is called before Get or concurrently with Get then Get
 	// should return immediately with ErrSessionClosed error.
 	// Should never be called concurrently with itself.
 	// If ctx is cancelled should return immediately with an error.
-	Get(ctx context.Context) (*config.Map, error)
+	Get(ctx context.Context) (interface{}, error)
 
 	// Close signals that the configuration for which it was used to retrieve values is
 	// no longer in use and the object should close and release any watchers that it

@@ -71,7 +71,7 @@ type configSettings struct {
 	Exporters     map[config.ComponentID]map[string]interface{} `mapstructure:"exporters"`
 	Extensions    map[config.ComponentID]map[string]interface{} `mapstructure:"extensions"`
 	ConfigSources map[config.ComponentID]map[string]interface{} `mapstructure:"config_sources"`
-	ValueSources  map[config.ComponentID]map[string]interface{} `mapstructure:"value_sources"`
+	MergeConfigs  []string                                      `mapstructure:"merge_configs"`
 	Service       map[string]interface{}                        `mapstructure:"service"`
 }
 

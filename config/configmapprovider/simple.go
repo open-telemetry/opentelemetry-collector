@@ -33,7 +33,7 @@ func (s simpleProvider) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func NewSimple(confMap *config.Map) ConfigSource {
+func NewSimple(confMap *config.Map) Provider {
 	return &simpleProvider{confMap: confMap}
 }
 

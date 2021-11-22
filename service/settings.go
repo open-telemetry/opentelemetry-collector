@@ -64,7 +64,7 @@ type CollectorSettings struct {
 	// from a config file define by the --config command line flag and overrides component's configuration
 	// properties supplied via --set command line flag.
 	// If the provider is configmapprovider.WatchableRetrieved, collector may reload the configuration upon error.
-	ConfigMapProvider configmapprovider.ConfigSource
+	ConfigMapProvider configmapprovider.Provider
 
 	// ConfigUnmarshaler unmarshalls the configuration's Parser into the service configuration.
 	// If it is not provided a default unmarshaler is used.

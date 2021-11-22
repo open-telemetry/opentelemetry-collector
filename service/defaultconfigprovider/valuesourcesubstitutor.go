@@ -34,7 +34,7 @@ type (
 type valueSourceSubstitutor struct {
 	onChange     func(event *configmapprovider.ChangeEvent)
 	retrieved    configmapprovider.RetrievedConfig
-	valueSources map[config.ComponentID]configmapprovider.ValueSource
+	valueSources map[config.ComponentID]configmapprovider.ValueProvider
 }
 
 func (vp *valueSourceSubstitutor) Get(ctx context.Context) (*config.Map, error) {

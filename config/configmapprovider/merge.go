@@ -25,13 +25,13 @@ import (
 // TODO: Add support to "merge" watchable interface.
 
 type mergeMapProvider struct {
-	providers []ConfigSource
+	providers []Provider
 }
 
-// NewMerge returns a Shutdownable, that merges the result from multiple Shutdownable.
+// NewMerge returns a Provider, that merges the result from multiple Provider(s).
 //
 // The ConfigMaps are merged in the given order, by merging all of them in order into an initial empty map.
-func NewMerge(ps ...ConfigSource) ConfigSource {
+func NewMerge(ps ...Provider) Provider {
 	return &mergeMapProvider{providers: ps}
 }
 

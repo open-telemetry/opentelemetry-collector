@@ -23,28 +23,17 @@ import (
 
 // ConfigSource is
 type ConfigSource interface {
-	configmapprovider.Shutdownable
+	configmapprovider.BaseProvider
 }
 
 // ConfigSourceCreateSettings is passed to ExtensionFactory.Create* functions.
 type ConfigSourceCreateSettings struct {
-	//TelemetrySettings
-
 	// BuildInfo can be used by components for informational purposes
 	BuildInfo BuildInfo
 }
 
-type ConfigSourceFactoryBase interface {
+type ConfigSourceFactory interface {
 	Factory
 	CreateDefaultConfig() config.ConfigSource
-}
-
-type ConfigSourceFactory interface {
-	ConfigSourceFactoryBase
-	CreateConfigSource(ctx context.Context, set ConfigSourceCreateSettings, cfg config.ConfigSource) (configmapprovider.ConfigSource, error)
-}
-
-type ValueSourceFactory interface {
-	ConfigSourceFactoryBase
-	CreateValueSource(ctx context.Context, set ConfigSourceCreateSettings, cfg config.ConfigSource) (configmapprovider.ValueSource, error)
+	CreateConfigSource(ctx context.Context, set ConfigSourceCreateSettings, cfg config.ConfigSource) (configmapprovider.BaseProvider, error)
 }

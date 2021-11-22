@@ -26,7 +26,7 @@ type inMemoryMapProvider struct {
 }
 
 // NewInMemory returns a new Shutdownable that reads the configuration, from the provided buffer, as YAML.
-func NewInMemory(buf io.Reader) ConfigSource {
+func NewInMemory(buf io.Reader) BaseProvider {
 	return &inMemoryMapProvider{buf: buf}
 }
 

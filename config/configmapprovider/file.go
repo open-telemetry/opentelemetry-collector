@@ -27,7 +27,7 @@ type fileMapProvider struct {
 }
 
 // NewFile returns a new Shutdownable that reads the configuration from the given file.
-func NewFile(fileName string) ConfigSource {
+func NewFile(fileName string) Provider {
 	return &fileMapProvider{
 		fileName: fileName,
 	}

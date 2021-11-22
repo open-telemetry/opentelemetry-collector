@@ -16,9 +16,8 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 // NewLocal returns the default Shutdownable, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func NewLocal(configFileName string, properties []string) ConfigSource {
-	return NewExpand(
-		NewMerge(
-			NewFile(configFileName),
-			NewProperties(properties)))
+func NewLocal(configFileName string, properties []string) Provider {
+	return NewMerge(
+		NewFile(configFileName),
+		NewProperties(properties))
 }
