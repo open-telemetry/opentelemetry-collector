@@ -131,7 +131,10 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 
 func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Collector, error) {
 	if set.ConfigMapProvider == nil {
-		set.ConfigMapProvider = NewDefaultConfigProvider(getConfigFlag(), getSetFlag(), set.Factories)
+		set.ConfigMapProvider, err = NewDefaultConfigProvider(getConfigFlag(), getSetFlag(), set.Factories)
+		if err != nil {
+			return nil, err
+		}
 	}
 	set.LoggingOptions = append(
 		set.LoggingOptions,
