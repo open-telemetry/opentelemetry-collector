@@ -62,6 +62,7 @@ type RetrievedValue interface {
 	// should return immediately with ErrSessionClosed error.
 	// Should never be called concurrently with itself.
 	// If ctx is cancelled should return immediately with an error.
+	// TODO: use a more specific type for return value instead of interface{}.
 	Get(ctx context.Context) (interface{}, error)
 
 	// Close signals that the configuration for which it was used to retrieve values is
