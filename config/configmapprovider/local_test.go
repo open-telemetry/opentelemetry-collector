@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-func TestDefaultMapProvider(t *testing.T) {
+func TestLocalMapProvider(t *testing.T) {
 	mp := NewLocal("testdata/default-config.yaml", nil)
 	retr, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ exporters:
 	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
-func TestDefaultMapProvider_AddNewConfig(t *testing.T) {
+func TestLocalMapProvider_AddNewConfig(t *testing.T) {
 	mp := NewLocal("testdata/default-config.yaml", []string{"processors.batch.timeout=2s"})
 	cp, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
@@ -64,7 +64,7 @@ exporters:
 	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
-func TestDefaultMapProvider_OverwriteConfig(t *testing.T) {
+func TestLocalMapProvider_OverwriteConfig(t *testing.T) {
 	mp := NewLocal(
 		"testdata/default-config.yaml",
 		[]string{"processors.batch.timeout=2s", "exporters.otlp.endpoint=localhost:1234"})
@@ -86,7 +86,7 @@ exporters:
 	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
-func TestDefaultMapProvider_InexistentFile(t *testing.T) {
+func TestLocalMapProvider_InexistentFile(t *testing.T) {
 	mp := NewLocal("testdata/otelcol-config.yaml", nil)
 	require.NotNil(t, mp)
 	_, err := mp.Retrieve(context.Background(), nil)
@@ -95,7 +95,7 @@ func TestDefaultMapProvider_InexistentFile(t *testing.T) {
 	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
-func TestDefaultMapProvider_EmptyFileName(t *testing.T) {
+func TestLocalMapProvider_EmptyFileName(t *testing.T) {
 	mp := NewLocal("", nil)
 	_, err := mp.Retrieve(context.Background(), nil)
 	require.Error(t, err)

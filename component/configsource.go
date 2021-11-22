@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmapprovider"
 )
 
-// ConfigSource is
+// ConfigSource is a component that provides a configuration map or value.
 type ConfigSource interface {
 	configmapprovider.Provider
 }

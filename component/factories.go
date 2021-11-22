@@ -35,6 +35,7 @@ type Factories struct {
 	// Extensions maps extension type names in the config to the respective factory.
 	Extensions map[config.Type]ExtensionFactory
 
+	// ConfigSources maps config source type names in the config to the respective factory.
 	ConfigSources map[config.Type]ConfigSourceFactory
 }
 

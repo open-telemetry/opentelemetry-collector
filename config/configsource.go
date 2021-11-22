@@ -14,8 +14,9 @@
 
 package config // import "go.opentelemetry.io/collector/config"
 
-// ConfigSource is the configuration of a component.ConfigSource. Specific ConfigSources must implement
-// this interface and must embed ConfigSourceSettings struct or a struct that extends it.
+// ConfigSource is the configuration of a component.ConfigSource.
+// Specific ConfigSources must implement this interface and must embed
+// ConfigSourceSettings struct or a struct that extends it.
 type ConfigSource interface {
 	identifiable
 	validatable
