@@ -89,14 +89,14 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 
 	assert.Eventually(t, func() bool {
 		return Running == col.GetState()
-	}, time.Second*2, time.Second)
+	}, time.Second*2, time.Millisecond*200)
 
 	col.Shutdown()
 	col.Shutdown()
 	<-colDone
 	assert.Eventually(t, func() bool {
 		return Closed == col.GetState()
-	}, time.Second*2, time.Second)
+	}, time.Second*2, time.Millisecond*200)
 }
 
 func TestCollector_Start(t *testing.T) {
@@ -132,7 +132,7 @@ func TestCollector_Start(t *testing.T) {
 
 	assert.Eventually(t, func() bool {
 		return Running == col.GetState()
-	}, time.Second*2, time.Second)
+	}, time.Second*2, time.Millisecond*200)
 	assert.Equal(t, col.logger, col.GetLogger())
 	assert.True(t, loggingHookCalled)
 
@@ -153,7 +153,7 @@ func TestCollector_Start(t *testing.T) {
 	<-colDone
 	assert.Eventually(t, func() bool {
 		return Closed == col.GetState()
-	}, time.Second*2, time.Second)
+	}, time.Second*2, time.Millisecond*200)
 }
 
 type mockColTelemetry struct{}
@@ -190,12 +190,12 @@ func TestCollector_ReportError(t *testing.T) {
 
 	assert.Eventually(t, func() bool {
 		return Running == col.GetState()
-	}, time.Second*2, time.Second)
+	}, time.Second*2, time.Millisecond*200)
 	col.service.ReportFatalError(errors.New("err2"))
 	<-colDone
 	assert.Eventually(t, func() bool {
 		return Closed == col.GetState()
-	}, time.Second*2, time.Second)
+	}, time.Second*2, time.Millisecond*200)
 }
 
 func assertMetrics(t *testing.T, prefix string, metricsPort uint16, mandatoryLabels []string) {
