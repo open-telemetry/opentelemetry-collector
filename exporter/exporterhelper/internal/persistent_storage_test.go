@@ -216,7 +216,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 	ext := createStorageExtension(path)
 	wq := createTestQueue(ext, 5000)
 	require.Equal(t, 0, wq.Size())
-	ext.Shutdown(context.Background())
+	require.NoError(t, ext.Shutdown(context.Background()))
 }
 
 func TestPersistentStorage_EmptyRequest(t *testing.T) {
@@ -279,7 +279,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 				req := ps.get()
 				require.NotNil(bb, req)
 			}
-			ext.Shutdown(context.Background())
+			require.NoError(b, ext.Shutdown(context.Background()))
 		})
 	}
 }

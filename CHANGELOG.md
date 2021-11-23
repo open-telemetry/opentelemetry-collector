@@ -7,10 +7,15 @@
 - Support `Snappy` and `Zstd` for confighttp.go (#4441)
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 - Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
+- Make state information propagation non-blocking on the collector (#4460)
 
 ## 💡 Enhancements 💡
 
 - Add semconv 1.7.0 and 1.8.0 (#4452)
+
+## 💡 Enhancements 💡
+
+- Added `feature-gates` CLI flag for controlling feature gate state. (#4368)
 
 ## v0.39.0 Beta
 
