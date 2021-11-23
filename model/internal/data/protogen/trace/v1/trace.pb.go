@@ -421,7 +421,9 @@ type Span struct {
 	// This makes it easier to correlate spans in different traces.
 	//
 	// This field is semantically required to be set to non-empty string.
-	// Empty value is equivalent to an unknown span name.
+	// When null or empty string received - receiver may use string "name"
+	// as a replacement. There might be smarted algorithms implemented by
+	// receiver to fix the empty span name.
 	//
 	// This field is required.
 	Name string `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
