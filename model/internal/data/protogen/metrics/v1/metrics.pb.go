@@ -3229,14 +3229,11 @@ func (m *HistogramDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x32
 	}
-	if m.XSum != nil {
-		{
-			size := m.XSum.Size()
-			i -= size
-			if _, err := m.XSum.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-		}
+	if m.Sum != nil {
+		i -= 8
+		encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(*m.Sum))))
+		i--
+		dAtA[i] = 0x29
 	}
 	if m.Count != 0 {
 		i -= 8
@@ -3273,19 +3270,6 @@ func (m *HistogramDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *HistogramDataPoint_Sum) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *HistogramDataPoint_Sum) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	i -= 8
-	encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.Sum))))
-	i--
-	dAtA[i] = 0x29
-	return len(dAtA) - i, nil
-}
 func (m *ExponentialHistogramDataPoint) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -4404,8 +4388,8 @@ func (m *HistogramDataPoint) Size() (n int) {
 	if m.Count != 0 {
 		n += 9
 	}
-	if m.XSum != nil {
-		n += m.XSum.Size()
+	if m.Sum != nil {
+		n += 9
 	}
 	if len(m.BucketCounts) > 0 {
 		n += 1 + sovMetrics(uint64(len(m.BucketCounts)*8)) + len(m.BucketCounts)*8
@@ -4431,15 +4415,6 @@ func (m *HistogramDataPoint) Size() (n int) {
 	return n
 }
 
-func (m *HistogramDataPoint_Sum) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	n += 9
-	return n
-}
 func (m *ExponentialHistogramDataPoint) Size() (n int) {
 	if m == nil {
 		return 0
@@ -6390,7 +6365,8 @@ func (m *HistogramDataPoint) Unmarshal(dAtA []byte) error {
 			}
 			v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
 			iNdEx += 8
-			m.XSum = &HistogramDataPoint_Sum{float64(math.Float64frombits(v))}
+			v2 := float64(math.Float64frombits(v))
+			m.Sum = &v2
 		case 6:
 			if wireType == 1 {
 				var v uint64
