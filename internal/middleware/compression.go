@@ -35,17 +35,42 @@ const (
 	CompressionZstd       = "zstd"
 )
 
-type (
-	CompressRoundTripper struct {
-		RoundTripper    http.RoundTripper
-		CompressionType string
-	}
-)
+type CompressRoundTripper struct {
+	RoundTripper    http.RoundTripper
+	CompressionType string
+	Writer          func(*bytes.Buffer) (io.WriteCloser, error)
+}
 
 func NewCompressRoundTripper(rt http.RoundTripper, compressionType string) *CompressRoundTripper {
 	return &CompressRoundTripper{
 		RoundTripper:    rt,
 		CompressionType: compressionType,
+		Writer:          writerFactory(compressionType),
+	}
+}
+
+func writerFactory(compressionType string) func(*bytes.Buffer) (io.WriteCloser, error) {
+	switch compressionType {
+	case CompressionGzip:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return gzip.NewWriter(buf), nil
+		}
+	case CompressionSnappy:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return snappy.NewBufferedWriter(buf), nil
+		}
+	case CompressionZstd:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return zstd.NewWriter(buf)
+		}
+	case CompressionZlib, CompressionDeflate:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return zlib.NewWriter(buf), nil
+		}
+	default:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return nil, fmt.Errorf("unsupported compression type %q", compressionType)
+		}
 	}
 }
 
@@ -60,7 +85,7 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Compress the body.
 	buf := bytes.NewBuffer([]byte{})
-	compressWriter, writerErr := newCompressorWriter(buf, r.CompressionType)
+	compressWriter, writerErr := r.Writer(buf)
 	if writerErr != nil {
 		return nil, writerErr
 	}
@@ -91,21 +116,6 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	cReq.Header.Add(headerContentEncoding, r.CompressionType)
 
 	return r.RoundTripper.RoundTrip(cReq)
-}
-
-func newCompressorWriter(buf *bytes.Buffer, compressionType string) (io.WriteCloser, error) {
-	switch compressionType {
-	case CompressionGzip:
-		return gzip.NewWriter(buf), nil
-	case CompressionSnappy:
-		return snappy.NewBufferedWriter(buf), nil
-	case CompressionZstd:
-		return zstd.NewWriter(buf)
-	case CompressionZlib, CompressionDeflate:
-		return zlib.NewWriter(buf), nil
-	default:
-		return nil, fmt.Errorf("unsupported compression type %q", compressionType)
-	}
 }
 
 type ErrorHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)

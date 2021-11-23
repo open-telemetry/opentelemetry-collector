@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -30,6 +31,28 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/internal/middleware"
+)
+
+type CompressionType string
+
+const (
+	CompressionUnsupported CompressionType = ""
+	CompressionGzip        CompressionType = "gzip"
+	CompressionZlib        CompressionType = "zlib"
+	CompressionDeflate     CompressionType = "deflate"
+	CompressionSnappy      CompressionType = "snappy"
+	CompressionZstd        CompressionType = "zstd"
+)
+
+var (
+	// HTTPCompressionKeyMap is the map of OpenTelemetry compression types to HTTP registered compression types.
+	HTTPCompressionKeyMap = map[CompressionType]string{
+		CompressionGzip:    "gzip",
+		CompressionZlib:    "zlib",
+		CompressionDeflate: "deflate",
+		CompressionSnappy:  "snappy",
+		CompressionZstd:    "zstd",
+	}
 )
 
 // HTTPClientSettings defines settings for creating an HTTP client.
@@ -91,7 +114,11 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting Gzip, zlib, snappy, and zstd.
 	if hcs.Compression != "" {
-		clientTransport = middleware.NewCompressRoundTripper(clientTransport, hcs.Compression)
+		if compressionKey := getHTTPCompressionKey(hcs.Compression); compressionKey != CompressionUnsupported {
+			clientTransport = middleware.NewCompressRoundTripper(clientTransport, string(compressionKey))
+		} else {
+			return nil, fmt.Errorf("unsupported compression type %q", hcs.Compression)
+		}
 	}
 
 	if hcs.Auth != nil {
@@ -233,4 +260,12 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 	return &http.Server{
 		Handler: handler,
 	}
+}
+
+func getHTTPCompressionKey(compressionType string) CompressionType {
+	compressionKey := strings.ToLower(compressionType)
+	if encodingKey, ok := HTTPCompressionKeyMap[CompressionType(compressionKey)]; ok {
+		return CompressionType(encodingKey)
+	}
+	return CompressionUnsupported
 }
