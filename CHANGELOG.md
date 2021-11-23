@@ -12,6 +12,10 @@
 
 - Add semconv 1.7.0 and 1.8.0 (#4452)
 
+## 💡 Enhancements 💡
+
+- Added `feature-gates` CLI flag for controlling feature gate state. (#4368)
+
 ## v0.39.0 Beta
 
 ## 🛑 Breaking changes 🛑
