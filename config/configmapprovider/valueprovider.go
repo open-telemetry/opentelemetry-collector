@@ -20,24 +20,35 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// ValueProvider is an interface that helps to retrieve a config value and watch for any
-// changes to the config value. Implementations may load the config from a file,
-// a database or any other source.
+// ValueProvider is an interface that helps to retrieve config values. Config values
+// can be either a primitive value, such as string or number or a config.Map - a map
+// of key/values. One ValueProvider may allow retrieving one or more values from the
+// the same source (values are identified by the "selector", see below).
+// ValueProvider allows to watch for any changes to the config values.
+// Implementations may load the config value from a file, a database or any other source.
 type ValueProvider interface {
 	Provider
 
-	// RetrieveValue goes to the configuration source and retrieves the selected data which
-	// contains the value to be injected in the configuration and the corresponding watcher that
-	// will be used to monitor for updates of the retrieved value.
+	// RetrieveValue goes to the configuration source and retrieves the selected data
+	// which contains the value to be injected in the configuration.
 	//
-	// onChange callback is called when the config changes. onChange may be called from
+	// onChange callback is called when the config value changes. onChange may be called from
 	// a different go routine. After onChange is called Retrieved.Get should be called
-	// to get the new config. See description of Retrieved for more details.
+	// to get the new config value. See description of RetrievedValue for more details.
 	// onChange may be nil, which indicates that the caller is not interested in
 	// knowing about the changes.
 	//
 	// If ctx is cancelled should return immediately with an error.
 	// Should never be called concurrently with itself or with Shutdown.
+	//
+	// selector is an implementation-defined string which identifies which of the
+	// values that the provider has to retrieve. For example for a ValueProvider that
+	// retrieves values from process environment the selector may be the environment
+	// variable name.
+	// paramsConfigMap is any additional implementation-defined key/value map to
+	// pass to the ValueProvider to help retrieve the value. For example for a
+	// ValueProvider that retrieves values from an HTTP source the paramsConfigMap
+	// may contain HTTP URL query parameters.
 	RetrieveValue(ctx context.Context, onChange func(*ChangeEvent), selector string, paramsConfigMap *config.Map) (RetrievedValue, error)
 }
 
@@ -57,7 +68,8 @@ type ValueProvider interface {
 //		// ...
 //		mapProvider.Shutdown()
 type RetrievedValue interface {
-	// Get returns the config Map.
+	// Get returns the config value, which should be either a primitive value,
+	// such as string or number or a *config.Map.
 	// If Close is called before Get or concurrently with Get then Get
 	// should return immediately with ErrSessionClosed error.
 	// Should never be called concurrently with itself.
