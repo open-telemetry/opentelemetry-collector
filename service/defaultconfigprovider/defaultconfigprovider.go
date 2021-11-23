@@ -90,7 +90,8 @@ func (mp *defaultConfigProvider) Retrieve(
 	// a provider for each.
 	var rootProviders []configmapprovider.MapProvider
 	for _, configSourceRef := range mergeConfigs {
-		mapProvider, err := mp.getConfigSourceMapProvider(configSourceRef, configSources)
+		var mapProvider configmapprovider.MapProvider
+		mapProvider, err = mp.getConfigSourceMapProvider(configSourceRef, configSources)
 		if err != nil {
 			return nil, err
 		}
@@ -143,22 +144,22 @@ func (mp *defaultConfigProvider) getConfigSourceMapProvider(
 			configSourceName: cfgSrcName,
 		}
 		return mapProvider, nil
-
-	} else {
-		configSource, err := mp.findConfigSource(configSourceRef, configSources)
-		if err != nil {
-			return nil, err
-		}
-
-		mapProvider, ok := configSource.(configmapprovider.MapProvider)
-		if !ok {
-			return nil, fmt.Errorf(
-				"config source %q cannot be used in merge_configs section since it does not implement MapProvider interface",
-				configSource,
-			)
-		}
-		return mapProvider, nil
 	}
+
+	configSource, err := mp.findConfigSource(configSourceRef, configSources)
+	if err != nil {
+		return nil, err
+	}
+
+	mapProvider, ok := configSource.(configmapprovider.MapProvider)
+	if !ok {
+		return nil, fmt.Errorf(
+			"config source %q cannot be used in merge_configs section since it does not implement MapProvider interface",
+			configSource,
+		)
+	}
+	return mapProvider, nil
+
 }
 
 func (mp *defaultConfigProvider) findConfigSource(
@@ -204,27 +205,22 @@ func unmarshalSources(ctx context.Context, rootMap *config.Map, factories compon
 			sourceType := id.Type()
 
 			// See if we have a factory for this config source type.
-			factoryBase, ok := factories.ConfigSources[sourceType]
+			factory, ok := factories.ConfigSources[sourceType]
 			if !ok {
 				return nil, nil, fmt.Errorf("unknown config source type %q (did you register the config source factory?)", sourceType)
 			}
 
-			cfg := factoryBase.CreateDefaultConfig()
+			cfg := factory.CreateDefaultConfig()
 			cfg.SetIDName(sourceName)
 
 			// Now that the default config struct is created we can Unmarshal into it,
 			// and it will apply user-defined config on top of the default.
-			if err := configunmarshaler.Unmarshal(config.NewMapFromStringMap(settings), cfg); err != nil {
+			if err = configunmarshaler.Unmarshal(config.NewMapFromStringMap(settings), cfg); err != nil {
 				return nil, nil, fmt.Errorf("error reading config of config source %q: %w", sourceType, err)
 			}
 
-			if err := cfg.Validate(); err != nil {
+			if err = cfg.Validate(); err != nil {
 				return nil, nil, fmt.Errorf("config of config source %q is invalid: %w", sourceType, err)
-			}
-
-			factory, ok := factoryBase.(component.ConfigSourceFactory)
-			if !ok {
-				return nil, nil, fmt.Errorf("config source %q does not implement ConfigSourceFactory", sourceType)
 			}
 
 			source, err := factory.CreateConfigSource(ctx, component.ConfigSourceCreateSettings{}, cfg)

@@ -9,9 +9,10 @@ import (
 	"strings"
 
 	"github.com/spf13/cast"
+	"gopkg.in/yaml.v2"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmapprovider"
-	"gopkg.in/yaml.v2"
 )
 
 const (

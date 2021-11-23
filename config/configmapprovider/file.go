@@ -22,18 +22,18 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-type fileMapProvider struct {
+type FileMapProvider struct {
 	fileName string
 }
 
 // NewFile returns a new MapProvider that reads the configuration from the given file.
-func NewFile(fileName string) *fileMapProvider {
-	return &fileMapProvider{
+func NewFile(fileName string) *FileMapProvider {
+	return &FileMapProvider{
 		fileName: fileName,
 	}
 }
 
-func (fmp *fileMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (RetrievedMap, error) {
+func (fmp *FileMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (RetrievedMap, error) {
 	if fmp.fileName == "" {
 		return nil, errors.New("config file not specified")
 	}
@@ -46,7 +46,7 @@ func (fmp *fileMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (R
 	return &simpleRetrieved{confMap: cp}, nil
 }
 
-func (fmp *fileMapProvider) RetrieveValue(_ context.Context, _ func(*ChangeEvent), selector string, paramsConfigMap *config.Map) (RetrievedValue, error) {
+func (fmp *FileMapProvider) RetrieveValue(_ context.Context, _ func(*ChangeEvent), selector string, paramsConfigMap *config.Map) (RetrievedValue, error) {
 	if selector == "" {
 		return nil, errors.New("config file not specified")
 	}
@@ -61,6 +61,6 @@ func (fmp *fileMapProvider) RetrieveValue(_ context.Context, _ func(*ChangeEvent
 	return &simpleRetrievedValue{value: cp}, nil
 }
 
-func (*fileMapProvider) Shutdown(context.Context) error {
+func (*FileMapProvider) Shutdown(context.Context) error {
 	return nil
 }

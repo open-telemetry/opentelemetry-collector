@@ -43,7 +43,7 @@ func (r retrieved) Get(ctx context.Context) (interface{}, error) {
 		for k, v := range r.paramsConfigMap.ToStringMap() {
 			str, ok := v.(string)
 			if !ok {
-				return nil, fmt.Errorf("invalid value for paramter %q", k)
+				return nil, fmt.Errorf("invalid value for parameter %q", k)
 			}
 			queryVals.Set(k, str)
 		}
@@ -54,7 +54,12 @@ func (r retrieved) Get(ctx context.Context) (interface{}, error) {
 		}
 	}
 
-	resp, err := http.Get(urlStr)
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, fmt.Errorf("cannot load config from %s: %w", urlStr, err)
+	}
+
+	resp, err := http.Get(u.String())
 	if err != nil {
 		return nil, fmt.Errorf("cannot load config from %s: %w", urlStr, err)
 	}

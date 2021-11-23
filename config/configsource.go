@@ -17,7 +17,7 @@ package config // import "go.opentelemetry.io/collector/config"
 // ConfigSource is the configuration of a component.ConfigSource.
 // Specific ConfigSources must implement this interface and must embed
 // ConfigSourceSettings struct or a struct that extends it.
-type ConfigSource interface {
+type ConfigSource interface { //nolint
 	identifiable
 	validatable
 
@@ -30,7 +30,7 @@ type ConfigSource interface {
 // It is highly recommended to "override" the Validate() function.
 //
 // When embedded in the ConfigSource config, it must be with `mapstructure:",squash"` tag.
-type ConfigSourceSettings struct {
+type ConfigSourceSettings struct { //nolint
 	id ComponentID `mapstructure:"-"`
 }
 

@@ -22,13 +22,13 @@ import (
 
 // mockProvider is a mock implementation of Provider, useful for testing.
 type mockProvider struct {
-	retrieved   Retrieved
+	retrieved   RetrievedMap
 	retrieveErr error
 }
 
 var _ Provider = &mockProvider{}
 
-func (m *mockProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
+func (m *mockProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (RetrievedMap, error) {
 	return m.retrieved, m.retrieveErr
 }
 
@@ -39,7 +39,7 @@ type mockRetrieved struct {
 	getErr error
 }
 
-var _ Retrieved = &mockRetrieved{}
+var _ RetrievedMap = &mockRetrieved{}
 
 func (sr *mockRetrieved) Get(ctx context.Context) (*config.Map, error) {
 	return sr.got, sr.getErr

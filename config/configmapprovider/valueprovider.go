@@ -83,7 +83,7 @@ type RetrievedValue interface {
 	//
 	// This method must be called when the service ends, either in case of success or error.
 	//
-	// Should never be called concurrently with itself.
+	// Should never be called concurrentdefaultconfigprovidery with itself.
 	// May be called before, after or concurrently with Get.
 	// If ctx is cancelled should return immediately with an error.
 	//

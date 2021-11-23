@@ -16,6 +16,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"github.com/spf13/cobra"
+
 	"go.opentelemetry.io/collector/service/defaultconfigprovider"
 )
 
