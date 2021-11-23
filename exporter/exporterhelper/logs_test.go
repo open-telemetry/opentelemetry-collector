@@ -127,7 +127,7 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rCfg := DefaultRetrySettings()
 	qCfg := DefaultQueueSettings()
@@ -141,7 +141,8 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	md := testdata.GenerateLogsTwoLogRecordsSameResourceOneDifferent()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		te.ConsumeLogs(context.Background(), md)
+		// errors are checked in the checkExporterEnqueueFailedLogsStats function below.
+		_ = te.ConsumeLogs(context.Background(), md)
 	}
 
 	// 2 batched must be in queue, and 5 batches (15 log records) rejected due to queue overflow
@@ -207,7 +208,7 @@ func newPushLogsData(retError error) consumerhelper.ConsumeLogsFunc {
 func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter, wantError error) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 	const numBatches = 7

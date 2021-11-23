@@ -40,7 +40,7 @@ var (
 func TestCheckReceiverTracesViews(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             receiver,
@@ -60,7 +60,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 func TestCheckReceiverMetricsViews(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             receiver,
@@ -80,7 +80,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 func TestCheckReceiverLogsViews(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             receiver,
@@ -100,7 +100,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 func TestCheckExporterTracesViews(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
@@ -120,7 +120,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 func TestCheckExporterMetricsViews(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
@@ -140,7 +140,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 func TestCheckExporterLogsViews(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
 		Level:                  configtelemetry.LevelNormal,
