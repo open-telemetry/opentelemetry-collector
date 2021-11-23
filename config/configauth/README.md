@@ -1,11 +1,11 @@
 # Authentication configuration
 
-This module defines necessary interfaces to implement 
+This module defines necessary interfaces to implement server and client type authenticators:
 
-- Server type authenticators for gRPC and HTTP receivers to perform authentication for requests and/or RPCs. Each server type is responsible for getting the request/RPC metadata and passing down to the authenticator.
-- Client type authenticators for gRPC and HTTP exporters to perform client side authentication. 
+- Server type authenticators perform authentication for incoming HTTP/gRPC requests and are typically used in receivers.
+- Client type authenticators perform client-side authentication for outgoing HTTP/gRPC requests and are typically used in exporters.
 
-Few such authenticators that are implemented currently:
+The currently known authenticators are:
 
 - Server Authenticators
   - [oidc](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oidcauthextension)
@@ -60,6 +60,6 @@ receivers:
 
 ## Creating an authenticator
 
-New server side authenticators can be added by creating a new extension that also implements the `configauth.ServerAuthenticator` extension and similarly a client side authenticator can be added by implementing `configauth.ClientAuthenticator` interface.
+New authenticators can be added by creating a new extension that also implements the appropriate interface (`configauth.ServerAuthenticator` or `configauth.ClientAuthenticator`).
 
-Generic authenticators that may be used by a good number of users might be accepted as part of the core distribution, or as part of the contrib distribution. If you have interest in contributing one authenticator, open an issue with your proposal. For other cases, you'll need to include your custom authenticator as part of your custom OpenTelemetry Collector, perhaps being built using the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector-builder).
+Generic authenticators that may be used by a good number of users might be accepted as part of the contrib distribution. If you have an interest in contributing an authenticator, open an issue with your proposal. For other cases, you'll need to include your custom authenticator as part of your custom OpenTelemetry Collector, perhaps being built using the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder).
