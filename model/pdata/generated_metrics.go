@@ -1197,12 +1197,12 @@ func (ms HistogramDataPoint) SetCount(v uint64) {
 }
 
 // Sum returns the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Sum() float64 {
+func (ms HistogramDataPoint) Sum() *float64 {
 	return (*ms.orig).Sum
 }
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetSum(v float64) {
+func (ms HistogramDataPoint) SetSum(v *float64) {
 	(*ms.orig).Sum = v
 }
 

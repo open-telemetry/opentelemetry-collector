@@ -116,6 +116,10 @@ func TestDeprecatedStatusCode(t *testing.T) {
 	}
 }
 
+func floatPtr(in float64) *float64 {
+	return &in
+}
+
 func TestDeprecatedIntHistogram(t *testing.T) {
 	tests := []struct {
 		inputMetrics  []*otlpmetrics.Metric
@@ -134,7 +138,7 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 									},
 									BucketCounts:      []uint64{11, 16, 2},
 									ExplicitBounds:    []float64{3, 4},
-									Sum:               10.1,
+									Sum:               floatPtr(10.1),
 									StartTimeUnixNano: 0,
 									TimeUnixNano:      1,
 									Count:             29,
@@ -155,7 +159,7 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 								},
 								BucketCounts:      []uint64{11, 16, 2},
 								ExplicitBounds:    []float64{3, 4},
-								Sum:               10.1,
+								Sum:               floatPtr(10.1),
 								StartTimeUnixNano: 0,
 								TimeUnixNano:      1,
 								Count:             29,
@@ -202,7 +206,7 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 								},
 								BucketCounts:      []uint64{10, 15, 1},
 								ExplicitBounds:    []float64{1, 2},
-								Sum:               10.0,
+								Sum:               floatPtr(10.0),
 								StartTimeUnixNano: 2,
 								TimeUnixNano:      3,
 								Count:             26,
@@ -249,7 +253,7 @@ func TestDeprecatedIntHistogram(t *testing.T) {
 								},
 								BucketCounts:      []uint64{10, 15, 1},
 								ExplicitBounds:    []float64{1, 2},
-								Sum:               10.0,
+								Sum:               floatPtr(10.0),
 								StartTimeUnixNano: 2,
 								TimeUnixNano:      3,
 								Count:             26,

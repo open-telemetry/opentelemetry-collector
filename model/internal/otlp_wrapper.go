@@ -158,12 +158,13 @@ func addFilteredAttributesToExemplars(exemplars []otlpmetrics.Exemplar) {
 func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.Metric_Histogram {
 	datapoints := []*otlpmetrics.HistogramDataPoint{}
 	for _, datapoint := range src.IntHistogram.DataPoints {
+		sum := float64(datapoint.Sum)
 		datapoints = append(datapoints, &otlpmetrics.HistogramDataPoint{
 			Labels:            datapoint.Labels,
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			Count:             datapoint.Count,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
-			Sum:               float64(datapoint.Sum),
+			Sum:               &sum,
 			BucketCounts:      datapoint.BucketCounts,
 			ExplicitBounds:    datapoint.ExplicitBounds,
 			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),

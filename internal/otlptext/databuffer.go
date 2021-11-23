@@ -110,7 +110,9 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %f", p.Sum())
+		if p.Sum() != nil {
+			b.logEntry("Sum: %f", *p.Sum())
+		}
 
 		bounds := p.ExplicitBounds()
 		if len(bounds) != 0 {

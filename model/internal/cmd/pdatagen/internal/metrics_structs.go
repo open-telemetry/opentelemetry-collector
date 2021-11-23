@@ -231,7 +231,7 @@ var histogramDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		countField,
-		doubleSumField,
+		optionalSumField,
 		bucketCountsField,
 		explicitBoundsField,
 		exemplarsField,
@@ -344,6 +344,14 @@ var doubleSumField = &primitiveField{
 	returnType:      "float64",
 	defaultVal:      "float64(0.0)",
 	testVal:         "float64(17.13)",
+}
+
+var optionalSumField = &primitiveField{
+	fieldName:       "Sum",
+	originFieldName: "Sum",
+	returnType:      "*float64",
+	defaultVal:      "(*float64)(nil)",
+	testVal:         "floatPtr(17.13)",
 }
 
 var valueFloat64Field = &primitiveField{

@@ -323,3 +323,7 @@ func (ms Exemplar) Type() MetricValueType {
 	}
 	return MetricValueTypeNone
 }
+
+func floatPtr(in float64) *float64 {
+	return &in
+}
