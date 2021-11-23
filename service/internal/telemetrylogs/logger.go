@@ -30,10 +30,13 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding:         cfg.Encoding,
-		EncoderConfig:    zap.NewProductionEncoderConfig(),
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
+		Encoding:          cfg.Encoding,
+		EncoderConfig:     zap.NewProductionEncoderConfig(),
+		OutputPaths:       cfg.OutputPaths,
+		ErrorOutputPaths:  cfg.ErrorOutputPaths,
+		DisableCaller:     cfg.DisableCaller,
+		DisableStacktrace: cfg.DisableStacktrace,
+		InitialFields:     cfg.InitialFields,
 	}
 
 	if zapCfg.Encoding == "console" {
