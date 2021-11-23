@@ -15,15 +15,13 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"github.com/spf13/cobra"
 
-	"go.opentelemetry.io/collector/cmd/builder/cmd"
+	"go.opentelemetry.io/collector/cmd/builder/internal"
 )
 
 func main() {
-	if err := cmd.Execute(); err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
+	cmd, err := internal.Command()
+	cobra.CheckErr(err)
+	cobra.CheckErr(cmd.Execute())
 }

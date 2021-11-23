@@ -24,6 +24,7 @@ import (
 	"go.opencensus.io/tag"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -102,111 +103,95 @@ func SetupTelemetry() (TestTelemetry, error) {
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckExporterTraces(_ TestTelemetry, exporter config.ComponentID, acceptedSpans, droppedSpans int64) error {
+func CheckExporterTraces(_ TestTelemetry, exporter config.ComponentID, sentSpans, sendFailedSpans int64) error {
 	exporterTags := tagsForExporterView(exporter)
-	if err := checkValueForView(exporterTags, acceptedSpans, "exporter/sent_spans"); err != nil {
-		return err
-	}
-	return checkValueForView(exporterTags, droppedSpans, "exporter/send_failed_spans")
+	return multierr.Combine(
+		checkValueForView(exporterTags, sentSpans, "exporter/sent_spans"),
+		checkValueForView(exporterTags, sendFailedSpans, "exporter/send_failed_spans"))
 }
 
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckExporterMetrics(_ TestTelemetry, exporter config.ComponentID, acceptedMetricsPoints, droppedMetricsPoints int64) error {
+func CheckExporterMetrics(_ TestTelemetry, exporter config.ComponentID, sentMetricsPoints, sendFailedMetricsPoints int64) error {
 	exporterTags := tagsForExporterView(exporter)
-	if err := checkValueForView(exporterTags, acceptedMetricsPoints, "exporter/sent_metric_points"); err != nil {
-		return err
-	}
-	return checkValueForView(exporterTags, droppedMetricsPoints, "exporter/send_failed_metric_points")
+	return multierr.Combine(
+		checkValueForView(exporterTags, sentMetricsPoints, "exporter/sent_metric_points"),
+		checkValueForView(exporterTags, sendFailedMetricsPoints, "exporter/send_failed_metric_points"))
 }
 
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckExporterLogs(_ TestTelemetry, exporter config.ComponentID, acceptedLogRecords, droppedLogRecords int64) error {
+func CheckExporterLogs(_ TestTelemetry, exporter config.ComponentID, sentLogRecords, sendFailedLogRecords int64) error {
 	exporterTags := tagsForExporterView(exporter)
-	if err := checkValueForView(exporterTags, acceptedLogRecords, "exporter/sent_log_records"); err != nil {
-		return err
-	}
-	return checkValueForView(exporterTags, droppedLogRecords, "exporter/send_failed_log_records")
+	return multierr.Combine(
+		checkValueForView(exporterTags, sentLogRecords, "exporter/sent_log_records"),
+		checkValueForView(exporterTags, sendFailedLogRecords, "exporter/send_failed_log_records"))
 }
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func CheckProcessorTraces(_ TestTelemetry, processor config.ComponentID, acceptedSpans, refusedSpans, droppedSpans int64) error {
 	processorTags := tagsForProcessorView(processor)
-	if err := checkValueForView(processorTags, acceptedSpans, "processor/accepted_spans"); err != nil {
-		return err
-	}
-	if err := checkValueForView(processorTags, refusedSpans, "processor/refused_spans"); err != nil {
-		return err
-	}
-	return checkValueForView(processorTags, droppedSpans, "processor/dropped_spans")
+	return multierr.Combine(
+		checkValueForView(processorTags, acceptedSpans, "processor/accepted_spans"),
+		checkValueForView(processorTags, refusedSpans, "processor/refused_spans"),
+		checkValueForView(processorTags, droppedSpans, "processor/dropped_spans"))
 }
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func CheckProcessorMetrics(_ TestTelemetry, processor config.ComponentID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
 	processorTags := tagsForProcessorView(processor)
-	if err := checkValueForView(processorTags, acceptedMetricPoints, "processor/accepted_metric_points"); err != nil {
-		return err
-	}
-	if err := checkValueForView(processorTags, refusedMetricPoints, "processor/refused_metric_points"); err != nil {
-		return err
-	}
-	return checkValueForView(processorTags, droppedMetricPoints, "processor/dropped_metric_points")
+	return multierr.Combine(
+		checkValueForView(processorTags, acceptedMetricPoints, "processor/accepted_metric_points"),
+		checkValueForView(processorTags, refusedMetricPoints, "processor/refused_metric_points"),
+		checkValueForView(processorTags, droppedMetricPoints, "processor/dropped_metric_points"))
 }
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func CheckProcessorLogs(_ TestTelemetry, processor config.ComponentID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
 	processorTags := tagsForProcessorView(processor)
-	if err := checkValueForView(processorTags, acceptedLogRecords, "processor/accepted_log_records"); err != nil {
-		return err
-	}
-	if err := checkValueForView(processorTags, refusedLogRecords, "processor/refused_log_records"); err != nil {
-		return err
-	}
-	return checkValueForView(processorTags, droppedLogRecords, "processor/dropped_log_records")
+	return multierr.Combine(
+		checkValueForView(processorTags, acceptedLogRecords, "processor/accepted_log_records"),
+		checkValueForView(processorTags, refusedLogRecords, "processor/refused_log_records"),
+		checkValueForView(processorTags, droppedLogRecords, "processor/dropped_log_records"))
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func CheckReceiverTraces(_ TestTelemetry, receiver config.ComponentID, protocol string, acceptedSpans, droppedSpans int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
-	if err := checkValueForView(receiverTags, acceptedSpans, "receiver/accepted_spans"); err != nil {
-		return err
-	}
-	return checkValueForView(receiverTags, droppedSpans, "receiver/refused_spans")
+	return multierr.Combine(
+		checkValueForView(receiverTags, acceptedSpans, "receiver/accepted_spans"),
+		checkValueForView(receiverTags, droppedSpans, "receiver/refused_spans"))
 }
 
 // CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func CheckReceiverLogs(_ TestTelemetry, receiver config.ComponentID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
-	if err := checkValueForView(receiverTags, acceptedLogRecords, "receiver/accepted_log_records"); err != nil {
-		return err
-	}
-	return checkValueForView(receiverTags, droppedLogRecords, "receiver/refused_log_records")
+	return multierr.Combine(
+		checkValueForView(receiverTags, acceptedLogRecords, "receiver/accepted_log_records"),
+		checkValueForView(receiverTags, droppedLogRecords, "receiver/refused_log_records"))
 }
 
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func CheckReceiverMetrics(_ TestTelemetry, receiver config.ComponentID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
-	if err := checkValueForView(receiverTags, acceptedMetricPoints, "receiver/accepted_metric_points"); err != nil {
-		return err
-	}
-	return checkValueForView(receiverTags, droppedMetricPoints, "receiver/refused_metric_points")
+	return multierr.Combine(
+		checkValueForView(receiverTags, acceptedMetricPoints, "receiver/accepted_metric_points"),
+		checkValueForView(receiverTags, droppedMetricPoints, "receiver/refused_metric_points"))
 }
 
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func CheckScraperMetrics(_ TestTelemetry, receiver config.ComponentID, scraper config.ComponentID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	scraperTags := tagsForScraperView(receiver, scraper)
-	if err := checkValueForView(scraperTags, scrapedMetricPoints, "scraper/scraped_metric_points"); err != nil {
-		return err
-	}
-	return checkValueForView(scraperTags, erroredMetricPoints, "scraper/errored_metric_points")
+	return multierr.Combine(
+		checkValueForView(scraperTags, scrapedMetricPoints, "scraper/scraped_metric_points"),
+		checkValueForView(scraperTags, erroredMetricPoints, "scraper/errored_metric_points"))
 }
 
 // checkValueForView checks that for the current exported value in the view with the given name
@@ -226,12 +211,12 @@ func checkValueForView(wantTags []tag.Tag, value int64, vName string) error {
 		if reflect.DeepEqual(wantTags, row.Tags) {
 			sum := row.Data.(*view.SumData)
 			if float64(value) != sum.Value {
-				return fmt.Errorf("values did no match, wanted %f got %f", float64(value), sum.Value)
+				return fmt.Errorf("[%s]: values did no match, wanted %f got %f", vName, float64(value), sum.Value)
 			}
 			return nil
 		}
 	}
-	return fmt.Errorf("could not find tags, wantTags: %s in rows %v", wantTags, rows)
+	return fmt.Errorf("[%s]: could not find tags, wantTags: %s in rows %v", vName, wantTags, rows)
 }
 
 // tagsForReceiverView returns the tags that are needed for the receiver views.

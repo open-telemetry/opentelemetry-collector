@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 )
 
@@ -62,8 +63,8 @@ type CollectorSettings struct {
 	// If it is not provided a default provider is used. The default provider loads the configuration
 	// from a config file define by the --config command line flag and overrides component's configuration
 	// properties supplied via --set command line flag.
-	// If the provider is config.WatchableRetrieved, collector may reload the configuration upon error.
-	ConfigMapProvider config.MapProvider
+	// If the provider is configmapprovider.WatchableRetrieved, collector may reload the configuration upon error.
+	ConfigMapProvider configmapprovider.Provider
 
 	// ConfigUnmarshaler unmarshalls the configuration's Parser into the service configuration.
 	// If it is not provided a default unmarshaler is used.

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"syscall"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -103,11 +104,13 @@ func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 
 	// wait until the collector server is in the Running state
 	go func() {
-		for state := range s.col.GetStateChannel() {
+		for {
+			state := s.col.GetState()
 			if state == Running {
 				colErrorChannel <- nil
 				break
 			}
+			time.Sleep(time.Millisecond * 200)
 		}
 	}()
 
@@ -133,7 +136,7 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 
 func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Collector, error) {
 	if set.ConfigMapProvider == nil {
-		set.ConfigMapProvider = configmapprovider.NewDefaultMapProvider(getConfigFlag(), getSetFlag())
+		set.ConfigMapProvider = configmapprovider.NewDefault(getConfigFlag(), getSetFlag())
 	}
 	set.LoggingOptions = append(
 		set.LoggingOptions,

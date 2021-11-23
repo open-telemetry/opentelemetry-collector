@@ -16,6 +16,7 @@ package configmapprovider
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path"
 	"testing"
@@ -25,6 +26,24 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 )
+
+func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
+	retErr := errors.New("test error")
+	exp := NewExpand(&mockProvider{retrieveErr: retErr})
+	defer exp.Shutdown(context.Background())
+	_, err := exp.Retrieve(context.Background(), nil)
+	require.Error(t, err)
+	require.ErrorIs(t, err, retErr)
+}
+
+func TestBaseRetrieveFailsOnGet(t *testing.T) {
+	getErr := errors.New("test error")
+	exp := NewExpand(&mockProvider{retrieved: &mockRetrieved{getErr: getErr}})
+	defer exp.Shutdown(context.Background())
+	_, err := exp.Retrieve(context.Background(), nil)
+	require.Error(t, err)
+	require.ErrorIs(t, err, getErr)
+}
 
 func TestExpand(t *testing.T) {
 	var testCases = []struct {
@@ -56,12 +75,14 @@ func TestExpand(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			// Retrieve the config
-			emp := NewExpandMapProvider(NewFileMapProvider(path.Join("testdata", test.name)))
-			cp, err := emp.Retrieve(context.Background())
+			emp := NewExpand(NewFile(path.Join("testdata", test.name)))
+			cp, err := emp.Retrieve(context.Background(), nil)
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
-			assert.Equal(t, expectedCfgMap.ToStringMap(), cp.Get().ToStringMap())
+			m, err := cp.Get(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, expectedCfgMap.ToStringMap(), m.ToStringMap())
 		})
 	}
 }
@@ -74,8 +95,8 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 	}()
 
 	// Retrieve the config
-	emp := NewExpandMapProvider(NewFileMapProvider(path.Join("testdata", "expand-escaped-env.yaml")))
-	cp, err := emp.Retrieve(context.Background())
+	emp := NewExpand(NewFile(path.Join("testdata", "expand-escaped-env.yaml")))
+	cp, err := emp.Retrieve(context.Background(), nil)
 	require.NoError(t, err, "Unable to get config")
 
 	expectedMap := map[string]interface{}{
@@ -95,5 +116,7 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 			// escaped $ alone
 			"recv.7": "$",
 		}}
-	assert.Equal(t, expectedMap, cp.Get().ToStringMap())
+	m, err := cp.Get(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, expectedMap, m.ToStringMap())
 }

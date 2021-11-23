@@ -41,12 +41,10 @@ func TestSpanIDHexString(t *testing.T) {
 
 func TestSpanIDEqual(t *testing.T) {
 	sid := NewSpanID([8]byte{})
-	assert.True(t, sid.Equal(sid))
 	assert.True(t, sid.Equal(NewSpanID([8]byte{})))
 	assert.False(t, sid.Equal(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})))
 
 	sid = NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	assert.True(t, sid.Equal(sid))
 	assert.False(t, sid.Equal(NewSpanID([8]byte{})))
 	assert.True(t, sid.Equal(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})))
 }

@@ -29,7 +29,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if set.ConfigMapProvider == nil {
-				set.ConfigMapProvider = configmapprovider.NewDefaultMapProvider(getConfigFlag(), getSetFlag())
+				set.ConfigMapProvider = configmapprovider.NewDefault(getConfigFlag(), getSetFlag())
 			}
 			col, err := New(set)
 			if err != nil {

@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mostynb/go-grpc-compression/snappy"
+	"github.com/mostynb/go-grpc-compression/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
@@ -39,12 +41,16 @@ import (
 const (
 	CompressionUnsupported = ""
 	CompressionGzip        = "gzip"
+	CompressionSnappy      = "snappy"
+	CompressionZstd        = "zstd"
 )
 
 var (
 	// Map of opentelemetry compression types to grpc registered compression types.
 	gRPCCompressionKeyMap = map[string]string{
-		CompressionGzip: gzip.Name,
+		CompressionGzip:   gzip.Name,
+		CompressionSnappy: snappy.Name,
+		CompressionZstd:   zstd.Name,
 	}
 )
 
@@ -67,8 +73,7 @@ type GRPCClientSettings struct {
 	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// The compression key for supported compression types within
-	// collector. Currently the only supported mode is `gzip`.
+	// The compression key for supported compression types within collector.
 	Compression string `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
@@ -178,7 +183,7 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 }
 
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
-func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOption, error) {
+func (gcs *GRPCClientSettings) ToDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != "" {
 		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
@@ -243,8 +248,8 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host) ([]grpc.DialOp
 	}
 
 	// Enable OpenTelemetry observability plugin.
-	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
-	opts = append(opts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor(otelgrpc.WithTracerProvider(settings.TracerProvider))))
+	opts = append(opts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor(otelgrpc.WithTracerProvider(settings.TracerProvider))))
 
 	return opts, nil
 }

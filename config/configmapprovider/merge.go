@@ -25,34 +25,38 @@ import (
 // TODO: Add support to "merge" watchable interface.
 
 type mergeMapProvider struct {
-	providers []config.MapProvider
+	providers []Provider
 }
 
-// NewMergeMapProvider returns a config.MapProvider, that merges the result from multiple config.MapProvider.
+// NewMerge returns a Provider, that merges the result from multiple Provider.
 //
 // The ConfigMaps are merged in the given order, by merging all of them in order into an initial empty map.
-func NewMergeMapProvider(ps ...config.MapProvider) config.MapProvider {
+func NewMerge(ps ...Provider) Provider {
 	return &mergeMapProvider{providers: ps}
 }
 
-func (mp *mergeMapProvider) Retrieve(ctx context.Context) (config.Retrieved, error) {
+func (mp *mergeMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
 	retCfgMap := config.NewMap()
 	for _, p := range mp.providers {
-		retr, err := p.Retrieve(ctx)
+		retr, err := p.Retrieve(ctx, onChange)
 		if err != nil {
 			return nil, err
 		}
-		if err = retCfgMap.Merge(retr.Get()); err != nil {
+		cfgMap, err := retr.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if err = retCfgMap.Merge(cfgMap); err != nil {
 			return nil, err
 		}
 	}
 	return &simpleRetrieved{confMap: retCfgMap}, nil
 }
 
-func (mp *mergeMapProvider) Close(ctx context.Context) error {
+func (mp *mergeMapProvider) Shutdown(ctx context.Context) error {
 	var errs error
 	for _, p := range mp.providers {
-		errs = multierr.Append(errs, p.Close(ctx))
+		errs = multierr.Append(errs, p.Shutdown(ctx))
 	}
 
 	return errs

@@ -37,13 +37,14 @@ func new${structName}(orig *${originName}) ${structName} {
 
 // New${structName} creates a new empty ${structName}.
 //
-// This must be used only in testing code since no "Set" method available.
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
 func New${structName}() ${structName} {
 	return new${structName}(&${originName}{})
 }
 
 // MoveTo moves all properties from the current struct to dest
-// reseting the current instance to its zero value
+// resetting the current instance to its zero value
 func (ms ${structName}) MoveTo(dest ${structName}) {
 	*dest.orig = *ms.orig
 	*ms.orig = ${originName}{}

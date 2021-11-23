@@ -53,14 +53,13 @@ func TestTemplateFuncs(t *testing.T) {
 
 func TestNoCrash(t *testing.T) {
 	buf := new(bytes.Buffer)
-	assert.NotPanics(t, func() { WriteHTMLHeader(buf, HeaderData{Title: "Foo"}) })
+	assert.NotPanics(t, func() { WriteHTMLPageHeader(buf, HeaderData{Title: "Foo"}) })
 	assert.NotPanics(t, func() { WriteHTMLComponentHeader(buf, ComponentHeaderData{Name: "Bar"}) })
 	assert.NotPanics(t, func() {
 		WriteHTMLComponentHeader(buf, ComponentHeaderData{Name: "Bar", ComponentEndpoint: "pagez", Link: true})
 	})
 	assert.NotPanics(t, func() {
 		WriteHTMLPipelinesSummaryTable(buf, SummaryPipelinesTableData{
-			ComponentEndpoint: "pagez",
 			Rows: []SummaryPipelinesTableRowData{{
 				FullName:    "test",
 				InputType:   "metrics",
@@ -73,7 +72,6 @@ func TestNoCrash(t *testing.T) {
 	})
 	assert.NotPanics(t, func() {
 		WriteHTMLExtensionsSummaryTable(buf, SummaryExtensionsTableData{
-			ComponentEndpoint: "pagez",
 			Rows: []SummaryExtensionsTableRowData{{
 				FullName: "test",
 			}},
@@ -82,6 +80,6 @@ func TestNoCrash(t *testing.T) {
 	assert.NotPanics(t, func() {
 		WriteHTMLPropertiesTable(buf, PropertiesTableData{Name: "Bar", Properties: [][2]string{{"key", "value"}}})
 	})
-	assert.NotPanics(t, func() { WriteHTMLFooter(buf) })
-	assert.NotPanics(t, func() { WriteHTMLFooter(buf) })
+	assert.NotPanics(t, func() { WriteHTMLPageFooter(buf) })
+	assert.NotPanics(t, func() { WriteHTMLPageFooter(buf) })
 }

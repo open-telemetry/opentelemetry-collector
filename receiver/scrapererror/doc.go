@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package scraperror provides custom error types for scrapers.
+// Package scrapererror provides custom error types for scrapers.
 package scrapererror // import "go.opentelemetry.io/collector/receiver/scrapererror"

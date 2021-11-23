@@ -47,13 +47,15 @@ type exporter struct {
 	metadata       metadata.MD
 	callOptions    []grpc.CallOption
 
+	settings component.TelemetrySettings
+
 	// Default user-agent header.
 	userAgent string
 }
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg config.Exporter, buildInfo component.BuildInfo) (*exporter, error) {
+func newExporter(cfg config.Exporter, settings component.TelemetrySettings, buildInfo component.BuildInfo) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
@@ -63,13 +65,13 @@ func newExporter(cfg config.Exporter, buildInfo component.BuildInfo) (*exporter,
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		buildInfo.Description, buildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &exporter{config: oCfg, userAgent: userAgent}, nil
+	return &exporter{config: oCfg, settings: settings, userAgent: userAgent}, nil
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	dialOpts, err := e.config.GRPCClientSettings.ToDialOptions(host)
+	dialOpts, err := e.config.GRPCClientSettings.ToDialOptions(host, e.settings)
 	if err != nil {
 		return err
 	}

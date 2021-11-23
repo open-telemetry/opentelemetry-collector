@@ -197,17 +197,17 @@ func (a AttributeValue) MapVal() AttributeMap {
 	return newAttributeMap(&kvlist.Values)
 }
 
-// ArrayVal returns the array value associated with this AttributeValue.
-// If the Type() is not AttributeValueTypeArray then returns an empty array. Note that modifying
-// such empty array has no effect on this AttributeValue.
+// SliceVal returns the slice value associated with this AttributeValue.
+// If the Type() is not AttributeValueTypeArray then returns an empty slice. Note that modifying
+// such empty slice has no effect on this AttributeValue.
 //
 // Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) ArrayVal() AnyValueArray {
+func (a AttributeValue) SliceVal() AttributeValueSlice {
 	arr := a.orig.GetArrayValue()
 	if arr == nil {
-		return NewAnyValueArray()
+		return NewAttributeValueSlice()
 	}
-	return newAnyValueArray(&arr.Values)
+	return newAttributeValueSlice(&arr.Values)
 }
 
 // BytesVal returns the []byte value associated with this AttributeValue.
@@ -255,20 +255,6 @@ func (a AttributeValue) SetBytesVal(v []byte) {
 	a.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: v}
 }
 
-// SetMapVal replaces the AttributeMap value associated with this AttributeValue,
-// it also changes the type to be AttributeValueTypeMap.
-// Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetMapVal(v AttributeMap) {
-	a.orig.Value = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: *v.orig}}
-}
-
-// SetArrayVal replaces the AnyValueArray value associated with this AttributeValue,
-// it also changes the type to be AttributeValueTypeArray.
-// Calling this function on zero-initialized AttributeValue will cause a panic.
-func (a AttributeValue) SetArrayVal(v AnyValueArray) {
-	a.orig.Value = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: *v.orig}}
-}
-
 // copyTo copies the value to AnyValue. Will panic if dest is nil.
 func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 	switch v := a.orig.Value.(type) {
@@ -295,7 +281,7 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 			return
 		}
 		// Deep copy to dest.
-		newAnyValueArray(&v.ArrayValue.Values).CopyTo(newAnyValueArray(&av.ArrayValue.Values))
+		newAttributeValueSlice(&v.ArrayValue.Values).CopyTo(newAttributeValueSlice(&av.ArrayValue.Values))
 	default:
 		// Primitive immutable type, no need for deep copy.
 		dest.Value = a.orig.Value
@@ -406,7 +392,7 @@ func (a AttributeValue) AsString() string {
 		return base64.StdEncoding.EncodeToString(a.BytesVal())
 
 	case AttributeValueTypeArray:
-		jsonStr, _ := json.Marshal(a.ArrayVal().asRaw())
+		jsonStr, _ := json.Marshal(a.SliceVal().asRaw())
 		return string(jsonStr)
 
 	default:
@@ -490,28 +476,6 @@ func NewAttributeMapFromMap(attrMap map[string]AttributeValue) AttributeMap {
 
 func newAttributeMap(orig *[]otlpcommon.KeyValue) AttributeMap {
 	return AttributeMap{orig}
-}
-
-// InitFromMap overwrites the entire AttributeMap and reconstructs the AttributeMap
-// with values from the given map[string]AttributeValue.
-//
-// Returns the same instance to allow nicer code like:
-//   assert.EqualValues(t, NewAttributeMap().InitFromMap(map[string]AttributeValue{...}), actual)
-// Deprecated: use NewAttributeMapFromMap instead.
-func (am AttributeMap) InitFromMap(attrMap map[string]AttributeValue) AttributeMap {
-	if len(attrMap) == 0 {
-		*am.orig = []otlpcommon.KeyValue(nil)
-		return am
-	}
-	origs := make([]otlpcommon.KeyValue, len(attrMap))
-	ix := 0
-	for k, v := range attrMap {
-		origs[ix].Key = k
-		v.copyTo(&origs[ix].Value)
-		ix++
-	}
-	*am.orig = origs
-	return am
 }
 
 // Clear erases any existing entries in this AttributeMap instance.
@@ -833,15 +797,15 @@ func (am AttributeMap) AsRaw() map[string]interface{} {
 		case AttributeValueTypeMap:
 			rawMap[k] = v.MapVal().AsRaw()
 		case AttributeValueTypeArray:
-			rawMap[k] = v.ArrayVal().asRaw()
+			rawMap[k] = v.SliceVal().asRaw()
 		}
 		return true
 	})
 	return rawMap
 }
 
-// asRaw creates a slice out of a AnyValueArray.
-func (es AnyValueArray) asRaw() []interface{} {
+// asRaw creates a slice out of a AttributeValueSlice.
+func (es AttributeValueSlice) asRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		v := es.At(i)
