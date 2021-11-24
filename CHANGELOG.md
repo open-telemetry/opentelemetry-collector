@@ -4,7 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
-- Support `Snappy` and `Zstd` for confighttp.go (#4441)
+- confighttp supports multiple compression methods including `gzip`, `zlib`, `deflate`, `snappy` and `zstd`.  (#4441)
+  - Each exporters should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 - Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
 - Make state information propagation non-blocking on the collector (#4460)

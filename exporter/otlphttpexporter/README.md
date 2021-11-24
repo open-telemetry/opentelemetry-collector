@@ -33,8 +33,6 @@ The following settings can be optionally configured:
 - `timeout` (default = 30s): HTTP request time limit. For details see https://golang.org/pkg/net/http/#Client
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
-- `compression` (default = none): Compression type to use. Currently `gzip`, `zlib`, `deflate`, `snappy` and `zstd` are supported.
-
 
 Example:
 
