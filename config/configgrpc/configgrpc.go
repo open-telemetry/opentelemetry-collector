@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/mostynb/go-grpc-compression/snappy"
 	"github.com/mostynb/go-grpc-compression/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -375,13 +376,14 @@ func GetGRPCCompressionKey(compressionType string) string {
 
 // enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes
 // a client.Info, potentially with the peer's address.
-func enhanceWithClientInformation(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func enhanceWithClientInformation(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	return handler(contextWithClient(ctx), req)
 }
 
-func enhanceStreamWithClientInformation(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	// TODO: how to change the context in this case?
-	return nil
+func enhanceStreamWithClientInformation(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	wrapped := grpc_middleware.WrapServerStream(ss)
+	wrapped.WrappedContext = contextWithClient(ss.Context())
+	return handler(srv, wrapped)
 }
 
 // contextWithClient attempts to add the peer address to the client.Info from the context. When no

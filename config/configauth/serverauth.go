@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -100,11 +101,12 @@ func DefaultGRPCStreamServerInterceptor(srv interface{}, stream grpc.ServerStrea
 		return errMetadataNotFound
 	}
 
-	// TODO: propagate the context down the stream
-	_, err := authenticate(ctx, headers)
+	ctx, err := authenticate(ctx, headers)
 	if err != nil {
 		return err
 	}
 
-	return handler(srv, stream)
+	wrapped := grpc_middleware.WrapServerStream(stream)
+	wrapped.WrappedContext = ctx
+	return handler(srv, wrapped)
 }
