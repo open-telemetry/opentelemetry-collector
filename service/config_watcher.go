@@ -27,6 +27,7 @@ type configWatcher struct {
 	ctx     context.Context
 	set     CollectorSettings
 	watcher chan error
+	ret     configmapprovider.Retrieved
 }
 
 func newConfigWatcher(ctx context.Context, set CollectorSettings) (*configWatcher, error) {
@@ -40,13 +41,24 @@ func newConfigWatcher(ctx context.Context, set CollectorSettings) (*configWatche
 }
 
 func (cm *configWatcher) get() (*config.Config, error) {
-	var cfg *config.Config
-	ret, err := cm.set.ConfigMapProvider.Retrieve(cm.ctx, cm.onChange)
+	// Ensure that a previously existing Retrieved is closed out properly.
+	if cm.ret != nil {
+		err := cm.ret.Close(cm.ctx)
+		if err != nil {
+			return nil, fmt.Errorf("cannot close previously retrieved config: %w", err)
+		}
+	}
+
+	var (
+		cfg *config.Config
+		err error
+	)
+	cm.ret, err = cm.set.ConfigMapProvider.Retrieve(cm.ctx, cm.onChange)
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
 	}
 
-	m, err := ret.Get(cm.ctx)
+	m, err := cm.ret.Get(cm.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get the configuration: %w", err)
 	}

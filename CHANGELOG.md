@@ -15,6 +15,7 @@
 
 - Add semconv 1.7.0 and 1.8.0 (#4452)
 - Added `feature-gates` CLI flag for controlling feature gate state. (#4368)
+- Add file watch to support config reload on file change (#4454) 
 
 ## v0.39.0 Beta
 
