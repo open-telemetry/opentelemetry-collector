@@ -111,6 +111,9 @@ func (bof *batchStruct) getRequestResult(key string) (PersistentRequest, error) 
 	if err != nil {
 		return nil, err
 	}
+	if reqIf == nil {
+		return nil, errValueNotSet
+	}
 
 	return reqIf.(PersistentRequest), nil
 }
