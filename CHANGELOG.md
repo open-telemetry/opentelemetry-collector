@@ -16,6 +16,10 @@
 - Add semconv 1.7.0 and 1.8.0 (#4452)
 - Added `feature-gates` CLI flag for controlling feature gate state. (#4368)
 
+## 🧰 Bug fixes 🧰
+
+- Fix handling of corrupted records by persistent buffer (experimental) (#4475)
+
 ## v0.39.0 Beta
 
 ## 🛑 Breaking changes 🛑
