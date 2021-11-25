@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -105,7 +106,7 @@ func newBatchProcessor(set component.ProcessorCreateSettings, cfg *Config, batch
 		batchSizeTriggerSend: meter.NewInt64Counter("batch_size_trigger_send", metric.WithDescription("Number of times the batch was sent due to a size trigger")),
 		timeoutTriggerSend:   meter.NewInt64Counter("timeout_trigger_send", metric.WithDescription("Number of times the batch was sent due to a timeout trigger")),
 		batchSendSize:        meter.NewInt64Histogram("batch_send_size", metric.WithDescription("Number of units in the batch")),
-		batchSendSizeBytes:   meter.NewInt64Histogram("batch_send_size_bytes", metric.WithDescription("Number of bytes in batch that was sent")),
+		batchSendSizeBytes:   meter.NewInt64Histogram("batch_send_size_bytes", metric.WithDescription("Number of bytes in batch that was sent"), metric.WithUnit(unit.Bytes)),
 	}, nil
 }
 
