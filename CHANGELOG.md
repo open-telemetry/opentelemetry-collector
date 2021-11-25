@@ -3,9 +3,14 @@
 ## Unreleased
 
 ## 🛑 Breaking changes 🛑
-
 - confighttp supports multiple compression methods including `gzip`, `zlib`, `deflate`, `snappy` and `zstd`.  (#4441)
   - Each exporters should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
+
+## v0.40.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Package `client` refactored (#4416) and auth data included in it (#4422). Final PR to be merged in the next release (#4423)
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 - Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
 - Make state information propagation non-blocking on the collector (#4460)
@@ -13,9 +18,6 @@
 ## 💡 Enhancements 💡
 
 - Add semconv 1.7.0 and 1.8.0 (#4452)
-
-## 💡 Enhancements 💡
-
 - Added `feature-gates` CLI flag for controlling feature gate state. (#4368)
 
 ## v0.39.0 Beta
