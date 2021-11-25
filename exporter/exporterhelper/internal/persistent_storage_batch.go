@@ -91,7 +91,7 @@ func (bof *batchStruct) delete(keys ...string) *batchStruct {
 }
 
 // getResult returns the result of a Get operation for a given key using the provided unmarshal function.
-// It should be called after execute
+// It should be called after execute. It may return nil value
 func (bof *batchStruct) getResult(key string, unmarshal func([]byte) (interface{}, error)) (interface{}, error) {
 	op := bof.getOperations[key]
 	if op == nil {
@@ -106,6 +106,7 @@ func (bof *batchStruct) getResult(key string, unmarshal func([]byte) (interface{
 }
 
 // getRequestResult returns the result of a Get operation as a request
+// If the value cannot be retrieved, it returns an error
 func (bof *batchStruct) getRequestResult(key string) (PersistentRequest, error) {
 	reqIf, err := bof.getResult(key, bof.bytesToRequest)
 	if err != nil {
@@ -119,6 +120,7 @@ func (bof *batchStruct) getRequestResult(key string) (PersistentRequest, error) 
 }
 
 // getItemIndexResult returns the result of a Get operation as an itemIndex
+// If the value cannot be retrieved, it returns an error
 func (bof *batchStruct) getItemIndexResult(key string) (itemIndex, error) {
 	itemIndexIf, err := bof.getResult(key, bytesToItemIndex)
 	if err != nil {
@@ -133,6 +135,7 @@ func (bof *batchStruct) getItemIndexResult(key string) (itemIndex, error) {
 }
 
 // getItemIndexArrayResult returns the result of a Get operation as a itemIndexArray
+// It may return nil value
 func (bof *batchStruct) getItemIndexArrayResult(key string) ([]itemIndex, error) {
 	itemIndexArrIf, err := bof.getResult(key, bytesToItemIndexArray)
 	if err != nil {
