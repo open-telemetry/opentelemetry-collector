@@ -54,6 +54,12 @@ func TestHTTPClientCompression(t *testing.T) {
 			shouldError: false,
 		},
 		{
+			name:        "ValidNone",
+			encoding:    "none",
+			reqBody:     testBody,
+			shouldError: false,
+		},
+		{
 			name:        "ValidGzip",
 			encoding:    "gzip",
 			reqBody:     compressedGzipBody.Bytes(),
@@ -118,7 +124,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			require.NoError(t, err, "failed to create request to test handler")
 
 			client := http.Client{}
-			if tt.encoding != "" {
+			if tt.encoding != "" && tt.encoding != "none" {
 				client.Transport = NewCompressRoundTripper(http.DefaultTransport, tt.encoding)
 			}
 			res, err := client.Do(req)

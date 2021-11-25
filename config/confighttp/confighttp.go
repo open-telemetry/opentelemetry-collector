@@ -36,22 +36,22 @@ import (
 type CompressionType string
 
 const (
-	CompressionUnsupported CompressionType = ""
-	CompressionGzip        CompressionType = "gzip"
-	CompressionZlib        CompressionType = "zlib"
-	CompressionDeflate     CompressionType = "deflate"
-	CompressionSnappy      CompressionType = "snappy"
-	CompressionZstd        CompressionType = "zstd"
+	CompressionGzip    CompressionType = "gzip"
+	CompressionZlib    CompressionType = "zlib"
+	CompressionDeflate CompressionType = "deflate"
+	CompressionSnappy  CompressionType = "snappy"
+	CompressionZstd    CompressionType = "zstd"
+	CompressionNone    CompressionType = "none"
 )
 
 var (
-	// HTTPCompressionKeyMap is the map of OpenTelemetry compression types to HTTP registered compression types.
-	HTTPCompressionKeyMap = map[CompressionType]string{
-		CompressionGzip:    "gzip",
-		CompressionZlib:    "zlib",
-		CompressionDeflate: "deflate",
-		CompressionSnappy:  "snappy",
-		CompressionZstd:    "zstd",
+	// HTTPCompressionKeys is the set of OpenTelemetry compression types to HTTP registered compression types.
+	HTTPCompressionKeys = map[CompressionType]struct{}{
+		CompressionGzip:    {},
+		CompressionZlib:    {},
+		CompressionDeflate: {},
+		CompressionSnappy:  {},
+		CompressionZstd:    {},
 	}
 )
 
@@ -112,10 +112,10 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	}
 
 	// Compress the body using specified compression methods if non-empty string is provided.
-	// Supporting Gzip, zlib, deflate, snappy, and zstd.
-	if hcs.Compression != "" {
-		if compressionKey := getHTTPCompressionKey(hcs.Compression); compressionKey != CompressionUnsupported {
-			clientTransport = middleware.NewCompressRoundTripper(clientTransport, string(compressionKey))
+	// Supporting gzip, zlib, deflate, snappy, and zstd.
+	if hcs.Compression != "" && hcs.Compression != string(CompressionNone) {
+		if isValidHTTPCompressionKey(hcs.Compression) {
+			clientTransport = middleware.NewCompressRoundTripper(clientTransport, hcs.Compression)
 		} else {
 			return nil, fmt.Errorf("unsupported compression type %q", hcs.Compression)
 		}
@@ -262,10 +262,8 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 	}
 }
 
-func getHTTPCompressionKey(compressionType string) CompressionType {
+func isValidHTTPCompressionKey(compressionType string) bool {
 	compressionKey := strings.ToLower(compressionType)
-	if encodingKey, ok := HTTPCompressionKeyMap[CompressionType(compressionKey)]; ok {
-		return CompressionType(encodingKey)
-	}
-	return CompressionUnsupported
+	_, valid := HTTPCompressionKeys[CompressionType(compressionKey)]
+	return valid
 }

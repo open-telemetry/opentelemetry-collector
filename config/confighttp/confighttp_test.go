@@ -69,6 +69,20 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			shouldError: false,
 		},
 		{
+			name: "all_valid_settings_with_none_compression",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression:        "none",
+			},
+			shouldError: false,
+		},
+		{
 			name: "all_valid_settings_with_gzip_compression",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
@@ -124,7 +138,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 1024, transport.ReadBufferSize)
 				assert.EqualValues(t, 512, transport.WriteBufferSize)
 			case *middleware.CompressRoundTripper:
-				assert.EqualValues(t, "gzip", transport.CompressionType)
+				assert.EqualValues(t, "gzip", transport.CompressionType())
 			}
 		})
 	}

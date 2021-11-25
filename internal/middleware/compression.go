@@ -37,15 +37,15 @@ const (
 
 type CompressRoundTripper struct {
 	RoundTripper    http.RoundTripper
-	CompressionType string
-	Writer          func(*bytes.Buffer) (io.WriteCloser, error)
+	compressionType string
+	writer          func(*bytes.Buffer) (io.WriteCloser, error)
 }
 
 func NewCompressRoundTripper(rt http.RoundTripper, compressionType string) *CompressRoundTripper {
 	return &CompressRoundTripper{
 		RoundTripper:    rt,
-		CompressionType: compressionType,
-		Writer:          writerFactory(compressionType),
+		compressionType: compressionType,
+		writer:          writerFactory(compressionType),
 	}
 }
 
@@ -85,7 +85,7 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Compress the body.
 	buf := bytes.NewBuffer([]byte{})
-	compressWriter, writerErr := r.Writer(buf)
+	compressWriter, writerErr := r.writer(buf)
 	if writerErr != nil {
 		return nil, writerErr
 	}
@@ -113,9 +113,13 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Clone the headers and add gzip encoding header.
 	cReq.Header = req.Header.Clone()
-	cReq.Header.Add(headerContentEncoding, r.CompressionType)
+	cReq.Header.Add(headerContentEncoding, r.compressionType)
 
 	return r.RoundTripper.RoundTrip(cReq)
+}
+
+func (r *CompressRoundTripper) CompressionType() string {
+	return r.compressionType
 }
 
 type ErrorHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
