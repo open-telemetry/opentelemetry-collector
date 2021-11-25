@@ -20,15 +20,17 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // batch_processor is a component that accepts spans and metrics, places them
@@ -40,8 +42,6 @@ import (
 // - batch size reaches cfg.SendBatchSize
 // - cfg.Timeout is elapsed since the timestamp when the previous batch was sent out.
 type batchProcessor struct {
-	logger           *zap.Logger
-	exportCtx        context.Context
 	timer            *time.Timer
 	timeout          time.Duration
 	sendBatchSize    int
@@ -53,7 +53,16 @@ type batchProcessor struct {
 	shutdownC  chan struct{}
 	goroutines sync.WaitGroup
 
-	telemetryLevel configtelemetry.Level
+	exportCtx            context.Context
+	logger               *zap.Logger
+	meter                metric.MeterMust
+	tracer               trace.Tracer
+	telemetryLevel       configtelemetry.Level
+	telemetryLabels      []attribute.KeyValue
+	batchSizeTriggerSend metric.Int64Counter
+	timeoutTriggerSend   metric.Int64Counter
+	batchSendSize        metric.Int64Histogram
+	batchSendSizeBytes   metric.Int64Histogram
 }
 
 type batch interface {
@@ -75,21 +84,28 @@ var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
 func newBatchProcessor(set component.ProcessorCreateSettings, cfg *Config, batch batch, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, cfg.ID().String()))
-	if err != nil {
-		return nil, err
-	}
-	return &batchProcessor{
-		logger:         set.Logger,
-		exportCtx:      exportCtx,
-		telemetryLevel: telemetryLevel,
+	processorTagKey := attribute.Key(obsmetrics.ProcessorKey)
+	logger := set.Logger
+	meter := metric.Must(set.MeterProvider.Meter(cfg.ID().Name()))
+	tracer := set.TracerProvider.Tracer(cfg.ID().Name())
 
+	return &batchProcessor{
 		sendBatchSize:    int(cfg.SendBatchSize),
 		sendBatchMaxSize: int(cfg.SendBatchMaxSize),
 		timeout:          cfg.Timeout,
 		newItem:          make(chan interface{}, runtime.NumCPU()),
 		batch:            batch,
 		shutdownC:        make(chan struct{}, 1),
+
+		logger:               logger,
+		meter:                meter,
+		tracer:               tracer,
+		telemetryLevel:       telemetryLevel,
+		telemetryLabels:      []attribute.KeyValue{processorTagKey.String(cfg.ID().String())},
+		batchSizeTriggerSend: meter.NewInt64Counter("batch_size_trigger_send", metric.WithDescription("Number of times the batch was sent due to a size trigger")),
+		timeoutTriggerSend:   meter.NewInt64Counter("timeout_trigger_send", metric.WithDescription("Number of times the batch was sent due to a timeout trigger")),
+		batchSendSize:        meter.NewInt64Histogram("batch_send_size", metric.WithDescription("Number of units in the batch")),
+		batchSendSizeBytes:   meter.NewInt64Histogram("batch_send_size_bytes", metric.WithDescription("Number of bytes in batch that was sent")),
 	}, nil
 }
 
@@ -132,7 +148,7 @@ func (bp *batchProcessor) startProcessingCycle() {
 			if bp.batch.itemCount() > 0 {
 				// TODO: Set a timeout on sendTraces or
 				// make it cancellable using the context that Shutdown gets as a parameter
-				bp.sendItems(statTimeoutTriggerSend)
+				bp.sendItems(bp.timeoutTriggerSend)
 			}
 			return
 		case item := <-bp.newItem:
@@ -142,7 +158,7 @@ func (bp *batchProcessor) startProcessingCycle() {
 			bp.processItem(item)
 		case <-bp.timer.C:
 			if bp.batch.itemCount() > 0 {
-				bp.sendItems(statTimeoutTriggerSend)
+				bp.sendItems(bp.timeoutTriggerSend)
 			}
 			bp.resetTimer()
 		}
@@ -154,7 +170,7 @@ func (bp *batchProcessor) processItem(item interface{}) {
 	sent := false
 	for bp.batch.itemCount() >= bp.sendBatchSize {
 		sent = true
-		bp.sendItems(statBatchSizeTriggerSend)
+		bp.sendItems(bp.batchSizeTriggerSend)
 	}
 
 	if sent {
@@ -173,12 +189,13 @@ func (bp *batchProcessor) resetTimer() {
 	bp.timer.Reset(bp.timeout)
 }
 
-func (bp *batchProcessor) sendItems(triggerMeasure *stats.Int64Measure) {
+func (bp *batchProcessor) sendItems(triggerMeasure metric.Int64Counter) {
 	// Add that it came form the trace pipeline?
-	stats.Record(bp.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
+	triggerMeasure.Add(bp.exportCtx, int64(1))
+	bp.batchSendSize.Record(bp.exportCtx, int64(bp.batch.itemCount()))
 
 	if bp.telemetryLevel == configtelemetry.LevelDetailed {
-		stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(bp.batch.size())))
+		bp.batchSendSizeBytes.Record(bp.exportCtx, int64(bp.batch.size()))
 	}
 
 	if err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize); err != nil {

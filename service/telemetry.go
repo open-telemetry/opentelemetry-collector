@@ -37,7 +37,6 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/version"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
@@ -147,7 +146,6 @@ func (tel *colTelemetry) initOpenCensus(level configtelemetry.Level, instanceID 
 
 	var views []*view.View
 	obsMetrics := obsreportconfig.Configure(level)
-	views = append(views, batchprocessor.MetricViews()...)
 	views = append(views, obsMetrics.Views...)
 	views = append(views, processMetricsViews.Views()...)
 

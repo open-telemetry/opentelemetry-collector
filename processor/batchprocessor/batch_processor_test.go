@@ -121,9 +121,6 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 
 func TestBatchProcessorSentBySize(t *testing.T) {
 	sizer := otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)
-	views := MetricViews()
-	require.NoError(t, view.Register(views...))
-	defer view.Unregister(views...)
 
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
