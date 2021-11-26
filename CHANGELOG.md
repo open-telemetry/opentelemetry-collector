@@ -3,7 +3,9 @@
 ## Unreleased
 
 ## 🛑 Breaking changes 🛑
-- confighttp supports multiple compression methods including `gzip`, `zlib`, `deflate`, `snappy` and `zstd`.  (#4441)
+
+## 💡 Enhancements 💡
+- `confighttp`: add client-side compression support. (#4441)
   - Each exporters should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
 
 ## v0.40.0 Beta
