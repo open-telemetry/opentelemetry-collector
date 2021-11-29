@@ -75,7 +75,7 @@ to happen as close to the source data as possible, for example within receivers 
 mechanism could be used for selecting metrics for temporality conversion as other cases, but it is expected that in
 practice configuration will be limited.
 
-The processors implementing this use case are `cumulativetodeltaprocessor` and `deltatorateprocessor`.
+The processors implementing this use case are `cumulativetodeltaprocessor`.
 
 ### Telemetry enrichment
 
@@ -108,6 +108,9 @@ signal being part of a query space. Virtual fields are added to access data from
 `resource`, `library_info`. For metrics, the structure presented for processing is actual data points, e.g. `NumberDataPoint`, 
 `HistogramDataPoint`, with the information from higher levels like `Metric` or the data type available as virtual fields.
 
+Virtual fields for all signals: `resource`, `library_info`.
+Virtual fields for metrics: `descriptor`, which contains `metric.name`, `metric.description`, `metric.unit`.
+
 Navigation can then be used with a simple expression language for identifying telemetry to operate on.
 
 `... where name = "GET /cats"`
@@ -127,37 +130,33 @@ allowing the operation to mutate telemetry as needed.
 
 ### Examples
 
-Remove a forbidden attribute such as `http.request.header.authorization` from all telemetry.
+Remove a forbidden attribute such as `http.request.header.authorization` from spans only
 
-`delete(attributes["http.request.header.authorization"])`
-
-Remove a forbidden attribute from spans only
-
-`delete(attributes["http.request.header.authorization"]) from span`
+`delete(attributes["http.request.header.authorization"]) from traces`
 
 Remove all attributes except for some
 
-`keep(attributes, "http.method", "http.status_code") from metric`
+`keep(attributes, "http.method", "http.status_code") from metrics`
 
 Reduce cardinality of an attribute
 
-`replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])`
+`replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"]) from traces`
 
 Reduce cardinality of a span name
 
-`replace_wildcards("GET /user/*/list/*", "GET /user/{userId}/list/{listId}", name) from span`
+`replace_wildcards("GET /user/*/list/*", "GET /user/{userId}/list/{listId}", name) from traces`
 
 Decrease the size of the telemetry payload by removing large resource attributes
 
-`delete(resource.attributes["process.command_line"])`
+`delete(resource.attributes["process.command_line"]) from traces`
 
-Filtering out signals such as by removing all telemetry with a `http.target` of `/health`
+Filtering out signals such as by removing all metrics with a `http.target` of `/health`
 
-`drop() where attributes["http.target"] = "/health"`
+`drop() where attributes["http.target"] = "/health" from metrics`
 
 Attach information from resource into telemetry, for example adding certain resource fields as metric attributes
 
-`set(attributes["k8s_pod"], resource.attributes["k8s.pod.name"]) from metric`
+`set(attributes["k8s_pod"], resource.attributes["k8s.pod.name"]) from metrics`
 
 Stateful processing can also be modeled by the language. The processor implementation would set up the state while
 parsing the configuration.
@@ -165,18 +164,18 @@ parsing the configuration.
 Create duration_metric with two attributes copied from a span
 
 ```
-create_histogram("duration", end_time_nanos - start_time_nanos) from span
-keep(attributes, "http.method") from metric where descriptor.metric_name = "duration"
+create_histogram("duration", end_time_nanos - start_time_nanos) from traces
+keep(attributes, "http.method") from metrics where descriptor.metric_name = "duration"
 ```
 
 Group spans by trace ID
 
-`group_by(trace_id, 2m) from span`
+`group_by(trace_id, 2m) from traces`
 
 Create utilization metric from base metrics. Because navigation expressions only operate on a single piece of telemetry,
 helper functions for reading values from other metrics need to be provided.
 
-`create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit") from metric`
+`create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit") from metric`**s**
 
 A lot of processing. Queries are executed in order. While initially performance may degrade compared to more specialized
 processors, the expectation is that over time, the query processor's engine would improve to be able to apply optimizations 
