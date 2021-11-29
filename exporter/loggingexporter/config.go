@@ -27,7 +27,7 @@ type Config struct {
 	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
 	LogLevel zapcore.Level `mapstructure:"loglevel"`
 
-	// Format defines the serialization format of the logging exporter; options are text and json.
+	// Format defines the serialization format of the logging exporter; options are text, json and jsonstream.
 	Format string `mapstructure:"format"`
 
 	// SamplingInitial defines how many samples are initially logged during each second.

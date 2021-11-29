@@ -31,8 +31,8 @@ type marshaler struct {
 }
 
 // newMarshaler returns a marshaler that uses the given serialization format.
-// Currently the format could be either "text" or "json". An error is returned
-// if the format is unknown.
+// Currently the format could be either "text", "json" or "jsonstream". An error
+// is returned if the format is unknown.
 func newMarshaler(format string) (*marshaler, error) {
 	switch format {
 	case "text":

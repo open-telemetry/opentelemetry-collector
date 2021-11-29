@@ -12,4 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package jsonstream implements JSON stream serializers for OTLP data.
 package jsonstream // import "go.opentelemetry.io/collector/exporter/loggingexporter/internal/jsonstream"
