@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🧰 Bug fixes 🧰
+
+- Fix handling of corrupted records by persistent buffer (experimental) (#4475)
+
 ## v0.40.0 Beta
 
 ## 🛑 Breaking changes 🛑
