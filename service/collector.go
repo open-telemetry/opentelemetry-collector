@@ -233,11 +233,7 @@ func (col *Collector) Run(ctx context.Context) error {
 	col.asyncErrorChannel = make(chan error)
 
 	// set up config watcher
-	var err error
-	if col.cfgW, err = newConfigWatcher(ctx, col.set); err != nil {
-		return err
-	}
-
+	col.cfgW = newConfigWatcher(ctx, col.set)
 	cfg, err := col.cfgW.get()
 	if err != nil {
 		return fmt.Errorf("unable to get config: %w", err)

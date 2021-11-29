@@ -147,7 +147,7 @@ func TestConfigWatcher(t *testing.T) {
 				Factories:         factories,
 			}
 
-			cfgW, _ := newConfigWatcher(context.Background(), set)
+			cfgW := newConfigWatcher(context.Background(), set)
 			_, errN := cfgW.get()
 
 			if tt.expectNewErr {
@@ -177,8 +177,7 @@ func TestConfigWatcherNoWatcher(t *testing.T) {
 	}
 
 	watcherWG := sync.WaitGroup{}
-	cfgW, errN := newConfigWatcher(context.Background(), set)
-	assert.NoError(t, errN)
+	cfgW := newConfigWatcher(context.Background(), set)
 
 	watcherWG.Add(1)
 	go func() {
@@ -210,9 +209,7 @@ func TestConfigWatcherWhenClosed(t *testing.T) {
 	}
 
 	watcherWG := sync.WaitGroup{}
-	cfgW, errN := newConfigWatcher(context.Background(), set)
-	assert.NoError(t, errN)
-
+	cfgW := newConfigWatcher(context.Background(), set)
 	cfg, err := cfgW.get()
 	assert.NotNil(t, cfg)
 	assert.Nil(t, err)

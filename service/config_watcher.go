@@ -30,14 +30,14 @@ type configWatcher struct {
 	ret     configmapprovider.Retrieved
 }
 
-func newConfigWatcher(ctx context.Context, set CollectorSettings) (*configWatcher, error) {
+func newConfigWatcher(ctx context.Context, set CollectorSettings) *configWatcher {
 	cm := &configWatcher{
 		ctx:     ctx,
 		watcher: make(chan error, 1),
 		set:     set,
 	}
 
-	return cm, nil
+	return cm
 }
 
 func (cm *configWatcher) get() (*config.Config, error) {
