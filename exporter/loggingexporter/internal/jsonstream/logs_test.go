@@ -269,9 +269,9 @@ func TestLogsJSON(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			logs, err := NewJSONLogsMarshaler().MarshalLogs(tt.logs)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expect, string(logs))
-			assert.NoError(t, checkJSON(logs))
+			if assert.NoError(t, err) {
+				testJSON(t, tt.expect, string(logs))
+			}
 		})
 	}
 }

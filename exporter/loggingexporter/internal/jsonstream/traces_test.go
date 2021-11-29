@@ -102,7 +102,7 @@ func TestTracesJSON(t *testing.T) {
 			      "timestamp": "2020-02-11 20:26:13.000000123 +0000 UTC",
 			      "droppedAttributesCount": 2,
 			      "attributes": {
-				"span-event-attr": "span-event-attr-val"
+			        "span-event-attr": "span-event-attr-val"
 			      }
 			    },
 			    {
@@ -145,7 +145,7 @@ func TestTracesJSON(t *testing.T) {
 			      "timestamp": "2020-02-11 20:26:13.000000123 +0000 UTC",
 			      "droppedAttributesCount": 2,
 			      "attributes": {
-				"span-event-attr": "span-event-attr-val"
+			        "span-event-attr": "span-event-attr-val"
 			      }
 			    },
 			    {
@@ -185,7 +185,7 @@ func TestTracesJSON(t *testing.T) {
 			      "traceState": "",
 			      "droppedAttributesCount": 4,
 			      "attributes": {
-				"span-link-attr": "span-link-attr-val"
+			        "span-link-attr": "span-link-attr-val"
 			      }
 			    },
 			    {
@@ -202,9 +202,9 @@ func TestTracesJSON(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			traces, err := NewJSONTracesMarshaler().MarshalTraces(tt.traces)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expect, string(traces))
-			assert.NoError(t, checkJSON(traces))
+			if assert.NoError(t, err) {
+				testJSON(t, tt.expect, string(traces))
+			}
 		})
 	}
 }

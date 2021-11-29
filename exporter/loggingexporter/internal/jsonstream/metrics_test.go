@@ -93,7 +93,7 @@ func TestMetricsJSON(t *testing.T) {
 			  "dataPoints": [
 			    {
 			      "attributes": {
-				"label-1": "label-value-1"
+			        "label-1": "label-value-1"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -101,7 +101,7 @@ func TestMetricsJSON(t *testing.T) {
 			    },
 			    {
 			      "attributes": {
-				"label-2": "label-value-2"
+			        "label-2": "label-value-2"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -126,8 +126,8 @@ func TestMetricsJSON(t *testing.T) {
 			  "dataPoints": [
 			    {
 			      "attributes": {
-				"label-1": "label-value-1",
-				"label-2": "label-value-2"
+			        "label-1": "label-value-1",
+			        "label-2": "label-value-2"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -135,8 +135,8 @@ func TestMetricsJSON(t *testing.T) {
 			    },
 			    {
 			      "attributes": {
-				"label-1": "label-value-1",
-				"label-3": "label-value-3"
+			        "label-1": "label-value-1",
+			        "label-3": "label-value-3"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -154,7 +154,7 @@ func TestMetricsJSON(t *testing.T) {
 			    "name": "",
 			    "version": ""
 			  },
-			  "name": "counter-int",
+			  "name": "sum-int",
 			  "description": "",
 			  "unit": "1",
 			  "dataType": "Sum",
@@ -163,7 +163,7 @@ func TestMetricsJSON(t *testing.T) {
 			  "dataPoints": [
 			    {
 			      "attributes": {
-				"label-1": "label-value-1"
+			        "label-1": "label-value-1"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -171,7 +171,7 @@ func TestMetricsJSON(t *testing.T) {
 			    },
 			    {
 			      "attributes": {
-				"label-2": "label-value-2"
+			        "label-2": "label-value-2"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -189,7 +189,7 @@ func TestMetricsJSON(t *testing.T) {
 			    "name": "",
 			    "version": ""
 			  },
-			  "name": "counter-double",
+			  "name": "sum-double",
 			  "description": "",
 			  "unit": "1",
 			  "dataType": "Sum",
@@ -198,8 +198,8 @@ func TestMetricsJSON(t *testing.T) {
 			  "dataPoints": [
 			    {
 			      "attributes": {
-				"label-1": "label-value-1",
-				"label-2": "label-value-2"
+			        "label-1": "label-value-1",
+			        "label-2": "label-value-2"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -207,8 +207,8 @@ func TestMetricsJSON(t *testing.T) {
 			    },
 			    {
 			      "attributes": {
-				"label-1": "label-value-1",
-				"label-3": "label-value-3"
+			        "label-1": "label-value-1",
+			        "label-3": "label-value-3"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -226,7 +226,7 @@ func TestMetricsJSON(t *testing.T) {
 			    "name": "",
 			    "version": ""
 			  },
-			  "name": "double-histogram",
+			  "name": "histogram",
 			  "description": "",
 			  "unit": "1",
 			  "dataType": "Histogram",
@@ -234,8 +234,8 @@ func TestMetricsJSON(t *testing.T) {
 			  "dataPoints": [
 			    {
 			      "attributes": {
-				"label-1": "label-value-1",
-				"label-3": "label-value-3"
+			        "label-1": "label-value-1",
+			        "label-3": "label-value-3"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -246,18 +246,18 @@ func TestMetricsJSON(t *testing.T) {
 			    },
 			    {
 			      "attributes": {
-				"label-2": "label-value-2"
+			        "label-2": "label-value-2"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
 			      "count": 1,
 			      "sum": 15,
 			      "explicitBounds": [
-				1
+			        1
 			      ],
 			      "bucketCounts": [
-				0,
-				1
+			        0,
+			        1
 			      ]
 			    }
 			  ]
@@ -272,15 +272,30 @@ func TestMetricsJSON(t *testing.T) {
 			    "name": "",
 			    "version": ""
 			  },
-			  "name": "double-summary",
+			  "name": "exponential-histogram",
+			  "description": "",
+			  "unit": "1",
+			  "dataType": "ExponentialHistogram"
+			}`), compactJSON(`{
+			  "resource": {
+			    "type": "metric",
+			    "labels": {
+			      "resource-attr": "resource-attr-val-1"
+			    }
+			  },
+			  "instrumentationLibrary": {
+			    "name": "",
+			    "version": ""
+			  },
+			  "name": "summary",
 			  "description": "",
 			  "unit": "1",
 			  "dataType": "Summary",
 			  "dataPoints": [
 			    {
 			      "attributes": {
-				"label-1": "label-value-1",
-				"label-3": "label-value-3"
+			        "label-1": "label-value-1",
+			        "label-3": "label-value-3"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
@@ -290,17 +305,17 @@ func TestMetricsJSON(t *testing.T) {
 			    },
 			    {
 			      "attributes": {
-				"label-2": "label-value-2"
+			        "label-2": "label-value-2"
 			      },
 			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
 			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
 			      "count": 1,
 			      "sum": 15,
 			      "quantileValues": [
-				{
-				  "quantile": 0.01,
-				  "value": 15
-				}
+			        {
+			          "quantile": 0.01,
+			          "value": 15
+			        }
 			      ]
 			    }
 			  ]
@@ -364,7 +379,7 @@ func TestMetricsJSON(t *testing.T) {
 			    "name": "",
 			    "version": ""
 			  },
-			  "name": "counter-double",
+			  "name": "sum-double",
 			  "description": "",
 			  "unit": "1",
 			  "dataType": "Sum",
@@ -388,7 +403,7 @@ func TestMetricsJSON(t *testing.T) {
 			    "name": "",
 			    "version": ""
 			  },
-			  "name": "counter-int",
+			  "name": "sum-int",
 			  "description": "",
 			  "unit": "1",
 			  "dataType": "Sum",
@@ -412,7 +427,7 @@ func TestMetricsJSON(t *testing.T) {
 			    "name": "",
 			    "version": ""
 			  },
-			  "name": "double-histogram",
+			  "name": "histogram",
 			  "description": "",
 			  "unit": "1",
 			  "dataType": "Histogram",
@@ -439,7 +454,7 @@ func TestMetricsJSON(t *testing.T) {
 			    "name": "",
 			    "version": ""
 			  },
-			  "name": "double-summary",
+			  "name": "summary",
 			  "description": "",
 			  "unit": "1",
 			  "dataType": "Summary",
@@ -469,7 +484,7 @@ func TestMetricsJSON(t *testing.T) {
 			    "name": "",
 			    "version": ""
 			  },
-			  "name": "counter-int",
+			  "name": "sum-int",
 			  "description": "",
 			  "unit": "1",
 			  "dataType": "None"
@@ -479,9 +494,9 @@ func TestMetricsJSON(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			metrics, err := NewJSONMetricsMarshaler().MarshalMetrics(tt.metrics)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expect, string(metrics))
-			assert.NoError(t, checkJSON(metrics))
+			if assert.NoError(t, err) {
+				testJSON(t, tt.expect, string(metrics))
+			}
 		})
 	}
 }

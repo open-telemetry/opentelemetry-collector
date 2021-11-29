@@ -32,9 +32,11 @@ func TestNestedArraySerializesCorrectly(t *testing.T) {
 
 	ava2 := pdata.NewAttributeValueArray()
 	ava2.SliceVal().AppendEmpty().SetStringVal("bar")
-	ava2.SliceVal().AppendEmpty().SetMapVal(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+	m := pdata.NewAttributeValueMap()
+	pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 		"baz": pdata.NewAttributeValueBytes([]byte{42}),
-	}))
+	}).CopyTo(m.MapVal())
+	m.CopyTo(ava2.SliceVal().AppendEmpty())
 	ava2.CopyTo(ava.SliceVal().AppendEmpty())
 
 	ava.SliceVal().AppendEmpty().SetBoolVal(true)
@@ -46,11 +48,10 @@ func TestNestedArraySerializesCorrectly(t *testing.T) {
 	got := buf.buf.String()
 
 	assert.Equal(t, 5, ava.SliceVal().Len())
-	assert.Equal(t, lines(
+	testJSON(t, lines(
 		`["bar",{"baz":"Kg=="}]`,
 		`["foo",42,["bar",{"baz":"Kg=="}],true,5.5]`,
 	), got)
-	assert.NoError(t, checkJSON([]byte(got)))
 }
 
 func TestNestedMapSerializesCorrectly(t *testing.T) {
@@ -69,26 +70,14 @@ func TestNestedMapSerializesCorrectly(t *testing.T) {
 	got := buf.buf.String()
 
 	assert.Equal(t, 2, ava.MapVal().Len())
-	assert.Equal(t, lines(
+	testJSON(t, lines(
 		`{"bar":13}`,
 		`{"foo":"test","zoo":{"bar":13}}`,
 	), got)
-	assert.NoError(t, checkJSON([]byte(got)))
 }
 
 func lines(elems ...string) string {
 	return strings.Join(elems, "\n")
-}
-
-func checkJSON(data []byte) error {
-	var j json.RawMessage
-	dec := json.NewDecoder(bytes.NewReader(data))
-	for dec.More() {
-		if err := dec.Decode(&j); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func compactJSON(s string) string {
@@ -97,4 +86,57 @@ func compactJSON(s string) string {
 		panic(err)
 	}
 	return buf.String()
+}
+
+func splitStream(data string) ([]json.RawMessage, error) {
+	var elems []json.RawMessage
+
+	dec := json.NewDecoder(strings.NewReader(data))
+	for dec.More() {
+		var j json.RawMessage
+		if err := dec.Decode(&j); err != nil {
+			return nil, err
+		}
+		elems = append(elems, j)
+	}
+
+	return elems, nil
+}
+
+func streamToArray(data string) (string, error) {
+	elems, err := splitStream(data)
+	if err != nil {
+		return "", err
+	}
+
+	raw, err := json.Marshal(elems)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, raw, "", "\t"); err != nil {
+		return "", err
+	}
+
+	return string(buf.Bytes()), nil
+}
+
+func testJSON(t *testing.T, expect, actual string) {
+	t.Helper()
+
+	actualArray, err := streamToArray(actual)
+	if !assert.NoError(t, err) {
+		return
+	}
+	if actual == expect {
+		return
+	}
+
+	expectArray, err := streamToArray(expect)
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	assert.Equal(t, expectArray, actualArray)
 }
