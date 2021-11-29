@@ -17,7 +17,7 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/internal/otlpjson"
+	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/jsonstream"
 	"go.opentelemetry.io/collector/internal/otlptext"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -36,8 +36,8 @@ func newMarshaler(format string) (*marshaler, error) {
 	switch format {
 	case "text":
 		return newTextMarshaler(), nil
-	case "json":
-		return newJSONMarshaler(), nil
+	case "jsonstream":
+		return newJSONStreamMarshaler(), nil
 	default:
 		return nil, fmt.Errorf("invalid format %q", format)
 	}
@@ -52,11 +52,12 @@ func newTextMarshaler() *marshaler {
 	}
 }
 
-// newJSONMarshaler returns a marshaler for the JSON serialization format.
-func newJSONMarshaler() *marshaler {
+// newJSONStreamMarshaler returns a marshaler for the JSON stream serialization
+// format.
+func newJSONStreamMarshaler() *marshaler {
 	return &marshaler{
-		LogsMarshaler:    otlpjson.NewJSONLogsMarshaler(),
-		MetricsMarshaler: otlpjson.NewJSONMetricsMarshaler(),
-		TracesMarshaler:  otlpjson.NewJSONTracesMarshaler(),
+		LogsMarshaler:    jsonstream.NewJSONLogsMarshaler(),
+		MetricsMarshaler: jsonstream.NewJSONMetricsMarshaler(),
+		TracesMarshaler:  jsonstream.NewJSONTracesMarshaler(),
 	}
 }

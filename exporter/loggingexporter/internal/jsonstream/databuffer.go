@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlpjson // import "go.opentelemetry.io/collector/internal/otlpjson"
+package jsonstream
 
 import (
 	"bytes"
