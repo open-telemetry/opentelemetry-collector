@@ -28,6 +28,9 @@
 
 - Fix handling of corrupted records by persistent buffer (experimental) (#4475)
 
+## 💡 Enhancements 💡
+
+- Extending the contribution guide to help clarify what is acceptable defaults and recommendations.
 ## v0.40.0 Beta
 
 ## 🛑 Breaking changes 🛑
