@@ -65,4 +65,5 @@ receivers:
         - https://*.example.com
         cors_allowed_headers:
         - TestHeader
+        cors_max_age: 7200
 ```

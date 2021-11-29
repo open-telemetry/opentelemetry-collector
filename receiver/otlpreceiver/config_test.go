@@ -157,6 +157,7 @@ func TestLoadConfig(t *testing.T) {
 				HTTP: &confighttp.HTTPServerSettings{
 					Endpoint:    "0.0.0.0:4318",
 					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
+					CorsMaxAge:  7200,
 				},
 			},
 		})

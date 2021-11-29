@@ -488,6 +488,7 @@ func TestHttpCors(t *testing.T) {
 		name             string
 		CorsOrigins      []string
 		CorsHeaders      []string
+		CorsMaxAge       int
 		allowedWorks     bool
 		disallowedWorks  bool
 		extraHeaderWorks bool
@@ -502,6 +503,15 @@ func TestHttpCors(t *testing.T) {
 			name:             "OriginCORS",
 			CorsOrigins:      []string{"allowed-*.com"},
 			CorsHeaders:      []string{},
+			allowedWorks:     true,
+			disallowedWorks:  false,
+			extraHeaderWorks: false,
+		},
+		{
+			name:             "CacheableCORS",
+			CorsOrigins:      []string{"allowed-*.com"},
+			CorsHeaders:      []string{},
+			CorsMaxAge:       360,
 			allowedWorks:     true,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
@@ -522,6 +532,7 @@ func TestHttpCors(t *testing.T) {
 				Endpoint:    "localhost:0",
 				CorsOrigins: tt.CorsOrigins,
 				CorsHeaders: tt.CorsHeaders,
+				CorsMaxAge:  tt.CorsMaxAge,
 			}
 
 			ln, err := hss.ToListener()
@@ -550,13 +561,13 @@ func TestHttpCors(t *testing.T) {
 				expectedStatus = http.StatusOK
 			}
 			// Verify allowed domain gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", false, expectedStatus, tt.allowedWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.CorsMaxAge, false, expectedStatus, tt.allowedWorks)
 
 			// Verify allowed domain and extra headers gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", true, expectedStatus, tt.extraHeaderWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.CorsMaxAge, true, expectedStatus, tt.extraHeaderWorks)
 
 			// Verify disallowed domain gets responses that disallow CORS.
-			verifyCorsResp(t, url, "disallowed-origin.com", false, expectedStatus, tt.disallowedWorks)
+			verifyCorsResp(t, url, "disallowed-origin.com", tt.CorsMaxAge, false, expectedStatus, tt.disallowedWorks)
 
 			require.NoError(t, s.Close())
 		})
@@ -579,7 +590,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	require.NoError(t, s.Close())
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, extraHeader bool, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url string, origin string, maxAge int, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest("OPTIONS", url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
@@ -604,12 +615,17 @@ func verifyCorsResp(t *testing.T, url string, origin string, extraHeader bool, w
 
 	wantAllowOrigin := ""
 	wantAllowMethods := ""
+	wantMaxAge := ""
 	if wantAllowed {
 		wantAllowOrigin = origin
 		wantAllowMethods = "POST"
+		if maxAge != 0 {
+			wantMaxAge = fmt.Sprintf("%d", maxAge)
+		}
 	}
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
 	assert.Equal(t, wantAllowMethods, gotAllowMethods)
+	assert.Equal(t, wantMaxAge, resp.Header.Get("Access-Control-Max-Age"))
 }
 
 func ExampleHTTPServerSettings() {

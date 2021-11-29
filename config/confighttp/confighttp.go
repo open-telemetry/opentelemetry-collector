@@ -196,6 +196,11 @@ type HTTPServerSettings struct {
 	// CORS needs to be enabled first by providing a non-empty list in CorsOrigins
 	// A wildcard (*) can be used to match any header.
 	CorsHeaders []string `mapstructure:"cors_allowed_headers"`
+
+	// CorsMaxAge allows browsers to cache CORS preflight responses. It sets
+	// the Access-Control-Max-Age header. See github.com/rs/cors
+	// CORS needs to be enabled first by providing a non-empty list in CorsOrigins.
+	CorsMaxAge int `mapstructure:"cors_max_age"`
 }
 
 // ToListener creates a net.Listener.
@@ -251,6 +256,7 @@ func (hss *HTTPServerSettings) ToServer(_ component.Host, settings component.Tel
 			AllowedOrigins:   hss.CorsOrigins,
 			AllowCredentials: true,
 			AllowedHeaders:   hss.CorsHeaders,
+			MaxAge:           hss.CorsMaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
 	}

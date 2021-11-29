@@ -52,6 +52,9 @@ leverage server configuration.
   can be used to specify an optional list of allowed headers. By default, it includes `Accept`, 
   `Content-Type`, `X-Requested-With`. `Origin` is also always
   added to the list. A wildcard (`*`) can be used to match any header.
+- [`cors_max_age`](https://github.com/rs/cors): When CORS is enabled,
+  sets the value of the `Access-Control-Max-Age` header, allowing clients to
+  cache the response to CORS preflight requests.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
 
@@ -65,6 +68,7 @@ receivers:
     - https://*.test.com
     cors_allowed_headers:
     - ExampleHeader
+    cors_max_age: 7200
     endpoint: 0.0.0.0:55690
     protocols:
       http:
