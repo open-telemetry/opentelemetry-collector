@@ -26,6 +26,7 @@ import (
 	"sync/atomic"
 	"syscall"
 
+	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
@@ -186,6 +187,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if col.logger, err = telemetrylogs.NewLogger(col.cfgW.cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
+
+	// replace grpc logger with collector logger
+	grpcZap.ReplaceGrpcLoggerV2(col.logger)
 
 	col.logger.Info("Applying configuration...")
 
