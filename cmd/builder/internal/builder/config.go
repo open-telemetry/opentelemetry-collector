@@ -54,8 +54,10 @@ type Distribution struct {
 	Go             string `mapstructure:"go"`
 	Description    string `mapstructure:"description"`
 	OtelColVersion string `mapstructure:"otelcol_version"`
-	OutputPath     string `mapstructure:"output_path"`
-	Version        string `mapstructure:"version"`
+	// IncludeCore is deprecated and note that if this is being used, it will be removed in a subsequent release
+	IncludeCore *bool  `mapstructure:"include_core"`
+	OutputPath  string `mapstructure:"output_path"`
+	Version     string `mapstructure:"version"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution

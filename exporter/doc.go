@@ -16,4 +16,7 @@
 //
 // To implement a custom exporter you will need to implement component.ExporterFactory
 // interface and component.Exporter interface.
+//
+// To make the custom exporter part of the Collector build the factory must be added
+// to defaultcomponents.Components() function.
 package exporter // import "go.opentelemetry.io/collector/exporter"

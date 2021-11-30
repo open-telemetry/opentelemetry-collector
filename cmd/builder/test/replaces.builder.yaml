@@ -2,15 +2,6 @@ dist:
   module: go.opentelemetry.io/collector/builder/test/replaces
   otelcol_version: 0.38.0
 
-receivers:
-  - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    gomod: go.opentelemetry.io/collector v0.38.0
-exporters:
-  - import: go.opentelemetry.io/collector/exporter/loggingexporter
-    gomod: go.opentelemetry.io/collector v0.38.0
-extensions:
-  - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.38.0
 processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.38.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.38.0
