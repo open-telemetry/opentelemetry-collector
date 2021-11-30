@@ -97,7 +97,7 @@ func (l Level) String() string {
 
 // Set sets the telemetry level.
 func (l *Level) Set(s string) error {
-	lvl, err := ParseLevel(s)
+	lvl, err := parseLevel(s)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func (l *Level) UnmarshalText(text []byte) error {
 		return fmt.Errorf("cannot unmarshal to a nil *Level")
 	}
 	var err error
-	*l, err = ParseLevel(string(text))
+	*l, err = parseLevel(string(text))
 	return err
 }
 
@@ -146,12 +146,12 @@ func DefaultTelemetrySetting() TelemetrySetting {
 // GetMetricsLevel returns the parsed level, or error if unknown value.
 // Empty string is considered an unknown value.
 func (ts TelemetrySetting) GetMetricsLevel() (Level, error) {
-	return ParseLevel(ts.MetricsLevelStr)
+	return parseLevel(ts.MetricsLevelStr)
 }
 
-// ParseLevel returns the Level represented by the string. The parsing is case-insensitive
+// parseLevel returns the Level represented by the string. The parsing is case-insensitive
 // and it returns error if the string value is unknown.
-func ParseLevel(str string) (Level, error) {
+func parseLevel(str string) (Level, error) {
 	str = strings.ToLower(str)
 
 	switch str {
