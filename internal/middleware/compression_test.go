@@ -89,12 +89,6 @@ func TestHTTPClientCompression(t *testing.T) {
 			reqBody:     compressedZstdBody.Bytes(),
 			shouldError: false,
 		},
-		{
-			name:        "invalid",
-			encoding:    "ggip",
-			reqBody:     testBody,
-			shouldError: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

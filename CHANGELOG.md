@@ -2,11 +2,11 @@
 
 ## Unreleased
 
-## 🛑 Breaking changes 🛑
-
 ## 💡 Enhancements 💡
+
 - `confighttp`: add client-side compression support. (#4441)
-  - Each exporters should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
+  - Each exporter should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
+
 ## 🧰 Bug fixes 🧰
 
 - Fix handling of corrupted records by persistent buffer (experimental) (#4475)

@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -42,17 +41,6 @@ const (
 	CompressionSnappy  CompressionType = "snappy"
 	CompressionZstd    CompressionType = "zstd"
 	CompressionNone    CompressionType = "none"
-)
-
-var (
-	// HTTPCompressionKeys is the set of OpenTelemetry compression types to HTTP registered compression types.
-	HTTPCompressionKeys = map[CompressionType]struct{}{
-		CompressionGzip:    {},
-		CompressionZlib:    {},
-		CompressionDeflate: {},
-		CompressionSnappy:  {},
-		CompressionZstd:    {},
-	}
 )
 
 // HTTPClientSettings defines settings for creating an HTTP client.
@@ -83,7 +71,7 @@ type HTTPClientSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
-	Compression string `mapstructure:"compression"`
+	Compression CompressionType `mapstructure:"compression"`
 }
 
 // ToClient creates an HTTP client.
@@ -113,12 +101,11 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd.
-	if hcs.Compression != "" && hcs.Compression != string(CompressionNone) {
-		if isValidHTTPCompressionKey(hcs.Compression) {
-			clientTransport = middleware.NewCompressRoundTripper(clientTransport, hcs.Compression)
-		} else {
+	if hcs.Compression != "" && hcs.Compression != CompressionNone {
+		if !isValidHTTPCompressionKey(hcs.Compression) {
 			return nil, fmt.Errorf("unsupported compression type %q", hcs.Compression)
 		}
+		clientTransport = middleware.NewCompressRoundTripper(clientTransport, string(hcs.Compression))
 	}
 
 	if hcs.Auth != nil {
@@ -262,8 +249,15 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 	}
 }
 
-func isValidHTTPCompressionKey(compressionType string) bool {
-	compressionKey := strings.ToLower(compressionType)
-	_, valid := HTTPCompressionKeys[CompressionType(compressionKey)]
-	return valid
+func isValidHTTPCompressionKey(compressionType CompressionType) bool {
+	switch compressionType {
+	case CompressionGzip,
+		CompressionZlib,
+		CompressionDeflate,
+		CompressionSnappy,
+		CompressionZstd:
+		return true
+	default:
+		return false
+	}
 }

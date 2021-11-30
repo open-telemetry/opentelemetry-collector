@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -49,6 +48,8 @@ func NewCompressRoundTripper(rt http.RoundTripper, compressionType string) *Comp
 	}
 }
 
+// writerFactory defines writer field in CompressRoundTripper.
+// The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
 func writerFactory(compressionType string) func(*bytes.Buffer) (io.WriteCloser, error) {
 	switch compressionType {
 	case CompressionGzip:
@@ -67,11 +68,8 @@ func writerFactory(compressionType string) func(*bytes.Buffer) (io.WriteCloser, 
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
 			return zlib.NewWriter(buf), nil
 		}
-	default:
-		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
-			return nil, fmt.Errorf("unsupported compression type %q", compressionType)
-		}
 	}
+	return nil
 }
 
 func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
