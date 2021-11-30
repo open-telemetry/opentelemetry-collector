@@ -15,11 +15,21 @@
 package telemetrylogs // import "go.opentelemetry.io/collector/service/internal/telemetrylogs"
 
 import (
+	grpc_logsettable "github.com/grpc-ecosystem/go-grpc-middleware/logging/settable"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zapgrpc"
 
 	"go.opentelemetry.io/collector/config"
 )
+
+var grpcSettableLogger grpc_logsettable.SettableLoggerV2
+
+func init() {
+	// Note: this needs to happen only once and that too before any gRPC calls.
+	// The grpcSettableLogger.Set can be then be called to set any logger after in thread safe fashion.
+	grpcSettableLogger = grpc_logsettable.ReplaceGrpcLoggerV2()
+}
 
 func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logger, error) {
 	// Copied from NewProductionConfig.
@@ -45,5 +55,17 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 	if err != nil {
 		return nil, err
 	}
+
 	return logger, nil
+}
+
+func SetGRPCLogger(logger *zap.Logger, loglevel zapcore.Level) {
+	glogger := logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		if loglevel == zap.InfoLevel {
+			c, _ := zapcore.NewIncreaseLevelCore(core, zap.WarnLevel)
+			return c
+		}
+		return core
+	}))
+	grpcSettableLogger.Set(zapgrpc.NewLogger(glogger))
 }
