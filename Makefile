@@ -49,7 +49,7 @@ version:
 	@echo ${VERSION}
 
 .PHONY: all
-all: checklicense checkdoc misspell goimpi golint gotest otelcol
+all: checklicense checkdoc misspell goimpi golint gotest
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -140,26 +140,9 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/jcchavezs/porto/cmd/porto
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
-.PHONY: otelcol
-otelcol:
-	go generate ./...
-	$(MAKE) build-binary-internal
-
-.PHONY: otelcol-unstable
-otelcol-unstable:
-	go generate ./...
-	$(MAKE) build-binary-internal-unstable
-
 .PHONY: run
-run:
-	GO111MODULE=on go run --race ./cmd/otelcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
-
-.PHONY: docker-component # Not intended to be used directly
-docker-component: check-component
-	GOOS=linux $(MAKE) $(COMPONENT)
-	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
-	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
-	rm ./cmd/$(COMPONENT)/$(COMPONENT)
+run: build-binary-cmd-otelcol
+	./bin/cmd-otelcol --config ${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: for-all
 for-all:
@@ -206,72 +189,6 @@ delete-tag:
 	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
 	 	git tag -d "$${dir:2}/$${TAG}" ); \
 	done
-
-.PHONY: docker-otelcol
-docker-otelcol:
-	COMPONENT=otelcol $(MAKE) docker-component
-
-# build collector binaries with different OS and Architecture
-.PHONY: binaries-all-sys
-binaries-all-sys: binaries-darwin_amd64 binaries-darwin_arm64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
-
-.PHONY: binaries-all-sys-unstable
-binaries-all-sys-unstable: binaries-darwin_amd64-unstable binaries-darwin_arm64-unstable binaries-linux_amd64-unstable binaries-linux_arm64-unstable binaries-windows_amd64-unstable
-
-.PHONY: binaries-darwin_amd64
-binaries-darwin_amd64:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal
-
-.PHONY: binaries-darwin_arm64
-binaries-darwin_arm64:
-	GOOS=darwin  GOARCH=arm64 $(MAKE) build-binary-internal
-
-.PHONY: binaries-linux_amd64
-binaries-linux_amd64:
-	GOOS=linux   GOARCH=amd64 $(MAKE) build-binary-internal
-
-.PHONY: binaries-linux_arm64
-binaries-linux_arm64:
-	GOOS=linux   GOARCH=arm64 $(MAKE) build-binary-internal
-
-.PHONY: binaries-windows_amd64
-binaries-windows_amd64:
-	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) build-binary-internal
-
-.PHONY: binaries-darwin_amd64-unstable
-binaries-darwin_amd64-unstable:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) build-binary-internal-unstable
-
-.PHONY: binaries-darwin_arm64-unstable
-binaries-darwin_arm64-unstable:
-	GOOS=darwin  GOARCH=arm64 $(MAKE) build-binary-internal-unstable
-
-.PHONY: binaries-linux_amd64-unstable
-binaries-linux_amd64-unstable:
-	GOOS=linux   GOARCH=amd64 $(MAKE) build-binary-internal-unstable
-
-.PHONY: binaries-linux_arm64-unstable
-binaries-linux_arm64-unstable:
-	GOOS=linux   GOARCH=arm64 $(MAKE) build-binary-internal-unstable
-
-.PHONY: binaries-windows_amd64-unstable
-binaries-windows_amd64-unstable:
-	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) build-binary-internal-unstable
-
-.PHONY: build-binary-internal
-build-binary-internal:
-	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcol
-
-.PHONY: build-binary-internal-unstable
-build-binary-internal-unstable:
-	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcol_$(GOOS)_$(GOARCH)$(EXTENSION)_unstable $(BUILD_INFO) -tags enable_unstable ./cmd/otelcol
-
-.PHONY: deb-rpm-package
-%-package: ARCH ?= amd64
-%-package:
-	$(MAKE) binaries-linux_$(ARCH)
-	docker build -t otelcol-fpm internal/buildscripts/packaging/fpm
-	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcol-fpm
 
 # Builds a collector binary of the removed cmd/otelcol directory
 .PHONY: build-binary-cmd-otelcol

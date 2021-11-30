@@ -26,31 +26,19 @@ import (
 )
 
 var (
-	version = "dev"
-	date    = "unknown"
-
 	cfgFile string
 	cfg     = builder.DefaultConfig()
-
-	versionCmd = &cobra.Command{
-		Use:   "version",
-		Short: "Version of opentelemetry-collector-builder",
-		Long:  "Prints the version of opentelemetry-collector-builder binary",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Println(fmt.Sprintf("%s version %s", cmd.Parent().Name(), version))
-		},
-	}
 )
 
-// Execute is the main entrypoint for this application
-func Execute() error {
-	cobra.OnInitialize(initConfig)
-
+// Command is the main entrypoint for this application
+func Command() (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:  "builder",
 		Long: fmt.Sprintf("OpenTelemetry Collector distribution builder (%s)", version),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
+			if err := initConfig(); err != nil {
+				return err
+			}
 			if err := cfg.Validate(); err != nil {
 				cfg.Logger.Error("invalid configuration", zap.Error(err))
 				return err
@@ -73,30 +61,24 @@ func Execute() error {
 	cmd.Flags().StringVar(&cfg.Distribution.Name, "name", "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.Description, "description", "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.Version, "version", "1.0.0", "The version for the OpenTelemetry Collector distribution")
-	cmd.Flags().BoolVar(&cfg.Distribution.IncludeCore, "include-core", true, "Whether the core components should be included in the distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, "otelcol-version", cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
 	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, "output-path", cfg.Distribution.OutputPath, "Where to write the resulting files")
 	cmd.Flags().StringVar(&cfg.Distribution.Go, "go", "", "The Go binary to use during the compilation phase. Default: go from the PATH")
 	cmd.Flags().StringVar(&cfg.Distribution.Module, "module", "go.opentelemetry.io/collector/cmd/builder", "The Go module for the new distribution")
 
 	// version of this binary
-	cmd.AddCommand(versionCmd)
+	cmd.AddCommand(versionCommand())
 
 	// tie Viper to flags
 	if err := viper.BindPFlags(cmd.Flags()); err != nil {
 		cfg.Logger.Error("failed to bind flags", zap.Error(err))
-		return err
+		return nil, err
 	}
 
-	if err := cmd.Execute(); err != nil {
-		cfg.Logger.Error("failed to run", zap.Error(err))
-		return err
-	}
-
-	return nil
+	return cmd, nil
 }
 
-func initConfig() {
+func initConfig() error {
 	cfg.Logger.Info("OpenTelemetry Collector distribution builder", zap.String("version", version), zap.String("date", date))
 
 	vp := viper.New()
@@ -115,14 +97,14 @@ func initConfig() {
 
 	// load the config file
 	if err := vp.ReadInConfig(); err != nil {
-		cobra.CheckErr(err)
+		return err
 	}
 	cfg.Logger.Info("Using config file", zap.String("path", vp.ConfigFileUsed()))
 
 	// convert Viper's internal state into our configuration object
 	if err := vp.Unmarshal(&cfg); err != nil {
 		cfg.Logger.Error("failed to parse the config", zap.Error(err))
-		cobra.CheckErr(err)
-		return
+		return err
 	}
+	return nil
 }

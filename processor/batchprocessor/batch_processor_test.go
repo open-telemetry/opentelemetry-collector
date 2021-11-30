@@ -549,7 +549,7 @@ func BenchmarkBatchMetricProcessor(b *testing.B) {
 	}
 	b.StartTimer()
 	for n := 0; n < b.N; n++ {
-		batcher.ConsumeMetrics(ctx, mds[n])
+		require.NoError(b, batcher.ConsumeMetrics(ctx, mds[n]))
 	}
 	b.StopTimer()
 	require.NoError(b, batcher.Shutdown(ctx))

@@ -443,7 +443,7 @@ func TestBallastSizeMiB(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ballastExtCfg.SizeMiB = tt.ballastExtBallastSizeSetting
 			ballastExt, _ := ballastExtFactory.CreateExtension(ctx, extCreateSet, ballastExtCfg)
-			ballastExt.Start(ctx, nil)
+			require.NoError(t, ballastExt.Start(ctx, nil))
 			assert.Equal(t, tt.expectResult, tt.expectedMemLimiterBallastSize*mibBytes == ballastExt.(*ballastextension.MemoryBallast).GetBallastSize())
 		})
 	}

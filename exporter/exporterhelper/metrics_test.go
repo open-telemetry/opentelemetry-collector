@@ -126,7 +126,7 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rCfg := DefaultRetrySettings()
 	qCfg := DefaultQueueSettings()
@@ -140,7 +140,8 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	md := testdata.GenerateMetricsOneMetric()
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
-		te.ConsumeMetrics(context.Background(), md)
+		// errors are checked in the checkExporterEnqueueFailedMetricsStats function below.
+		_ = te.ConsumeMetrics(context.Background(), md)
 	}
 
 	// 2 batched must be in queue, and 10 metric points rejected due to queue overflow
@@ -208,7 +209,7 @@ func newPushMetricsData(retError error) consumerhelper.ConsumeMetricsFunc {
 func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsExporter, wantError error) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	md := testdata.GenerateMetricsTwoMetrics()
 	const numBatches = 7

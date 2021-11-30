@@ -104,6 +104,124 @@ func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
 	}
 }
 
+func TestPersistentStorage_CorruptedData(t *testing.T) {
+	path := createTemporaryDirectory()
+	defer os.RemoveAll(path)
+
+	traces := newTraces(5, 10)
+	req := newFakeTracesRequest(traces)
+
+	ext := createStorageExtension(path)
+
+	cases := []struct {
+		name                               string
+		corruptAllData                     bool
+		corruptSomeData                    bool
+		corruptCurrentlyDispatchedItemsKey bool
+		corruptReadIndex                   bool
+		corruptWriteIndex                  bool
+		desiredQueueSize                   uint64
+		desiredNumberOfDispatchedItems     int
+	}{
+		{
+			name:                           "corrupted no items",
+			corruptAllData:                 false,
+			desiredQueueSize:               2,
+			desiredNumberOfDispatchedItems: 1,
+		},
+		{
+			name:                           "corrupted all items",
+			corruptAllData:                 true,
+			desiredQueueSize:               0,
+			desiredNumberOfDispatchedItems: 0,
+		},
+		{
+			name:                           "corrupted some items",
+			corruptSomeData:                true,
+			desiredQueueSize:               1,
+			desiredNumberOfDispatchedItems: 1,
+		},
+		{
+			name:                               "corrupted dispatched items key",
+			corruptCurrentlyDispatchedItemsKey: true,
+			desiredQueueSize:                   1,
+			desiredNumberOfDispatchedItems:     1,
+		},
+		{
+			name:                           "corrupted read index",
+			corruptReadIndex:               true,
+			desiredQueueSize:               0,
+			desiredNumberOfDispatchedItems: 1,
+		},
+		{
+			name:                           "corrupted write index",
+			corruptWriteIndex:              true,
+			desiredQueueSize:               0,
+			desiredNumberOfDispatchedItems: 1,
+		},
+		{
+			name:                               "corrupted everything",
+			corruptAllData:                     true,
+			corruptCurrentlyDispatchedItemsKey: true,
+			corruptReadIndex:                   true,
+			corruptWriteIndex:                  true,
+			desiredQueueSize:                   0,
+			desiredNumberOfDispatchedItems:     0,
+		},
+	}
+
+	badBytes := []byte{0, 1, 2}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			client := createTestClient(ext)
+			ps := createTestPersistentStorage(client)
+
+			ctx := context.Background()
+
+			// Put some items, make sure they are loaded and shutdown the storage...
+			for i := 0; i < 3; i++ {
+				err := ps.put(req)
+				require.NoError(t, err)
+			}
+			require.Eventually(t, func() bool {
+				return ps.size() == 2
+			}, 500*time.Millisecond, 10*time.Millisecond)
+			ps.stop()
+
+			// ... so now we can corrupt data (in several ways)
+			if c.corruptAllData || c.corruptSomeData {
+				_ = client.Set(ctx, "0", badBytes)
+			}
+			if c.corruptAllData {
+				_ = client.Set(ctx, "1", badBytes)
+				_ = client.Set(ctx, "2", badBytes)
+			}
+
+			if c.corruptCurrentlyDispatchedItemsKey {
+				_ = client.Set(ctx, currentlyDispatchedItemsKey, badBytes)
+			}
+
+			if c.corruptReadIndex {
+				_ = client.Set(ctx, readIndexKey, badBytes)
+			}
+
+			if c.corruptWriteIndex {
+				_ = client.Set(ctx, writeIndexKey, badBytes)
+			}
+
+			// Reload
+			newPs := createTestPersistentStorage(client)
+
+			require.Eventually(t, func() bool {
+				newPs.mu.Lock()
+				defer newPs.mu.Unlock()
+				return newPs.size() == c.desiredQueueSize && len(newPs.currentlyDispatchedItems) == c.desiredNumberOfDispatchedItems
+			}, 500*time.Millisecond, 10*time.Millisecond)
+		})
+	}
+}
+
 func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	path := createTemporaryDirectory()
 	defer os.RemoveAll(path)
@@ -216,7 +334,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 	ext := createStorageExtension(path)
 	wq := createTestQueue(ext, 5000)
 	require.Equal(t, 0, wq.Size())
-	ext.Shutdown(context.Background())
+	require.NoError(t, ext.Shutdown(context.Background()))
 }
 
 func TestPersistentStorage_EmptyRequest(t *testing.T) {
@@ -279,7 +397,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 				req := ps.get()
 				require.NotNil(bb, req)
 			}
-			ext.Shutdown(context.Background())
+			require.NoError(b, ext.Shutdown(context.Background()))
 		})
 	}
 }

@@ -23,6 +23,7 @@ We release both core and contrib collectors with the same versions where the con
       * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/versions.yaml)
       * Run `make multimod-prerelease`
     * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
+    * Update the collector version in the manifest used by `make run` to the new release in `./internal/buildscripts/builder-config.yaml`.
 
 1. Make sure the current main branch build successfully passes (Core and Contrib). For Contrib also check that the spawn-stability-tests-job triggered by the main build-publish job also passes. Check that the corresponding "-dev" images exist in Dockerhub (Core and Contrib).
 
@@ -30,7 +31,9 @@ We release both core and contrib collectors with the same versions where the con
 
 1. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.4.0`). Push them to origin (not your fork) with `git push --tags origin` (assuming origin refers to upstream open-telemetry project). Wait for the new tag build to pass successfully.
 
-1. The release script for the collector builder should create a new GitHub release. Wait until the workflow "Builder - Release" has completed and change the release's description to include the release notes from the CHANGELOG.md file.
+1. The release script for the collector builder should create a new GitHub release for the builder. This is a separate release from the core, but we might join them in the future if it makes sense.
+
+1. Create a new `v0.40.0` release and use the contents from the CHANGELOG.md as the release's description.
 
 ## Releasing opentelemetry-collector-contrib
 
