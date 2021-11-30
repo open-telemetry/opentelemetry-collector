@@ -20,7 +20,6 @@ Available log exporters (sorted alphabetically):
 
 Available local exporters (sorted alphabetically):
 
-- [File](fileexporter/README.md)
 - [Logging](loggingexporter/README.md)
 
 The [contrib
