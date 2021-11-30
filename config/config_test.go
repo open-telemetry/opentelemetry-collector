@@ -255,7 +255,15 @@ func generateConfig() *Config {
 			},
 		},
 		Service: Service{
-			Telemetry:  ServiceTelemetry{Logs: ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"}},
+			Telemetry: ServiceTelemetry{Logs: ServiceTelemetryLogs{
+				Level:             zapcore.DebugLevel,
+				Development:       true,
+				Encoding:          "console",
+				DisableCaller:     true,
+				DisableStacktrace: true,
+				OutputPaths:       []string{"stderr", "./output-logs"},
+				ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
+				InitialFields:     map[string]interface{}{"fieldKey": "filed-value"}}},
 			Extensions: []ComponentID{NewComponentID("nop")},
 			Pipelines: map[ComponentID]*Pipeline{
 				NewComponentID("traces"): {

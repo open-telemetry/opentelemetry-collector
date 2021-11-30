@@ -25,6 +25,12 @@ service:
       level: "DEBUG"
       development: true
       encoding: "console"
+      disableCaller: true
+      disableStacktrace: true
+      outputPaths: ["stderr", "./output-logs"]
+      errorOutputPaths: ["stderr", "./error-output-logs"]
+      initialFields: 
+        fieldKey: "filed-value"
   extensions: [exampleextension/0, exampleextension/1]
   pipelines:
     traces:

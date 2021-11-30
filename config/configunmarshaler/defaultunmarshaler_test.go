@@ -98,7 +98,17 @@ func TestDecodeConfig(t *testing.T) {
 		"Did not load processor config correctly")
 
 	// Verify Service Telemetry
-	assert.Equal(t, config.ServiceTelemetry{Logs: config.ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"}}, cfg.Service.Telemetry)
+	assert.Equal(t,
+		config.ServiceTelemetry{Logs: config.ServiceTelemetryLogs{
+			Level:             zapcore.DebugLevel,
+			Development:       true,
+			Encoding:          "console",
+			DisableCaller:     true,
+			DisableStacktrace: true,
+			OutputPaths:       []string{"stderr", "./output-logs"},
+			ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
+			InitialFields:     map[string]interface{}{"fieldKey": "filed-value"},
+		}}, cfg.Service.Telemetry)
 
 	// Verify Service Extensions
 	assert.Equal(t, 2, len(cfg.Service.Extensions))
