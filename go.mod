@@ -8,7 +8,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
-	github.com/knadh/koanf v1.3.2
+	github.com/knadh/koanf v1.3.3
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/mostynb/go-grpc-compression v1.1.15
@@ -19,10 +19,10 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/model v0.39.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.1
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1
-	go.opentelemetry.io/contrib/zpages v0.26.1
+	go.opentelemetry.io/collector/model v0.40.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.27.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.27.0
+	go.opentelemetry.io/contrib/zpages v0.27.0
 	go.opentelemetry.io/otel v1.2.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.25.0
 	go.opentelemetry.io/otel/metric v0.25.0

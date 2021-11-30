@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sync/atomic"
 	"syscall"
 
 	"go.opentelemetry.io/contrib/zpages"
@@ -70,9 +71,9 @@ type Collector struct {
 	meterProvider       metric.MeterProvider
 	zPagesSpanProcessor *zpages.SpanProcessor
 
-	cfgW         *configWatcher
-	service      *service
-	stateChannel chan State
+	cfgW    *configWatcher
+	service *service
+	state   atomic.Value
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -99,15 +100,18 @@ func New(set CollectorSettings) (*Collector, error) {
 		set.ConfigUnmarshaler = configunmarshaler.NewDefault()
 	}
 
+	state := atomic.Value{}
+	state.Store(Starting)
 	return &Collector{
-		set:          set,
-		stateChannel: make(chan State, Closed+1),
+		set:   set,
+		state: state,
 	}, nil
+
 }
 
-// GetStateChannel returns state channel of the collector server.
-func (col *Collector) GetStateChannel() chan State {
-	return col.stateChannel
+// GetState returns current state of the collector server.
+func (col *Collector) GetState() State {
+	return col.state.Load().(State)
 }
 
 // GetLogger returns logger used by the Collector.
@@ -137,14 +141,14 @@ func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 	}
 
 	col.shutdownChan = make(chan struct{})
-	col.stateChannel <- Running
+	col.setCollectorState(Running)
 LOOP:
 	for {
 		select {
 		case err := <-col.cfgW.watcher:
 			col.logger.Warn("Config updated", zap.Error(err))
 
-			col.stateChannel <- Closing
+			col.setCollectorState(Closing)
 
 			if err = col.cfgW.close(ctx); err != nil {
 				return fmt.Errorf("failed to close config watcher: %w", err)
@@ -172,7 +176,7 @@ LOOP:
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	col.stateChannel <- Starting
+	col.setCollectorState(Starting)
 
 	var err error
 	if col.cfgW, err = newConfigWatcher(ctx, col.set); err != nil {
@@ -243,7 +247,7 @@ func (col *Collector) Run(ctx context.Context) error {
 }
 
 func (col *Collector) shutdown(ctx context.Context) error {
-	col.stateChannel <- Closing
+	col.setCollectorState(Closing)
 
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
@@ -268,10 +272,14 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	}
 
 	col.logger.Info("Shutdown complete.")
-	col.stateChannel <- Closed
-	close(col.stateChannel)
+	col.setCollectorState(Closed)
 
 	return errs
+}
+
+// setCollectorState provides current state of the collector
+func (col *Collector) setCollectorState(state State) {
+	col.state.Store(state)
 }
 
 func getBallastSize(host component.Host) uint64 {

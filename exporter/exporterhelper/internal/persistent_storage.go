@@ -173,7 +173,7 @@ func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []Persiste
 	if len(reqs) > 0 {
 		errCount := 0
 		for _, req := range reqs {
-			if pcs.put(req) != nil {
+			if req == nil || pcs.put(req) != nil {
 				errCount++
 			}
 		}
@@ -265,16 +265,20 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Persis
 		pcs.updateReadIndex(ctx)
 		pcs.itemDispatchingStart(ctx, index)
 
+		var req PersistentRequest
 		batch, err := newBatch(pcs).get(pcs.itemKey(index)).execute(ctx)
-		if err != nil {
-			return nil, false
+		if err == nil {
+			req, err = batch.getRequestResult(pcs.itemKey(index))
 		}
 
-		req, err := batch.getRequestResult(pcs.itemKey(index))
 		if err != nil || req == nil {
+			// We need to make sure that currently dispatched items list is cleaned
+			pcs.itemDispatchingFinish(ctx, index)
+
 			return nil, false
 		}
 
+		// If all went well so far, cleanup will be handled by callback
 		req.SetOnProcessingFinished(func() {
 			pcs.mu.Lock()
 			defer pcs.mu.Unlock()
@@ -287,7 +291,8 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Persis
 }
 
 // retrieveNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
-// and moves the items back to the queue
+// and moves the items back to the queue. The function returns an array which might contain nils
+// if unmarshalling of the value at a given index was not possible.
 func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []PersistentRequest {
 	var reqs []PersistentRequest
 	var dispatchedItems []itemIndex
@@ -339,11 +344,17 @@ func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Co
 
 	for i, key := range keys {
 		req, err := retrieveBatch.getRequestResult(key)
+		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pcs.logger.Warn("Failed unmarshalling item",
 				zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key), zap.Error(err))
 		} else {
-			reqs[i] = req
+			if req == nil {
+				pcs.logger.Debug("Item value could not be retrieved",
+					zap.String(zapQueueNameKey, pcs.queueName), zap.String(zapKey, key), zap.Error(err))
+			} else {
+				reqs[i] = req
+			}
 		}
 	}
 

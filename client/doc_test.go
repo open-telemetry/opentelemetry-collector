@@ -59,3 +59,35 @@ func Example_processor() {
 	// And use the information from the client as you need
 	fmt.Println(cl.Addr)
 }
+
+func Example_authenticator() {
+	// Your configauth.AuthenticateFunc receives a context
+	ctx := context.Background()
+
+	// Get the client from the context: if it doesn't exist, FromContext will
+	// create one
+	cl := client.FromContext(ctx)
+
+	// After a successful authentication, place the data you want to propagate
+	// as part of an AuthData implementation of your own
+	cl.Auth = &exampleAuthData{
+		username: "jdoe",
+	}
+
+	// Your configauth.AuthenticateFunc should return this new context
+	_ = client.NewContext(ctx, cl)
+}
+
+type exampleAuthData struct {
+	username string
+}
+
+func (e *exampleAuthData) GetAttribute(key string) interface{} {
+	if key == "username" {
+		return e.username
+	}
+	return nil
+}
+func (e *exampleAuthData) GetAttributeNames() []string {
+	return []string{"username"}
+}

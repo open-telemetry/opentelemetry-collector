@@ -22,6 +22,11 @@ builds:
     goarm:
       - 6
       - 7
+    binary: ocb
+release:
+  github:
+    owner: open-telemetry
+    name: opentelemetry-collector
 archives:
   - format: binary
 checksum:
