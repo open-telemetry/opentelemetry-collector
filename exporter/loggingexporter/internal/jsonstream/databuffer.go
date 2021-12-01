@@ -53,6 +53,10 @@ func (b *dataBuffer) tokenUint64(n uint64) {
 	b.buf.WriteString(strconv.FormatUint(n, 10))
 }
 
+func (b *dataBuffer) tokenInt32(n int32) {
+	b.tokenInt64(int64(n))
+}
+
 func (b *dataBuffer) tokenInt64(n int64) {
 	b.buf.WriteString(strconv.FormatInt(n, 10))
 }
@@ -173,6 +177,12 @@ func (b *dataBuffer) fieldUint32(name string, value uint32) {
 func (b *dataBuffer) fieldUint64(name string, value uint64) {
 	b.field(name, func() {
 		b.tokenUint64(value)
+	})
+}
+
+func (b *dataBuffer) fieldInt32(name string, value int32) {
+	b.field(name, func() {
+		b.tokenInt32(value)
 	})
 }
 

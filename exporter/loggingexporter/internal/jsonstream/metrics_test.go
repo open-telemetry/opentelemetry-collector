@@ -275,7 +275,49 @@ func TestMetricsJSON(t *testing.T) {
 			  "name": "exponential-histogram",
 			  "description": "",
 			  "unit": "1",
-			  "dataType": "ExponentialHistogram"
+			  "dataType": "ExponentialHistogram",
+			  "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+			  "dataPoints": [
+			    {
+			      "attributes": {
+			        "label-1": "label-value-1",
+			        "label-3": "label-value-3"
+			      },
+			      "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
+			      "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
+			      "count": 2,
+			      "sum": 15,
+			      "scale": 0,
+			      "zeroCount": 1,
+			      "negative": {
+			      "offset": 0,
+			      "bucketCounts": []
+			    },
+			    "positive": {
+			      "offset": 0,
+			      "bucketCounts": []
+			    }
+			  },
+			  {
+			    "attributes": {
+			      "label-2": "label-value-2"
+			    },
+			    "startTimestamp": "2020-02-11 20:26:12.000000321 +0000 UTC",
+			    "timestamp": "2020-02-11 20:26:13.000000789 +0000 UTC",
+			    "count": 2,
+			    "sum": 15,
+			    "scale": 0,
+			    "zeroCount": 1,
+			    "negative": {
+			      "offset": 0,
+			      "bucketCounts": []
+			    },
+			    "positive": {
+			      "offset": 0,
+			      "bucketCounts": []
+			    }
+			  }
+			  ]
 			}`), compactJSON(`{
 			  "resource": {
 			    "type": "metric",

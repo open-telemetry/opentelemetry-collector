@@ -79,7 +79,8 @@ func (b *dataBuffer) metricDataPoints(m pdata.Metric) {
 	case pdata.MetricDataTypeNone:
 		return
 	case pdata.MetricDataTypeGauge:
-		b.metricNumberDataPoints(m.Gauge().DataPoints())
+		data := m.Gauge()
+		b.metricNumberDataPoints(data.DataPoints())
 	case pdata.MetricDataTypeSum:
 		data := m.Sum()
 		b.fieldBool("isMonotonic", data.IsMonotonic())
@@ -89,8 +90,13 @@ func (b *dataBuffer) metricDataPoints(m pdata.Metric) {
 		data := m.Histogram()
 		b.fieldString("aggregationTemporality", data.AggregationTemporality().String())
 		b.histogramDataPoints(data.DataPoints())
+	case pdata.MetricDataTypeExponentialHistogram:
+		data := m.ExponentialHistogram()
+		b.fieldString("aggregationTemporality", data.AggregationTemporality().String())
+		b.exponentialHistogramDataPoints(data.DataPoints())
 	case pdata.MetricDataTypeSummary:
-		b.summaryDataPoints(m.Summary().DataPoints())
+		data := m.Summary()
+		b.summaryDataPoints(data.DataPoints())
 	}
 }
 
@@ -135,14 +141,46 @@ func (b *dataBuffer) histogramDataPoints(ps pdata.HistogramDataPointSlice) {
 					}
 				})
 
-				buckets := p.BucketCounts()
-				b.fieldArray("bucketCounts", func() {
-					for _, bucket := range buckets {
-						b.elementUint64(bucket)
-					}
-				})
+				b.histogramBucketCounts(p.BucketCounts())
 			})
 		}
+	})
+}
+
+func (b *dataBuffer) exponentialHistogramDataPoints(ps pdata.ExponentialHistogramDataPointSlice) {
+	b.fieldArray("dataPoints", func() {
+		for i := 0; i < ps.Len(); i++ {
+			p := ps.At(i)
+
+			b.object(func() {
+				b.fieldAttrs("attributes", p.Attributes())
+				b.fieldTime("startTimestamp", p.StartTimestamp())
+				b.fieldTime("timestamp", p.Timestamp())
+
+				b.fieldUint64("count", p.Count())
+				b.fieldFloat64("sum", p.Sum())
+				b.fieldInt32("scale", p.Scale())
+				b.fieldUint64("zeroCount", p.ZeroCount())
+
+				b.exponentialHistogramBuckets("negative", p.Negative())
+				b.exponentialHistogramBuckets("positive", p.Positive())
+			})
+		}
+	})
+}
+
+func (b *dataBuffer) histogramBucketCounts(buckets []uint64) {
+	b.fieldArray("bucketCounts", func() {
+		for _, bucket := range buckets {
+			b.elementUint64(bucket)
+		}
+	})
+}
+
+func (b *dataBuffer) exponentialHistogramBuckets(name string, xs pdata.Buckets) {
+	b.fieldObject(name, func() {
+		b.fieldInt32("offset", xs.Offset())
+		b.histogramBucketCounts(xs.BucketCounts())
 	})
 }
 
