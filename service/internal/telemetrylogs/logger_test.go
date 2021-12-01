@@ -17,6 +17,7 @@ package telemetrylogs
 import (
 	"testing"
 
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -63,29 +64,31 @@ func TestGRPCLogger(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			expectedInfo, expectedWarn := false, false
+			obsInfo, obsWarn := false, false
 
 			hook := zap.Hooks(func(entry zapcore.Entry) error {
 				switch entry.Level {
 				case zapcore.InfoLevel:
-					expectedInfo = true
+					obsInfo = true
 				case zapcore.WarnLevel:
-					expectedWarn = true
+					obsWarn = true
 				}
 				return nil
 			})
 
 			// create new collector logger
-			_, err := NewLogger(test.cfg, []zap.Option{hook})
+			logger, err := NewLogger(test.cfg, []zap.Option{hook})
 			assert.NoError(t, err)
 
+			glogger := newGRPCLogger(logger, test.cfg.Level)
+			grpc_zap.ReplaceGrpcLoggerV2(glogger)
 			// write a grpc log
 			grpclog.Info(test.name)
 			grpclog.Warning(test.name)
 
 			// test whether the grpc log has been recorded from collector logger
-			assert.Equal(t, expectedInfo, test.infoLogged)
-			assert.Equal(t, expectedWarn, test.warnLogged)
+			assert.Equal(t, obsInfo, test.infoLogged)
+			assert.Equal(t, obsWarn, test.warnLogged)
 		})
 	}
 }
