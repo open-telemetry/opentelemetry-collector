@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap/zapgrpc"
 	"os"
 	"os/signal"
 	"runtime"
@@ -35,6 +34,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapgrpc"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
@@ -194,7 +194,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 
 	grpcLogger := telemetrylogs.NewGRPCLogger(col.logger, col.cfgW.cfg.Service.Telemetry.Logs.Level)
 	gsettable.Set(zapgrpc.NewLogger(grpcLogger))
-	
+
 	col.logger.Info("Applying configuration...")
 
 	col.service, err = newService(&svcSettings{
