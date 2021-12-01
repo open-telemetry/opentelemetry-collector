@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -103,13 +102,9 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 func TestCollector_Start(t *testing.T) {
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
-
-	var mu sync.Mutex
-
+	
 	loggingHookCalled := false
 	hook := func(entry zapcore.Entry) error {
-		mu.Lock()
-		defer mu.Unlock()
 		loggingHookCalled = true
 		return nil
 	}
