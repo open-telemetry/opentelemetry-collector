@@ -79,7 +79,6 @@ func TestGRPCLogger(t *testing.T) {
 			_, err := NewLogger(test.cfg, []zap.Option{hook})
 			assert.NoError(t, err)
 
-
 			// write a grpc log
 			grpclog.Info(test.name)
 			grpclog.Warning(test.name)
