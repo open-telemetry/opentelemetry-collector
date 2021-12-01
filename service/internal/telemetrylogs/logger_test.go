@@ -76,12 +76,9 @@ func TestGRPCLogger(t *testing.T) {
 			})
 
 			// create new collector logger
-			logger, err := NewLogger(test.cfg, []zap.Option{hook})
+			_, err := NewLogger(test.cfg, []zap.Option{hook})
 			assert.NoError(t, err)
 
-			// create new grpc logger from collector logger
-			glogger := NewGRPCLogger(logger, test.cfg.Level)
-			grpclog.SetLoggerV2(glogger)
 
 			// write a grpc log
 			grpclog.Info(test.name)

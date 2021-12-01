@@ -26,6 +26,11 @@ import (
 	"sync/atomic"
 	"syscall"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
+	"go.opentelemetry.io/collector/extension/ballastextension"
+	"go.opentelemetry.io/collector/service/internal"
+	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
@@ -33,13 +38,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/grpclog"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configunmarshaler"
-	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/service/internal"
-	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
 // State defines Collector's state.
@@ -187,9 +185,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if col.logger, err = telemetrylogs.NewLogger(col.cfgW.cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
-
-	// replace grpc logger with zap logger
-	grpclog.SetLoggerV2(telemetrylogs.NewGRPCLogger(col.logger, col.cfgW.cfg.Service.Telemetry.Logs.Level))
 
 	col.logger.Info("Applying configuration...")
 
