@@ -20,13 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap/zapgrpc"
 	"os"
 	"os/signal"
 	"runtime"
 	"sync/atomic"
 	"syscall"
 
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_logsettable "github.com/grpc-ecosystem/go-grpc-middleware/logging/settable"
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
@@ -85,6 +86,9 @@ type Collector struct {
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
 }
+
+
+var gsettable = grpc_logsettable.ReplaceGrpcLoggerV2()
 
 // New creates and returns a new instance of Collector.
 func New(set CollectorSettings) (*Collector, error) {
@@ -189,8 +193,8 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	grpcLogger := telemetrylogs.NewGRPCLogger(col.logger, col.cfgW.cfg.Service.Telemetry.Logs.Level)
-	grpc_zap.ReplaceGrpcLoggerV2(grpcLogger)
-
+	gsettable.Set(zapgrpc.NewLogger(grpcLogger))
+	
 	col.logger.Info("Applying configuration...")
 
 	col.service, err = newService(&svcSettings{
@@ -236,7 +240,7 @@ func (col *Collector) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := collectorTelemetry.init(col.asyncErrorChannel, getBallastSize(col.service), col.logger); err != nil {
+	if err := collectorTelemetry.init(col.asyncErrorChannel, getBallastSize(col.service), col.logger); err != nil{
 		return err
 	}
 
