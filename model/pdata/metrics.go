@@ -16,7 +16,6 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 import (
 	"go.opentelemetry.io/collector/model/internal"
-	"go.opentelemetry.io/collector/model/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 )
 
@@ -352,7 +351,7 @@ func (ms Exemplar) Type() MetricValueType {
 	return MetricValueTypeNone
 }
 
-// NewOptionalDouble creates an data.OptionalDouble from a float64.
-func NewOptionalDouble(val float64) *data.OptionalDouble {
-	return data.NewOptionalDouble(val)
+// HasSum returns true if the histogram has a Sum value.
+func (ms HistogramDataPoint) HasSum() bool {
+	return !(*ms.orig).Sum.IsEmpty()
 }

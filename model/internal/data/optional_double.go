@@ -14,39 +14,67 @@
 
 package data // import "go.opentelemetry.io/collector/model/internal/data"
 
+import (
+	"github.com/gogo/protobuf/types"
+)
+
 // OptionalDouble is a custom data type that is used for all optional double fields in OTLP
 // Protobuf messages.
 type OptionalDouble struct {
-	orig float64
+	orig  *types.DoubleValue
+	empty bool
 }
 
 // Equal returns true if values are equal.
-func (t OptionalDouble) Equal(that OptionalDouble) bool {
-	return t.orig == that.orig
+func (m OptionalDouble) Equal(that OptionalDouble) bool {
+	return m.orig.Equal(that.orig)
 }
 
 // NewOptionalDouble creates an OptionalDouble from a float64.
-func NewOptionalDouble(d float64) *OptionalDouble {
-	return &OptionalDouble{orig: d}
+func NewOptionalDouble(d float64) OptionalDouble {
+	return OptionalDouble{orig: &types.DoubleValue{Value: d}}
 }
 
-// TODO: implement all the methods below this line
-func (t OptionalDouble) Marshal() ([]byte, error) {
-	return []byte{}, nil
-}
-func (t *OptionalDouble) MarshalTo(data []byte) (n int, err error) {
-	return 0, nil
-}
-func (t *OptionalDouble) Unmarshal(data []byte) error {
-	return nil
-}
-func (t *OptionalDouble) Size() int {
-	return 0
+// MarshalTo converts OptionalDouble into a binary representation. Called by Protobuf serialization.
+func (m *OptionalDouble) MarshalTo(data []byte) (n int, err error) {
+	return m.orig.MarshalTo(data)
 }
 
-func (t OptionalDouble) MarshalJSON() ([]byte, error) {
+// Unmarshal inflates this OptionalDouble from binary representation. Called by Protobuf serialization.
+func (m *OptionalDouble) Unmarshal(data []byte) error {
+	m.orig = &types.DoubleValue{}
+	if len(data) == 0 {
+		m.empty = true
+		return nil
+	}
+	return m.orig.Unmarshal(data)
+}
+
+// Size returns the size of the data to serialize.
+func (m *OptionalDouble) Size() int {
+	if m == nil {
+		return 0
+	}
+	return m.orig.Size()
+}
+
+func (m *OptionalDouble) IsEmpty() bool {
+	return m.empty
+}
+
+// TODO: implement
+func (m OptionalDouble) MarshalJSON() ([]byte, error) {
 	return []byte{}, nil
 }
-func (t *OptionalDouble) UnmarshalJSON(data []byte) error {
+
+// TODO: implement
+func (m *OptionalDouble) UnmarshalJSON(data []byte) error {
 	return nil
+}
+
+func (m *OptionalDouble) Value() float64 {
+	if m == nil || m.orig == nil {
+		return 0
+	}
+	return m.orig.Value
 }

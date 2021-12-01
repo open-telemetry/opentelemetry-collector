@@ -54,6 +54,7 @@ s+Buckets \(.*\)tive = \(.*\);+Buckets \1tive = \2\
 
 s+optional double \(.*\);+OptionalDouble \1\
   [\
+    (gogoproto.nullable) = false,\
     (gogoproto.customtype) = "go.opentelemetry.io/collector/model/internal/data.OptionalDouble"\
   ];\
   \

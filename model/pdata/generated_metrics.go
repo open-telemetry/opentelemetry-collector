@@ -1323,13 +1323,13 @@ func (ms HistogramDataPoint) SetCount(v uint64) {
 }
 
 // Sum returns the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Sum() *data.OptionalDouble {
-	return (*ms.orig).Sum
+func (ms HistogramDataPoint) Sum() float64 {
+	return (*ms.orig).Sum.Value()
 }
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetSum(v *data.OptionalDouble) {
-	(*ms.orig).Sum = v
+func (ms HistogramDataPoint) SetSum(v float64) {
+	(*ms.orig).Sum = data.NewOptionalDouble(v)
 }
 
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.

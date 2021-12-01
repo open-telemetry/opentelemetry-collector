@@ -263,9 +263,9 @@ var histogramDataPoint = &messageValueStruct{
 var optionalSumField = &primitiveField{
 	fieldName:       "Sum",
 	originFieldName: "Sum",
-	returnType:      "*data.OptionalDouble",
-	defaultVal:      "(*data.OptionalDouble)(nil)",
-	testVal:         "NewOptionalDouble(17.13)",
+	returnType:      "float64",
+	defaultVal:      "0.0",
+	testVal:         "17.13",
 }
 
 var exponentialHistogramDataPointSlice = &sliceOfPtrs{

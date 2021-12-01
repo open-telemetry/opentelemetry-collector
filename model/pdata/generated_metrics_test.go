@@ -22,7 +22,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/model/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 )
 
@@ -945,8 +944,8 @@ func TestHistogramDataPoint_Count(t *testing.T) {
 
 func TestHistogramDataPoint_Sum(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, (*data.OptionalDouble)(nil), ms.Sum())
-	testValSum := NewOptionalDouble(17.13)
+	assert.EqualValues(t, 0.0, ms.Sum())
+	testValSum := 17.13
 	ms.SetSum(testValSum)
 	assert.EqualValues(t, testValSum, ms.Sum())
 }
@@ -1892,7 +1891,7 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
-	tv.SetSum(NewOptionalDouble(17.13))
+	tv.SetSum(17.13)
 	tv.SetBucketCounts([]uint64{1, 2, 3})
 	tv.SetExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
