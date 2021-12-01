@@ -87,10 +87,10 @@ func TestGRPCLogger(t *testing.T) {
 					Encoding:    "console",
 				}, nil)
 
-				grpc_zap.ReplaceGrpcLoggerV2(newGRPCLogger(defaultLogger, zapcore.InfoLevel))
+				grpc_zap.ReplaceGrpcLoggerV2(NewGRPCLogger(defaultLogger, zapcore.InfoLevel))
 			})
 
-			glogger := newGRPCLogger(logger, test.cfg.Level)
+			glogger := NewGRPCLogger(logger, test.cfg.Level)
 			grpc_zap.ReplaceGrpcLoggerV2(glogger)
 			// write a grpc log
 			grpclog.Info(test.name)

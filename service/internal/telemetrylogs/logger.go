@@ -49,7 +49,7 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 	return logger, nil
 }
 
-func newGRPCLogger(logger *zap.Logger, loglevel zapcore.Level) *zap.Logger {
+func NewGRPCLogger(logger *zap.Logger, loglevel zapcore.Level) *zap.Logger {
 	glogger := logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		if loglevel == zap.InfoLevel {
 			c, _ := zapcore.NewIncreaseLevelCore(core, loglevel+1)
