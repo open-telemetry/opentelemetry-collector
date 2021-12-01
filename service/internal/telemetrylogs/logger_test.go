@@ -80,6 +80,16 @@ func TestGRPCLogger(t *testing.T) {
 			logger, err := NewLogger(test.cfg, []zap.Option{hook})
 			assert.NoError(t, err)
 
+			t.Cleanup(func() {
+				defaultLogger, _ := NewLogger(config.ServiceTelemetryLogs{
+					Level:       zapcore.InfoLevel,
+					Development: false,
+					Encoding:    "console",
+				}, nil)
+
+				grpc_zap.ReplaceGrpcLoggerV2(newGRPCLogger(defaultLogger, zapcore.InfoLevel))
+			})
+
 			glogger := newGRPCLogger(logger, test.cfg.Level)
 			grpc_zap.ReplaceGrpcLoggerV2(glogger)
 			// write a grpc log
