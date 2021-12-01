@@ -15,6 +15,7 @@
 package internal // import "go.opentelemetry.io/collector/model/internal"
 
 import (
+	"go.opentelemetry.io/collector/model/internal/data"
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
@@ -163,7 +164,7 @@ func intHistogramToHistogram(src *otlpmetrics.Metric_IntHistogram) *otlpmetrics.
 			TimeUnixNano:      datapoint.TimeUnixNano,
 			Count:             datapoint.Count,
 			StartTimeUnixNano: datapoint.StartTimeUnixNano,
-			Sum:               float64(datapoint.Sum),
+			Sum:               data.NewOptionalDouble(float64(datapoint.Sum)),
 			BucketCounts:      datapoint.BucketCounts,
 			ExplicitBounds:    datapoint.ExplicitBounds,
 			Exemplars:         intExemplarToExemplar(datapoint.Exemplars),

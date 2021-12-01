@@ -51,3 +51,12 @@ s+repeated Exemplar exemplars = \(.*\);+repeated Exemplar exemplars = \1\
 
 s+Buckets \(.*\)tive = \(.*\);+Buckets \1tive = \2\
   [ (gogoproto.nullable) = false ];+g
+
+s+optional double \(.*\);+OptionalDouble \1\
+  [\
+    (gogoproto.customtype) = "go.opentelemetry.io/collector/model/internal/data.OptionalDouble"\
+  ];\
+  \
+  message OptionalDouble {\
+    double Sum = 1;\
+  }+g

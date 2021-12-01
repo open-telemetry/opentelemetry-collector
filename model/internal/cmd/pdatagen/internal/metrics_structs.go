@@ -19,6 +19,7 @@ var metricsFile = &File{
 	imports: []string{
 		`"sort"`,
 		``,
+		`"go.opentelemetry.io/collector/model/internal/data"`,
 		`otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"`,
 	},
 	testImports: []string{
@@ -26,6 +27,7 @@ var metricsFile = &File{
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
+		`"go.opentelemetry.io/collector/model/internal/data"`,
 		`otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"`,
 	},
 	structs: []baseStruct{
@@ -250,12 +252,20 @@ var histogramDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		countField,
-		doubleSumField,
+		optionalSumField,
 		bucketCountsField,
 		explicitBoundsField,
 		exemplarsField,
 		dataPointFlagsField,
 	},
+}
+
+var optionalSumField = &primitiveField{
+	fieldName:       "Sum",
+	originFieldName: "Sum",
+	returnType:      "*data.OptionalDouble",
+	defaultVal:      "(*data.OptionalDouble)(nil)",
+	testVal:         "NewOptionalDouble(17.13)",
 }
 
 var exponentialHistogramDataPointSlice = &sliceOfPtrs{

@@ -20,6 +20,7 @@ package pdata
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/model/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 )
 
@@ -1322,12 +1323,12 @@ func (ms HistogramDataPoint) SetCount(v uint64) {
 }
 
 // Sum returns the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Sum() float64 {
+func (ms HistogramDataPoint) Sum() *data.OptionalDouble {
 	return (*ms.orig).Sum
 }
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetSum(v float64) {
+func (ms HistogramDataPoint) SetSum(v *data.OptionalDouble) {
 	(*ms.orig).Sum = v
 }
 

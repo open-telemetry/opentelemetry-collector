@@ -16,6 +16,7 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 import (
 	"go.opentelemetry.io/collector/model/internal"
+	"go.opentelemetry.io/collector/model/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 )
 
@@ -349,4 +350,9 @@ func (ms Exemplar) Type() MetricValueType {
 		return MetricValueTypeInt
 	}
 	return MetricValueTypeNone
+}
+
+// NewOptionalDouble creates an data.OptionalDouble from a float64.
+func NewOptionalDouble(val float64) *data.OptionalDouble {
+	return data.NewOptionalDouble(val)
 }
