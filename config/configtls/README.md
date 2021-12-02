@@ -36,7 +36,8 @@ won't use TLS at all.
 
 Minimum and maximum TLS version can be set:
 
-- `min_version` (default = "1.0"): Minimum acceptable TLS version.
+- `min_version` (default = "1.2"): Minimum acceptable TLS version.
+It's recommended to use at least 1.2 as the minimum version.
 
 - `max_version` (default = "1.3"): Maximum acceptable TLS version.
 

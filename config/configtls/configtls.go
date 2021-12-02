@@ -178,7 +178,7 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 
 func convertVersion(v string) (uint16, error) {
 	if v == "" {
-		return 0, nil // default
+		return tls.VersionTLS12, nil // default
 	}
 	val, ok := tlsVersions[v]
 	if !ok {
