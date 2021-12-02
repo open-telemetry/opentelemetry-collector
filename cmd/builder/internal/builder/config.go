@@ -55,7 +55,7 @@ type Distribution struct {
 	Description    string `mapstructure:"description"`
 	OtelColVersion string `mapstructure:"otelcol_version"`
 	// IncludeCore is deprecated and note that if this is being used, it will be removed in a subsequent release
-	IncludeCore *bool  `mapstructure:"include_core"`
+	IncludeCore bool   `mapstructure:"include_core"`
 	OutputPath  string `mapstructure:"output_path"`
 	Version     string `mapstructure:"version"`
 }
