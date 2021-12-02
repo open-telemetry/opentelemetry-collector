@@ -19,6 +19,7 @@ package service
 
 import (
 	"os"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ import (
 )
 
 func TestWindowsService_Execute(t *testing.T) {
-	os.Args = []string{"otelcol", "--config", "testdata/otelcol-config.yaml"}
+	os.Args = []string{"otelcol", "--config", path.Join("testdata", "otelcol-config.yaml")}
 
 	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
