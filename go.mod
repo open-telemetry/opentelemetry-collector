@@ -8,7 +8,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
-	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0-rc.2.0.20210831071041-dd1540ef8252
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0-rc.2.0.20211202150119-32bd5da6a64a
 	github.com/knadh/koanf v1.3.3
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.3
