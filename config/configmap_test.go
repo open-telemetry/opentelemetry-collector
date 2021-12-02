@@ -15,10 +15,14 @@
 package config
 
 import (
+	"fmt"
+	"io/ioutil"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 func TestToStringMap_WithSet(t *testing.T) {
@@ -98,9 +102,24 @@ func TestToStringMap(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			parser, err := NewMapFromFile(test.fileName)
-			require.NoError(t, err, "Unable to read configuration file '%s'", test.fileName)
+			parser, err := newMapFromFile(test.fileName)
+			require.NoError(t, err)
 			assert.Equal(t, test.stringMap, parser.ToStringMap())
 		})
 	}
+}
+
+// newMapFromFile creates a new config.Map by reading the given file.
+func newMapFromFile(fileName string) (*Map, error) {
+	content, err := ioutil.ReadFile(path.Clean(fileName))
+	if err != nil {
+		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
+	}
+
+	var data map[string]interface{}
+	if err = yaml.Unmarshal(content, &data); err != nil {
+		return nil, fmt.Errorf("unable to parse yaml: %w", err)
+	}
+
+	return NewMapFromStringMap(data), nil
 }

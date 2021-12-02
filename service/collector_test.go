@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 	"syscall"
@@ -35,27 +36,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmapprovider"
-	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
-
-const configStr = `
-receivers:
-  examplereceiver:
-processors:
-  exampleprocessor:
-exporters:
-  exampleexporter:
-extensions:
-  exampleextension:
-service:
-  extensions: [exampleextension]
-  pipelines:
-    traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
-`
 
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
 // to test for initialization without setting CLI flags.
@@ -65,13 +48,13 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	collectorTelemetry = &colTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := testcomponents.ExampleComponents()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
 	set := CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
+		ConfigMapProvider: configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -98,7 +81,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 }
 
 func TestCollector_Start(t *testing.T) {
-	factories, err := testcomponents.OtelColConfigComponents()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
 	loggingHookCalled := false
@@ -170,13 +153,13 @@ func TestCollector_ReportError(t *testing.T) {
 	collectorTelemetry = &mockColTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := testcomponents.ExampleComponents()
+	factories, err := defaultcomponents.Components()
 	require.NoError(t, err)
 
 	col, err := New(CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
+		ConfigMapProvider: configmapprovider.NewFile("testdata/otelcol-config.yaml"),
 	})
 	require.NoError(t, err)
 
