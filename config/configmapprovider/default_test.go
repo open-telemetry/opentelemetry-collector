@@ -16,7 +16,6 @@ package configmapprovider
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,13 +29,10 @@ func TestDefaultMapProvider(t *testing.T) {
 	retr, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
-	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
-processors:
-  batch:
-exporters:
-  otlp:
-    endpoint: "localhost:4317"`))
-	require.NoError(t, err)
+	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
+		"processors::batch":         nil,
+		"exporters::otlp::endpoint": "localhost:4317",
+	})
 	m, err := retr.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, expectedMap, m)
@@ -49,14 +45,10 @@ func TestDefaultMapProvider_AddNewConfig(t *testing.T) {
 	cp, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
-	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
-processors:
-  batch:
-    timeout: 2s
-exporters:
-  otlp:
-    endpoint: "localhost:4317"`))
-	require.NoError(t, err)
+	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
+		"processors::batch::timeout": "2s",
+		"exporters::otlp::endpoint":  "localhost:4317",
+	})
 	m, err := cp.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, expectedMap, m)
@@ -71,14 +63,10 @@ func TestDefaultMapProvider_OverwriteConfig(t *testing.T) {
 	cp, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
-	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
-processors:
-  batch:
-    timeout: 2s
-exporters:
-  otlp:
-    endpoint: "localhost:1234"`))
-	require.NoError(t, err)
+	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
+		"processors::batch::timeout": "2s",
+		"exporters::otlp::endpoint":  "localhost:1234",
+	})
 	m, err := cp.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, expectedMap, m)

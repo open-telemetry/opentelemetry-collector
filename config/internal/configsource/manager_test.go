@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 )
 
@@ -161,11 +162,11 @@ map:
 	})
 
 	file := path.Join("testdata", "yaml_injection.yaml")
-	cp, err := config.NewMapFromFile(file)
+	cp, err := configtest.LoadConfigMap(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "yaml_injection_expected.yaml")
-	expectedConfigMap, err := config.NewMapFromFile(expectedFile)
+	expectedConfigMap, err := configtest.LoadConfigMap(expectedFile)
 	require.NoError(t, err)
 	expectedCfg := expectedConfigMap.ToStringMap()
 
@@ -190,11 +191,11 @@ func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
 	})
 
 	file := path.Join("testdata", "arrays_and_maps.yaml")
-	cp, err := config.NewMapFromFile(file)
+	cp, err := configtest.LoadConfigMap(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "arrays_and_maps_expected.yaml")
-	expectedConfigMap, err := config.NewMapFromFile(expectedFile)
+	expectedConfigMap, err := configtest.LoadConfigMap(expectedFile)
 	require.NoError(t, err)
 
 	res, err := manager.Resolve(ctx, cp)
@@ -244,11 +245,11 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 	})
 
 	file := path.Join("testdata", "params_handling.yaml")
-	cp, err := config.NewMapFromFile(file)
+	cp, err := configtest.LoadConfigMap(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "params_handling_expected.yaml")
-	expectedConfigMap, err := config.NewMapFromFile(expectedFile)
+	expectedConfigMap, err := configtest.LoadConfigMap(expectedFile)
 	require.NoError(t, err)
 
 	res, err := manager.Resolve(ctx, cp)
@@ -383,11 +384,11 @@ func TestConfigSourceManager_EnvVarHandling(t *testing.T) {
 	})
 
 	file := path.Join("testdata", "envvar_cfgsrc_mix.yaml")
-	cp, err := config.NewMapFromFile(file)
+	cp, err := configtest.LoadConfigMap(file)
 	require.NoError(t, err)
 
 	expectedFile := path.Join("testdata", "envvar_cfgsrc_mix_expected.yaml")
-	expectedConfigMap, err := config.NewMapFromFile(expectedFile)
+	expectedConfigMap, err := configtest.LoadConfigMap(expectedFile)
 	require.NoError(t, err)
 
 	res, err := manager.Resolve(ctx, cp)

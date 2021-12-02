@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove `config.NewConfigMapFrom[File|Buffer]`, add testonly version (#4502)
+
 ## 💡 Enhancements 💡
 
 - `confighttp`: add client-side compression support. (#4441)

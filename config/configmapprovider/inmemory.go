@@ -16,7 +16,11 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"io/ioutil"
+
+	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -30,12 +34,18 @@ func NewInMemory(buf io.Reader) Provider {
 	return &inMemoryMapProvider{buf: buf}
 }
 
-func (inp *inMemoryMapProvider) Retrieve(_ context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
-	cfg, err := config.NewMapFromBuffer(inp.buf)
+func (inp *inMemoryMapProvider) Retrieve(context.Context, func(*ChangeEvent)) (Retrieved, error) {
+	content, err := ioutil.ReadAll(inp.buf)
 	if err != nil {
 		return nil, err
 	}
-	return &simpleRetrieved{confMap: cfg}, nil
+
+	var data map[string]interface{}
+	if err = yaml.Unmarshal(content, &data); err != nil {
+		return nil, fmt.Errorf("unable to parse yaml: %w", err)
+	}
+
+	return &simpleRetrieved{confMap: config.NewMapFromStringMap(data)}, nil
 }
 
 func (inp *inMemoryMapProvider) Shutdown(context.Context) error {
