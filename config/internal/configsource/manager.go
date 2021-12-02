@@ -15,7 +15,6 @@
 package configsource // import "go.opentelemetry.io/collector/config/internal/configsource"
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -531,12 +530,11 @@ func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigM
 		selector = strings.Trim(parts[0], " ")
 
 		if len(parts) > 1 && len(parts[1]) > 0 {
-			var cp *config.Map
-			cp, err = config.NewMapFromBuffer(bytes.NewReader([]byte(parts[1])))
-			if err != nil {
+			var data map[string]interface{}
+			if err = yaml.Unmarshal([]byte(parts[1]), &data); err != nil {
 				return
 			}
-			paramsConfigMap = cp
+			paramsConfigMap = config.NewMapFromStringMap(data)
 		}
 
 	default:
