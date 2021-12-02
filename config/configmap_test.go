@@ -39,7 +39,7 @@ func TestToStringMap(t *testing.T) {
 	}{
 		{
 			name:     "Sample Collector configuration",
-			fileName: "testdata/config.yaml",
+			fileName: path.Join("testdata", "config.yaml"),
 			stringMap: map[string]interface{}{
 				"receivers": map[string]interface{}{
 					"nop":            nil,
@@ -75,7 +75,7 @@ func TestToStringMap(t *testing.T) {
 		},
 		{
 			name:     "Sample types",
-			fileName: "testdata/basic_types.yaml",
+			fileName: path.Join("testdata", "basic_types.yaml"),
 			stringMap: map[string]interface{}{
 				"typed.options": map[string]interface{}{
 					"floating.point.example": 3.14,
@@ -88,7 +88,7 @@ func TestToStringMap(t *testing.T) {
 		},
 		{
 			name:     "Embedded keys",
-			fileName: "testdata/embedded_keys.yaml",
+			fileName: path.Join("testdata", "embedded_keys.yaml"),
 			stringMap: map[string]interface{}{
 				"typed": map[string]interface{}{"options": map[string]interface{}{
 					"floating": map[string]interface{}{"point": map[string]interface{}{"example": 3.14}},

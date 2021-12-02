@@ -16,6 +16,7 @@ package configmapprovider
 
 import (
 	"context"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,7 @@ import (
 )
 
 func TestDefaultMapProvider(t *testing.T) {
-	mp := NewDefault("testdata/default-config.yaml", nil)
+	mp := NewDefault(path.Join("testdata", "default-config.yaml"), nil)
 	retr, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
@@ -41,7 +42,7 @@ func TestDefaultMapProvider(t *testing.T) {
 }
 
 func TestDefaultMapProvider_AddNewConfig(t *testing.T) {
-	mp := NewDefault("testdata/default-config.yaml", []string{"processors.batch.timeout=2s"})
+	mp := NewDefault(path.Join("testdata", "default-config.yaml"), []string{"processors.batch.timeout=2s"})
 	cp, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
@@ -58,7 +59,7 @@ func TestDefaultMapProvider_AddNewConfig(t *testing.T) {
 
 func TestDefaultMapProvider_OverwriteConfig(t *testing.T) {
 	mp := NewDefault(
-		"testdata/default-config.yaml",
+		path.Join("testdata", "default-config.yaml"),
 		[]string{"processors.batch.timeout=2s", "exporters.otlp.endpoint=localhost:1234"})
 	cp, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
@@ -75,7 +76,7 @@ func TestDefaultMapProvider_OverwriteConfig(t *testing.T) {
 }
 
 func TestDefaultMapProvider_InexistentFile(t *testing.T) {
-	mp := NewDefault("testdata/otelcol-config.yaml", nil)
+	mp := NewDefault(path.Join("testdata", "otelcol-config.yaml"), nil)
 	require.NotNil(t, mp)
 	_, err := mp.Retrieve(context.Background(), nil)
 	require.Error(t, err)
