@@ -59,15 +59,18 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 	return logger, nil
 }
 
-// SetGRPCLogger replaces grpc logger with collector logger. The minimum level of gRPC logs is
-// set to WARN should the loglevel of the collector is set to INFO to avoid copious logging from grpc framework.
-func SetGRPCLogger(logger *zap.Logger, loglevel zapcore.Level) {
-	glogger := logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+// SetGRPCLogger replaces grpc logger with logger cloned from baseLogger with exact configuration.
+// The minimum level of gRPC logs is set to WARN should the loglevel of the collector is set to INFO to avoid
+// copious logging from grpc framework.
+func SetGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) {
+	glogger := baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		var c zapcore.Core
 		if loglevel == zap.InfoLevel {
-			c, _ := zapcore.NewIncreaseLevelCore(core, zap.WarnLevel)
-			return c
+			c, _ = zapcore.NewIncreaseLevelCore(core, zap.WarnLevel)
+		} else {
+			c = core
 		}
-		return core
+		return c.With([]zapcore.Field{zap.Bool("grpc_log", true)})
 	}))
 	grpcSettableLogger.Set(zapgrpc.NewLogger(glogger))
 }

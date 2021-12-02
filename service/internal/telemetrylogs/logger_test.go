@@ -64,7 +64,6 @@ func TestGRPCLogger(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			obsInfo, obsWarn := false, false
-
 			hook := zap.Hooks(func(entry zapcore.Entry) error {
 				switch entry.Level {
 				case zapcore.InfoLevel:
