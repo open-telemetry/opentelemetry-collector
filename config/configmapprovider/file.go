@@ -18,6 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+
+	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -38,12 +41,17 @@ func (fmp *fileMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (R
 		return nil, errors.New("config file not specified")
 	}
 
-	cp, err := config.NewMapFromFile(fmp.fileName)
+	content, err := ioutil.ReadFile(fmp.fileName)
 	if err != nil {
-		return nil, fmt.Errorf("error loading config file %q: %w", fmp.fileName, err)
+		return nil, fmt.Errorf("unable to read the file %v: %w", fmp.fileName, err)
 	}
 
-	return &simpleRetrieved{confMap: cp}, nil
+	var data map[string]interface{}
+	if err = yaml.Unmarshal(content, &data); err != nil {
+		return nil, fmt.Errorf("unable to parse yaml: %w", err)
+	}
+
+	return &simpleRetrieved{confMap: config.NewMapFromStringMap(data)}, nil
 }
 
 func (*fileMapProvider) Shutdown(context.Context) error {
