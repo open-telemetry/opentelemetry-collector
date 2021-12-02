@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	pb_testproto "github.com/grpc-ecosystem/go-grpc-middleware/testing/testproto"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/testing/testpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -635,12 +635,12 @@ func TestContextWithClient(t *testing.T) {
 func TestClientInfoInterceptors(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		tester func(context.Context, pb_testproto.TestServiceClient)
+		tester func(context.Context, testpb.TestServiceClient)
 	}{
 		{
 			desc: "stream",
-			tester: func(ctx context.Context, cl pb_testproto.TestServiceClient) {
-				stream, err := cl.PingList(ctx, &pb_testproto.PingRequest{})
+			tester: func(ctx context.Context, cl testpb.TestServiceClient) {
+				stream, err := cl.PingList(ctx, &testpb.PingListRequest{})
 				require.NoError(t, err)
 
 				_, err = stream.Recv()
@@ -649,8 +649,8 @@ func TestClientInfoInterceptors(t *testing.T) {
 		},
 		{
 			desc: "unary",
-			tester: func(ctx context.Context, cl pb_testproto.TestServiceClient) {
-				resp, errResp := cl.Ping(ctx, &pb_testproto.PingRequest{})
+			tester: func(ctx context.Context, cl testpb.TestServiceClient) {
+				resp, errResp := cl.Ping(ctx, &testpb.PingRequest{})
 				require.NoError(t, errResp)
 				require.NotNil(t, resp)
 			},
@@ -672,7 +672,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 				opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 				require.NoError(t, err)
 				srv := grpc.NewServer(opts...)
-				pb_testproto.RegisterTestServiceServer(srv, mock)
+				testpb.RegisterTestServiceServer(srv, mock)
 
 				defer srv.Stop()
 
@@ -705,7 +705,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 				grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 				require.NoError(t, errDial)
 
-				cl := pb_testproto.NewTestServiceClient(grpcClientConn)
+				cl := testpb.NewTestServiceClient(grpcClientConn)
 				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancelFunc()
 
@@ -733,31 +733,32 @@ func (gts *grpcTraceServer) Export(ctx context.Context, _ otlpgrpc.TracesRequest
 // interceptors and other gRPC middleware code. We use it here as it provides a
 // streaming interface, which we don't have for OTLP services.
 type pingService struct {
+	testpb.TestPingService
 	recordedContext context.Context
 }
 
-func (s *pingService) PingEmpty(ctx context.Context, _ *pb_testproto.Empty) (*pb_testproto.PingResponse, error) {
+func (s *pingService) PingEmpty(ctx context.Context, req *testpb.PingEmptyRequest) (*testpb.PingEmptyResponse, error) {
 	s.recordedContext = ctx
-	return &pb_testproto.PingResponse{}, nil
+	return s.TestPingService.PingEmpty(ctx, req)
 }
 
-func (s *pingService) Ping(ctx context.Context, _ *pb_testproto.PingRequest) (*pb_testproto.PingResponse, error) {
+func (s *pingService) Ping(ctx context.Context, req *testpb.PingRequest) (*testpb.PingResponse, error) {
 	s.recordedContext = ctx
-	return &pb_testproto.PingResponse{}, nil
+	return s.TestPingService.Ping(ctx, req)
 }
 
-func (s *pingService) PingError(ctx context.Context, _ *pb_testproto.PingRequest) (*pb_testproto.Empty, error) {
+func (s *pingService) PingError(ctx context.Context, req *testpb.PingErrorRequest) (*testpb.PingErrorResponse, error) {
 	s.recordedContext = ctx
-	return &pb_testproto.Empty{}, nil
+	return s.TestPingService.PingError(ctx, req)
 }
 
-func (s *pingService) PingList(req *pb_testproto.PingRequest, stream pb_testproto.TestService_PingListServer) error {
+func (s *pingService) PingList(req *testpb.PingListRequest, stream testpb.TestService_PingListServer) error {
 	s.recordedContext = stream.Context()
-	return stream.Send(&pb_testproto.PingResponse{})
+	return s.TestPingService.PingList(req, stream)
 }
 
-func (s *pingService) PingStream(stream pb_testproto.TestService_PingStreamServer) error {
-	return nil
+func (s *pingService) PingStream(stream testpb.TestService_PingStreamServer) error {
+	return s.TestPingService.PingStream(stream)
 }
 
 // tempSocketName provides a temporary Unix socket name for testing.
