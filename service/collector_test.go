@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 	"syscall"
@@ -39,26 +40,6 @@ import (
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
-const configStr = `
-receivers:
-  otlp:
-    protocols:
-      grpc:
-exporters:
-  otlp:
-    endpoint: "localhost:4317"
-processors:
-  batch:
-extensions:
-service:
-  extensions:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp]
-`
-
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
 // to test for initialization without setting CLI flags.
 func TestCollector_StartAsGoRoutine(t *testing.T) {
@@ -73,7 +54,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(configStr)),
+		ConfigMapProvider: configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
