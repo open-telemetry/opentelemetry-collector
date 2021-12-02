@@ -25,22 +25,25 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
+type CompressionType string
+
 const (
-	headerContentEncoding = "Content-Encoding"
-	CompressionGzip       = "gzip"
-	CompressionZlib       = "zlib"
-	CompressionDeflate    = "deflate"
-	CompressionSnappy     = "snappy"
-	CompressionZstd       = "zstd"
+	headerContentEncoding                 = "Content-Encoding"
+	CompressionGzip       CompressionType = "gzip"
+	CompressionZlib       CompressionType = "zlib"
+	CompressionDeflate    CompressionType = "deflate"
+	CompressionSnappy     CompressionType = "snappy"
+	CompressionZstd       CompressionType = "zstd"
+	CompressionNone       CompressionType = "none"
 )
 
 type CompressRoundTripper struct {
 	RoundTripper    http.RoundTripper
-	compressionType string
+	compressionType CompressionType
 	writer          func(*bytes.Buffer) (io.WriteCloser, error)
 }
 
-func NewCompressRoundTripper(rt http.RoundTripper, compressionType string) *CompressRoundTripper {
+func NewCompressRoundTripper(rt http.RoundTripper, compressionType CompressionType) *CompressRoundTripper {
 	return &CompressRoundTripper{
 		RoundTripper:    rt,
 		compressionType: compressionType,
@@ -50,7 +53,7 @@ func NewCompressRoundTripper(rt http.RoundTripper, compressionType string) *Comp
 
 // writerFactory defines writer field in CompressRoundTripper.
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
-func writerFactory(compressionType string) func(*bytes.Buffer) (io.WriteCloser, error) {
+func writerFactory(compressionType CompressionType) func(*bytes.Buffer) (io.WriteCloser, error) {
 	switch compressionType {
 	case CompressionGzip:
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
@@ -111,12 +114,12 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Clone the headers and add gzip encoding header.
 	cReq.Header = req.Header.Clone()
-	cReq.Header.Add(headerContentEncoding, r.compressionType)
+	cReq.Header.Add(headerContentEncoding, string(r.compressionType))
 
 	return r.RoundTripper.RoundTrip(cReq)
 }
 
-func (r *CompressRoundTripper) CompressionType() string {
+func (r *CompressRoundTripper) CompressionType() CompressionType {
 	return r.compressionType
 }
 

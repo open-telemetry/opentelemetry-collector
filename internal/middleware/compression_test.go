@@ -43,7 +43,7 @@ func TestHTTPClientCompression(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		encoding    string
+		encoding    CompressionType
 		reqBody     []byte
 		shouldError bool
 	}{

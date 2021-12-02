@@ -32,17 +32,6 @@ import (
 	"go.opentelemetry.io/collector/internal/middleware"
 )
 
-type CompressionType string
-
-const (
-	CompressionGzip    CompressionType = "gzip"
-	CompressionZlib    CompressionType = "zlib"
-	CompressionDeflate CompressionType = "deflate"
-	CompressionSnappy  CompressionType = "snappy"
-	CompressionZstd    CompressionType = "zstd"
-	CompressionNone    CompressionType = "none"
-)
-
 // HTTPClientSettings defines settings for creating an HTTP client.
 type HTTPClientSettings struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
@@ -71,7 +60,7 @@ type HTTPClientSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
-	Compression CompressionType `mapstructure:"compression"`
+	Compression middleware.CompressionType `mapstructure:"compression"`
 }
 
 // ToClient creates an HTTP client.
@@ -101,11 +90,11 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd.
-	if hcs.Compression != "" && hcs.Compression != CompressionNone {
+	if hcs.Compression != "" && hcs.Compression != middleware.CompressionNone {
 		if !isValidHTTPCompressionKey(hcs.Compression) {
 			return nil, fmt.Errorf("unsupported compression type %q", hcs.Compression)
 		}
-		clientTransport = middleware.NewCompressRoundTripper(clientTransport, string(hcs.Compression))
+		clientTransport = middleware.NewCompressRoundTripper(clientTransport, hcs.Compression)
 	}
 
 	if hcs.Auth != nil {
@@ -249,13 +238,13 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 	}
 }
 
-func isValidHTTPCompressionKey(compressionType CompressionType) bool {
+func isValidHTTPCompressionKey(compressionType middleware.CompressionType) bool {
 	switch compressionType {
-	case CompressionGzip,
-		CompressionZlib,
-		CompressionDeflate,
-		CompressionSnappy,
-		CompressionZstd:
+	case middleware.CompressionGzip,
+		middleware.CompressionZlib,
+		middleware.CompressionDeflate,
+		middleware.CompressionSnappy,
+		middleware.CompressionZstd:
 		return true
 	default:
 		return false
