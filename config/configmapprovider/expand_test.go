@@ -23,8 +23,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
@@ -69,7 +67,10 @@ func TestExpand(t *testing.T) {
 		assert.NoError(t, os.Unsetenv("EXTRA_LIST_VALUE_1"))
 	}()
 
-	expectedCfgMap, errExpected := config.NewMapFromFile(path.Join("testdata", "expand-with-no-env.yaml"))
+	// Cannot use configtest.LoadConfigMap because of circular deps.
+	ret, errRet := NewFile(path.Join("testdata", "expand-with-no-env.yaml")).Retrieve(context.Background(), nil)
+	require.NoError(t, errRet, "Unable to get expected config")
+	expectedCfgMap, errExpected := ret.Get(context.Background())
 	require.NoError(t, errExpected, "Unable to get expected config")
 
 	for _, test := range testCases {

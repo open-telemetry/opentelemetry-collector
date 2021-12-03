@@ -16,16 +16,11 @@ package config // import "go.opentelemetry.io/collector/config"
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"reflect"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/maps"
-	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
-	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
 )
@@ -38,31 +33,6 @@ const (
 // NewMap creates a new empty config.Map instance.
 func NewMap() *Map {
 	return &Map{k: koanf.New(KeyDelimiter)}
-}
-
-// NewMapFromFile creates a new config.Map by reading the given file.
-func NewMapFromFile(fileName string) (*Map, error) {
-	// Read yaml config from file.
-	p := NewMap()
-	if err := p.k.Load(file.Provider(fileName), yaml.Parser()); err != nil {
-		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
-	}
-	return p, nil
-}
-
-// NewMapFromBuffer creates a new config.Map by reading the given yaml buffer.
-func NewMapFromBuffer(buf io.Reader) (*Map, error) {
-	content, err := ioutil.ReadAll(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	p := NewMap()
-	if err := p.k.Load(rawbytes.Provider(content), yaml.Parser()); err != nil {
-		return nil, err
-	}
-
-	return p, nil
 }
 
 // NewMapFromStringMap creates a config.Map from a map[string]interface{}.

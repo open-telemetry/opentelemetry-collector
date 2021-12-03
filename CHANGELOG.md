@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove `config.NewConfigMapFrom[File|Buffer]`, add testonly version (#4502)
+- `configtls`: TLS 1.2 is the new default mininum version (#4503)
+
 ## 🧰 Bug fixes 🧰
 
 - Fix handling of corrupted records by persistent buffer (experimental) (#4475)

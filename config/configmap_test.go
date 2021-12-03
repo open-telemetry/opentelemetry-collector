@@ -15,10 +15,14 @@
 package config
 
 import (
+	"fmt"
+	"io/ioutil"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 func TestToStringMap_WithSet(t *testing.T) {
@@ -35,7 +39,7 @@ func TestToStringMap(t *testing.T) {
 	}{
 		{
 			name:     "Sample Collector configuration",
-			fileName: "testdata/config.yaml",
+			fileName: path.Join("testdata", "config.yaml"),
 			stringMap: map[string]interface{}{
 				"receivers": map[string]interface{}{
 					"nop":            nil,
@@ -71,7 +75,7 @@ func TestToStringMap(t *testing.T) {
 		},
 		{
 			name:     "Sample types",
-			fileName: "testdata/basic_types.yaml",
+			fileName: path.Join("testdata", "basic_types.yaml"),
 			stringMap: map[string]interface{}{
 				"typed.options": map[string]interface{}{
 					"floating.point.example": 3.14,
@@ -84,7 +88,7 @@ func TestToStringMap(t *testing.T) {
 		},
 		{
 			name:     "Embedded keys",
-			fileName: "testdata/embedded_keys.yaml",
+			fileName: path.Join("testdata", "embedded_keys.yaml"),
 			stringMap: map[string]interface{}{
 				"typed": map[string]interface{}{"options": map[string]interface{}{
 					"floating": map[string]interface{}{"point": map[string]interface{}{"example": 3.14}},
@@ -98,9 +102,24 @@ func TestToStringMap(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			parser, err := NewMapFromFile(test.fileName)
-			require.NoError(t, err, "Unable to read configuration file '%s'", test.fileName)
+			parser, err := newMapFromFile(test.fileName)
+			require.NoError(t, err)
 			assert.Equal(t, test.stringMap, parser.ToStringMap())
 		})
 	}
+}
+
+// newMapFromFile creates a new config.Map by reading the given file.
+func newMapFromFile(fileName string) (*Map, error) {
+	content, err := ioutil.ReadFile(path.Clean(fileName))
+	if err != nil {
+		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
+	}
+
+	var data map[string]interface{}
+	if err = yaml.Unmarshal(content, &data); err != nil {
+		return nil, fmt.Errorf("unable to parse yaml: %w", err)
+	}
+
+	return NewMapFromStringMap(data), nil
 }

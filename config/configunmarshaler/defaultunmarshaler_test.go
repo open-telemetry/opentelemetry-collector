@@ -15,6 +15,7 @@
 package configunmarshaler
 
 import (
+	"context"
 	"path"
 	"testing"
 
@@ -24,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -214,9 +216,11 @@ func TestLoadEmptyAllSections(t *testing.T) {
 }
 
 func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*config.Config, error) {
-	v, err := config.NewMapFromFile(fileName)
+	v, err := configmapprovider.NewFile(fileName).Retrieve(context.Background(), nil)
+	require.NoError(t, err)
+	cm, err := v.Get(context.Background())
 	require.NoError(t, err)
 
 	// Unmarshal the config from the config.Map using the given factories.
-	return NewDefault().Unmarshal(v, factories)
+	return NewDefault().Unmarshal(cm, factories)
 }
