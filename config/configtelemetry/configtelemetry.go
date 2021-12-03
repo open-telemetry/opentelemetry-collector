@@ -35,18 +35,15 @@ const (
 	levelNormalStr   = "normal"
 	levelDetailedStr = "detailed"
 
-	metricsLevelCfg  = "metrics-level"
-	metricsAddrCfg   = "metrics-addr"
-	metricsPrefixCfg = "metrics-prefix"
+	metricsLevelCfg = "metrics-level"
+	metricsAddrCfg  = "metrics-addr"
 )
 
 const UseOpenTelemetryForInternalMetrics = false
 
 var (
-	metricsLevelPtr  = new(Level)
-	metricsAddrPtr   = new(string)
-	metricsPrefixPtr = new(string)
-	addInstanceIDPtr = new(bool)
+	metricsLevelPtr = new(Level)
+	metricsAddrPtr  = new(string)
 )
 
 // Flags is a helper function to add telemetry config flags to the service that exposes
@@ -63,16 +60,6 @@ func Flags(flags *flag.FlagSet) {
 		metricsAddrCfg,
 		GetMetricsAddrDefault(),
 		"Deprecated. Define the metrics configuration as part of the configuration file, under the 'service' section.")
-
-	metricsPrefixPtr = flags.String(
-		metricsPrefixCfg,
-		GetMetricsPrefixDefault(),
-		"Deprecated.")
-
-	addInstanceIDPtr = flags.Bool(
-		"add-instance-id",
-		GetAddInstanceIDDefault(),
-		"Deprecated.")
 }
 
 // Level is the level of internal telemetry (metrics, logs, traces about the component itself)
@@ -173,22 +160,6 @@ func GetMetricsAddrDefault() string {
 	return ":8888"
 }
 
-func GetMetricsPrefixDefault() string {
-	return "otelcol"
-}
-
-func GetAddInstanceIDDefault() bool {
-	return true
-}
-
-func GetAddInstanceID() bool {
-	return *addInstanceIDPtr
-}
-
 func GetMetricsAddr() string {
 	return *metricsAddrPtr
-}
-
-func GetMetricsPrefix() string {
-	return *metricsPrefixPtr
 }
