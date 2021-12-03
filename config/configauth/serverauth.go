@@ -17,6 +17,7 @@ package configauth // import "go.opentelemetry.io/collector/config/configauth"
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -60,6 +61,11 @@ type ServerAuthenticator interface {
 	// Once the authentication succeeds, the interceptor is expected to call the handler.
 	// See https://pkg.go.dev/google.golang.org/grpc#StreamServerInterceptor.
 	GRPCStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, srvInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error
+
+	// HTTPInterceptor is a helper method to provide an HTTP handler responsible for intercepting the incoming HTTP requests, using the
+	// request's meta data as source of data for the authentication. Once the authentication succeeds, the interceptor is expected to call
+	// the next handler.
+	HTTPInterceptor(next http.Handler) http.Handler
 }
 
 // AuthenticateFunc defines the signature for the function responsible for performing the authentication based on the given headers map.
@@ -75,6 +81,10 @@ type GRPCUnaryInterceptorFunc func(ctx context.Context, req interface{}, info *g
 // types for internal structs, making it easier to mock them in tests.
 // See ServerAuthenticator.GRPCStreamServerInterceptor.
 type GRPCStreamInterceptorFunc func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate AuthenticateFunc) error
+
+// HTTPInterceptorFunc defines the signature for the function intercepting HTTP calls, useful for authenticators to use as
+// types for internal structs, making it easier to mock them in tests.
+type HTTPInterceptorFunc func(handler http.Handler, authenticate AuthenticateFunc) http.Handler
 
 // DefaultGRPCUnaryServerInterceptor provides a default implementation of GRPCUnaryInterceptorFunc, useful for most authenticators.
 // It extracts the headers from the incoming request, under the assumption that the credentials will be part of the resulting map.
@@ -109,4 +119,18 @@ func DefaultGRPCStreamServerInterceptor(srv interface{}, stream grpc.ServerStrea
 	wrapped := middleware.WrapServerStream(stream)
 	wrapped.WrappedContext = ctx
 	return handler(srv, wrapped)
+}
+
+// DefaultHTTPInterceptor provides a default implementation of HTTPInterceptorFunc, useful for most authenticators.
+// It passes the headers from the incoming request as it is, under the assumption that the credentials are part of it.
+func DefaultHTTPInterceptor(next http.Handler, authenticate AuthenticateFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, err := authenticate(r.Context(), r.Header)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

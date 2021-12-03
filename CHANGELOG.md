@@ -21,6 +21,10 @@
 - OTLP/HTTP receivers now support setting the `Access-Control-Max-Age` header for CORS caching. (#4492)
 - `client.Info` pre-populated for all receivers using common helpers like `confighttp` and `configgrpc` (#4423)
 
+## 💡 Enhancements 💡
+
+- `configauth`: add ServerAuthenticator interfaces for HTTP receivers. (#4506)
+
 ## 🧰 Bug fixes 🧰
 
 - Fix handling of corrupted records by persistent buffer (experimental) (#4475)

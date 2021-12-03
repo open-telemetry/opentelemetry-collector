@@ -187,6 +187,9 @@ type HTTPServerSettings struct {
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS *CORSSettings `mapstructure:"cors,omitempty"`
+
+	// Auth for this receiver
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
 // ToListener creates a net.Listener.
@@ -226,7 +229,7 @@ func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
 }
 
 // ToServer creates an http.Server from settings object.
-func (hss *HTTPServerSettings) ToServer(_ component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o(serverOpts)
@@ -247,6 +250,15 @@ func (hss *HTTPServerSettings) ToServer(_ component.Host, settings component.Tel
 		handler = cors.New(co).Handler(handler)
 	}
 	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
+
+	if hss.Auth != nil {
+		authenticator, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
+		if err != nil {
+			return nil, err
+		}
+
+		handler = authenticator.HTTPInterceptor(handler)
+	}
 
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Consider to use component ID string as prefix for all the operations.
