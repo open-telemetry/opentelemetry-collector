@@ -62,7 +62,7 @@ func Command() (*cobra.Command, error) {
 	cmd.Flags().StringVar(&cfg.Distribution.Description, "description", "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.Version, "version", "1.0.0", "The version for the OpenTelemetry Collector distribution")
 	// IncludeCore is deprecated and will be removed in a subsequent release
-	cmd.Flags().BoolVar(&cfg.Distribution.IncludeCore, "include-core", true, "Deprecated: starting from v1.41.0, core components are not going to be implicitly included.")
+	cmd.Flags().BoolVar(&cfg.Distribution.IncludeCore, "include-core", true, "Deprecated: starting from v0.41.0, core components are not going to be implicitly included.")
 	if err := cmd.Flags().MarkDeprecated("include-core", "IncludeCore is deprecated, please explicitly list all the components required"); err != nil {
 		cfg.Logger.Error("failed to mark the IncludeCore flag is deprecated", zap.Error(err))
 		return nil, err
@@ -106,11 +106,6 @@ func initConfig() error {
 		return err
 	}
 	cfg.Logger.Info("Using config file", zap.String("path", vp.ConfigFileUsed()))
-
-	// if the include_core flag is set from the config, create a warning message that this is deprecated and will be removed in a subsequent release
-	if vp.IsSet("dist.include_core") {
-		cfg.Logger.Warn("IncludeCore is deprecated, starting from v1.41.0, core components are not going to be implicitly included ")
-	}
 
 	// convert Viper's internal state into our configuration object
 	if err := vp.Unmarshal(&cfg); err != nil {

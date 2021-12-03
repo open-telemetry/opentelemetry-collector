@@ -46,8 +46,8 @@ func ExampleComponents() (
 	return
 }
 
-// OtelColConfigComponents returns the set of components in "testdata/otelcol-config.yaml". This is only used by tests.
-func OtelColConfigComponents() (
+// DefaultFactories returns the set of components in "testdata/otelcol-config.yaml". This is only used by tests.
+func DefaultFactories() (
 	component.Factories,
 	error,
 ) {

@@ -101,6 +101,14 @@ func (c *Config) Validate() error {
 		}
 		c.Distribution.Go = path
 	}
+
+	// create a warning message that include_core is deprecated and will be removed in a subsequent release
+	if c.Distribution.IncludeCore {
+		c.Logger.Warn("IncludeCore is deprecated. Starting from v0.41.0, you need to include all components explicitly.")
+	} else {
+		c.Logger.Info("IncludeCore is deprecated, starting from v0.41.0. The new behavior won't affect your distribution, just remove the option from the manifest.")
+	}
+
 	c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
 
 	return nil
