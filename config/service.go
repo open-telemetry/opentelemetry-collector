@@ -72,6 +72,7 @@ func (srvTL *ServiceTelemetryLogs) validate() error {
 }
 
 // ServiceTelemetryMetrics exposes the common Telemetry configuration for one component.
+// Experimental: *NOTE* this structure is subject to change or removal in the future.
 type ServiceTelemetryMetrics struct {
 	// Level is the level of telemetry metrics, the possible values are:
 	//  - "none" indicates that no telemetry data should be collected;

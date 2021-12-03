@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestParseFrom(t *testing.T) {
@@ -148,20 +147,4 @@ func TestLevelString(t *testing.T) {
 			assert.Equal(t, test.str, test.level.String())
 		})
 	}
-}
-
-func TestTelemetrySettings(t *testing.T) {
-	ts := &TelemetrySetting{
-		MetricsLevelStr: "unknown",
-	}
-	_, err := ts.GetMetricsLevel()
-	assert.Error(t, err)
-}
-
-func TestDefaultTelemetrySettings(t *testing.T) {
-	ts := DefaultTelemetrySetting()
-	assert.Equal(t, levelBasicStr, ts.MetricsLevelStr)
-	lvl, err := ts.GetMetricsLevel()
-	require.NoError(t, err)
-	assert.Equal(t, LevelBasic, lvl)
 }
