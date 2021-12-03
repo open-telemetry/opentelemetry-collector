@@ -187,7 +187,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
 
-	// must be called once - that too before any GRPC calls.
 	telemetrylogs.NewColGRPCLogger(col.logger, col.cfgW.cfg.Service.Telemetry.Logs.Level).SetGRPCLogger()
 
 	col.logger.Info("Applying configuration...")
