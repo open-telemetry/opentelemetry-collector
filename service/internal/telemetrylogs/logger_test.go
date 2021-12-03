@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"google.golang.org/grpc/grpclog"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -53,7 +52,7 @@ func TestGRPCLogger(t *testing.T) {
 		{
 			"collector_warn_level_grpc_log_warn",
 			config.ServiceTelemetryLogs{
-				Development: false, // this must set the grpc logger to logger
+				Development: false, // this must set the grpc loggerV2 to loggerV2
 				Level:       zapcore.WarnLevel,
 				Encoding:    "console",
 			},
@@ -74,26 +73,20 @@ func TestGRPCLogger(t *testing.T) {
 				return nil
 			})
 
-			// create new collector logger
+			// create new collector zap logger
 			logger, err := NewLogger(test.cfg, []zap.Option{hook})
 			assert.NoError(t, err)
 
-			t.Cleanup(func() {
-				defaultLogger, _ := NewLogger(config.ServiceTelemetryLogs{
-					Level:       zapcore.InfoLevel,
-					Development: false,
-					Encoding:    "console",
-				}, nil)
-				SetGRPCLogger(defaultLogger, zapcore.InfoLevel)
-			})
+			// create colGRPCLogger
+			glogger := NewColGrpcLogger(logger, test.cfg.Level)
+			assert.NotNil(t, glogger)
 
-			SetGRPCLogger(logger, test.cfg.Level)
+			zapGRPCLogger, ok := glogger.(*colGrpcLogger)
+			assert.True(t, ok)
 
-			// write a grpc log
-			grpclog.Info(test.name)
-			grpclog.Warning(test.name)
+			zapGRPCLogger.loggerV2.Info(test.name)
+			zapGRPCLogger.loggerV2.Warning(test.name)
 
-			// test whether the grpc log has been recorded from collector logger
 			assert.Equal(t, obsInfo, test.infoLogged)
 			assert.Equal(t, obsWarn, test.warnLogged)
 		})

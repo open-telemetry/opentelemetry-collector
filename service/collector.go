@@ -187,7 +187,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
 
-	telemetrylogs.SetGRPCLogger(col.logger, col.cfgW.cfg.Service.Telemetry.Logs.Level)
+	telemetrylogs.NewColGrpcLogger(col.logger, col.cfgW.cfg.Service.Telemetry.Logs.Level).SetGrpcLogger()
 
 	col.logger.Info("Applying configuration...")
 

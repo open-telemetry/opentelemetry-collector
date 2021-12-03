@@ -15,21 +15,15 @@
 package telemetrylogs // import "go.opentelemetry.io/collector/service/internal/telemetrylogs"
 
 import (
-	grpc_logsettable "github.com/grpc-ecosystem/go-grpc-middleware/logging/settable"
+	"sync"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zapgrpc"
+	"google.golang.org/grpc/grpclog"
 
 	"go.opentelemetry.io/collector/config"
 )
-
-var grpcSettableLogger grpc_logsettable.SettableLoggerV2
-
-func init() {
-	// Note: this needs to happen only once and that too before any gRPC calls.
-	// The grpcSettableLogger.Set can be then be called to set any logger after in thread safe fashion.
-	grpcSettableLogger = grpc_logsettable.ReplaceGrpcLoggerV2()
-}
 
 func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logger, error) {
 	// Copied from NewProductionConfig.
@@ -59,11 +53,21 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 	return logger, nil
 }
 
-// SetGRPCLogger replaces grpc logger with logger cloned from baseLogger with exact configuration.
+// SettableGrpcLoggerV2 sets grpc framework's logger with internal logger.
+type SettableGrpcLoggerV2 interface {
+	SetGrpcLogger()
+}
+
+type colGrpcLogger struct {
+	setOnce  sync.Once
+	loggerV2 grpclog.LoggerV2
+}
+
+// NewColGrpcLogger constructs a grpclog.LoggerV2 instance cloned from baseLogger with exact configuration.
 // The minimum level of gRPC logs is set to WARN should the loglevel of the collector is set to INFO to avoid
 // copious logging from grpc framework.
-func SetGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) {
-	glogger := baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+func NewColGrpcLogger(baseLogger *zap.Logger, loglevel zapcore.Level) SettableGrpcLoggerV2 {
+	logger := baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		var c zapcore.Core
 		if loglevel == zap.InfoLevel {
 			c, _ = zapcore.NewIncreaseLevelCore(core, zap.WarnLevel)
@@ -72,5 +76,13 @@ func SetGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) {
 		}
 		return c.With([]zapcore.Field{zap.Bool("grpc_log", true)})
 	}))
-	grpcSettableLogger.Set(zapgrpc.NewLogger(glogger))
+	return &colGrpcLogger{
+		loggerV2: zapgrpc.NewLogger(logger),
+	}
+}
+
+func (gl *colGrpcLogger) SetGrpcLogger() {
+	gl.setOnce.Do(func() {
+		grpclog.SetLoggerV2(gl.loggerV2)
+	})
 }
