@@ -53,20 +53,20 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 	return logger, nil
 }
 
-// SettableGrpcLoggerV2 sets grpc framework's logger with internal logger.
-type SettableGrpcLoggerV2 interface {
-	SetGrpcLogger()
+// SettableGRPCLoggerV2 sets grpc framework's logger with internal logger.
+type SettableGRPCLoggerV2 interface {
+	SetGRPCLogger()
 }
 
-type colGrpcLogger struct {
+type colGRPCLogger struct {
 	setOnce  sync.Once
 	loggerV2 grpclog.LoggerV2
 }
 
-// NewColGrpcLogger constructs a grpclog.LoggerV2 instance cloned from baseLogger with exact configuration.
+// NewColGRPCLogger constructs a grpclog.LoggerV2 instance cloned from baseLogger with exact configuration.
 // The minimum level of gRPC logs is set to WARN should the loglevel of the collector is set to INFO to avoid
 // copious logging from grpc framework.
-func NewColGrpcLogger(baseLogger *zap.Logger, loglevel zapcore.Level) SettableGrpcLoggerV2 {
+func NewColGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) SettableGRPCLoggerV2 {
 	logger := baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		var c zapcore.Core
 		if loglevel == zap.InfoLevel {
@@ -76,12 +76,14 @@ func NewColGrpcLogger(baseLogger *zap.Logger, loglevel zapcore.Level) SettableGr
 		}
 		return c.With([]zapcore.Field{zap.Bool("grpc_log", true)})
 	}))
-	return &colGrpcLogger{
+	return &colGRPCLogger{
 		loggerV2: zapgrpc.NewLogger(logger),
 	}
 }
 
-func (gl *colGrpcLogger) SetGrpcLogger() {
+// SetGRPCLogger needs to be run before any grpc calls and this implementation requires it to be run
+// only once.
+func (gl *colGRPCLogger) SetGRPCLogger() {
 	gl.setOnce.Do(func() {
 		grpclog.SetLoggerV2(gl.loggerV2)
 	})

@@ -78,10 +78,10 @@ func TestGRPCLogger(t *testing.T) {
 			assert.NoError(t, err)
 
 			// create colGRPCLogger
-			glogger := NewColGrpcLogger(logger, test.cfg.Level)
+			glogger := NewColGRPCLogger(logger, test.cfg.Level)
 			assert.NotNil(t, glogger)
 
-			zapGRPCLogger, ok := glogger.(*colGrpcLogger)
+			zapGRPCLogger, ok := glogger.(*colGRPCLogger)
 			assert.True(t, ok)
 
 			zapGRPCLogger.loggerV2.Info(test.name)
