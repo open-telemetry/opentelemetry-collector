@@ -175,7 +175,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 func testPipeline(t *testing.T, pipelineID config.ComponentID, exporterIDs []config.ComponentID) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
-	cfg, err := configtest.LoadConfigAndValidate("testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", "pipelines_builder.yaml"), factories)
 	// Unmarshal the config
 	require.Nil(t, err)
 

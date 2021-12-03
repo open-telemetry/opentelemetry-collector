@@ -32,11 +32,13 @@ func (textMetricsMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
 	for i := 0; i < rms.Len(); i++ {
 		buf.logEntry("ResourceMetrics #%d", i)
 		rm := rms.At(i)
+		buf.logEntry("Resource SchemaURL: %s", rm.SchemaUrl())
 		buf.logAttributeMap("Resource labels", rm.Resource().Attributes())
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryMetrics #%d", j)
 			ilm := ilms.At(j)
+			buf.logEntry("InstrumentationLibraryMetrics SchemaURL: %s", ilm.SchemaUrl())
 			buf.logInstrumentationLibrary(ilm.InstrumentationLibrary())
 			metrics := ilm.Metrics()
 			for k := 0; k < metrics.Len(); k++ {

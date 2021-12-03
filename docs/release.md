@@ -29,7 +29,7 @@ We release both core and contrib collectors with the same versions where the con
 
 1. Create a branch named release/<release-series> (e.g. release/v0.4.x) in Core from the changelog update commit and push to origin (not your fork). Wait for the release branch builds to pass successfully.
 
-1. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.4.0`). Push them to origin (not your fork) with `git push --tags origin` (assuming origin refers to upstream open-telemetry project). Wait for the new tag build to pass successfully.
+1. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.40.0`). Push them upstream (not your fork) with `make push-tag TAG=v0.40.0`. NOTE: push-tag assumes your git remote is called `upstream`. Wait for the new tag build to pass successfully.
 
 1. The release script for the collector builder should create a new GitHub release for the builder. This is a separate release from the core, but we might join them in the future if it makes sense.
 
@@ -45,9 +45,9 @@ We release both core and contrib collectors with the same versions where the con
 
 1. Update the Core dependency to the Core version we just released with `make update-otel` command, e.g, `make update-otel OTEL_VERSION=v0.4.0`. Create a PR with both the changes, get it approved and merged.
 
-1. Create a branch named release/<release-series> (e.g. release/v0.4.x) in Core from the changelog update commit and push to origin (not your fork). Wait for the release branch builds to pass successfully.
+1. Create a branch named release/<release-series> (e.g. release/v0.4.x) in Contrib from the changelog update commit and push it upstream (not your fork). Wait for the release branch builds to pass successfully.
 
-1. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.4.0`). Push them to origin (not your fork) with `git push --tags origin` (assuming origin refers to upstream open-telemetry project).
+1. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.40.0`). Push them upstream (not your fork) with `make push-tag TAG=v0.40.0`. NOTE: push-tag assumes your git remote is called `upstream`. Wait for the new tag build to pass successfully.
 
 1. Create a new Github release from the new version tag and copy release notes from the CHANGELOG.md file to the release. This step should be automated. CI can pull the release notes from the change log and use it as the body when creating the new release.
 
@@ -61,4 +61,4 @@ The last step of the release process creates artifacts for the new version of th
 
 1. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/17/files).
 
-1. Ensure the "Release" action passes, this will push new docker images to https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib, create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/runs/1346637081).
+1. Ensure the "Release" action passes, this will push new docker images to https://hub.docker.com/repository/docker/otel/opentelemetry-collector, create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/runs/1346637081).

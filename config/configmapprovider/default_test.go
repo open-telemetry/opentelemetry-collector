@@ -16,7 +16,7 @@ package configmapprovider
 
 import (
 	"context"
-	"strings"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,17 +26,14 @@ import (
 )
 
 func TestDefaultMapProvider(t *testing.T) {
-	mp := NewDefault("testdata/default-config.yaml", nil)
+	mp := NewDefault(path.Join("testdata", "default-config.yaml"), nil)
 	retr, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
-	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
-processors:
-  batch:
-exporters:
-  otlp:
-    endpoint: "localhost:4317"`))
-	require.NoError(t, err)
+	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
+		"processors::batch":         nil,
+		"exporters::otlp::endpoint": "localhost:4317",
+	})
 	m, err := retr.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, expectedMap, m)
@@ -45,18 +42,14 @@ exporters:
 }
 
 func TestDefaultMapProvider_AddNewConfig(t *testing.T) {
-	mp := NewDefault("testdata/default-config.yaml", []string{"processors.batch.timeout=2s"})
+	mp := NewDefault(path.Join("testdata", "default-config.yaml"), []string{"processors.batch.timeout=2s"})
 	cp, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
-	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
-processors:
-  batch:
-    timeout: 2s
-exporters:
-  otlp:
-    endpoint: "localhost:4317"`))
-	require.NoError(t, err)
+	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
+		"processors::batch::timeout": "2s",
+		"exporters::otlp::endpoint":  "localhost:4317",
+	})
 	m, err := cp.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, expectedMap, m)
@@ -66,19 +59,15 @@ exporters:
 
 func TestDefaultMapProvider_OverwriteConfig(t *testing.T) {
 	mp := NewDefault(
-		"testdata/default-config.yaml",
+		path.Join("testdata", "default-config.yaml"),
 		[]string{"processors.batch.timeout=2s", "exporters.otlp.endpoint=localhost:1234"})
 	cp, err := mp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 
-	expectedMap, err := config.NewMapFromBuffer(strings.NewReader(`
-processors:
-  batch:
-    timeout: 2s
-exporters:
-  otlp:
-    endpoint: "localhost:1234"`))
-	require.NoError(t, err)
+	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
+		"processors::batch::timeout": "2s",
+		"exporters::otlp::endpoint":  "localhost:1234",
+	})
 	m, err := cp.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, expectedMap, m)
@@ -87,7 +76,7 @@ exporters:
 }
 
 func TestDefaultMapProvider_InexistentFile(t *testing.T) {
-	mp := NewDefault("testdata/otelcol-config.yaml", nil)
+	mp := NewDefault(path.Join("testdata", "otelcol-config.yaml"), nil)
 	require.NotNil(t, mp)
 	_, err := mp.Retrieve(context.Background(), nil)
 	require.Error(t, err)
