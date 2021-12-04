@@ -110,6 +110,18 @@ func TestDeprecatedCore(t *testing.T) {
 	assert.True(t, errors.Is(err, ErrDeprecatedCore))
 }
 
+func TestDeprecatedIncludeCoreWarnLog(t *testing.T) {
+	// prepare
+	cfg := DefaultConfig()
+	cfg.Distribution.IncludeCore = true
+
+	// test
+	require.NoError(t, cfg.Validate())
+
+	// verify
+	assert.True(t, IncludeCoreWarnLog)
+}
+
 func TestInvalidModule(t *testing.T) {
 	type invalidModuleTest struct {
 		cfg Config

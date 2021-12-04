@@ -33,6 +33,9 @@ var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 // ErrDeprecatedCore indicates deprecated core
 var ErrDeprecatedCore = errors.New("mod.Core has deprecated, you should not be used anymore and required to be set mod.GoMod instead")
 
+// IncludeCoreWarnLog indicates the warning message is logged that include_core is deprecated and starting from v0.41.0, you need to include all components explicitly
+var IncludeCoreWarnLog = false
+
 // Config holds the builder's configuration
 type Config struct {
 	Logger          *zap.Logger
@@ -105,8 +108,10 @@ func (c *Config) Validate() error {
 	// create a warning message that include_core is deprecated and will be removed in a subsequent release
 	if c.Distribution.IncludeCore {
 		c.Logger.Warn("IncludeCore is deprecated. Starting from v0.41.0, you need to include all components explicitly.")
+		IncludeCoreWarnLog = true
 	} else {
 		c.Logger.Info("IncludeCore is deprecated, starting from v0.41.0. The new behavior won't affect your distribution, just remove the option from the manifest.")
+		IncludeCoreWarnLog = false
 	}
 
 	c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
