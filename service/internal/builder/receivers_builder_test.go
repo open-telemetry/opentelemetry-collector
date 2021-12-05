@@ -90,7 +90,7 @@ func testReceivers(t *testing.T, test testCase) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	cfg, err := configtest.LoadConfigAndValidate("testdata/pipelines_builder.yaml", factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", "pipelines_builder.yaml"), factories)
 	require.NoError(t, err)
 
 	// Build the pipeline
@@ -275,7 +275,7 @@ func TestBuildReceivers_Unused(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	cfg, err := configtest.LoadConfigAndValidate("testdata/unused_receiver.yaml", factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", "unused_receiver.yaml"), factories)
 	assert.NoError(t, err)
 
 	// Build the pipeline

@@ -17,6 +17,8 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 import (
 	"context"
 	"errors"
+	"fmt"
+	"runtime"
 	"time"
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -46,18 +48,24 @@ type exporter struct {
 	callOptions    []grpc.CallOption
 
 	settings component.TelemetrySettings
+
+	// Default user-agent header.
+	userAgent string
 }
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg config.Exporter, settings component.TelemetrySettings) (*exporter, error) {
+func newExporter(cfg config.Exporter, settings component.TelemetrySettings, buildInfo component.BuildInfo) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
 	}
 
-	return &exporter{config: oCfg, settings: settings}, nil
+	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
+		buildInfo.Description, buildInfo.Version, runtime.GOOS, runtime.GOARCH)
+
+	return &exporter{config: oCfg, settings: settings, userAgent: userAgent}, nil
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
@@ -67,6 +75,7 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	if err != nil {
 		return err
 	}
+	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
 
 	if e.clientConn, err = grpc.Dial(e.config.GRPCClientSettings.SanitizedEndpoint(), dialOpts...); err != nil {
 		return err
