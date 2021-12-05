@@ -70,6 +70,8 @@ func NewColGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) SettableGR
 	logger := baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		var c zapcore.Core
 		if loglevel == zap.InfoLevel {
+			// NewIncreaseLevelCore errors only if the new log level is less than the initial core level.
+			// In this case it never happens as WARN is always greater than INFO, therefore ignoring it.
 			c, _ = zapcore.NewIncreaseLevelCore(core, zap.WarnLevel)
 		} else {
 			c = core
