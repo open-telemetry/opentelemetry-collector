@@ -97,20 +97,6 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "error_unsupported_compression",
-			settings: HTTPClientSettings{
-				Endpoint: "localhost:1234",
-				TLSSetting: configtls.TLSClientSetting{
-					Insecure: false,
-				},
-				ReadBufferSize:     1024,
-				WriteBufferSize:    512,
-				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
-				Compression:        "ggip",
-			},
-			shouldError: true,
-		},
-		{
 			name: "error_round_tripper_returned",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",

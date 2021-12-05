@@ -89,11 +89,8 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	}
 
 	// Compress the body using specified compression methods if non-empty string is provided.
-	// Supporting gzip, zlib, deflate, snappy, and zstd.
-	if hcs.Compression != "" && hcs.Compression != middleware.CompressionNone {
-		if !isValidHTTPCompressionKey(hcs.Compression) {
-			return nil, fmt.Errorf("unsupported compression type %q", hcs.Compression)
-		}
+	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
+	if hcs.Compression != middleware.CompressionEmpty && hcs.Compression != middleware.CompressionNone {
 		clientTransport = middleware.NewCompressRoundTripper(clientTransport, hcs.Compression)
 	}
 
@@ -235,18 +232,5 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 
 	return &http.Server{
 		Handler: handler,
-	}
-}
-
-func isValidHTTPCompressionKey(compressionType middleware.CompressionType) bool {
-	switch compressionType {
-	case middleware.CompressionGzip,
-		middleware.CompressionZlib,
-		middleware.CompressionDeflate,
-		middleware.CompressionSnappy,
-		middleware.CompressionZstd:
-		return true
-	default:
-		return false
 	}
 }

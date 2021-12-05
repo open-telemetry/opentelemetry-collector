@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -35,6 +36,7 @@ const (
 	CompressionSnappy     CompressionType = "snappy"
 	CompressionZstd       CompressionType = "zstd"
 	CompressionNone       CompressionType = "none"
+	CompressionEmpty      CompressionType = ""
 )
 
 type CompressRoundTripper struct {
@@ -194,4 +196,20 @@ func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 // defaultErrorHandler writes the error message in plain text.
 func defaultErrorHandler(w http.ResponseWriter, _ *http.Request, errMsg string, statusCode int) {
 	http.Error(w, errMsg, statusCode)
+}
+
+func (ct *CompressionType) UnmarshalText(in []byte) error {
+	switch typ := CompressionType(in); typ {
+	case CompressionGzip,
+		CompressionZlib,
+		CompressionDeflate,
+		CompressionSnappy,
+		CompressionZstd,
+		CompressionNone,
+		CompressionEmpty:
+		*ct = typ
+		return nil
+	default:
+		return fmt.Errorf("unsupported compression type %q", typ)
+	}
 }
