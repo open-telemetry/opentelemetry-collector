@@ -48,6 +48,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 	ext := map[config.ComponentID]component.Extension{
 		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 	}
+	maxIdleConns := 50
+	maxIdleConnsPerHost := 40
+	maxConnsPerHost := 45
+	idleConnTimeout := 30 * time.Second
 	tests := []struct {
 		name        string
 		settings    HTTPClientSettings
@@ -60,9 +64,13 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
-				ReadBufferSize:     1024,
-				WriteBufferSize:    512,
-				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConns:        &maxIdleConns,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
+				IdleConnTimeout:     &idleConnTimeout,
+				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 			},
 			shouldError: false,
 		},
@@ -92,8 +100,59 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
 			assert.EqualValues(t, 512, transport.WriteBufferSize)
+			assert.EqualValues(t, 50, transport.MaxIdleConns)
+			assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
+			assert.EqualValues(t, 45, transport.MaxConnsPerHost)
+			assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
+
 		})
 	}
+}
+
+func TestPartialHTTPClientSettings(t *testing.T) {
+	ext := map[config.ComponentID]component.Extension{
+		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+	}
+	tests := []struct {
+		name        string
+		settings    HTTPClientSettings
+		shouldError bool
+	}{
+		{
+			name: "valid_partial_settings",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			},
+			shouldError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, err := test.settings.ToClient(ext)
+			assert.NoError(t, err)
+			transport := client.Transport.(*http.Transport)
+			assert.EqualValues(t, 1024, transport.ReadBufferSize)
+			assert.EqualValues(t, 512, transport.WriteBufferSize)
+			assert.EqualValues(t, 100, transport.MaxIdleConns)
+			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
+			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
+			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
+
+		})
+	}
+}
+
+func TestDefaultHTTPClientSettings(t *testing.T) {
+	httpClientSettings := DefaultHTTPClientSettings()
+	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
+	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {

@@ -58,6 +58,38 @@ type HTTPClientSettings struct {
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+
+	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxIdleConns *int `mapstructure:"max_idle_conns"`
+
+	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
+
+	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
+	// active, and idle states.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxConnsPerHost *int `mapstructure:"max_conns_per_host"`
+
+	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
+}
+
+// DefaultHTTPClientSettings returns HTTPClientSettings type object with
+// the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
+// Other config options are not added as they are initialized with 'zero value' by GoLang as default.
+// We encourage to use this function to create an object of HTTPClientSettings.
+func DefaultHTTPClientSettings() HTTPClientSettings {
+	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
+	maxIdleConns := 100
+	idleConnTimeout := 90 * time.Second
+
+	return HTTPClientSettings{
+		MaxIdleConns:    &maxIdleConns,
+		IdleConnTimeout: &idleConnTimeout,
+	}
 }
 
 // ToClient creates an HTTP client.
@@ -75,6 +107,22 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	}
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
+	}
+
+	if hcs.MaxIdleConns != nil {
+		transport.MaxIdleConns = *hcs.MaxIdleConns
+	}
+
+	if hcs.MaxIdleConnsPerHost != nil {
+		transport.MaxIdleConnsPerHost = *hcs.MaxIdleConnsPerHost
+	}
+
+	if hcs.MaxConnsPerHost != nil {
+		transport.MaxConnsPerHost = *hcs.MaxConnsPerHost
+	}
+
+	if hcs.IdleConnTimeout != nil {
+		transport.IdleConnTimeout = *hcs.IdleConnTimeout
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
