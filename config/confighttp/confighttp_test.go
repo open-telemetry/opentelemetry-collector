@@ -381,10 +381,14 @@ func TestHttpReception(t *testing.T) {
 			}
 			ln, err := hss.ToListener()
 			assert.NoError(t, err)
-			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				_, errWrite := fmt.Fprint(w, "test")
-				assert.NoError(t, errWrite)
-			}), componenttest.NewNopTelemetrySettings())
+			s, err := hss.ToServer(
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					_, errWrite := fmt.Fprint(w, "test")
+					assert.NoError(t, errWrite)
+				}))
+			assert.NoError(t, err)
 
 			go func() {
 				_ = s.Serve(ln)
@@ -461,9 +465,14 @@ func TestHttpCors(t *testing.T) {
 
 			ln, err := hss.ToListener()
 			assert.NoError(t, err)
-			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			}), componenttest.NewNopTelemetrySettings())
+			s, err := hss.ToServer(
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+				}))
+			assert.NoError(t, err)
+
 			go func() {
 				_ = s.Serve(ln)
 			}()
@@ -499,7 +508,11 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
-	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), componenttest.NewNopTelemetrySettings())
+	s, err := hss.ToServer(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	require.NoError(t, err)
 	require.NotNil(t, s)
 	require.NoError(t, s.Close())
 }
@@ -541,7 +554,14 @@ func ExampleHTTPServerSettings() {
 	settings := HTTPServerSettings{
 		Endpoint: ":443",
 	}
-	s := settings.ToServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), componenttest.NewNopTelemetrySettings())
+	s, err := settings.ToServer(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	if err != nil {
+		panic(err)
+	}
+
 	l, err := settings.ToListener()
 	if err != nil {
 		panic(err)
