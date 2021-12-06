@@ -77,6 +77,21 @@ type HTTPClientSettings struct {
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 }
 
+// DefaultHTTPClientSettings returns HTTPClientSettings type object with
+// the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
+// Other config options are not added as they are initialized with 'zero value' by GoLang as default.
+// We encourage to use this function to create an object of HTTPClientSettings.
+func DefaultHTTPClientSettings() HTTPClientSettings {
+	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
+	maxIdleConns := 100
+	idleConnTimeout := 90 * time.Second
+
+	return HTTPClientSettings{
+		MaxIdleConns:    &maxIdleConns,
+		IdleConnTimeout: &idleConnTimeout,
+	}
+}
+
 // ToClient creates an HTTP client.
 func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
