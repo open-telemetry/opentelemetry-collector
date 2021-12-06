@@ -128,11 +128,16 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 		}
 	}
 	if r.cfg.HTTP != nil {
-		r.serverHTTP = r.cfg.HTTP.ToServer(
-			r.httpMux,
+		r.serverHTTP, err = r.cfg.HTTP.ToServer(
+			host,
 			r.settings.TelemetrySettings,
+			r.httpMux,
 			confighttp.WithErrorHandler(errorHandler),
 		)
+		if err != nil {
+			return err
+		}
+
 		err = r.startHTTPServer(r.cfg.HTTP, host)
 		if err != nil {
 			return err

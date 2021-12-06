@@ -6,6 +6,7 @@
 
 - Remove `config.NewConfigMapFrom[File|Buffer]`, add testonly version (#4502)
 - `configtls`: TLS 1.2 is the new default mininum version (#4503)
+- `confighttp`: `ToServer` now accepts a `component.Host`, in line with gRPC's counterpart (#4514)
 
 ## 🧰 Bug fixes 🧰
 

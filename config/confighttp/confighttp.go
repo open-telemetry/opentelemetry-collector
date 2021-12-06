@@ -187,7 +187,7 @@ func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
 }
 
 // ToServer creates an http.Server from settings object.
-func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component.TelemetrySettings, opts ...ToServerOption) *http.Server {
+func (hss *HTTPServerSettings) ToServer(_ component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o(serverOpts)
@@ -223,5 +223,5 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 
 	return &http.Server{
 		Handler: handler,
-	}
+	}, nil
 }
