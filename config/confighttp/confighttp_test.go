@@ -380,7 +380,8 @@ func TestHttpReception(t *testing.T) {
 				TLSSetting: tt.tlsServerCreds,
 			}
 			ln, err := hss.ToListener()
-			assert.NoError(t, err)
+			require.NoError(t, err)
+
 			s, err := hss.ToServer(
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
@@ -388,7 +389,7 @@ func TestHttpReception(t *testing.T) {
 					_, errWrite := fmt.Fprint(w, "test")
 					assert.NoError(t, errWrite)
 				}))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			go func() {
 				_ = s.Serve(ln)
@@ -407,7 +408,8 @@ func TestHttpReception(t *testing.T) {
 				TLSSetting: *tt.tlsClientCreds,
 			}
 			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
-			assert.NoError(t, errClient)
+			require.NoError(t, errClient)
+
 			resp, errResp := client.Get(hcs.Endpoint)
 			if tt.hasError {
 				assert.Error(t, errResp)
@@ -464,14 +466,15 @@ func TestHttpCors(t *testing.T) {
 			}
 
 			ln, err := hss.ToListener()
-			assert.NoError(t, err)
+			require.NoError(t, err)
+
 			s, err := hss.ToServer(
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				}))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			go func() {
 				_ = s.Serve(ln)
