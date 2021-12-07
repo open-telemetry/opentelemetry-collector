@@ -24,11 +24,11 @@ import (
 )
 
 func TestWrapServerStream(t *testing.T) {
-	ctx := context.WithValue(context.TODO(), "something", 1)
+	ctx := context.WithValue(context.TODO(), "something", 1) //nolint
 	fake := &fakeServerStream{ctx: ctx}
 	wrapped := WrapServerStream(fake)
 	assert.NotNil(t, wrapped.Context().Value("something"), "values from fake must propagate to wrapper")
-	wrapped.WrappedContext = context.WithValue(wrapped.Context(), "other", 2)
+	wrapped.WrappedContext = context.WithValue(wrapped.Context(), "other", 2) //nolint
 	assert.NotNil(t, wrapped.Context().Value("other"), "values from wrapper must be set")
 }
 
