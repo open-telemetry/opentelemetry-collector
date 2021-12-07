@@ -58,16 +58,16 @@ type ServiceTelemetryLogs struct {
 
 	// DisableCaller stops annotating logs with the calling function's file
 	// name and line number. By default, all logs are annotated.
-	DisableCaller bool `mapstructure:"disableCaller"`
+	DisableCaller bool `mapstructure:"disable_caller"`
 
 	// DisableStacktrace completely disables automatic stacktrace capturing. By
 	// default, stacktraces are captured for WarnLevel and above logs in
 	// development and ErrorLevel and above in production.
-	DisableStacktrace bool `mapstructure:"disableStacktrace"`
+	DisableStacktrace bool `mapstructure:"disable_stacktrace"`
 
 	// OutputPaths is a list of URLs or file paths to write logging output to.
 	// See Open for details.
-	OutputPaths []string `mapstructure:"outputPaths"`
+	OutputPaths []string `mapstructure:"output_paths"`
 
 	// ErrorOutputPaths is a list of URLs to write internal logger errors to.
 	// The default is standard error.
@@ -75,10 +75,10 @@ type ServiceTelemetryLogs struct {
 	// Note that this setting only affects internal errors; for sample code that
 	// sends error-level logs to a different location from info- and debug-level
 	// logs, see the package-level AdvancedConfiguration example.
-	ErrorOutputPaths []string `mapstructure:"errorOutputPaths"`
+	ErrorOutputPaths []string `mapstructure:"error_output_paths"`
 
 	// InitialFields is a collection of fields to add to the root logger.
-	InitialFields map[string]interface{} `mapstructure:"initialFields"`
+	InitialFields map[string]interface{} `mapstructure:"initial_fields"`
 }
 
 func (srvTL *ServiceTelemetryLogs) validate() error {

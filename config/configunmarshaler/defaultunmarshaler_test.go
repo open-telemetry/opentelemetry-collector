@@ -107,7 +107,7 @@ func TestDecodeConfig(t *testing.T) {
 			DisableStacktrace: true,
 			OutputPaths:       []string{"stderr", "./output-logs"},
 			ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
-			InitialFields:     map[string]interface{}{"fieldKey": "filed-value"},
+			InitialFields:     map[string]interface{}{"field_key": "filed_value"},
 		}}, cfg.Service.Telemetry)
 
 	// Verify Service Extensions
