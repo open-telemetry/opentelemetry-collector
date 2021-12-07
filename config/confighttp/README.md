@@ -57,13 +57,15 @@ will not be enabled.
   [default safelist][cors-headers]. By default, safelist headers and
   `X-Requested-With` will be allowed. To allow any request header, set to
   `["*"]`.
-  - `max_age`: Sets the value of the `Access-Control-Max-Age` header, allowing
-  clients to cache the response to CORS preflight requests.
+  - `max_age`: Sets the value of the [`Access-Control-Max-Age`][cors-cache]
+  header, allowing clients to cache the response to CORS preflight requests. If
+  not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
 
 [cors]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 [cors-headers]: https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header
+[cors-cache]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
 [origin]: https://developer.mozilla.org/en-US/docs/Glossary/Origin
 
 Example:
