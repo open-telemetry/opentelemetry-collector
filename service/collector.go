@@ -163,14 +163,56 @@ LOOP:
 	return col.shutdown(ctx)
 }
 
+func printFactories(factories component.Factories) {
+	ids := make([]string, len(factories.Extensions))
+	i := 0
+	for id := range factories.Extensions {
+		ids[i] = string(id)
+		i++
+	}
+	fmt.Printf("Extensions are: %v\n", ids)
+
+	ids = make([]string, len(factories.Receivers))
+	i = 0
+	for id := range factories.Receivers {
+		ids[i] = string(id)
+		i++
+	}
+	fmt.Printf("Receivers are: %v\n", ids)
+
+	ids = make([]string, len(factories.Processors))
+	i = 0
+	for id := range factories.Processors {
+		ids[i] = string(id)
+		i++
+	}
+	fmt.Printf("Processors are: %v\n", ids)
+
+	ids = make([]string, len(factories.Exporters))
+	i = 0
+	for id := range factories.Exporters {
+		ids[i] = string(id)
+		i++
+	}
+	fmt.Printf("Exporters are: %v\n", ids)
+}
+
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(Starting)
 
+<<<<<<< HEAD
 	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
+=======
+	var err error
+	if col.cfgW, err = newConfigWatcher(ctx, col.set); err != nil {
+		printFactories(col.set.Factories)
+
+		return err
+>>>>>>> af98b610 (if the config is invalid, list the factories)
 	}
 	if col.logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
