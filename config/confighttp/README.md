@@ -52,11 +52,11 @@ will not be enabled.
   - `allowed_origins`: A list of [origins][origin] allowed to send requests to
   the receiver. An origin may contain a wildcard (`*`) to replace 0 or more
   characters (e.g., `https://*.example.com`). To allow any origin, set to
-  `['*']`. If no origins are listed, CORS will not be enabled.
+  `["*"]`. If no origins are listed, CORS will not be enabled.
   - `allowed_headers`: Allow CORS requests to include headers outside the
   [default safelist][cors-headers]. By default, safelist headers and
   `X-Requested-With` will be allowed. To allow any request header, set to
-  `['*']`.
+  `["*"]`.
   - `max_age`: Sets the value of the `Access-Control-Max-Age` header, allowing
   clients to cache the response to CORS preflight requests.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
@@ -76,7 +76,7 @@ receivers:
         - https://foo.bar.com
         - https://*.test.com
       allowed_headers:
-        - ExampleHeader
+        - Example-Header
       max_age: 7200
     endpoint: 0.0.0.0:55690
     protocols:

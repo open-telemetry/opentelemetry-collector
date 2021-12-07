@@ -185,7 +185,7 @@ type HTTPServerSettings struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls, omitempty"`
 
-	// CORS configures the server for HTTP cross-origin request sharing (CORS).
+	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS *CORSSettings `mapstructure:"cors,omitempty"`
 }
 
@@ -266,7 +266,7 @@ func (hss *HTTPServerSettings) ToServer(_ component.Host, settings component.Tel
 	}, nil
 }
 
-// CORSSettings configures a receiver for HTTP cross-origin request sharing (CORS).
+// CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS).
 // See the underlying https://github.com/rs/cors package for details.
 type CORSSettings struct {
 	// AllowedOrigins sets the allowed values of the Origin header for
@@ -275,9 +275,11 @@ type CORSSettings struct {
 	// "http://*.domain.com", or "*" to allow any origin).
 	AllowedOrigins []string `mapstructure:"allowed_origins"`
 
-	// AllowedHeaders sets the value of the Access-Control-Allow-Headers
-	// response header. If not specified or blank, no such header will be
-	// sent in response to CORS requests.
+	// AllowedHeaders sets what headers will be allowed in CORS requests.
+	// The Accept, Accept-Language, Content-Type, and Content-Language
+	// headers are implicitly allowed. If no headers are listed,
+	// X-Requested-With will also be accepted by default. Include "*" to
+	// allow any request header.
 	AllowedHeaders []string `mapstructure:"allowed_headers,omitempty"`
 
 	// MaxAge sets the value of the Access-Control-Max-Age response header.

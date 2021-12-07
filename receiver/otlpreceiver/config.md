@@ -75,14 +75,14 @@ Config defines configuration for OTLP receiver.
 | ---- | ---- | ------- | ---- |
 | endpoint |string| 0.0.0.0:4318 | Endpoint configures the listening address for the server.  |
 | tls |[configtls-TLSServerSetting](#configtls-TLSServerSetting)| <no value> | TLSSetting struct exposes TLS client configuration.  |
-| cors |[confighttp-CORSSettings](#confighttp-CORSSettings)| <no value> | CORSSettings configures a receiver for HTTP cross-origin request sharing (CORS). |
+| cors |[confighttp-CORSSettings](#confighttp-CORSSettings)| <no value> | CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS). |
 
-### confighttp-HTTPServerSettings
+### confighttp-CORSSettings
 
 | Name | Type | Default | Docs |
 | ---- | ---- | ------- | ---- |
 | allowed_origins |[]string| <no value> | AllowedOrigins sets the allowed values of the Origin header for HTTP/JSON requests to an OTLP receiver. An origin may contain a wildcard (`*`) to replace 0 or more characters (e.g., `"https://*.example.com"`, or `"*"` to allow any origin). |
-| allowed_headers |[]string| <no value> | AllowedHeaders sets the value of the Access-Control-Allow-Headers response header. If not specified or blank, no such header will be sent in response to CORS requests. Include `"*"` to allow any request header. |
+| allowed_headers |[]string| <no value> | AllowedHeaders sets what headers will be allowed in CORS requests. The Accept, Accept-Language, Content-Type, and Content-Language headers are implicitly allowed. If no headers are listed, X-Requested-With will also be accepted by default. Include `"*"` to allow any request header. |
 | max_age |int| <no value> | MaxAge sets the value of the Access-Control-Max-Age response header.  Set it to the number of seconds that browsers should cache a CORS preflight response for. |
 
 ### configtls-TLSServerSetting
