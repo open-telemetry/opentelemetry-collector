@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
 	"github.com/mostynb/go-grpc-compression/snappy"
 	"github.com/mostynb/go-grpc-compression/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -39,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 // Compression gRPC keys for supported compression types within collector.
@@ -381,7 +381,7 @@ func enhanceWithClientInformation(ctx context.Context, req interface{}, info *gr
 }
 
 func enhanceStreamWithClientInformation(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	wrapped := grpc_middleware.WrapServerStream(ss)
+	wrapped := middleware.WrapServerStream(ss)
 	wrapped.WrappedContext = contextWithClient(ss.Context())
 	return handler(srv, wrapped)
 }

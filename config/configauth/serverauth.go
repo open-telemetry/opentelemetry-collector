@@ -18,11 +18,11 @@ import (
 	"context"
 	"errors"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 var (
@@ -106,7 +106,7 @@ func DefaultGRPCStreamServerInterceptor(srv interface{}, stream grpc.ServerStrea
 		return err
 	}
 
-	wrapped := grpc_middleware.WrapServerStream(stream)
+	wrapped := middleware.WrapServerStream(stream)
 	wrapped.WrappedContext = ctx
 	return handler(srv, wrapped)
 }
