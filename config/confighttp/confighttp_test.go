@@ -529,10 +529,12 @@ func TestHttpCors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &HTTPServerSettings{
-				Endpoint:    "localhost:0",
-				CorsOrigins: tt.CorsOrigins,
-				CorsHeaders: tt.CorsHeaders,
-				CorsMaxAge:  tt.CorsMaxAge,
+				Endpoint: "localhost:0",
+				CORS: &CORSSettings{
+					AllowedOrigins: tt.CorsOrigins,
+					AllowedHeaders: tt.CorsHeaders,
+					MaxAge:         tt.CorsMaxAge,
+				},
 			}
 
 			ln, err := hss.ToListener()
@@ -576,8 +578,8 @@ func TestHttpCors(t *testing.T) {
 
 func TestHttpCorsInvalidSettings(t *testing.T) {
 	hss := &HTTPServerSettings{
-		Endpoint:    "localhost:0",
-		CorsHeaders: []string{"some-header"},
+		Endpoint: "localhost:0",
+		CORS:     &CORSSettings{AllowedHeaders: []string{"some-header"}},
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
