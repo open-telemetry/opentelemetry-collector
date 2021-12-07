@@ -23,6 +23,10 @@ README](../configtls/README.md).
 - `compression`: Compression type to use among `zstd`, `snappy`, `gzip`, `zlib`, and `deflate`.
   - `zstd` and `snappy` are recommended.
   - `none` will be treated as uncompressed, and any other inputs will cause an error.
+- [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
+- [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
+- [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
+- [`idle_conn_timeout`](https://golang.org/pkg/net/http/#Transport)
 
 Example:
 

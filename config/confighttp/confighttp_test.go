@@ -49,6 +49,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 	ext := map[config.ComponentID]component.Extension{
 		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 	}
+	maxIdleConns := 50
+	maxIdleConnsPerHost := 40
+	maxConnsPerHost := 45
+	idleConnTimeout := 30 * time.Second
 	tests := []struct {
 		name        string
 		settings    HTTPClientSettings
@@ -61,10 +65,14 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
-				ReadBufferSize:     1024,
-				WriteBufferSize:    512,
-				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
-				Compression:        "",
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConns:        &maxIdleConns,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
+				IdleConnTimeout:     &idleConnTimeout,
+				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression:         "",
 			},
 			shouldError: false,
 		},
@@ -77,6 +85,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:     1024,
 				WriteBufferSize:    512,
+				MaxIdleConns:        &maxIdleConns,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
+				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:        "none",
 			},
@@ -91,6 +103,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:     1024,
 				WriteBufferSize:    512,
+				MaxIdleConns:        &maxIdleConns,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
+				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
 				Compression:        "gzip",
 			},
@@ -123,11 +139,61 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			case *http.Transport:
 				assert.EqualValues(t, 1024, transport.ReadBufferSize)
 				assert.EqualValues(t, 512, transport.WriteBufferSize)
+				assert.EqualValues(t, 50, transport.MaxIdleConns)
+				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
+				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
+				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
 			case *middleware.CompressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.CompressionType())
 			}
 		})
 	}
+}
+
+func TestPartialHTTPClientSettings(t *testing.T) {
+	ext := map[config.ComponentID]component.Extension{
+		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+	}
+	tests := []struct {
+		name        string
+		settings    HTTPClientSettings
+		shouldError bool
+	}{
+		{
+			name: "valid_partial_settings",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:     1024,
+				WriteBufferSize:    512,
+				CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+			},
+			shouldError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, err := test.settings.ToClient(ext)
+			assert.NoError(t, err)
+			transport := client.Transport.(*http.Transport)
+			assert.EqualValues(t, 1024, transport.ReadBufferSize)
+			assert.EqualValues(t, 512, transport.WriteBufferSize)
+			assert.EqualValues(t, 100, transport.MaxIdleConns)
+			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
+			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
+			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
+
+		})
+	}
+}
+
+func TestDefaultHTTPClientSettings(t *testing.T) {
+	httpClientSettings := DefaultHTTPClientSettings()
+	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
+	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
@@ -414,11 +480,16 @@ func TestHttpReception(t *testing.T) {
 				TLSSetting: tt.tlsServerCreds,
 			}
 			ln, err := hss.ToListener()
-			assert.NoError(t, err)
-			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				_, errWrite := fmt.Fprint(w, "test")
-				assert.NoError(t, errWrite)
-			}), componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			s, err := hss.ToServer(
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					_, errWrite := fmt.Fprint(w, "test")
+					assert.NoError(t, errWrite)
+				}))
+			require.NoError(t, err)
 
 			go func() {
 				_ = s.Serve(ln)
@@ -437,7 +508,8 @@ func TestHttpReception(t *testing.T) {
 				TLSSetting: *tt.tlsClientCreds,
 			}
 			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
-			assert.NoError(t, errClient)
+			require.NoError(t, errClient)
+
 			resp, errResp := client.Get(hcs.Endpoint)
 			if tt.hasError {
 				assert.Error(t, errResp)
@@ -494,10 +566,16 @@ func TestHttpCors(t *testing.T) {
 			}
 
 			ln, err := hss.ToListener()
-			assert.NoError(t, err)
-			s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			}), componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			s, err := hss.ToServer(
+				componenttest.NewNopHost(),
+				componenttest.NewNopTelemetrySettings(),
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+				}))
+			require.NoError(t, err)
+
 			go func() {
 				_ = s.Serve(ln)
 			}()
@@ -533,7 +611,11 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
-	s := hss.ToServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), componenttest.NewNopTelemetrySettings())
+	s, err := hss.ToServer(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	require.NoError(t, err)
 	require.NotNil(t, s)
 	require.NoError(t, s.Close())
 }
@@ -575,7 +657,14 @@ func ExampleHTTPServerSettings() {
 	settings := HTTPServerSettings{
 		Endpoint: ":443",
 	}
-	s := settings.ToServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), componenttest.NewNopTelemetrySettings())
+	s, err := settings.ToServer(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	if err != nil {
+		panic(err)
+	}
+
 	l, err := settings.ToListener()
 	if err != nil {
 		panic(err)
