@@ -175,7 +175,7 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 				ErrorOutputPaths:  []string{"stderr"},
 				DisableCaller:     false,
 				DisableStacktrace: false,
-				InitialFields:     map[string]interface{}{},
+				InitialFields:     map[string]interface{}(nil),
 			},
 		},
 	}
