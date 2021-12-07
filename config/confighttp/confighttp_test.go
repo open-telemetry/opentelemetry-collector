@@ -485,10 +485,10 @@ func TestHttpReception(t *testing.T) {
 
 func TestHttpCors(t *testing.T) {
 	tests := []struct {
-		name             string
-		CorsOrigins      []string
-		CorsHeaders      []string
-		CorsMaxAge       int
+		name string
+
+		CORSSettings
+
 		allowedWorks     bool
 		disallowedWorks  bool
 		extraHeaderWorks bool
@@ -500,26 +500,30 @@ func TestHttpCors(t *testing.T) {
 			extraHeaderWorks: false,
 		},
 		{
-			name:             "OriginCORS",
-			CorsOrigins:      []string{"allowed-*.com"},
-			CorsHeaders:      []string{},
+			name: "OriginCORS",
+			CORSSettings: CORSSettings{
+				AllowedOrigins: []string{"allowed-*.com"},
+			},
 			allowedWorks:     true,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
 		},
 		{
-			name:             "CacheableCORS",
-			CorsOrigins:      []string{"allowed-*.com"},
-			CorsHeaders:      []string{},
-			CorsMaxAge:       360,
+			name: "CacheableCORS",
+			CORSSettings: CORSSettings{
+				AllowedOrigins: []string{"allowed-*.com"},
+				MaxAge:         360,
+			},
 			allowedWorks:     true,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
 		},
 		{
-			name:             "HeaderCORS",
-			CorsOrigins:      []string{"allowed-*.com"},
-			CorsHeaders:      []string{"ExtraHeader"},
+			name: "HeaderCORS",
+			CORSSettings: CORSSettings{
+				AllowedOrigins: []string{"allowed-*.com"},
+				AllowedHeaders: []string{"ExtraHeader"},
+			},
 			allowedWorks:     true,
 			disallowedWorks:  false,
 			extraHeaderWorks: true,
@@ -530,11 +534,7 @@ func TestHttpCors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &HTTPServerSettings{
 				Endpoint: "localhost:0",
-				CORS: &CORSSettings{
-					AllowedOrigins: tt.CorsOrigins,
-					AllowedHeaders: tt.CorsHeaders,
-					MaxAge:         tt.CorsMaxAge,
-				},
+				CORS:     &tt.CORSSettings,
 			}
 
 			ln, err := hss.ToListener()
@@ -559,17 +559,17 @@ func TestHttpCors(t *testing.T) {
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
 			expectedStatus := http.StatusNoContent
-			if len(tt.CorsOrigins) == 0 {
+			if len(tt.AllowedOrigins) == 0 {
 				expectedStatus = http.StatusOK
 			}
 			// Verify allowed domain gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.CorsMaxAge, false, expectedStatus, tt.allowedWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.MaxAge, false, expectedStatus, tt.allowedWorks)
 
 			// Verify allowed domain and extra headers gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", tt.CorsMaxAge, true, expectedStatus, tt.extraHeaderWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.MaxAge, true, expectedStatus, tt.extraHeaderWorks)
 
 			// Verify disallowed domain gets responses that disallow CORS.
-			verifyCorsResp(t, url, "disallowed-origin.com", tt.CorsMaxAge, false, expectedStatus, tt.disallowedWorks)
+			verifyCorsResp(t, url, "disallowed-origin.com", tt.MaxAge, false, expectedStatus, tt.disallowedWorks)
 
 			require.NoError(t, s.Close())
 		})
