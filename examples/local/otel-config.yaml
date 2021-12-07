@@ -9,6 +9,7 @@ receivers:
     protocols:
       grpc:
       http:
+        endpoint: 0.0.0.0:55681
 
 processors:
   batch:
