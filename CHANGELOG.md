@@ -7,6 +7,11 @@
 - Remove `config.NewConfigMapFrom[File|Buffer]`, add testonly version (#4502)
 - `configtls`: TLS 1.2 is the new default mininum version (#4503)
 - `confighttp`: `ToServer` now accepts a `component.Host`, in line with gRPC's counterpart (#4514)
+- CORS configuration for OTLP/HTTP receivers has been moved into a `cors:` block, instead of individual `cors_allowed_origins` and `cors_allowed_headers` settings (#4492)
+
+## 💡 Enhancements 💡
+
+- OTLP/HTTP receivers now support setting the `Access-Control-Max-Age` header for CORS caching. (#4492)
 
 ## 🧰 Bug fixes 🧰
 
@@ -20,14 +25,12 @@
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 - Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
 - Make state information propagation non-blocking on the collector (#4460)
-- CORS configuration for OTLP/HTTP receivers has been moved into a `cors:` block, instead of individual `cors_allowed_origins` and `cors_allowed_headers` settings (#4492)
 
 ## 💡 Enhancements 💡
 
 - Add semconv 1.7.0 and 1.8.0 (#4452)
 - Added `feature-gates` CLI flag for controlling feature gate state. (#4368)
 - Add a default user-agent header to the OTLP/gRPC and OTLP/HTTP exporters containing collector build information (#3970)
-- OTLP/HTTP receivers now support setting the `Access-Control-Max-Age` header for CORS caching. (#4492)
 
 ## v0.39.0 Beta
 
