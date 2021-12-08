@@ -119,7 +119,7 @@ func streamToArray(data string) (string, error) {
 		return "", err
 	}
 
-	return string(buf.Bytes()), nil
+	return buf.String(), nil
 }
 
 func testJSON(t *testing.T, expect, actual string) {
