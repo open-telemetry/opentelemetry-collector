@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Remove `defaultcomponents` from core (#4087)
+- Remove reference to `defaultcomponents` in core and deprecate `include_core` flag (#4087)
 
 ## 🛑 Breaking changes 🛑
 
