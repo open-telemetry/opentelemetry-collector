@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -45,12 +44,7 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 		return
 	}
 
-	ctx := req.Context()
-	if c, ok := client.FromHTTP(req); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
-	otlpResp, err := tracesReceiver.Export(ctx, otlpReq)
+	otlpResp, err := tracesReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
 		writeError(resp, encoder, err, http.StatusInternalServerError)
 		return
@@ -76,12 +70,7 @@ func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver 
 		return
 	}
 
-	ctx := req.Context()
-	if c, ok := client.FromHTTP(req); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
-	otlpResp, err := metricsReceiver.Export(ctx, otlpReq)
+	otlpResp, err := metricsReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
 		writeError(resp, encoder, err, http.StatusInternalServerError)
 		return
@@ -107,12 +96,7 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 		return
 	}
 
-	ctx := req.Context()
-	if c, ok := client.FromHTTP(req); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
-	otlpResp, err := logsReceiver.Export(ctx, otlpReq)
+	otlpResp, err := logsReceiver.Export(req.Context(), otlpReq)
 	if err != nil {
 		writeError(resp, encoder, err, http.StatusInternalServerError)
 		return

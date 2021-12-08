@@ -91,9 +91,6 @@ package client // import "go.opentelemetry.io/collector/client"
 import (
 	"context"
 	"net"
-	"net/http"
-
-	"google.golang.org/grpc/peer"
 )
 
 type ctxKey struct{}
@@ -139,34 +136,4 @@ func FromContext(ctx context.Context) Info {
 		c = Info{}
 	}
 	return c
-}
-
-// FromGRPC takes a GRPC context and tries to extract client information from it
-func FromGRPC(ctx context.Context) (Info, bool) {
-	if p, ok := peer.FromContext(ctx); ok {
-		ip := parseIP(p.Addr.String())
-		if ip != nil {
-			return Info{Addr: ip}, true
-		}
-	}
-	return Info{}, false
-}
-
-// FromHTTP takes a net/http Request object and tries to extract client information from it
-func FromHTTP(r *http.Request) (Info, bool) {
-	ip := parseIP(r.RemoteAddr)
-	if ip == nil {
-		return Info{}, false
-	}
-	return Info{Addr: ip}, true
-}
-
-func parseIP(source string) net.Addr {
-	ipstr, _, err := net.SplitHostPort(source)
-	if err == nil {
-		source = ipstr
-	}
-	return &net.IPAddr{
-		IP: net.ParseIP(source),
-	}
 }

@@ -12,6 +12,10 @@
 
 - Fix handling of corrupted records by persistent buffer (experimental) (#4475)
 
+## 💡 Enhancements 💡
+
+- `client.Info` pre-populated for all receivers using common helpers like `confighttp` and `configgrpc` (#4423)
+
 ## v0.40.0 Beta
 
 ## 🛑 Breaking changes 🛑
