@@ -16,6 +16,7 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -153,6 +154,10 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 			if err != nil {
 				return err
 			}
+		}
+		if r.cfg.HTTP.Endpoint == legacyHTTPEndpoint {
+			r.settings.Logger.Warn(fmt.Sprintf("Legacy HTTP endpoint %v is configured, please use %v instead.",
+				legacyHTTPEndpoint, defaultHTTPEndpoint))
 		}
 	}
 
