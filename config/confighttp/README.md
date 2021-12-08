@@ -20,8 +20,8 @@ README](../configtls/README.md).
 - [`read_buffer_size`](https://golang.org/pkg/net/http/#Transport)
 - [`timeout`](https://golang.org/pkg/net/http/#Client)
 - [`write_buffer_size`](https://golang.org/pkg/net/http/#Transport)
-- `compression`: Compression type to use among `zstd`, `snappy`, `gzip`, `zlib`, and `deflate`.
-  - `zstd` and `snappy` are recommended.
+- `compression`: Compression type to use among `gzip`, `zstd`, `snappy`, `zlib`, and `deflate`.
+  - look at the documentation for the server-side of the communication.
   - `none` will be treated as uncompressed, and any other inputs will cause an error.
 - [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
 - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
