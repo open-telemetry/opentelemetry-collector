@@ -54,9 +54,10 @@ type Distribution struct {
 	Go             string `mapstructure:"go"`
 	Description    string `mapstructure:"description"`
 	OtelColVersion string `mapstructure:"otelcol_version"`
-	IncludeCore    bool   `mapstructure:"include_core"`
-	OutputPath     string `mapstructure:"output_path"`
-	Version        string `mapstructure:"version"`
+	// IncludeCore is deprecated and note that if this is being used, it will be removed in a subsequent release
+	IncludeCore bool   `mapstructure:"include_core"`
+	OutputPath  string `mapstructure:"output_path"`
+	Version     string `mapstructure:"version"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
@@ -100,6 +101,14 @@ func (c *Config) Validate() error {
 		}
 		c.Distribution.Go = path
 	}
+
+	// create a warning message that include_core is deprecated and will be removed in a subsequent release
+	if c.Distribution.IncludeCore {
+		c.Logger.Warn("IncludeCore is deprecated. Starting from v0.41.0, you need to include all components explicitly.")
+	} else {
+		c.Logger.Info("IncludeCore is deprecated, starting from v0.41.0. The new behavior won't affect your distribution, just remove the option from the manifest.")
+	}
+
 	c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
 
 	return nil

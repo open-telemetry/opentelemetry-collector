@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove reference to `defaultcomponents` in core and deprecate `include_core` flag (#4087)
+
 ## 🛑 Breaking changes 🛑
 
 - Remove `config.NewConfigMapFrom[File|Buffer]`, add testonly version (#4502)

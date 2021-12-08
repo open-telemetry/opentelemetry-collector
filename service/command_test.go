@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
 func TestNewCommand(t *testing.T) {
@@ -40,7 +40,7 @@ func TestNewCommandMapProviderIsNil(t *testing.T) {
 }
 
 func TestNewCommandInvalidFactories(t *testing.T) {
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.ExampleComponents()
 	require.NoError(t, err)
 	f := &badConfigExtensionFactory{}
 	factories.Extensions[f.Type()] = f
