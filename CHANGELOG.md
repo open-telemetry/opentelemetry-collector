@@ -24,7 +24,6 @@
 -  Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
 - `client.Info` pre-populated for all receivers using common helpers like `confighttp` and `configgrpc` (#4423)
 
-
 ## v0.40.0 Beta
 
 ## 🛑 Breaking changes 🛑
