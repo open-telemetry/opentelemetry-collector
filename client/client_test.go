@@ -19,11 +19,9 @@ package client
 import (
 	"context"
 	"net"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc/peer"
 )
 
 func TestNewContext(t *testing.T) {
@@ -87,25 +85,4 @@ func TestFromContext(t *testing.T) {
 			assert.Equal(t, FromContext(tC.input), tC.expected)
 		})
 	}
-}
-
-func TestParsingGRPC(t *testing.T) {
-	grpcCtx := peer.NewContext(context.Background(), &peer.Peer{
-		Addr: &net.TCPAddr{
-			IP:   net.ParseIP("192.168.1.1"),
-			Port: 80,
-		},
-	})
-
-	client, ok := FromGRPC(grpcCtx)
-	assert.True(t, ok)
-	assert.NotNil(t, client)
-	assert.Equal(t, client.Addr.String(), "192.168.1.1")
-}
-
-func TestParsingHTTP(t *testing.T) {
-	client, ok := FromHTTP(&http.Request{RemoteAddr: "192.168.1.2"})
-	assert.True(t, ok)
-	assert.NotNil(t, client)
-	assert.Equal(t, client.Addr.String(), "192.168.1.2")
 }

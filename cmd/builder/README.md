@@ -73,7 +73,6 @@ dist:
     module: github.com/open-telemetry/opentelemetry-collector # the module name for the new distribution, following Go mod conventions. Optional, but recommended.
     name: otelcol-custom # the binary name. Optional.
     description: "Custom OpenTelemetry Collector distribution" # a long name for the application. Optional.
-    include_core: true # whether the core components should be included in the distribution. Optional.
     otelcol_version: "0.40.0" # the OpenTelemetry Collector version to use as base for the distribution. Optional.
     output_path: /tmp/otelcol-distributionNNN # the path to write the output (sources and binary). Optional.
     version: "1.0.0" # the version for your custom OpenTelemetry Collector. Optional.

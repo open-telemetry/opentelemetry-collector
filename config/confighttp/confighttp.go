@@ -58,6 +58,38 @@ type HTTPClientSettings struct {
 
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+
+	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxIdleConns *int `mapstructure:"max_idle_conns"`
+
+	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
+
+	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
+	// active, and idle states.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	MaxConnsPerHost *int `mapstructure:"max_conns_per_host"`
+
+	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
+	// There's an already set value, and we want to override it only if an explicit value provided
+	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
+}
+
+// DefaultHTTPClientSettings returns HTTPClientSettings type object with
+// the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
+// Other config options are not added as they are initialized with 'zero value' by GoLang as default.
+// We encourage to use this function to create an object of HTTPClientSettings.
+func DefaultHTTPClientSettings() HTTPClientSettings {
+	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
+	maxIdleConns := 100
+	idleConnTimeout := 90 * time.Second
+
+	return HTTPClientSettings{
+		MaxIdleConns:    &maxIdleConns,
+		IdleConnTimeout: &idleConnTimeout,
+	}
 }
 
 // ToClient creates an HTTP client.
@@ -75,6 +107,22 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	}
 	if hcs.WriteBufferSize > 0 {
 		transport.WriteBufferSize = hcs.WriteBufferSize
+	}
+
+	if hcs.MaxIdleConns != nil {
+		transport.MaxIdleConns = *hcs.MaxIdleConns
+	}
+
+	if hcs.MaxIdleConnsPerHost != nil {
+		transport.MaxIdleConnsPerHost = *hcs.MaxIdleConnsPerHost
+	}
+
+	if hcs.MaxConnsPerHost != nil {
+		transport.MaxConnsPerHost = *hcs.MaxConnsPerHost
+	}
+
+	if hcs.IdleConnTimeout != nil {
+		transport.IdleConnTimeout = *hcs.IdleConnTimeout
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
@@ -137,17 +185,8 @@ type HTTPServerSettings struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls, omitempty"`
 
-	// CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter
-	// for the OTLP receiver. See github.com/rs/cors
-	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
-	// used to match any origin or one or more characters of an origin.
-	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
-
-	// CorsHeaders are the allowed CORS headers for HTTP/JSON requests to grpc-gateway adapter
-	// for the OTLP receiver. See github.com/rs/cors
-	// CORS needs to be enabled first by providing a non-empty list in CorsOrigins
-	// A wildcard (*) can be used to match any header.
-	CorsHeaders []string `mapstructure:"cors_allowed_headers"`
+	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
+	CORS *CORSSettings `mapstructure:"cors,omitempty"`
 }
 
 // ToListener creates a net.Listener.
@@ -187,7 +226,7 @@ func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
 }
 
 // ToServer creates an http.Server from settings object.
-func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component.TelemetrySettings, opts ...ToServerOption) *http.Server {
+func (hss *HTTPServerSettings) ToServer(_ component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o(serverOpts)
@@ -198,11 +237,12 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 		middleware.WithErrorHandler(serverOpts.errorHandler),
 	)
 
-	if len(hss.CorsOrigins) > 0 {
+	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
 		co := cors.Options{
-			AllowedOrigins:   hss.CorsOrigins,
+			AllowedOrigins:   hss.CORS.AllowedOrigins,
 			AllowCredentials: true,
-			AllowedHeaders:   hss.CorsHeaders,
+			AllowedHeaders:   hss.CORS.AllowedHeaders,
+			MaxAge:           hss.CORS.MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
 	}
@@ -221,7 +261,34 @@ func (hss *HTTPServerSettings) ToServer(handler http.Handler, settings component
 		}),
 	)
 
+	// wrap the current handler in an interceptor that will add client.Info to the request's context
+	handler = &clientInfoHandler{
+		next: handler,
+	}
+
 	return &http.Server{
 		Handler: handler,
-	}
+	}, nil
+}
+
+// CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS).
+// See the underlying https://github.com/rs/cors package for details.
+type CORSSettings struct {
+	// AllowedOrigins sets the allowed values of the Origin header for
+	// HTTP/JSON requests to an OTLP receiver. An origin may contain a
+	// wildcard (*) to replace 0 or more characters (e.g.,
+	// "http://*.domain.com", or "*" to allow any origin).
+	AllowedOrigins []string `mapstructure:"allowed_origins"`
+
+	// AllowedHeaders sets what headers will be allowed in CORS requests.
+	// The Accept, Accept-Language, Content-Type, and Content-Language
+	// headers are implicitly allowed. If no headers are listed,
+	// X-Requested-With will also be accepted by default. Include "*" to
+	// allow any request header.
+	AllowedHeaders []string `mapstructure:"allowed_headers,omitempty"`
+
+	// MaxAge sets the value of the Access-Control-Max-Age response header.
+	// Set it to the number of seconds that browsers should cache a CORS
+	// preflight response for.
+	MaxAge int `mapstructure:"max_age,omitempty"`
 }
