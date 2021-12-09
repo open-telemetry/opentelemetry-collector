@@ -17,11 +17,14 @@ package configauth
 import (
 	"context"
 	"fmt"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+
+	"go.opentelemetry.io/collector/client"
 )
 
 func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
@@ -30,10 +33,16 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	authCalled := false
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
-		return context.Background(), nil
+		ctx := client.NewContext(context.Background(), client.Info{
+			Addr: &net.IPAddr{IP: net.IPv4(1, 2, 3, 4)},
+		})
+
+		return ctx, nil
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		handlerCalled = true
+		cl := client.FromContext(ctx)
+		assert.Equal(t, "1.2.3.4", cl.Addr.String())
 		return nil, nil
 	}
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
@@ -96,9 +105,15 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	authCalled := false
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
-		return context.Background(), nil
+		ctx := client.NewContext(context.Background(), client.Info{
+			Addr: &net.IPAddr{IP: net.IPv4(1, 2, 3, 4)},
+		})
+		return ctx, nil
 	}
 	handler := func(srv interface{}, stream grpc.ServerStream) error {
+		// ensure that the client information is propagated down to the underlying stream
+		cl := client.FromContext(stream.Context())
+		assert.Equal(t, "1.2.3.4", cl.Addr.String())
 		handlerCalled = true
 		return nil
 	}

@@ -194,17 +194,8 @@ type HTTPServerSettings struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls, omitempty"`
 
-	// CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter
-	// for the OTLP receiver. See github.com/rs/cors
-	// An empty list means that CORS is not enabled at all. A wildcard (*) can be
-	// used to match any origin or one or more characters of an origin.
-	CorsOrigins []string `mapstructure:"cors_allowed_origins"`
-
-	// CorsHeaders are the allowed CORS headers for HTTP/JSON requests to grpc-gateway adapter
-	// for the OTLP receiver. See github.com/rs/cors
-	// CORS needs to be enabled first by providing a non-empty list in CorsOrigins
-	// A wildcard (*) can be used to match any header.
-	CorsHeaders []string `mapstructure:"cors_allowed_headers"`
+	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
+	CORS *CORSSettings `mapstructure:"cors,omitempty"`
 }
 
 // ToListener creates a net.Listener.
@@ -255,11 +246,12 @@ func (hss *HTTPServerSettings) ToServer(_ component.Host, settings component.Tel
 		middleware.WithErrorHandler(serverOpts.errorHandler),
 	)
 
-	if len(hss.CorsOrigins) > 0 {
+	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
 		co := cors.Options{
-			AllowedOrigins:   hss.CorsOrigins,
+			AllowedOrigins:   hss.CORS.AllowedOrigins,
 			AllowCredentials: true,
-			AllowedHeaders:   hss.CorsHeaders,
+			AllowedHeaders:   hss.CORS.AllowedHeaders,
+			MaxAge:           hss.CORS.MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
 	}
@@ -278,7 +270,34 @@ func (hss *HTTPServerSettings) ToServer(_ component.Host, settings component.Tel
 		}),
 	)
 
+	// wrap the current handler in an interceptor that will add client.Info to the request's context
+	handler = &clientInfoHandler{
+		next: handler,
+	}
+
 	return &http.Server{
 		Handler: handler,
 	}, nil
+}
+
+// CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS).
+// See the underlying https://github.com/rs/cors package for details.
+type CORSSettings struct {
+	// AllowedOrigins sets the allowed values of the Origin header for
+	// HTTP/JSON requests to an OTLP receiver. An origin may contain a
+	// wildcard (*) to replace 0 or more characters (e.g.,
+	// "http://*.domain.com", or "*" to allow any origin).
+	AllowedOrigins []string `mapstructure:"allowed_origins"`
+
+	// AllowedHeaders sets what headers will be allowed in CORS requests.
+	// The Accept, Accept-Language, Content-Type, and Content-Language
+	// headers are implicitly allowed. If no headers are listed,
+	// X-Requested-With will also be accepted by default. Include "*" to
+	// allow any request header.
+	AllowedHeaders []string `mapstructure:"allowed_headers,omitempty"`
+
+	// MaxAge sets the value of the Access-Control-Max-Age response header.
+	// Set it to the number of seconds that browsers should cache a CORS
+	// preflight response for.
+	MaxAge int `mapstructure:"max_age,omitempty"`
 }

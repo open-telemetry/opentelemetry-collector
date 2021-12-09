@@ -48,10 +48,17 @@ To write traces with HTTP/JSON, `POST` to `[address]/v1/traces` for traces,
 to `[address]/v1/metrics` for metrics, to `[address]/v1/logs` for logs. The default
 port is `4318`.
 
-The HTTP/JSON endpoint can also optionally configure
-[CORS](https://fetch.spec.whatwg.org/#cors-protocol), which is enabled by
-specifying a list of allowed CORS origins in the `cors_allowed_origins`
-and optionally headers in `cors_allowed_headers`:
+### CORS (Cross-origin resource sharing)
+
+The HTTP/JSON endpoint can also optionally configure [CORS][cors] under `cors:`.
+Specify what origins (or wildcard patterns) to allow requests from as
+`allowed_origins`. To allow additional request headers outside of the [default
+safelist][cors-headers], set `allowed_headers`. Browsers can be instructed to
+[cache][cors-max-age] responses to preflight requests by setting `max_age`.
+
+[cors]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+[cors-headers]: https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header
+[cors-max-age]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
 
 ```yaml
 receivers:
@@ -59,10 +66,12 @@ receivers:
     protocols:
       http:
         endpoint: "localhost:4318"
-        cors_allowed_origins:
-        - http://test.com
-        # Origins can have wildcards with *, use * by itself to match any origin.
-        - https://*.example.com
-        cors_allowed_headers:
-        - TestHeader
+        cors:
+          allowed_origins:
+            - http://test.com
+            # Origins can have wildcards with *, use * by itself to match any origin.
+            - https://*.example.com
+          allowed_headers:
+            - Example-Header
+          max_age: 7200
 ```

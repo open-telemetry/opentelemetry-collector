@@ -155,8 +155,11 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "cors")),
 			Protocols: Protocols{
 				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint:    "0.0.0.0:4318",
-					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
+					Endpoint: "0.0.0.0:4318",
+					CORS: &confighttp.CORSSettings{
+						AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
+						MaxAge:         7200,
+					},
 				},
 			},
 		})
@@ -166,9 +169,11 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "corsheader")),
 			Protocols: Protocols{
 				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint:    "0.0.0.0:4318",
-					CorsOrigins: []string{"https://*.test.com", "https://test.com"},
-					CorsHeaders: []string{"ExampleHeader"},
+					Endpoint: "0.0.0.0:4318",
+					CORS: &confighttp.CORSSettings{
+						AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
+						AllowedHeaders: []string{"ExampleHeader"},
+					},
 				},
 			},
 		})

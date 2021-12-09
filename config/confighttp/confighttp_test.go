@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -28,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -526,9 +528,10 @@ func TestHttpReception(t *testing.T) {
 
 func TestHttpCors(t *testing.T) {
 	tests := []struct {
-		name             string
-		CorsOrigins      []string
-		CorsHeaders      []string
+		name string
+
+		CORSSettings
+
 		allowedWorks     bool
 		disallowedWorks  bool
 		extraHeaderWorks bool
@@ -540,17 +543,30 @@ func TestHttpCors(t *testing.T) {
 			extraHeaderWorks: false,
 		},
 		{
-			name:             "OriginCORS",
-			CorsOrigins:      []string{"allowed-*.com"},
-			CorsHeaders:      []string{},
+			name: "OriginCORS",
+			CORSSettings: CORSSettings{
+				AllowedOrigins: []string{"allowed-*.com"},
+			},
 			allowedWorks:     true,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
 		},
 		{
-			name:             "HeaderCORS",
-			CorsOrigins:      []string{"allowed-*.com"},
-			CorsHeaders:      []string{"ExtraHeader"},
+			name: "CacheableCORS",
+			CORSSettings: CORSSettings{
+				AllowedOrigins: []string{"allowed-*.com"},
+				MaxAge:         360,
+			},
+			allowedWorks:     true,
+			disallowedWorks:  false,
+			extraHeaderWorks: false,
+		},
+		{
+			name: "HeaderCORS",
+			CORSSettings: CORSSettings{
+				AllowedOrigins: []string{"allowed-*.com"},
+				AllowedHeaders: []string{"ExtraHeader"},
+			},
 			allowedWorks:     true,
 			disallowedWorks:  false,
 			extraHeaderWorks: true,
@@ -560,9 +576,8 @@ func TestHttpCors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &HTTPServerSettings{
-				Endpoint:    "localhost:0",
-				CorsOrigins: tt.CorsOrigins,
-				CorsHeaders: tt.CorsHeaders,
+				Endpoint: "localhost:0",
+				CORS:     &tt.CORSSettings,
 			}
 
 			ln, err := hss.ToListener()
@@ -587,17 +602,17 @@ func TestHttpCors(t *testing.T) {
 			url := fmt.Sprintf("http://%s", ln.Addr().String())
 
 			expectedStatus := http.StatusNoContent
-			if len(tt.CorsOrigins) == 0 {
+			if len(tt.AllowedOrigins) == 0 {
 				expectedStatus = http.StatusOK
 			}
 			// Verify allowed domain gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", false, expectedStatus, tt.allowedWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.MaxAge, false, expectedStatus, tt.allowedWorks)
 
 			// Verify allowed domain and extra headers gets responses that allow CORS.
-			verifyCorsResp(t, url, "allowed-origin.com", true, expectedStatus, tt.extraHeaderWorks)
+			verifyCorsResp(t, url, "allowed-origin.com", tt.MaxAge, true, expectedStatus, tt.extraHeaderWorks)
 
 			// Verify disallowed domain gets responses that disallow CORS.
-			verifyCorsResp(t, url, "disallowed-origin.com", false, expectedStatus, tt.disallowedWorks)
+			verifyCorsResp(t, url, "disallowed-origin.com", tt.MaxAge, false, expectedStatus, tt.disallowedWorks)
 
 			require.NoError(t, s.Close())
 		})
@@ -606,8 +621,8 @@ func TestHttpCors(t *testing.T) {
 
 func TestHttpCorsInvalidSettings(t *testing.T) {
 	hss := &HTTPServerSettings{
-		Endpoint:    "localhost:0",
-		CorsHeaders: []string{"some-header"},
+		Endpoint: "localhost:0",
+		CORS:     &CORSSettings{AllowedHeaders: []string{"some-header"}},
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
@@ -620,7 +635,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	require.NoError(t, s.Close())
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, extraHeader bool, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url string, origin string, maxAge int, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest("OPTIONS", url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
@@ -645,12 +660,17 @@ func verifyCorsResp(t *testing.T, url string, origin string, extraHeader bool, w
 
 	wantAllowOrigin := ""
 	wantAllowMethods := ""
+	wantMaxAge := ""
 	if wantAllowed {
 		wantAllowOrigin = origin
 		wantAllowMethods = "POST"
+		if maxAge != 0 {
+			wantMaxAge = fmt.Sprintf("%d", maxAge)
+		}
 	}
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
 	assert.Equal(t, wantAllowMethods, gotAllowMethods)
+	assert.Equal(t, wantMaxAge, resp.Header.Get("Access-Control-Max-Age"))
 }
 
 func ExampleHTTPServerSettings() {
@@ -711,6 +731,37 @@ func TestHttpHeaders(t *testing.T) {
 			assert.NoError(t, err)
 			_, err = client.Do(req)
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestContextWithClient(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		input    *http.Request
+		expected client.Info
+	}{
+		{
+			desc:     "request without client IP",
+			input:    &http.Request{},
+			expected: client.Info{},
+		},
+		{
+			desc: "request without client IP",
+			input: &http.Request{
+				RemoteAddr: "1.2.3.4:55443",
+			},
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			ctx := contextWithClient(tC.input)
+			assert.Equal(t, tC.expected, client.FromContext(ctx))
 		})
 	}
 }

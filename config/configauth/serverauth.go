@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 var (
@@ -100,11 +101,12 @@ func DefaultGRPCStreamServerInterceptor(srv interface{}, stream grpc.ServerStrea
 		return errMetadataNotFound
 	}
 
-	// TODO: propagate the context down the stream
-	_, err := authenticate(ctx, headers)
+	ctx, err := authenticate(ctx, headers)
 	if err != nil {
 		return err
 	}
 
-	return handler(srv, stream)
+	wrapped := middleware.WrapServerStream(stream)
+	wrapped.WrappedContext = ctx
+	return handler(srv, wrapped)
 }

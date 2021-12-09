@@ -75,8 +75,15 @@ Config defines configuration for OTLP receiver.
 | ---- | ---- | ------- | ---- |
 | endpoint |string| 0.0.0.0:4318 | Endpoint configures the listening address for the server.  |
 | tls |[configtls-TLSServerSetting](#configtls-TLSServerSetting)| <no value> | TLSSetting struct exposes TLS client configuration.  |
-| cors_allowed_origins |[]string| <no value> | CorsOrigins are the allowed CORS origins for HTTP/JSON requests to grpc-gateway adapter for the OTLP receiver. See github.com/rs/cors An empty list means that CORS is not enabled at all. A wildcard (*) can be used to match any origin or one or more characters of an origin.  |
-| cors_allowed_headers |[]string| <no value> | CorsHeaders are the allowed CORS headers for HTTP/JSON requests to grpc-gateway adapter for the OTLP receiver. See github.com/rs/cors CORS needs to be enabled first by providing a non-empty list in CorsOrigins A wildcard (*) can be used to match any header.  |
+| cors |[confighttp-CORSSettings](#confighttp-CORSSettings)| <no value> | CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS). |
+
+### confighttp-CORSSettings
+
+| Name | Type | Default | Docs |
+| ---- | ---- | ------- | ---- |
+| allowed_origins |[]string| <no value> | AllowedOrigins sets the allowed values of the Origin header for HTTP/JSON requests to an OTLP receiver. An origin may contain a wildcard (`*`) to replace 0 or more characters (e.g., `"https://*.example.com"`, or `"*"` to allow any origin). |
+| allowed_headers |[]string| <no value> | AllowedHeaders sets what headers will be allowed in CORS requests. The Accept, Accept-Language, Content-Type, and Content-Language headers are implicitly allowed. If no headers are listed, X-Requested-With will also be accepted by default. Include `"*"` to allow any request header. |
+| max_age |int| <no value> | MaxAge sets the value of the Access-Control-Max-Age response header.  Set it to the number of seconds that browsers should cache a CORS preflight response for. |
 
 ### configtls-TLSServerSetting
 

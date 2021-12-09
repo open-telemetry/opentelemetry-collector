@@ -49,26 +49,41 @@ exporter:
 [Receivers](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/README.md)
 leverage server configuration.
 
-- [`cors_allowed_origins`](https://github.com/rs/cors): An empty list means
-  that CORS is not enabled at all. A wildcard can be used to match any origin
-  or one or more characters of an origin.
-- [`cors_allowed_headers`](https://github.com/rs/cors): When CORS is enabled,
-  can be used to specify an optional list of allowed headers. By default, it includes `Accept`, 
-  `Content-Type`, `X-Requested-With`. `Origin` is also always
-  added to the list. A wildcard (`*`) can be used to match any header.
+- [`cors`](https://github.com/rs/cors#parameters): Configure [CORS][cors],
+allowing the receiver to accept traces from web browsers, even if the receiver
+is hosted at a different [origin][origin]. If left blank or set to `null`, CORS
+will not be enabled.
+  - `allowed_origins`: A list of [origins][origin] allowed to send requests to
+  the receiver. An origin may contain a wildcard (`*`) to replace 0 or more
+  characters (e.g., `https://*.example.com`). To allow any origin, set to
+  `["*"]`. If no origins are listed, CORS will not be enabled.
+  - `allowed_headers`: Allow CORS requests to include headers outside the
+  [default safelist][cors-headers]. By default, safelist headers and
+  `X-Requested-With` will be allowed. To allow any request header, set to
+  `["*"]`.
+  - `max_age`: Sets the value of the [`Access-Control-Max-Age`][cors-cache]
+  header, allowing clients to cache the response to CORS preflight requests. If
+  not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
+
+[cors]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+[cors-headers]: https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header
+[cors-cache]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
+[origin]: https://developer.mozilla.org/en-US/docs/Glossary/Origin
 
 Example:
 
 ```yaml
 receivers:
   otlp:
-    cors_allowed_origins:
-    - https://foo.bar.com
-    - https://*.test.com
-    cors_allowed_headers:
-    - ExampleHeader
+    cors:
+      allowed_origins:
+        - https://foo.bar.com
+        - https://*.test.com
+      allowed_headers:
+        - Example-Header
+      max_age: 7200
     endpoint: 0.0.0.0:55690
     protocols:
       http:

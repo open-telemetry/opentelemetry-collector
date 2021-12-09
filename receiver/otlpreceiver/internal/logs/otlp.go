@@ -17,7 +17,6 @@ package logs // import "go.opentelemetry.io/collector/receiver/otlpreceiver/inte
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -54,10 +53,6 @@ func (r *Receiver) Export(ctx context.Context, req otlpgrpc.LogsRequest) (otlpgr
 	numSpans := ld.LogRecordCount()
 	if numSpans == 0 {
 		return otlpgrpc.NewLogsResponse(), nil
-	}
-
-	if c, ok := client.FromGRPC(ctx); ok {
-		ctx = client.NewContext(ctx, c)
 	}
 
 	ctx = r.obsrecv.StartLogsOp(ctx)
