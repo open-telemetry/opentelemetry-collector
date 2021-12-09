@@ -86,6 +86,15 @@ func TestConfigValidate(t *testing.T) {
 			expected: nil,
 		},
 		{
+			name: "custom-service-telemetry-encoding",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Service.Telemetry.Logs.Encoding = "test_encoding"
+				return cfg
+			},
+			expected: nil,
+		},
+		{
 			name: "missing-exporters",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
@@ -214,15 +223,6 @@ func TestConfigValidate(t *testing.T) {
 				return cfg
 			},
 			expected: fmt.Errorf(`extension "nop" has invalid configuration: %w`, errInvalidExtConfig),
-		},
-		{
-			name: "invalid-service-telemetry-encoding",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				cfg.Service.Telemetry.Logs.Encoding = "unknown"
-				return cfg
-			},
-			expected: errors.New(`service telemetry logs invalid encoding: "unknown", valid values are "json" and "console"`),
 		},
 	}
 

@@ -15,6 +15,7 @@
 - `confighttp`: add client-side compression support. (#4441)
   - Each exporter should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
 - Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
+- Allow the custom zap logger encoding (#4532)
 - Collector self-metrics may now be configured through the configuration file. (#4069)
   - CLI flags for configuring self-metrics are deprecated and will be removed
     in a future release.
@@ -239,7 +240,7 @@
 
 - Rename `configloader` interface to `configunmarshaler` (#3774)
 - Remove `LabelsMap` from all the metrics points (#3706)
-- Update generated K8S attribute labels to fix capitalization (#3823) 
+- Update generated K8S attribute labels to fix capitalization (#3823)
 
 ## 💡 Enhancements 💡
 
@@ -339,28 +340,28 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - zipkinv1 implement directly Unmarshaler interface (#3504)
 - zipkinv2 implement directly Marshaler/Unmarshaler interface (#3505)
 - Change exporterhelper to accept ExporterCreateSettings instead of just logger (#3569)
-- Deprecate Resize() from pdata slice APIs (#3573) 
+- Deprecate Resize() from pdata slice APIs (#3573)
 - Use Func pattern in processorhelper, consistent with others (#3570)
 
 ## 💡 Enhancements 💡
 
 - Update OTLP to v0.8.0 (#3572)
-- Migrate from OpenCensus to OpenTelemetry for internal tracing (#3567) 
-- Move internal/pdatagrpc to model/otlpgrpc (#3507) 
+- Migrate from OpenCensus to OpenTelemetry for internal tracing (#3567)
+- Move internal/pdatagrpc to model/otlpgrpc (#3507)
 - Move internal/otlp to model/otlp (#3508)
 - Create http Server via Config, enable cors and decompression (#3513)
 - Allow users to set min and max TLS versions (#3591)
 - Support setting ballast size in percentage of total Mem in ballast extension (#3456)
 - Publish go.opentelemetry.io/collector/model as a separate module (#3530)
-- Pass a TracerProvider via construct settings to all the components (#3592) 
+- Pass a TracerProvider via construct settings to all the components (#3592)
 - Make graceful shutdown optional (#3577)
 
 ## 🧰 Bug fixes 🧰
 
 - `scraperhelper`: Include the scraper name in log messages (#3487)
-- `scraperhelper`: fix case when returned pdata is empty (#3520) 
-- Record the correct number of points not metrics in Kafka receiver (#3553) 
-- Validate the Prometheus configuration (#3589) 
+- `scraperhelper`: fix case when returned pdata is empty (#3520)
+- Record the correct number of points not metrics in Kafka receiver (#3553)
+- Validate the Prometheus configuration (#3589)
 
 ## v0.29.0 Beta
 
@@ -1158,8 +1159,8 @@ Released 2020-06-16
 
 ## 🛑 Breaking changes 🛑
 
-- `isEnabled` configuration option removed (#909) 
-- `thrift_tchannel` protocol moved from `jaeger` receiver to `jaeger_legacy` in contrib (#636) 
+- `isEnabled` configuration option removed (#909)
+- `thrift_tchannel` protocol moved from `jaeger` receiver to `jaeger_legacy` in contrib (#636)
 
 ## ⚠️ Major changes ⚠️
 
@@ -1175,24 +1176,24 @@ Released 2020-06-16
 - Receivers
   - `hostmetrics` receiver with CPU (#862), disk (#921), load (#974), filesystem (#926), memory (#911), network (#930), and virtual memory (#989) support
 - Processors
-  - `batch` for batching received metrics (#1060) 
-  - `filter` for filtering (dropping) received metrics (#1001) 
+  - `batch` for batching received metrics (#1060)
+  - `filter` for filtering (dropping) received metrics (#1001)
 
 ## 💡 Enhancements 💡
 
 - `otlp` receiver implement HTTP X-Protobuf (#1021)
-- Exporters: Support mTLS in gRPC exporters (#927) 
-- Extensions: Add `zpages` for service (servicez, pipelinez, extensions) (#894) 
+- Exporters: Support mTLS in gRPC exporters (#927)
+- Extensions: Add `zpages` for service (servicez, pipelinez, extensions) (#894)
 
 ## 🧰 Bug fixes 🧰
 
-- Add missing logging for metrics at `debug` level (#1108) 
-- Fix setting internal status code in `jaeger` receivers (#1105) 
-- `zipkin` export fails on span without timestamp when used with `queued_retry` (#1068) 
-- Fix `zipkin` receiver status code conversion (#996) 
+- Add missing logging for metrics at `debug` level (#1108)
+- Fix setting internal status code in `jaeger` receivers (#1105)
+- `zipkin` export fails on span without timestamp when used with `queued_retry` (#1068)
+- Fix `zipkin` receiver status code conversion (#996)
 - Remove extra send/receive annotations with using `zipkin` v1 (#960)
-- Fix resource attribute mutation bug when exporting in `jaeger` proto (#907) 
-- Fix metric/spans count, add tests for nil entries in the slices (#787) 
+- Fix resource attribute mutation bug when exporting in `jaeger` proto (#907)
+- Fix metric/spans count, add tests for nil entries in the slices (#787)
 
 
 ## 🧩 Components 🧩
@@ -1232,14 +1233,14 @@ Released 2020-03-30
 
 ### Breaking changes
 
--  Make prometheus receiver config loading strict. #697 
+-  Make prometheus receiver config loading strict. #697
 Prometheus receiver will now fail fast if the config contains unused keys in it.
 
 ### Changes and fixes
 
 - Enable best effort serve by default of Prometheus Exporter (https://github.com/orijtech/prometheus-go-metrics-exporter/pull/6)
-- Fix null pointer exception in the logging exporter #743 
-- Remove unnecessary condition to have at least one processor #744 
+- Fix null pointer exception in the logging exporter #743
+- Remove unnecessary condition to have at least one processor #744
 
 ### Components
 
@@ -1261,7 +1262,7 @@ Alpha v0.2.8 of OpenTelemetry Collector
 - Implemented OTLP receiver and exporter.
 - Added ability to pass config to the service programmatically (useful for custom builds).
 - Improved own metrics / observability.
-- Refactored component and factory interface definitions (breaking change #683) 
+- Refactored component and factory interface definitions (breaking change #683)
 
 
 ## v0.2.7 Alpha
