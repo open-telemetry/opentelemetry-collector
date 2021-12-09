@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
@@ -98,7 +99,17 @@ func TestDecodeConfig(t *testing.T) {
 		"Did not load processor config correctly")
 
 	// Verify Service Telemetry
-	assert.Equal(t, config.ServiceTelemetry{Logs: config.ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"}}, cfg.Service.Telemetry)
+	assert.Equal(t,
+		config.ServiceTelemetry{Logs: config.ServiceTelemetryLogs{
+			Level:             zapcore.DebugLevel,
+			Development:       true,
+			Encoding:          "console",
+			DisableCaller:     true,
+			DisableStacktrace: true,
+			OutputPaths:       []string{"stderr", "./output-logs"},
+			ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
+			InitialFields:     map[string]interface{}{"field_key": "filed_value"},
+		}}, cfg.Service.Telemetry)
 
 	// Verify Service Extensions
 	assert.Equal(t, 2, len(cfg.Service.Extensions))
@@ -215,4 +226,25 @@ func loadConfigFile(t *testing.T, fileName string, factories component.Factories
 
 	// Unmarshal the config from the config.Map using the given factories.
 	return NewDefault().Unmarshal(cm, factories)
+}
+
+func TestDefaultLoggerConfig(t *testing.T) {
+	factories, err := testcomponents.ExampleComponents()
+	assert.NoError(t, err)
+
+	cfg, err := loadConfigFile(t, path.Join(".", "testdata", "empty-all-sections.yaml"), factories)
+	assert.NoError(t, err)
+
+	zapProdCfg := zap.NewProductionConfig()
+	assert.Equal(t,
+		config.ServiceTelemetryLogs{
+			Level:             zapProdCfg.Level.Level(),
+			Development:       zapProdCfg.Development,
+			Encoding:          "console",
+			DisableCaller:     zapProdCfg.DisableCaller,
+			DisableStacktrace: zapProdCfg.DisableStacktrace,
+			OutputPaths:       zapProdCfg.OutputPaths,
+			ErrorOutputPaths:  zapProdCfg.ErrorOutputPaths,
+			InitialFields:     zapProdCfg.InitialFields,
+		}, cfg.Service.Telemetry.Logs)
 }

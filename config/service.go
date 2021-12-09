@@ -46,15 +46,58 @@ func (srvT *ServiceTelemetry) validate() error {
 // the collector uses mapstructure and not yaml tags.
 type ServiceTelemetryLogs struct {
 	// Level is the minimum enabled logging level.
+	// (default = "INFO")
 	Level zapcore.Level `mapstructure:"level"`
 
 	// Development puts the logger in development mode, which changes the
 	// behavior of DPanicLevel and takes stacktraces more liberally.
+	// (default = false)
 	Development bool `mapstructure:"development"`
 
 	// Encoding sets the logger's encoding.
 	// Valid values are "json" and "console".
+	// (default = "console")
 	Encoding string `mapstructure:"encoding"`
+
+	// DisableCaller stops annotating logs with the calling function's file
+	// name and line number. By default, all logs are annotated.
+	// (default = false)
+	DisableCaller bool `mapstructure:"disable_caller"`
+
+	// DisableStacktrace completely disables automatic stacktrace capturing. By
+	// default, stacktraces are captured for WarnLevel and above logs in
+	// development and ErrorLevel and above in production.
+	// (default = false)
+	DisableStacktrace bool `mapstructure:"disable_stacktrace"`
+
+	// OutputPaths is a list of URLs or file paths to write logging output to.
+	// The URLs could only be with "file" schema or without schema.
+	// The URLs with "file" schema must be an absolute path.
+	// The URLs without schema are treated as local file paths.
+	// "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr.
+	// see details at Open in zap/writer.go.
+	// (default = ["stderr"])
+	OutputPaths []string `mapstructure:"output_paths"`
+
+	// ErrorOutputPaths is a list of URLs or file paths to write zap internal logger errors to.
+	// The URLs could only be with "file" schema or without schema.
+	// The URLs with "file" schema must use absolute paths.
+	// The URLs without schema are treated as local file paths.
+	// "stdout" and "stderr" are interpreted as os.Stdout and os.Stderr.
+	// see details at Open in zap/writer.go.
+	//
+	// Note that this setting only affects the zap internal logger errors.
+	// (default = ["stderr"])
+	ErrorOutputPaths []string `mapstructure:"error_output_paths"`
+
+	// InitialFields is a collection of fields to add to the root logger.
+	// Example:
+	//
+	// 		initial_fields:
+	//	   		foo: "bar"
+	//
+	// By default, there is no initial field.
+	InitialFields map[string]interface{} `mapstructure:"initial_fields"`
 }
 
 func (srvTL *ServiceTelemetryLogs) validate() error {
