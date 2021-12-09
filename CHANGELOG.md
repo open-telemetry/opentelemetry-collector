@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `confighttp`: add client-side compression support. (#4441)
+  - Each exporter should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
+
 ## v0.41.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -16,11 +21,6 @@
 
 - OTLP/HTTP receivers now support setting the `Access-Control-Max-Age` header for CORS caching. (#4492)
 - `client.Info` pre-populated for all receivers using common helpers like `confighttp` and `configgrpc` (#4423)
-
-## 💡 Enhancements 💡
-
-- `confighttp`: add client-side compression support. (#4441)
-  - Each exporter should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
 
 ## 🧰 Bug fixes 🧰
 
