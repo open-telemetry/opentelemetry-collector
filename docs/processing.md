@@ -130,52 +130,54 @@ allowing the operation to mutate telemetry as needed.
 
 ### Examples
 
+These examples contain both a SQL-like declarative language and Python-like imperative language for comparison during
+the design phase. The Python-like language currently assumes statements can only be applied to one signal.
+
 Remove a forbidden attribute such as `http.request.header.authorization` from spans only
 
 `delete(attributes["http.request.header.authorization"]) from traces`
+`delete(attributes["http.request.header.authorization"])`
 
 Remove all attributes except for some
 
 `keep(attributes, "http.method", "http.status_code") from metrics`
+`keep(attributes, "http.method", "http.status_code")`
 
 Reduce cardinality of an attribute
 
 `replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"]) from traces`
+`replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])`
 
 Reduce cardinality of a span name
 
 `replace_wildcards("GET /user/*/list/*", "GET /user/{userId}/list/{listId}", name) from traces`
+`replace_wildcards("GET /user/*/list/*", "GET /user/{userId}/list/{listId}", name)`
 
 Decrease the size of the telemetry payload by removing large resource attributes
 
 `delete(resource.attributes["process.command_line"]) from traces`
+`delete(resource.attributes["process.command_line"])`
 
 Filtering out signals such as by removing all metrics with a `http.target` of `/health`
 
 `drop() where attributes["http.target"] = "/health" from metrics`
+`if attributes["http.target"] = "/health": drop()`
 
 Attach information from resource into telemetry, for example adding certain resource fields as metric attributes
 
 `set(attributes["k8s_pod"], resource.attributes["k8s.pod.name"]) from metrics`
-
-Stateful processing can also be modeled by the language. The processor implementation would set up the state while
-parsing the configuration.
-
-Create duration_metric with two attributes copied from a span
-
-```
-create_histogram("duration", end_time_nanos - start_time_nanos) from traces
-keep(attributes, "http.method") from metrics where descriptor.metric_name = "duration"
-```
+`attributes["k8s_pod"] = resource.attributes["k8s.pod.name"]`
 
 Group spans by trace ID
 
 `group_by(trace_id, 2m) from traces`
+`group_by(trace_id, 2m)`
 
 Create utilization metric from base metrics. Because navigation expressions only operate on a single piece of telemetry,
 helper functions for reading values from other metrics need to be provided.
 
-`create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit") from metric`**s**
+`create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit") from metric`
+`create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit")`
 
 A lot of processing. Queries are executed in order. While initially performance may degrade compared to more specialized
 processors, the expectation is that over time, the query processor's engine would improve to be able to apply optimizations 
