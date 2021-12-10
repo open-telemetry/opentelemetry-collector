@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 type customRoundTripper struct {
@@ -74,6 +75,43 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxConnsPerHost:     &maxConnsPerHost,
 				IdleConnTimeout:     &idleConnTimeout,
 				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression:         "",
+			},
+			shouldError: false,
+		},
+		{
+			name: "all_valid_settings_with_none_compression",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConns:        &maxIdleConns,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
+				IdleConnTimeout:     &idleConnTimeout,
+				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression:         "none",
+			},
+			shouldError: false,
+		},
+		{
+			name: "all_valid_settings_with_gzip_compression",
+			settings: HTTPClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				ReadBufferSize:      1024,
+				WriteBufferSize:     512,
+				MaxIdleConns:        &maxIdleConns,
+				MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+				MaxConnsPerHost:     &maxConnsPerHost,
+				IdleConnTimeout:     &idleConnTimeout,
+				CustomRoundTripper:  func(next http.RoundTripper) (http.RoundTripper, error) { return next, nil },
+				Compression:         "gzip",
 			},
 			shouldError: false,
 		},
@@ -100,14 +138,17 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			transport := client.Transport.(*http.Transport)
-			assert.EqualValues(t, 1024, transport.ReadBufferSize)
-			assert.EqualValues(t, 512, transport.WriteBufferSize)
-			assert.EqualValues(t, 50, transport.MaxIdleConns)
-			assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
-			assert.EqualValues(t, 45, transport.MaxConnsPerHost)
-			assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
-
+			switch transport := client.Transport.(type) {
+			case *http.Transport:
+				assert.EqualValues(t, 1024, transport.ReadBufferSize)
+				assert.EqualValues(t, 512, transport.WriteBufferSize)
+				assert.EqualValues(t, 50, transport.MaxIdleConns)
+				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
+				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
+				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
+			case *middleware.CompressRoundTripper:
+				assert.EqualValues(t, "gzip", transport.CompressionType())
+			}
 		})
 	}
 }

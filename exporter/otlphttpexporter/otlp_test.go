@@ -134,63 +134,6 @@ func TestTraceRoundTrip(t *testing.T) {
 	}
 }
 
-func TestCompressionOptions(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
-	tests := []struct {
-		name        string
-		baseURL     string
-		compression string
-		err         bool
-	}{
-		{
-			name:        "no compression",
-			baseURL:     fmt.Sprintf("http://%s", addr),
-			compression: "",
-		},
-		{
-			name:        "gzip",
-			baseURL:     fmt.Sprintf("http://%s", addr),
-			compression: "gzip",
-		},
-		{
-			name:        "incorrect compression",
-			baseURL:     fmt.Sprintf("http://%s", addr),
-			compression: "gzip2",
-			err:         true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			sink := new(consumertest.TracesSink)
-			startTracesReceiver(t, addr, sink)
-
-			factory := NewFactory()
-			cfg := createExporterConfig(test.baseURL, factory.CreateDefaultConfig())
-			cfg.Compression = test.compression
-			exp, _ := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
-			err := exp.Start(context.Background(), componenttest.NewNopHost())
-			t.Cleanup(func() {
-				require.NoError(t, exp.Shutdown(context.Background()))
-			})
-			if test.err {
-				require.Error(t, err)
-				return
-			}
-
-			td := testdata.GenerateTracesOneSpan()
-			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
-			require.Eventually(t, func() bool {
-				return sink.SpanCount() > 0
-			}, 1*time.Second, 10*time.Millisecond)
-			allTraces := sink.AllTraces()
-			require.Len(t, allTraces, 1)
-			assert.EqualValues(t, td, allTraces[0])
-		})
-	}
-}
-
 func TestMetricsError(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 

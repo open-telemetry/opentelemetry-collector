@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 				ReadBufferSize:  123,
 				WriteBufferSize: 345,
 				Timeout:         time.Second * 10,
+				Compression:     "gzip",
 			},
-			Compression: "gzip",
 		})
 }

@@ -59,6 +59,9 @@ type HTTPClientSettings struct {
 	// Auth configuration for outgoing HTTP calls.
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
+	// The compression key for supported compression types within collector.
+	Compression middleware.CompressionType `mapstructure:"compression"`
+
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// There's an already set value, and we want to override it only if an explicit value provided
 	MaxIdleConns *int `mapstructure:"max_idle_conns"`
@@ -131,6 +134,12 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 			transport: transport,
 			headers:   hcs.Headers,
 		}
+	}
+
+	// Compress the body using specified compression methods if non-empty string is provided.
+	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
+	if hcs.Compression != middleware.CompressionEmpty && hcs.Compression != middleware.CompressionNone {
+		clientTransport = middleware.NewCompressRoundTripper(clientTransport, hcs.Compression)
 	}
 
 	if hcs.Auth != nil {

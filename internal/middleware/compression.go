@@ -18,27 +18,66 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/golang/snappy"
+	"github.com/klauspost/compress/zstd"
 )
 
+type CompressionType string
+
 const (
-	headerContentEncoding = "Content-Encoding"
-	headerValueGZIP       = "gzip"
+	headerContentEncoding                 = "Content-Encoding"
+	CompressionGzip       CompressionType = "gzip"
+	CompressionZlib       CompressionType = "zlib"
+	CompressionDeflate    CompressionType = "deflate"
+	CompressionSnappy     CompressionType = "snappy"
+	CompressionZstd       CompressionType = "zstd"
+	CompressionNone       CompressionType = "none"
+	CompressionEmpty      CompressionType = ""
 )
 
 type CompressRoundTripper struct {
-	http.RoundTripper
+	RoundTripper    http.RoundTripper
+	compressionType CompressionType
+	writer          func(*bytes.Buffer) (io.WriteCloser, error)
 }
 
-func NewCompressRoundTripper(rt http.RoundTripper) *CompressRoundTripper {
+func NewCompressRoundTripper(rt http.RoundTripper, compressionType CompressionType) *CompressRoundTripper {
 	return &CompressRoundTripper{
-		RoundTripper: rt,
+		RoundTripper:    rt,
+		compressionType: compressionType,
+		writer:          writerFactory(compressionType),
 	}
 }
 
-func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+// writerFactory defines writer field in CompressRoundTripper.
+// The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
+func writerFactory(compressionType CompressionType) func(*bytes.Buffer) (io.WriteCloser, error) {
+	switch compressionType {
+	case CompressionGzip:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return gzip.NewWriter(buf), nil
+		}
+	case CompressionSnappy:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return snappy.NewBufferedWriter(buf), nil
+		}
+	case CompressionZstd:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return zstd.NewWriter(buf)
+		}
+	case CompressionZlib, CompressionDeflate:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return zlib.NewWriter(buf), nil
+		}
+	}
+	return nil
+}
 
+func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.Header.Get(headerContentEncoding) != "" {
 		// If the header already specifies a content encoding then skip compression
 		// since we don't want to compress it again. This is a safeguard that normally
@@ -47,19 +86,23 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 		return r.RoundTripper.RoundTrip(req)
 	}
 
-	// Gzip the body.
+	// Compress the body.
 	buf := bytes.NewBuffer([]byte{})
-	gzipWriter := gzip.NewWriter(buf)
-	_, copyErr := io.Copy(gzipWriter, req.Body)
+	compressWriter, writerErr := r.writer(buf)
+	if writerErr != nil {
+		return nil, writerErr
+	}
+	_, copyErr := io.Copy(compressWriter, req.Body)
 	closeErr := req.Body.Close()
 
-	if err := gzipWriter.Close(); err != nil {
+	if err := compressWriter.Close(); err != nil {
 		return nil, err
 	}
 
 	if copyErr != nil {
 		return nil, copyErr
 	}
+
 	if closeErr != nil {
 		return nil, closeErr
 	}
@@ -73,9 +116,13 @@ func (r *CompressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Clone the headers and add gzip encoding header.
 	cReq.Header = req.Header.Clone()
-	cReq.Header.Add(headerContentEncoding, headerValueGZIP)
+	cReq.Header.Add(headerContentEncoding, string(r.compressionType))
 
 	return r.RoundTripper.RoundTrip(cReq)
+}
+
+func (r *CompressRoundTripper) CompressionType() CompressionType {
+	return r.compressionType
 }
 
 type ErrorHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
@@ -149,4 +196,20 @@ func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 // defaultErrorHandler writes the error message in plain text.
 func defaultErrorHandler(w http.ResponseWriter, _ *http.Request, errMsg string, statusCode int) {
 	http.Error(w, errMsg, statusCode)
+}
+
+func (ct *CompressionType) UnmarshalText(in []byte) error {
+	switch typ := CompressionType(in); typ {
+	case CompressionGzip,
+		CompressionZlib,
+		CompressionDeflate,
+		CompressionSnappy,
+		CompressionZstd,
+		CompressionNone,
+		CompressionEmpty:
+		*ct = typ
+		return nil
+	default:
+		return fmt.Errorf("unsupported compression type %q", typ)
+	}
 }
