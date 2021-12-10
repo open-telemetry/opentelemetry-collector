@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 -  Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
+- `configauth`: add ServerAuthenticator interfaces for HTTP receivers. (#4506)
 
 ## v0.41.0 Beta
 

@@ -15,6 +15,7 @@
 package confighttp
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -723,4 +724,61 @@ func TestContextWithClient(t *testing.T) {
 			assert.Equal(t, tC.expected, client.FromContext(ctx))
 		})
 	}
+}
+
+func TestServerAuth(t *testing.T) {
+	// prepare
+	authCalled := false
+	hss := HTTPServerSettings{
+		Auth: &configauth.Authentication{
+			AuthenticatorID: config.NewComponentID("mock"),
+		},
+	}
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewComponentID("mock"): &configauth.MockServerAuthenticator{
+				AuthenticateFunc: func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+					authCalled = true
+					return ctx, nil
+				},
+				HTTPInterceptorFunc: configauth.DefaultHTTPInterceptor,
+			},
+		},
+	}
+
+	handlerCalled := false
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlerCalled = true
+	})
+
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), handler)
+	require.NoError(t, err)
+
+	// test
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/", nil))
+
+	// verify
+	assert.True(t, handlerCalled)
+	assert.True(t, authCalled)
+}
+
+func TestInvalidServerAuth(t *testing.T) {
+	hss := HTTPServerSettings{
+		Auth: &configauth.Authentication{
+			AuthenticatorID: config.NewComponentID("non-existing"),
+		},
+	}
+
+	srv, err := hss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
+	require.Error(t, err)
+	require.Nil(t, srv)
+}
+
+type mockHost struct {
+	component.Host
+	ext map[config.ComponentID]component.Extension
+}
+
+func (nh *mockHost) GetExtensions() map[config.ComponentID]component.Extension {
+	return nh.ext
 }

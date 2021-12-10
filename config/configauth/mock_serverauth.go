@@ -16,6 +16,7 @@ package configauth // import "go.opentelemetry.io/collector/config/configauth"
 
 import (
 	"context"
+	"net/http"
 
 	"google.golang.org/grpc"
 
@@ -31,6 +32,9 @@ var (
 type MockServerAuthenticator struct {
 	// AuthenticateFunc to use during the authentication phase of this mock. Optional.
 	AuthenticateFunc AuthenticateFunc
+
+	// HTTPInterceptor to use in the test
+	HTTPInterceptorFunc HTTPInterceptorFunc
 	// TODO: implement the other funcs
 }
 
@@ -50,6 +54,14 @@ func (m *MockServerAuthenticator) GRPCUnaryServerInterceptor(context.Context, in
 // GRPCStreamServerInterceptor isn't currently implemented and always returns nil.
 func (m *MockServerAuthenticator) GRPCStreamServerInterceptor(interface{}, grpc.ServerStream, *grpc.StreamServerInfo, grpc.StreamHandler) error {
 	return nil
+}
+
+// HTTPInterceptor isn't currently implemented and always returns nil.
+func (m *MockServerAuthenticator) HTTPInterceptor(next http.Handler) http.Handler {
+	if m.HTTPInterceptorFunc == nil {
+		return next
+	}
+	return m.HTTPInterceptorFunc(next, m.AuthenticateFunc)
 }
 
 // Start isn't currently implemented and always returns nil.
