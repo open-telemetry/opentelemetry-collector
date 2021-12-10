@@ -16,13 +16,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Check for CHANGELOG changes
-        run: |
+        with:
           # Only the latest commit of the feature branch is available
           # automatically. To diff with the base branch, we need to
           # fetch that too (and we only need its latest commit).
-          git fetch origin ${{ github.base_ref }} --depth=1
+          fetch-depth: 1
+
+      - name: Check for CHANGELOG changes
+        run: |
           if [[ $(git diff --name-only FETCH_HEAD | grep CHANGELOG) ]]
           then
             echo "A CHANGELOG was modified. Looks good!"
