@@ -6,6 +6,7 @@
 
 - `confighttp`: add client-side compression support. (#4441)
   - Each exporter should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
+-  Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
 
 ## v0.41.0 Beta
 
