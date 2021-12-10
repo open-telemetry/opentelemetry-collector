@@ -21,6 +21,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+// this functionality was originally copied from grpc-ecosystem/go-grpc-middleware project
+
 // WrappedServerStream is a thin wrapper around grpc.ServerStream that allows modifying context.
 type WrappedServerStream struct {
 	grpc.ServerStream
