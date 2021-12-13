@@ -24,6 +24,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -83,10 +84,12 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 func TestCollector_Start(t *testing.T) {
 	factories, err := testcomponents.DefaultFactories()
 	require.NoError(t, err)
-
+	var once sync.Once
 	loggingHookCalled := false
 	hook := func(entry zapcore.Entry) error {
-		loggingHookCalled = true
+		once.Do(func() {
+			loggingHookCalled = true
+		})
 		return nil
 	}
 

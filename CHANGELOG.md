@@ -36,6 +36,7 @@
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 - Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
 - Make state information propagation non-blocking on the collector (#4460)
+- Added support to expose gRPC framework's logs as part of collector logs (#4501)
 
 ## 💡 Enhancements 💡
 
