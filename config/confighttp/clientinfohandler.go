@@ -46,6 +46,8 @@ func contextWithClient(req *http.Request) context.Context {
 		cl.Addr = ip
 	}
 
+	cl.Header = req.Header
+
 	ctx := client.NewContext(req.Context(), cl)
 	return ctx
 }
