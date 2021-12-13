@@ -106,7 +106,7 @@ func (exp *Exporter) startOp(ctx context.Context, operationSuffix string) contex
 }
 
 func (exp *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend int64, sentMeasure, failedToSendMeasure *stats.Int64Measure) {
-	if obsreportconfig.Level == configtelemetry.LevelNone {
+	if obsreportconfig.Level() == configtelemetry.LevelNone {
 		return
 	}
 	// Ignore the error for now. This should not happen.

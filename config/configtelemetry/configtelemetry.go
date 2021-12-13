@@ -53,7 +53,7 @@ func Flags(flags *flag.FlagSet) {
 
 // Level is the level of internal telemetry (metrics, logs, traces about the component itself)
 // that every component should generate.
-type Level int8
+type Level int32
 
 var _ flag.Value = (*Level)(nil)
 
