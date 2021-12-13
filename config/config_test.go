@@ -258,7 +258,16 @@ func generateConfig() *Config {
 		},
 		Service: Service{
 			Telemetry: ServiceTelemetry{
-				Logs: ServiceTelemetryLogs{Level: zapcore.DebugLevel, Development: true, Encoding: "console"},
+				Logs: ServiceTelemetryLogs{
+					Level:             zapcore.DebugLevel,
+					Development:       true,
+					Encoding:          "console",
+					DisableCaller:     true,
+					DisableStacktrace: true,
+					OutputPaths:       []string{"stderr", "./output-logs"},
+					ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
+					InitialFields:     map[string]interface{}{"fieldKey": "filed-value"},
+				},
 				Metrics: ServiceTelemetryMetrics{
 					Level:   configtelemetry.LevelNormal,
 					Address: ":8080",

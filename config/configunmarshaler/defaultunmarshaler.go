@@ -169,9 +169,14 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 	srv := config.Service{
 		Telemetry: config.ServiceTelemetry{
 			Logs: config.ServiceTelemetryLogs{
-				Level:       zapcore.InfoLevel,
-				Development: false,
-				Encoding:    "console",
+				Level:             zapcore.InfoLevel,
+				Development:       false,
+				Encoding:          "console",
+				OutputPaths:       []string{"stderr"},
+				ErrorOutputPaths:  []string{"stderr"},
+				DisableCaller:     false,
+				DisableStacktrace: false,
+				InitialFields:     map[string]interface{}(nil),
 			},
 			Metrics: defaultServiceTelemetryMetricsSettings(),
 		},

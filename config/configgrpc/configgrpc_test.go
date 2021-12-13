@@ -17,6 +17,7 @@ package configgrpc
 import (
 	"context"
 	"io/ioutil"
+	"net"
 	"os"
 	"path"
 	"runtime"
@@ -26,7 +27,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -565,9 +568,192 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	s.Stop()
 }
 
-type grpcTraceServer struct{}
+func TestContextWithClient(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		input    context.Context
+		expected client.Info
+	}{
+		{
+			desc:     "no peer information, empty client",
+			input:    context.Background(),
+			expected: client.Info{},
+		},
+		{
+			desc: "existing client with IP, no peer information",
+			input: client.NewContext(context.Background(), client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			}),
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			},
+		},
+		{
+			desc: "empty client, with peer information",
+			input: peer.NewContext(context.Background(), &peer.Peer{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			}),
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			},
+		},
+		{
+			desc: "existing client, existing IP gets overridden with peer information",
+			input: peer.NewContext(client.NewContext(context.Background(), client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 4),
+				},
+			}), &peer.Peer{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 5),
+				},
+			}),
+			expected: client.Info{
+				Addr: &net.IPAddr{
+					IP: net.IPv4(1, 2, 3, 5),
+				},
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			cl := client.FromContext(contextWithClient(tC.input))
+			assert.Equal(t, tC.expected, cl)
+		})
+	}
+}
 
-func (gts *grpcTraceServer) Export(context.Context, otlpgrpc.TracesRequest) (otlpgrpc.TracesResponse, error) {
+func TestStreamInterceptorEnhancesClient(t *testing.T) {
+	// prepare
+	inCtx := peer.NewContext(context.Background(), &peer.Peer{
+		Addr: &net.IPAddr{IP: net.IPv4(1, 1, 1, 1)},
+	})
+	var outContext context.Context
+
+	stream := &mockedStream{
+		ctx: inCtx,
+	}
+
+	handler := func(srv interface{}, stream grpc.ServerStream) error {
+		outContext = stream.Context()
+		return nil
+	}
+
+	// test
+	err := enhanceStreamWithClientInformation(nil, stream, nil, handler)
+
+	// verify
+	assert.NoError(t, err)
+
+	cl := client.FromContext(outContext)
+	assert.Equal(t, "1.1.1.1", cl.Addr.String())
+}
+
+type mockedStream struct {
+	ctx context.Context
+	grpc.ServerStream
+}
+
+func (ms *mockedStream) Context() context.Context {
+	return ms.ctx
+}
+
+func TestClientInfoInterceptors(t *testing.T) {
+	testCases := []struct {
+		desc   string
+		tester func(context.Context, otlpgrpc.TracesClient)
+	}{
+		{
+			// we only have unary services, we don't have any clients we could use
+			// to test with streaming services
+			desc: "unary",
+			tester: func(ctx context.Context, cl otlpgrpc.TracesClient) {
+				resp, errResp := cl.Export(ctx, otlpgrpc.NewTracesRequest())
+				require.NoError(t, errResp)
+				require.NotNil(t, resp)
+			},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			mock := &grpcTraceServer{}
+			var l net.Listener
+
+			// prepare the server
+			{
+				gss := &GRPCServerSettings{
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:0",
+						Transport: "tcp",
+					},
+				}
+				opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+				require.NoError(t, err)
+				srv := grpc.NewServer(opts...)
+				otlpgrpc.RegisterTracesServer(srv, mock)
+
+				defer srv.Stop()
+
+				l, err = gss.ToListener()
+				require.NoError(t, err)
+
+				go func() {
+					_ = srv.Serve(l)
+				}()
+			}
+
+			// prepare the client and execute a RPC
+			{
+				gcs := &GRPCClientSettings{
+					Endpoint: l.Addr().String(),
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure: true,
+					},
+				}
+
+				tt, err := obsreporttest.SetupTelemetry()
+				require.NoError(t, err)
+				defer func() {
+					require.NoError(t, tt.Shutdown(context.Background()))
+				}()
+
+				clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+				require.NoError(t, errClient)
+
+				grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
+				require.NoError(t, errDial)
+
+				cl := otlpgrpc.NewTracesClient(grpcClientConn)
+				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancelFunc()
+
+				// test
+				tC.tester(ctx, cl)
+			}
+
+			// verify
+			cl := client.FromContext(mock.recordedContext)
+
+			// the client address is something like 127.0.0.1:41086
+			assert.Contains(t, cl.Addr.String(), "127.0.0.1")
+		})
+	}
+}
+
+type grpcTraceServer struct {
+	recordedContext context.Context
+}
+
+func (gts *grpcTraceServer) Export(ctx context.Context, _ otlpgrpc.TracesRequest) (otlpgrpc.TracesResponse, error) {
+	gts.recordedContext = ctx
 	return otlpgrpc.NewTracesResponse(), nil
 }
 
