@@ -195,13 +195,16 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 }
 
 func defaultServiceTelemetryMetricsSettings() config.ServiceTelemetryMetrics {
-	addr := configtelemetry.GetMetricsAddr()
+	// These deprecated functions are still needed here so that the values provided through the CLI flags
+	// can be used as a baseline if no values are provided in configuration.  This will eventually return
+	// a static default configuration when the CLI flags are removed.
+	addr := configtelemetry.GetMetricsAddr() //nolint:staticcheck
 	if addr == "" {
-		addr = configtelemetry.GetMetricsAddrDefault()
+		addr = configtelemetry.GetMetricsAddrDefault() //nolint:staticcheck
 	}
 
 	return config.ServiceTelemetryMetrics{
-		Level:   configtelemetry.GetMetricsLevelFlagValue(),
+		Level:   configtelemetry.GetMetricsLevelFlagValue(), //nolint:staticcheck
 		Address: addr,
 	}
 }
