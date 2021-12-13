@@ -262,6 +262,13 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
 }
 
+func TestNewExporterSuccess(t *testing.T) {
+	rec := NewExporter(ExporterSettings{
+		ExporterID: exporter,
+	})
+	require.NotNil(t, rec)
+}
+
 func TestExportTraceDataOp(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)

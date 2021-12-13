@@ -46,11 +46,16 @@ type ExporterSettings struct {
 
 // NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) *Exporter {
+	traceProvider := cfg.ExporterCreateSettings.TracerProvider
+	if traceProvider == nil {
+		traceProvider = trace.NewNoopTracerProvider()
+	}
+
 	return &Exporter{
 		level:          cfg.Level,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
-		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
+		tracer:         traceProvider.Tracer(cfg.ExporterID.String()),
 	}
 }
 
