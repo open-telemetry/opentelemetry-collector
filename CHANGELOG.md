@@ -6,8 +6,13 @@
 
 - `confighttp`: add client-side compression support. (#4441)
   - Each exporter should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
--  Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
+- Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
 - `configauth`: add ServerAuthenticator interfaces for HTTP receivers. (#4506)
+- Collector self-metrics may now be configured through the configuration file. (#4069)
+  - CLI flags for configuring self-metrics are deprecated and will be removed
+    in a future release.
+  - `service.telemetry.metrics.level` and `service.telemetry.metrics.address`
+    should be used to configure collector self-metrics.
 
 ## v0.41.0 Beta
 
