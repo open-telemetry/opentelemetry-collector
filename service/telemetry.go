@@ -159,7 +159,7 @@ func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := prometheus.Options{
-		Namespace: col.service.buildInfo.Command,
+		Namespace: "otelcol",
 	}
 
 	opts.ConstLabels = make(map[string]string)
@@ -180,18 +180,18 @@ func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http
 }
 
 func (tel *colTelemetry) initOpenTelemetry() (http.Handler, error) {
-	cfg := otelprometheus.Config{}
+	config := otelprometheus.Config{}
 	c := controller.New(
 		processor.NewFactory(
 			selector.NewWithHistogramDistribution(
-				histogram.WithExplicitBoundaries(cfg.DefaultHistogramBoundaries),
+				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
 			),
 			aggregation.CumulativeTemporalitySelector(),
 			processor.WithMemory(true),
 		),
 	)
 
-	pe, err := otelprometheus.New(cfg, c)
+	pe, err := otelprometheus.New(config, c)
 	if err != nil {
 		return nil, err
 	}
