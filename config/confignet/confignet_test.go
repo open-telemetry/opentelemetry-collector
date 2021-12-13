@@ -22,6 +22,8 @@ import (
 )
 
 func TestNetAddr(t *testing.T) {
+	t.Parallel()
+
 	nas := &NetAddr{
 		Endpoint:  "localhost:0",
 		Transport: "tcp",
@@ -57,6 +59,8 @@ func TestNetAddr(t *testing.T) {
 }
 
 func TestTcpAddr(t *testing.T) {
+	t.Parallel()
+
 	nas := &TCPAddr{
 		Endpoint: "localhost:0",
 	}

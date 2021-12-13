@@ -25,6 +25,8 @@ import (
 )
 
 func TestNewContext(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		desc string
 		cl   Info
@@ -51,6 +53,8 @@ func TestNewContext(t *testing.T) {
 }
 
 func TestFromContext(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		desc     string
 		input    context.Context

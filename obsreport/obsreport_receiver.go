@@ -161,7 +161,7 @@ func (rec *Receiver) endOp(
 
 	span := trace.SpanFromContext(receiverCtx)
 
-	if obsreportconfig.Level != configtelemetry.LevelNone {
+	if obsreportconfig.Level() != configtelemetry.LevelNone {
 		var acceptedMeasure, refusedMeasure *stats.Int64Measure
 		switch dataType {
 		case config.TracesDataType:

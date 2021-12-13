@@ -24,6 +24,8 @@ import (
 )
 
 func TestNilStartAndShutdown(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	m := &MockClientAuthenticator{}
 
@@ -44,6 +46,8 @@ func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, e
 }
 
 func TestMockRoundTripper(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		name        string
 		expectedErr bool
@@ -96,6 +100,8 @@ func (c *customPerRPCCredentials) RequireTransportSecurity() bool {
 }
 
 func TestMockPerRPCCredential(t *testing.T) {
+	t.Parallel()
+
 	testcases := []struct {
 		name        string
 		expectedErr bool

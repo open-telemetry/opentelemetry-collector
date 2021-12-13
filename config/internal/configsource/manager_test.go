@@ -31,6 +31,8 @@ import (
 )
 
 func TestConfigSourceManager_Simple(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	manager := newManager(map[string]configsource.ConfigSource{
 		"tstcfgsrc": &testConfigSource{
@@ -73,6 +75,8 @@ func TestConfigSourceManager_Simple(t *testing.T) {
 }
 
 func TestConfigSourceManager_ResolveRemoveConfigSourceSection(t *testing.T) {
+	t.Parallel()
+
 	cfg := map[string]interface{}{
 		"config_sources": map[string]interface{}{
 			"testcfgsrc": nil,
@@ -95,6 +99,8 @@ func TestConfigSourceManager_ResolveRemoveConfigSourceSection(t *testing.T) {
 }
 
 func TestConfigSourceManager_ResolveErrors(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	testErr := errors.New("test error")
 
@@ -135,6 +141,8 @@ func TestConfigSourceManager_ResolveErrors(t *testing.T) {
 }
 
 func TestConfigSourceManager_YAMLInjection(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	manager := newManager(map[string]configsource.ConfigSource{
 		"tstcfgsrc": &testConfigSource{
@@ -178,6 +186,8 @@ map:
 }
 
 func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	manager := newManager(map[string]configsource.ConfigSource{
 		"tstcfgsrc": &testConfigSource{
@@ -205,6 +215,8 @@ func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
 }
 
 func TestConfigSourceManager_ParamsHandling(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	tstCfgSrc := testConfigSource{
 		ValueMap: map[string]valueEntry{
@@ -259,6 +271,8 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 }
 
 func TestConfigSourceManager_WatchForUpdate(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	watchForUpdateCh := make(chan error, 1)
 
@@ -301,6 +315,8 @@ func TestConfigSourceManager_WatchForUpdate(t *testing.T) {
 }
 
 func TestConfigSourceManager_MultipleWatchForUpdate(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 
 	watchDoneCh := make(chan struct{})
@@ -360,9 +376,9 @@ func TestConfigSourceManager_MultipleWatchForUpdate(t *testing.T) {
 
 func TestConfigSourceManager_EnvVarHandling(t *testing.T) {
 	require.NoError(t, os.Setenv("envvar", "envvar_value"))
-	defer func() {
+	t.Cleanup(func() {
 		assert.NoError(t, os.Unsetenv("envvar"))
-	}()
+	})
 
 	ctx := context.Background()
 	tstCfgSrc := testConfigSource{
@@ -539,6 +555,8 @@ func TestManager_parseStringValue(t *testing.T) {
 }
 
 func Test_parseCfgSrcInvocation(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		params     interface{}
 		name       string

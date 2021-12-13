@@ -22,6 +22,8 @@ import (
 )
 
 func TestParseFrom(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		str   string
 		level Level
@@ -69,6 +71,8 @@ func TestParseFrom(t *testing.T) {
 }
 
 func TestLevelSet(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		str   string
 		level Level
@@ -117,6 +121,8 @@ func TestLevelSet(t *testing.T) {
 }
 
 func TestLevelString(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		str   string
 		level Level
@@ -151,6 +157,8 @@ func TestLevelString(t *testing.T) {
 }
 
 func TestTelemetrySettings(t *testing.T) {
+	t.Parallel()
+
 	ts := &TelemetrySetting{
 		MetricsLevelStr: "unknown",
 	}
@@ -159,6 +167,8 @@ func TestTelemetrySettings(t *testing.T) {
 }
 
 func TestDefaultTelemetrySettings(t *testing.T) {
+	t.Parallel()
+
 	ts := DefaultTelemetrySetting()
 	assert.Equal(t, levelBasicStr, ts.MetricsLevelStr)
 	lvl, err := ts.GetMetricsLevel()

@@ -21,6 +21,8 @@ import (
 )
 
 func TestIDFromString(t *testing.T) {
+	t.Parallel()
+
 	var testCases = []struct {
 		idStr       string
 		expectedErr bool

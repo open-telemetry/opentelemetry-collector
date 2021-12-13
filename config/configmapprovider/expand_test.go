@@ -26,6 +26,8 @@ import (
 )
 
 func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
+	t.Parallel()
+
 	retErr := errors.New("test error")
 	exp := NewExpand(&mockProvider{retrieveErr: retErr})
 	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
@@ -35,6 +37,8 @@ func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
 }
 
 func TestBaseRetrieveFailsOnGet(t *testing.T) {
+	t.Parallel()
+
 	getErr := errors.New("test error")
 	exp := NewExpand(&mockProvider{retrieved: &mockRetrieved{getErr: getErr}})
 	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
@@ -44,6 +48,8 @@ func TestBaseRetrieveFailsOnGet(t *testing.T) {
 }
 
 func TestExpand(t *testing.T) {
+	t.Parallel()
+
 	var testCases = []struct {
 		name string // test case name (also file name containing config yaml)
 	}{
@@ -89,6 +95,8 @@ func TestExpand(t *testing.T) {
 }
 
 func TestExpand_EscapedEnvVars(t *testing.T) {
+	t.Parallel()
+
 	const receiverExtraMapValue = "some map value"
 	assert.NoError(t, os.Setenv("MAP_VALUE_2", receiverExtraMapValue))
 	defer func() {

@@ -49,6 +49,8 @@ func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, e
 }
 
 func TestAllHTTPClientSettings(t *testing.T) {
+	t.Parallel()
+
 	ext := map[config.ComponentID]component.Extension{
 		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 	}
@@ -154,6 +156,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 }
 
 func TestPartialHTTPClientSettings(t *testing.T) {
+	t.Parallel()
+
 	ext := map[config.ComponentID]component.Extension{
 		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 	}
@@ -194,12 +198,16 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 }
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
+	t.Parallel()
+
 	httpClientSettings := DefaultHTTPClientSettings()
 	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
 	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		settings HTTPClientSettings
 		err      string
@@ -247,6 +255,8 @@ func TestHTTPClientSettingsError(t *testing.T) {
 }
 
 func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name         string
 		shouldErr    bool
@@ -327,6 +337,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 }
 
 func TestHTTPServerSettingsError(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		settings HTTPServerSettings
 		err      string
@@ -372,6 +384,8 @@ func TestHTTPServerSettingsError(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		tlsServerCreds *configtls.TLSServerSetting
@@ -528,6 +542,8 @@ func TestHttpReception(t *testing.T) {
 }
 
 func TestHttpCors(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 
@@ -621,6 +637,8 @@ func TestHttpCors(t *testing.T) {
 }
 
 func TestHttpCorsInvalidSettings(t *testing.T) {
+	t.Parallel()
+
 	hss := &HTTPServerSettings{
 		Endpoint: "localhost:0",
 		CORS:     &CORSSettings{AllowedHeaders: []string{"some-header"}},
@@ -696,6 +714,8 @@ func ExampleHTTPServerSettings() {
 }
 
 func TestHttpHeaders(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		headers map[string]string
@@ -737,6 +757,8 @@ func TestHttpHeaders(t *testing.T) {
 }
 
 func TestContextWithClient(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		desc     string
 		input    *http.Request
@@ -768,6 +790,8 @@ func TestContextWithClient(t *testing.T) {
 }
 
 func TestServerAuth(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	authCalled := false
 	hss := HTTPServerSettings{
@@ -804,6 +828,8 @@ func TestServerAuth(t *testing.T) {
 }
 
 func TestInvalidServerAuth(t *testing.T) {
+	t.Parallel()
+
 	hss := HTTPServerSettings{
 		Auth: &configauth.Authentication{
 			AuthenticatorID: config.NewComponentID("non-existing"),

@@ -24,6 +24,8 @@ import (
 )
 
 func TestGetServerAuthenticator(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		desc          string
 		authenticator component.Extension
@@ -65,6 +67,8 @@ func TestGetServerAuthenticator(t *testing.T) {
 }
 
 func TestGetServerAuthenticatorFails(t *testing.T) {
+	t.Parallel()
+
 	cfg := &Authentication{
 		AuthenticatorID: config.NewComponentID("does-not-exist"),
 	}
@@ -75,6 +79,8 @@ func TestGetServerAuthenticatorFails(t *testing.T) {
 }
 
 func TestGetClientAuthenticator(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		desc          string
 		authenticator component.Extension
@@ -116,6 +122,8 @@ func TestGetClientAuthenticator(t *testing.T) {
 }
 
 func TestGetClientAuthenticatorFails(t *testing.T) {
+	t.Parallel()
+
 	cfg := &Authentication{
 		AuthenticatorID: config.NewComponentID("does-not-exist"),
 	}

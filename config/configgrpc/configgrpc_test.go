@@ -41,6 +41,8 @@ import (
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
+	t.Parallel()
+
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -56,6 +58,8 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
+	t.Parallel()
+
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -93,6 +97,8 @@ func TestAllGrpcClientSettings(t *testing.T) {
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
+	t.Parallel()
+
 	gss := &GRPCServerSettings{}
 	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
@@ -102,6 +108,8 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
+	t.Parallel()
+
 	gss := &GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:1234",
@@ -137,6 +145,8 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
+	t.Parallel()
+
 	gss := &GRPCServerSettings{}
 
 	// sanity check
@@ -161,6 +171,8 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
+	t.Parallel()
+
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -252,6 +264,8 @@ func TestGRPCClientSettingsError(t *testing.T) {
 }
 
 func TestUseSecure(t *testing.T) {
+	t.Parallel()
+
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -269,6 +283,8 @@ func TestUseSecure(t *testing.T) {
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		settings GRPCServerSettings
 		err      string
@@ -325,6 +341,8 @@ func TestGRPCServerSettingsError(t *testing.T) {
 }
 
 func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
+	t.Parallel()
+
 	settings := GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "127.0.0.1:1234567",
@@ -342,6 +360,8 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 }
 
 func TestGetGRPCCompressionKey(t *testing.T) {
+	t.Parallel()
+
 	if GetGRPCCompressionKey("gzip") != CompressionGzip {
 		t.Error("gzip is marked as supported but returned unsupported")
 	}
@@ -372,6 +392,8 @@ func TestGetGRPCCompressionKey(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
+	t.Parallel()
+
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -524,6 +546,8 @@ func TestHttpReception(t *testing.T) {
 }
 
 func TestReceiveOnUnixDomainSocket(t *testing.T) {
+	t.Parallel()
+
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on windows")
 	}
@@ -569,6 +593,8 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 }
 
 func TestContextWithClient(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		desc     string
 		input    context.Context
@@ -632,6 +658,8 @@ func TestContextWithClient(t *testing.T) {
 }
 
 func TestStreamInterceptorEnhancesClient(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	inCtx := peer.NewContext(context.Background(), &peer.Peer{
 		Addr: &net.IPAddr{IP: net.IPv4(1, 1, 1, 1)},
@@ -667,6 +695,8 @@ func (ms *mockedStream) Context() context.Context {
 }
 
 func TestClientInfoInterceptors(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		desc   string
 		tester func(context.Context, otlpgrpc.TracesClient)

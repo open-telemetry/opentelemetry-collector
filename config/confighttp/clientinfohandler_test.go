@@ -22,6 +22,8 @@ import (
 )
 
 func TestParseIP(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		desc     string
 		input    string

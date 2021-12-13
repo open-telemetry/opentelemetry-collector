@@ -23,6 +23,8 @@ import (
 )
 
 func TestPropertiesProvider(t *testing.T) {
+	t.Parallel()
+
 	setFlagStr := []string{
 		"processors.batch.timeout=2s",
 		"processors.batch/foo.timeout=3s",
@@ -45,6 +47,8 @@ func TestPropertiesProvider(t *testing.T) {
 }
 
 func TestPropertiesProvider_empty(t *testing.T) {
+	t.Parallel()
+
 	pmp := NewProperties(nil)
 	retr, err := pmp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)

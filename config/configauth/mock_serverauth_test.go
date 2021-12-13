@@ -22,6 +22,8 @@ import (
 )
 
 func TestAuthenticateFunc(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	m := &MockServerAuthenticator{}
 	called := false
@@ -40,6 +42,8 @@ func TestAuthenticateFunc(t *testing.T) {
 }
 
 func TestNilOperations(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	m := &MockServerAuthenticator{}
 

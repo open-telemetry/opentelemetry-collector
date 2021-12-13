@@ -32,6 +32,8 @@ import (
 )
 
 func TestDecodeConfig(t *testing.T) {
+	t.Parallel()
+
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -130,6 +132,7 @@ func TestDecodeConfig(t *testing.T) {
 }
 
 func TestDecodeConfig_Invalid(t *testing.T) {
+	t.Parallel()
 
 	var testCases = []struct {
 		name            string          // test case name (also file name containing config yaml)
@@ -203,6 +206,8 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 }
 
 func TestLoadEmpty(t *testing.T) {
+	t.Parallel()
+
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -211,6 +216,8 @@ func TestLoadEmpty(t *testing.T) {
 }
 
 func TestLoadEmptyAllSections(t *testing.T) {
+	t.Parallel()
+
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -229,6 +236,8 @@ func loadConfigFile(t *testing.T, fileName string, factories component.Factories
 }
 
 func TestDefaultLoggerConfig(t *testing.T) {
+	t.Parallel()
+
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 

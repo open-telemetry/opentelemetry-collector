@@ -28,6 +28,8 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -69,6 +71,8 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigAndValidate(t *testing.T) {
+	t.Parallel()
+
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -82,6 +86,8 @@ func TestLoadConfigAndValidate(t *testing.T) {
 }
 
 func TestCheckConfigStructPointerAndValue(t *testing.T) {
+	t.Parallel()
+
 	config := struct {
 		SomeFiled string `mapstructure:"test"`
 	}{}
@@ -90,6 +96,8 @@ func TestCheckConfigStructPointerAndValue(t *testing.T) {
 }
 
 func TestCheckConfigStruct(t *testing.T) {
+	t.Parallel()
+
 	type BadConfigTag struct {
 		BadTagField int `mapstructure:"test-dash"`
 	}

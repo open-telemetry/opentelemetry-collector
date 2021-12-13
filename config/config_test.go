@@ -73,6 +73,8 @@ func (nc *nopExtConfig) Validate() error {
 }
 
 func TestConfigValidate(t *testing.T) {
+	t.Parallel()
+
 	var testCases = []struct {
 		name     string // test case name (also file name containing config yaml)
 		cfgFn    func() *Config

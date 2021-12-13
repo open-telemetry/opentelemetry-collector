@@ -28,6 +28,8 @@ import (
 )
 
 func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	handlerCalled := false
 	authCalled := false
@@ -58,6 +60,8 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 }
 
 func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	authCalled := false
 	expectedErr := fmt.Errorf("not authenticated")
@@ -81,6 +85,8 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 }
 
 func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		assert.FailNow(t, "the auth func should not have been called!")
@@ -100,6 +106,8 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 }
 
 func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	handlerCalled := false
 	authCalled := false
@@ -132,6 +140,8 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 }
 
 func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
+	t.Parallel()
+
 	// prepare
 	authCalled := false
 	expectedErr := fmt.Errorf("not authenticated")

@@ -23,6 +23,8 @@ import (
 )
 
 func TestOptionsToConfig(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		options     TLSSetting
@@ -146,6 +148,8 @@ func TestOptionsToConfig(t *testing.T) {
 }
 
 func TestLoadTLSClientConfigError(t *testing.T) {
+	t.Parallel()
+
 	tlsSetting := TLSClientSetting{
 		TLSSetting: TLSSetting{
 			CertFile: "doesnt/exist",
@@ -157,6 +161,8 @@ func TestLoadTLSClientConfigError(t *testing.T) {
 }
 
 func TestLoadTLSClientConfig(t *testing.T) {
+	t.Parallel()
+
 	tlsSetting := TLSClientSetting{
 		Insecure: true,
 	}
@@ -179,6 +185,8 @@ func TestLoadTLSClientConfig(t *testing.T) {
 }
 
 func TestLoadTLSServerConfigError(t *testing.T) {
+	t.Parallel()
+
 	tlsSetting := TLSServerSetting{
 		TLSSetting: TLSSetting{
 			CertFile: "doesnt/exist",
@@ -196,6 +204,8 @@ func TestLoadTLSServerConfigError(t *testing.T) {
 }
 
 func TestLoadTLSServerConfig(t *testing.T) {
+	t.Parallel()
+
 	tlsSetting := TLSServerSetting{}
 	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	assert.NoError(t, err)

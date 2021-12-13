@@ -32,6 +32,8 @@ func TestToStringMap_WithSet(t *testing.T) {
 }
 
 func TestToStringMap(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name      string
 		fileName  string

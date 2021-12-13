@@ -26,6 +26,8 @@ import (
 )
 
 func TestMerge_GetError(t *testing.T) {
+	t.Parallel()
+
 	pl := NewMerge(&errProvider{err: nil}, &errProvider{errors.New("my error")})
 	require.NotNil(t, pl)
 	cp, err := pl.Retrieve(context.Background(), nil)
@@ -34,6 +36,8 @@ func TestMerge_GetError(t *testing.T) {
 }
 
 func TestMerge_CloseError(t *testing.T) {
+	t.Parallel()
+
 	pl := NewMerge(&errProvider{err: nil}, &errProvider{errors.New("my error")})
 	require.NotNil(t, pl)
 	assert.Error(t, pl.Shutdown(context.Background()))
