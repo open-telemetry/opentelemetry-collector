@@ -159,6 +159,7 @@ func RegisterTracesServer(s *grpc.Server, srv TracesServer) {
 }
 
 type rawTracesServer struct {
+	otlpcollectortrace.UnimplementedTraceServiceServer
 	srv TracesServer
 }
 

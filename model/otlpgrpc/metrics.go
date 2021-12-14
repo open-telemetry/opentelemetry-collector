@@ -158,6 +158,7 @@ func RegisterMetricsServer(s *grpc.Server, srv MetricsServer) {
 }
 
 type rawMetricsServer struct {
+	otlpcollectormetrics.UnimplementedMetricsServiceServer
 	srv MetricsServer
 }
 
