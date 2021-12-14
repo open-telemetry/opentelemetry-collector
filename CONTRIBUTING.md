@@ -327,16 +327,6 @@ with clear instructions on how to install the required libraries.
 Furthermore, if your package requires CGO, it MUST be able to compile and operate in a no op mode
 or report a warning back to the collector with a clear error saying CGO is required to work.
 
-### Configuration Naming
-
-In order to keep configuration settings consistent across the project and their intent,
-a package must use the following naming for their purpose:
-
-| Name               | Purpose                                                              | Example                                                     |
-|--------------------|----------------------------------------------------------------------|-------------------------------------------------------------|
-| ExportTimeout      | Used to set the allowed during of an export operation                | Setting the allowed time a single export operation can take |
-| NetworkTimeout     | Used to configure the allowed duration of a single network call      | Used when setting the timeout in a http.Client              |
-
 
 ## Updating Changelog
 
