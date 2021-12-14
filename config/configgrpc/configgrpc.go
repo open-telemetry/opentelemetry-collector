@@ -402,6 +402,9 @@ func contextWithClient(ctx context.Context) context.Context {
 	if p, ok := peer.FromContext(ctx); ok {
 		cl.Addr = p.Addr
 	}
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		cl.Metadata = md
+	}
 	return client.NewContext(ctx, cl)
 }
 

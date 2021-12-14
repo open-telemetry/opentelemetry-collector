@@ -91,7 +91,6 @@ package client // import "go.opentelemetry.io/collector/client"
 import (
 	"context"
 	"net"
-	"net/http"
 )
 
 type ctxKey struct{}
@@ -108,8 +107,8 @@ type Info struct {
 	// this connection.
 	Auth AuthData
 
-	// Header is the request headers from the HTTP client connecting to this connector.
-	Header http.Header
+	// Metadata is the request metadata from the client connecting to this connector.
+	Metadata map[string][]string
 }
 
 // AuthData represents the authentication data as seen by authenticators tied to
