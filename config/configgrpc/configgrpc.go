@@ -403,7 +403,7 @@ func contextWithClient(ctx context.Context) context.Context {
 		cl.Addr = p.Addr
 	}
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		cl.Metadata = md
+		cl.Metadata = md.Copy()
 	}
 	return client.NewContext(ctx, cl)
 }

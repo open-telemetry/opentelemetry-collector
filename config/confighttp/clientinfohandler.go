@@ -46,7 +46,7 @@ func contextWithClient(req *http.Request) context.Context {
 		cl.Addr = ip
 	}
 
-	cl.Metadata = req.Header
+	cl.Metadata = req.Header.Clone()
 
 	ctx := client.NewContext(req.Context(), cl)
 	return ctx
