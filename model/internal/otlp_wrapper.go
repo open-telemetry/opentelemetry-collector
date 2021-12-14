@@ -129,12 +129,12 @@ func LogsFromOtlp(req *otlplogs.LogsData) LogsWrapper {
 	return LogsWrapper{req: req}
 }
 
-func labelsToAttributes(labels []otlpcommon.StringKeyValue) []otlpcommon.KeyValue { //nolint:staticcheck // SA1019 ignore this!
-	attrs := make([]otlpcommon.KeyValue, len(labels))
+func labelsToAttributes(labels []*otlpcommon.StringKeyValue) []*otlpcommon.KeyValue { //nolint:staticcheck // SA1019 ignore this!
+	attrs := make([]*otlpcommon.KeyValue, len(labels))
 	for i, v := range labels {
-		attrs[i] = otlpcommon.KeyValue{
+		attrs[i] = &otlpcommon.KeyValue{
 			Key: v.Key,
-			Value: otlpcommon.AnyValue{
+			Value: &otlpcommon.AnyValue{
 				Value: &otlpcommon.AnyValue_StringValue{
 					StringValue: v.Value,
 				},
@@ -144,7 +144,7 @@ func labelsToAttributes(labels []otlpcommon.StringKeyValue) []otlpcommon.KeyValu
 	return attrs
 }
 
-func addFilteredAttributesToExemplars(exemplars []otlpmetrics.Exemplar) {
+func addFilteredAttributesToExemplars(exemplars []*otlpmetrics.Exemplar) {
 	for i := range exemplars {
 		if exemplars[i].FilteredLabels != nil && exemplars[i].FilteredAttributes != nil {
 			continue
@@ -218,10 +218,10 @@ func intSumToSum(src *otlpmetrics.Metric_IntSum) *otlpmetrics.Metric_Sum {
 	}
 }
 
-func intExemplarToExemplar(src []otlpmetrics.IntExemplar) []otlpmetrics.Exemplar { //nolint:staticcheck // SA1019 ignore this!
-	exemplars := []otlpmetrics.Exemplar{}
+func intExemplarToExemplar(src []*otlpmetrics.IntExemplar) []*otlpmetrics.Exemplar { //nolint:staticcheck // SA1019 ignore this!
+	exemplars := []*otlpmetrics.Exemplar{}
 	for _, exemplar := range src {
-		exemplars = append(exemplars, otlpmetrics.Exemplar{
+		exemplars = append(exemplars, &otlpmetrics.Exemplar{
 			FilteredLabels:     exemplar.FilteredLabels,
 			FilteredAttributes: labelsToAttributes(exemplar.FilteredLabels),
 			TimeUnixNano:       exemplar.TimeUnixNano,
