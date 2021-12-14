@@ -39,7 +39,7 @@ func NewTracesResponse() TracesResponse {
 // UnmarshalTracesResponse unmarshalls TracesResponse from proto bytes.
 func UnmarshalTracesResponse(data []byte) (TracesResponse, error) {
 	var orig otlpcollectortrace.ExportTraceServiceResponse
-	if err := orig.Unmarshal(data); err != nil {
+	if err := orig.UnmarshalVT(data); err != nil {
 		return TracesResponse{}, err
 	}
 	return TracesResponse{orig: &orig}, nil
@@ -56,7 +56,7 @@ func UnmarshalJSONTracesResponse(data []byte) (TracesResponse, error) {
 
 // Marshal marshals TracesResponse into proto bytes.
 func (tr TracesResponse) Marshal() ([]byte, error) {
-	return tr.orig.Marshal()
+	return tr.orig.MarshalVT()
 }
 
 // MarshalJSON marshals TracesResponse into JSON bytes.
@@ -81,7 +81,7 @@ func NewTracesRequest() TracesRequest {
 // UnmarshalTracesRequest unmarshalls TracesRequest from proto bytes.
 func UnmarshalTracesRequest(data []byte) (TracesRequest, error) {
 	var orig otlpcollectortrace.ExportTraceServiceRequest
-	if err := orig.Unmarshal(data); err != nil {
+	if err := orig.UnmarshalVT(data); err != nil {
 		return TracesRequest{}, err
 	}
 	return TracesRequest{orig: &orig}, nil
@@ -98,7 +98,7 @@ func UnmarshalJSONTracesRequest(data []byte) (TracesRequest, error) {
 
 // Marshal marshals TracesRequest into proto bytes.
 func (tr TracesRequest) Marshal() ([]byte, error) {
-	return tr.orig.Marshal()
+	return tr.orig.MarshalVT()
 }
 
 // MarshalJSON marshals TracesRequest into JSON bytes.

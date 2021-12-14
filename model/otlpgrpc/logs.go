@@ -43,7 +43,7 @@ func NewLogsResponse() LogsResponse {
 // UnmarshalLogsResponse unmarshalls LogsResponse from proto bytes.
 func UnmarshalLogsResponse(data []byte) (LogsResponse, error) {
 	var orig otlpcollectorlog.ExportLogsServiceResponse
-	if err := orig.Unmarshal(data); err != nil {
+	if err := orig.UnmarshalVT(data); err != nil {
 		return LogsResponse{}, err
 	}
 	return LogsResponse{orig: &orig}, nil
@@ -60,7 +60,7 @@ func UnmarshalJSONLogsResponse(data []byte) (LogsResponse, error) {
 
 // Marshal marshals LogsResponse into proto bytes.
 func (lr LogsResponse) Marshal() ([]byte, error) {
-	return lr.orig.Marshal()
+	return lr.orig.MarshalVT()
 }
 
 // MarshalJSON marshals LogsResponse into JSON bytes.
@@ -85,7 +85,7 @@ func NewLogsRequest() LogsRequest {
 // UnmarshalLogsRequest unmarshalls LogsRequest from proto bytes.
 func UnmarshalLogsRequest(data []byte) (LogsRequest, error) {
 	var orig otlpcollectorlog.ExportLogsServiceRequest
-	if err := orig.Unmarshal(data); err != nil {
+	if err := orig.UnmarshalVT(data); err != nil {
 		return LogsRequest{}, err
 	}
 	return LogsRequest{orig: &orig}, nil
@@ -102,7 +102,7 @@ func UnmarshalJSONLogsRequest(data []byte) (LogsRequest, error) {
 
 // Marshal marshals LogsRequest into proto bytes.
 func (lr LogsRequest) Marshal() ([]byte, error) {
-	return lr.orig.Marshal()
+	return lr.orig.MarshalVT()
 }
 
 // MarshalJSON marshals LogsRequest into JSON bytes.

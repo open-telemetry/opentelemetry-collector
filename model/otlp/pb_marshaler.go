@@ -46,25 +46,25 @@ var _ pdata.MetricsSizer = (*pbMarshaler)(nil)
 var _ pdata.LogsSizer = (*pbMarshaler)(nil)
 
 func (e *pbMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
-	return internal.LogsToOtlp(ld.InternalRep()).Marshal()
+	return internal.LogsToOtlp(ld.InternalRep()).MarshalVT()
 }
 
 func (e *pbMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
-	return internal.MetricsToOtlp(md.InternalRep()).Marshal()
+	return internal.MetricsToOtlp(md.InternalRep()).MarshalVT()
 }
 
 func (e *pbMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
-	return internal.TracesToOtlp(td.InternalRep()).Marshal()
+	return internal.TracesToOtlp(td.InternalRep()).MarshalVT()
 }
 
 func (e *pbMarshaler) TracesSize(td pdata.Traces) int {
-	return internal.TracesToOtlp(td.InternalRep()).Size()
+	return internal.TracesToOtlp(td.InternalRep()).SizeVT()
 }
 
 func (e *pbMarshaler) MetricsSize(md pdata.Metrics) int {
-	return internal.MetricsToOtlp(md.InternalRep()).Size()
+	return internal.MetricsToOtlp(md.InternalRep()).SizeVT()
 }
 
 func (e *pbMarshaler) LogsSize(ld pdata.Logs) int {
-	return internal.LogsToOtlp(ld.InternalRep()).Size()
+	return internal.LogsToOtlp(ld.InternalRep()).SizeVT()
 }

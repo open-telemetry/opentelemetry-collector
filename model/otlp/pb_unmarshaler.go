@@ -45,18 +45,18 @@ func newPbUnmarshaler() *pbUnmarshaler {
 
 func (d *pbUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
 	ld := &otlplogs.LogsData{}
-	err := ld.Unmarshal(buf)
+	err := ld.UnmarshalVT(buf)
 	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(ld)), err
 }
 
 func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
 	md := &otlpmetrics.MetricsData{}
-	err := md.Unmarshal(buf)
+	err := md.UnmarshalVT(buf)
 	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(md)), err
 }
 
 func (d *pbUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
 	td := &otlptrace.TracesData{}
-	err := td.Unmarshal(buf)
+	err := td.UnmarshalVT(buf)
 	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(td)), err
 }

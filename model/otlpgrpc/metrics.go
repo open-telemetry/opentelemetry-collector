@@ -39,7 +39,7 @@ func NewMetricsResponse() MetricsResponse {
 // UnmarshalMetricsResponse unmarshalls MetricsResponse from proto bytes.
 func UnmarshalMetricsResponse(data []byte) (MetricsResponse, error) {
 	var orig otlpcollectormetrics.ExportMetricsServiceResponse
-	if err := orig.Unmarshal(data); err != nil {
+	if err := orig.UnmarshalVT(data); err != nil {
 		return MetricsResponse{}, err
 	}
 	return MetricsResponse{orig: &orig}, nil
@@ -56,7 +56,7 @@ func UnmarshalJSONMetricsResponse(data []byte) (MetricsResponse, error) {
 
 // Marshal marshals MetricsResponse into proto bytes.
 func (mr MetricsResponse) Marshal() ([]byte, error) {
-	return mr.orig.Marshal()
+	return mr.orig.MarshalVT()
 }
 
 // MarshalJSON marshals MetricsResponse into JSON bytes.
@@ -81,7 +81,7 @@ func NewMetricsRequest() MetricsRequest {
 // UnmarshalMetricsRequest unmarshalls MetricsRequest from proto bytes.
 func UnmarshalMetricsRequest(data []byte) (MetricsRequest, error) {
 	var orig otlpcollectormetrics.ExportMetricsServiceRequest
-	if err := orig.Unmarshal(data); err != nil {
+	if err := orig.UnmarshalVT(data); err != nil {
 		return MetricsRequest{}, err
 	}
 	return MetricsRequest{orig: &orig}, nil
@@ -98,7 +98,7 @@ func UnmarshalJSONMetricsRequest(data []byte) (MetricsRequest, error) {
 
 // Marshal marshals MetricsRequest into proto bytes.
 func (mr MetricsRequest) Marshal() ([]byte, error) {
-	return mr.orig.Marshal()
+	return mr.orig.MarshalVT()
 }
 
 // MarshalJSON marshals LogsRequest into JSON bytes.
