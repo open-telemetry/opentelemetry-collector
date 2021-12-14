@@ -28,6 +28,12 @@ func InvalidSpanID() SpanID {
 	return SpanID{orig: data.NewSpanID([8]byte{})}
 }
 
+func NewSpanIDFromBytes(bytes []byte) SpanID {
+	var b [8]byte
+	copy(b[:], bytes[:8])
+	return SpanID{orig: data.NewSpanID(b)}
+}
+
 // NewSpanID returns a new SpanID from the given byte array.
 func NewSpanID(bytes [8]byte) SpanID {
 	return SpanID{orig: data.NewSpanID(bytes)}

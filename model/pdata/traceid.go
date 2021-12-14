@@ -33,6 +33,12 @@ func NewTraceID(bytes [16]byte) TraceID {
 	return TraceID{orig: data.NewTraceID(bytes)}
 }
 
+func NewTraceIDFromBytes(bytes []byte) TraceID {
+	var b [16]byte
+	copy(b[:], bytes[:16])
+	return TraceID{orig: data.NewTraceID(b)}
+}
+
 // Bytes returns the byte array representation of the TraceID.
 func (t TraceID) Bytes() [16]byte {
 	return t.orig.Bytes()
