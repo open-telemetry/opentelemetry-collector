@@ -743,12 +743,12 @@ func TestContextWithClient(t *testing.T) {
 		expected client.Info
 	}{
 		{
-			desc:     "request without client IP",
+			desc:     "request without client IP or headers",
 			input:    &http.Request{},
 			expected: client.Info{},
 		},
 		{
-			desc: "request without client IP",
+			desc: "request with client IP",
 			input: &http.Request{
 				RemoteAddr: "1.2.3.4:55443",
 			},
@@ -756,6 +756,15 @@ func TestContextWithClient(t *testing.T) {
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
+			},
+		},
+		{
+			desc: "request with client headers",
+			input: &http.Request{
+				Header: map[string][]string{"x-test-header": {"test-value"}},
+			},
+			expected: client.Info{
+				Metadata: map[string][]string{"x-test-header": {"test-value"}},
 			},
 		},
 	}

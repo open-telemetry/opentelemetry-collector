@@ -624,6 +624,25 @@ func TestContextWithClient(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "existing client with metadata",
+			input: client.NewContext(context.Background(), client.Info{
+				Metadata: map[string][]string{"test-metadata-key": {"test-value"}},
+			}),
+			expected: client.Info{
+				Metadata: map[string][]string{"test-metadata-key": {"test-value"}},
+			},
+		},
+		{
+			desc: "existing client with metadata in context",
+			input: metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value"),
+			),
+			expected: client.Info{
+				Metadata: map[string][]string{"test-metadata-key": {"test-value"}},
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
