@@ -17,7 +17,6 @@ package trace // import "go.opentelemetry.io/collector/receiver/otlpreceiver/int
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -55,10 +54,6 @@ func (r *Receiver) Export(ctx context.Context, req otlpgrpc.TracesRequest) (otlp
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
 		return otlpgrpc.NewTracesResponse(), nil
-	}
-
-	if c, ok := client.FromGRPC(ctx); ok {
-		ctx = client.NewContext(ctx, c)
 	}
 
 	ctx = r.obsrecv.StartTracesOp(ctx)

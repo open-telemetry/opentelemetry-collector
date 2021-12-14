@@ -170,6 +170,20 @@ for coding advice). The code must adhere to the following robustness principles 
 are important for software that runs autonomously and continuously without direct
 interaction with a human (such as this Collector).
 
+### Recommended Libraries / Defaults
+
+In order to simplify developing within the project, library recommendations have been set
+and should be followed.
+
+| Scenario | Recommended                                   | Rationale        |
+| ----------------------------------------------------------------------------|
+| Hashing  | ["hashing/fnv"](https://pkg.go.dev/hash/fnv)  | The project adopted this as the default hashing method due to the efficiency and is reasonable for non cryptographic use |
+| Testing  | Use `t.Parallel()` where possible             | Enabling more test to be run in parallel will speed up the feedback process when working on the project.                 |
+
+
+Within the project, there are some packages that are yet to follow the recommendations and are being address, however, any new code should adhere to the recommendations.
+
+
 ### Startup Error Handling
 
 Verify configuration during startup and fail fast if the configuration is invalid.
@@ -288,6 +302,48 @@ Cover important functionality with unit tests. We require that contributions
 do not decrease overall code coverage of the codebase - this is aligned with our
 goal to increase coverage over time. Keep track of execution time for your unit
 tests and try to keep them as short as possible.
+
+#### Testing Library Recommendations 
+
+To keep testing practices consistent across the project, it is advised to use these libraries under
+these circumstances:
+
+- For assertions to validate expectations, use `"github.com/stretchr/testify/assert"`
+- For assertions that are required to continue the test, use `"github.com/stretchr/testify/require"`
+- For mocking external resources, use `"github.com/stretchr/testify/mock"`
+- For validating HTTP traffic interactions, `"net/http/httptest"`
+
+### Integration Testing
+
+Integration testing is encouraged throughout the project, container images can be used in order to facilitate
+a local version. In their absence, it is strongly advised to mock the integration.
+
+### Using CGO
+
+Using CGO is prohibited due to the lack of portability and complexity 
+that comes with managing external libaries with different operating systems and configurations.
+However, if the package MUST use CGO, this should be explicitly called out within the readme
+with clear instructions on how to install the required libraries.
+Furthermore, if your package requires CGO, it MUST be able to compile and operate in a no op mode
+or report a warning back to the collector with a clear error saying CGO is required to work.
+
+
+## Updating Changelog
+
+An entry into the [Changelog](./CHANGELOG.md) is required for the following reasons:
+
+- Changes made to the behaviour of the component
+- Changes to the configuration
+- Changes to default settings
+- New components being added
+
+It is reasonable to omit an entry to the changelog under these circuimstances:
+
+- Updating test to remove flakiness or improve coverage
+- Updates to the CI/CD process
+
+If there is some uncertainty with regards to if a changelog entry is needed, the recomendation is to create
+an entry to in the event that the change is important to the project consumers.
 
 ## Release
 

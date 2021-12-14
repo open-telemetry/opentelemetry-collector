@@ -15,6 +15,7 @@
 package configgrpc // import "go.opentelemetry.io/collector/config/configgrpc"
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -30,11 +31,14 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/peer"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 // Compression gRPC keys for supported compression types within collector.
@@ -352,6 +356,9 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	))
 
+	uInterceptors = append(uInterceptors, enhanceWithClientInformation)
+	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation)
+
 	opts = append(opts, grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
 	return opts, nil
@@ -365,4 +372,26 @@ func GetGRPCCompressionKey(compressionType string) string {
 		return encodingKey
 	}
 	return CompressionUnsupported
+}
+
+// enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes
+// a client.Info, potentially with the peer's address.
+func enhanceWithClientInformation(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return handler(contextWithClient(ctx), req)
+}
+
+func enhanceStreamWithClientInformation(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	wrapped := middleware.WrapServerStream(ss)
+	wrapped.WrappedContext = contextWithClient(ss.Context())
+	return handler(srv, wrapped)
+}
+
+// contextWithClient attempts to add the peer address to the client.Info from the context. When no
+// client.Info exists in the context, one is created.
+func contextWithClient(ctx context.Context) context.Context {
+	cl := client.FromContext(ctx)
+	if p, ok := peer.FromContext(ctx); ok {
+		cl.Addr = p.Addr
+	}
+	return client.NewContext(ctx, cl)
 }

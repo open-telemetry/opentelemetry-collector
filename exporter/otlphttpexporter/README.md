@@ -30,13 +30,9 @@ The following settings can be optionally configured:
   - `ca_file` path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false.
   - `cert_file` path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to false.
   - `key_file` path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
-
-- `compression` (default = none): Compression type to use (only gzip is supported today)
-
 - `timeout` (default = 30s): HTTP request time limit. For details see https://golang.org/pkg/net/http/#Client
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
-
 
 Example:
 

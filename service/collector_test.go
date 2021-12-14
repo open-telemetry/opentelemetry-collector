@@ -24,6 +24,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -36,8 +37,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
@@ -48,7 +49,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	collectorTelemetry = &colTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.DefaultFactories()
 	require.NoError(t, err)
 
 	set := CollectorSettings{
@@ -81,12 +82,14 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 }
 
 func TestCollector_Start(t *testing.T) {
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.DefaultFactories()
 	require.NoError(t, err)
-
+	var once sync.Once
 	loggingHookCalled := false
 	hook := func(entry zapcore.Entry) error {
-		loggingHookCalled = true
+		once.Do(func() {
+			loggingHookCalled = true
+		})
 		return nil
 	}
 
@@ -153,7 +156,7 @@ func TestCollector_ReportError(t *testing.T) {
 	collectorTelemetry = &mockColTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := defaultcomponents.Components()
+	factories, err := testcomponents.DefaultFactories()
 	require.NoError(t, err)
 
 	col, err := New(CollectorSettings{

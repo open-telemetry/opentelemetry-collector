@@ -4,14 +4,37 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove configmapprovider.NewInMemory() (#4507)
+
+## 💡 Enhancements 💡
+
+- `confighttp`: add client-side compression support. (#4441)
+  - Each exporter should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
+-  Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
+- `configauth`: add ServerAuthenticator interfaces for HTTP receivers. (#4506)
+
+## v0.41.0 Beta
+
+## 🛑 Breaking changes 🛑
+
+- Remove reference to `defaultcomponents` in core and deprecate `include_core` flag (#4087)
 - Remove `config.NewConfigMapFrom[File|Buffer]`, add testonly version (#4502)
 - `configtls`: TLS 1.2 is the new default mininum version (#4503)
-- Remove configmapprovider.NewInMemory() (#4507)
+- `confighttp`: `ToServer` now accepts a `component.Host`, in line with gRPC's counterpart (#4514)
+- CORS configuration for OTLP/HTTP receivers has been moved into a `cors:` block, instead of individual `cors_allowed_origins` and `cors_allowed_headers` settings (#4492)
+
+## 💡 Enhancements 💡
+
+- OTLP/HTTP receivers now support setting the `Access-Control-Max-Age` header for CORS caching. (#4492)
+- `client.Info` pre-populated for all receivers using common helpers like `confighttp` and `configgrpc` (#4423)
 
 ## 🧰 Bug fixes 🧰
 
 - Fix handling of corrupted records by persistent buffer (experimental) (#4475)
 
+## 💡 Enhancements 💡
+
+- Extending the contribution guide to help clarify what is acceptable defaults and recommendations.
 ## v0.40.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -20,6 +43,7 @@
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 - Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
 - Make state information propagation non-blocking on the collector (#4460)
+- Added support to expose gRPC framework's logs as part of collector logs (#4501)
 
 ## 💡 Enhancements 💡
 
