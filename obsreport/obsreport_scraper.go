@@ -87,7 +87,7 @@ func (s *Scraper) EndMetricsOp(
 
 	span := trace.SpanFromContext(scraperCtx)
 
-	if obsreportconfig.Level != configtelemetry.LevelNone {
+	if obsreportconfig.Level() != configtelemetry.LevelNone {
 		stats.Record(
 			scraperCtx,
 			obsmetrics.ScraperScrapedMetricPoints.M(int64(numScrapedMetrics)),
