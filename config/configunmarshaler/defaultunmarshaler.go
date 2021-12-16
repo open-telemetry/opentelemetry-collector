@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 // These are errors that can be returned by Unmarshal(). Note that error codes are not part
@@ -177,6 +178,7 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 				DisableStacktrace: false,
 				InitialFields:     map[string]interface{}(nil),
 			},
+			Metrics: defaultServiceTelemetryMetricsSettings(),
 		},
 	}
 
@@ -190,6 +192,21 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 		}
 	}
 	return srv, nil
+}
+
+func defaultServiceTelemetryMetricsSettings() config.ServiceTelemetryMetrics {
+	// These deprecated functions are still needed here so that the values provided through the CLI flags
+	// can be used as a baseline if no values are provided in configuration.  This will eventually return
+	// a static default configuration when the CLI flags are removed.
+	addr := configtelemetry.GetMetricsAddr() //nolint:staticcheck
+	if addr == "" {
+		addr = configtelemetry.GetMetricsAddrDefault() //nolint:staticcheck
+	}
+
+	return config.ServiceTelemetryMetrics{
+		Level:   configtelemetry.GetMetricsLevelFlagValue(), //nolint:staticcheck
+		Address: addr,
+	}
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.

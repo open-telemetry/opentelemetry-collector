@@ -21,6 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 var errInvalidRecvConfig = errors.New("invalid receiver config")
@@ -255,15 +257,22 @@ func generateConfig() *Config {
 			},
 		},
 		Service: Service{
-			Telemetry: ServiceTelemetry{Logs: ServiceTelemetryLogs{
-				Level:             zapcore.DebugLevel,
-				Development:       true,
-				Encoding:          "console",
-				DisableCaller:     true,
-				DisableStacktrace: true,
-				OutputPaths:       []string{"stderr", "./output-logs"},
-				ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
-				InitialFields:     map[string]interface{}{"fieldKey": "filed-value"}}},
+			Telemetry: ServiceTelemetry{
+				Logs: ServiceTelemetryLogs{
+					Level:             zapcore.DebugLevel,
+					Development:       true,
+					Encoding:          "console",
+					DisableCaller:     true,
+					DisableStacktrace: true,
+					OutputPaths:       []string{"stderr", "./output-logs"},
+					ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
+					InitialFields:     map[string]interface{}{"fieldKey": "filed-value"},
+				},
+				Metrics: ServiceTelemetryMetrics{
+					Level:   configtelemetry.LevelNormal,
+					Address: ":8080",
+				},
+			},
 			Extensions: []ComponentID{NewComponentID("nop")},
 			Pipelines: map[ComponentID]*Pipeline{
 				NewComponentID("traces"): {

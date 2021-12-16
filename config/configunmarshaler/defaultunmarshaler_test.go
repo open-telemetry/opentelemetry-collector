@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
@@ -100,16 +101,22 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify Service Telemetry
 	assert.Equal(t,
-		config.ServiceTelemetry{Logs: config.ServiceTelemetryLogs{
-			Level:             zapcore.DebugLevel,
-			Development:       true,
-			Encoding:          "console",
-			DisableCaller:     true,
-			DisableStacktrace: true,
-			OutputPaths:       []string{"stderr", "./output-logs"},
-			ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
-			InitialFields:     map[string]interface{}{"field_key": "filed_value"},
-		}}, cfg.Service.Telemetry)
+		config.ServiceTelemetry{
+			Logs: config.ServiceTelemetryLogs{
+				Level:             zapcore.DebugLevel,
+				Development:       true,
+				Encoding:          "console",
+				DisableCaller:     true,
+				DisableStacktrace: true,
+				OutputPaths:       []string{"stderr", "./output-logs"},
+				ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
+				InitialFields:     map[string]interface{}{"field_key": "filed_value"},
+			},
+			Metrics: config.ServiceTelemetryMetrics{
+				Level:   configtelemetry.LevelNormal,
+				Address: ":8081",
+			},
+		}, cfg.Service.Telemetry)
 
 	// Verify Service Extensions
 	assert.Equal(t, 2, len(cfg.Service.Extensions))
@@ -177,6 +184,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "invalid-pipeline-sub-config", expected: errUnmarshalService},
 
 		{name: "invalid-logs-level", expected: errUnmarshalService},
+		{name: "invalid-metrics-level", expected: errUnmarshalService},
 	}
 
 	factories, err := testcomponents.ExampleComponents()

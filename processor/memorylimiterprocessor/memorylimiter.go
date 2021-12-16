@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -115,7 +114,7 @@ func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memo
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:                   configtelemetry.GetMetricsLevelFlagValue(),
+			Level:                   set.MetricsLevel,
 			ProcessorID:             cfg.ID(),
 			ProcessorCreateSettings: set,
 		}),

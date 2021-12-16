@@ -6,8 +6,13 @@
 
 - `confighttp`: add client-side compression support. (#4441)
   - Each exporter should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
--  Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
+- Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
 - `configauth`: add ServerAuthenticator interfaces for HTTP receivers. (#4506)
+- Collector self-metrics may now be configured through the configuration file. (#4069)
+  - CLI flags for configuring self-metrics are deprecated and will be removed
+    in a future release.
+  - `service.telemetry.metrics.level` and `service.telemetry.metrics.address`
+    should be used to configure collector self-metrics.
 
 ## v0.41.0 Beta
 
@@ -69,6 +74,13 @@
 - Move `config.WatchableRetrieved` and `config.Retrieved` interfaces to `config/configmapprovider` package (#4337)
 - Remove `config.Pipeline.InputDataType` (#4343)
 - otlpexporter: Do not retry on PermissionDenied and Unauthenticated (#4349)
+- Enable configuring collector metrics through service config file. (#4069)
+  - New `service::telemetry::metrics` structure added to configuration
+  - Existing metrics configuration CLI flags are deprecated and to be
+    removed in the future.
+  - `--metrics-prefix` is no longer operative; the prefix is determined by
+    the value of `service.buildInfo.Command`.
+  - `--add-instance-id` is no longer operative; an instance ID will always be added.
 - Remove deprecated funcs `consumererror.As[Traces|Metrics|Logs]` (#4364)
 - Remove support to expand env variables in default configs (#4366)
 

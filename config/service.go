@@ -18,6 +18,8 @@ import (
 	"fmt"
 
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 // Service defines the configurable components of the service.
@@ -34,11 +36,16 @@ type Service struct {
 
 // ServiceTelemetry defines the configurable settings for service telemetry.
 type ServiceTelemetry struct {
-	Logs ServiceTelemetryLogs `mapstructure:"logs"`
+	Logs    ServiceTelemetryLogs    `mapstructure:"logs"`
+	Metrics ServiceTelemetryMetrics `mapstructure:"metrics"`
 }
 
 func (srvT *ServiceTelemetry) validate() error {
-	return srvT.Logs.validate()
+	if err := srvT.Logs.validate(); err != nil {
+		return err
+	}
+
+	return srvT.Metrics.validate()
 }
 
 // ServiceTelemetryLogs defines the configurable settings for service telemetry logs.
@@ -104,6 +111,24 @@ func (srvTL *ServiceTelemetryLogs) validate() error {
 	if srvTL.Encoding != "json" && srvTL.Encoding != "console" {
 		return fmt.Errorf(`service telemetry logs invalid encoding: %q, valid values are "json" and "console"`, srvTL.Encoding)
 	}
+	return nil
+}
+
+// ServiceTelemetryMetrics exposes the common Telemetry configuration for one component.
+// Experimental: *NOTE* this structure is subject to change or removal in the future.
+type ServiceTelemetryMetrics struct {
+	// Level is the level of telemetry metrics, the possible values are:
+	//  - "none" indicates that no telemetry data should be collected;
+	//  - "basic" is the recommended and covers the basics of the service telemetry.
+	//  - "normal" adds some other indicators on top of basic.
+	//  - "detailed" adds dimensions and views to the previous levels.
+	Level configtelemetry.Level `mapstructure:"level"`
+
+	// Address is the [address]:port that metrics exposition should be bound to.
+	Address string `mapstructure:"address"`
+}
+
+func (s ServiceTelemetryMetrics) validate() error {
 	return nil
 }
 

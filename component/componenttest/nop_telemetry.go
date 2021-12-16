@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 // NewNopTelemetrySettings returns a new nop telemetry settings for Create* functions.
@@ -28,5 +29,6 @@ func NewNopTelemetrySettings() component.TelemetrySettings {
 		Logger:         zap.NewNop(),
 		TracerProvider: trace.NewNoopTracerProvider(),
 		MeterProvider:  metric.NewNoopMeterProvider(),
+		MetricsLevel:   configtelemetry.LevelNone,
 	}
 }

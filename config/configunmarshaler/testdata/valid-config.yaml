@@ -29,8 +29,11 @@ service:
       disable_stacktrace: true
       output_paths: ["stderr", "./output-logs"]
       error_output_paths: ["stderr", "./error-output-logs"]
-      initial_fields: 
+      initial_fields:
         field_key: "filed_value"
+    metrics:
+      level: "normal"
+      address: ":8081"
   extensions: [exampleextension/0, exampleextension/1]
   pipelines:
     traces:

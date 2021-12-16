@@ -168,6 +168,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 					zap.String(components.ZapNameKey, procID.String())),
 				TracerProvider: pb.settings.TracerProvider,
 				MeterProvider:  pb.settings.MeterProvider,
+				MetricsLevel:   pb.config.Telemetry.Metrics.Level,
 			},
 			BuildInfo: pb.buildInfo,
 		}

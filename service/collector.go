@@ -199,6 +199,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 			Logger:         col.logger,
 			TracerProvider: col.tracerProvider,
 			MeterProvider:  col.meterProvider,
+			MetricsLevel:   col.cfgW.cfg.Telemetry.Metrics.Level,
 		},
 		ZPagesSpanProcessor: col.zPagesSpanProcessor,
 		AsyncErrorChannel:   col.asyncErrorChannel,
@@ -234,7 +235,7 @@ func (col *Collector) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := collectorTelemetry.init(col.asyncErrorChannel, getBallastSize(col.service), col.logger); err != nil {
+	if err := collectorTelemetry.init(col); err != nil {
 		return err
 	}
 

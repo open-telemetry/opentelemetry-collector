@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -180,7 +179,7 @@ func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, 
 	}
 
 	be.obsrep = newObsExporter(obsreport.ExporterSettings{
-		Level:                  configtelemetry.GetMetricsLevelFlagValue(),
+		Level:                  set.MetricsLevel,
 		ExporterID:             cfg.ID(),
 		ExporterCreateSettings: set,
 	}, globalInstruments)

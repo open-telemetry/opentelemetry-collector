@@ -36,11 +36,15 @@ const (
 	levelDetailedStr = "detailed"
 
 	metricsLevelCfg = "metrics-level"
+	metricsAddrCfg  = "metrics-addr"
 )
 
 const UseOpenTelemetryForInternalMetrics = false
 
-var metricsLevelPtr = new(Level)
+var (
+	metricsLevelPtr = new(Level)
+	metricsAddrPtr  = new(string)
+)
 
 // Flags is a helper function to add telemetry config flags to the service that exposes
 // the application flags.
@@ -48,7 +52,14 @@ func Flags(flags *flag.FlagSet) {
 	flags.Var(
 		metricsLevelPtr,
 		metricsLevelCfg,
-		"Output level of telemetry metrics (none, basic, normal, detailed)")
+		"Deprecated. Define the metrics configuration as part of the configuration file, under the 'service' section.")
+
+	// At least until we can use a generic, i.e.: OpenCensus, metrics exporter
+	// we default to Prometheus at port 8888, if not otherwise specified.
+	metricsAddrPtr = flags.String(
+		metricsAddrCfg,
+		GetMetricsAddrDefault(),
+		"Deprecated. Define the metrics configuration as part of the configuration file, under the 'service' section.")
 }
 
 // Level is the level of internal telemetry (metrics, logs, traces about the component itself)
@@ -57,8 +68,8 @@ type Level int32
 
 var _ flag.Value = (*Level)(nil)
 
-func (l *Level) String() string {
-	switch *l {
+func (l Level) String() string {
+	switch l {
 	case LevelNone:
 		return levelNoneStr
 	case LevelBasic:
@@ -81,37 +92,17 @@ func (l *Level) Set(s string) error {
 	return nil
 }
 
-// GetMetricsLevelFlagValue returns the value of the "--metrics-level" flag.
-// IMPORTANT: This must be used only in the core collector code for the moment.
-func GetMetricsLevelFlagValue() Level {
-	return *metricsLevelPtr
-}
-
-// TelemetrySetting exposes the common Telemetry configuration for one component.
-type TelemetrySetting struct {
-	// MetricsLevelStr is the level of telemetry metrics, the possible values are:
-	//  - "none" indicates that no telemetry data should be collected;
-	//  - "basic" is the recommended and covers the basics of the service telemetry.
-	//  - "normal" adds some other indicators on top of basic.
-	//  - "detailed" adds dimensions and views to the previous levels.
-	MetricsLevelStr string `mapstructure:"metrics_level"`
-}
-
-// DefaultTelemetrySetting returns the default TelemetrySetting.
-// The level is set to the "--metrics-level" flag if set, otherwise the default "basic" level.
-func DefaultTelemetrySetting() TelemetrySetting {
-	return TelemetrySetting{
-		MetricsLevelStr: metricsLevelPtr.String(),
+// UnmarshalText unmarshals text to a Level.
+func (l *Level) UnmarshalText(text []byte) error {
+	if l == nil {
+		return fmt.Errorf("cannot unmarshal to a nil *Level")
 	}
+	var err error
+	*l, err = parseLevel(string(text))
+	return err
 }
 
-// GetMetricsLevel returns the parsed level, or error if unknown value.
-// Empty string is consider unknown value.
-func (ts TelemetrySetting) GetMetricsLevel() (Level, error) {
-	return parseLevel(ts.MetricsLevelStr)
-}
-
-// ParseLevel returns the Level represented by the string. The parsing is case-insensitive
+// parseLevel returns the Level represented by the string. The parsing is case-insensitive
 // and it returns error if the string value is unknown.
 func parseLevel(str string) (Level, error) {
 	str = strings.ToLower(str)
@@ -127,4 +118,23 @@ func parseLevel(str string) (Level, error) {
 		return LevelDetailed, nil
 	}
 	return LevelNone, fmt.Errorf("unknown metrics level %q", str)
+}
+
+// GetMetricsAddrDefault returns the default metrics bind address and port depending on
+// the current build type.
+// Deprecated: This function will be removed in the future.
+func GetMetricsAddrDefault() string {
+	return ":8888"
+}
+
+// Deprecated: This function will be removed in the future.
+func GetMetricsAddr() string {
+	return *metricsAddrPtr
+}
+
+// GetMetricsLevelFlagValue returns the value of the "--metrics-level" flag.
+// IMPORTANT: This must be used only in the core collector code for the moment.
+// Deprecated: This function will be removed in the future.
+func GetMetricsLevelFlagValue() Level {
+	return *metricsLevelPtr
 }

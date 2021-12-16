@@ -135,6 +135,7 @@ func Build(
 					zap.String(components.ZapNameKey, extID.String())),
 				TracerProvider: settings.TracerProvider,
 				MeterProvider:  settings.MeterProvider,
+				MetricsLevel:   config.Telemetry.Metrics.Level,
 			},
 			BuildInfo: buildInfo,
 		}

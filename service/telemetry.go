@@ -53,7 +53,7 @@ const (
 )
 
 type collectorTelemetryExporter interface {
-	init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error
+	init(col *Collector) error
 	shutdown() error
 }
 
@@ -63,11 +63,11 @@ type colTelemetry struct {
 	doInitOnce sync.Once
 }
 
-func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
+func (tel *colTelemetry) init(col *Collector) error {
 	var err error
 	tel.doInitOnce.Do(
 		func() {
-			err = tel.initOnce(asyncErrorChannel, ballastSizeBytes, logger)
+			err = tel.initOnce(col)
 		},
 	)
 	if err != nil {
@@ -76,9 +76,12 @@ func (tel *colTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	return nil
 }
 
-func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeBytes uint64, logger *zap.Logger) error {
-	level := configtelemetry.GetMetricsLevelFlagValue()
-	metricsAddr := getMetricsAddr()
+func (tel *colTelemetry) initOnce(col *Collector) error {
+	logger := col.logger
+	cfg := col.service.config.Telemetry
+
+	level := cfg.Metrics.Level
+	metricsAddr := cfg.Metrics.Address
 
 	if level == configtelemetry.LevelNone || metricsAddr == "" {
 		logger.Info(
@@ -91,12 +94,8 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 
 	logger.Info("Setting up own telemetry...")
 
-	var instanceID string
-
-	if getAddInstanceID() {
-		instanceUUID, _ := uuid.NewRandom()
-		instanceID = instanceUUID.String()
-	}
+	instanceUUID, _ := uuid.NewRandom()
+	instanceID := instanceUUID.String()
 
 	var pe http.Handler
 	if configtelemetry.UseOpenTelemetryForInternalMetrics {
@@ -106,7 +105,7 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 		}
 		pe = otelHandler
 	} else {
-		ocHandler, err := tel.initOpenCensus(level, instanceID, ballastSizeBytes)
+		ocHandler, err := tel.initOpenCensus(col, instanceID)
 		if err != nil {
 			return err
 		}
@@ -132,21 +131,21 @@ func (tel *colTelemetry) initOnce(asyncErrorChannel chan<- error, ballastSizeByt
 	go func() {
 		serveErr := tel.server.ListenAndServe()
 		if serveErr != nil && serveErr != http.ErrServerClosed {
-			asyncErrorChannel <- serveErr
+			col.asyncErrorChannel <- serveErr
 		}
 	}()
 
 	return nil
 }
 
-func (tel *colTelemetry) initOpenCensus(level configtelemetry.Level, instanceID string, ballastSizeBytes uint64) (http.Handler, error) {
-	processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
+func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http.Handler, error) {
+	processMetricsViews, err := telemetry2.NewProcessMetricsViews(getBallastSize(col.service))
 	if err != nil {
 		return nil, err
 	}
 
 	var views []*view.View
-	obsMetrics := obsreportconfig.Configure(level)
+	obsMetrics := obsreportconfig.Configure(col.service.config.Telemetry.Metrics.Level)
 	views = append(views, batchprocessor.MetricViews()...)
 	views = append(views, obsMetrics.Views...)
 	views = append(views, processMetricsViews.Views()...)
@@ -160,14 +159,12 @@ func (tel *colTelemetry) initOpenCensus(level configtelemetry.Level, instanceID 
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := prometheus.Options{
-		Namespace: getMetricsPrefix(),
+		Namespace: "otelcol",
 	}
 
 	opts.ConstLabels = make(map[string]string)
 
-	if getAddInstanceID() {
-		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
-	}
+	opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
 
 	if AddCollectorVersionTag {
 		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceVersion)] = version.Version

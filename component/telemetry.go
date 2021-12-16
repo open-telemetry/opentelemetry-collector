@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 type TelemetrySettings struct {
@@ -30,4 +32,8 @@ type TelemetrySettings struct {
 
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.
 	MeterProvider metric.MeterProvider
+
+	// MetricsLevel controls the level of detail for metrics emitted by the collector.
+	// Experimental: *NOTE* this field is experimental and may be changed or removed.
+	MetricsLevel configtelemetry.Level
 }
