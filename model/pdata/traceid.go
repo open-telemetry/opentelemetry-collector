@@ -34,6 +34,9 @@ func NewTraceID(bytes [16]byte) TraceID {
 }
 
 func NewTraceIDFromBytes(bytes []byte) TraceID {
+	if len(bytes) != 16 {
+		return TraceID{orig: data.NewTraceID([16]byte{0})}
+	}
 	var b [16]byte
 	copy(b[:], bytes[:16])
 	return TraceID{orig: data.NewTraceID(b)}
