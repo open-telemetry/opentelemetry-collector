@@ -146,11 +146,15 @@ LOOP:
 	for {
 		select {
 		case err := <-col.cfgW.watcher:
-			col.logger.Warn("Config updated", zap.Error(err))
+			if err != nil {
+				col.logger.Error("Config watch failed", zap.Error(err))
+				break LOOP
+			}
 
+			col.logger.Warn("Config updated, restart service")
 			col.setCollectorState(Closing)
 
-			if err = col.cfgW.close(ctx); err != nil {
+			if err = col.cfgW.shutdown(ctx); err != nil {
 				return fmt.Errorf("failed to close config watcher: %w", err)
 			}
 			if err = col.service.Shutdown(ctx); err != nil {
@@ -188,8 +192,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	telemetrylogs.NewColGRPCLogger(col.logger, col.cfgW.cfg.Service.Telemetry.Logs.Level).SetGRPCLogger()
-
-	col.logger.Info("Applying configuration...")
 
 	col.service, err = newService(&svcSettings{
 		BuildInfo: col.set.BuildInfo,
@@ -257,7 +259,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if err := col.cfgW.close(ctx); err != nil {
+	if err := col.cfgW.shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to close config provider watcher: %w", err))
 	}
 

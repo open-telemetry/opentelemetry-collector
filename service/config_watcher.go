@@ -62,7 +62,7 @@ func (cm *configWatcher) onChange(event *configmapprovider.ChangeEvent) {
 	}
 }
 
-func (cm *configWatcher) close(ctx context.Context) error {
+func (cm *configWatcher) shutdown(ctx context.Context) error {
 	close(cm.watcher)
 	return cm.ret.Close(ctx)
 }
