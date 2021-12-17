@@ -43,10 +43,6 @@ type service struct {
 }
 
 func newService(set *svcSettings) (*service, error) {
-	if err := set.Config.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid configuration: %w", err)
-	}
-
 	srv := &service{
 		factories:           set.Factories,
 		buildInfo:           set.BuildInfo,

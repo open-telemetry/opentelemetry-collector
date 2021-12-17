@@ -161,7 +161,7 @@ func TestConfigWatcher(t *testing.T) {
 			}
 			assert.NoError(t, errW)
 
-			errC := cfgW.close(context.Background())
+			errC := cfgW.shutdown(context.Background())
 			if tt.expectCloseErr {
 				assert.Error(t, errC)
 				return
@@ -193,7 +193,7 @@ func TestConfigWatcherNoWatcher(t *testing.T) {
 		watcherWG.Done()
 	}()
 
-	assert.NoError(t, cfgW.close(context.Background()))
+	assert.NoError(t, cfgW.shutdown(context.Background()))
 	watcherWG.Wait()
 }
 
@@ -226,6 +226,6 @@ func TestConfigWatcherWhenClosed(t *testing.T) {
 		watcherWG.Done()
 	}()
 
-	assert.NoError(t, cfgW.close(context.Background()))
+	assert.NoError(t, cfgW.shutdown(context.Background()))
 	watcherWG.Wait()
 }
