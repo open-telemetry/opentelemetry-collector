@@ -48,7 +48,9 @@ func (emp *envMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (Re
 		return nil, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 
-	return &simpleRetrieved{confMap: config.NewMapFromStringMap(data)}, nil
+	return NewRetrieved(func(ctx context.Context) (*config.Map, error) {
+		return config.NewMapFromStringMap(data), nil
+	})
 }
 
 func (*envMapProvider) Shutdown(context.Context) error {

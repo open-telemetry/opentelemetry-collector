@@ -57,6 +57,7 @@ func (ecu *errConfigUnmarshaler) Unmarshal(*config.Map, component.Factories) (*c
 }
 
 type errRetrieved struct {
+	configmapprovider.Retrieved
 	retM     *config.Map
 	errW     error
 	errC     error

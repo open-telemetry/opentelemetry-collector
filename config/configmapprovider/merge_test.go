@@ -24,23 +24,30 @@ import (
 )
 
 func TestMerge_GetError(t *testing.T) {
-	pl := NewMerge(&mockProvider{}, &mockProvider{retrieved: &mockRetrieved{getErr: errors.New("my error")}})
+	getErr := errors.New("test error")
+	pl := NewMerge(&mockProvider{}, &mockProvider{retrieved: newErrGetRetrieved(getErr)})
 	require.NotNil(t, pl)
-	cp, err := pl.Retrieve(context.Background(), nil)
+	_, err := pl.Retrieve(context.Background(), nil)
 	assert.Error(t, err)
-	assert.Nil(t, cp)
+	assert.ErrorIs(t, err, getErr)
 }
 
 func TestMerge_CloseError(t *testing.T) {
-	pl := NewMerge(&mockProvider{}, &mockProvider{retrieved: &mockRetrieved{closeErr: errors.New("my error")}})
+	closeErr := errors.New("test error")
+	pl := NewMerge(&mockProvider{}, &mockProvider{retrieved: newErrCloseRetrieved(closeErr)})
 	require.NotNil(t, pl)
 	cp, err := pl.Retrieve(context.Background(), nil)
 	assert.NoError(t, err)
-	assert.Error(t, cp.Close(context.Background()))
+	err = cp.Close(context.Background())
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, closeErr)
 }
 
 func TestMerge_ShutdownError(t *testing.T) {
-	pl := NewMerge(&mockProvider{}, &mockProvider{shutdownErr: errors.New("my error")})
+	shutdownErr := errors.New("test error")
+	pl := NewMerge(&mockProvider{}, &mockProvider{shutdownErr: shutdownErr})
 	require.NotNil(t, pl)
-	assert.Error(t, pl.Shutdown(context.Background()))
+	err := pl.Shutdown(context.Background())
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, shutdownErr)
 }
