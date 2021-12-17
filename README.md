@@ -9,7 +9,7 @@
     <a href="https://gitter.im/open-telemetry/opentelemetry-service">Getting In Touch</a>
   </strong>
 </p>
-
+ 
 <p align="center">
   <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector?style=for-the-badge"></a>
