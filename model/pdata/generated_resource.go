@@ -34,6 +34,9 @@ type Resource struct {
 }
 
 func newResource(orig *otlpresource.Resource) Resource {
+	if orig == nil {
+		return Resource{orig: &otlpresource.Resource{}}
+	}
 	return Resource{orig: orig}
 }
 

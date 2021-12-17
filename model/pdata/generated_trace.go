@@ -37,6 +37,9 @@ type ResourceSpansSlice struct {
 }
 
 func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) ResourceSpansSlice {
+	if orig == nil {
+		return NewResourceSpansSlice()
+	}
 	return ResourceSpansSlice{orig}
 }
 
@@ -193,7 +196,7 @@ func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
 
 // Resource returns the resource associated with this ResourceSpans.
 func (ms ResourceSpans) Resource() Resource {
-	return newResource(&(*ms.orig).Resource)
+	return newResource((*ms.orig).Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceSpans.
@@ -388,7 +391,7 @@ func (ms InstrumentationLibrarySpans) MoveTo(dest InstrumentationLibrarySpans) {
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
 func (ms InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLibrary {
-	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
+	return newInstrumentationLibrary((*ms.orig).InstrumentationLibrary)
 }
 
 // SchemaUrl returns the schemaurl associated with this InstrumentationLibrarySpans.
@@ -584,22 +587,24 @@ func (ms Span) MoveTo(dest Span) {
 
 // TraceID returns the traceid associated with this Span.
 func (ms Span) TraceID() TraceID {
-	return TraceID{orig: ((*ms.orig).TraceId)}
+	return NewTraceIDFromBytes((*ms.orig).TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Span.
 func (ms Span) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = v.orig
+	val := v.orig.Bytes()
+	(*ms.orig).TraceId = val[:]
 }
 
 // SpanID returns the spanid associated with this Span.
 func (ms Span) SpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).SpanId)}
+	return NewSpanIDFromBytes((*ms.orig).SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Span.
 func (ms Span) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = v.orig
+	val := v.orig.Bytes()
+	(*ms.orig).SpanId = val[:]
 }
 
 // TraceState returns the tracestate associated with this Span.
@@ -614,12 +619,13 @@ func (ms Span) SetTraceState(v TraceState) {
 
 // ParentSpanID returns the parentspanid associated with this Span.
 func (ms Span) ParentSpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).ParentSpanId)}
+	return NewSpanIDFromBytes((*ms.orig).ParentSpanId)
 }
 
 // SetParentSpanID replaces the parentspanid associated with this Span.
 func (ms Span) SetParentSpanID(v SpanID) {
-	(*ms.orig).ParentSpanId = v.orig
+	val := v.orig.Bytes()
+	(*ms.orig).ParentSpanId = val[:]
 }
 
 // Name returns the name associated with this Span.
@@ -709,7 +715,7 @@ func (ms Span) SetDroppedLinksCount(v uint32) {
 
 // Status returns the status associated with this Span.
 func (ms Span) Status() SpanStatus {
-	return newSpanStatus(&(*ms.orig).Status)
+	return newSpanStatus((*ms.orig).Status)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1115,22 +1121,24 @@ func (ms SpanLink) MoveTo(dest SpanLink) {
 
 // TraceID returns the traceid associated with this SpanLink.
 func (ms SpanLink) TraceID() TraceID {
-	return TraceID{orig: ((*ms.orig).TraceId)}
+	return NewTraceIDFromBytes((*ms.orig).TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this SpanLink.
 func (ms SpanLink) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = v.orig
+	val := v.orig.Bytes()
+	(*ms.orig).TraceId = val[:]
 }
 
 // SpanID returns the spanid associated with this SpanLink.
 func (ms SpanLink) SpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).SpanId)}
+	return NewSpanIDFromBytes((*ms.orig).SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this SpanLink.
 func (ms SpanLink) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = v.orig
+	val := v.orig.Bytes()
+	(*ms.orig).SpanId = val[:]
 }
 
 // TraceState returns the tracestate associated with this SpanLink.
@@ -1181,6 +1189,9 @@ type SpanStatus struct {
 }
 
 func newSpanStatus(orig *otlptrace.Status) SpanStatus {
+	if orig == nil {
+		return NewSpanStatus()
+	}
 	return SpanStatus{orig: orig}
 }
 

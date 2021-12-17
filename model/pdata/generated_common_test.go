@@ -58,7 +58,7 @@ func TestInstrumentationLibrary_Version(t *testing.T) {
 func TestAttributeValueSlice(t *testing.T) {
 	es := NewAttributeValueSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newAttributeValueSlice(&[]otlpcommon.AnyValue{})
+	es = newAttributeValueSlice(&[]*otlpcommon.AnyValue{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)

@@ -30,7 +30,7 @@ func InvalidSpanID() SpanID {
 
 func NewSpanIDFromBytes(bytes []byte) SpanID {
 	if len(bytes) != 8 {
-		return SpanID{orig: data.NewSpanID([8]byte{0})}
+		return InvalidSpanID()
 	}
 	var b [8]byte
 	copy(b[:], bytes[:8])

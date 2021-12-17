@@ -466,10 +466,10 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 									Gauge: &otlpmetrics.Gauge{
 										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{
-												Attributes: []otlpcommon.KeyValue{
+												Attributes: []*otlpcommon.KeyValue{
 													{
 														Key:   "k",
-														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
+														Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
 													},
 												},
 												StartTimeUnixNano: startTime + 1,
@@ -551,10 +551,10 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{
-												Attributes: []otlpcommon.KeyValue{
+												Attributes: []*otlpcommon.KeyValue{
 													{
 														Key:   "k",
-														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
+														Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
 													},
 												},
 												StartTimeUnixNano: startTime + 1,
@@ -636,10 +636,10 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 										DataPoints: []*otlpmetrics.HistogramDataPoint{
 											{
-												Attributes: []otlpcommon.KeyValue{
+												Attributes: []*otlpcommon.KeyValue{
 													{
 														Key:   "k",
-														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
+														Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
 													},
 												},
 												StartTimeUnixNano: startTime + 1,
@@ -794,19 +794,19 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	}
 }
 
-func generateTestProtoResource() otlpresource.Resource {
-	return otlpresource.Resource{
-		Attributes: []otlpcommon.KeyValue{
+func generateTestProtoResource() *otlpresource.Resource {
+	return &otlpresource.Resource{
+		Attributes: []*otlpcommon.KeyValue{
 			{
 				Key:   "string",
-				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},
+				Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},
 			},
 		},
 	}
 }
 
-func generateTestProtoInstrumentationLibrary() otlpcommon.InstrumentationLibrary {
-	return otlpcommon.InstrumentationLibrary{
+func generateTestProtoInstrumentationLibrary() *otlpcommon.InstrumentationLibrary {
+	return &otlpcommon.InstrumentationLibrary{
 		Name:    "test",
 		Version: "",
 	}
@@ -821,10 +821,10 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 			Gauge: &otlpmetrics.Gauge{
 				DataPoints: []*otlpmetrics.NumberDataPoint{
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key0",
-								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
+								Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -834,10 +834,10 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 						},
 					},
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key1",
-								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
+								Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -861,10 +861,10 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 				DataPoints: []*otlpmetrics.NumberDataPoint{
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key0",
-								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
+								Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -874,10 +874,10 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 						},
 					},
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key1",
-								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
+								Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -902,10 +902,10 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 				DataPoints: []*otlpmetrics.HistogramDataPoint{
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key0",
-								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
+								Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
 							},
 						},
 						StartTimeUnixNano: startTime,
@@ -914,10 +914,10 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 						ExplicitBounds:    []float64{1, 2},
 					},
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key1",
-								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
+								Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
 							},
 						},
 						StartTimeUnixNano: startTime,

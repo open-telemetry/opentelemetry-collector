@@ -193,7 +193,7 @@ func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
 
 // Resource returns the resource associated with this ResourceMetrics.
 func (ms ResourceMetrics) Resource() Resource {
-	return newResource(&(*ms.orig).Resource)
+	return newResource((*ms.orig).Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceMetrics.
@@ -388,7 +388,7 @@ func (ms InstrumentationLibraryMetrics) MoveTo(dest InstrumentationLibraryMetric
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
 func (ms InstrumentationLibraryMetrics) InstrumentationLibrary() InstrumentationLibrary {
-	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
+	return newInstrumentationLibrary((*ms.orig).InstrumentationLibrary)
 }
 
 // SchemaUrl returns the schemaurl associated with this InstrumentationLibraryMetrics.
@@ -1617,12 +1617,12 @@ func (ms ExponentialHistogramDataPoint) SetZeroCount(v uint64) {
 
 // Positive returns the positive associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Positive() Buckets {
-	return newBuckets(&(*ms.orig).Positive)
+	return newBuckets((*ms.orig).Positive)
 }
 
 // Negative returns the negative associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Negative() Buckets {
-	return newBuckets(&(*ms.orig).Negative)
+	return newBuckets((*ms.orig).Negative)
 }
 
 // Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
@@ -1668,6 +1668,9 @@ type Buckets struct {
 }
 
 func newBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) Buckets {
+	if orig == nil {
+		return NewBuckets()
+	}
 	return Buckets{orig: orig}
 }
 
@@ -2155,17 +2158,20 @@ func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
 type ExemplarSlice struct {
 	// orig points to the slice otlpmetrics.Exemplar field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
-	orig *[]otlpmetrics.Exemplar
+	orig *[]*otlpmetrics.Exemplar
 }
 
-func newExemplarSlice(orig *[]otlpmetrics.Exemplar) ExemplarSlice {
+func newExemplarSlice(orig *[]*otlpmetrics.Exemplar) ExemplarSlice {
+	if orig == nil {
+		return NewExemplarSlice()
+	}
 	return ExemplarSlice{orig}
 }
 
 // NewExemplarSlice creates a ExemplarSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewExemplarSlice() ExemplarSlice {
-	orig := []otlpmetrics.Exemplar(nil)
+	orig := []*otlpmetrics.Exemplar(nil)
 	return ExemplarSlice{&orig}
 }
 
@@ -2184,7 +2190,7 @@ func (es ExemplarSlice) Len() int {
 //       ... // Do something with the element
 //   }
 func (es ExemplarSlice) At(ix int) Exemplar {
-	return newExemplar(&(*es.orig)[ix])
+	return newExemplar((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -2194,11 +2200,11 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 	} else {
-		(*dest.orig) = make([]otlpmetrics.Exemplar, srcLen)
+		(*dest.orig) = make([]*otlpmetrics.Exemplar, srcLen)
 	}
 
 	for i := range *es.orig {
-		newExemplar(&(*es.orig)[i]).CopyTo(newExemplar(&(*dest.orig)[i]))
+		newExemplar((*es.orig)[i]).CopyTo(newExemplar((*dest.orig)[i]))
 	}
 }
 
@@ -2219,7 +2225,7 @@ func (es ExemplarSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]otlpmetrics.Exemplar, len(*es.orig), newCap)
+	newOrig := make([]*otlpmetrics.Exemplar, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -2227,7 +2233,7 @@ func (es ExemplarSlice) EnsureCapacity(newCap int) {
 // AppendEmpty will append to the end of the slice an empty Exemplar.
 // It returns the newly added Exemplar.
 func (es ExemplarSlice) AppendEmpty() Exemplar {
-	*es.orig = append(*es.orig, otlpmetrics.Exemplar{})
+	*es.orig = append(*es.orig, &otlpmetrics.Exemplar{})
 	return es.At(es.Len() - 1)
 }
 
@@ -2279,6 +2285,9 @@ type Exemplar struct {
 }
 
 func newExemplar(orig *otlpmetrics.Exemplar) Exemplar {
+	if orig == nil {
+		return NewExemplar()
+	}
 	return Exemplar{orig: orig}
 }
 
@@ -2338,22 +2347,24 @@ func (ms Exemplar) FilteredAttributes() AttributeMap {
 
 // TraceID returns the traceid associated with this Exemplar.
 func (ms Exemplar) TraceID() TraceID {
-	return TraceID{orig: ((*ms.orig).TraceId)}
+	return NewTraceIDFromBytes((*ms.orig).TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Exemplar.
 func (ms Exemplar) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = v.orig
+	val := v.orig.Bytes()
+	(*ms.orig).TraceId = val[:]
 }
 
 // SpanID returns the spanid associated with this Exemplar.
 func (ms Exemplar) SpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).SpanId)}
+	return NewSpanIDFromBytes((*ms.orig).SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Exemplar.
 func (ms Exemplar) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = v.orig
+	val := v.orig.Bytes()
+	(*ms.orig).SpanId = val[:]
 }
 
 // CopyTo copies all properties from the current struct to the dest.

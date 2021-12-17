@@ -96,6 +96,9 @@ func tracesCompatibilityChanges(req *otlptrace.TracesData) {
 	for _, rss := range req.ResourceSpans {
 		for _, ils := range rss.InstrumentationLibrarySpans {
 			for _, span := range ils.Spans {
+				if span.Status == nil {
+					continue
+				}
 				switch span.Status.Code {
 				case otlptrace.Status_STATUS_CODE_UNSET:
 					if span.Status.DeprecatedCode != otlptrace.Status_DEPRECATED_STATUS_CODE_OK {

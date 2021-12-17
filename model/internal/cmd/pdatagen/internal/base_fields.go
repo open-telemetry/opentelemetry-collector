@@ -21,7 +21,7 @@ import (
 
 const accessorSliceTemplate = `// ${fieldName} returns the ${originFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(&(*ms.orig).${originFieldName})
+	return new${returnType}((*ms.orig).${originFieldName})
 }`
 
 const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
@@ -34,7 +34,7 @@ const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testi
 
 const accessorsMessageValueTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(&(*ms.orig).${originFieldName})
+	return new${returnType}((*ms.orig).${originFieldName})
 }`
 
 const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {

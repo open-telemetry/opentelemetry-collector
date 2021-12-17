@@ -356,15 +356,15 @@ func TestNilAttributeMap(t *testing.T) {
 }
 
 func TestAttributeMapWithEmpty(t *testing.T) {
-	origWithNil := []otlpcommon.KeyValue{
+	origWithNil := []*otlpcommon.KeyValue{
 		{},
 		{
 			Key:   "test_key",
-			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 		},
 		{
 			Key:   "test_key2",
-			Value: otlpcommon.AnyValue{Value: nil},
+			Value: &otlpcommon.AnyValue{Value: nil},
 		},
 	}
 	sm := AttributeMap{
@@ -604,7 +604,7 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 		"k_null":   NewAttributeValueEmpty(),
 		"k_bytes":  NewAttributeValueBytes([]byte{1, 2, 3}),
 	}
-	rawOrig := []otlpcommon.KeyValue{
+	rawOrig := []*otlpcommon.KeyValue{
 		newAttributeKeyValueString("k_string", "123"),
 		newAttributeKeyValueInt("k_int", 123),
 		newAttributeKeyValueDouble("k_double", 1.23),
@@ -649,7 +649,7 @@ func TestAttributeMap_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestAttributeMap(), dest)
 
 	// Test CopyTo with an empty Value in the destination
-	(*dest.orig)[0].Value = otlpcommon.AnyValue{}
+	(*dest.orig)[0].Value = &otlpcommon.AnyValue{}
 	generateTestAttributeMap().CopyTo(dest)
 	assert.EqualValues(t, generateTestAttributeMap(), dest)
 }
@@ -662,14 +662,14 @@ func TestAttributeValue_copyTo(t *testing.T) {
 }
 
 func TestAttributeMap_Update(t *testing.T) {
-	origWithNil := []otlpcommon.KeyValue{
+	origWithNil := []*otlpcommon.KeyValue{
 		{
 			Key:   "test_key",
-			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 		},
 		{
 			Key:   "test_key2",
-			Value: otlpcommon.AnyValue{Value: nil},
+			Value: &otlpcommon.AnyValue{Value: nil},
 		},
 	}
 	sm := AttributeMap{
@@ -757,11 +757,11 @@ func BenchmarkAttributeValue_SetIntVal(b *testing.B) {
 
 func BenchmarkAttributeMap_Range(b *testing.B) {
 	const numElements = 20
-	rawOrig := make([]otlpcommon.KeyValue, numElements)
+	rawOrig := make([]*otlpcommon.KeyValue, numElements)
 	for i := 0; i < numElements; i++ {
-		rawOrig[i] = otlpcommon.KeyValue{
+		rawOrig[i] = &otlpcommon.KeyValue{
 			Key:   "k" + strconv.Itoa(i),
-			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v" + strconv.Itoa(i)}},
+			Value: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v" + strconv.Itoa(i)}},
 		}
 	}
 	am := AttributeMap{
@@ -914,7 +914,7 @@ func TestAttributeValueArray(t *testing.T) {
 }
 
 func TestAttributeSliceWithNilValues(t *testing.T) {
-	origWithNil := []otlpcommon.AnyValue{
+	origWithNil := []*otlpcommon.AnyValue{
 		{},
 		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 	}

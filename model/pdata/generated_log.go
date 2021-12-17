@@ -193,7 +193,7 @@ func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() Resource {
-	return newResource(&(*ms.orig).Resource)
+	return newResource((*ms.orig).Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceLogs.
@@ -388,7 +388,7 @@ func (ms InstrumentationLibraryLogs) MoveTo(dest InstrumentationLibraryLogs) {
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryLogs.
 func (ms InstrumentationLibraryLogs) InstrumentationLibrary() InstrumentationLibrary {
-	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
+	return newInstrumentationLibrary((*ms.orig).InstrumentationLibrary)
 }
 
 // SchemaUrl returns the schemaurl associated with this InstrumentationLibraryLogs.
@@ -594,22 +594,24 @@ func (ms LogRecord) SetTimestamp(v Timestamp) {
 
 // TraceID returns the traceid associated with this LogRecord.
 func (ms LogRecord) TraceID() TraceID {
-	return TraceID{orig: ((*ms.orig).TraceId)}
+	return NewTraceIDFromBytes((*ms.orig).TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
 func (ms LogRecord) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = v.orig
+	val := v.orig.Bytes()
+	(*ms.orig).TraceId = val[:]
 }
 
 // SpanID returns the spanid associated with this LogRecord.
 func (ms LogRecord) SpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).SpanId)}
+	return NewSpanIDFromBytes((*ms.orig).SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
 func (ms LogRecord) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = v.orig
+	val := v.orig.Bytes()
+	(*ms.orig).SpanId = val[:]
 }
 
 // Flags returns the flags associated with this LogRecord.
@@ -654,7 +656,7 @@ func (ms LogRecord) SetName(v string) {
 
 // Body returns the body associated with this LogRecord.
 func (ms LogRecord) Body() AttributeValue {
-	return newAttributeValue(&(*ms.orig).Body)
+	return newAttributeValue((*ms.orig).Body)
 }
 
 // Attributes returns the Attributes associated with this LogRecord.

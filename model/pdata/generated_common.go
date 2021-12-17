@@ -34,6 +34,9 @@ type InstrumentationLibrary struct {
 }
 
 func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
+	if orig == nil {
+		return NewInstrumentationLibrary()
+	}
 	return InstrumentationLibrary{orig: orig}
 }
 
@@ -88,17 +91,17 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 type AttributeValueSlice struct {
 	// orig points to the slice otlpcommon.AnyValue field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
-	orig *[]otlpcommon.AnyValue
+	orig *[]*otlpcommon.AnyValue
 }
 
-func newAttributeValueSlice(orig *[]otlpcommon.AnyValue) AttributeValueSlice {
+func newAttributeValueSlice(orig *[]*otlpcommon.AnyValue) AttributeValueSlice {
 	return AttributeValueSlice{orig}
 }
 
 // NewAttributeValueSlice creates a AttributeValueSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewAttributeValueSlice() AttributeValueSlice {
-	orig := []otlpcommon.AnyValue(nil)
+	orig := []*otlpcommon.AnyValue(nil)
 	return AttributeValueSlice{&orig}
 }
 
@@ -117,7 +120,7 @@ func (es AttributeValueSlice) Len() int {
 //       ... // Do something with the element
 //   }
 func (es AttributeValueSlice) At(ix int) AttributeValue {
-	return newAttributeValue(&(*es.orig)[ix])
+	return newAttributeValue((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -127,11 +130,14 @@ func (es AttributeValueSlice) CopyTo(dest AttributeValueSlice) {
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 	} else {
-		(*dest.orig) = make([]otlpcommon.AnyValue, srcLen)
+		(*dest.orig) = make([]*otlpcommon.AnyValue, srcLen)
+		for i := 0; i < srcLen; i++ {
+			(*dest.orig)[i] = &otlpcommon.AnyValue{}
+		}
 	}
 
 	for i := range *es.orig {
-		newAttributeValue(&(*es.orig)[i]).CopyTo(newAttributeValue(&(*dest.orig)[i]))
+		newAttributeValue((*es.orig)[i]).CopyTo(newAttributeValue((*dest.orig)[i]))
 	}
 }
 
@@ -152,7 +158,7 @@ func (es AttributeValueSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]otlpcommon.AnyValue, len(*es.orig), newCap)
+	newOrig := make([]*otlpcommon.AnyValue, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -160,7 +166,7 @@ func (es AttributeValueSlice) EnsureCapacity(newCap int) {
 // AppendEmpty will append to the end of the slice an empty AttributeValue.
 // It returns the newly added AttributeValue.
 func (es AttributeValueSlice) AppendEmpty() AttributeValue {
-	*es.orig = append(*es.orig, otlpcommon.AnyValue{})
+	*es.orig = append(*es.orig, &otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
 }
 
