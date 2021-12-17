@@ -26,7 +26,7 @@ import (
 )
 
 func TestMerge_GetError(t *testing.T) {
-	pl := NewMerge(&errProvider{err: nil}, &errProvider{errors.New("my error")})
+	pl := NewMerge(&errProvider{err: nil}, &errProvider{err: errors.New("my error")})
 	require.NotNil(t, pl)
 	cp, err := pl.Retrieve(context.Background(), nil)
 	assert.Error(t, err)
@@ -34,18 +34,27 @@ func TestMerge_GetError(t *testing.T) {
 }
 
 func TestMerge_CloseError(t *testing.T) {
-	pl := NewMerge(&errProvider{err: nil}, &errProvider{errors.New("my error")})
+	pl := NewMerge(&errProvider{err: nil}, &errProvider{closeErr: errors.New("my error")})
+	require.NotNil(t, pl)
+	cp, err := pl.Retrieve(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.Error(t, cp.Close(context.Background()))
+}
+
+func TestMerge_ShutdownError(t *testing.T) {
+	pl := NewMerge(&errProvider{err: nil}, &errProvider{err: errors.New("my error")})
 	require.NotNil(t, pl)
 	assert.Error(t, pl.Shutdown(context.Background()))
 }
 
 type errProvider struct {
-	err error
+	err      error
+	closeErr error
 }
 
 func (epl *errProvider) Retrieve(context.Context, func(*ChangeEvent)) (Retrieved, error) {
 	if epl.err == nil {
-		return &simpleRetrieved{confMap: config.NewMap()}, nil
+		return &simpleRetrieved{confMap: config.NewMap(), closeFunc: func(context.Context) error { return epl.closeErr }}, nil
 	}
 	return nil, epl.err
 }

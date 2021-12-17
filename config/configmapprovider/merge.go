@@ -36,6 +36,7 @@ func NewMerge(ps ...Provider) Provider {
 }
 
 func (mp *mergeMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
+	var retrs []Retrieved
 	retCfgMap := config.NewMap()
 	for _, p := range mp.providers {
 		retr, err := p.Retrieve(ctx, onChange)
@@ -49,8 +50,15 @@ func (mp *mergeMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeE
 		if err = retCfgMap.Merge(cfgMap); err != nil {
 			return nil, err
 		}
+		retrs = append(retrs, retr)
 	}
-	return &simpleRetrieved{confMap: retCfgMap}, nil
+	return &simpleRetrieved{confMap: retCfgMap, closeFunc: func(ctxF context.Context) error {
+		var err error
+		for _, ret := range retrs {
+			err = multierr.Append(err, ret.Close(ctxF))
+		}
+		return err
+	}}, nil
 }
 
 func (mp *mergeMapProvider) Shutdown(ctx context.Context) error {
