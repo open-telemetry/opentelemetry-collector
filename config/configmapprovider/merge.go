@@ -22,8 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// TODO: Add support to "merge" watchable interface.
-
 type mergeMapProvider struct {
 	providers []Provider
 }
