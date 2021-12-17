@@ -15,8 +15,6 @@
 package telemetrylogs // import "go.opentelemetry.io/collector/service/internal/telemetrylogs"
 
 import (
-	"sync"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zapgrpc"
@@ -56,21 +54,11 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 	return logger, nil
 }
 
-// SettableGRPCLoggerV2 sets grpc framework's logger with internal logger.
-type SettableGRPCLoggerV2 interface {
-	SetGRPCLogger()
-}
-
-type colGRPCLogger struct {
-	setOnce  sync.Once
-	loggerV2 grpclog.LoggerV2
-}
-
-// NewColGRPCLogger constructs a grpclog.LoggerV2 instance cloned from baseLogger with exact configuration.
-// The minimum level of gRPC logs is set to WARN should the loglevel of the collector is set to INFO to avoid
-// copious logging from grpc framework.
-func NewColGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) SettableGRPCLoggerV2 {
-	logger := baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+// SetColGRPCLogger constructs a zapgrpc.Logger instance, and installs it as grpc logger, cloned from baseLogger with
+// exact configuration. The minimum level of gRPC logs is set to WARN should the loglevel of the collector is set to
+// INFO to avoid copious logging from grpc framework.
+func SetColGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) *zapgrpc.Logger {
+	logger := zapgrpc.NewLogger(baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		var c zapcore.Core
 		if loglevel == zap.InfoLevel {
 			// NewIncreaseLevelCore errors only if the new log level is less than the initial core level.
@@ -80,16 +68,8 @@ func NewColGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) SettableGR
 			c = core
 		}
 		return c.With([]zapcore.Field{zap.Bool("grpc_log", true)})
-	}))
-	return &colGRPCLogger{
-		loggerV2: zapgrpc.NewLogger(logger),
-	}
-}
+	})))
 
-// SetGRPCLogger needs to be run before any grpc calls and this implementation requires it to be run
-// only once.
-func (gl *colGRPCLogger) SetGRPCLogger() {
-	gl.setOnce.Do(func() {
-		grpclog.SetLoggerV2(gl.loggerV2)
-	})
+	grpclog.SetLoggerV2(logger)
+	return logger
 }
