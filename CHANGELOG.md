@@ -16,7 +16,8 @@
 
 ## 🧰 Bug fixes 🧰
 
-- Fix merge config map provider to close the watchers #4570
+- Fix merge config map provider to close the watchers (#4570)
+- Fix expand map provider to call close on the base provider (#4571)
 
 ## v0.41.0 Beta
 
