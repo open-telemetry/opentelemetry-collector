@@ -71,9 +71,9 @@ type Collector struct {
 	meterProvider       metric.MeterProvider
 	zPagesSpanProcessor *zpages.SpanProcessor
 
-	cfgW    *configWatcher
-	service *service
-	state   atomic.Value
+	cfgProvider *configProvider
+	service     *service
+	state       atomic.Value
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -103,8 +103,9 @@ func New(set CollectorSettings) (*Collector, error) {
 	state := atomic.Value{}
 	state.Store(Starting)
 	return &Collector{
-		set:   set,
-		state: state,
+		set:         set,
+		state:       state,
+		cfgProvider: newConfigProvider(set.ConfigMapProvider, set.ConfigUnmarshaler),
 	}, nil
 
 }
@@ -145,7 +146,7 @@ func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 LOOP:
 	for {
 		select {
-		case err := <-col.cfgW.watcher:
+		case err := <-col.cfgProvider.watch():
 			if err != nil {
 				col.logger.Error("Config watch failed", zap.Error(err))
 				break LOOP
@@ -154,9 +155,6 @@ LOOP:
 			col.logger.Warn("Config updated, restart service")
 			col.setCollectorState(Closing)
 
-			if err = col.cfgW.shutdown(ctx); err != nil {
-				return fmt.Errorf("failed to close config watcher: %w", err)
-			}
 			if err = col.service.Shutdown(ctx); err != nil {
 				return fmt.Errorf("failed to shutdown the retiring config: %w", err)
 			}
@@ -182,26 +180,25 @@ LOOP:
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(Starting)
 
-	var err error
-	if col.cfgW, err = newConfigWatcher(ctx, col.set); err != nil {
-		return err
+	cfg, err := col.cfgProvider.get(ctx, col.set.Factories)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
 	}
-
-	if col.logger, err = telemetrylogs.NewLogger(col.cfgW.cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
+	if col.logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
 
-	telemetrylogs.SetColGRPCLogger(col.logger, col.cfgW.cfg.Service.Telemetry.Logs.Level)
+	telemetrylogs.SetColGRPCLogger(col.logger, cfg.Service.Telemetry.Logs.Level)
 
 	col.service, err = newService(&svcSettings{
 		BuildInfo: col.set.BuildInfo,
 		Factories: col.set.Factories,
-		Config:    col.cfgW.cfg,
+		Config:    cfg,
 		Telemetry: component.TelemetrySettings{
 			Logger:         col.logger,
 			TracerProvider: col.tracerProvider,
 			MeterProvider:  col.meterProvider,
-			MetricsLevel:   col.cfgW.cfg.Telemetry.Metrics.Level,
+			MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		},
 		ZPagesSpanProcessor: col.zPagesSpanProcessor,
 		AsyncErrorChannel:   col.asyncErrorChannel,
@@ -259,7 +256,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if err := col.cfgW.shutdown(ctx); err != nil {
+	if err := col.cfgProvider.shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to close config provider watcher: %w", err))
 	}
 

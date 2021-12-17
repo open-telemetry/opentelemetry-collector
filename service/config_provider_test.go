@@ -63,7 +63,7 @@ type errRetrieved struct {
 	onChange func(event *configmapprovider.ChangeEvent)
 }
 
-func (er *errRetrieved) Get(ctx context.Context) (*config.Map, error) {
+func (er *errRetrieved) Get(context.Context) (*config.Map, error) {
 	er.onChange(&configmapprovider.ChangeEvent{Error: er.errW})
 	return er.retM, nil
 }
@@ -72,7 +72,7 @@ func (er *errRetrieved) Close(context.Context) error {
 	return er.errC
 }
 
-func TestConfigWatcher(t *testing.T) {
+func TestConfigProvider(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
 
@@ -141,20 +141,15 @@ func TestConfigWatcher(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := CollectorSettings{
-				ConfigMapProvider: tt.parserProvider,
-				ConfigUnmarshaler: tt.configUnmarshaler,
-				Factories:         factories,
-			}
-
-			cfgW, errN := newConfigWatcher(context.Background(), set)
+			cfgW := newConfigProvider(tt.parserProvider, tt.configUnmarshaler)
+			_, errN := cfgW.get(context.Background(), factories)
 			if tt.expectNewErr {
 				assert.Error(t, errN)
 				return
 			}
 			assert.NoError(t, errN)
 
-			errW := <-cfgW.watcher
+			errW := <-cfgW.watch()
 			if tt.expectWatchErr {
 				assert.Error(t, errW)
 				return
@@ -171,22 +166,18 @@ func TestConfigWatcher(t *testing.T) {
 	}
 }
 
-func TestConfigWatcherNoWatcher(t *testing.T) {
+func TestConfigProviderNoWatcher(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
-	set := CollectorSettings{
-		ConfigMapProvider: configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")),
-		ConfigUnmarshaler: configunmarshaler.NewDefault(),
-		Factories:         factories,
-	}
 
 	watcherWG := sync.WaitGroup{}
-	cfgW, errN := newConfigWatcher(context.Background(), set)
+	cfgW := newConfigProvider(configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")), configunmarshaler.NewDefault())
+	_, errN := cfgW.get(context.Background(), factories)
 	assert.NoError(t, errN)
 
 	watcherWG.Add(1)
 	go func() {
-		errW, ok := <-cfgW.watcher
+		errW, ok := <-cfgW.watch()
 		// Channel is closed, no exception
 		assert.False(t, ok)
 		assert.NoError(t, errW)
@@ -197,29 +188,26 @@ func TestConfigWatcherNoWatcher(t *testing.T) {
 	watcherWG.Wait()
 }
 
-func TestConfigWatcherWhenClosed(t *testing.T) {
+func TestConfigProviderWhenClosed(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
-	set := CollectorSettings{
-		ConfigMapProvider: func() configmapprovider.Provider {
-			// Use errRetrieved with nil errors to have Watchable interface implemented.
-			ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
-			require.NoError(t, err)
-			m, err := ret.Get(context.Background())
-			require.NoError(t, err)
-			return &errConfigMapProvider{ret: &errRetrieved{retM: m, errW: configsource.ErrSessionClosed}}
-		}(),
-		ConfigUnmarshaler: configunmarshaler.NewDefault(),
-		Factories:         factories,
-	}
+	configMapProvider := func() configmapprovider.Provider {
+		// Use errRetrieved with nil errors to have Watchable interface implemented.
+		ret, err := configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")).Retrieve(context.Background(), nil)
+		require.NoError(t, err)
+		m, err := ret.Get(context.Background())
+		require.NoError(t, err)
+		return &errConfigMapProvider{ret: &errRetrieved{retM: m, errW: configsource.ErrSessionClosed}}
+	}()
 
 	watcherWG := sync.WaitGroup{}
-	cfgW, errN := newConfigWatcher(context.Background(), set)
+	cfgW := newConfigProvider(configMapProvider, configunmarshaler.NewDefault())
+	_, errN := cfgW.get(context.Background(), factories)
 	assert.NoError(t, errN)
 
 	watcherWG.Add(1)
 	go func() {
-		errW, ok := <-cfgW.watcher
+		errW, ok := <-cfgW.watch()
 		// Channel is closed, no exception
 		assert.False(t, ok)
 		assert.NoError(t, errW)
