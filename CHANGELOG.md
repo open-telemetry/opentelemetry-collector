@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Remove configmapprovider.NewInMemory() (#4507)
+
 ## 💡 Enhancements 💡
 
 - `confighttp`: add client-side compression support. (#4441)
