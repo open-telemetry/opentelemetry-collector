@@ -20,15 +20,21 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+type closeFunc func(ctx context.Context) error
+
 // TODO: This probably will make sense to be exported, but needs better name and documentation.
 type simpleRetrieved struct {
+	closeFunc
 	confMap *config.Map
 }
 
-func (sr *simpleRetrieved) Get(ctx context.Context) (*config.Map, error) {
+func (sr *simpleRetrieved) Get(context.Context) (*config.Map, error) {
 	return sr.confMap, nil
 }
 
 func (sr *simpleRetrieved) Close(ctx context.Context) error {
-	return nil
+	if sr.closeFunc == nil {
+		return nil
+	}
+	return sr.closeFunc(ctx)
 }

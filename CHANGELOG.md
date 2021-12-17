@@ -14,6 +14,10 @@
   - `service.telemetry.metrics.level` and `service.telemetry.metrics.address`
     should be used to configure collector self-metrics.
 
+## 🧰 Bug fixes 🧰
+
+- Fix merge config map provider to close the watchers #4570
+
 ## v0.41.0 Beta
 
 ## 🛑 Breaking changes 🛑
