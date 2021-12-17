@@ -43,6 +43,25 @@ func TestBaseRetrieveFailsOnGet(t *testing.T) {
 	require.ErrorIs(t, err, getErr)
 }
 
+func TestBaseRetrieveFailsOnClose(t *testing.T) {
+	closeErr := errors.New("test error")
+	exp := NewExpand(&mockProvider{retrieved: &mockRetrieved{closeErr: closeErr}})
+	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
+	ret, err := exp.Retrieve(context.Background(), nil)
+	require.NoError(t, err)
+	err = ret.Close(context.Background())
+	require.Error(t, err)
+	require.ErrorIs(t, err, closeErr)
+}
+
+func TestBaseRetrieveFailsOnShutdown(t *testing.T) {
+	shutdownErr := errors.New("test error")
+	exp := NewExpand(&mockProvider{shutdownErr: shutdownErr})
+	err := exp.Shutdown(context.Background())
+	require.Error(t, err)
+	require.ErrorIs(t, err, shutdownErr)
+}
+
 func TestExpand(t *testing.T) {
 	var testCases = []struct {
 		name string // test case name (also file name containing config yaml)

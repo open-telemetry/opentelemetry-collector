@@ -24,25 +24,43 @@ import (
 type mockProvider struct {
 	retrieved   Retrieved
 	retrieveErr error
+	shutdownErr error
 }
 
 var _ Provider = &mockProvider{}
 
-func (m *mockProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
-	return m.retrieved, m.retrieveErr
+func (m *mockProvider) Retrieve(context.Context, func(*ChangeEvent)) (Retrieved, error) {
+	if m.retrieveErr != nil {
+		return nil, m.retrieveErr
+	}
+	if m.retrieved == nil {
+		return &mockRetrieved{}, nil
+	}
+	return m.retrieved, nil
 }
 
-func (mockProvider) Shutdown(ctx context.Context) error { return nil }
+func (m *mockProvider) Shutdown(context.Context) error {
+	return m.shutdownErr
+}
 
 type mockRetrieved struct {
-	got    *config.Map
-	getErr error
+	cfg      *config.Map
+	getErr   error
+	closeErr error
 }
 
 var _ Retrieved = &mockRetrieved{}
 
-func (sr *mockRetrieved) Get(ctx context.Context) (*config.Map, error) {
-	return sr.got, sr.getErr
+func (sr *mockRetrieved) Get(context.Context) (*config.Map, error) {
+	if sr.getErr != nil {
+		return nil, sr.getErr
+	}
+	if sr.cfg == nil {
+		return config.NewMap(), nil
+	}
+	return sr.cfg, nil
 }
 
-func (mockRetrieved) Close(ctx context.Context) error { return nil }
+func (sr *mockRetrieved) Close(context.Context) error {
+	return sr.closeErr
+}

@@ -44,7 +44,7 @@ func (emp *expandMapProvider) Retrieve(ctx context.Context, onChange func(*Chang
 	for _, k := range cfgMap.AllKeys() {
 		cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
 	}
-	return &simpleRetrieved{confMap: cfgMap}, nil
+	return &simpleRetrieved{confMap: cfgMap, closeFunc: retr.Close}, nil
 }
 
 func (emp *expandMapProvider) Shutdown(ctx context.Context) error {
