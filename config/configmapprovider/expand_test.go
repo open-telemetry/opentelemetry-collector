@@ -30,36 +30,36 @@ func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
 	exp := NewExpand(&mockProvider{retrieveErr: retErr})
 	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
 	_, err := exp.Retrieve(context.Background(), nil)
-	require.Error(t, err)
-	require.ErrorIs(t, err, retErr)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, retErr)
 }
 
 func TestBaseRetrieveFailsOnGet(t *testing.T) {
 	getErr := errors.New("test error")
-	exp := NewExpand(&mockProvider{retrieved: &mockRetrieved{getErr: getErr}})
+	exp := NewExpand(&mockProvider{retrieved: newErrGetRetrieved(getErr)})
 	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
 	_, err := exp.Retrieve(context.Background(), nil)
-	require.Error(t, err)
-	require.ErrorIs(t, err, getErr)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, getErr)
 }
 
 func TestBaseRetrieveFailsOnClose(t *testing.T) {
 	closeErr := errors.New("test error")
-	exp := NewExpand(&mockProvider{retrieved: &mockRetrieved{closeErr: closeErr}})
+	exp := NewExpand(&mockProvider{retrieved: newErrCloseRetrieved(closeErr)})
 	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
 	ret, err := exp.Retrieve(context.Background(), nil)
 	require.NoError(t, err)
 	err = ret.Close(context.Background())
-	require.Error(t, err)
-	require.ErrorIs(t, err, closeErr)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, closeErr)
 }
 
 func TestBaseRetrieveFailsOnShutdown(t *testing.T) {
 	shutdownErr := errors.New("test error")
 	exp := NewExpand(&mockProvider{shutdownErr: shutdownErr})
 	err := exp.Shutdown(context.Background())
-	require.Error(t, err)
-	require.ErrorIs(t, err, shutdownErr)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, shutdownErr)
 }
 
 func TestExpand(t *testing.T) {

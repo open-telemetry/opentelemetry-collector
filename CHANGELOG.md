@@ -4,7 +4,8 @@
 
 ## 🛑 Breaking changes 🛑
 
-- Remove configmapprovider.NewInMemory() (#4507)
+- Remove `configmapprovider.NewInMemory()` (#4507)
+- Disallow direct implementation of `configmapprovider.Retrieved` (#4577)
 
 ## 💡 Enhancements 💡
 

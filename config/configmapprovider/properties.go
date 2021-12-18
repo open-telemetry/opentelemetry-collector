@@ -42,7 +42,9 @@ func NewProperties(properties []string) Provider {
 
 func (pmp *propertiesMapProvider) Retrieve(_ context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
 	if len(pmp.properties) == 0 {
-		return &simpleRetrieved{confMap: config.NewMap()}, nil
+		return NewRetrieved(func(ctx context.Context) (*config.Map, error) {
+			return config.NewMap(), nil
+		})
 	}
 
 	b := &bytes.Buffer{}
@@ -67,7 +69,9 @@ func (pmp *propertiesMapProvider) Retrieve(_ context.Context, onChange func(*Cha
 	}
 	prop := maps.Unflatten(parsed, ".")
 
-	return &simpleRetrieved{confMap: config.NewMapFromStringMap(prop)}, nil
+	return NewRetrieved(func(ctx context.Context) (*config.Map, error) {
+		return config.NewMapFromStringMap(prop), nil
+	})
 }
 
 func (*propertiesMapProvider) Shutdown(context.Context) error {

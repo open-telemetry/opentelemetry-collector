@@ -34,7 +34,7 @@ func (m *mockProvider) Retrieve(context.Context, func(*ChangeEvent)) (Retrieved,
 		return nil, m.retrieveErr
 	}
 	if m.retrieved == nil {
-		return &mockRetrieved{}, nil
+		return NewRetrieved(func(ctx context.Context) (*config.Map, error) { return config.NewMap(), nil })
 	}
 	return m.retrieved, nil
 }
@@ -43,24 +43,14 @@ func (m *mockProvider) Shutdown(context.Context) error {
 	return m.shutdownErr
 }
 
-type mockRetrieved struct {
-	cfg      *config.Map
-	getErr   error
-	closeErr error
+func newErrGetRetrieved(getErr error) Retrieved {
+	ret, _ := NewRetrieved(func(ctx context.Context) (*config.Map, error) { return nil, getErr })
+	return ret
 }
 
-var _ Retrieved = &mockRetrieved{}
-
-func (sr *mockRetrieved) Get(context.Context) (*config.Map, error) {
-	if sr.getErr != nil {
-		return nil, sr.getErr
-	}
-	if sr.cfg == nil {
-		return config.NewMap(), nil
-	}
-	return sr.cfg, nil
-}
-
-func (sr *mockRetrieved) Close(context.Context) error {
-	return sr.closeErr
+func newErrCloseRetrieved(closeErr error) Retrieved {
+	ret, _ := NewRetrieved(
+		func(ctx context.Context) (*config.Map, error) { return config.NewMap(), nil },
+		WithClose(func(ctx context.Context) error { return closeErr }))
+	return ret
 }

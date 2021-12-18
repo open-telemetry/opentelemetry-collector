@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+
+	"go.opentelemetry.io/collector/config"
 )
 
 type expandMapProvider struct {
@@ -44,7 +46,9 @@ func (emp *expandMapProvider) Retrieve(ctx context.Context, onChange func(*Chang
 	for _, k := range cfgMap.AllKeys() {
 		cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
 	}
-	return &simpleRetrieved{confMap: cfgMap, closeFunc: retr.Close}, nil
+	return NewRetrieved(func(ctx context.Context) (*config.Map, error) {
+		return cfgMap, nil
+	}, WithClose(retr.Close))
 }
 
 func (emp *expandMapProvider) Shutdown(ctx context.Context) error {
