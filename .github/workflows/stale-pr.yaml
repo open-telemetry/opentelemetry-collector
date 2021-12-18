@@ -10,9 +10,9 @@ jobs:
       - uses: actions/stale@v4
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          stale-pr-message: 'This PR was marked stale due to lack of activity. It will be closed in 7 days.'
+          stale-pr-message: 'This PR was marked stale due to lack of activity. It will be closed in 14 days.'
           close-pr-message: 'Closed as inactive. Feel free to reopen if this PR is still being worked on.'
-          days-before-pr-stale: 7
+          days-before-pr-stale: 14
           days-before-issue-stale: 730
-          days-before-pr-close: 7
+          days-before-pr-close: 14
           days-before-issue-close: 30
