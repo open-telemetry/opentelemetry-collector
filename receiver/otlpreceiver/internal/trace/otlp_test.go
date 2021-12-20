@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -90,7 +91,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 }
 
 func makeTraceServiceClient(addr net.Addr) (otlpgrpc.TracesClient, func(), error) {
-	cc, err := grpc.Dial(addr.String(), grpc.WithInsecure(), grpc.WithBlock())
+	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}

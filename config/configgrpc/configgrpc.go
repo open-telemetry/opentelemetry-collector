@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
@@ -205,13 +206,13 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host, settings compo
 	if err != nil {
 		return nil, err
 	}
-	tlsDialOption := grpc.WithInsecure()
+	cred := insecure.NewCredentials()
 	if tlsCfg != nil {
-		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))
+		cred = credentials.NewTLS(tlsCfg)
 	} else if gcs.isSchemeHTTPS() {
-		tlsDialOption = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
+		cred = credentials.NewTLS(&tls.Config{})
 	}
-	opts = append(opts, tlsDialOption)
+	opts = append(opts, grpc.WithTransportCredentials(cred))
 
 	if gcs.ReadBufferSize > 0 {
 		opts = append(opts, grpc.WithReadBufferSize(gcs.ReadBufferSize))
