@@ -6,13 +6,13 @@
 
 - Remove `configmapprovider.NewInMemory()` (#4507)
 - Disallow direct implementation of `configmapprovider.Retrieved` (#4577)
+- `configauth`: remove interceptor functions from the ServerAuthenticator interface (#4583)
 
 ## 💡 Enhancements 💡
 
 - `confighttp`: add client-side compression support. (#4441)
   - Each exporter should remove `compression` field if they have and should use `confighttp.HTTPClientSettings`
 - Allow more zap logger configs: `disable_caller`, `disable_stacktrace`, `output_paths`, `error_output_paths`, `initial_fields` (#1048)
-- `configauth`: add ServerAuthenticator interfaces for HTTP receivers. (#4506)
 - Collector self-metrics may now be configured through the configuration file. (#4069)
   - CLI flags for configuring self-metrics are deprecated and will be removed
     in a future release.
