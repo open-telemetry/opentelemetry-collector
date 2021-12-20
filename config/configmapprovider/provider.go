@@ -65,8 +65,7 @@ type Provider interface {
 // ChangeEvent describes the particular change event that happened with the config.
 // TODO: see if this can be eliminated.
 type ChangeEvent struct {
-	// Error is nil if the config is changed and needs to be re-fetched using Get.
-	// It is set to configsource.ErrSessionClosed if Close was called.
-	// Any other error indicates that there was a problem with retrieving the config.
+	// Error is nil if the config is changed and needs to be re-fetched.
+	// Any non-nil error indicates that there was a problem with watching the config changes.
 	Error error
 }

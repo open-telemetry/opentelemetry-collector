@@ -24,24 +24,17 @@ import (
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
 // This interface cannot be directly implemented. Implementations must use the NewRetrieved helper.
 type Retrieved interface {
-	// Get returns the config Map.
-	// If Close is called before Get or concurrently with Get then Get
-	// should return immediately with ErrSessionClosed error.
-	// Should never be called concurrently with itself.
-	// If ctx is cancelled should return immediately with an error.
+	// Get returns the config Map. Should never be called after Close.
+	// Should never be called concurrently with itself or Close.
 	Get(ctx context.Context) (*config.Map, error)
 
 	// Close signals that the configuration for which it was used to retrieve values is
-	// no longer in use and the object should close and release any watchers that it
-	// may have created.
+	// no longer in use and should close and release any watchers that it may have created.
 	//
-	// This method must be called when the service ends, either in case of success or error.
+	// Should block until all resources are closed, and guarantee that `onChange` is not
+	// going to be called after it returns except when `ctx` is cancelled.
 	//
-	// Should never be called concurrently with itself.
-	// May be called before, after or concurrently with Get.
-	// If ctx is cancelled should return immediately with an error.
-	//
-	// Calling Close on an already closed object should have no effect and should return nil.
+	// Should never be called concurrently with itself or Get.
 	Close(ctx context.Context) error
 
 	// privateRetrieved is an unexported func to disallow direct implementation.
