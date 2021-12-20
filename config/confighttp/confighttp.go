@@ -266,7 +266,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 			return nil, err
 		}
 
-		handler = authenticator.HTTPInterceptor(handler)
+		handler = authInterceptor(handler, authenticator.Authenticate)
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -312,4 +312,16 @@ type CORSSettings struct {
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
 	MaxAge int `mapstructure:"max_age,omitempty"`
+}
+
+func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, err := authenticate(r.Context(), r.Header)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

@@ -782,7 +782,6 @@ func TestServerAuth(t *testing.T) {
 					authCalled = true
 					return ctx, nil
 				},
-				HTTPInterceptorFunc: configauth.DefaultHTTPInterceptor,
 			},
 		},
 	}
