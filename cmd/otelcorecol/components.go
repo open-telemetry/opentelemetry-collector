@@ -4,40 +4,24 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
-	{{- range .Exporters}}
-	{{.Name}} "{{.Import}}"
-	{{- end}}
-	{{- range .Extensions}}
-	{{.Name}} "{{.Import}}"
-	{{- end}}
-	{{- range .Processors}}
-	{{.Name}} "{{.Import}}"
-	{{- end}}
-	{{- range .Receivers}}
-	{{.Name}} "{{.Import}}"
-	{{- end}}
-	{{- if .Distribution.IncludeCore}}
-	"go.opentelemetry.io/collector/service/defaultcomponents"
-	{{- end}}
+	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
+	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
+	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
+	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
+	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
+	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
 func components() (component.Factories, error) {
 	var err error
 	var factories component.Factories
-
-	{{- if .Distribution.IncludeCore}}
-	factories, err = defaultcomponents.Components()
-	if err != nil {
-		return component.Factories{}, err
-	}
-	{{- else}}
 	factories = component.Factories{}
-	{{- end}}
 
 	extensions := []component.ExtensionFactory{
-		{{- range .Extensions}}
-		{{.Name}}.NewFactory(),
-		{{- end}}
+		ballastextension.NewFactory(),
+		zpagesextension.NewFactory(),
 	}
 	for _, ext := range factories.Extensions {
 		extensions = append(extensions, ext)
@@ -48,9 +32,7 @@ func components() (component.Factories, error) {
 	}
 
 	receivers := []component.ReceiverFactory{
-		{{- range .Receivers}}
-		{{.Name}}.NewFactory(),
-		{{- end}}
+		otlpreceiver.NewFactory(),
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
@@ -61,9 +43,9 @@ func components() (component.Factories, error) {
 	}
 
 	exporters := []component.ExporterFactory{
-		{{- range .Exporters}}
-		{{.Name}}.NewFactory(),
-		{{- end}}
+		loggingexporter.NewFactory(),
+		otlpexporter.NewFactory(),
+		otlphttpexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {
 		exporters = append(exporters, exp)
@@ -74,9 +56,8 @@ func components() (component.Factories, error) {
 	}
 
 	processors := []component.ProcessorFactory{
-		{{- range .Processors}}
-		{{.Name}}.NewFactory(),
-		{{- end}}
+		batchprocessor.NewFactory(),
+		memorylimiterprocessor.NewFactory(),
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)
