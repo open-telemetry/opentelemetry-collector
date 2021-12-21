@@ -36,8 +36,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmapprovider"
-	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
@@ -56,7 +54,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
-		ConfigProvider: NewConfigProvider(configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")), configunmarshaler.NewDefault()),
+		ConfigProvider: NewDefaultConfigProvider(path.Join("testdata", "otelcol-config.yaml"), nil),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -97,7 +95,7 @@ func TestCollector_Start(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
-		ConfigProvider: NewConfigProvider(configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")), configunmarshaler.NewDefault()),
+		ConfigProvider: NewDefaultConfigProvider(path.Join("testdata", "otelcol-config.yaml"), nil),
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
@@ -161,7 +159,7 @@ func TestCollector_ReportError(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
-		ConfigProvider: NewConfigProvider(configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")), configunmarshaler.NewDefault()),
+		ConfigProvider: NewDefaultConfigProvider(path.Join("testdata", "otelcol-config.yaml"), nil),
 	})
 	require.NoError(t, err)
 

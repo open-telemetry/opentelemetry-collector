@@ -130,7 +130,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfgW := NewConfigProvider(tt.parserProvider, tt.configUnmarshaler)
+			cfgW := newConfigProvider(tt.parserProvider, tt.configUnmarshaler)
 			_, errN := cfgW.Get(context.Background(), factories)
 			if tt.expectNewErr {
 				assert.Error(t, errN)
@@ -167,7 +167,7 @@ func TestConfigProvider(t *testing.T) {
 		return &errConfigMapProvider{ret: &fakeRetrieved{retM: m}}
 	}()
 
-	cfgW := NewConfigProvider(parserProvider, configunmarshaler.NewDefault())
+	cfgW := newConfigProvider(parserProvider, configunmarshaler.NewDefault())
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
 
@@ -191,7 +191,7 @@ func TestConfigProviderNoWatcher(t *testing.T) {
 	require.NoError(t, errF)
 
 	watcherWG := sync.WaitGroup{}
-	cfgW := NewConfigProvider(configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")), configunmarshaler.NewDefault())
+	cfgW := newConfigProvider(configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")), configunmarshaler.NewDefault())
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
 
@@ -221,7 +221,7 @@ func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 	}()
 
 	watcherWG := sync.WaitGroup{}
-	cfgW := NewConfigProvider(configMapProvider, configunmarshaler.NewDefault())
+	cfgW := newConfigProvider(configMapProvider, configunmarshaler.NewDefault())
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
 

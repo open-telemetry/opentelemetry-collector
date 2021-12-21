@@ -1,0 +1,5 @@
+processors:
+  batch:
+exporters:
+  otlp:
+    endpoint: "localhost:4317"
