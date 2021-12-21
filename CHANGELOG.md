@@ -8,6 +8,7 @@
 - Disallow direct implementation of `configmapprovider.Retrieved` (#4577)
 - `configauth`: remove interceptor functions from the ServerAuthenticator interface (#4583)
 - Replace ConfigMapProvider and ConfigUnmarshaler in collector settings by one simpler ConfigProvider (#4590)
+- Remove deprecated consumererror.Combine (#4597)
 
 ## 💡 Enhancements 💡
 
