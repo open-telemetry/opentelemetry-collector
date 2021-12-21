@@ -85,10 +85,6 @@ type Collector struct {
 
 // New creates and returns a new instance of Collector.
 func New(set CollectorSettings) (*Collector, error) {
-	if err := validateConfigFromFactories(set.Factories); err != nil {
-		return nil, err
-	}
-
 	if set.ConfigProvider == nil {
 		return nil, errors.New("invalid nil config provider")
 	}
