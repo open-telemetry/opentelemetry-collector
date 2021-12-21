@@ -142,7 +142,7 @@ install-tools:
 
 .PHONY: run
 run: build-binary-cmd-otelcol
-	./bin/cmd-otelcol --config ${RUN_CONFIG} ${RUN_ARGS}
+	./bin/otelcolcore --config ${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: for-all
 for-all:
