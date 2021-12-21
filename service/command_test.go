@@ -15,11 +15,15 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
@@ -48,4 +52,25 @@ func TestNewCommandInvalidFactories(t *testing.T) {
 	cmd := NewCommand(settings)
 	err = cmd.Execute()
 	require.Error(t, err)
+}
+
+// badConfigExtensionFactory was created to force error path from factory returning
+// a config not satisfying the validation.
+type badConfigExtensionFactory struct {
+	internalinterface.BaseInternal
+}
+
+func (b badConfigExtensionFactory) Type() config.Type {
+	return "bad_config"
+}
+
+func (b badConfigExtensionFactory) CreateDefaultConfig() config.Extension {
+	return &struct {
+		config.ExtensionSettings
+		BadTagField int `mapstructure:"tag-with-dashes"`
+	}{}
+}
+
+func (b badConfigExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateSettings, _ config.Extension) (component.Extension, error) {
+	return nil, nil
 }
