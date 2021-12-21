@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider
+package configprovider
 
 import (
 	"context"
@@ -23,6 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/config/configmapprovider"
 )
 
 func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
@@ -87,7 +89,7 @@ func TestExpand(t *testing.T) {
 	}()
 
 	// Cannot use configtest.LoadConfigMap because of circular deps.
-	ret, errRet := NewFile(path.Join("testdata", "expand-with-no-env.yaml")).Retrieve(context.Background(), nil)
+	ret, errRet := configmapprovider.NewFile(path.Join("testdata", "expand-with-no-env.yaml")).Retrieve(context.Background(), nil)
 	require.NoError(t, errRet, "Unable to get expected config")
 	expectedCfgMap, errExpected := ret.Get(context.Background())
 	require.NoError(t, errExpected, "Unable to get expected config")
@@ -95,7 +97,7 @@ func TestExpand(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			// Retrieve the config
-			emp := NewExpand(NewFile(path.Join("testdata", test.name)))
+			emp := NewExpand(configmapprovider.NewFile(path.Join("testdata", test.name)))
 			cp, err := emp.Retrieve(context.Background(), nil)
 			require.NoError(t, err, "Unable to get config")
 
@@ -115,7 +117,7 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 	}()
 
 	// Retrieve the config
-	emp := NewExpand(NewFile(path.Join("testdata", "expand-escaped-env.yaml")))
+	emp := NewExpand(configmapprovider.NewFile(path.Join("testdata", "expand-escaped-env.yaml")))
 	cp, err := emp.Retrieve(context.Background(), nil)
 	require.NoError(t, err, "Unable to get config")
 

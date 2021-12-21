@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configprovider // import "go.opentelemetry.io/collector/service/internal/configprovider"
+package configprovider // import "go.opentelemetry.io/collector/internal/configprovider"
 
 import (
 	"go.opentelemetry.io/collector/config/configmapprovider"
@@ -21,8 +21,5 @@ import (
 // NewDefaultMapProvider returns the default configmapprovider.Provider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
 func NewDefaultMapProvider(configFileName string, properties []string) configmapprovider.Provider {
-	return configmapprovider.NewExpand(
-		configmapprovider.NewMerge(
-			configmapprovider.NewFile(configFileName),
-			configmapprovider.NewProperties(properties)))
+	return NewExpand(NewMerge(configmapprovider.NewFile(configFileName), configmapprovider.NewProperties(properties)))
 }

@@ -12,29 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider
+package configprovider
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 )
 
 // mockProvider is a mock implementation of Provider, useful for testing.
 type mockProvider struct {
-	retrieved   Retrieved
+	retrieved   configmapprovider.Retrieved
 	retrieveErr error
 	shutdownErr error
 }
 
-var _ Provider = &mockProvider{}
+var _ configmapprovider.Provider = &mockProvider{}
 
-func (m *mockProvider) Retrieve(context.Context, func(*ChangeEvent)) (Retrieved, error) {
+func (m *mockProvider) Retrieve(context.Context, func(*configmapprovider.ChangeEvent)) (configmapprovider.Retrieved, error) {
 	if m.retrieveErr != nil {
 		return nil, m.retrieveErr
 	}
 	if m.retrieved == nil {
-		return NewRetrieved(func(ctx context.Context) (*config.Map, error) { return config.NewMap(), nil })
+		return configmapprovider.NewRetrieved(func(ctx context.Context) (*config.Map, error) { return config.NewMap(), nil })
 	}
 	return m.retrieved, nil
 }
@@ -43,14 +44,14 @@ func (m *mockProvider) Shutdown(context.Context) error {
 	return m.shutdownErr
 }
 
-func newErrGetRetrieved(getErr error) Retrieved {
-	ret, _ := NewRetrieved(func(ctx context.Context) (*config.Map, error) { return nil, getErr })
+func newErrGetRetrieved(getErr error) configmapprovider.Retrieved {
+	ret, _ := configmapprovider.NewRetrieved(func(ctx context.Context) (*config.Map, error) { return nil, getErr })
 	return ret
 }
 
-func newErrCloseRetrieved(closeErr error) Retrieved {
-	ret, _ := NewRetrieved(
+func newErrCloseRetrieved(closeErr error) configmapprovider.Retrieved {
+	ret, _ := configmapprovider.NewRetrieved(
 		func(ctx context.Context) (*config.Map, error) { return config.NewMap(), nil },
-		WithClose(func(ctx context.Context) error { return closeErr }))
+		configmapprovider.WithClose(func(ctx context.Context) error { return closeErr }))
 	return ret
 }
