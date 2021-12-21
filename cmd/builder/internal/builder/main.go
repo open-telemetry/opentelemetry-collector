@@ -60,33 +60,16 @@ func Generate(cfg Config) error {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
-	for _, file := range []struct {
-		outFile string
-		tmpl    *template.Template
-	}{
-		{
-			"main.go",
-			mainTemplate,
-		},
-		{
-			"main_others.go",
-			mainOthersTemplate,
-		},
-		{
-			"main_windows.go",
-			mainWindowsTemplate,
-		},
-		{
-			"components.go",
-			componentsTemplate,
-		},
-		{
-			"go.mod",
-			goModTemplate,
-		},
+	for _, tmpl := range []*template.Template{
+		mainTemplate,
+		mainOthersTemplate,
+		mainWindowsTemplate,
+		componentsTemplate,
+		componentsTestTemplate,
+		goModTemplate,
 	} {
-		if err := processAndWrite(cfg, file.tmpl, file.outFile, cfg); err != nil {
-			return fmt.Errorf("failed to generate source file with destination %q, source: %q: %w", file.outFile, file.tmpl.Name(), err)
+		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
+			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}
 	}
 
