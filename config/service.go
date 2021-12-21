@@ -15,8 +15,6 @@
 package config // import "go.opentelemetry.io/collector/config"
 
 import (
-	"fmt"
-
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -41,10 +39,6 @@ type ServiceTelemetry struct {
 }
 
 func (srvT *ServiceTelemetry) validate() error {
-	if err := srvT.Logs.validate(); err != nil {
-		return err
-	}
-
 	return srvT.Metrics.validate()
 }
 
@@ -62,8 +56,7 @@ type ServiceTelemetryLogs struct {
 	Development bool `mapstructure:"development"`
 
 	// Encoding sets the logger's encoding.
-	// Valid values are "json" and "console".
-	// (default = "console")
+	// Example values are "json", "console".
 	Encoding string `mapstructure:"encoding"`
 
 	// DisableCaller stops annotating logs with the calling function's file
@@ -105,13 +98,6 @@ type ServiceTelemetryLogs struct {
 	//
 	// By default, there is no initial field.
 	InitialFields map[string]interface{} `mapstructure:"initial_fields"`
-}
-
-func (srvTL *ServiceTelemetryLogs) validate() error {
-	if srvTL.Encoding != "json" && srvTL.Encoding != "console" {
-		return fmt.Errorf(`service telemetry logs invalid encoding: %q, valid values are "json" and "console"`, srvTL.Encoding)
-	}
-	return nil
 }
 
 // ServiceTelemetryMetrics exposes the common Telemetry configuration for one component.
