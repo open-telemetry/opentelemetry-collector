@@ -22,23 +22,27 @@ import (
 var (
 	//go:embed templates/components.go.tmpl
 	componentsBytes    []byte
-	componentsTemplate = parseTemplate("component_header.go.tmpl", componentsBytes)
+	componentsTemplate = parseTemplate("components.go", componentsBytes)
+
+	//go:embed templates/components_test.go.tmpl
+	componentsTestBytes    []byte
+	componentsTestTemplate = parseTemplate("components_test.go", componentsTestBytes)
 
 	//go:embed templates/main.go.tmpl
 	mainBytes    []byte
-	mainTemplate = parseTemplate("main.go.tmpl", mainBytes)
+	mainTemplate = parseTemplate("main.go", mainBytes)
 
 	//go:embed templates/main_others.go.tmpl
 	mainOthersBytes    []byte
-	mainOthersTemplate = parseTemplate("main_others.go.tmpl", mainOthersBytes)
+	mainOthersTemplate = parseTemplate("main_others.go", mainOthersBytes)
 
 	//go:embed templates/main_windows.go.tmpl
 	mainWindowsBytes    []byte
-	mainWindowsTemplate = parseTemplate("main_windows.go.tmpl", mainWindowsBytes)
+	mainWindowsTemplate = parseTemplate("main_windows.go", mainWindowsBytes)
 
 	//go:embed templates/go.mod.tmpl
 	goModBytes    []byte
-	goModTemplate = parseTemplate("go.mod.tmpl", goModBytes)
+	goModTemplate = parseTemplate("go.mod", goModBytes)
 )
 
 func parseTemplate(name string, bytes []byte) *template.Template {
