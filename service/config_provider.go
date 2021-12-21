@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
+	"go.opentelemetry.io/collector/service/internal/configprovider"
 )
 
 // ConfigProvider provides the service configuration.
@@ -71,12 +72,22 @@ type configProvider struct {
 	watcher chan error
 }
 
-// NewConfigProvider returns a new ConfigProvider that provides the configuration using the given
+// newConfigProvider returns a new ConfigProvider that provides the configuration using the given
 // `configMapProvider` and the given `configUnmarshaler`.
-func NewConfigProvider(configMapProvider configmapprovider.Provider, configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+func newConfigProvider(configMapProvider configmapprovider.Provider, configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
 	return &configProvider{
 		configMapProvider: configMapProvider,
 		configUnmarshaler: configUnmarshaler,
+		watcher:           make(chan error, 1),
+	}
+}
+
+// NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
+// defined by the given configFile and overwrites fields using properties.
+func NewDefaultConfigProvider(configFileName string, properties []string) ConfigProvider {
+	return &configProvider{
+		configMapProvider: configprovider.NewDefaultMapProvider(configFileName, properties),
+		configUnmarshaler: configunmarshaler.NewDefault(),
 		watcher:           make(chan error, 1),
 	}
 }
