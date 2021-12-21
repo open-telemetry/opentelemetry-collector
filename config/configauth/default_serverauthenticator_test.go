@@ -16,11 +16,9 @@ package configauth
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -64,50 +62,6 @@ func TestWithAuthenticateFunc(t *testing.T) {
 	// verify
 	assert.True(t, authCalled)
 	assert.NoError(t, err)
-}
-
-func TestWithGRPCStreamInterceptor(t *testing.T) {
-	called := false
-	e := NewServerAuthenticator(WithGRPCStreamInterceptor(func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate AuthenticateFunc) error {
-		called = true
-		return nil
-	}))
-
-	// test
-	err := e.GRPCStreamServerInterceptor(nil, nil, nil, nil)
-
-	// verify
-	assert.True(t, called)
-	assert.NoError(t, err)
-}
-
-func TestWithGRPCUnaryInterceptor(t *testing.T) {
-	called := false
-	e := NewServerAuthenticator(WithGRPCUnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate AuthenticateFunc) (interface{}, error) {
-		called = true
-		return nil, nil
-	}))
-
-	// test
-	_, err := e.GRPCUnaryServerInterceptor(context.Background(), nil, nil, nil)
-
-	// verify
-	assert.True(t, called)
-	assert.NoError(t, err)
-}
-
-func TestWithHTTPInterceptor(t *testing.T) {
-	called := false
-	e := NewServerAuthenticator(WithHTTPInterceptor(func(handler http.Handler, authenticate AuthenticateFunc) http.Handler {
-		called = true
-		return handler
-	}))
-
-	// test
-	e.HTTPInterceptor(nil)
-
-	// verify
-	assert.True(t, called)
 }
 
 func TestWithStart(t *testing.T) {

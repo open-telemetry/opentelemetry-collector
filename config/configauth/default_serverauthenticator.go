@@ -16,9 +16,6 @@ package configauth // import "go.opentelemetry.io/collector/config/configauth"
 
 import (
 	"context"
-	"net/http"
-
-	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
@@ -31,10 +28,6 @@ type Option func(*defaultServerAuthenticator)
 
 type defaultServerAuthenticator struct {
 	AuthenticateFunc
-	GRPCStreamInterceptorFunc
-	GRPCUnaryInterceptorFunc
-	HTTPInterceptorFunc
-
 	componenthelper.StartFunc
 	componenthelper.ShutdownFunc
 }
@@ -43,27 +36,6 @@ type defaultServerAuthenticator struct {
 func WithAuthenticate(authenticateFunc AuthenticateFunc) Option {
 	return func(o *defaultServerAuthenticator) {
 		o.AuthenticateFunc = authenticateFunc
-	}
-}
-
-// WithGRPCStreamInterceptor
-func WithGRPCStreamInterceptor(grpcStreamInterceptorFunc GRPCStreamInterceptorFunc) Option {
-	return func(o *defaultServerAuthenticator) {
-		o.GRPCStreamInterceptorFunc = grpcStreamInterceptorFunc
-	}
-}
-
-// WithGRPCUnaryInterceptor
-func WithGRPCUnaryInterceptor(grpcUnaryInterceptorFunc GRPCUnaryInterceptorFunc) Option {
-	return func(o *defaultServerAuthenticator) {
-		o.GRPCUnaryInterceptorFunc = grpcUnaryInterceptorFunc
-	}
-}
-
-// WithHTTPInterceptor
-func WithHTTPInterceptor(httpInterceptorFunc HTTPInterceptorFunc) Option {
-	return func(o *defaultServerAuthenticator) {
-		o.HTTPInterceptorFunc = httpInterceptorFunc
 	}
 }
 
@@ -86,13 +58,9 @@ func WithShutdown(shutdownFunc componenthelper.ShutdownFunc) Option {
 // NewServerAuthenticator returns a ServerAuthenticator configured with the provided options.
 func NewServerAuthenticator(options ...Option) ServerAuthenticator {
 	bc := &defaultServerAuthenticator{
-		AuthenticateFunc:          func(ctx context.Context, headers map[string][]string) (context.Context, error) { return ctx, nil },
-		GRPCStreamInterceptorFunc: DefaultGRPCStreamServerInterceptor,
-		GRPCUnaryInterceptorFunc:  DefaultGRPCUnaryServerInterceptor,
-		HTTPInterceptorFunc:       DefaultHTTPInterceptor,
-
-		StartFunc:    func(ctx context.Context, host component.Host) error { return nil },
-		ShutdownFunc: func(ctx context.Context) error { return nil },
+		AuthenticateFunc: func(ctx context.Context, headers map[string][]string) (context.Context, error) { return ctx, nil },
+		StartFunc:        func(ctx context.Context, host component.Host) error { return nil },
+		ShutdownFunc:     func(ctx context.Context) error { return nil },
 	}
 
 	for _, op := range options {
@@ -104,18 +72,6 @@ func NewServerAuthenticator(options ...Option) ServerAuthenticator {
 
 func (a *defaultServerAuthenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	return a.AuthenticateFunc(ctx, headers)
-}
-
-func (a *defaultServerAuthenticator) GRPCStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, srvInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	return a.GRPCStreamInterceptorFunc(srv, stream, srvInfo, handler, a.AuthenticateFunc)
-}
-
-func (a *defaultServerAuthenticator) GRPCUnaryServerInterceptor(ctx context.Context, req interface{}, srvInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	return a.GRPCUnaryInterceptorFunc(ctx, req, srvInfo, handler, a.AuthenticateFunc)
-}
-
-func (a *defaultServerAuthenticator) HTTPInterceptor(next http.Handler) http.Handler {
-	return a.HTTPInterceptorFunc(next, a.AuthenticateFunc)
 }
 
 func (a *defaultServerAuthenticator) Start(ctx context.Context, host component.Host) error {
