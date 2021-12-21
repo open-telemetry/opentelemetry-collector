@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v2.1.5
         with:
           go-version: '^1.17.0'
       - uses: evantorrie/mott-the-tidier@v1-beta
