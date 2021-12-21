@@ -106,7 +106,7 @@ func BuildReceivers(
 			BuildInfo: buildInfo,
 		}
 
-		rcv, err := rb.buildReceiver(context.Background(), set, recvCfg)
+		rcv, err := rb.buildReceiver(context.Background(), set, recvID, recvCfg)
 		if err != nil {
 			if err == errUnusedReceiver {
 				set.Logger.Info("Ignoring receiver as it is not used by any pipeline")
@@ -166,6 +166,7 @@ func attachReceiverToPipelines(
 	set component.ReceiverCreateSettings,
 	factory component.ReceiverFactory,
 	dataType config.DataType,
+	id config.ComponentID,
 	cfg config.Receiver,
 	rcv *builtReceiver,
 	builtPipelines []*builtPipeline,
@@ -197,14 +198,14 @@ func attachReceiverToPipelines(
 		if err == componenterror.ErrDataTypeIsNotSupported {
 			return fmt.Errorf(
 				"receiver %v does not support %s but it was used in a %s pipeline",
-				cfg.ID(), dataType, dataType)
+				id, dataType, dataType)
 		}
-		return fmt.Errorf("cannot create receiver %v: %w", cfg.ID(), err)
+		return fmt.Errorf("cannot create receiver %v: %w", id, err)
 	}
 
 	// Check if the factory really created the receiver.
 	if createdReceiver == nil {
-		return fmt.Errorf("factory for %v produced a nil receiver", cfg.ID())
+		return fmt.Errorf("factory for %v produced a nil receiver", id)
 	}
 
 	if rcv.receiver != nil {
@@ -213,10 +214,10 @@ func attachReceiverToPipelines(
 		// that CreateTracesReceiver and CreateMetricsReceiver return the same value.
 		if rcv.receiver != createdReceiver {
 			return fmt.Errorf(
-				"factory for %v is implemented incorrectly: "+
+				"factory for %q is implemented incorrectly: "+
 					"CreateTracesReceiver, CreateMetricsReceiver and CreateLogsReceiver must return "+
 					"the same receiver pointer when creating receivers of different data types",
-				cfg.ID(),
+				id,
 			)
 		}
 	}
@@ -227,16 +228,16 @@ func attachReceiverToPipelines(
 	return nil
 }
 
-func (rb *receiversBuilder) buildReceiver(ctx context.Context, set component.ReceiverCreateSettings, cfg config.Receiver) (*builtReceiver, error) {
+func (rb *receiversBuilder) buildReceiver(ctx context.Context, set component.ReceiverCreateSettings, id config.ComponentID, cfg config.Receiver) (*builtReceiver, error) {
 
 	// First find pipelines that must be attached to this receiver.
-	pipelinesToAttach, err := rb.findPipelinesToAttach(cfg.ID())
+	pipelinesToAttach, err := rb.findPipelinesToAttach(id)
 	if err != nil {
 		return nil, err
 	}
 
 	// Prepare to build the receiver.
-	factory := rb.factories[cfg.ID().Type()]
+	factory := rb.factories[id.Type()]
 	if factory == nil {
 		return nil, fmt.Errorf("receiver factory not found for: %v", cfg.ID())
 	}
@@ -253,7 +254,7 @@ func (rb *receiversBuilder) buildReceiver(ctx context.Context, set component.Rec
 
 		// Attach the corresponding part of the receiver to all pipelines that require
 		// this data type.
-		if err = attachReceiverToPipelines(ctx, set, factory, dataType, cfg, rcv, pipelines); err != nil {
+		if err = attachReceiverToPipelines(ctx, set, factory, dataType, id, cfg, rcv, pipelines); err != nil {
 			return nil, err
 		}
 	}
