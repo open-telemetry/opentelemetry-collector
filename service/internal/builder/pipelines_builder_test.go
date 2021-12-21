@@ -25,10 +25,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestBuildPipelines(t *testing.T) {
@@ -175,7 +175,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 func testPipeline(t *testing.T, pipelineID config.ComponentID, exporterIDs []config.ComponentID) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
-	cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", "pipelines_builder.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "pipelines_builder.yaml"), factories)
 	// Unmarshal the config
 	require.Nil(t, err)
 
@@ -251,7 +251,7 @@ func TestBuildPipelines_NotSupportedDataType(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.configFile, func(t *testing.T) {
 
-			cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
+			cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
 			require.Nil(t, err)
 
 			allExporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
