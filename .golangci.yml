@@ -124,6 +124,10 @@ issues:
     - text: "G402:"
       linters:
         - gosec
+    # Exclude some linters from running on otelcorecol generated files.
+    - path: cmd/otelcorecol/*
+      linters:
+        - goimports
 
   # The list of ids of default excludes to include or disable. By default it's empty.
   # See the list of default excludes here https://golangci-lint.run/usage/configuration.

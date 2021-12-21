@@ -141,8 +141,8 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: run
-run: build-binary-cmd-otelcol
-	./bin/otelcolcore --config ${RUN_CONFIG} ${RUN_ARGS}
+run: otelcorecol
+	./bin/otelcorecol_$(GOOS)_$(GOARCH) --config ${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: for-all
 for-all:
@@ -190,15 +190,15 @@ delete-tag:
 	 	git tag -d "$${dir:2}/$${TAG}" ); \
 	done
 
-# Builds a collector binary of the removed cmd/otelcol directory
-.PHONY: build-binary-cmd-otelcol
-build-binary-cmd-otelcol:
-	mkdir -p ./bin
-	pushd cmd/builder/ && go run ./ --config ../../internal/buildscripts/builder-config.yaml --output-path ../../bin && popd
+# Build the Collector executable.
+.PHONY: otelcorecol
+otelcorecol:
+	pushd cmd/otelcorecol && GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
 
-.PHONY: genmdata
-genmdata:
-	$(MAKE) for-all CMD="go generate ./..."
+.PHONY: genotelcorecol
+genotelcorecol:
+	pushd cmd/builder/ && go run ./ --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol --skip-compilation && popd
 
 DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: internal-gendependabot
