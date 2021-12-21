@@ -35,7 +35,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
@@ -71,9 +70,8 @@ type Collector struct {
 	meterProvider       metric.MeterProvider
 	zPagesSpanProcessor *zpages.SpanProcessor
 
-	cfgProvider ConfigProvider
-	service     *service
-	state       atomic.Value
+	service *service
+	state   atomic.Value
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -91,21 +89,15 @@ func New(set CollectorSettings) (*Collector, error) {
 		return nil, err
 	}
 
-	if set.ConfigMapProvider == nil {
+	if set.ConfigProvider == nil {
 		return nil, errors.New("invalid nil config provider")
-	}
-
-	if set.ConfigUnmarshaler == nil {
-		// use default unmarshaler.
-		set.ConfigUnmarshaler = configunmarshaler.NewDefault()
 	}
 
 	state := atomic.Value{}
 	state.Store(Starting)
 	return &Collector{
-		set:         set,
-		state:       state,
-		cfgProvider: newConfigProvider(set.ConfigMapProvider, set.ConfigUnmarshaler),
+		set:   set,
+		state: state,
 	}, nil
 
 }
@@ -146,7 +138,7 @@ func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 LOOP:
 	for {
 		select {
-		case err := <-col.cfgProvider.Watch():
+		case err := <-col.set.ConfigProvider.Watch():
 			if err != nil {
 				col.logger.Error("Config watch failed", zap.Error(err))
 				break LOOP
@@ -180,7 +172,7 @@ LOOP:
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(Starting)
 
-	cfg, err := col.cfgProvider.Get(ctx, col.set.Factories)
+	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
@@ -256,11 +248,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if err := col.cfgProvider.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to close config provider watcher: %w", err))
-	}
-
-	if err := col.set.ConfigMapProvider.Shutdown(ctx); err != nil {
+	if err := col.set.ConfigProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
 	}
 

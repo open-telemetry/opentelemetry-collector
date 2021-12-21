@@ -33,7 +33,7 @@ func TestNewCommand(t *testing.T) {
 
 func TestNewCommandMapProviderIsNil(t *testing.T) {
 	settings := CollectorSettings{}
-	settings.ConfigMapProvider = nil
+	settings.ConfigProvider = nil
 	cmd := NewCommand(settings)
 	err := cmd.Execute()
 	require.Error(t, err)

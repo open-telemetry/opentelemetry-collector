@@ -37,6 +37,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
@@ -53,9 +54,9 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:         component.NewDefaultBuildInfo(),
-		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")),
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: NewConfigProvider(configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")), configunmarshaler.NewDefault()),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -94,10 +95,10 @@ func TestCollector_Start(t *testing.T) {
 	}
 
 	col, err := New(CollectorSettings{
-		BuildInfo:         component.NewDefaultBuildInfo(),
-		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")),
-		LoggingOptions:    []zap.Option{zap.Hooks(hook)},
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: NewConfigProvider(configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")), configunmarshaler.NewDefault()),
+		LoggingOptions: []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
 
@@ -158,9 +159,9 @@ func TestCollector_ReportError(t *testing.T) {
 	require.NoError(t, err)
 
 	col, err := New(CollectorSettings{
-		BuildInfo:         component.NewDefaultBuildInfo(),
-		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")),
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: NewConfigProvider(configmapprovider.NewFile(path.Join("testdata", "otelcol-config.yaml")), configunmarshaler.NewDefault()),
 	})
 	require.NoError(t, err)
 
