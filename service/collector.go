@@ -170,7 +170,7 @@ func printFactories(factories component.Factories) {
 		ids[i] = string(id)
 		i++
 	}
-	fmt.Printf("Extensions are: %v\n", ids)
+	fmt.Printf("Available extensions are: %v\n", ids)
 
 	ids = make([]string, len(factories.Receivers))
 	i = 0
@@ -178,7 +178,7 @@ func printFactories(factories component.Factories) {
 		ids[i] = string(id)
 		i++
 	}
-	fmt.Printf("Receivers are: %v\n", ids)
+	fmt.Printf("Available receivers are: %v\n", ids)
 
 	ids = make([]string, len(factories.Processors))
 	i = 0
@@ -186,7 +186,7 @@ func printFactories(factories component.Factories) {
 		ids[i] = string(id)
 		i++
 	}
-	fmt.Printf("Processors are: %v\n", ids)
+	fmt.Printf("Available processors are: %v\n", ids)
 
 	ids = make([]string, len(factories.Exporters))
 	i = 0
@@ -194,7 +194,7 @@ func printFactories(factories component.Factories) {
 		ids[i] = string(id)
 		i++
 	}
-	fmt.Printf("Exporters are: %v\n", ids)
+	fmt.Printf("Available exporters are: %v\n", ids)
 }
 
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
