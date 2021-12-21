@@ -60,16 +60,12 @@ func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logg
 func SetColGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) *zapgrpc.Logger {
 	logger := zapgrpc.NewLogger(baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		var c zapcore.Core
-		if loglevel == zap.InfoLevel {
-			var err error
-			// NewIncreaseLevelCore errors only if the new log level is less than the initial core level.
-			// In this case it never happens as WARN is always greater than INFO, therefore ignoring it.
-			c, err = zapcore.NewIncreaseLevelCore(core, zap.WarnLevel)
-			// In case of an error changing the level, move on, this happens when using the NopCore
-			if err != nil {
-				c = core
-			}
-		} else {
+		var err error
+		// NewIncreaseLevelCore errors only if the new log level is less than the initial core level.
+		// In this case it never happens as WARN is always greater than INFO, therefore ignoring it.
+		c, err = zapcore.NewIncreaseLevelCore(core, zap.WarnLevel)
+		// In case of an error changing the level, move on, this happens when using the NopCore
+		if err != nil {
 			c = core
 		}
 		return c.With([]zapcore.Field{zap.Bool("grpc_log", true)})
