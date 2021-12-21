@@ -202,17 +202,11 @@ func printFactories(factories component.Factories) {
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(Starting)
 
-<<<<<<< HEAD
 	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
 	if err != nil {
-		return fmt.Errorf("failed to get config: %w", err)
-=======
-	var err error
-	if col.cfgW, err = newConfigWatcher(ctx, col.set); err != nil {
 		printFactories(col.set.Factories)
 
-		return err
->>>>>>> af98b610 (if the config is invalid, list the factories)
+		return fmt.Errorf("failed to get config: %w", err)
 	}
 	if col.logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
