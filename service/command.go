@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -30,8 +31,8 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			featuregate.Apply(featuregate.GetFlags())
-			if set.ConfigMapProvider == nil {
-				set.ConfigMapProvider = configmapprovider.NewDefault(getConfigFlag(), getSetFlag())
+			if set.ConfigProvider == nil {
+				set.ConfigProvider = NewConfigProvider(configmapprovider.NewDefault(getConfigFlag(), getSetFlag()), configunmarshaler.NewDefault())
 			}
 			col, err := New(set)
 			if err != nil {

@@ -71,7 +71,9 @@ type configProvider struct {
 	watcher chan error
 }
 
-func newConfigProvider(configMapProvider configmapprovider.Provider, configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+// NewConfigProvider returns a new ConfigProvider that provides the configuration using the given
+// `configMapProvider` and the given `configUnmarshaler`.
+func NewConfigProvider(configMapProvider configmapprovider.Provider, configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
 	return &configProvider{
 		configMapProvider: configMapProvider,
 		configUnmarshaler: configUnmarshaler,
