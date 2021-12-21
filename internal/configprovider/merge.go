@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
+package configprovider // import "go.opentelemetry.io/collector/internal/configprovider"
 
 import (
 	"context"
@@ -20,21 +20,22 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 )
 
 type mergeMapProvider struct {
-	providers []Provider
+	providers []configmapprovider.Provider
 }
 
 // NewMerge returns a Provider, that merges the result from multiple Provider.
 //
 // The ConfigMaps are merged in the given order, by merging all of them in order into an initial empty map.
-func NewMerge(ps ...Provider) Provider {
+func NewMerge(ps ...configmapprovider.Provider) configmapprovider.Provider {
 	return &mergeMapProvider{providers: ps}
 }
 
-func (mp *mergeMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
-	var retrs []Retrieved
+func (mp *mergeMapProvider) Retrieve(ctx context.Context, onChange func(*configmapprovider.ChangeEvent)) (configmapprovider.Retrieved, error) {
+	var retrs []configmapprovider.Retrieved
 	retCfgMap := config.NewMap()
 	for _, p := range mp.providers {
 		retr, err := p.Retrieve(ctx, onChange)
@@ -50,11 +51,11 @@ func (mp *mergeMapProvider) Retrieve(ctx context.Context, onChange func(*ChangeE
 		}
 		retrs = append(retrs, retr)
 	}
-	return NewRetrieved(
+	return configmapprovider.NewRetrieved(
 		func(ctx context.Context) (*config.Map, error) {
 			return retCfgMap, nil
 		},
-		WithClose(func(ctxF context.Context) error {
+		configmapprovider.WithClose(func(ctxF context.Context) error {
 			var err error
 			for _, ret := range retrs {
 				err = multierr.Append(err, ret.Close(ctxF))

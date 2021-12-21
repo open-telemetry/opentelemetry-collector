@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
+	"go.opentelemetry.io/collector/internal/configprovider"
 )
 
 // The regular expression for valid config field tag.
@@ -35,7 +36,7 @@ var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
 func LoadConfig(fileName string, factories component.Factories) (*config.Config, error) {
 	// Read yaml config from file
-	cp, err := configmapprovider.NewExpand(configmapprovider.NewFile(fileName)).Retrieve(context.Background(), nil)
+	cp, err := configprovider.NewExpand(configmapprovider.NewFile(fileName)).Retrieve(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
