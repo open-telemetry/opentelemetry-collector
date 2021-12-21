@@ -4,7 +4,6 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	// extensions
 	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
@@ -24,7 +23,6 @@ import (
 )
 
 func components() (component.Factories, error) {
-	var errs []error
 	var err error
 	var factories component.Factories
 	factories = component.Factories{}
@@ -38,7 +36,7 @@ func components() (component.Factories, error) {
 	}
 	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
 	receivers := []component.ReceiverFactory{
@@ -49,7 +47,7 @@ func components() (component.Factories, error) {
 	}
 	factories.Receivers, err = component.MakeReceiverFactoryMap(receivers...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
 	exporters := []component.ExporterFactory{
@@ -62,7 +60,7 @@ func components() (component.Factories, error) {
 	}
 	factories.Exporters, err = component.MakeExporterFactoryMap(exporters...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
 	processors := []component.ProcessorFactory{
@@ -74,8 +72,8 @@ func components() (component.Factories, error) {
 	}
 	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
-	return factories, consumererror.Combine(errs)
+	return factories, nil
 }
