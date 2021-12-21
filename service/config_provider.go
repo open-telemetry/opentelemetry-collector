@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 )
 
-// configProvider represents the service configuration provider object.
+// ConfigProvider provides the service configuration.
 //
 // The typical usage is the following:
 //
@@ -38,6 +38,30 @@ import (
 //		cfgProvider.Watch() // wait for an event.
 //		// repeat Get/Watch cycle until it is time to shut down the Collector process.
 //		cfgProvider.Shutdown()
+type ConfigProvider interface {
+	// Get returns the service configuration, or error otherwise.
+	//
+	// Should never be called concurrently with itself, Watch or Shutdown.
+	Get(ctx context.Context, factories component.Factories) (*config.Config, error)
+
+	// Watch blocks until any configuration change was detected or an unrecoverable error
+	// happened during monitoring the configuration changes.
+	//
+	// Error is nil if the configuration is changed and needs to be re-fetched. Any non-nil
+	// error indicates that there was a problem with watching the config changes.
+	//
+	// Should never be called concurrently with itself or Get.
+	Watch() <-chan error
+
+	// Shutdown signals that the provider is no longer in use and the that should close
+	// and release any resources that it may have created.
+	//
+	// This function must terminate the Watch channel.
+	//
+	// Should never be called concurrently with itself or Get.
+	Shutdown(ctx context.Context) error
+}
+
 type configProvider struct {
 	configMapProvider configmapprovider.Provider
 	configUnmarshaler configunmarshaler.ConfigUnmarshaler
@@ -47,7 +71,7 @@ type configProvider struct {
 	watcher chan error
 }
 
-func newConfigProvider(configMapProvider configmapprovider.Provider, configUnmarshaler configunmarshaler.ConfigUnmarshaler) *configProvider {
+func newConfigProvider(configMapProvider configmapprovider.Provider, configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
 	return &configProvider{
 		configMapProvider: configMapProvider,
 		configUnmarshaler: configUnmarshaler,
@@ -55,7 +79,7 @@ func newConfigProvider(configMapProvider configmapprovider.Provider, configUnmar
 	}
 }
 
-func (cm *configProvider) get(ctx context.Context, factories component.Factories) (*config.Config, error) {
+func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
 	// First check if already an active watching, close that if any.
 	if err := cm.closeIfNeeded(ctx); err != nil {
 		return nil, fmt.Errorf("cannot close previous watch: %w", err)
@@ -85,7 +109,7 @@ func (cm *configProvider) get(ctx context.Context, factories component.Factories
 	return cfg, nil
 }
 
-func (cm *configProvider) watch() <-chan error {
+func (cm *configProvider) Watch() <-chan error {
 	return cm.watcher
 }
 
@@ -103,7 +127,7 @@ func (cm *configProvider) closeIfNeeded(ctx context.Context) error {
 	return nil
 }
 
-func (cm *configProvider) shutdown(ctx context.Context) error {
+func (cm *configProvider) Shutdown(ctx context.Context) error {
 	close(cm.watcher)
 	return multierr.Combine(cm.closeIfNeeded(ctx), cm.configMapProvider.Shutdown(ctx))
 }

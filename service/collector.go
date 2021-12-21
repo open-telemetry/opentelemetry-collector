@@ -71,7 +71,7 @@ type Collector struct {
 	meterProvider       metric.MeterProvider
 	zPagesSpanProcessor *zpages.SpanProcessor
 
-	cfgProvider *configProvider
+	cfgProvider ConfigProvider
 	service     *service
 	state       atomic.Value
 
@@ -146,7 +146,7 @@ func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 LOOP:
 	for {
 		select {
-		case err := <-col.cfgProvider.watch():
+		case err := <-col.cfgProvider.Watch():
 			if err != nil {
 				col.logger.Error("Config watch failed", zap.Error(err))
 				break LOOP
@@ -180,7 +180,7 @@ LOOP:
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(Starting)
 
-	cfg, err := col.cfgProvider.get(ctx, col.set.Factories)
+	cfg, err := col.cfgProvider.Get(ctx, col.set.Factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
@@ -256,7 +256,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	// Begin shutdown sequence.
 	col.logger.Info("Starting shutdown...")
 
-	if err := col.cfgProvider.shutdown(ctx); err != nil {
+	if err := col.cfgProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to close config provider watcher: %w", err))
 	}
 
