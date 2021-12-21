@@ -26,35 +26,20 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmapprovider"
-	"go.opentelemetry.io/collector/config/configunmarshaler"
-	"go.opentelemetry.io/collector/internal/configprovider"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 // The regular expression for valid config field tag.
 var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 
-// LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
+// Deprecated: use servicetest.LoadConfig
 func LoadConfig(fileName string, factories component.Factories) (*config.Config, error) {
-	// Read yaml config from file
-	cp, err := configprovider.NewExpand(configmapprovider.NewFile(fileName)).Retrieve(context.Background(), nil)
-	if err != nil {
-		return nil, err
-	}
-	// Unmarshal the config using the given factories.
-	m, err := cp.Get(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	return configunmarshaler.NewDefault().Unmarshal(m, factories)
+	return servicetest.LoadConfig(fileName, factories)
 }
 
-// LoadConfigAndValidate loads a config from the file, and validates the configuration.
+// Deprecated: use servicetest.LoadConfigAndValidate
 func LoadConfigAndValidate(fileName string, factories component.Factories) (*config.Config, error) {
-	cfg, err := LoadConfig(fileName, factories)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, cfg.Validate()
+	return servicetest.LoadConfigAndValidate(fileName, factories)
 }
 
 // LoadConfigMap loads a config.Map from file, and does NOT validate the configuration.

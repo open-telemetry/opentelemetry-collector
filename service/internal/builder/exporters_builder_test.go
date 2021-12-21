@@ -27,9 +27,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/internal/testcomponents"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestBuildExporters(t *testing.T) {
@@ -208,7 +208,7 @@ func TestBuildExporters_NotSupportedDataType(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.configFile, func(t *testing.T) {
 
-			cfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
+			cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
 			require.Nil(t, err)
 
 			exporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)

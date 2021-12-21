@@ -10,6 +10,7 @@
 - Replace ConfigMapProvider and ConfigUnmarshaler in collector settings by one simpler ConfigProvider (#4590)
 - Remove deprecated consumererror.Combine (#4597)
 - Remove `configmapprovider.NewDefault`, `configmapprovider.NewExpand`, `configmapprovider.NewMerge` (#4600)
+- Move `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` to `servicetest` (#4606)
 
 ## 💡 Enhancements 💡
 

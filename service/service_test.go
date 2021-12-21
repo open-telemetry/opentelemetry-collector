@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestService_GetFactory(t *testing.T) {
@@ -100,7 +100,7 @@ func createExampleService(t *testing.T) *service {
 	// Create some factories.
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "otelcol-nop.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "otelcol-nop.yaml"), factories)
 	require.NoError(t, err)
 
 	srv, err := newService(&svcSettings{
