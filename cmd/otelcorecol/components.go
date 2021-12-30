@@ -12,6 +12,29 @@ import (
 	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
 	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
+	prometheusreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	receivercreator "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
+	k8seventsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
+	k8sclusterreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
+	kubeletstatsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
+	dockerstatsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
+	podmanreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
+	redisreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	elasticsearchreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
+	hostmetricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	jmxreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
+	mysqlreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	apachereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
+	nginxreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
+	filelogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	journaldreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
+	syslogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
+	tcplogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
+	udplogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
+	statsdreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
+	fluentforwardreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
+	jaegerreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
+	zipkinreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 )
 
 func components() (component.Factories, error) {
@@ -33,6 +56,29 @@ func components() (component.Factories, error) {
 
 	receivers := []component.ReceiverFactory{
 		otlpreceiver.NewFactory(),
+		prometheusreceiver.NewFactory(),
+		receivercreator.NewFactory(),
+		k8seventsreceiver.NewFactory(),
+		k8sclusterreceiver.NewFactory(),
+		kubeletstatsreceiver.NewFactory(),
+		dockerstatsreceiver.NewFactory(),
+		podmanreceiver.NewFactory(),
+		redisreceiver.NewFactory(),
+		elasticsearchreceiver.NewFactory(),
+		hostmetricsreceiver.NewFactory(),
+		jmxreceiver.NewFactory(),
+		mysqlreceiver.NewFactory(),
+		apachereceiver.NewFactory(),
+		nginxreceiver.NewFactory(),
+		filelogreceiver.NewFactory(),
+		journaldreceiver.NewFactory(),
+		syslogreceiver.NewFactory(),
+		tcplogreceiver.NewFactory(),
+		udplogreceiver.NewFactory(),
+		statsdreceiver.NewFactory(),
+		fluentforwardreceiver.NewFactory(),
+		jaegerreceiver.NewFactory(),
+		zipkinreceiver.NewFactory(),
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)

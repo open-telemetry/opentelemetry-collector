@@ -8,25 +8,75 @@ dist:
 
 receivers:
   - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    gomod: go.opentelemetry.io/collector v0.41.0
+    gomod: go.opentelemetry.io/collector main
+
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator main
+
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver main
+
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver main
+
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver main
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver main
+
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
-    gomod: go.opentelemetry.io/collector v0.41.0
+    gomod: go.opentelemetry.io/collector main
   - import: go.opentelemetry.io/collector/exporter/otlpexporter
-    gomod: go.opentelemetry.io/collector v0.41.0
+    gomod: go.opentelemetry.io/collector main
   - import: go.opentelemetry.io/collector/exporter/otlphttpexporter
-    gomod: go.opentelemetry.io/collector v0.41.0
+    gomod: go.opentelemetry.io/collector main
 extensions:
   - import: go.opentelemetry.io/collector/extension/ballastextension
-    gomod: go.opentelemetry.io/collector v0.41.0
+    gomod: go.opentelemetry.io/collector main
   - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.41.0
+    gomod: go.opentelemetry.io/collector main
 processors:
   - import: go.opentelemetry.io/collector/processor/batchprocessor
-    gomod: go.opentelemetry.io/collector v0.41.0
+    gomod: go.opentelemetry.io/collector main
   - import: go.opentelemetry.io/collector/processor/memorylimiterprocessor
-    gomod: go.opentelemetry.io/collector v0.41.0
+    gomod: go.opentelemetry.io/collector main
 
 replaces:
-  - go.opentelemetry.io/collector => ../../
-  - go.opentelemetry.io/collector/model => ../../model
+  - go.opentelemetry.io/collector => go.opentelemetry.io/collector main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics => github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy => github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s => github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus main
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin main
