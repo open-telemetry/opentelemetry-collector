@@ -11,6 +11,7 @@
 - Remove deprecated consumererror.Combine (#4597)
 - Remove `configmapprovider.NewDefault`, `configmapprovider.NewExpand`, `configmapprovider.NewMerge` (#4600)
 - Move `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` to `servicetest` (#4606)
+- Builder: Remove deprecated `include-core` flag (#4616)
 
 ## 💡 Enhancements 💡
 
