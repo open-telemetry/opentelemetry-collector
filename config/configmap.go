@@ -85,7 +85,7 @@ func (l *Map) Get(key string) interface{} {
 func (l *Map) Set(key string, value interface{}) error {
 	// koanf doesn't offer a direct setting mechanism so merging is required.
 	merged := koanf.New(KeyDelimiter)
-	_, err = merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
+	_, err := merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
 	// TODO (issue 4467): return this error on `Set`.
 	if err !=nil {
 		return err
