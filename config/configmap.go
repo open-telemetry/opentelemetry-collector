@@ -82,12 +82,15 @@ func (l *Map) Get(key string) interface{} {
 }
 
 // Set sets the value for the key.
-func (l *Map) Set(key string, value interface{}) {
+func (l *Map) Set(key string, value interface{}) error {
 	// koanf doesn't offer a direct setting mechanism so merging is required.
 	merged := koanf.New(KeyDelimiter)
-	_ = merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
+	_, err = merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
 	// TODO (issue 4467): return this error on `Set`.
-	_ = l.k.Merge(merged)
+	if err !=nil {
+		return err
+	}
+	return l.k.Merge(merged)
 }
 
 // IsSet checks to see if the key has been set in any of the data locations.
