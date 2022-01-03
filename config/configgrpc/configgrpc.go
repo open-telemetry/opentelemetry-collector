@@ -178,7 +178,10 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 func (gcs *GRPCClientSettings) ToDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if gcs.Compression != middleware.CompressionEmpty && gcs.Compression != middleware.CompressionNone {
-		cp := GetGRPCCompressionName(gcs.Compression)
+		cp, err := GetGRPCCompressionName(gcs.Compression)
+		if err != nil {
+			return nil, err
+		}
 		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
 	}
 
@@ -354,16 +357,17 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 }
 
 // GetGRPCCompressionName returns compression name registered in grpc.
-func GetGRPCCompressionName(compressionType middleware.CompressionType) string {
+func GetGRPCCompressionName(compressionType middleware.CompressionType) (string, error) {
 	switch compressionType {
 	case middleware.CompressionGzip:
-		return gzip.Name
+		return gzip.Name, nil
 	case middleware.CompressionSnappy:
-		return snappy.Name
+		return snappy.Name, nil
 	case middleware.CompressionZstd:
-		return zstd.Name
+		return zstd.Name, nil
+	default:
+		return "", fmt.Errorf("unsupported compression type %q", compressionType)
 	}
-	return ""
 }
 
 // enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes
