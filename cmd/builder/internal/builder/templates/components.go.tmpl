@@ -33,9 +33,9 @@ func components() (component.Factories, error) {
 
 	factories.Receivers, err = component.MakeReceiverFactoryMap(
 		{{- range .Receivers}}
-    	{{.Name}}.NewFactory(),
-    	{{- end}}
-    )
+		{{.Name}}.NewFactory(),
+		{{- end}}
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}
