@@ -11,6 +11,7 @@
 - Remove deprecated consumererror.Combine (#4597)
 - Remove `configmapprovider.NewDefault`, `configmapprovider.NewExpand`, `configmapprovider.NewMerge` (#4600)
 - Move `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` to `servicetest` (#4606)
+- Builder: Remove deprecated `include-core` flag (#4616)
 
 ## 💡 Enhancements 💡
 
@@ -23,7 +24,8 @@
     in a future release.
   - `service.telemetry.metrics.level` and `service.telemetry.metrics.address`
     should be used to configure collector self-metrics.
-  - `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (#4547)
+- `configauth`: add helpers to create new server authenticators. (#4558)
+- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (#4547)
 
 ## 🧰 Bug fixes 🧰
 

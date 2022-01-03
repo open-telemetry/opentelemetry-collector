@@ -16,53 +16,36 @@ import (
 
 func components() (component.Factories, error) {
 	var err error
-	var factories component.Factories
-	factories = component.Factories{}
+	factories := component.Factories{}
 
-	extensions := []component.ExtensionFactory{
+	factories.Extensions, err = component.MakeExtensionFactoryMap(
 		ballastextension.NewFactory(),
 		zpagesextension.NewFactory(),
-	}
-	for _, ext := range factories.Extensions {
-		extensions = append(extensions, ext)
-	}
-	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}
 
-	receivers := []component.ReceiverFactory{
+	factories.Receivers, err = component.MakeReceiverFactoryMap(
 		otlpreceiver.NewFactory(),
-	}
-	for _, rcv := range factories.Receivers {
-		receivers = append(receivers, rcv)
-	}
-	factories.Receivers, err = component.MakeReceiverFactoryMap(receivers...)
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}
 
-	exporters := []component.ExporterFactory{
+	factories.Exporters, err = component.MakeExporterFactoryMap(
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
-	}
-	for _, exp := range factories.Exporters {
-		exporters = append(exporters, exp)
-	}
-	factories.Exporters, err = component.MakeExporterFactoryMap(exporters...)
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}
 
-	processors := []component.ProcessorFactory{
+	factories.Processors, err = component.MakeProcessorFactoryMap(
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
-	}
-	for _, pr := range factories.Processors {
-		processors = append(processors, pr)
-	}
-	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}

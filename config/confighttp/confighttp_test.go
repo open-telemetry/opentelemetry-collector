@@ -794,14 +794,15 @@ func TestServerAuth(t *testing.T) {
 			AuthenticatorID: config.NewComponentID("mock"),
 		},
 	}
+
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("mock"): &configauth.MockServerAuthenticator{
-				AuthenticateFunc: func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
+				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					authCalled = true
 					return ctx, nil
-				},
-			},
+				}),
+			),
 		},
 	}
 

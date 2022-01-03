@@ -15,7 +15,7 @@ echo "Using ${GOBIN} to compile the distributions."
 # each attempt pauses for 100ms before retrying
 max_retries=50
 
-tests="replaces nocore"
+tests="replaces core"
 
 base=`mktemp -d`
 echo "Running the tests in ${base}"
