@@ -28,7 +28,7 @@ var _ http.Handler = (*clientInfoHandler)(nil)
 type clientInfoHandler struct {
 	next http.Handler
 
-	// include client metadat or not
+	// include client metadata or not
 	includeMetadata bool
 }
 
