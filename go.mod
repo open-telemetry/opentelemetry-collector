@@ -16,7 +16,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.15
 	github.com/prometheus/common v0.32.1
 	github.com/rs/cors v1.8.2
-	github.com/shirou/gopsutil/v3 v3.21.11
+	github.com/shirou/gopsutil/v3 v3.21.12
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
