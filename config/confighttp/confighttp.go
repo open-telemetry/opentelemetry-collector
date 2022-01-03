@@ -200,7 +200,7 @@ type HTTPServerSettings struct {
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
-	// Include propagates the client metadata from the incoming requests to the downstream consumers
+	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 }
 
