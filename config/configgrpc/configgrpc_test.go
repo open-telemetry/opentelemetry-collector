@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/internal/middleware"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -67,7 +68,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			"test": "test",
 		},
 		Endpoint:    "localhost:1234",
-		Compression: "gzip",
+		Compression: middleware.CompressionGzip,
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: false,
 		},
@@ -341,36 +342,6 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 	}
 	_, err := settings.ToListener()
 	assert.Error(t, err)
-}
-
-func TestGetGRPCCompressionKey(t *testing.T) {
-	if GetGRPCCompressionKey("gzip") != CompressionGzip {
-		t.Error("gzip is marked as supported but returned unsupported")
-	}
-
-	if GetGRPCCompressionKey("Gzip") != CompressionGzip {
-		t.Error("Capitalization of CompressionGzip should not matter")
-	}
-
-	if GetGRPCCompressionKey("snappy") != CompressionSnappy {
-		t.Error("snappy is marked as supported but returned unsupported")
-	}
-
-	if GetGRPCCompressionKey("Snappy") != CompressionSnappy {
-		t.Error("Capitalization of CompressionSnappy should not matter")
-	}
-
-	if GetGRPCCompressionKey("zstd") != CompressionZstd {
-		t.Error("zstd is marked as supported but returned unsupported")
-	}
-
-	if GetGRPCCompressionKey("Zstd") != CompressionZstd {
-		t.Error("Capitalization of CompressionZstd should not matter")
-	}
-
-	if GetGRPCCompressionKey("badType") != CompressionUnsupported {
-		t.Error("badType is not supported but was returned as supported")
-	}
 }
 
 func TestHttpReception(t *testing.T) {
