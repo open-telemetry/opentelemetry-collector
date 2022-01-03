@@ -23,7 +23,7 @@ import (
 
 var _ ServerAuthenticator = (*defaultServerAuthenticator)(nil)
 
-// Option represents the possible options for New.
+// Option represents the possible options for NewServerAuthenticator.
 type Option func(*defaultServerAuthenticator)
 
 type defaultServerAuthenticator struct {
@@ -32,7 +32,7 @@ type defaultServerAuthenticator struct {
 	componenthelper.ShutdownFunc
 }
 
-// WithAuthenticate
+// WithAuthenticate specifies which function to use to perform the authentication.
 func WithAuthenticate(authenticateFunc AuthenticateFunc) Option {
 	return func(o *defaultServerAuthenticator) {
 		o.AuthenticateFunc = authenticateFunc
@@ -70,14 +70,17 @@ func NewServerAuthenticator(options ...Option) ServerAuthenticator {
 	return bc
 }
 
+// Authenticate performs the authentication.
 func (a *defaultServerAuthenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	return a.AuthenticateFunc(ctx, headers)
 }
 
+// Start the component.
 func (a *defaultServerAuthenticator) Start(ctx context.Context, host component.Host) error {
 	return a.StartFunc(ctx, host)
 }
 
+// Shutdown stops the component.
 func (a *defaultServerAuthenticator) Shutdown(ctx context.Context) error {
 	return a.ShutdownFunc(ctx)
 }
