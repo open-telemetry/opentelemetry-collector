@@ -16,72 +16,44 @@ import (
 	{{- range .Receivers}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
-	{{- if .Distribution.IncludeCore}}
-	"go.opentelemetry.io/collector/service/defaultcomponents"
-	{{- end}}
 )
 
 func components() (component.Factories, error) {
 	var err error
-	var factories component.Factories
+	factories := component.Factories{}
 
-	{{- if .Distribution.IncludeCore}}
-	factories, err = defaultcomponents.Components()
-	if err != nil {
-		return component.Factories{}, err
-	}
-	{{- else}}
-	factories = component.Factories{}
-	{{- end}}
-
-	extensions := []component.ExtensionFactory{
+	factories.Extensions, err = component.MakeExtensionFactoryMap(
 		{{- range .Extensions}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
-	}
-	for _, ext := range factories.Extensions {
-		extensions = append(extensions, ext)
-	}
-	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}
 
-	receivers := []component.ReceiverFactory{
+	factories.Receivers, err = component.MakeReceiverFactoryMap(
 		{{- range .Receivers}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
-	}
-	for _, rcv := range factories.Receivers {
-		receivers = append(receivers, rcv)
-	}
-	factories.Receivers, err = component.MakeReceiverFactoryMap(receivers...)
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}
 
-	exporters := []component.ExporterFactory{
+	factories.Exporters, err = component.MakeExporterFactoryMap(
 		{{- range .Exporters}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
-	}
-	for _, exp := range factories.Exporters {
-		exporters = append(exporters, exp)
-	}
-	factories.Exporters, err = component.MakeExporterFactoryMap(exporters...)
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}
 
-	processors := []component.ProcessorFactory{
+	factories.Processors, err = component.MakeProcessorFactoryMap(
 		{{- range .Processors}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
-	}
-	for _, pr := range factories.Processors {
-		processors = append(processors, pr)
-	}
-	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}

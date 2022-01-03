@@ -61,12 +61,6 @@ func Command() (*cobra.Command, error) {
 	cmd.Flags().StringVar(&cfg.Distribution.Name, "name", "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.Description, "description", "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.Version, "version", "1.0.0", "The version for the OpenTelemetry Collector distribution")
-	// IncludeCore is deprecated and will be removed in a subsequent release
-	cmd.Flags().BoolVar(&cfg.Distribution.IncludeCore, "include-core", true, "Deprecated: starting from v0.41.0, core components are not going to be implicitly included.")
-	if err := cmd.Flags().MarkDeprecated("include-core", "IncludeCore is deprecated, please explicitly list all the components required"); err != nil {
-		cfg.Logger.Error("failed to mark the IncludeCore flag is deprecated", zap.Error(err))
-		return nil, err
-	}
 	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, "otelcol-version", cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
 	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, "output-path", cfg.Distribution.OutputPath, "Where to write the resulting files")
 	cmd.Flags().StringVar(&cfg.Distribution.Go, "go", "", "The Go binary to use during the compilation phase. Default: go from the PATH")
