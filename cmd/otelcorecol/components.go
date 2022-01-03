@@ -27,8 +27,8 @@ func components() (component.Factories, error) {
 	}
 
 	factories.Receivers, err = component.MakeReceiverFactoryMap(
-    	otlpreceiver.NewFactory(),
-    )
+		otlpreceiver.NewFactory(),
+	)
 	if err != nil {
 		return component.Factories{}, err
 	}
