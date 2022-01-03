@@ -738,9 +738,10 @@ func TestHttpHeaders(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		input    *http.Request
-		expected client.Info
+		desc       string
+		input      *http.Request
+		doMetadata bool
+		expected   client.Info
 	}{
 		{
 			desc:     "request without client IP or headers",
@@ -759,10 +760,19 @@ func TestContextWithClient(t *testing.T) {
 			},
 		},
 		{
+			desc: "request with client headers, no metadata processing",
+			input: &http.Request{
+				Header: map[string][]string{"x-test-header": {"test-value"}},
+			},
+			doMetadata: false,
+			expected:   client.Info{},
+		},
+		{
 			desc: "request with client headers",
 			input: &http.Request{
 				Header: map[string][]string{"x-test-header": {"test-value"}},
 			},
+			doMetadata: true,
 			expected: client.Info{
 				Metadata: map[string][]string{"x-test-header": {"test-value"}},
 			},
@@ -770,7 +780,7 @@ func TestContextWithClient(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			ctx := contextWithClient(tC.input)
+			ctx := contextWithClient(tC.input, tC.doMetadata)
 			assert.Equal(t, tC.expected, client.FromContext(ctx))
 		})
 	}

@@ -27,18 +27,21 @@ var _ http.Handler = (*clientInfoHandler)(nil)
 // clientInfoHandler is an http.Handler that enhances the incoming request context with client.Info.
 type clientInfoHandler struct {
 	next http.Handler
+
+	// include client metadat or not
+	includeMetadata bool
 }
 
 // ServeHTTP intercepts incoming HTTP requests, replacing the request's context with one that contains
 // a client.Info containing the client's IP address.
 func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	req = req.WithContext(contextWithClient(req))
+	req = req.WithContext(contextWithClient(req, h.includeMetadata))
 	h.next.ServeHTTP(w, req)
 }
 
 // contextWithClient attempts to add the client IP address to the client.Info from the context. When no
 // client.Info exists in the context, one is created.
-func contextWithClient(req *http.Request) context.Context {
+func contextWithClient(req *http.Request, includeMetadata bool) context.Context {
 	cl := client.FromContext(req.Context())
 
 	ip := parseIP(req.RemoteAddr)
@@ -46,7 +49,9 @@ func contextWithClient(req *http.Request) context.Context {
 		cl.Addr = ip
 	}
 
-	cl.Metadata = req.Header.Clone()
+	if includeMetadata {
+		cl.Metadata = req.Header.Clone()
+	}
 
 	ctx := client.NewContext(req.Context(), cl)
 	return ctx

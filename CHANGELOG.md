@@ -23,7 +23,7 @@
     in a future release.
   - `service.telemetry.metrics.level` and `service.telemetry.metrics.address`
     should be used to configure collector self-metrics.
-  - `confighttp` and `configgrpc`: Persist request metadata/headers in `client.Info.Metadata` (#4547)
+  - `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (#4547)
 
 ## 🧰 Bug fixes 🧰
 
