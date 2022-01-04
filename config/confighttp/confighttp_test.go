@@ -815,6 +815,35 @@ func TestInvalidServerAuth(t *testing.T) {
 	require.Nil(t, srv)
 }
 
+func TestFailedServerAuth(t *testing.T) {
+	// prepare
+	hss := HTTPServerSettings{
+		Auth: &configauth.Authentication{
+			AuthenticatorID: config.NewComponentID("mock"),
+		},
+	}
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
+				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+					return ctx, fmt.Errorf("authentication failed")
+				}),
+			),
+		},
+	}
+
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	require.NoError(t, err)
+
+	// test
+	response := &httptest.ResponseRecorder{}
+	srv.Handler.ServeHTTP(response, httptest.NewRequest("GET", "/", nil))
+
+	// verify
+	assert.Equal(t, response.Result().StatusCode, http.StatusUnauthorized)
+	assert.Equal(t, response.Result().Status, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)))
+}
+
 type mockHost struct {
 	component.Host
 	ext map[config.ComponentID]component.Extension
