@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/internal/middleware"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -62,36 +63,103 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	gcs := &GRPCClientSettings{
-		Headers: map[string]string{
-			"test": "test",
+	tests := []struct {
+		settings GRPCClientSettings
+		name     string
+		host     component.Host
+	}{
+		{
+			name: "test all with gzip compression",
+			settings: GRPCClientSettings{
+				Headers: map[string]string{
+					"test": "test",
+				},
+				Endpoint:    "localhost:1234",
+				Compression: middleware.CompressionGzip,
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				Keepalive: &KeepaliveClientConfig{
+					Time:                time.Second,
+					Timeout:             time.Second,
+					PermitWithoutStream: true,
+				},
+				ReadBufferSize:  1024,
+				WriteBufferSize: 1024,
+				WaitForReady:    true,
+				BalancerName:    "round_robin",
+				Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("testauth")},
+			},
+			host: &mockHost{
+				ext: map[config.ComponentID]component.Extension{
+					config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{},
+				},
+			},
 		},
-		Endpoint:    "localhost:1234",
-		Compression: "gzip",
-		TLSSetting: configtls.TLSClientSetting{
-			Insecure: false,
+		{
+			name: "test all with snappy compression",
+			settings: GRPCClientSettings{
+				Headers: map[string]string{
+					"test": "test",
+				},
+				Endpoint:    "localhost:1234",
+				Compression: middleware.CompressionSnappy,
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				Keepalive: &KeepaliveClientConfig{
+					Time:                time.Second,
+					Timeout:             time.Second,
+					PermitWithoutStream: true,
+				},
+				ReadBufferSize:  1024,
+				WriteBufferSize: 1024,
+				WaitForReady:    true,
+				BalancerName:    "round_robin",
+				Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("testauth")},
+			},
+			host: &mockHost{
+				ext: map[config.ComponentID]component.Extension{
+					config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{},
+				},
+			},
 		},
-		Keepalive: &KeepaliveClientConfig{
-			Time:                time.Second,
-			Timeout:             time.Second,
-			PermitWithoutStream: true,
+		{
+			name: "test all with zstd compression",
+			settings: GRPCClientSettings{
+				Headers: map[string]string{
+					"test": "test",
+				},
+				Endpoint:    "localhost:1234",
+				Compression: middleware.CompressionZstd,
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: false,
+				},
+				Keepalive: &KeepaliveClientConfig{
+					Time:                time.Second,
+					Timeout:             time.Second,
+					PermitWithoutStream: true,
+				},
+				ReadBufferSize:  1024,
+				WriteBufferSize: 1024,
+				WaitForReady:    true,
+				BalancerName:    "round_robin",
+				Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("testauth")},
+			},
+			host: &mockHost{
+				ext: map[config.ComponentID]component.Extension{
+					config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{},
+				},
+			},
 		},
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		WaitForReady:    true,
-		BalancerName:    "round_robin",
-		Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("testauth")},
 	}
-
-	host := &mockHost{
-		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{},
-		},
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			opts, err := test.settings.ToDialOptions(test.host, tt.TelemetrySettings)
+			assert.NoError(t, err)
+			assert.Len(t, opts, 9)
+		})
 	}
-
-	opts, err := gcs.ToDialOptions(host, tt.TelemetrySettings)
-	assert.NoError(t, err)
-	assert.Len(t, opts, 9)
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
@@ -242,6 +310,39 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			},
 			host: &mockHost{},
 		},
+		{
+			err: "unsupported compression type \"zlib\"",
+			settings: GRPCClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: true,
+				},
+				Compression: "zlib",
+			},
+			host: &mockHost{},
+		},
+		{
+			err: "unsupported compression type \"deflate\"",
+			settings: GRPCClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: true,
+				},
+				Compression: "deflate",
+			},
+			host: &mockHost{},
+		},
+		{
+			err: "unsupported compression type \"bad\"",
+			settings: GRPCClientSettings{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: true,
+				},
+				Compression: "bad",
+			},
+			host: &mockHost{},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
@@ -341,36 +442,6 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 	}
 	_, err := settings.ToListener()
 	assert.Error(t, err)
-}
-
-func TestGetGRPCCompressionKey(t *testing.T) {
-	if GetGRPCCompressionKey("gzip") != CompressionGzip {
-		t.Error("gzip is marked as supported but returned unsupported")
-	}
-
-	if GetGRPCCompressionKey("Gzip") != CompressionGzip {
-		t.Error("Capitalization of CompressionGzip should not matter")
-	}
-
-	if GetGRPCCompressionKey("snappy") != CompressionSnappy {
-		t.Error("snappy is marked as supported but returned unsupported")
-	}
-
-	if GetGRPCCompressionKey("Snappy") != CompressionSnappy {
-		t.Error("Capitalization of CompressionSnappy should not matter")
-	}
-
-	if GetGRPCCompressionKey("zstd") != CompressionZstd {
-		t.Error("zstd is marked as supported but returned unsupported")
-	}
-
-	if GetGRPCCompressionKey("Zstd") != CompressionZstd {
-		t.Error("Capitalization of CompressionZstd should not matter")
-	}
-
-	if GetGRPCCompressionKey("badType") != CompressionUnsupported {
-		t.Error("badType is not supported but was returned as supported")
-	}
 }
 
 func TestHttpReception(t *testing.T) {
