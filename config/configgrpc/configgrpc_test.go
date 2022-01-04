@@ -54,6 +54,22 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 	}
 	opts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
+	assert.Len(t, opts, 4)
+}
+
+func TestNoneCompressionClientSettings(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	gcs := &GRPCClientSettings{
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: true,
+		},
+		Compression: "noNe",
+	}
+	opts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+	assert.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
 
@@ -267,7 +283,7 @@ func TestUseSecure(t *testing.T) {
 	}
 	dialOpts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
-	assert.Len(t, dialOpts, 3)
+	assert.Len(t, dialOpts, 4)
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {

@@ -47,6 +47,7 @@ import (
 // Compression gRPC keys for supported compression types within collector.
 const (
 	CompressionUnsupported = ""
+	CompressionNone        = "none"
 	CompressionGzip        = "gzip"
 	CompressionSnappy      = "snappy"
 	CompressionZstd        = "zstd"
@@ -194,12 +195,15 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
 func (gcs *GRPCClientSettings) ToDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
-	if gcs.Compression != "" {
-		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
-			opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))
-		} else {
-			return nil, fmt.Errorf("unsupported compression type %q", gcs.Compression)
+	if strings.ToLower(gcs.Compression) != CompressionNone {
+		compressionKey := CompressionGzip
+		if gcs.Compression != "" {
+			compressionKey = GetGRPCCompressionKey(gcs.Compression)
+			if compressionKey == CompressionUnsupported {
+				return nil, fmt.Errorf("unsupported compression type %q", gcs.Compression)
+			}
 		}
+		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))
 	}
 
 	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig()
