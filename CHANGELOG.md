@@ -30,6 +30,7 @@
 
 - Fix merge config map provider to close the watchers (#4570)
 - Fix expand map provider to call close on the base provider (#4571)
+- Fix correct the value of `otelcol_exporter_send_failed_requests` (#4629)
 
 ## v0.41.0 Beta
 
