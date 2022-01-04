@@ -61,9 +61,12 @@ func SetColGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) *zapgrpc.L
 	logger := zapgrpc.NewLogger(baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		var c zapcore.Core
 		var err error
+		if loglevel == zapcore.InfoLevel {
+			loglevel = zapcore.WarnLevel
+		}
 		// NewIncreaseLevelCore errors only if the new log level is less than the initial core level.
 		// In this case it never happens as WARN is always greater than INFO, therefore ignoring it.
-		c, err = zapcore.NewIncreaseLevelCore(core, zap.WarnLevel)
+		c, err = zapcore.NewIncreaseLevelCore(core, loglevel)
 		// In case of an error changing the level, move on, this happens when using the NopCore
 		if err != nil {
 			c = core
