@@ -65,6 +65,7 @@ type ConfigProvider interface {
 
 type configProvider struct {
 	configMapProvider configmapprovider.Provider
+	cfgMapConverters  []ConfigMapConverterFunc
 	configUnmarshaler configunmarshaler.ConfigUnmarshaler
 
 	sync.Mutex
@@ -74,22 +75,23 @@ type configProvider struct {
 
 // newConfigProvider returns a new ConfigProvider that provides the configuration using the given
 // `configMapProvider` and the given `configUnmarshaler`.
-func newConfigProvider(configMapProvider configmapprovider.Provider, configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+func newConfigProvider(configMapProvider configmapprovider.Provider, configUnmarshaler configunmarshaler.ConfigUnmarshaler, cfgMapConverters ...ConfigMapConverterFunc) ConfigProvider {
 	return &configProvider{
 		configMapProvider: configMapProvider,
+		cfgMapConverters:  cfgMapConverters,
 		configUnmarshaler: configUnmarshaler,
 		watcher:           make(chan error, 1),
 	}
 }
 
+// ConfigMapConverterFunc is a converter function for the config.Map that allows distributions
+// (in the future components as well) to build backwards compatible config converters.
+type ConfigMapConverterFunc func(*config.Map) (*config.Map, error)
+
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func NewDefaultConfigProvider(configFileName string, properties []string) ConfigProvider {
-	return &configProvider{
-		configMapProvider: configprovider.NewDefaultMapProvider(configFileName, properties),
-		configUnmarshaler: configunmarshaler.NewDefault(),
-		watcher:           make(chan error, 1),
-	}
+func NewDefaultConfigProvider(configFileName string, properties []string, cfgMapConverters ...ConfigMapConverterFunc) ConfigProvider {
+	return newConfigProvider(configprovider.NewDefaultMapProvider(configFileName, properties), configunmarshaler.NewDefault(), cfgMapConverters...)
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
@@ -106,12 +108,22 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 		return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
 	}
 
-	var cfg *config.Config
-	m, err := cm.ret.Get(ctx)
+	var cfgMap *config.Map
+	cfgMap, err = cm.ret.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get the configuration: %w", err)
 	}
-	if cfg, err = cm.configUnmarshaler.Unmarshal(m, factories); err != nil {
+
+	// Apply all converters.
+	for _, cfgMapConv := range cm.cfgMapConverters {
+		cfgMap, err = cfgMapConv(cfgMap)
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
+		}
+	}
+
+	var cfg *config.Config
+	if cfg, err = cm.configUnmarshaler.Unmarshal(cfgMap, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 

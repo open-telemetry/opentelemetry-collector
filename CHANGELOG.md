@@ -26,6 +26,7 @@
     should be used to configure collector self-metrics.
 - `configauth`: add helpers to create new server authenticators. (#4558)
 - Refactor `configgrpc` for compression methods (#4624)
+- Add an option to allow `config.Map` conversion in the `service.ConfigProvider` (#4634)
 
 ## 🧰 Bug fixes 🧰
 
