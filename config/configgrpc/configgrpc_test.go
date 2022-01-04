@@ -626,13 +626,6 @@ func TestContextWithClient(t *testing.T) {
 			},
 		},
 		{
-			desc: "existing client with metadata, no metadata processing",
-			input: client.NewContext(context.Background(), client.Info{
-				Metadata: map[string][]string{"test-metadata-key": {"test-value"}},
-			}),
-			expected: client.Info{},
-		},
-		{
 			desc: "existing client with metadata",
 			input: client.NewContext(context.Background(), client.Info{
 				Metadata: map[string][]string{"test-metadata-key": {"test-value"}},
@@ -652,6 +645,14 @@ func TestContextWithClient(t *testing.T) {
 			expected: client.Info{
 				Metadata: map[string][]string{"test-metadata-key": {"test-value"}},
 			},
+		},
+		{
+			desc: "existing client with metadata in context, no metadata processing",
+			input: metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value"),
+			),
+			expected: client.Info{},
 		},
 	}
 	for _, tC := range testCases {
