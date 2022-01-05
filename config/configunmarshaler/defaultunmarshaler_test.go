@@ -37,7 +37,7 @@ func TestDecodeConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Unmarshal the config
-	cfg, err := loadConfigFile(t, path.Join(".", "testdata", "valid-config.yaml"), factories)
+	cfg, err := loadConfigFile(t, filepath.Join( "testdata", "valid-config.yaml"), factories)
 	require.NoError(t, err, "Unable to load config")
 
 	// Verify extensions.
@@ -192,7 +192,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := loadConfigFile(t, path.Join(".", "testdata", test.name+".yaml"), factories)
+			_, err := loadConfigFile(t, filepath.Join( "testdata", test.name+".yaml"), factories)
 			require.Error(t, err)
 			if test.expected != 0 {
 				cfgErr, ok := err.(*configError)
@@ -214,7 +214,7 @@ func TestLoadEmpty(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	_, err = loadConfigFile(t, path.Join(".", "testdata", "empty-config.yaml"), factories)
+	_, err = loadConfigFile(t, filepath.Join( "testdata", "empty-config.yaml"), factories)
 	assert.NoError(t, err)
 }
 
@@ -222,7 +222,7 @@ func TestLoadEmptyAllSections(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	_, err = loadConfigFile(t, path.Join(".", "testdata", "empty-all-sections.yaml"), factories)
+	_, err = loadConfigFile(t, filepath.Join( "testdata", "empty-all-sections.yaml"), factories)
 	assert.NoError(t, err)
 }
 
@@ -240,7 +240,7 @@ func TestDefaultLoggerConfig(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	cfg, err := loadConfigFile(t, path.Join(".", "testdata", "empty-all-sections.yaml"), factories)
+	cfg, err := loadConfigFile(t, filepath.Join( "testdata", "empty-all-sections.yaml"), factories)
 	assert.NoError(t, err)
 
 	zapProdCfg := zap.NewProductionConfig()
