@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 					"another":                "somevalue",
 				},
 				Endpoint:    "1.2.3.4:1234",
-				Compression: "on",
+				Compression: "gzip",
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/var/lib/mycert.pem",

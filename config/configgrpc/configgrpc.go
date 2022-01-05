@@ -44,24 +44,7 @@ import (
 	"go.opentelemetry.io/collector/internal/middleware"
 )
 
-// Compression gRPC keys for supported compression types within collector.
-const (
-	CompressionUnsupported = ""
-	CompressionGzip        = "gzip"
-	CompressionSnappy      = "snappy"
-	CompressionZstd        = "zstd"
-)
-
-var (
-	// Map of opentelemetry compression types to grpc registered compression types.
-	gRPCCompressionKeyMap = map[string]string{
-		CompressionGzip:   gzip.Name,
-		CompressionSnappy: snappy.Name,
-		CompressionZstd:   zstd.Name,
-	}
-
-	errMetadataNotFound = errors.New("no request metadata found")
-)
+var errMetadataNotFound = errors.New("no request metadata found")
 
 // Allowed balancer names to be set in grpclb_policy to discover the servers.
 var allowedBalancerNames = []string{roundrobin.Name, grpc.PickFirstBalancerName}
@@ -83,7 +66,7 @@ type GRPCClientSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// The compression key for supported compression types within collector.
-	Compression string `mapstructure:"compression"`
+	Compression middleware.CompressionType `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
@@ -197,12 +180,12 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
 func (gcs *GRPCClientSettings) ToDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
-	if gcs.Compression != "" {
-		if compressionKey := GetGRPCCompressionKey(gcs.Compression); compressionKey != CompressionUnsupported {
-			opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(compressionKey)))
-		} else {
-			return nil, fmt.Errorf("unsupported compression type %q", gcs.Compression)
+	if gcs.Compression != middleware.CompressionEmpty && gcs.Compression != middleware.CompressionNone {
+		cp, err := getGRPCCompressionName(gcs.Compression)
+		if err != nil {
+			return nil, err
 		}
+		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
 	}
 
 	tlsCfg, err := gcs.TLSSetting.LoadTLSConfig()
@@ -376,14 +359,18 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 	return opts, nil
 }
 
-// GetGRPCCompressionKey returns the grpc registered compression key if the
-// passed in compression key is supported, and CompressionUnsupported otherwise.
-func GetGRPCCompressionKey(compressionType string) string {
-	compressionKey := strings.ToLower(compressionType)
-	if encodingKey, ok := gRPCCompressionKeyMap[compressionKey]; ok {
-		return encodingKey
+// getGRPCCompressionName returns compression name registered in grpc.
+func getGRPCCompressionName(compressionType middleware.CompressionType) (string, error) {
+	switch compressionType {
+	case middleware.CompressionGzip:
+		return gzip.Name, nil
+	case middleware.CompressionSnappy:
+		return snappy.Name, nil
+	case middleware.CompressionZstd:
+		return zstd.Name, nil
+	default:
+		return "", fmt.Errorf("unsupported compression type %q", compressionType)
 	}
-	return CompressionUnsupported
 }
 
 // enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes

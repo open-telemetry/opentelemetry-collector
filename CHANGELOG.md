@@ -25,6 +25,8 @@
   - `service.telemetry.metrics.level` and `service.telemetry.metrics.address`
     should be used to configure collector self-metrics.
 - `configauth`: add helpers to create new server authenticators. (#4558)
+- Refactor `configgrpc` for compression methods (#4624)
+- Add an option to allow `config.Map` conversion in the `service.ConfigProvider` (#4634)
 - `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (#4547)
 
 ## 🧰 Bug fixes 🧰
