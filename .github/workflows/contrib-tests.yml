@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: cimg/go:1.17
+      # required for docker_stats receiver startup
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: Setup Permissions
         run: sudo chmod -R 777 $GITHUB_WORKSPACE /github /__w/_temp
