@@ -27,6 +27,7 @@
 - `configauth`: add helpers to create new server authenticators. (#4558)
 - Refactor `configgrpc` for compression methods (#4624)
 - Add an option to allow `config.Map` conversion in the `service.ConfigProvider` (#4634)
+- Builder: Enable unmarshal exact to help finding hard to find typos #4644
 
 ## 🧰 Bug fixes 🧰
 
