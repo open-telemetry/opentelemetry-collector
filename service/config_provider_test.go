@@ -95,7 +95,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 		{
 			name:              "converter_err",
 			parserProvider:    configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")),
-			cfgMapConverters:  []ConfigMapConverterFunc{func(c *config.Map) (*config.Map, error) { return nil, errors.New("converter_err") }},
+			cfgMapConverters:  []ConfigMapConverterFunc{func(c *config.Map) error { return errors.New("converter_err") }},
 			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectNewErr:      true,
 		},

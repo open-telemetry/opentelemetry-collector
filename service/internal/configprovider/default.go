@@ -21,5 +21,5 @@ import (
 // NewDefaultMapProvider returns the default configmapprovider.Provider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
 func NewDefaultMapProvider(configFileName string, properties []string) configmapprovider.Provider {
-	return NewExpand(NewMerge(configmapprovider.NewFile(configFileName), configmapprovider.NewProperties(properties)))
+	return NewMerge(configmapprovider.NewFile(configFileName), configmapprovider.NewProperties(properties))
 }
