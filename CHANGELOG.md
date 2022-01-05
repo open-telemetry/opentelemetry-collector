@@ -32,6 +32,7 @@
 
 - Fix merge config map provider to close the watchers (#4570)
 - Fix expand map provider to call close on the base provider (#4571)
+- `otlp` receiver: Fix legacy port cfg value override and HTTP server starting bug (#4631)
 
 ## v0.41.0 Beta
 
