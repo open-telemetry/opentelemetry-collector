@@ -86,12 +86,15 @@ func newConfigProvider(configMapProvider configmapprovider.Provider, configUnmar
 
 // ConfigMapConverterFunc is a converter function for the config.Map that allows distributions
 // (in the future components as well) to build backwards compatible config converters.
-type ConfigMapConverterFunc func(*config.Map) (*config.Map, error)
+type ConfigMapConverterFunc func(*config.Map) error
 
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
 func NewDefaultConfigProvider(configFileName string, properties []string, cfgMapConverters ...ConfigMapConverterFunc) ConfigProvider {
-	return newConfigProvider(configprovider.NewDefaultMapProvider(configFileName, properties), configunmarshaler.NewDefault(), cfgMapConverters...)
+	return newConfigProvider(
+		configprovider.NewDefaultMapProvider(configFileName, properties),
+		configunmarshaler.NewDefault(),
+		append(cfgMapConverters, configprovider.NewExpandConverter())...)
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
@@ -116,8 +119,7 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 
 	// Apply all converters.
 	for _, cfgMapConv := range cm.cfgMapConverters {
-		cfgMap, err = cfgMapConv(cfgMap)
-		if err != nil {
+		if err = cfgMapConv(cfgMap); err != nil {
 			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
 		}
 	}

@@ -16,7 +16,6 @@ package configprovider
 
 import (
 	"context"
-	"errors"
 	"os"
 	"path"
 	"testing"
@@ -25,46 +24,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
-func TestBaseRetrieveFailsOnRetrieve(t *testing.T) {
-	retErr := errors.New("test error")
-	exp := NewExpand(&mockProvider{retrieveErr: retErr})
-	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
-	_, err := exp.Retrieve(context.Background(), nil)
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, retErr)
-}
-
-func TestBaseRetrieveFailsOnGet(t *testing.T) {
-	getErr := errors.New("test error")
-	exp := NewExpand(&mockProvider{retrieved: newErrGetRetrieved(getErr)})
-	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
-	_, err := exp.Retrieve(context.Background(), nil)
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, getErr)
-}
-
-func TestBaseRetrieveFailsOnClose(t *testing.T) {
-	closeErr := errors.New("test error")
-	exp := NewExpand(&mockProvider{retrieved: newErrCloseRetrieved(closeErr)})
-	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
-	ret, err := exp.Retrieve(context.Background(), nil)
-	require.NoError(t, err)
-	err = ret.Close(context.Background())
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, closeErr)
-}
-
-func TestBaseRetrieveFailsOnShutdown(t *testing.T) {
-	shutdownErr := errors.New("test error")
-	exp := NewExpand(&mockProvider{shutdownErr: shutdownErr})
-	err := exp.Shutdown(context.Background())
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, shutdownErr)
-}
-
-func TestExpand(t *testing.T) {
+func TestNewExpandConverter(t *testing.T) {
 	var testCases = []struct {
 		name string // test case name (also file name containing config yaml)
 	}{
@@ -96,20 +59,17 @@ func TestExpand(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			// Retrieve the config
-			emp := NewExpand(configmapprovider.NewFile(path.Join("testdata", test.name)))
-			cp, err := emp.Retrieve(context.Background(), nil)
+			cfgMap, err := configtest.LoadConfigMap(path.Join("testdata", test.name))
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
-			m, err := cp.Get(context.Background())
-			require.NoError(t, err)
-			assert.Equal(t, expectedCfgMap.ToStringMap(), m.ToStringMap())
+			require.NoError(t, NewExpandConverter()(cfgMap))
+			assert.Equal(t, expectedCfgMap.ToStringMap(), cfgMap.ToStringMap())
 		})
 	}
 }
 
-func TestExpand_EscapedEnvVars(t *testing.T) {
+func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 	const receiverExtraMapValue = "some map value"
 	assert.NoError(t, os.Setenv("MAP_VALUE_2", receiverExtraMapValue))
 	defer func() {
@@ -117,8 +77,7 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 	}()
 
 	// Retrieve the config
-	emp := NewExpand(configmapprovider.NewFile(path.Join("testdata", "expand-escaped-env.yaml")))
-	cp, err := emp.Retrieve(context.Background(), nil)
+	cfgMap, err := configtest.LoadConfigMap(path.Join("testdata", "expand-escaped-env.yaml"))
 	require.NoError(t, err, "Unable to get config")
 
 	expectedMap := map[string]interface{}{
@@ -138,7 +97,6 @@ func TestExpand_EscapedEnvVars(t *testing.T) {
 			// escaped $ alone
 			"recv.7": "$",
 		}}
-	m, err := cp.Get(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, expectedMap, m.ToStringMap())
+	require.NoError(t, NewExpandConverter()(cfgMap))
+	assert.Equal(t, expectedMap, cfgMap.ToStringMap())
 }

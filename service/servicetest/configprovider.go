@@ -21,13 +21,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
-	"go.opentelemetry.io/collector/service/internal/configprovider"
 )
 
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
 func LoadConfig(fileName string, factories component.Factories) (*config.Config, error) {
 	// Read yaml config from file
-	cp, err := configprovider.NewExpand(configmapprovider.NewFile(fileName)).Retrieve(context.Background(), nil)
+	cp, err := configmapprovider.NewFile(fileName).Retrieve(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
