@@ -198,7 +198,7 @@ otelcorecol:
 
 .PHONY: genotelcorecol
 genotelcorecol:
-	pushd cmd/builder/ && go run ./ --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol --skip-compilation && popd
+	pushd cmd/builder/ && go run ./ --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 
 .PHONY: genmdata
 genmdata:
