@@ -774,7 +774,7 @@ func TestContextWithClient(t *testing.T) {
 			},
 			doMetadata: true,
 			expected: client.Info{
-				Metadata: map[string][]string{"x-test-header": {"test-value"}},
+				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}}),
 			},
 		},
 	}

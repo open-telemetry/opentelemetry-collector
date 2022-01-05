@@ -398,7 +398,7 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 	}
 	if includeMetadata {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
-			cl.Metadata = md.Copy()
+			cl.Metadata = client.NewMetadata(md.Copy())
 		}
 	}
 	return client.NewContext(ctx, cl)

@@ -699,11 +699,11 @@ func TestContextWithClient(t *testing.T) {
 		{
 			desc: "existing client with metadata",
 			input: client.NewContext(context.Background(), client.Info{
-				Metadata: map[string][]string{"test-metadata-key": {"test-value"}},
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
 			}),
 			doMetadata: true,
 			expected: client.Info{
-				Metadata: map[string][]string{"test-metadata-key": {"test-value"}},
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
 			},
 		},
 		{
@@ -714,7 +714,7 @@ func TestContextWithClient(t *testing.T) {
 			),
 			doMetadata: true,
 			expected: client.Info{
-				Metadata: map[string][]string{"test-metadata-key": {"test-value"}},
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
 			},
 		},
 		{
