@@ -110,7 +110,11 @@ func (exp *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend
 		return
 	}
 	// Ignore the error for now. This should not happen.
-	_ = stats.RecordWithTags(ctx, exp.mutators, sentMeasure.M(numSent), failedToSendMeasure.M(numFailedToSend))
+	if numFailedToSend > 0 {
+		_ = stats.RecordWithTags(ctx, exp.mutators, sentMeasure.M(numSent), failedToSendMeasure.M(numFailedToSend))
+	} else {
+		_ = stats.RecordWithTags(ctx, exp.mutators, sentMeasure.M(numSent))
+	}
 }
 
 func endSpan(ctx context.Context, err error, numSent, numFailedToSend int64, sentItemsKey, failedToSendItemsKey string) {
