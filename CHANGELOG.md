@@ -25,12 +25,15 @@
   - `service.telemetry.metrics.level` and `service.telemetry.metrics.address`
     should be used to configure collector self-metrics.
 - `configauth`: add helpers to create new server authenticators. (#4558)
+- Refactor `configgrpc` for compression methods (#4624)
+- Add an option to allow `config.Map` conversion in the `service.ConfigProvider` (#4634)
 
 ## 🧰 Bug fixes 🧰
 
 - Fix merge config map provider to close the watchers (#4570)
 - Fix expand map provider to call close on the base provider (#4571)
 - Fix correct the value of `otelcol_exporter_send_failed_requests` (#4629)
+- `otlp` receiver: Fix legacy port cfg value override and HTTP server starting bug (#4631)
 
 ## v0.41.0 Beta
 
