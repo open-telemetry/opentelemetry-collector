@@ -64,23 +64,27 @@ type ConfigProvider interface {
 }
 
 type configProvider struct {
-	configMapProvider configmapprovider.Provider
-	cfgMapConverters  []ConfigMapConverterFunc
-	configUnmarshaler configunmarshaler.ConfigUnmarshaler
+	configMapProviders []configmapprovider.Provider
+	cfgMapConverters   []ConfigMapConverterFunc
+	configUnmarshaler  configunmarshaler.ConfigUnmarshaler
 
 	sync.Mutex
 	ret     configmapprovider.Retrieved
 	watcher chan error
 }
 
-// newConfigProvider returns a new ConfigProvider that provides the configuration using the given
-// `configMapProvider` and the given `configUnmarshaler`.
-func newConfigProvider(configMapProvider configmapprovider.Provider, configUnmarshaler configunmarshaler.ConfigUnmarshaler, cfgMapConverters ...ConfigMapConverterFunc) ConfigProvider {
+// NewConfigProvider returns a new ConfigProvider that provides the configuration:
+// * Retrieve the config.Map by merging all retrieved maps from all the configmapprovider.Provider in order.
+// * Then applies all the ConfigMapConverterFunc in the given order.
+// * Then unmarshalls the final config.Config using the given configunmarshaler.ConfigUnmarshaler.
+//
+// Notice: This API is experimental.
+func NewConfigProvider(configMapProviders []configmapprovider.Provider, cfgMapConverters []ConfigMapConverterFunc, configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
 	return &configProvider{
-		configMapProvider: configMapProvider,
-		cfgMapConverters:  cfgMapConverters,
-		configUnmarshaler: configUnmarshaler,
-		watcher:           make(chan error, 1),
+		configMapProviders: configMapProviders,
+		cfgMapConverters:   cfgMapConverters,
+		configUnmarshaler:  configUnmarshaler,
+		watcher:            make(chan error, 1),
 	}
 }
 
@@ -90,11 +94,11 @@ type ConfigMapConverterFunc func(*config.Map) error
 
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func NewDefaultConfigProvider(configFileName string, properties []string, cfgMapConverters ...ConfigMapConverterFunc) ConfigProvider {
-	return newConfigProvider(
-		configprovider.NewDefaultMapProvider(configFileName, properties),
-		configunmarshaler.NewDefault(),
-		append(cfgMapConverters, configprovider.NewExpandConverter())...)
+func NewDefaultConfigProvider(configFileName string, properties []string) ConfigProvider {
+	return NewConfigProvider(
+		[]configmapprovider.Provider{configmapprovider.NewFile(configFileName), configmapprovider.NewProperties(properties)},
+		[]ConfigMapConverterFunc{configprovider.NewExpandConverter()},
+		configunmarshaler.NewDefault())
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
@@ -104,7 +108,7 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 	}
 
 	var err error
-	cm.ret, err = cm.configMapProvider.Retrieve(ctx, cm.onChange)
+	cm.ret, err = mergeRetrieve(ctx, cm.onChange, cm.configMapProviders)
 	if err != nil {
 		// Nothing to close, no valid retrieved value.
 		cm.ret = nil
@@ -156,5 +160,44 @@ func (cm *configProvider) closeIfNeeded(ctx context.Context) error {
 
 func (cm *configProvider) Shutdown(ctx context.Context) error {
 	close(cm.watcher)
-	return multierr.Combine(cm.closeIfNeeded(ctx), cm.configMapProvider.Shutdown(ctx))
+	return multierr.Combine(cm.closeIfNeeded(ctx), mergeShutdown(ctx, cm.configMapProviders))
+}
+
+func mergeRetrieve(ctx context.Context, onChange func(*configmapprovider.ChangeEvent), providers []configmapprovider.Provider) (configmapprovider.Retrieved, error) {
+	var retrs []configmapprovider.Retrieved
+	retCfgMap := config.NewMap()
+	for _, p := range providers {
+		retr, err := p.Retrieve(ctx, onChange)
+		if err != nil {
+			return nil, err
+		}
+		cfgMap, err := retr.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if err = retCfgMap.Merge(cfgMap); err != nil {
+			return nil, err
+		}
+		retrs = append(retrs, retr)
+	}
+	return configmapprovider.NewRetrieved(
+		func(ctx context.Context) (*config.Map, error) {
+			return retCfgMap, nil
+		},
+		configmapprovider.WithClose(func(ctxF context.Context) error {
+			var err error
+			for _, ret := range retrs {
+				err = multierr.Append(err, ret.Close(ctxF))
+			}
+			return err
+		}))
+}
+
+func mergeShutdown(ctx context.Context, providers []configmapprovider.Provider) error {
+	var errs error
+	for _, p := range providers {
+		errs = multierr.Append(errs, p.Shutdown(ctx))
+	}
+
+	return errs
 }
