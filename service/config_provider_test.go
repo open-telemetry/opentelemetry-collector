@@ -80,6 +80,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 	tests := []struct {
 		name              string
 		parserProvider    configmapprovider.Provider
+		cfgMapConverters  []ConfigMapConverterFunc
 		configUnmarshaler configunmarshaler.ConfigUnmarshaler
 		expectNewErr      bool
 		expectWatchErr    bool
@@ -92,9 +93,16 @@ func TestConfigProvider_Errors(t *testing.T) {
 			expectNewErr:      true,
 		},
 		{
-			name:              "retrieve_ok_unmarshal_err",
+			name:              "converter_err",
 			parserProvider:    configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")),
-			configUnmarshaler: &errConfigUnmarshaler{err: errors.New("retrieve_ok_unmarshal_err")},
+			cfgMapConverters:  []ConfigMapConverterFunc{func(c *config.Map) (*config.Map, error) { return nil, errors.New("converter_err") }},
+			configUnmarshaler: configunmarshaler.NewDefault(),
+			expectNewErr:      true,
+		},
+		{
+			name:              "unmarshal_err",
+			parserProvider:    configmapprovider.NewFile(path.Join("testdata", "otelcol-nop.yaml")),
+			configUnmarshaler: &errConfigUnmarshaler{err: errors.New("unmarshal_err")},
 			expectNewErr:      true,
 		},
 		{
@@ -130,7 +138,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfgW := newConfigProvider(tt.parserProvider, tt.configUnmarshaler)
+			cfgW := newConfigProvider(tt.parserProvider, tt.configUnmarshaler, tt.cfgMapConverters...)
 			_, errN := cfgW.Get(context.Background(), factories)
 			if tt.expectNewErr {
 				assert.Error(t, errN)

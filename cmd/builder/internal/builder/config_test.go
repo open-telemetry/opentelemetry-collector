@@ -161,9 +161,3 @@ func TestDefaultConfig(t *testing.T) {
 	require.NoError(t, cfg.ParseModules())
 	require.NoError(t, cfg.Validate())
 }
-
-func TestValidateDeprecatedIncludeCoreWarnLog(t *testing.T) {
-	cfg := DefaultConfig()
-	cfg.Distribution.IncludeCore = true
-	require.NoError(t, cfg.Validate())
-}

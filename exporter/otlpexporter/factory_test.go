@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/middleware"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -105,7 +106,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configgrpc.CompressionGzip,
+					Compression: middleware.CompressionGzip,
 				},
 			},
 		},
@@ -114,7 +115,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configgrpc.CompressionSnappy,
+					Compression: middleware.CompressionSnappy,
 				},
 			},
 		},
@@ -123,7 +124,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configgrpc.CompressionZstd,
+					Compression: middleware.CompressionZstd,
 				},
 			},
 		},
@@ -148,17 +149,6 @@ func TestCreateTracesExporter(t *testing.T) {
 					Endpoint: endpoint,
 				},
 			},
-		},
-		{
-			name: "CompressionError",
-			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint:    endpoint,
-					Compression: "unknown compression",
-				},
-			},
-			mustFailOnStart: true,
 		},
 		{
 			name: "CaCert",
