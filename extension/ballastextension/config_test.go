@@ -15,7 +15,7 @@
 package ballastextension
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join( "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -59,7 +59,7 @@ func TestLoadInvalidConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join( "testdata", "config_invalid.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_invalid.yaml"), factories)
 
 	require.NotNil(t, err)
 	assert.Equal(t, err.Error(), "extension \"memory_ballast\" has invalid configuration: size_in_percentage is not in range 0 to 100")
