@@ -146,6 +146,14 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pdata.ExponentialHisto
 
 		scale := int(p.Scale())
 		factor := math.Ldexp(math.Ln2, -scale)
+		// Note: the equation used here, which is
+		//   math.Exp(index * factor)
+		// reports +Inf as the _lower_ boundary of the bucket nearest
+		// infinity, which is incorrect and can be addressed in various
+		// ways.  The OTel-Go implementation of this histogram pending
+		// in https://github.com/open-telemetry/opentelemetry-go/pull/2393
+		// uses a lookup table for the last finite boundary, which can be
+		// easily computed using `math/big` (for scales up to 20).
 
 		negB := p.Negative().BucketCounts()
 		posB := p.Positive().BucketCounts()
