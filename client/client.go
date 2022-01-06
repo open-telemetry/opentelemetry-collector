@@ -108,7 +108,7 @@ type Info struct {
 	Auth AuthData
 
 	// Metadata is the request metadata from the client connecting to this connector.
-	Metadata *Metadata
+	Metadata Metadata
 }
 
 // Metadata is an immutable map, meant to contain request metadata.
@@ -147,14 +147,14 @@ func FromContext(ctx context.Context) Info {
 }
 
 // NewMetadata creates a new Metadata object to use in Info. md is used as-is.
-func NewMetadata(md map[string][]string) *Metadata {
-	return &Metadata{
+func NewMetadata(md map[string][]string) Metadata {
+	return Metadata{
 		data: md,
 	}
 }
 
 // Get gets the value of the key from metadata, returning a copy.
-func (m *Metadata) Get(key string) []string {
+func (m Metadata) Get(key string) []string {
 	vals := m.data[key]
 	ret := make([]string, 0, len(vals))
 	copy(ret, vals)
