@@ -102,7 +102,7 @@ func initConfig() error {
 	cfg.Logger.Info("Using config file", zap.String("path", vp.ConfigFileUsed()))
 
 	// convert Viper's internal state into our configuration object
-	if err := vp.Unmarshal(&cfg); err != nil {
+	if err := vp.UnmarshalExact(&cfg); err != nil {
 		cfg.Logger.Error("failed to parse the config", zap.Error(err))
 		return err
 	}
