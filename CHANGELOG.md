@@ -32,6 +32,7 @@
 - Refactor `configgrpc` for compression methods (#4624)
 - Add an option to allow `config.Map` conversion in the `service.ConfigProvider` (#4634)
 - Added support to expose gRPC framework's logs as part of collector logs (#4501)
+- Builder: Enable unmarshal exact to help finding hard to find typos #4644
 
 ## 🧰 Bug fixes 🧰
 
