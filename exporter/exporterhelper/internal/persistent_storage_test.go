@@ -56,7 +56,7 @@ func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, lo
 }
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
-	logger, _ := zap.NewDevelopment()
+	logger := zap.NewNop()
 	return createTestPersistentStorageWithLoggingAndCapacity(client, logger, 1000)
 }
 
@@ -110,8 +110,6 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
-
-	ext := createStorageExtension(path)
 
 	cases := []struct {
 		name                               string
@@ -174,6 +172,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			ext := createStorageExtension(path)
 			client := createTestClient(ext)
 			ps := createTestPersistentStorage(client)
 
@@ -186,7 +185,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 			}
 			require.Eventually(t, func() bool {
 				return ps.size() == 2
-			}, 500*time.Millisecond, 10*time.Millisecond)
+			}, 5*time.Second, 10*time.Millisecond)
 			ps.stop()
 
 			// ... so now we can corrupt data (in several ways)
@@ -217,7 +216,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 				newPs.mu.Lock()
 				defer newPs.mu.Unlock()
 				return newPs.size() == c.desiredQueueSize && len(newPs.currentlyDispatchedItems) == c.desiredNumberOfDispatchedItems
-			}, 500*time.Millisecond, 10*time.Millisecond)
+			}, 5*time.Second, 10*time.Millisecond)
 		})
 	}
 }
@@ -260,7 +259,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	newPs := createTestPersistentStorage(client)
 	require.Eventually(t, func() bool {
 		return newPs.size() == 3
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []itemIndex{3})
 
@@ -274,7 +273,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, newPs, nil)
 	require.Eventually(t, func() bool {
 		return newPs.size() == 0
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// The writeIndex should be now set accordingly
 	require.Equal(t, 7, int(newPs.writeIndex))
@@ -316,7 +315,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 		// The first element should be already picked by loop
 		require.Eventually(t, func() bool {
 			return ps.size() == 1
-		}, 500*time.Millisecond, 10*time.Millisecond)
+		}, 5*time.Second, 10*time.Millisecond)
 
 		// Lets read both of the elements we put
 		readReq := getItemFromChannel(t, ps)
@@ -441,7 +440,7 @@ func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) Persiste
 	require.Eventually(t, func() bool {
 		readReq = <-pcs.get()
 		return true
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 	return readReq
 }
 
@@ -450,7 +449,7 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pcs *persistentContiguou
 		pcs.mu.Lock()
 		defer pcs.mu.Unlock()
 		return reflect.DeepEqual(pcs.currentlyDispatchedItems, compare)
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 }
 
 type mockStorageExtension struct{}
