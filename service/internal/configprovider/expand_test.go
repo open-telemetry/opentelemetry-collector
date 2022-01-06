@@ -16,13 +16,13 @@ package configprovider
 
 import (
 	"context"
-	"os"
 	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configtest"
 )
@@ -39,17 +39,11 @@ func TestNewExpandConverter(t *testing.T) {
 	const valueExtra = "some string"
 	const valueExtraMapValue = "some map value"
 	const valueExtraListElement = "some list value"
-	assert.NoError(t, os.Setenv("EXTRA", valueExtra))
-	assert.NoError(t, os.Setenv("EXTRA_MAP_VALUE_1", valueExtraMapValue+"_1"))
-	assert.NoError(t, os.Setenv("EXTRA_MAP_VALUE_2", valueExtraMapValue+"_2"))
-	assert.NoError(t, os.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1"))
-	assert.NoError(t, os.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2"))
-
-	defer func() {
-		assert.NoError(t, os.Unsetenv("EXTRA"))
-		assert.NoError(t, os.Unsetenv("EXTRA_MAP_VALUE"))
-		assert.NoError(t, os.Unsetenv("EXTRA_LIST_VALUE_1"))
-	}()
+	t.Setenv("EXTRA", valueExtra)
+	t.Setenv("EXTRA_MAP_VALUE_1", valueExtraMapValue+"_1")
+	t.Setenv("EXTRA_MAP_VALUE_2", valueExtraMapValue+"_2")
+	t.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1")
+	t.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2")
 
 	// Cannot use configtest.LoadConfigMap because of circular deps.
 	ret, errRet := configmapprovider.NewFile(path.Join("testdata", "expand-with-no-env.yaml")).Retrieve(context.Background(), nil)
@@ -69,12 +63,34 @@ func TestNewExpandConverter(t *testing.T) {
 	}
 }
 
+func TestNewExpandConverter_EscapedMaps(t *testing.T) {
+	const receiverExtraMapValue = "some map value"
+	t.Setenv("MAP_VALUE", receiverExtraMapValue)
+
+	cfgMap := config.NewMapFromStringMap(
+		map[string]interface{}{
+			"test_string_map": map[string]interface{}{
+				"recv": "$MAP_VALUE",
+			},
+			"test_interface_map": map[interface{}]interface{}{
+				"recv": "$MAP_VALUE",
+			}},
+	)
+	require.NoError(t, NewExpandConverter()(cfgMap))
+
+	expectedMap := map[string]interface{}{
+		"test_string_map": map[string]interface{}{
+			"recv": receiverExtraMapValue,
+		},
+		"test_interface_map": map[string]interface{}{
+			"recv": receiverExtraMapValue,
+		}}
+	assert.Equal(t, expectedMap, cfgMap.ToStringMap())
+}
+
 func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 	const receiverExtraMapValue = "some map value"
-	assert.NoError(t, os.Setenv("MAP_VALUE_2", receiverExtraMapValue))
-	defer func() {
-		assert.NoError(t, os.Unsetenv("MAP_VALUE_2"))
-	}()
+	t.Setenv("MAP_VALUE_2", receiverExtraMapValue)
 
 	// Retrieve the config
 	cfgMap, err := configtest.LoadConfigMap(path.Join("testdata", "expand-escaped-env.yaml"))
