@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.42.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Remove `configmapprovider.NewInMemory()` (#4507)
@@ -13,6 +15,7 @@
   - The merge functionality is now embedded into `service.NewConfigProvider` (#4637).
 - Move `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` to `servicetest` (#4606)
 - Builder: Remove deprecated `include-core` flag (#4616)
+- Collector telemetry level must now be accessed through an atomic function. (#4549)
 
 ## 💡 Enhancements 💡
 
@@ -28,6 +31,7 @@
 - `configauth`: add helpers to create new server authenticators. (#4558)
 - Refactor `configgrpc` for compression methods (#4624)
 - Add an option to allow `config.Map` conversion in the `service.ConfigProvider` (#4634)
+- Added support to expose gRPC framework's logs as part of collector logs (#4501)
 
 ## 🧰 Bug fixes 🧰
 
@@ -66,7 +70,6 @@
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 - Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
 - Make state information propagation non-blocking on the collector (#4460)
-- Added support to expose gRPC framework's logs as part of collector logs (#4501)
 
 ## 💡 Enhancements 💡
 
