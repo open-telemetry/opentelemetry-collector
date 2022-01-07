@@ -154,6 +154,7 @@ type GRPCServerSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// Include propagates the incoming connection's metadata to downstream consumers.
+	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 }
 

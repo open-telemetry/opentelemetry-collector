@@ -108,6 +108,7 @@ type Info struct {
 	Auth AuthData
 
 	// Metadata is the request metadata from the client connecting to this connector.
+	// Experimental: *NOTE* this structure is subject to change or removal in the future.
 	Metadata Metadata
 }
 

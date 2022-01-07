@@ -4,7 +4,7 @@
 
 ## 💡 Enhancements 💡
 
-- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (#4547)
+- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
 
 ## v0.42.0 Beta
 

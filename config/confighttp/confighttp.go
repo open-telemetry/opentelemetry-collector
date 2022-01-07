@@ -201,6 +201,7 @@ type HTTPServerSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
+	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 }
 
