@@ -260,6 +260,24 @@ the event happens.
 Make log message human readable and also include data that is needed for easier
 understanding of what happened and in what context.
 
+### Executing External Processes
+
+The components should avoid executing arbitrary external processes with arbitrary command
+line arguments based on user input, including input received from the network or input
+read from the configuration file. Failure to follow this rule can result in arbitrary
+remote code execution, compelled by malicious actors that can craft the input.
+
+The following limitations are recommended:
+- If an external process needs to be executed limit and hard-code the location where
+  the executable file may be located, instead of allowing the input to dictate the
+  full path to the executable.
+- If possible limit the name of the executable file to be one from a hard-coded
+  list defined at compile time.
+- If command line arguments need to be passed to the process do not take the arguments
+  from the user input directly. Instead, compose the command line arguments indirectly,
+  if necessary, deriving the value from the user input. Limit as much as possible the
+  possible space of values for command line arguments.
+
 ### Observability
 
 Out of the box, your users should be able to observe the state of your component. 
