@@ -258,17 +258,43 @@ func initExponentialHistogramMetric(hm pdata.Metric) {
 	initMetricAttributes13(hdp0.Attributes())
 	hdp0.SetStartTimestamp(TestMetricStartTimestamp)
 	hdp0.SetTimestamp(TestMetricTimestamp)
-	hdp0.SetCount(2)
-	hdp0.SetSum(15)
+	hdp0.SetCount(5)
+	hdp0.SetSum(0.15)
 	hdp0.SetZeroCount(1)
-	hdp1 := hdps.AppendEmpty()
+	hdp0.SetScale(1)
 
+	// positive index 1 and 2 are values sqrt(2), 2 at scale 1
+	hdp0.Positive().SetOffset(1)
+	hdp0.Positive().SetBucketCounts([]uint64{1, 1})
+	// negative index -1 and 0 are values -1/sqrt(2), -1 at scale 1
+	hdp0.Negative().SetOffset(-1)
+	hdp0.Negative().SetBucketCounts([]uint64{1, 1})
+
+	// The above will print:
+	// Bucket (-1.414214, -1.000000], Count: 1
+	// Bucket (-1.000000, -0.707107], Count: 1
+	// Bucket [0, 0], Count: 1
+	// Bucket [0.707107, 1.000000), Count: 1
+	// Bucket [1.000000, 1.414214), Count: 1
+
+	hdp1 := hdps.AppendEmpty()
 	initMetricAttributes2(hdp1.Attributes())
 	hdp1.SetStartTimestamp(TestMetricStartTimestamp)
 	hdp1.SetTimestamp(TestMetricTimestamp)
-	hdp1.SetCount(2)
-	hdp1.SetSum(15)
+	hdp1.SetCount(3)
+	hdp1.SetSum(1.25)
 	hdp1.SetZeroCount(1)
+	hdp1.SetScale(-1)
+
+	// index -1 and 0 are values 0.25, 1 at scale -1
+	hdp1.Positive().SetOffset(-1)
+	hdp1.Positive().SetBucketCounts([]uint64{1, 1})
+
+	// The above will print:
+	// Bucket [0, 0], Count: 1
+	// Bucket [0.250000, 1.000000), Count: 1
+	// Bucket [1.000000, 4.000000), Count: 1
+
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
 	exemplar.SetDoubleVal(15)
