@@ -38,6 +38,14 @@
 // +build linux
 
 package cgroups // import "go.opentelemetry.io/collector/internal/cgroups"
+import (
+	"bufio"
+	"io"
+	"os"
+	"path"
+	"strconv"
+	"strings"
+)
 
 const (
 	// _cgroupFSType is the Linux CGroup file system type used in
@@ -53,11 +61,19 @@ const (
 	_cgroupSubsysMemory = "memory"
 
 	_cgroupMemoryLimitBytes = "memory.limit_in_bytes"
+
+	// _cgroupv2MemoryMax is the file name for the CGroup-V2 Memory max
+	// parameter.
+	_cgroupv2MemoryMax = "memory.max"
+	// _cgroupFSType is the Linux CGroup-V2 file system type used in
+	// `/proc/$PID/mountinfo`.
+	_cgroupv2FSType = "cgroup2"
 )
 
 const (
-	_procPathCGroup    = "/proc/self/cgroup"
-	_procPathMountInfo = "/proc/self/mountinfo"
+	_procPathCGroup     = "/proc/self/cgroup"
+	_procPathMountInfo  = "/proc/self/mountinfo"
+	_cgroupv2MountPoint = "/sys/fs/cgroup"
 )
 
 // CGroups is a map that associates each CGroup with its subsystem name.
@@ -106,7 +122,7 @@ func NewCGroupsForCurrentProcess() (CGroups, error) {
 	return NewCGroups(_procPathMountInfo, _procPathCGroup)
 }
 
-// MemoryQuota returns the total memory a
+// MemoryQuota returns the total memory limit of the process
 // It is a result of `memory.limit_in_bytes`. If the value of
 // `memory.limit_in_bytes` was not set (-1) or (9223372036854771712), the method returns `(-1, false, nil)`.
 func (cg CGroups) MemoryQuota() (int64, bool, error) {
@@ -120,4 +136,58 @@ func (cg CGroups) MemoryQuota() (int64, bool, error) {
 		return -1, defined, err
 	}
 	return int64(memLimitBytes), true, nil
+}
+
+func IsCGroupV2() (bool, error) {
+	return isCGroupV2(_procPathMountInfo)
+}
+
+func isCGroupV2(procPathMountInfo string) (bool, error) {
+	isV2 := false
+	newMountPoint := func(mp *MountPoint) error {
+		if mp.FSType == _cgroupv2FSType && mp.MountPoint == _cgroupv2MountPoint {
+			isV2 = true
+		}
+		return nil
+	}
+	if err := parseMountInfo(procPathMountInfo, newMountPoint); err != nil {
+		return false, err
+	}
+	if isV2 {
+		return true, nil
+	}
+	return false, nil
+}
+
+// MemoryQuotaV2 returns the total memory limit of the process
+// It is a result of cgroupv2 `memory.max`. If the value of
+// `memory.max` was not set (max), the method returns `(-1, false, nil)`.
+func MemoryQuotaV2() (int64, bool, error) {
+	return memoryQuotaV2(_cgroupv2MountPoint, _cgroupv2MemoryMax)
+}
+
+func memoryQuotaV2(cgroupv2MountPoint, cgroupv2MemoryMax string) (int64, bool, error) {
+	cpuMaxParams, err := os.Open(path.Clean(path.Join(cgroupv2MountPoint, cgroupv2MemoryMax)))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return -1, false, nil
+		}
+		return -1, false, err
+	}
+	scanner := bufio.NewScanner(cpuMaxParams)
+	if scanner.Scan() {
+		value := strings.TrimSpace(scanner.Text())
+		if value == "max" {
+			return -1, false, nil
+		}
+		max, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return -1, false, err
+		}
+		return max, true, nil
+	}
+	if err := scanner.Err(); err != nil {
+		return -1, false, err
+	}
+	return -1, false, io.ErrUnexpectedEOF
 }
