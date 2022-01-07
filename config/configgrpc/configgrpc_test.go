@@ -36,7 +36,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
-	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
@@ -75,7 +75,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: confighttp.CompressionGzip,
+				Compression: configcompression.CompressionGzip,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -103,7 +103,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: confighttp.CompressionSnappy,
+				Compression: configcompression.CompressionSnappy,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -131,7 +131,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: confighttp.CompressionZstd,
+				Compression: configcompression.CompressionZstd,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},

@@ -39,7 +39,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
-	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/internal/middleware"
@@ -67,7 +67,7 @@ type GRPCClientSettings struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// The compression key for supported compression types within collector.
-	Compression confighttp.CompressionType `mapstructure:"compression"`
+	Compression configcompression.CompressionType `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
@@ -178,7 +178,7 @@ func (gcs *GRPCClientSettings) isSchemeHTTPS() bool {
 // ToDialOptions maps configgrpc.GRPCClientSettings to a slice of dial options for gRPC.
 func (gcs *GRPCClientSettings) ToDialOptions(host component.Host, settings component.TelemetrySettings) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
-	if gcs.Compression != confighttp.CompressionEmpty && gcs.Compression != confighttp.CompressionNone {
+	if configcompression.IsCompressed(gcs.Compression) {
 		cp, err := getGRPCCompressionName(gcs.Compression)
 		if err != nil {
 			return nil, err
@@ -358,13 +358,13 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 }
 
 // getGRPCCompressionName returns compression name registered in grpc.
-func getGRPCCompressionName(compressionType confighttp.CompressionType) (string, error) {
+func getGRPCCompressionName(compressionType configcompression.CompressionType) (string, error) {
 	switch compressionType {
-	case confighttp.CompressionGzip:
+	case configcompression.CompressionGzip:
 		return gzip.Name, nil
-	case confighttp.CompressionSnappy:
+	case configcompression.CompressionSnappy:
 		return snappy.Name, nil
-	case confighttp.CompressionZstd:
+	case configcompression.CompressionZstd:
 		return zstd.Name, nil
 	default:
 		return "", fmt.Errorf("unsupported compression type %q", compressionType)

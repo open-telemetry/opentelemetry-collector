@@ -34,21 +34,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-type CompressionType string
-
-const (
-	headerContentEncoding                 = "Content-Encoding"
-	CompressionGzip       CompressionType = "gzip"
-	CompressionZlib       CompressionType = "zlib"
-	CompressionDeflate    CompressionType = "deflate"
-	CompressionSnappy     CompressionType = "snappy"
-	CompressionZstd       CompressionType = "zstd"
-	CompressionNone       CompressionType = "none"
-	CompressionEmpty      CompressionType = ""
-)
+const headerContentEncoding = "Content-Encoding"
 
 // HTTPClientSettings defines settings for creating an HTTP client.
 type HTTPClientSettings struct {
@@ -78,7 +68,7 @@ type HTTPClientSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
-	Compression CompressionType `mapstructure:"compression"`
+	Compression configcompression.CompressionType `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// There's an already set value, and we want to override it only if an explicit value provided
@@ -156,7 +146,7 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
-	if hcs.Compression != CompressionEmpty && hcs.Compression != CompressionNone {
+	if configcompression.IsCompressed(hcs.Compression) {
 		clientTransport = newCompressRoundTripper(clientTransport, hcs.Compression)
 	}
 
@@ -346,11 +336,11 @@ func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc
 
 type compressRoundTripper struct {
 	RoundTripper    http.RoundTripper
-	compressionType CompressionType
+	compressionType configcompression.CompressionType
 	writer          func(*bytes.Buffer) (io.WriteCloser, error)
 }
 
-func newCompressRoundTripper(rt http.RoundTripper, compressionType CompressionType) *compressRoundTripper {
+func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompression.CompressionType) *compressRoundTripper {
 	return &compressRoundTripper{
 		RoundTripper:    rt,
 		compressionType: compressionType,
@@ -360,21 +350,21 @@ func newCompressRoundTripper(rt http.RoundTripper, compressionType CompressionTy
 
 // writerFactory defines writer field in CompressRoundTripper.
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
-func writerFactory(compressionType CompressionType) func(*bytes.Buffer) (io.WriteCloser, error) {
+func writerFactory(compressionType configcompression.CompressionType) func(*bytes.Buffer) (io.WriteCloser, error) {
 	switch compressionType {
-	case CompressionGzip:
+	case configcompression.CompressionGzip:
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
 			return gzip.NewWriter(buf), nil
 		}
-	case CompressionSnappy:
+	case configcompression.CompressionSnappy:
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
 			return snappy.NewBufferedWriter(buf), nil
 		}
-	case CompressionZstd:
+	case configcompression.CompressionZstd:
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
 			return zstd.NewWriter(buf)
 		}
-	case CompressionZlib, CompressionDeflate:
+	case configcompression.CompressionZlib, configcompression.CompressionDeflate:
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
 			return zlib.NewWriter(buf), nil
 		}
@@ -497,20 +487,4 @@ func newBodyReader(r *http.Request) (io.ReadCloser, error) {
 // defaultErrorHandler writes the error message in plain text.
 func defaultErrorHandler(w http.ResponseWriter, _ *http.Request, errMsg string, statusCode int) {
 	http.Error(w, errMsg, statusCode)
-}
-
-func (ct *CompressionType) UnmarshalText(in []byte) error {
-	switch typ := CompressionType(in); typ {
-	case CompressionGzip,
-		CompressionZlib,
-		CompressionDeflate,
-		CompressionSnappy,
-		CompressionZstd,
-		CompressionNone,
-		CompressionEmpty:
-		*ct = typ
-		return nil
-	default:
-		return fmt.Errorf("unsupported compression type %q", typ)
-	}
 }
