@@ -13,6 +13,8 @@
   - The merge functionality is now embedded into `service.NewConfigProvider` (#4637).
 - Move `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` to `servicetest` (#4606)
 - Builder: Remove deprecated `include-core` flag (#4616)
+- Move `compression.go` into `confighttp.go` (#4651)
+
 
 ## 💡 Enhancements 💡
 
