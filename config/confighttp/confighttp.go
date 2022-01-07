@@ -15,12 +15,18 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
+	"bytes"
+	"compress/gzip"
+	"compress/zlib"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"time"
 
+	"github.com/golang/snappy"
+	"github.com/klauspost/compress/zstd"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -29,7 +35,19 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/internal/middleware"
+)
+
+type CompressionType string
+
+const (
+	headerContentEncoding                 = "Content-Encoding"
+	CompressionGzip       CompressionType = "gzip"
+	CompressionZlib       CompressionType = "zlib"
+	CompressionDeflate    CompressionType = "deflate"
+	CompressionSnappy     CompressionType = "snappy"
+	CompressionZstd       CompressionType = "zstd"
+	CompressionNone       CompressionType = "none"
+	CompressionEmpty      CompressionType = ""
 )
 
 // HTTPClientSettings defines settings for creating an HTTP client.
@@ -60,7 +78,7 @@ type HTTPClientSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
-	Compression middleware.CompressionType `mapstructure:"compression"`
+	Compression CompressionType `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// There's an already set value, and we want to override it only if an explicit value provided
@@ -138,8 +156,8 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
-	if hcs.Compression != middleware.CompressionEmpty && hcs.Compression != middleware.CompressionNone {
-		clientTransport = middleware.NewCompressRoundTripper(clientTransport, hcs.Compression)
+	if hcs.Compression != CompressionEmpty && hcs.Compression != CompressionNone {
+		clientTransport = newCompressRoundTripper(clientTransport, hcs.Compression)
 	}
 
 	if hcs.Auth != nil {
@@ -222,7 +240,7 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
-	errorHandler middleware.ErrorHandler
+	errorHandler
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -230,8 +248,8 @@ type toServerOptions struct {
 type ToServerOption func(opts *toServerOptions)
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
-// when there is a failure inside middleware.HTTPContentDecompressor.
-func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
+// when there is a failure inside httpContentDecompressor.
+func WithErrorHandler(e errorHandler) ToServerOption {
 	return func(opts *toServerOptions) {
 		opts.errorHandler = e
 	}
@@ -244,9 +262,9 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		o(serverOpts)
 	}
 
-	handler = middleware.HTTPContentDecompressor(
+	handler = httpContentDecompressor(
 		handler,
-		middleware.WithErrorHandler(serverOpts.errorHandler),
+		withErrorHandlerForDecompressor(serverOpts.errorHandler),
 	)
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
@@ -324,4 +342,175 @@ func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+type compressRoundTripper struct {
+	RoundTripper    http.RoundTripper
+	compressionType CompressionType
+	writer          func(*bytes.Buffer) (io.WriteCloser, error)
+}
+
+func newCompressRoundTripper(rt http.RoundTripper, compressionType CompressionType) *compressRoundTripper {
+	return &compressRoundTripper{
+		RoundTripper:    rt,
+		compressionType: compressionType,
+		writer:          writerFactory(compressionType),
+	}
+}
+
+// writerFactory defines writer field in CompressRoundTripper.
+// The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
+func writerFactory(compressionType CompressionType) func(*bytes.Buffer) (io.WriteCloser, error) {
+	switch compressionType {
+	case CompressionGzip:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return gzip.NewWriter(buf), nil
+		}
+	case CompressionSnappy:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return snappy.NewBufferedWriter(buf), nil
+		}
+	case CompressionZstd:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return zstd.NewWriter(buf)
+		}
+	case CompressionZlib, CompressionDeflate:
+		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return zlib.NewWriter(buf), nil
+		}
+	}
+	return nil
+}
+
+func (r *compressRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get(headerContentEncoding) != "" {
+		// If the header already specifies a content encoding then skip compression
+		// since we don't want to compress it again. This is a safeguard that normally
+		// should not happen since CompressRoundTripper is not intended to be used
+		// with http clients which already do their own compression.
+		return r.RoundTripper.RoundTrip(req)
+	}
+
+	// Compress the body.
+	buf := bytes.NewBuffer([]byte{})
+	compressWriter, writerErr := r.writer(buf)
+	if writerErr != nil {
+		return nil, writerErr
+	}
+	_, copyErr := io.Copy(compressWriter, req.Body)
+	closeErr := req.Body.Close()
+
+	if err := compressWriter.Close(); err != nil {
+		return nil, err
+	}
+
+	if copyErr != nil {
+		return nil, copyErr
+	}
+
+	if closeErr != nil {
+		return nil, closeErr
+	}
+
+	// Create a new request since the docs say that we cannot modify the "req"
+	// (see https://golang.org/pkg/net/http/#RoundTripper).
+	cReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Clone the headers and add gzip encoding header.
+	cReq.Header = req.Header.Clone()
+	cReq.Header.Add(headerContentEncoding, string(r.compressionType))
+
+	return r.RoundTripper.RoundTrip(cReq)
+}
+
+type errorHandler func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int)
+
+type decompressor struct {
+	errorHandler
+}
+
+type decompressorOption func(d *decompressor)
+
+func withErrorHandlerForDecompressor(e errorHandler) decompressorOption {
+	return func(d *decompressor) {
+		d.errorHandler = e
+	}
+}
+
+// httpContentDecompressor offloads the task of handling compressed HTTP requests
+// by identifying the compression format in the "Content-Encoding" header and re-writing
+// request body so that the handlers further in the chain can work on decompressed data.
+// It supports gzip and deflate/zlib compression.
+func httpContentDecompressor(h http.Handler, opts ...decompressorOption) http.Handler {
+	d := &decompressor{}
+	for _, o := range opts {
+		o(d)
+	}
+	if d.errorHandler == nil {
+		d.errorHandler = defaultErrorHandler
+	}
+	return d.wrap(h)
+}
+
+func (d *decompressor) wrap(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		newBody, err := newBodyReader(r)
+		if err != nil {
+			d.errorHandler(w, r, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if newBody != nil {
+			defer newBody.Close()
+			// "Content-Encoding" header is removed to avoid decompressing twice
+			// in case the next handler(s) have implemented a similar mechanism.
+			r.Header.Del("Content-Encoding")
+			// "Content-Length" is set to -1 as the size of the decompressed body is unknown.
+			r.Header.Del("Content-Length")
+			r.ContentLength = -1
+			r.Body = newBody
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+func newBodyReader(r *http.Request) (io.ReadCloser, error) {
+	switch r.Header.Get("Content-Encoding") {
+	case "gzip":
+		gr, err := gzip.NewReader(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		return gr, nil
+	case "deflate", "zlib":
+		zr, err := zlib.NewReader(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		return zr, nil
+	}
+	return nil, nil
+}
+
+// defaultErrorHandler writes the error message in plain text.
+func defaultErrorHandler(w http.ResponseWriter, _ *http.Request, errMsg string, statusCode int) {
+	http.Error(w, errMsg, statusCode)
+}
+
+func (ct *CompressionType) UnmarshalText(in []byte) error {
+	switch typ := CompressionType(in); typ {
+	case CompressionGzip,
+		CompressionZlib,
+		CompressionDeflate,
+		CompressionSnappy,
+		CompressionZstd,
+		CompressionNone,
+		CompressionEmpty:
+		*ct = typ
+		return nil
+	default:
+		return fmt.Errorf("unsupported compression type %q", typ)
+	}
 }

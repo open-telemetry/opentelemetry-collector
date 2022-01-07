@@ -26,10 +26,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/middleware"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -106,7 +106,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: middleware.CompressionGzip,
+					Compression: confighttp.CompressionGzip,
 				},
 			},
 		},
@@ -115,7 +115,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: middleware.CompressionSnappy,
+					Compression: confighttp.CompressionSnappy,
 				},
 			},
 		},
@@ -124,7 +124,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: middleware.CompressionZstd,
+					Compression: confighttp.CompressionZstd,
 				},
 			},
 		},
