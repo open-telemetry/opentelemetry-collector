@@ -22,6 +22,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestPropertiesProvider_Empty(t *testing.T) {
+	pmp := NewProperties(nil)
+	retr, err := pmp.Retrieve(context.Background(), "", nil)
+	require.NoError(t, err)
+	cfgMap, err := retr.Get(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(cfgMap.AllKeys()))
+	require.NoError(t, pmp.Shutdown(context.Background()))
+}
+
 func TestPropertiesProvider(t *testing.T) {
 	setFlagStr := []string{
 		"processors.batch.timeout=2s",
@@ -31,7 +41,7 @@ func TestPropertiesProvider(t *testing.T) {
 	}
 
 	pmp := NewProperties(setFlagStr)
-	retr, err := pmp.Retrieve(context.Background(), nil)
+	retr, err := pmp.Retrieve(context.Background(), "", nil)
 	require.NoError(t, err)
 	cfgMap, err := retr.Get(context.Background())
 	require.NoError(t, err)
@@ -41,15 +51,5 @@ func TestPropertiesProvider(t *testing.T) {
 	assert.Equal(t, "3s", cfgMap.Get("processors::batch/foo::timeout"))
 	assert.Equal(t, "foo:9200,foo2:9200", cfgMap.Get("exporters::kafka::brokers"))
 	assert.Equal(t, "localhost:1818", cfgMap.Get("receivers::otlp::protocols::grpc::endpoint"))
-	require.NoError(t, pmp.Shutdown(context.Background()))
-}
-
-func TestPropertiesProvider_empty(t *testing.T) {
-	pmp := NewProperties(nil)
-	retr, err := pmp.Retrieve(context.Background(), nil)
-	require.NoError(t, err)
-	cfgMap, err := retr.Get(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, 0, len(cfgMap.AllKeys()))
 	require.NoError(t, pmp.Shutdown(context.Background()))
 }

@@ -32,7 +32,7 @@ var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 
 // LoadConfigMap loads a config.Map from file, and does NOT validate the configuration.
 func LoadConfigMap(fileName string) (*config.Map, error) {
-	ret, err := configmapprovider.NewFile(fileName).Retrieve(context.Background(), nil)
+	ret, err := configmapprovider.NewFile().Retrieve(context.Background(), "file:"+fileName, nil)
 	if err != nil {
 		return nil, err
 	}
