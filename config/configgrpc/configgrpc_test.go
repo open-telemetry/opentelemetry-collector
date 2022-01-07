@@ -20,7 +20,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -466,14 +466,14 @@ func TestHttpReception(t *testing.T) {
 			name: "TLS",
 			tlsServerCreds: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile:   path.Join(".", "testdata", "ca.crt"),
-					CertFile: path.Join(".", "testdata", "server.crt"),
-					KeyFile:  path.Join(".", "testdata", "server.key"),
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "server.crt"),
+					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
 			},
 			tlsClientCreds: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile: path.Join(".", "testdata", "ca.crt"),
+					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
 			},
@@ -482,12 +482,12 @@ func TestHttpReception(t *testing.T) {
 			name: "NoServerCertificates",
 			tlsServerCreds: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile: path.Join(".", "testdata", "ca.crt"),
+					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 			},
 			tlsClientCreds: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile: path.Join(".", "testdata", "ca.crt"),
+					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
 			},
@@ -497,17 +497,17 @@ func TestHttpReception(t *testing.T) {
 			name: "mTLS",
 			tlsServerCreds: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile:   path.Join(".", "testdata", "ca.crt"),
-					CertFile: path.Join(".", "testdata", "server.crt"),
-					KeyFile:  path.Join(".", "testdata", "server.key"),
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "server.crt"),
+					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
-				ClientCAFile: path.Join(".", "testdata", "ca.crt"),
+				ClientCAFile: filepath.Join("testdata", "ca.crt"),
 			},
 			tlsClientCreds: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile:   path.Join(".", "testdata", "ca.crt"),
-					CertFile: path.Join(".", "testdata", "client.crt"),
-					KeyFile:  path.Join(".", "testdata", "client.key"),
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "client.crt"),
+					KeyFile:  filepath.Join("testdata", "client.key"),
 				},
 				ServerName: "localhost",
 			},
@@ -516,15 +516,15 @@ func TestHttpReception(t *testing.T) {
 			name: "NoClientCertificate",
 			tlsServerCreds: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile:   path.Join(".", "testdata", "ca.crt"),
-					CertFile: path.Join(".", "testdata", "server.crt"),
-					KeyFile:  path.Join(".", "testdata", "server.key"),
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "server.crt"),
+					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
-				ClientCAFile: path.Join(".", "testdata", "ca.crt"),
+				ClientCAFile: filepath.Join("testdata", "ca.crt"),
 			},
 			tlsClientCreds: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile: path.Join(".", "testdata", "ca.crt"),
+					CAFile: filepath.Join("testdata", "ca.crt"),
 				},
 				ServerName: "localhost",
 			},
@@ -534,17 +534,17 @@ func TestHttpReception(t *testing.T) {
 			name: "WrongClientCA",
 			tlsServerCreds: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile:   path.Join(".", "testdata", "ca.crt"),
-					CertFile: path.Join(".", "testdata", "server.crt"),
-					KeyFile:  path.Join(".", "testdata", "server.key"),
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "server.crt"),
+					KeyFile:  filepath.Join("testdata", "server.key"),
 				},
-				ClientCAFile: path.Join(".", "testdata", "server.crt"),
+				ClientCAFile: filepath.Join("testdata", "server.crt"),
 			},
 			tlsClientCreds: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile:   path.Join(".", "testdata", "ca.crt"),
-					CertFile: path.Join(".", "testdata", "client.crt"),
-					KeyFile:  path.Join(".", "testdata", "client.key"),
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "client.crt"),
+					KeyFile:  filepath.Join("testdata", "client.key"),
 				},
 				ServerName: "localhost",
 			},

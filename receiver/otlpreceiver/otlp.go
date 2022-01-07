@@ -86,7 +86,7 @@ func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host 
 func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host component.Host) error {
 	r.settings.Logger.Info("Starting HTTP server on endpoint " + cfg.Endpoint)
 	var hln net.Listener
-	hln, err := r.cfg.HTTP.ToListener()
+	hln, err := cfg.ToListener()
 	if err != nil {
 		return err
 	}
@@ -147,10 +147,10 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 			r.settings.Logger.Info("Setting up a second HTTP listener on legacy endpoint " + legacyHTTPEndpoint)
 
 			// Copy the config.
-			cfgLegacyHTTP := r.cfg.HTTP
+			cfgLegacyHTTP := *(r.cfg.HTTP)
 			// And use the legacy endpoint.
 			cfgLegacyHTTP.Endpoint = legacyHTTPEndpoint
-			err = r.startHTTPServer(cfgLegacyHTTP, host)
+			err = r.startHTTPServer(&cfgLegacyHTTP, host)
 			if err != nil {
 				return err
 			}

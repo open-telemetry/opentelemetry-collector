@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.42.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Remove `configmapprovider.NewInMemory()` (#4507)
@@ -10,8 +12,10 @@
 - Replace ConfigMapProvider and ConfigUnmarshaler in collector settings by one simpler ConfigProvider (#4590)
 - Remove deprecated consumererror.Combine (#4597)
 - Remove `configmapprovider.NewDefault`, `configmapprovider.NewExpand`, `configmapprovider.NewMerge` (#4600)
+  - The merge functionality is now embedded into `service.NewConfigProvider` (#4637).
 - Move `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` to `servicetest` (#4606)
 - Builder: Remove deprecated `include-core` flag (#4616)
+- Collector telemetry level must now be accessed through an atomic function. (#4549)
 
 ## 💡 Enhancements 💡
 
@@ -27,12 +31,16 @@
 - `configauth`: add helpers to create new server authenticators. (#4558)
 - Refactor `configgrpc` for compression methods (#4624)
 - Add an option to allow `config.Map` conversion in the `service.ConfigProvider` (#4634)
+- Added support to expose gRPC framework's logs as part of collector logs (#4501)
+- Builder: Enable unmarshal exact to help finding hard to find typos #4644
 - `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (#4547)
 
 ## 🧰 Bug fixes 🧰
 
 - Fix merge config map provider to close the watchers (#4570)
 - Fix expand map provider to call close on the base provider (#4571)
+- Fix correct the value of `otelcol_exporter_send_failed_requests` (#4629)
+- `otlp` receiver: Fix legacy port cfg value override and HTTP server starting bug (#4631)
 
 ## v0.41.0 Beta
 
@@ -64,7 +72,6 @@
 - Remove `pdata.AttributeMap.InitFromMap` (#4429)
 - Updated configgrpc `ToDialOptions` to support passing providers to instrumentation library (#4451)
 - Make state information propagation non-blocking on the collector (#4460)
-- Added support to expose gRPC framework's logs as part of collector logs (#4501)
 
 ## 💡 Enhancements 💡
 
