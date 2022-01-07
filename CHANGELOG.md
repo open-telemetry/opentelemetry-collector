@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (#4547)
+
 ## v0.42.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -33,7 +37,6 @@
 - Add an option to allow `config.Map` conversion in the `service.ConfigProvider` (#4634)
 - Added support to expose gRPC framework's logs as part of collector logs (#4501)
 - Builder: Enable unmarshal exact to help finding hard to find typos #4644
-- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (#4547)
 
 ## 🧰 Bug fixes 🧰
 
