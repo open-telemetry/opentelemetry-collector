@@ -36,7 +36,7 @@ func NewEnv(envName string) Provider {
 	}
 }
 
-func (emp *envMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (Retrieved, error) {
+func (emp *envMapProvider) Retrieve(context.Context, WatcherFunc) (Retrieved, error) {
 	if emp.envName == "" {
 		return nil, errors.New("config environment not specified")
 	}
