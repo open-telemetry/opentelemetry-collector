@@ -15,27 +15,20 @@
 package servicetest // import "go.opentelemetry.io/collector/service/servicetest"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 )
 
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
 func LoadConfig(fileName string, factories component.Factories) (*config.Config, error) {
 	// Read yaml config from file
-	cp, err := configmapprovider.NewFile(fileName).Retrieve(context.Background(), nil)
+	cfgMap, err := configtest.LoadConfigMap(fileName)
 	if err != nil {
 		return nil, err
 	}
-	// Unmarshal the config using the given factories.
-	m, err := cp.Get(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	return configunmarshaler.NewDefault().Unmarshal(m, factories)
+	return configunmarshaler.NewDefault().Unmarshal(cfgMap, factories)
 }
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.
