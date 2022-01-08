@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
+
 ## v0.42.0 Beta
 
 ## 🛑 Breaking changes 🛑
