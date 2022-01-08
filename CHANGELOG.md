@@ -6,6 +6,10 @@
 
 - `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
 
+## 🛑 Breaking changes 🛑
+
+- Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
+
 ## v0.42.0 Beta
 
 ## 🛑 Breaking changes 🛑

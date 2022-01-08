@@ -38,14 +38,14 @@ type mockProvider struct {
 	errS error
 }
 
-func (m *mockProvider) Retrieve(_ context.Context, onChange func(*configmapprovider.ChangeEvent)) (configmapprovider.Retrieved, error) {
+func (m *mockProvider) Retrieve(_ context.Context, watcher configmapprovider.WatcherFunc) (configmapprovider.Retrieved, error) {
 	if m.errR != nil {
 		return nil, m.errR
 	}
 	if m.ret == nil {
 		return &fakeRetrieved{}, nil
 	}
-	m.ret.onChange = onChange
+	m.ret.watcher = watcher
 	return m.ret, nil
 }
 
@@ -63,16 +63,16 @@ func (ecu *errConfigUnmarshaler) Unmarshal(*config.Map, component.Factories) (*c
 
 type fakeRetrieved struct {
 	configmapprovider.Retrieved
-	retM     *config.Map
-	errG     error
-	errW     error
-	errC     error
-	onChange func(event *configmapprovider.ChangeEvent)
+	retM    *config.Map
+	errG    error
+	errW    error
+	errC    error
+	watcher configmapprovider.WatcherFunc
 }
 
 func (er *fakeRetrieved) Get(context.Context) (*config.Map, error) {
-	if er.onChange != nil {
-		er.onChange(&configmapprovider.ChangeEvent{Error: er.errW})
+	if er.watcher != nil {
+		er.watcher(&configmapprovider.ChangeEvent{Error: er.errW})
 	}
 	if er.errG != nil {
 		return nil, er.errG
