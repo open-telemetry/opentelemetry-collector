@@ -24,12 +24,12 @@ const (
 	CompressionDeflate CompressionType = "deflate"
 	CompressionSnappy  CompressionType = "snappy"
 	CompressionZstd    CompressionType = "zstd"
-	CompressionNone    CompressionType = "none"
-	CompressionEmpty   CompressionType = ""
+	compressionNone    CompressionType = "none"
+	compressionEmpty   CompressionType = ""
 )
 
 func IsCompressed(compressionType CompressionType) bool {
-	return compressionType != CompressionEmpty && compressionType != CompressionNone
+	return compressionType != compressionEmpty && compressionType != compressionNone
 }
 
 func (ct *CompressionType) UnmarshalText(in []byte) error {
@@ -39,8 +39,8 @@ func (ct *CompressionType) UnmarshalText(in []byte) error {
 		CompressionDeflate,
 		CompressionSnappy,
 		CompressionZstd,
-		CompressionNone,
-		CompressionEmpty:
+		compressionNone,
+		compressionEmpty:
 		*ct = typ
 		return nil
 	default:
