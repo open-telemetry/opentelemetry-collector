@@ -34,8 +34,6 @@ func NewExpandConverter() func(*config.Map) error {
 
 func expandStringValues(value interface{}) interface{} {
 	switch v := value.(type) {
-	default:
-		return v
 	case string:
 		return expandEnv(v)
 	case []interface{}:
@@ -44,18 +42,8 @@ func expandStringValues(value interface{}) interface{} {
 			nslice = append(nslice, expandStringValues(vint))
 		}
 		return nslice
-	case map[string]interface{}:
-		nmap := make(map[interface{}]interface{}, len(v))
-		for k, vint := range v {
-			nmap[k] = expandStringValues(vint)
-		}
-		return nmap
-	case map[interface{}]interface{}:
-		nmap := make(map[interface{}]interface{}, len(v))
-		for k, vint := range v {
-			nmap[k] = expandStringValues(vint)
-		}
-		return nmap
+	default:
+		return v
 	}
 }
 
