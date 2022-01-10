@@ -9,6 +9,8 @@
 ## 💡 Enhancements 💡
 
 - Remove expand cases that cannot happen with config.Map (#4649)
+- Move `compression.go` into `confighttp.go` to internalize functions in `compression.go` file. (#4651)
+  - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
 
 ## v0.42.0 Beta
 
@@ -23,7 +25,6 @@
   - The merge functionality is now embedded into `service.NewConfigProvider` (#4637).
 - Move `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` to `servicetest` (#4606)
 - Builder: Remove deprecated `include-core` flag (#4616)
-- Move `compression.go` into `confighttp.go` (#4651)
 - Collector telemetry level must now be accessed through an atomic function. (#4549)
 
 ## 💡 Enhancements 💡

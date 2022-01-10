@@ -360,11 +360,11 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 // getGRPCCompressionName returns compression name registered in grpc.
 func getGRPCCompressionName(compressionType configcompression.CompressionType) (string, error) {
 	switch compressionType {
-	case configcompression.CompressionGzip:
+	case configcompression.Gzip:
 		return gzip.Name, nil
-	case configcompression.CompressionSnappy:
+	case configcompression.Snappy:
 		return snappy.Name, nil
-	case configcompression.CompressionZstd:
+	case configcompression.Zstd:
 		return zstd.Name, nil
 	default:
 		return "", fmt.Errorf("unsupported compression type %q", compressionType)

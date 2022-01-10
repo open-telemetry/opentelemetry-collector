@@ -106,7 +106,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configcompression.CompressionGzip,
+					Compression: configcompression.Gzip,
 				},
 			},
 		},
@@ -115,7 +115,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configcompression.CompressionSnappy,
+					Compression: configcompression.Snappy,
 				},
 			},
 		},
@@ -124,7 +124,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configcompression.CompressionZstd,
+					Compression: configcompression.Zstd,
 				},
 			},
 		},

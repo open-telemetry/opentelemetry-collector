@@ -352,19 +352,19 @@ func newCompressRoundTripper(rt http.RoundTripper, compressionType configcompres
 // The validity of input is already checked when NewCompressRoundTripper was called in confighttp,
 func writerFactory(compressionType configcompression.CompressionType) func(*bytes.Buffer) (io.WriteCloser, error) {
 	switch compressionType {
-	case configcompression.CompressionGzip:
+	case configcompression.Gzip:
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
 			return gzip.NewWriter(buf), nil
 		}
-	case configcompression.CompressionSnappy:
+	case configcompression.Snappy:
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
 			return snappy.NewBufferedWriter(buf), nil
 		}
-	case configcompression.CompressionZstd:
+	case configcompression.Zstd:
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
 			return zstd.NewWriter(buf)
 		}
-	case configcompression.CompressionZlib, configcompression.CompressionDeflate:
+	case configcompression.Zlib, configcompression.Deflate:
 		return func(buf *bytes.Buffer) (io.WriteCloser, error) {
 			return zlib.NewWriter(buf), nil
 		}
