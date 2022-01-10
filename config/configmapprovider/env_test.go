@@ -36,10 +36,7 @@ func TestEnv_InvalidYaml(t *testing.T) {
 	bytes, err := os.ReadFile(path.Join("testdata", "invalid-yaml.yaml"))
 	require.NoError(t, err)
 	const envName = "invalid-yaml"
-	require.NoError(t, os.Setenv(envName, string(bytes)))
-	t.Cleanup(func() {
-		require.NoError(t, os.Unsetenv(envName))
-	})
+	t.Setenv(envName, string(bytes))
 	env := NewEnv(envName)
 	_, err = env.Retrieve(context.Background(), nil)
 	assert.Error(t, err)
@@ -49,10 +46,7 @@ func TestEnv(t *testing.T) {
 	bytes, err := os.ReadFile(path.Join("testdata", "default-config.yaml"))
 	require.NoError(t, err)
 	const envName = "default-config"
-	require.NoError(t, os.Setenv(envName, string(bytes)))
-	t.Cleanup(func() {
-		require.NoError(t, os.Unsetenv(envName))
-	})
+	t.Setenv(envName, string(bytes))
 	env := NewEnv(envName)
 	ret, err := env.Retrieve(context.Background(), nil)
 	assert.NoError(t, err)
