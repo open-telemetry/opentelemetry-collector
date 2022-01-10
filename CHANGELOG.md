@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
+
+## 💡 Enhancements 💡
+
+- Remove expand cases that cannot happen with config.Map (#4649)
+
 ## v0.42.0 Beta
 
 ## 🛑 Breaking changes 🛑
