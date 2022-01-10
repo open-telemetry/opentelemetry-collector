@@ -15,7 +15,6 @@
 package configprovider
 
 import (
-	"context"
 	"path"
 	"testing"
 
@@ -23,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -45,10 +43,7 @@ func TestNewExpandConverter(t *testing.T) {
 	t.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1")
 	t.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2")
 
-	// Cannot use configtest.LoadConfigMap because of circular deps.
-	ret, errRet := configmapprovider.NewFile(path.Join("testdata", "expand-with-no-env.yaml")).Retrieve(context.Background(), nil)
-	require.NoError(t, errRet, "Unable to get expected config")
-	expectedCfgMap, errExpected := ret.Get(context.Background())
+	expectedCfgMap, errExpected := configtest.LoadConfigMap(path.Join("testdata", "expand-with-no-env.yaml"))
 	require.NoError(t, errExpected, "Unable to get expected config")
 
 	for _, test := range testCases {

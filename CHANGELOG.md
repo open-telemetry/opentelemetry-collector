@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
+- Remove deprecated `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` (#4659)
 
 ## 💡 Enhancements 💡
 
