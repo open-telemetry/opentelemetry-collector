@@ -26,10 +26,20 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+const envSchemePrefix = envSchemeName + ":"
+
 func TestEnv_EmptyName(t *testing.T) {
-	exp := NewEnv("")
-	_, err := exp.Retrieve(context.Background(), nil)
+	env := NewEnv()
+	_, err := env.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
+	assert.NoError(t, env.Shutdown(context.Background()))
+}
+
+func TestEnv_UnsupportedScheme(t *testing.T) {
+	env := NewEnv()
+	_, err := env.Retrieve(context.Background(), "http://", nil)
+	assert.Error(t, err)
+	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestEnv_InvalidYaml(t *testing.T) {
@@ -37,9 +47,10 @@ func TestEnv_InvalidYaml(t *testing.T) {
 	require.NoError(t, err)
 	const envName = "invalid-yaml"
 	t.Setenv(envName, string(bytes))
-	env := NewEnv(envName)
-	_, err = env.Retrieve(context.Background(), nil)
+	env := NewEnv()
+	_, err = env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	assert.Error(t, err)
+	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestEnv(t *testing.T) {
@@ -47,16 +58,18 @@ func TestEnv(t *testing.T) {
 	require.NoError(t, err)
 	const envName = "default-config"
 	t.Setenv(envName, string(bytes))
-	env := NewEnv(envName)
-	ret, err := env.Retrieve(context.Background(), nil)
-	assert.NoError(t, err)
+
+	env := NewEnv()
+	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	require.NoError(t, err)
 	cfg, err := ret.Get(context.Background())
 	assert.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})
-	assert.Equal(t, expectedMap, cfg)
+	assert.Equal(t, expectedMap.ToStringMap(), cfg.ToStringMap())
 	assert.NoError(t, ret.Close(context.Background()))
+
 	assert.NoError(t, env.Shutdown(context.Background()))
 }

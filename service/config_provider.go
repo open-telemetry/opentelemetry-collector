@@ -17,6 +17,7 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"go.uber.org/multierr"
@@ -64,7 +65,8 @@ type ConfigProvider interface {
 }
 
 type configProvider struct {
-	configMapProviders []configmapprovider.Provider
+	locations          []string
+	configMapProviders map[string]configmapprovider.Provider
 	cfgMapConverters   []ConfigMapConverterFunc
 	configUnmarshaler  configunmarshaler.ConfigUnmarshaler
 
@@ -78,9 +80,16 @@ type configProvider struct {
 // * Then applies all the ConfigMapConverterFunc in the given order.
 // * Then unmarshalls the final config.Config using the given configunmarshaler.ConfigUnmarshaler.
 //
+// The `configMapProviders` is a map of pairs <scheme,Provider>.
+//
 // Notice: This API is experimental.
-func NewConfigProvider(configMapProviders []configmapprovider.Provider, cfgMapConverters []ConfigMapConverterFunc, configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+func NewConfigProvider(
+	locations []string,
+	configMapProviders map[string]configmapprovider.Provider,
+	cfgMapConverters []ConfigMapConverterFunc,
+	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
 	return &configProvider{
+		locations:          locations,
 		configMapProviders: configMapProviders,
 		cfgMapConverters:   cfgMapConverters,
 		configUnmarshaler:  configUnmarshaler,
@@ -96,8 +105,15 @@ type ConfigMapConverterFunc func(*config.Map) error
 // defined by the given configFile and overwrites fields using properties.
 func NewDefaultConfigProvider(configFileName string, properties []string) ConfigProvider {
 	return NewConfigProvider(
-		[]configmapprovider.Provider{configmapprovider.NewFile(configFileName), configmapprovider.NewProperties(properties)},
-		[]ConfigMapConverterFunc{configprovider.NewExpandConverter()},
+		[]string{configFileName},
+		map[string]configmapprovider.Provider{
+			"file": configmapprovider.NewFile(),
+			"env":  configmapprovider.NewEnv(),
+		},
+		[]ConfigMapConverterFunc{
+			propertiesConverter(properties),
+			configprovider.NewExpandConverter(),
+		},
 		configunmarshaler.NewDefault())
 }
 
@@ -108,7 +124,7 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 	}
 
 	var err error
-	cm.ret, err = mergeRetrieve(ctx, cm.onChange, cm.configMapProviders)
+	cm.ret, err = cm.mergeRetrieve(ctx)
 	if err != nil {
 		// Nothing to close, no valid retrieved value.
 		cm.ret = nil
@@ -160,14 +176,32 @@ func (cm *configProvider) closeIfNeeded(ctx context.Context) error {
 
 func (cm *configProvider) Shutdown(ctx context.Context) error {
 	close(cm.watcher)
-	return multierr.Combine(cm.closeIfNeeded(ctx), mergeShutdown(ctx, cm.configMapProviders))
+
+	var errs error
+	errs = multierr.Append(errs, cm.closeIfNeeded(ctx))
+	for _, p := range cm.configMapProviders {
+		errs = multierr.Append(errs, p.Shutdown(ctx))
+	}
+
+	return errs
 }
 
-func mergeRetrieve(ctx context.Context, onChange func(*configmapprovider.ChangeEvent), providers []configmapprovider.Provider) (configmapprovider.Retrieved, error) {
+func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.Retrieved, error) {
 	var retrs []configmapprovider.Retrieved
 	retCfgMap := config.NewMap()
-	for _, p := range providers {
-		retr, err := p.Retrieve(ctx, onChange)
+	for _, location := range cm.locations {
+		// For backwards compatibility, empty url scheme means "file".
+		scheme := "file"
+		if idx := strings.Index(location, ":"); idx != -1 {
+			scheme = location[:idx]
+		} else {
+			location = scheme + ":" + location
+		}
+		p, ok := cm.configMapProviders[scheme]
+		if !ok {
+			return nil, fmt.Errorf("scheme %v is not supported for location %v", scheme, location)
+		}
+		retr, err := p.Retrieve(ctx, location, cm.onChange)
 		if err != nil {
 			return nil, err
 		}
@@ -193,11 +227,18 @@ func mergeRetrieve(ctx context.Context, onChange func(*configmapprovider.ChangeE
 		}))
 }
 
-func mergeShutdown(ctx context.Context, providers []configmapprovider.Provider) error {
-	var errs error
-	for _, p := range providers {
-		errs = multierr.Append(errs, p.Shutdown(ctx))
+// TODO: Remove this when configmapprovider.NewProperties converted to ConfigMapConverter.
+func propertiesConverter(properties []string) ConfigMapConverterFunc {
+	return func(c *config.Map) error {
+		cfgP := configmapprovider.NewProperties(properties)
+		ret, err := cfgP.Retrieve(context.Background(), "", nil)
+		if err != nil {
+			return err
+		}
+		cfgMap, err := ret.Get(context.Background())
+		if err != nil {
+			return err
+		}
+		return c.Merge(cfgMap)
 	}
-
-	return errs
 }

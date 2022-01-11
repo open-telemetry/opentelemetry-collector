@@ -34,13 +34,14 @@ type propertiesMapProvider struct {
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
+// TODO: Change this to be a service.ConfigMapConverterFunc.
 func NewProperties(properties []string) Provider {
 	return &propertiesMapProvider{
 		properties: properties,
 	}
 }
 
-func (pmp *propertiesMapProvider) Retrieve(context.Context, WatcherFunc) (Retrieved, error) {
+func (pmp *propertiesMapProvider) Retrieve(context.Context, string, WatcherFunc) (Retrieved, error) {
 	if len(pmp.properties) == 0 {
 		return NewRetrieved(func(ctx context.Context) (*config.Map, error) {
 			return config.NewMap(), nil
