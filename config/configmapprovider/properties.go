@@ -16,6 +16,7 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"bytes"
+	"context"
 	"strings"
 
 	"github.com/knadh/koanf/maps"
@@ -24,17 +25,15 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// NewOverwritePropertiesConverter returns a service.ConfigMapConverterFunc, that overrides all the given properties into the
-// input map.
+// NewOverwritePropertiesConverter returns a config.MapConverter, that overrides all the properties into the input map.
 //
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
-// TODO: Find the right place for service.ConfigMapConverterFunc and return that. Currently this will cause circular dependency.
-func NewOverwritePropertiesConverter(properties []string) func(*config.Map) error {
-	return func(cfgMap *config.Map) error {
+func NewOverwritePropertiesConverter(properties []string) config.MapConverter {
+	return config.NewMapConverter(func(_ context.Context, cfgMap *config.Map) error {
 		return convert(properties, cfgMap)
-	}
+	})
 }
 
 func convert(propsStr []string, cfgMap *config.Map) error {

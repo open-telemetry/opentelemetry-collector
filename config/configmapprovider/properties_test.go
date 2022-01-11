@@ -15,6 +15,7 @@
 package configmapprovider
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,9 +25,9 @@ import (
 )
 
 func TestOverwritePropertiesConverter_Empty(t *testing.T) {
-	pmp := NewOverwritePropertiesConverter(nil)
+	pc := NewOverwritePropertiesConverter(nil)
 	cfgMap := config.NewMapFromStringMap(map[string]interface{}{"foo": "bar"})
-	assert.NoError(t, pmp(cfgMap))
+	assert.NoError(t, pc.Convert(context.Background(), cfgMap))
 	assert.Equal(t, map[string]interface{}{"foo": "bar"}, cfgMap.ToStringMap())
 }
 
@@ -38,9 +39,9 @@ func TestOverwritePropertiesConverter(t *testing.T) {
 		"exporters.kafka.brokers=foo:9200,foo2:9200",
 	}
 
-	pmp := NewOverwritePropertiesConverter(props)
+	pc := NewOverwritePropertiesConverter(props)
 	cfgMap := config.NewMap()
-	require.NoError(t, pmp(cfgMap))
+	require.NoError(t, pc.Convert(context.Background(), cfgMap))
 	keys := cfgMap.AllKeys()
 	assert.Len(t, keys, 4)
 	assert.Equal(t, "2s", cfgMap.Get("processors::batch::timeout"))
@@ -50,7 +51,7 @@ func TestOverwritePropertiesConverter(t *testing.T) {
 }
 
 func TestOverwritePropertiesConverter_InvalidProperty(t *testing.T) {
-	pmp := NewOverwritePropertiesConverter([]string{"=2s"})
+	pc := NewOverwritePropertiesConverter([]string{"=2s"})
 	cfgMap := config.NewMap()
-	assert.Error(t, pmp(cfgMap))
+	assert.Error(t, pc.Convert(context.Background(), cfgMap))
 }
