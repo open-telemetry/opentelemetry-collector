@@ -111,7 +111,7 @@ func NewDefaultConfigProvider(configFileName string, properties []string) Config
 			"env":  configmapprovider.NewEnv(),
 		},
 		[]ConfigMapConverterFunc{
-			propertiesConverter(properties),
+			configmapprovider.NewOverwritePropertiesConverter(properties),
 			configprovider.NewExpandConverter(),
 		},
 		configunmarshaler.NewDefault())
@@ -225,20 +225,4 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.
 			}
 			return err
 		}))
-}
-
-// TODO: Remove this when configmapprovider.NewProperties converted to ConfigMapConverter.
-func propertiesConverter(properties []string) ConfigMapConverterFunc {
-	return func(c *config.Map) error {
-		cfgP := configmapprovider.NewProperties(properties)
-		ret, err := cfgP.Retrieve(context.Background(), "", nil)
-		if err != nil {
-			return err
-		}
-		cfgMap, err := ret.Get(context.Background())
-		if err != nil {
-			return err
-		}
-		return c.Merge(cfgMap)
-	}
 }
