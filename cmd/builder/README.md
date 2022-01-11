@@ -10,6 +10,16 @@ $ GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@latest
 $ cat > ~/.otelcol-builder.yaml <<EOF
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.40.0"
+  - import: go.opentelemetry.io/collector/exporter/loggingexporter
+    gomod: go.opentelemetry.io/collector v0.40.0
+
+receivers:
+  - import: go.opentelemetry.io/collector/receiver/otlpreceiver
+    gomod: go.opentelemetry.io/collector v0.40.0
+
+processors:
+  - import: go.opentelemetry.io/collector/processor/batchprocessor
+    gomod: go.opentelemetry.io/collector v0.40.0
 EOF
 $ builder --output-path=/tmp/dist
 $ cat > /tmp/otelcol.yaml <<EOF
