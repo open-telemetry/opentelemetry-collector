@@ -201,6 +201,10 @@ type HTTPServerSettings struct {
 
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+
+	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
+	// Experimental: *NOTE* this option is subject to change or removal in the future.
+	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 }
 
 // ToListener creates a net.Listener.
@@ -286,7 +290,8 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
-		next: handler,
+		next:            handler,
+		includeMetadata: hss.IncludeMetadata,
 	}
 
 	return &http.Server{

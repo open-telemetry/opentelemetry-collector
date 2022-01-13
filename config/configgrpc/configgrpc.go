@@ -153,6 +153,10 @@ type GRPCServerSettings struct {
 
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+
+	// Include propagates the incoming connection's metadata to downstream consumers.
+	// Experimental: *NOTE* this option is subject to change or removal in the future.
+	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.
@@ -349,8 +353,8 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	))
 
-	uInterceptors = append(uInterceptors, enhanceWithClientInformation)
-	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation)
+	uInterceptors = append(uInterceptors, enhanceWithClientInformation(gss.IncludeMetadata))
+	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
 
 	opts = append(opts, grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
@@ -373,22 +377,31 @@ func getGRPCCompressionName(compressionType configcompression.CompressionType) (
 
 // enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes
 // a client.Info, potentially with the peer's address.
-func enhanceWithClientInformation(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	return handler(contextWithClient(ctx), req)
+func enhanceWithClientInformation(includeMetadata bool) func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		return handler(contextWithClient(ctx, includeMetadata), req)
+	}
 }
 
-func enhanceStreamWithClientInformation(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	wrapped := middleware.WrapServerStream(ss)
-	wrapped.WrappedContext = contextWithClient(ss.Context())
-	return handler(srv, wrapped)
+func enhanceStreamWithClientInformation(includeMetadata bool) func(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		wrapped := middleware.WrapServerStream(ss)
+		wrapped.WrappedContext = contextWithClient(ss.Context(), includeMetadata)
+		return handler(srv, wrapped)
+	}
 }
 
 // contextWithClient attempts to add the peer address to the client.Info from the context. When no
 // client.Info exists in the context, one is created.
-func contextWithClient(ctx context.Context) context.Context {
+func contextWithClient(ctx context.Context, includeMetadata bool) context.Context {
 	cl := client.FromContext(ctx)
 	if p, ok := peer.FromContext(ctx); ok {
 		cl.Addr = p.Addr
+	}
+	if includeMetadata {
+		if md, ok := metadata.FromIncomingContext(ctx); ok {
+			cl.Metadata = client.NewMetadata(md.Copy())
+		}
 	}
 	return client.NewContext(ctx, cl)
 }

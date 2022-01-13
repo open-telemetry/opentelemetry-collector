@@ -67,7 +67,7 @@ type ConfigProvider interface {
 type configProvider struct {
 	locations          []string
 	configMapProviders map[string]configmapprovider.Provider
-	cfgMapConverters   []ConfigMapConverterFunc
+	cfgMapConverters   []config.MapConverterFunc
 	configUnmarshaler  configunmarshaler.ConfigUnmarshaler
 
 	sync.Mutex
@@ -86,7 +86,7 @@ type configProvider struct {
 func NewConfigProvider(
 	locations []string,
 	configMapProviders map[string]configmapprovider.Provider,
-	cfgMapConverters []ConfigMapConverterFunc,
+	cfgMapConverters []config.MapConverterFunc,
 	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
 	return &configProvider{
 		locations:          locations,
@@ -97,10 +97,6 @@ func NewConfigProvider(
 	}
 }
 
-// ConfigMapConverterFunc is a converter function for the config.Map that allows distributions
-// (in the future components as well) to build backwards compatible config converters.
-type ConfigMapConverterFunc func(*config.Map) error
-
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
 func NewDefaultConfigProvider(configFileName string, properties []string) ConfigProvider {
@@ -110,7 +106,7 @@ func NewDefaultConfigProvider(configFileName string, properties []string) Config
 			"file": configmapprovider.NewFile(),
 			"env":  configmapprovider.NewEnv(),
 		},
-		[]ConfigMapConverterFunc{
+		[]config.MapConverterFunc{
 			configmapprovider.NewOverwritePropertiesConverter(properties),
 			configprovider.NewExpandConverter(),
 		},
