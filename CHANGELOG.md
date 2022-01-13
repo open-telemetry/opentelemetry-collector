@@ -8,11 +8,13 @@
 - Change Properties Provider to be a Converter (#4666)
 - Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
 - Remove deprecated `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` (#4659)
+- Move service.ConfigMapConverterFunc to config.MapConverterFunc (#4673)
 - Restore `configmapprovider.NewExpandConverter()` (#4672)
 
 ## 💡 Enhancements 💡
 
 - Remove expand cases that cannot happen with config.Map (#4649)
+- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
 
 ## v0.42.0 Beta
 
