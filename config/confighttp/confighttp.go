@@ -199,6 +199,9 @@ type HTTPServerSettings struct {
 
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+
+	// MaxRecvSize sets the maximum request body size
+	MaxRecvSize int64 `mapstructure:"max_recv_size,omitempty"`
 }
 
 // ToListener creates a net.Listener.
@@ -223,6 +226,7 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
 	errorHandler middleware.ErrorHandler
+	maxRecvSize int64
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -237,6 +241,15 @@ func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
 	}
 }
 
+// WithMaxRecvSize introduce a request body size upper bound for the HTTP handler.
+// This uses http.MaxBytesReader under the hood and when the client sends a request body
+// that exceeds this limit, 400 will be returned.
+func WithMaxRecvSize(maxRecvSize int64) ToServerOption {
+	return func(opts *toServerOptions) {
+		opts.maxRecvSize = maxRecvSize
+	}
+}
+
 // ToServer creates an http.Server from settings object.
 func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
@@ -248,6 +261,10 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		handler,
 		middleware.WithErrorHandler(serverOpts.errorHandler),
 	)
+
+	if serverOpts.maxRecvSize > 0 {
+		handler = maxRecvSizeInterceptor(handler, serverOpts.maxRecvSize)
+	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
 		co := cors.Options{
@@ -323,5 +340,12 @@ func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func maxRecvSizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
+		next.ServeHTTP(w, r)
 	})
 }
