@@ -15,6 +15,7 @@
 package configmapprovider
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,7 @@ import (
 func TestOverwritePropertiesConverter_Empty(t *testing.T) {
 	pmp := NewOverwritePropertiesConverter(nil)
 	cfgMap := config.NewMapFromStringMap(map[string]interface{}{"foo": "bar"})
-	assert.NoError(t, pmp(cfgMap))
+	assert.NoError(t, pmp(context.Background(), cfgMap))
 	assert.Equal(t, map[string]interface{}{"foo": "bar"}, cfgMap.ToStringMap())
 }
 
@@ -40,7 +41,7 @@ func TestOverwritePropertiesConverter(t *testing.T) {
 
 	pmp := NewOverwritePropertiesConverter(props)
 	cfgMap := config.NewMap()
-	require.NoError(t, pmp(cfgMap))
+	require.NoError(t, pmp(context.Background(), cfgMap))
 	keys := cfgMap.AllKeys()
 	assert.Len(t, keys, 4)
 	assert.Equal(t, "2s", cfgMap.Get("processors::batch::timeout"))
@@ -52,5 +53,5 @@ func TestOverwritePropertiesConverter(t *testing.T) {
 func TestOverwritePropertiesConverter_InvalidProperty(t *testing.T) {
 	pmp := NewOverwritePropertiesConverter([]string{"=2s"})
 	cfgMap := config.NewMap()
-	assert.Error(t, pmp(cfgMap))
+	assert.Error(t, pmp(context.Background(), cfgMap))
 }
