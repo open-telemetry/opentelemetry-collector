@@ -12,7 +12,7 @@
 ## 💡 Enhancements 💡
 
 - Remove expand cases that cannot happen with config.Map (#4649)
-- Add `max_recv_size` to otlpreceiver's http settings (#4677)
+- Add `max_request_body_size` to otlpreceiver's http settings (#4677)
 
 ## v0.42.0 Beta
 
