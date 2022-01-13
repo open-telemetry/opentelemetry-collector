@@ -71,11 +71,12 @@ Config defines configuration for OTLP receiver.
 
 ### confighttp-HTTPServerSettings
 
-| Name | Type | Default | Docs |
-| ---- | ---- | ------- | ---- |
-| endpoint |string| 0.0.0.0:4318 | Endpoint configures the listening address for the server.  |
-| tls |[configtls-TLSServerSetting](#configtls-TLSServerSetting)| <no value> | TLSSetting struct exposes TLS client configuration.  |
-| cors |[confighttp-CORSSettings](#confighttp-CORSSettings)| <no value> | CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS). |
+| Name          | Type                                                      | Default      | Docs                                                                               |
+| ----          | ----                                                      | -------      | ----                                                                               |
+| endpoint      | string                                                    | 0.0.0.0:4318 | Endpoint configures the listening address for the server.                          |
+| tls           | [configtls-TLSServerSetting](#configtls-TLSServerSetting) | <no value>   | TLSSetting struct exposes TLS client configuration.                                |
+| cors          | [confighttp-CORSSettings](#confighttp-CORSSettings)       | <no value>   | CORSSettings configures a receiver for HTTP cross-origin resource sharing (CORS).  |
+| max_recv_size | int                                                       | 0            | MaxRecvSize configures the maximum allowed body size for a single request.         |
 
 ### confighttp-CORSSettings
 
