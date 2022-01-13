@@ -676,7 +676,7 @@ func TestHTTPMaxRecvSize(t *testing.T) {
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Protocols: Protocols{
 			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: endpoint,
+				Endpoint:    endpoint,
 				MaxRecvSize: int64(jsonDataLength),
 			},
 		},
@@ -693,14 +693,14 @@ func TestHTTPMaxRecvSize(t *testing.T) {
 
 	resp, err := http.Post(url, "application/json", bytes.NewReader(traceJSON))
 	require.NoError(t, err)
-	body, err := ioutil.ReadAll(resp.Body)
+	_, err = ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode)
 
 	err = r.Shutdown(context.Background())
 	require.NoError(t, err)
 
-	cfg.Protocols.HTTP.MaxRecvSize -= 1
+	cfg.Protocols.HTTP.MaxRecvSize--
 	r, err = NewFactory().CreateTracesReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
@@ -713,7 +713,7 @@ func TestHTTPMaxRecvSize(t *testing.T) {
 	resp, err = http.Post(url, "application/json", bytes.NewReader(traceJSON))
 	require.NoError(t, err)
 	require.Equal(t, 400, resp.StatusCode)
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Contains(t, string(body), "request body too large")
 }

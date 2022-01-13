@@ -226,7 +226,7 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
 	errorHandler middleware.ErrorHandler
-	maxRecvSize int64
+	maxRecvSize  int64
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
