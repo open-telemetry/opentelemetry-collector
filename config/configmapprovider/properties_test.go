@@ -15,41 +15,42 @@
 package configmapprovider
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/config"
 )
 
-func TestPropertiesProvider(t *testing.T) {
-	setFlagStr := []string{
+func TestOverwritePropertiesConverter_Empty(t *testing.T) {
+	pmp := NewOverwritePropertiesConverter(nil)
+	cfgMap := config.NewMapFromStringMap(map[string]interface{}{"foo": "bar"})
+	assert.NoError(t, pmp(cfgMap))
+	assert.Equal(t, map[string]interface{}{"foo": "bar"}, cfgMap.ToStringMap())
+}
+
+func TestOverwritePropertiesConverter(t *testing.T) {
+	props := []string{
 		"processors.batch.timeout=2s",
 		"processors.batch/foo.timeout=3s",
 		"receivers.otlp.protocols.grpc.endpoint=localhost:1818",
 		"exporters.kafka.brokers=foo:9200,foo2:9200",
 	}
 
-	pmp := NewProperties(setFlagStr)
-	retr, err := pmp.Retrieve(context.Background(), nil)
-	require.NoError(t, err)
-	cfgMap, err := retr.Get(context.Background())
-	require.NoError(t, err)
+	pmp := NewOverwritePropertiesConverter(props)
+	cfgMap := config.NewMap()
+	require.NoError(t, pmp(cfgMap))
 	keys := cfgMap.AllKeys()
 	assert.Len(t, keys, 4)
 	assert.Equal(t, "2s", cfgMap.Get("processors::batch::timeout"))
 	assert.Equal(t, "3s", cfgMap.Get("processors::batch/foo::timeout"))
 	assert.Equal(t, "foo:9200,foo2:9200", cfgMap.Get("exporters::kafka::brokers"))
 	assert.Equal(t, "localhost:1818", cfgMap.Get("receivers::otlp::protocols::grpc::endpoint"))
-	require.NoError(t, pmp.Shutdown(context.Background()))
 }
 
-func TestPropertiesProvider_empty(t *testing.T) {
-	pmp := NewProperties(nil)
-	retr, err := pmp.Retrieve(context.Background(), nil)
-	require.NoError(t, err)
-	cfgMap, err := retr.Get(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, 0, len(cfgMap.AllKeys()))
-	require.NoError(t, pmp.Shutdown(context.Background()))
+func TestOverwritePropertiesConverter_InvalidProperty(t *testing.T) {
+	pmp := NewOverwritePropertiesConverter([]string{"=2s"})
+	cfgMap := config.NewMap()
+	assert.Error(t, pmp(cfgMap))
 }

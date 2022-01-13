@@ -4,7 +4,10 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Change configmapprovider.Provider to accept a location for retrieve (#4657)
+- Change Properties Provider to be a Converter (#4666)
 - Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
+- Remove deprecated `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` (#4659)
 
 ## 💡 Enhancements 💡
 
