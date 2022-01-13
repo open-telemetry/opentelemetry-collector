@@ -15,6 +15,7 @@
 package config // import "go.opentelemetry.io/collector/config"
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -32,8 +33,7 @@ const (
 
 // MapConverterFunc is a converter function for the config.Map that allows distributions
 // (in the future components as well) to build backwards compatible config converters.
-// TODO: Consider to add a context as the first argument.
-type MapConverterFunc func(*Map) error
+type MapConverterFunc func(context.Context, *Map) error
 
 // NewMap creates a new empty config.Map instance.
 func NewMap() *Map {

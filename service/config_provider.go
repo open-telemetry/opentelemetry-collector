@@ -135,7 +135,7 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 
 	// Apply all converters.
 	for _, cfgMapConv := range cm.cfgMapConverters {
-		if err = cfgMapConv(cfgMap); err != nil {
+		if err = cfgMapConv(ctx, cfgMap); err != nil {
 			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
 		}
 	}

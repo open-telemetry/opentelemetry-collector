@@ -16,6 +16,7 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"bytes"
+	"context"
 	"strings"
 
 	"github.com/knadh/koanf/maps"
@@ -31,7 +32,7 @@ import (
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
 func NewOverwritePropertiesConverter(properties []string) config.MapConverterFunc {
-	return func(cfgMap *config.Map) error {
+	return func(_ context.Context, cfgMap *config.Map) error {
 		return convert(properties, cfgMap)
 	}
 }

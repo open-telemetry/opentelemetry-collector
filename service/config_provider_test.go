@@ -142,7 +142,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 				"mock": &mockProvider{},
 				"file": configmapprovider.NewFile(),
 			},
-			cfgMapConverters:  []config.MapConverterFunc{func(c *config.Map) error { return errors.New("converter_err") }},
+			cfgMapConverters:  []config.MapConverterFunc{func(context.Context, *config.Map) error { return errors.New("converter_err") }},
 			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectNewErr:      true,
 		},
