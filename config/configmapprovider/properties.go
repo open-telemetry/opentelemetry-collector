@@ -30,8 +30,7 @@ import (
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
-// TODO: Find the right place for service.ConfigMapConverterFunc and return that. Currently this will cause circular dependency.
-func NewOverwritePropertiesConverter(properties []string) func(*config.Map) error {
+func NewOverwritePropertiesConverter(properties []string) config.MapConverterFunc {
 	return func(cfgMap *config.Map) error {
 		return convert(properties, cfgMap)
 	}

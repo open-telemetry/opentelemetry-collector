@@ -100,7 +100,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 		name              string
 		locations         []string
 		parserProvider    map[string]configmapprovider.Provider
-		cfgMapConverters  []ConfigMapConverterFunc
+		cfgMapConverters  []config.MapConverterFunc
 		configUnmarshaler configunmarshaler.ConfigUnmarshaler
 		expectNewErr      bool
 		expectWatchErr    bool
@@ -142,7 +142,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 				"mock": &mockProvider{},
 				"file": configmapprovider.NewFile(),
 			},
-			cfgMapConverters:  []ConfigMapConverterFunc{func(c *config.Map) error { return errors.New("converter_err") }},
+			cfgMapConverters:  []config.MapConverterFunc{func(c *config.Map) error { return errors.New("converter_err") }},
 			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectNewErr:      true,
 		},
