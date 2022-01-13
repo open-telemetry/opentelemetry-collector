@@ -200,8 +200,8 @@ type HTTPServerSettings struct {
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
-	// MaxRecvSize sets the maximum request body size
-	MaxRecvSize int64 `mapstructure:"max_recv_size,omitempty"`
+	// MaxRequestBodySize sets the maximum request body size in bytes
+	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
 }
 
 // ToListener creates a net.Listener.
