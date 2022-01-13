@@ -9,6 +9,7 @@
 - Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
 - Remove deprecated `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` (#4659)
 - Move service.ConfigMapConverterFunc to config.MapConverterFunc (#4673)
+  - Add context to config.MapConverterFunc (#4678)
 - Restore `configmapprovider.NewExpandConverter()` (#4672)
 
 ## 💡 Enhancements 💡
