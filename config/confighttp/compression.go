@@ -14,7 +14,7 @@
 
 // This file contains helper functions regarding compression/decompression for confighttp.
 
-package confighttp
+package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
 	"bytes"
