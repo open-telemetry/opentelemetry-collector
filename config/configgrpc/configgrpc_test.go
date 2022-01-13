@@ -643,9 +643,10 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		input    context.Context
-		expected client.Info
+		desc       string
+		input      context.Context
+		doMetadata bool
+		expected   client.Info
 	}{
 		{
 			desc:     "no peer information, empty client",
@@ -695,10 +696,39 @@ func TestContextWithClient(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "existing client with metadata",
+			input: client.NewContext(context.Background(), client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			}),
+			doMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			},
+		},
+		{
+			desc: "existing client with metadata in context",
+			input: metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value"),
+			),
+			doMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			},
+		},
+		{
+			desc: "existing client with metadata in context, no metadata processing",
+			input: metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value"),
+			),
+			expected: client.Info{},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			cl := client.FromContext(contextWithClient(tC.input))
+			cl := client.FromContext(contextWithClient(tC.input, tC.doMetadata))
 			assert.Equal(t, tC.expected, cl)
 		})
 	}
@@ -721,7 +751,7 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 	}
 
 	// test
-	err := enhanceStreamWithClientInformation(nil, stream, nil, handler)
+	err := enhanceStreamWithClientInformation(false)(nil, stream, nil, handler)
 
 	// verify
 	assert.NoError(t, err)
