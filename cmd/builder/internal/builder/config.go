@@ -36,7 +36,7 @@ var ErrDeprecatedCore = errors.New("mod.Core has deprecated, you should not be u
 // Config holds the builder's configuration
 type Config struct {
 	Logger          *zap.Logger
-	SkipCompilation bool
+	SkipCompilation bool `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
