@@ -691,7 +691,11 @@ func TestHTTPMaxRecvSize(t *testing.T) {
 	assert.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
-	resp, err := http.Post(url, "application/json", bytes.NewReader(traceJSON))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(traceJSON))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 	_, err = ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
@@ -710,7 +714,10 @@ func TestHTTPMaxRecvSize(t *testing.T) {
 	assert.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
-	resp, err = http.Post(url, "application/json", bytes.NewReader(traceJSON))
+	req, err = http.NewRequest("POST", url, bytes.NewReader(traceJSON))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = client.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, 400, resp.StatusCode)
 	body, err := ioutil.ReadAll(resp.Body)
