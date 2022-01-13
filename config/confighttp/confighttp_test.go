@@ -36,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 type customRoundTripper struct {
@@ -146,8 +145,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
 				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
-			case *middleware.CompressRoundTripper:
-				assert.EqualValues(t, "gzip", transport.CompressionType())
+			case *compressRoundTripper:
+				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
 		})
 	}

@@ -18,6 +18,8 @@
 ## 💡 Enhancements 💡
 
 - Remove expand cases that cannot happen with config.Map (#4649)
+- Move `compression.go` into `confighttp.go` to internalize functions in `compression.go` file. (#4651)
+  - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
 
 ## v0.42.0 Beta
 
