@@ -16,6 +16,7 @@ package configunmarshaler // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"fmt"
+	"reflect"
 
 	"go.uber.org/zap/zapcore"
 
@@ -144,7 +145,7 @@ func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, fac
 		// Find extension factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(extensionsKeyName, id)
+			return nil, errorUnknownType(extensionsKeyName, id, factories)
 		}
 
 		// Create the default config for this extension.
@@ -233,7 +234,7 @@ func unmarshalReceivers(recvs map[config.ComponentID]map[string]interface{}, fac
 		// Find receiver factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(receiversKeyName, id)
+			return nil, errorUnknownType(receiversKeyName, id, factories)
 		}
 
 		receiverCfg, err := LoadReceiver(config.NewMapFromStringMap(value), id, factory)
@@ -257,7 +258,7 @@ func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, fact
 		// Find exporter factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(exportersKeyName, id)
+			return nil, errorUnknownType(exportersKeyName, id, factories)
 		}
 
 		// Create the default config for this exporter.
@@ -285,7 +286,7 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 		// Find processor factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(processorsKeyName, id)
+			return nil, errorUnknownType(processorsKeyName, id, factories)
 		}
 
 		// Create the default config for this processor.
@@ -312,8 +313,15 @@ func unmarshal(componentSection *config.Map, intoCfg interface{}) error {
 	return componentSection.UnmarshalExact(intoCfg)
 }
 
-func errorUnknownType(component string, id config.ComponentID) error {
-	return fmt.Errorf("unknown %s type %q for %q", component, id.Type(), id)
+func errorUnknownType(component string, id config.ComponentID, extensions interface{}) error {
+	// 'extensions' SHOULD be a map[config.Type]component.<x>Factory
+	v := reflect.ValueOf(extensions)
+	if v.Kind() != reflect.Map {
+		return fmt.Errorf("unknown %s type %q for %q (internal error: extension map is a %T)", component, id.Type(), id, extensions)
+	}
+
+	validValues := v.MapKeys()
+	return fmt.Errorf("unknown %s type %q for %q (valid values: %v)", component, id.Type(), id, validValues)
 }
 
 func errorUnmarshalError(component string, id config.ComponentID, err error) error {

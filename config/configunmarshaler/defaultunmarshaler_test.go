@@ -253,3 +253,8 @@ func TestDefaultLoggerConfig(t *testing.T) {
 			InitialFields:     zapProdCfg.InitialFields,
 		}, cfg.Service.Telemetry.Logs)
 }
+
+func TestErrorUnknownTypeNoMap(t *testing.T) {
+	err := errorUnknownType("pinepple", config.NewComponentID("pineapple"), -1)
+	assert.Error(t, err)
+}
