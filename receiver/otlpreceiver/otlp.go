@@ -134,7 +134,7 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 			r.settings.TelemetrySettings,
 			r.httpMux,
 			confighttp.WithErrorHandler(errorHandler),
-			confighttp.WithMaxRecvSize(r.cfg.HTTP.MaxRequestBodySize),
+			confighttp.WithMaxRequestBodySize(r.cfg.HTTP.MaxRequestBodySize),
 		)
 		if err != nil {
 			return err

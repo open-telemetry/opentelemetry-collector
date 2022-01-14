@@ -225,8 +225,8 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
-	errorHandler middleware.ErrorHandler
-	maxRecvSize  int64
+	errorHandler       middleware.ErrorHandler
+	maxRequestBodySize int64
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -241,12 +241,12 @@ func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
 	}
 }
 
-// WithMaxRecvSize introduce a request body size upper bound for the HTTP handler.
+// WithMaxRequestBodySize introduce a request body size upper bound for the HTTP handler.
 // This uses http.MaxBytesReader under the hood and when the client sends a request body
 // that exceeds this limit, 400 will be returned.
-func WithMaxRecvSize(maxRecvSize int64) ToServerOption {
+func WithMaxRequestBodySize(maxRequestBodySize int64) ToServerOption {
 	return func(opts *toServerOptions) {
-		opts.maxRecvSize = maxRecvSize
+		opts.maxRequestBodySize = maxRequestBodySize
 	}
 }
 
@@ -262,8 +262,8 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		middleware.WithErrorHandler(serverOpts.errorHandler),
 	)
 
-	if serverOpts.maxRecvSize > 0 {
-		handler = maxRecvSizeInterceptor(handler, serverOpts.maxRecvSize)
+	if serverOpts.maxRequestBodySize > 0 {
+		handler = maxRequestBodySizeInterceptor(handler, serverOpts.maxRequestBodySize)
 	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
@@ -343,7 +343,7 @@ func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc
 	})
 }
 
-func maxRecvSizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
+func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
 		next.ServeHTTP(w, r)

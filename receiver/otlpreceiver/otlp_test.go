@@ -668,7 +668,7 @@ func TestHTTPUseLegacyPortWhenUsingDefaultEndpoint(t *testing.T) {
 	require.Equal(t, defaultHTTPEndpoint, metric.cfg.HTTP.Endpoint)
 }
 
-func TestHTTPMaxRecvSize(t *testing.T) {
+func TestHTTPMaxRequestBodySize(t *testing.T) {
 	jsonDataLength := len(traceJSON)
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
