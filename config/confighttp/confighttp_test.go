@@ -36,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 type customRoundTripper struct {
@@ -146,8 +145,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
 				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
-			case *middleware.CompressRoundTripper:
-				assert.EqualValues(t, "gzip", transport.CompressionType())
+			case *compressRoundTripper:
+				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
 		})
 	}
@@ -738,17 +737,18 @@ func TestHttpHeaders(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		input    *http.Request
-		expected client.Info
+		desc       string
+		input      *http.Request
+		doMetadata bool
+		expected   client.Info
 	}{
 		{
-			desc:     "request without client IP",
+			desc:     "request without client IP or headers",
 			input:    &http.Request{},
 			expected: client.Info{},
 		},
 		{
-			desc: "request without client IP",
+			desc: "request with client IP",
 			input: &http.Request{
 				RemoteAddr: "1.2.3.4:55443",
 			},
@@ -758,10 +758,28 @@ func TestContextWithClient(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "request with client headers, no metadata processing",
+			input: &http.Request{
+				Header: map[string][]string{"x-test-header": {"test-value"}},
+			},
+			doMetadata: false,
+			expected:   client.Info{},
+		},
+		{
+			desc: "request with client headers",
+			input: &http.Request{
+				Header: map[string][]string{"x-test-header": {"test-value"}},
+			},
+			doMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}}),
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			ctx := contextWithClient(tC.input)
+			ctx := contextWithClient(tC.input, tC.doMetadata)
 			assert.Equal(t, tC.expected, client.FromContext(ctx))
 		})
 	}

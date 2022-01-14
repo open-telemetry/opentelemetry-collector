@@ -2,17 +2,26 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
+
 ## 🛑 Breaking changes 🛑
 
 - Change configmapprovider.Provider to accept a location for retrieve (#4657)
 - Change Properties Provider to be a Converter (#4666)
 - Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
 - Remove deprecated `configtest.LoadConfig` and `configtest.LoadConfigAndValidate` (#4659)
+- Move service.ConfigMapConverterFunc to config.MapConverterFunc (#4673)
+  - Add context to config.MapConverterFunc (#4678)
+- Builder: the skip compilation should only be supplied as a CLI flag. Previously, it was possible to specify that in the YAML file, contrary to the original intention (#4645)
 
 ## 💡 Enhancements 💡
 
 - Remove expand cases that cannot happen with config.Map (#4649)
-- Add `max_request_body_size` to otlpreceiver's http settings (#4677)
+- Add `max_request_body_size` to confighttp.HTTPServerSettings (#4677)
+- Move `compression.go` into `confighttp.go` to internalize functions in `compression.go` file. (#4651)
+  - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
 
 ## v0.42.0 Beta
 

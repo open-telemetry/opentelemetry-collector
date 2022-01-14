@@ -15,16 +15,15 @@
 package configprovider // import "go.opentelemetry.io/collector/service/internal/configprovider"
 
 import (
+	"context"
 	"os"
 
 	"go.opentelemetry.io/collector/config"
 )
 
 // NewExpandConverter returns a service.ConfigMapConverterFunc, that expands all environment variables for a given config.Map.
-//
-// This does not directly return service.ConfigMapConverterFunc to avoid circular dependencies, not a problem since it is internal.
-func NewExpandConverter() func(*config.Map) error {
-	return func(cfgMap *config.Map) error {
+func NewExpandConverter() config.MapConverterFunc {
+	return func(_ context.Context, cfgMap *config.Map) error {
 		for _, k := range cfgMap.AllKeys() {
 			cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
 		}

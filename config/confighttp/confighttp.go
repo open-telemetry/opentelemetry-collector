@@ -28,9 +28,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/internal/middleware"
 )
+
+const headerContentEncoding = "Content-Encoding"
 
 // HTTPClientSettings defines settings for creating an HTTP client.
 type HTTPClientSettings struct {
@@ -60,7 +62,7 @@ type HTTPClientSettings struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
-	Compression middleware.CompressionType `mapstructure:"compression"`
+	Compression configcompression.CompressionType `mapstructure:"compression"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// There's an already set value, and we want to override it only if an explicit value provided
@@ -138,8 +140,8 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
-	if hcs.Compression != middleware.CompressionEmpty && hcs.Compression != middleware.CompressionNone {
-		clientTransport = middleware.NewCompressRoundTripper(clientTransport, hcs.Compression)
+	if configcompression.IsCompressed(hcs.Compression) {
+		clientTransport = newCompressRoundTripper(clientTransport, hcs.Compression)
 	}
 
 	if hcs.Auth != nil {
@@ -202,6 +204,10 @@ type HTTPServerSettings struct {
 
 	// MaxRequestBodySize sets the maximum request body size in bytes
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
+
+	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
+	// Experimental: *NOTE* this option is subject to change or removal in the future.
+	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 }
 
 // ToListener creates a net.Listener.
@@ -225,7 +231,7 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // toServerOptions has options that change the behavior of the HTTP server
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
-	errorHandler       middleware.ErrorHandler
+	errorHandler
 	maxRequestBodySize int64
 }
 
@@ -234,8 +240,8 @@ type toServerOptions struct {
 type ToServerOption func(opts *toServerOptions)
 
 // WithErrorHandler overrides the HTTP error handler that gets invoked
-// when there is a failure inside middleware.HTTPContentDecompressor.
-func WithErrorHandler(e middleware.ErrorHandler) ToServerOption {
+// when there is a failure inside httpContentDecompressor.
+func WithErrorHandler(e errorHandler) ToServerOption {
 	return func(opts *toServerOptions) {
 		opts.errorHandler = e
 	}
@@ -257,9 +263,9 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		o(serverOpts)
 	}
 
-	handler = middleware.HTTPContentDecompressor(
+	handler = httpContentDecompressor(
 		handler,
-		middleware.WithErrorHandler(serverOpts.errorHandler),
+		withErrorHandlerForDecompressor(serverOpts.errorHandler),
 	)
 
 	if serverOpts.maxRequestBodySize > 0 {
@@ -301,7 +307,8 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
-		next: handler,
+		next:            handler,
+		includeMetadata: hss.IncludeMetadata,
 	}
 
 	return &http.Server{
