@@ -232,7 +232,6 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 // returned by HTTPServerSettings.ToServer().
 type toServerOptions struct {
 	errorHandler
-	maxRequestBodySize int64
 }
 
 // ToServerOption is an option to change the behavior of the HTTP server
@@ -244,15 +243,6 @@ type ToServerOption func(opts *toServerOptions)
 func WithErrorHandler(e errorHandler) ToServerOption {
 	return func(opts *toServerOptions) {
 		opts.errorHandler = e
-	}
-}
-
-// WithMaxRequestBodySize introduce a request body size upper bound for the HTTP handler.
-// This uses http.MaxBytesReader under the hood and when the client sends a request body
-// that exceeds this limit, 400 will be returned.
-func WithMaxRequestBodySize(maxRequestBodySize int64) ToServerOption {
-	return func(opts *toServerOptions) {
-		opts.maxRequestBodySize = maxRequestBodySize
 	}
 }
 
@@ -268,8 +258,8 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		withErrorHandlerForDecompressor(serverOpts.errorHandler),
 	)
 
-	if serverOpts.maxRequestBodySize > 0 {
-		handler = maxRequestBodySizeInterceptor(handler, serverOpts.maxRequestBodySize)
+	if hss.MaxRequestBodySize > 0 {
+		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
 	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
