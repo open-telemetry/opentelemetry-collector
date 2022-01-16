@@ -22,6 +22,10 @@
 - Move `compression.go` into `confighttp.go` to internalize functions in `compression.go` file. (#4651)
   - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
 
+## 🧰 Bug fixes 🧰
+
+- Fix structured logging issue for windows service (#4686)
+
 ## v0.42.0 Beta
 
 ## 🛑 Breaking changes 🛑
