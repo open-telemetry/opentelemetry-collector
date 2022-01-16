@@ -138,6 +138,8 @@ func (cg CGroups) MemoryQuota() (int64, bool, error) {
 	return int64(memLimitBytes), true, nil
 }
 
+// IsCGroupV2 returns true if the system supports and uses cgroup2.
+// It gets the required information for deciding from mountinfo file.
 func IsCGroupV2() (bool, error) {
 	return isCGroupV2(_procPathMountInfo)
 }
@@ -153,10 +155,7 @@ func isCGroupV2(procPathMountInfo string) (bool, error) {
 	if err := parseMountInfo(procPathMountInfo, newMountPoint); err != nil {
 		return false, err
 	}
-	if isV2 {
-		return true, nil
-	}
-	return false, nil
+	return isV2, nil
 }
 
 // MemoryQuotaV2 returns the total memory limit of the process
@@ -167,14 +166,14 @@ func MemoryQuotaV2() (int64, bool, error) {
 }
 
 func memoryQuotaV2(cgroupv2MountPoint, cgroupv2MemoryMax string) (int64, bool, error) {
-	cpuMaxParams, err := os.Open(path.Clean(path.Join(cgroupv2MountPoint, cgroupv2MemoryMax)))
+	memoryMaxParams, err := os.Open(path.Clean(path.Join(cgroupv2MountPoint, cgroupv2MemoryMax)))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return -1, false, nil
 		}
 		return -1, false, err
 	}
-	scanner := bufio.NewScanner(cpuMaxParams)
+	scanner := bufio.NewScanner(memoryMaxParams)
 	if scanner.Scan() {
 		value := strings.TrimSpace(scanner.Text())
 		if value == "max" {

@@ -4,6 +4,7 @@
 
 ## 💡 Enhancements 💡
 
+- Add support for cgroupv2 memory limit (#4654)
 - `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
 
 ## 🛑 Breaking changes 🛑

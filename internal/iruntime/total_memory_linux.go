@@ -41,16 +41,18 @@ func TotalMemory() (uint64, error) {
 			return 0, err
 		}
 	} else {
-		cgroups, err := cgroups.NewCGroupsForCurrentProcess()
+		cgv1, err := cgroups.NewCGroupsForCurrentProcess()
 		if err != nil {
 			return 0, err
 		}
-		memoryQuota, defined, err = cgroups.MemoryQuota()
+		memoryQuota, defined, err = cgv1.MemoryQuota()
 		if err != nil {
 			return 0, err
 		}
 	}
 
+	// If memory is not defined or is set to unlimitedMemorySize (v1 unset),
+	// we fallback to /proc/meminfo.
 	if memoryQuota == unlimitedMemorySize || !defined {
 		totalMem, err := readMemInfo()
 		if err != nil {
