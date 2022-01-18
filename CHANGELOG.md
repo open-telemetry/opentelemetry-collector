@@ -15,6 +15,7 @@
 - Move service.ConfigMapConverterFunc to config.MapConverterFunc (#4673)
   - Add context to config.MapConverterFunc (#4678)
 - Builder: the skip compilation should only be supplied as a CLI flag. Previously, it was possible to specify that in the YAML file, contrary to the original intention (#4645)
+- Builder: Remove deprecated config option module::core (#4693)
 
 ## 💡 Enhancements 💡
 
