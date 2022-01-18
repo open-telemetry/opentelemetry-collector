@@ -16,6 +16,9 @@
   - Add context to config.MapConverterFunc (#4678)
 - Builder: the skip compilation should only be supplied as a CLI flag. Previously, it was possible to specify that in the YAML file, contrary to the original intention (#4645)
 - Builder: Remove deprecated config option module::core (#4693)
+- Remove deprecate flags --metrics-level and --metrics-addr (#4695)
+  - Usages of `--metrics-level={VALUE}` can be replaced by `--set=service.telemetry.metrics.level={VALUE}`;
+  - Usages of `--metrics-addr={VALUE}` can be replaced by `--set=service.telemetry.metrics.address={VALUE}`;
 
 ## 💡 Enhancements 💡
 
