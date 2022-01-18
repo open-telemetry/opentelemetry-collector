@@ -132,7 +132,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(ext)
+			client, err := test.settings.ToClient(ext, componenttest.NewNopTelemetrySettings())
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -179,7 +179,9 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(ext)
+			tt := componenttest.NewNopTelemetrySettings()
+			tt.TracerProvider = nil
+			client, err := test.settings.ToClient(ext, tt)
 			assert.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
@@ -188,10 +190,10 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
-
 		})
 	}
 }
+
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := DefaultHTTPClientSettings()
@@ -240,7 +242,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClient(map[config.ComponentID]component.Extension{})
+			_, err := test.settings.ToClient(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -311,7 +313,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(test.extensionMap)
+			client, err := test.settings.ToClient(test.extensionMap, componenttest.NewNopTelemetrySettings())
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
@@ -510,7 +512,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   prefix + ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
+			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)
@@ -727,7 +729,7 @@ func TestHttpHeaders(t *testing.T) {
 					"header1": "value1",
 				},
 			}
-			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{})
+			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)

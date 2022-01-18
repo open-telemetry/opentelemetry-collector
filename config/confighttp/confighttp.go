@@ -96,7 +96,7 @@ func DefaultHTTPClientSettings() HTTPClientSettings {
 }
 
 // ToClient creates an HTTP client.
-func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
+func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -135,7 +135,15 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 			headers:   hcs.Headers,
 		}
 	}
-
+	// wrapping http transport with otelhttp transport to enable otel instrumenetation
+	if settings.TracerProvider != nil && settings.MeterProvider != nil {
+		clientTransport = otelhttp.NewTransport(
+			clientTransport,
+			otelhttp.WithTracerProvider(settings.TracerProvider),
+			otelhttp.WithMeterProvider(settings.MeterProvider),
+			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+		)
+	}
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
 	if hcs.Compression != middleware.CompressionEmpty && hcs.Compression != middleware.CompressionNone {
