@@ -170,6 +170,16 @@ for coding advice). The code must adhere to the following robustness principles 
 are important for software that runs autonomously and continuously without direct
 interaction with a human (such as this Collector).
 
+### Method naming
+
+To keep naming patterns consistent across the project, naming patterns are enforced to make intent clear by:
+
+- Any method that allocates memory onto the heap must use the name prefix `New`
+  - For example `NewKinesisExporter` will return a kinesis exporter using the zero values 
+    or values provided by the provided arguments
+- Any method that references a static / global object must use the name prefix `Default`
+  - For example `DefaultKinesisConfig` returns a copy of an object that is configured with non zero values 
+
 ### Recommended Libraries / Defaults
 
 In order to simplify developing within the project, library recommendations have been set
