@@ -23,6 +23,7 @@
 ## 💡 Enhancements 💡
 
 - Remove expand cases that cannot happen with config.Map (#4649)
+- Add `max_request_body_size` to confighttp.HTTPServerSettings (#4677)
 - Move `compression.go` into `confighttp.go` to internalize functions in `compression.go` file. (#4651)
   - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
 

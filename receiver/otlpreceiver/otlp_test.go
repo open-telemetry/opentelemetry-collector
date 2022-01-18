@@ -668,6 +668,63 @@ func TestHTTPUseLegacyPortWhenUsingDefaultEndpoint(t *testing.T) {
 	require.Equal(t, defaultHTTPEndpoint, metric.cfg.HTTP.Endpoint)
 }
 
+func TestHTTPMaxRequestBodySize(t *testing.T) {
+	jsonDataLength := len(traceJSON)
+	endpoint := testutil.GetAvailableLocalAddress(t)
+	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
+	cfg := &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Protocols: Protocols{
+			HTTP: &confighttp.HTTPServerSettings{
+				Endpoint:           endpoint,
+				MaxRequestBodySize: int64(jsonDataLength),
+			},
+		},
+	}
+
+	r, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(traceJSON))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	_, err = ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, 200, resp.StatusCode)
+
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	cfg.Protocols.HTTP.MaxRequestBodySize--
+	r, err = NewFactory().CreateTracesReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+
+	req, err = http.NewRequest("POST", url, bytes.NewReader(traceJSON))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = client.Do(req)
+	require.NoError(t, err)
+	require.Equal(t, 400, resp.StatusCode)
+	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Contains(t, string(body), "request body too large")
+}
+
 func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
