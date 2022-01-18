@@ -224,7 +224,7 @@ func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
 	} else if !ml.configMismatchedLogged {
 		// This indicates misconfiguration. Log it once.
 		ml.configMismatchedLogged = true
-		ml.logger.Warn(ballastSizeMibKey + " in ballast extension is likely incorrectly configured.")
+		ml.logger.Warn(`"size_mib" in ballast extension is likely incorrectly configured.`)
 	}
 
 	return ms
