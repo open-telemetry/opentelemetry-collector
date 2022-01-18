@@ -30,9 +30,6 @@ const defaultOtelColVersion = "0.42.0"
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 
-// ErrDeprecatedCore indicates deprecated core
-var ErrDeprecatedCore = errors.New("mod.Core has deprecated, you should not be used anymore and required to be set mod.GoMod instead")
-
 // Config holds the builder's configuration
 type Config struct {
 	Logger          *zap.Logger
@@ -64,7 +61,6 @@ type Module struct {
 	Import string `mapstructure:"import"` // if not specified, this is the path part of the go mods
 	GoMod  string `mapstructure:"gomod"`  // a gomod-compatible spec for the module
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
-	Core   *bool  `mapstructure:"core"`   // whether this module comes from core. For this property isn't referred from anywhere, it might be removed. please see #15.
 }
 
 // DefaultConfig creates a new config, with default values
@@ -135,9 +131,6 @@ func (c *Config) ParseModules() error {
 func parseModules(mods []Module) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
-		if mod.Core != nil {
-			return mods, ErrDeprecatedCore
-		}
 		if mod.GoMod == "" {
 			return mods, fmt.Errorf("%w, module: %q", ErrInvalidGoMod, mod.GoMod)
 		}
