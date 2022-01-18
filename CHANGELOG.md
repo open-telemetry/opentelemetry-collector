@@ -19,6 +19,7 @@
 - Remove deprecate flags --metrics-level and --metrics-addr (#4695)
   - Usages of `--metrics-level={VALUE}` can be replaced by `--set=service.telemetry.metrics.level={VALUE}`;
   - Usages of `--metrics-addr={VALUE}` can be replaced by `--set=service.telemetry.metrics.address={VALUE}`;
+- Deprecate `configtelemetry.Level.Set()` (#4700)
 
 ## 💡 Enhancements 💡
 
