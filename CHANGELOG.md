@@ -5,6 +5,7 @@
 ## 🛑 Breaking changes 🛑
 
 - Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
+- Updated confighttp `ToClient` to support passing telemetry settings for instrumenting otlphttp exporter(#4449)
 
 ## v0.42.0 Beta
 
