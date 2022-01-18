@@ -18,7 +18,6 @@ import (
 	"flag"
 	"strings"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -45,7 +44,6 @@ func (s *stringArrayValue) String() string {
 
 func flags() *flag.FlagSet {
 	flagSet := new(flag.FlagSet)
-	configtelemetry.Flags(flagSet)
 	featuregate.Flags(flagSet)
 
 	configFlag = flagSet.String("config", defaultConfig, "Path to the config file")
