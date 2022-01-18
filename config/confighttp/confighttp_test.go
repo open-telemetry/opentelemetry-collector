@@ -194,7 +194,6 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 	}
 }
 
-
 func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := DefaultHTTPClientSettings()
 	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)

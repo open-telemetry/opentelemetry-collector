@@ -76,7 +76,7 @@ func newExporter(cfg config.Exporter, logger *zap.Logger, settings component.Tel
 		config:    oCfg,
 		logger:    logger,
 		userAgent: userAgent,
-		settings: settings,
+		settings:  settings,
 	}, nil
 }
 
