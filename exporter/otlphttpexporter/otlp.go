@@ -47,7 +47,7 @@ type exporter struct {
 	metricsURL string
 	logsURL    string
 	logger     *zap.Logger
-
+	settings   component.TelemetrySettings
 	// Default user-agent header.
 	userAgent string
 }
@@ -58,7 +58,7 @@ const (
 )
 
 // Crete new exporter.
-func newExporter(cfg config.Exporter, logger *zap.Logger, buildInfo component.BuildInfo) (*exporter, error) {
+func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint != "" {
@@ -69,13 +69,14 @@ func newExporter(cfg config.Exporter, logger *zap.Logger, buildInfo component.Bu
 	}
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
-		buildInfo.Description, buildInfo.Version, runtime.GOOS, runtime.GOARCH)
+		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
 	// client construction is deferred to start
 	return &exporter{
 		config:    oCfg,
-		logger:    logger,
+		logger:    set.Logger,
 		userAgent: userAgent,
+		settings:  set.TelemetrySettings,
 	}, nil
 }
 
