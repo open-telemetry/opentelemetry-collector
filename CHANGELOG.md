@@ -2,10 +2,6 @@
 
 ## Unreleased
 
-## 💡 Enhancements 💡
-
-- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
-
 ## 🛑 Breaking changes 🛑
 
 - Change configmapprovider.Provider to accept a location for retrieve (#4657)
@@ -23,6 +19,7 @@
 
 ## 💡 Enhancements 💡
 
+- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
 - Remove expand cases that cannot happen with config.Map (#4649)
 - Add `max_request_body_size` to confighttp.HTTPServerSettings (#4677)
 - Move `compression.go` into `confighttp.go` to internalize functions in `compression.go` file. (#4651)
