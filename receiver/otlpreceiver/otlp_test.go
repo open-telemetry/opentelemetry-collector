@@ -712,7 +712,6 @@ func TestHTTPMaxRequestBodySize_TooLarge(t *testing.T) {
 	testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON)-1, 400)
 }
 
-
 func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
