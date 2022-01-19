@@ -94,11 +94,6 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) validateService() error {
-	// Validate Telemetry
-	if err := cfg.Service.Telemetry.validate(); err != nil {
-		return err
-	}
-
 	// Check that all enabled extensions in the service are configured.
 	for _, ref := range cfg.Service.Extensions {
 		// Check that the name referenced in the Service extensions exists in the top-level extensions.
