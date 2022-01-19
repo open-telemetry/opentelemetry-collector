@@ -668,7 +668,7 @@ func TestHTTPUseLegacyPortWhenUsingDefaultEndpoint(t *testing.T) {
 	require.Equal(t, defaultHTTPEndpoint, metric.cfg.HTTP.Endpoint)
 }
 
-func TestHTTPMaxRequestBodySize(t *testing.T) {
+func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
 	jsonDataLength := len(traceJSON)
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
@@ -703,9 +703,22 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 
 	err = r.Shutdown(context.Background())
 	require.NoError(t, err)
+}
 
-	cfg.Protocols.HTTP.MaxRequestBodySize--
-	r, err = NewFactory().CreateTracesReceiver(
+func TestHTTPMaxRequestBodySize_TooLarge(t *testing.T) {
+	jsonDataLength := len(traceJSON)
+	endpoint := testutil.GetAvailableLocalAddress(t)
+	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
+	cfg := &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Protocols: Protocols{
+			HTTP: &confighttp.HTTPServerSettings{
+				Endpoint:           endpoint,
+				MaxRequestBodySize: int64(jsonDataLength) - 1,
+			},
+		},
+	}
+	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
@@ -714,10 +727,11 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 	assert.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
-	req, err = http.NewRequest("POST", url, bytes.NewReader(traceJSON))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(traceJSON))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
-	resp, err = client.Do(req)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 	require.Equal(t, 400, resp.StatusCode)
 	body, err := ioutil.ReadAll(resp.Body)
