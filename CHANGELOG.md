@@ -15,6 +15,7 @@
 - Remove deprecate flags --metrics-level and --metrics-addr (#4695)
   - Usages of `--metrics-level={VALUE}` can be replaced by `--set=service.telemetry.metrics.level={VALUE}`;
   - Usages of `--metrics-addr={VALUE}` can be replaced by `--set=service.telemetry.metrics.address={VALUE}`;
+- Updated confighttp `ToClient` to support passing telemetry settings for instrumenting otlphttp exporter(#4449)
 - Deprecate `configtelemetry.Level.Set()` (#4700)
 
 ## 💡 Enhancements 💡
