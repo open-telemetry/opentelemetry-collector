@@ -668,8 +668,7 @@ func TestHTTPUseLegacyPortWhenUsingDefaultEndpoint(t *testing.T) {
 	require.Equal(t, defaultHTTPEndpoint, metric.cfg.HTTP.Endpoint)
 }
 
-func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
-	jsonDataLength := len(traceJSON)
+func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expectedStatusCode int) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
 	cfg := &Config{
@@ -677,7 +676,7 @@ func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
 		Protocols: Protocols{
 			HTTP: &confighttp.HTTPServerSettings{
 				Endpoint:           endpoint,
-				MaxRequestBodySize: int64(jsonDataLength),
+				MaxRequestBodySize: int64(size),
 			},
 		},
 	}
@@ -691,7 +690,7 @@ func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
 	assert.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(traceJSON))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
@@ -699,44 +698,19 @@ func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
 	require.NoError(t, err)
 	_, err = ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
-	require.Equal(t, 200, resp.StatusCode)
+	require.Equal(t, expectedStatusCode, resp.StatusCode)
 
 	err = r.Shutdown(context.Background())
 	require.NoError(t, err)
 }
 
-func TestHTTPMaxRequestBodySize_TooLarge(t *testing.T) {
-	jsonDataLength := len(traceJSON)
-	endpoint := testutil.GetAvailableLocalAddress(t)
-	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
-	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Protocols: Protocols{
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint:           endpoint,
-				MaxRequestBodySize: int64(jsonDataLength) - 1,
-			},
-		},
-	}
-	r, err := NewFactory().CreateTracesReceiver(
-		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
-		cfg,
-		consumertest.NewNop())
-	require.NoError(t, err)
-	assert.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-
-	req, err := http.NewRequest("POST", url, bytes.NewReader(traceJSON))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, 400, resp.StatusCode)
-	body, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.Contains(t, string(body), "request body too large")
+func TestHTTPMaxRequestBodySize(t *testing.T) {
+	t.Run("TestHTTPMaxRequestBodySize_OK", func(t *testing.T) {
+		testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON), 200)
+	})
+	t.Run("TestHTTPMaxRequestBodySize_TooLarge", func(t *testing.T) {
+		testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON)-1, 400)
+	})
 }
 
 func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
