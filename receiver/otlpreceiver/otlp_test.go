@@ -704,14 +704,14 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 	require.NoError(t, err)
 }
 
-func TestHTTPMaxRequestBodySize(t *testing.T) {
-	t.Run("TestHTTPMaxRequestBodySize_OK", func(t *testing.T) {
-		testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON), 200)
-	})
-	t.Run("TestHTTPMaxRequestBodySize_TooLarge", func(t *testing.T) {
-		testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON)-1, 400)
-	})
+func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
+	testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON), 200)
 }
+
+func TestHTTPMaxRequestBodySize_TooLarge(t *testing.T) {
+	testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON)-1, 400)
+}
+
 
 func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	factory := NewFactory()
