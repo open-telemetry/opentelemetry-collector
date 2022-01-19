@@ -2,11 +2,6 @@
 
 ## Unreleased
 
-## 💡 Enhancements 💡
-
-- Add support for cgroupv2 memory limit (#4654)
-- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
-
 ## 🛑 Breaking changes 🛑
 
 - Change configmapprovider.Provider to accept a location for retrieve (#4657)
@@ -16,12 +11,21 @@
 - Move service.ConfigMapConverterFunc to config.MapConverterFunc (#4673)
   - Add context to config.MapConverterFunc (#4678)
 - Builder: the skip compilation should only be supplied as a CLI flag. Previously, it was possible to specify that in the YAML file, contrary to the original intention (#4645)
+- Builder: Remove deprecated config option module::core (#4693)
+- Remove deprecate flags --metrics-level and --metrics-addr (#4695)
+  - Usages of `--metrics-level={VALUE}` can be replaced by `--set=service.telemetry.metrics.level={VALUE}`;
+  - Usages of `--metrics-addr={VALUE}` can be replaced by `--set=service.telemetry.metrics.address={VALUE}`;
+- Updated confighttp `ToClient` to support passing telemetry settings for instrumenting otlphttp exporter(#4449)
+- Deprecate `configtelemetry.Level.Set()` (#4700)
 
 ## 💡 Enhancements 💡
 
+- `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
 - Remove expand cases that cannot happen with config.Map (#4649)
+- Add `max_request_body_size` to confighttp.HTTPServerSettings (#4677)
 - Move `compression.go` into `confighttp.go` to internalize functions in `compression.go` file. (#4651)
   - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
+- Add support for cgroupv2 memory limit (#4654)
 
 ## 🧰 Bug fixes 🧰
 

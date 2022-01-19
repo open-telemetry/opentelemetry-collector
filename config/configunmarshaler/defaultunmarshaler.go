@@ -16,6 +16,7 @@ package configunmarshaler // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"fmt"
+	"reflect"
 
 	"go.uber.org/zap/zapcore"
 
@@ -144,7 +145,7 @@ func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, fac
 		// Find extension factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(extensionsKeyName, id)
+			return nil, errorUnknownType(extensionsKeyName, id, reflect.ValueOf(factories).MapKeys())
 		}
 
 		// Create the default config for this extension.
@@ -195,17 +196,9 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 }
 
 func defaultServiceTelemetryMetricsSettings() config.ServiceTelemetryMetrics {
-	// These deprecated functions are still needed here so that the values provided through the CLI flags
-	// can be used as a baseline if no values are provided in configuration.  This will eventually return
-	// a static default configuration when the CLI flags are removed.
-	addr := configtelemetry.GetMetricsAddr() //nolint:staticcheck
-	if addr == "" {
-		addr = configtelemetry.GetMetricsAddrDefault() //nolint:staticcheck
-	}
-
 	return config.ServiceTelemetryMetrics{
-		Level:   configtelemetry.GetMetricsLevelFlagValue(), //nolint:staticcheck
-		Address: addr,
+		Level:   configtelemetry.LevelBasic, //nolint:staticcheck
+		Address: ":8888",
 	}
 }
 
@@ -233,7 +226,7 @@ func unmarshalReceivers(recvs map[config.ComponentID]map[string]interface{}, fac
 		// Find receiver factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(receiversKeyName, id)
+			return nil, errorUnknownType(receiversKeyName, id, reflect.ValueOf(factories).MapKeys())
 		}
 
 		receiverCfg, err := LoadReceiver(config.NewMapFromStringMap(value), id, factory)
@@ -257,7 +250,7 @@ func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, fact
 		// Find exporter factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(exportersKeyName, id)
+			return nil, errorUnknownType(exportersKeyName, id, reflect.ValueOf(factories).MapKeys())
 		}
 
 		// Create the default config for this exporter.
@@ -285,7 +278,7 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 		// Find processor factory based on "type" that we read from config source.
 		factory := factories[id.Type()]
 		if factory == nil {
-			return nil, errorUnknownType(processorsKeyName, id)
+			return nil, errorUnknownType(processorsKeyName, id, reflect.ValueOf(factories).MapKeys())
 		}
 
 		// Create the default config for this processor.
@@ -312,8 +305,8 @@ func unmarshal(componentSection *config.Map, intoCfg interface{}) error {
 	return componentSection.UnmarshalExact(intoCfg)
 }
 
-func errorUnknownType(component string, id config.ComponentID) error {
-	return fmt.Errorf("unknown %s type %q for %q", component, id.Type(), id)
+func errorUnknownType(component string, id config.ComponentID, factories []reflect.Value) error {
+	return fmt.Errorf("unknown %s type %q for %q (valid values: %v)", component, id.Type(), id, factories)
 }
 
 func errorUnmarshalError(component string, id config.ComponentID, err error) error {

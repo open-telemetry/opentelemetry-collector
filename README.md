@@ -27,6 +27,8 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/design.md">Design</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
+    <a href="https://opentelemetry.io/docs/collector/configuration/">Configuration</a>
+    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/monitoring.md">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/performance.md">Performance</a>

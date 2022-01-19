@@ -98,7 +98,7 @@ func DefaultHTTPClientSettings() HTTPClientSettings {
 }
 
 // ToClient creates an HTTP client.
-func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension) (*http.Client, error) {
+func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -136,6 +136,15 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 			transport: transport,
 			headers:   hcs.Headers,
 		}
+	}
+	// wrapping http transport with otelhttp transport to enable otel instrumenetation
+	if settings.TracerProvider != nil && settings.MeterProvider != nil {
+		clientTransport = otelhttp.NewTransport(
+			clientTransport,
+			otelhttp.WithTracerProvider(settings.TracerProvider),
+			otelhttp.WithMeterProvider(settings.MeterProvider),
+			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
+		)
 	}
 
 	// Compress the body using specified compression methods if non-empty string is provided.
@@ -202,6 +211,9 @@ type HTTPServerSettings struct {
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
+	// MaxRequestBodySize sets the maximum request body size in bytes
+	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
+
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
 	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
@@ -254,6 +266,10 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		handler,
 		withErrorHandlerForDecompressor(serverOpts.errorHandler),
 	)
+
+	if hss.MaxRequestBodySize > 0 {
+		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
+	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
 		co := cors.Options{
@@ -330,5 +346,12 @@ func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
+		next.ServeHTTP(w, r)
 	})
 }
