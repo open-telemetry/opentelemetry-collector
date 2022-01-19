@@ -345,7 +345,7 @@ with clear instructions on how to install the required libraries.
 Furthermore, if your package requires CGO, it MUST be able to compile and operate in a no op mode
 or report a warning back to the collector with a clear error saying CGO is required to work.
 
-### Doing breaking changes
+### Breaking changes
 
 Whenever possible, we adhere to semver as our minimum standards. Even before v1, we strive to not break compatibility
 without a good reason. Hence, when a change is known to cause a breaking change, it should be clearly marked in the
