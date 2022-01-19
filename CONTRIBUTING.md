@@ -170,15 +170,20 @@ for coding advice). The code must adhere to the following robustness principles 
 are important for software that runs autonomously and continuously without direct
 interaction with a human (such as this Collector).
 
-### Method naming
+### Naming convention
 
 To keep naming patterns consistent across the project, naming patterns are enforced to make intent clear by:
 
-- Any method that allocates memory onto the heap must use the name prefix `New`
-  - For example `NewKinesisExporter` will return a kinesis exporter using the zero values 
-    or values provided by the provided arguments
-- Any method that references a static / global object must use the name prefix `Default`
-  - For example `DefaultKinesisConfig` returns a copy of an object that is configured with non zero values 
+- Methods that return a variable that uses the zero value or values provided via the method MUST have the prefix `New`
+  - For example `func NewKinesisExporter(kpl aws.KinesisProducerLibrary)` allocates a variable that uses
+    the variables passed on creation.
+  - For example `func NewKeyValueBuilder()` may allocate internal varialbes to a safe zero value
+- Methods that return a variable that uses non zero value(s) that impacts business logic must use `NewDefault`
+  - For example `func NewDefaultKinesisConfig()` would return a configuration that is the suggested default
+    and can be updated without concern of a race condition.
+- Methods that act upon an input variable should have a signature that reflect concisely the logic being done
+- Variable assigned in a package's global scope that is preconfigured with a recommended set of values must use `Default` as the prefix
+
 
 ### Recommended Libraries / Defaults
 
