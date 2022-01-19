@@ -38,10 +38,6 @@ type ServiceTelemetry struct {
 	Metrics ServiceTelemetryMetrics `mapstructure:"metrics"`
 }
 
-func (srvT *ServiceTelemetry) validate() error {
-	return srvT.Metrics.validate()
-}
-
 // ServiceTelemetryLogs defines the configurable settings for service telemetry logs.
 // This MUST be compatible with zap.Config. Cannot use directly zap.Config because
 // the collector uses mapstructure and not yaml tags.
@@ -112,10 +108,6 @@ type ServiceTelemetryMetrics struct {
 
 	// Address is the [address]:port that metrics exposition should be bound to.
 	Address string `mapstructure:"address"`
-}
-
-func (s ServiceTelemetryMetrics) validate() error {
-	return nil
 }
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
