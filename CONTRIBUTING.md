@@ -181,8 +181,14 @@ To keep naming patterns consistent across the project, naming patterns are enfor
 - Methods that return a variable that uses non zero value(s) that impacts business logic must use `NewDefault`. For example:
   - `func NewDefaultKinesisConfig()` would return a configuration that is the suggested default
     and can be updated without concern of a race condition.
-- Methods that act upon an input variable should have a signature that reflect concisely the logic being done.
-- Variable assigned in a package's global scope that is preconfigured with a recommended set of values must use `Default` as the prefix.
+- Methods that act upon an input variable should have a signature that reflect concisely the logic being done. For example:
+  - `func FilterAttributes(attrs []Attribute, match func(attr Attribute) bool) []Attribute` must only filter attributes out of the passed input
+    slice and return a new slice with values that `match` returns true. It may not do more work than what the method name implies, ie, it
+    may not key a global history of all the slices that have been filtered.
+  - `func Add(v pdata.values)` 
+- Variable assigned in a package's global scope that is preconfigured with a recommended set of values must use `Default` as the prefix. For example:
+  - `var DefaultMarshallers = map[string]pdata.Marshallers{...}` is defined with an exporters package that allows for converting an encoding name,
+    `zipkin`, and return the preconfigured marshaller to be used in the export process.
 
 
 ### Recommended Libraries / Defaults
