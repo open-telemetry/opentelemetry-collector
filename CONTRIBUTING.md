@@ -345,6 +345,18 @@ with clear instructions on how to install the required libraries.
 Furthermore, if your package requires CGO, it MUST be able to compile and operate in a no op mode
 or report a warning back to the collector with a clear error saying CGO is required to work.
 
+### Doing breaking changes
+
+Whenever possible, we adhere to semver as our minimum standards. Even before v1, we strive to not break compatibility
+without a good reason. Hence, when a change is known to cause a breaking change, it should be clearly marked in the
+changelog, possibly with a line instructing users how to move forward.
+
+We also strive to perform breaking changes in two stages, or using feature flags: 
+
+- when we need to remove something, we mark a feature as deprecated in one version, and remove it in the next one
+- when renaming types, functions, or attributes, we create the new name first, deprecating the old one in one
+version, removing it in the next version
+- when creating new interfaces, provide helpers so that consumers can be forward compatible without much effort
 
 ## Updating Changelog
 
