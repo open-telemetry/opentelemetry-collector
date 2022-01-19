@@ -174,15 +174,15 @@ interaction with a human (such as this Collector).
 
 To keep naming patterns consistent across the project, naming patterns are enforced to make intent clear by:
 
-- Methods that return a variable that uses the zero value or values provided via the method MUST have the prefix `New`
-  - For example `func NewKinesisExporter(kpl aws.KinesisProducerLibrary)` allocates a variable that uses
+- Methods that return a variable that uses the zero value or values provided via the method MUST have the prefix `New`. For example:
+  - `func NewKinesisExporter(kpl aws.KinesisProducerLibrary)` allocates a variable that uses
     the variables passed on creation.
-  - For example `func NewKeyValueBuilder()` may allocate internal varialbes to a safe zero value
-- Methods that return a variable that uses non zero value(s) that impacts business logic must use `NewDefault`
-  - For example `func NewDefaultKinesisConfig()` would return a configuration that is the suggested default
+  - `func NewKeyValueBuilder()` may allocate internal varialbes to a safe zero value.
+- Methods that return a variable that uses non zero value(s) that impacts business logic must use `NewDefault`. For example:
+  - `func NewDefaultKinesisConfig()` would return a configuration that is the suggested default
     and can be updated without concern of a race condition.
-- Methods that act upon an input variable should have a signature that reflect concisely the logic being done
-- Variable assigned in a package's global scope that is preconfigured with a recommended set of values must use `Default` as the prefix
+- Methods that act upon an input variable should have a signature that reflect concisely the logic being done.
+- Variable assigned in a package's global scope that is preconfigured with a recommended set of values must use `Default` as the prefix.
 
 
 ### Recommended Libraries / Defaults
