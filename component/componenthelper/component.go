@@ -25,6 +25,9 @@ type StartFunc func(context.Context, component.Host) error
 
 // Start starts the component.
 func (f StartFunc) Start(ctx context.Context, host component.Host) error {
+	if f == nil {
+		return nil
+	}
 	return f(ctx, host)
 }
 
@@ -33,6 +36,9 @@ type ShutdownFunc func(context.Context) error
 
 // Shutdown shuts down the component.
 func (f ShutdownFunc) Shutdown(ctx context.Context) error {
+	if f == nil {
+		return nil
+	}
 	return f(ctx)
 }
 
@@ -62,10 +68,7 @@ type baseComponent struct {
 
 // New returns a component.Component configured with the provided options.
 func New(options ...Option) component.Component {
-	bc := &baseComponent{
-		StartFunc:    func(ctx context.Context, host component.Host) error { return nil },
-		ShutdownFunc: func(ctx context.Context) error { return nil },
-	}
+	bc := &baseComponent{}
 
 	for _, op := range options {
 		op(bc)

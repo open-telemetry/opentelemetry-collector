@@ -15,6 +15,7 @@
 package configtelemetry // import "go.opentelemetry.io/collector/config/configtelemetry"
 
 import (
+	"encoding"
 	"flag"
 	"fmt"
 	"strings"
@@ -40,7 +41,7 @@ const UseOpenTelemetryForInternalMetrics = false
 
 // Flags is a helper function to add telemetry config flags to the service that exposes
 // the application flags.
-// Deprecated: No-op, kept for backwards compatibility until next release
+// Deprecated: No-op, kept for backwards compatibility until v0.44.0.
 func Flags(*flag.FlagSet) {}
 
 // Level is the level of internal telemetry (metrics, logs, traces about the component itself)
@@ -48,6 +49,7 @@ func Flags(*flag.FlagSet) {}
 type Level int32
 
 var _ flag.Value = (*Level)(nil)
+var _ encoding.TextUnmarshaler = (*Level)(nil)
 
 func (l Level) String() string {
 	switch l {
@@ -63,7 +65,7 @@ func (l Level) String() string {
 	return "unknown"
 }
 
-// Set sets the telemetry level.
+// Deprecated: will be removed in v0.44.0.
 func (l *Level) Set(s string) error {
 	lvl, err := parseLevel(s)
 	if err != nil {
