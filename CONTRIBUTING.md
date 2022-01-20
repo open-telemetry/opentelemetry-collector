@@ -185,7 +185,6 @@ To keep naming patterns consistent across the project, naming patterns are enfor
   - `func FilterAttributes(attrs []Attribute, match func(attr Attribute) bool) []Attribute` must only filter attributes out of the passed input
     slice and return a new slice with values that `match` returns true. It may not do more work than what the method name implies, ie, it
     may not key a global history of all the slices that have been filtered.
-  - `func Add(v pdata.values)` 
 - Variable assigned in a package's global scope that is preconfigured with a recommended set of values must use `Default` as the prefix. For example:
   - `var DefaultMarshallers = map[string]pdata.Marshallers{...}` is defined with an exporters package that allows for converting an encoding name,
     `zipkin`, and return the preconfigured marshaller to be used in the export process.
