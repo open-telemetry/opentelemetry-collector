@@ -351,12 +351,19 @@ Whenever possible, we adhere to semver as our minimum standards. Even before v1,
 without a good reason. Hence, when a change is known to cause a breaking change, it should be clearly marked in the
 changelog, possibly with a line instructing users how to move forward.
 
-We also strive to perform breaking changes in two stages, or using feature flags: 
+We also strive to perform breaking changes in two stages: 
 
 - when we need to remove something, we mark a feature as deprecated in one version, and remove it in the next one
 - when renaming types, functions, or attributes, we create the new name first, deprecating the old one in one
 version, removing it in the next version
-- when creating new interfaces, provide helpers so that consumers can be forward compatible without much effort
+- when creating new interfaces, provide helpers so that consumers can be forward compatible without much effort. One
+example can be found in the `configauth` package, where a [`ServerAuthenticator`](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/config/configauth/serverauth.go#L28-L40)
+interface exists, we as well as a [helper](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/config/configauth/default_serverauthenticator.go#L59-L71)
+that most implementations should use.
+
+When deprecating a feature affecting end-users, consider first deprecating the feature, then hiding it behind
+a [feature flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/),
+and eventually removing it. 
 
 ## Updating Changelog
 
