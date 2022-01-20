@@ -356,10 +356,6 @@ We also strive to perform breaking changes in two stages:
 - when we need to remove something, we MUST mark a feature as deprecated in one version, and MAY remove it in the next one
 - when renaming types, functions, or attributes, we MUST create the new name first and MUST deprecate the old one in one
 version, and MAY remove it in the next version. For simple renames, the old name SHALL call the new one.
-- when creating new interfaces, helpers MUST be provided so that consumers can be forward compatible without much effort. One
-example can be found in the `configauth` package, where a [`ServerAuthenticator`](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/config/configauth/serverauth.go#L28-L40)
-interface exists, we as well as a [helper](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/config/configauth/default_serverauthenticator.go#L59-L71)
-that most implementations should use.
 
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it behind
 a [feature flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/) in the next version,
