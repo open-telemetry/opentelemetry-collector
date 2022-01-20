@@ -18,6 +18,7 @@
 - Updated confighttp `ToClient` to support passing telemetry settings for instrumenting otlphttp exporter(#4449)
 - Deprecate `configtelemetry.Level.Set()` (#4700)
 - Remove support to some arches and platforms from `ocb` (opentelemetry-collector-builder) (#4710)
+- Remove deprecated legacy path ("v1/trace") support for otlp http receiver (#4720)
 
 ## 💡 Enhancements 💡
 
