@@ -17,6 +17,7 @@
   - Usages of `--metrics-addr={VALUE}` can be replaced by `--set=service.telemetry.metrics.address={VALUE}`;
 - Updated confighttp `ToClient` to support passing telemetry settings for instrumenting otlphttp exporter(#4449)
 - Deprecate `configtelemetry.Level.Set()` (#4700)
+- Remove support to some arches and platforms from `ocb` (opentelemetry-collector-builder) (#4710)
 
 ## 💡 Enhancements 💡
 
