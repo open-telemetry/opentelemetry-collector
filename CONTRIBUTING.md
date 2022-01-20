@@ -348,22 +348,39 @@ or report a warning back to the collector with a clear error saying CGO is requi
 ### Breaking changes
 
 Whenever possible, we adhere to semver as our minimum standards. Even before v1, we strive to not break compatibility
-without a good reason. Hence, when a change is known to cause a breaking change, it should be clearly marked in the
-changelog, possibly with a line instructing users how to move forward.
+without a good reason. Hence, when a change is known to cause a breaking change, it MUST be clearly marked in the
+changelog, and SHOULD include a line instructing users how to move forward.
 
 We also strive to perform breaking changes in two stages: 
 
-- when we need to remove something, we mark a feature as deprecated in one version, and remove it in the next one
-- when renaming types, functions, or attributes, we create the new name first, deprecating the old one in one
-version, removing it in the next version
-- when creating new interfaces, provide helpers so that consumers can be forward compatible without much effort. One
+- when we need to remove something, we MUST mark a feature as deprecated in one version, and MAY remove it in the next one
+- when renaming types, functions, or attributes, we MUST create the new name first and MUST deprecate the old one in one
+version, and MAY remove it in the next version. For simple renames, the old name SHALL call the new one.
+- when creating new interfaces, helpers MUST be provided so that consumers can be forward compatible without much effort. One
 example can be found in the `configauth` package, where a [`ServerAuthenticator`](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/config/configauth/serverauth.go#L28-L40)
 interface exists, we as well as a [helper](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/config/configauth/default_serverauthenticator.go#L59-L71)
 that most implementations should use.
 
-When deprecating a feature affecting end-users, consider first deprecating the feature, then hiding it behind
-a [feature flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/),
-and eventually removing it. 
+When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it behind
+a [feature flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/) in the next version,
+and eventually removing it after yet another version.
+
+#### Example #1 - Renaming a function
+
+1. Current version `v0.N` has `func GetFoo() Bar`
+1. We now decided that `GetBar` is a better name. As such, on `v0.N+1` we add a new `func GetBar() Bar` function,
+changing the existing `func GetFoo() Bar` to be an alias of the new function. Additionally, a log entry with a warning
+is added to the old function, along with an entry to the changelog.
+1. On `v0.N+2`, we MAY remove `func GetFoo() Bar`.
+
+#### Example #2 - Changing the return values of a function
+
+1. Current version `v0.N` has `func GetFoo() Foo`
+1. We now need to also return an error. We do it by creating a new function that will be equivalent to the existing
+one, so that current users can easily migrate to that: `func MustGetFoo() Foo`, which panics on errors. We release
+this in `v0.N+1`, deprecating the existing `func GetFoo() Foo` with it, adding a log entry with a warning and an
+entry to the changelog.
+1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo() (Foo, error)`.
 
 ## Updating Changelog
 
