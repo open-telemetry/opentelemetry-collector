@@ -42,31 +42,28 @@ type Scraper interface {
 	Scrape(context.Context) (pdata.Metrics, error)
 }
 
-type baseSettings struct {
-	componentOptions []componenthelper.Option
-}
-
 // ScraperOption apply changes to internal options.
-type ScraperOption func(*baseSettings)
+type ScraperOption func(*baseScraper)
 
 // WithStart sets the function that will be called on startup.
 func WithStart(start componenthelper.StartFunc) ScraperOption {
-	return func(o *baseSettings) {
-		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
+	return func(o *baseScraper) {
+		o.StartFunc = start
 	}
 }
 
 // WithShutdown sets the function that will be called on shutdown.
 func WithShutdown(shutdown componenthelper.ShutdownFunc) ScraperOption {
-	return func(o *baseSettings) {
-		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
+	return func(o *baseScraper) {
+		o.ShutdownFunc = shutdown
 	}
 }
 
 var _ Scraper = (*baseScraper)(nil)
 
 type baseScraper struct {
-	component.Component
+	componenthelper.StartFunc
+	componenthelper.ShutdownFunc
 	ScrapeFunc
 	id config.ComponentID
 }
@@ -81,16 +78,13 @@ func NewScraper(name string, scrape ScrapeFunc, options ...ScraperOption) (Scrap
 	if scrape == nil {
 		return nil, errNilFunc
 	}
-	set := &baseSettings{}
-	for _, op := range options {
-		op(set)
-	}
-
-	ms := &baseScraper{
-		Component:  componenthelper.New(set.componentOptions...),
+	bs := &baseScraper{
 		ScrapeFunc: scrape,
 		id:         config.NewComponentID(config.Type(name)),
 	}
+	for _, op := range options {
+		op(bs)
+	}
 
-	return ms, nil
+	return bs, nil
 }

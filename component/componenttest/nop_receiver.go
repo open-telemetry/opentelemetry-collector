@@ -90,11 +90,10 @@ func (f *nopReceiverFactory) CreateLogsReceiver(
 	return nopReceiverInstance, nil
 }
 
-var nopReceiverInstance = &nopReceiver{
-	Component: componenthelper.New(),
-}
+var nopReceiverInstance = &nopReceiver{}
 
 // nopReceiver stores consumed traces and metrics for testing purposes.
 type nopReceiver struct {
-	component.Component
+	componenthelper.StartFunc
+	componenthelper.ShutdownFunc
 }

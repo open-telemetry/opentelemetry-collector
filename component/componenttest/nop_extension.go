@@ -68,11 +68,10 @@ func (f *nopExtensionFactory) CreateExtension(
 	return nopExtensionInstance, nil
 }
 
-var nopExtensionInstance = &nopExtension{
-	Component: componenthelper.New(),
-}
+var nopExtensionInstance = &nopExtension{}
 
 // nopExtension stores consumed traces and metrics for testing purposes.
 type nopExtension struct {
-	component.Component
+	componenthelper.StartFunc
+	componenthelper.ShutdownFunc
 }

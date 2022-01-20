@@ -92,12 +92,12 @@ func (f *nopProcessorFactory) CreateLogsProcessor(
 }
 
 var nopProcessorInstance = &nopProcessor{
-	Component: componenthelper.New(),
-	Consumer:  consumertest.NewNop(),
+	Consumer: consumertest.NewNop(),
 }
 
 // nopProcessor stores consumed traces and metrics for testing purposes.
 type nopProcessor struct {
-	component.Component
+	componenthelper.StartFunc
+	componenthelper.ShutdownFunc
 	consumertest.Consumer
 }

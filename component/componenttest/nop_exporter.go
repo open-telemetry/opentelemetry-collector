@@ -88,12 +88,12 @@ func (f *nopExporterFactory) CreateLogsExporter(
 }
 
 var nopExporterInstance = &nopExporter{
-	Component: componenthelper.New(),
-	Consumer:  consumertest.NewNop(),
+	Consumer: consumertest.NewNop(),
 }
 
 // nopExporter stores consumed traces and metrics for testing purposes.
 type nopExporter struct {
-	component.Component
+	componenthelper.StartFunc
+	componenthelper.ShutdownFunc
 	consumertest.Consumer
 }
