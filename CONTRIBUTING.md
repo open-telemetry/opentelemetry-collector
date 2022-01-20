@@ -170,6 +170,27 @@ for coding advice). The code must adhere to the following robustness principles 
 are important for software that runs autonomously and continuously without direct
 interaction with a human (such as this Collector).
 
+### Naming convention
+
+To keep naming patterns consistent across the project, naming patterns are enforced to make intent clear by:
+
+- Methods that return a variable that uses the zero value or values provided via the method MUST have the prefix `New`. For example:
+  - `func NewKinesisExporter(kpl aws.KinesisProducerLibrary)` allocates a variable that uses
+    the variables passed on creation.
+  - `func NewKeyValueBuilder()` may allocate internal varialbes to a safe zero value.
+- Methods that return a variable that uses non zero value(s) that impacts business logic must use `NewDefault`. For example:
+  - `func NewDefaultKinesisConfig()` would return a configuration that is the suggested default
+    and can be updated without concern of a race condition.
+- Methods that act upon an input variable should have a signature that reflect concisely the logic being done. For example:
+  - `func FilterAttributes(attrs []Attribute, match func(attr Attribute) bool) []Attribute` must only filter attributes out of the passed input
+    slice and return a new slice with values that `match` returns true. It may not do more work than what the method name implies, ie, it
+    may not key a global history of all the slices that have been filtered.
+  - `func Add(v pdata.values)` 
+- Variable assigned in a package's global scope that is preconfigured with a recommended set of values must use `Default` as the prefix. For example:
+  - `var DefaultMarshallers = map[string]pdata.Marshallers{...}` is defined with an exporters package that allows for converting an encoding name,
+    `zipkin`, and return the preconfigured marshaller to be used in the export process.
+
+
 ### Recommended Libraries / Defaults
 
 In order to simplify developing within the project, library recommendations have been set
