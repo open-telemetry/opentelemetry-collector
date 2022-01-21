@@ -183,7 +183,9 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-var fileRegexp = regexp.MustCompile("^[A-z]:")
+// follows drive-letter specification:
+// https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
+var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
 func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.Retrieved, error) {
 	var retrs []configmapprovider.Retrieved
@@ -193,12 +195,8 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.
 		// - empty url scheme means "file".
 		// - "^[A-z]:" also means "file"
 		scheme := "file"
-		if idx := strings.Index(location, ":"); idx != -1 {
-			if fileRegexp.MatchString(location) {
-				location = scheme + ":" + location
-			} else {
-				scheme = location[:idx]
-			}
+		if idx := strings.Index(location, ":"); idx != -1 && !driverLetterRegexp.MatchString(location) {
+			scheme = location[:idx]
 		} else {
 			location = scheme + ":" + location
 		}

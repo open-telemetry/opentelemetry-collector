@@ -16,6 +16,10 @@
   - Add context to config.MapConverterFunc (#4678)
 - Builder: the skip compilation should only be supplied as a CLI flag. Previously, it was possible to specify that in the YAML file, contrary to the original intention (#4645)
 
+## 🧰 Bug fixes 🧰
+
+- Ensure Windows path (e.g: C:) is recognized as a file path (#4726)
+
 ## 💡 Enhancements 💡
 
 - Remove expand cases that cannot happen with config.Map (#4649)
