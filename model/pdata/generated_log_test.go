@@ -309,18 +309,18 @@ func TestInstrumentationLibraryLogs_SchemaUrl(t *testing.T) {
 	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
-func TestInstrumentationLibraryLogs_Logs(t *testing.T) {
+func TestInstrumentationLibraryLogs_LogRecords(t *testing.T) {
 	ms := NewInstrumentationLibraryLogs()
-	assert.EqualValues(t, NewLogSlice(), ms.Logs())
-	fillTestLogSlice(ms.Logs())
-	testValLogs := generateTestLogSlice()
-	assert.EqualValues(t, testValLogs, ms.Logs())
+	assert.EqualValues(t, NewLogRecordSlice(), ms.LogRecords())
+	fillTestLogRecordSlice(ms.LogRecords())
+	testValLogRecords := generateTestLogRecordSlice()
+	assert.EqualValues(t, testValLogRecords, ms.LogRecords())
 }
 
-func TestLogSlice(t *testing.T) {
-	es := NewLogSlice()
+func TestLogRecordSlice(t *testing.T) {
+	es := NewLogRecordSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newLogSlice(&[]*otlplogs.LogRecord{})
+	es = newLogRecordSlice(&[]*otlplogs.LogRecord{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
@@ -335,23 +335,23 @@ func TestLogSlice(t *testing.T) {
 	}
 }
 
-func TestLogSlice_CopyTo(t *testing.T) {
-	dest := NewLogSlice()
+func TestLogRecordSlice_CopyTo(t *testing.T) {
+	dest := NewLogRecordSlice()
 	// Test CopyTo to empty
-	NewLogSlice().CopyTo(dest)
-	assert.EqualValues(t, NewLogSlice(), dest)
+	NewLogRecordSlice().CopyTo(dest)
+	assert.EqualValues(t, NewLogRecordSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestLogSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestLogSlice(), dest)
+	generateTestLogRecordSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestLogRecordSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestLogSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestLogSlice(), dest)
+	generateTestLogRecordSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestLogRecordSlice(), dest)
 }
 
-func TestLogSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestLogSlice()
+func TestLogRecordSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestLogRecordSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
 	expectedEs := make(map[*otlplogs.LogRecord]bool)
@@ -384,24 +384,24 @@ func TestLogSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
-func TestLogSlice_MoveAndAppendTo(t *testing.T) {
+func TestLogRecordSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestLogSlice()
-	dest := NewLogSlice()
-	src := generateTestLogSlice()
+	expectedSlice := generateTestLogRecordSlice()
+	dest := NewLogRecordSlice()
+	src := generateTestLogRecordSlice()
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestLogSlice(), dest)
+	assert.EqualValues(t, generateTestLogRecordSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestLogSlice(), dest)
+	assert.EqualValues(t, generateTestLogRecordSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	generateTestLogSlice().MoveAndAppendTo(dest)
+	generateTestLogRecordSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -409,16 +409,16 @@ func TestLogSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestLogSlice_RemoveIf(t *testing.T) {
+func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewLogSlice()
+	emptySlice := NewLogRecordSlice()
 	emptySlice.RemoveIf(func(el LogRecord) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := generateTestLogSlice()
+	filtered := generateTestLogRecordSlice()
 	pos := 0
 	filtered.RemoveIf(func(el LogRecord) bool {
 		pos++
@@ -568,16 +568,16 @@ func generateTestInstrumentationLibraryLogs() InstrumentationLibraryLogs {
 func fillTestInstrumentationLibraryLogs(tv InstrumentationLibraryLogs) {
 	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
 	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	fillTestLogSlice(tv.Logs())
+	fillTestLogRecordSlice(tv.LogRecords())
 }
 
-func generateTestLogSlice() LogSlice {
-	tv := NewLogSlice()
-	fillTestLogSlice(tv)
+func generateTestLogRecordSlice() LogRecordSlice {
+	tv := NewLogRecordSlice()
+	fillTestLogRecordSlice(tv)
 	return tv
 }
 
-func fillTestLogSlice(tv LogSlice) {
+func fillTestLogRecordSlice(tv LogRecordSlice) {
 	l := 7
 	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {

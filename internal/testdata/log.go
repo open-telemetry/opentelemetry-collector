@@ -40,26 +40,26 @@ func GenerateLogsNoLogRecords() pdata.Logs {
 func GenerateLogsOneEmptyLogRecord() pdata.Logs {
 	ld := GenerateLogsNoLogRecords()
 	rs0 := ld.ResourceLogs().At(0)
-	rs0.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	rs0.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	return ld
 }
 
 func GenerateLogsOneLogRecordNoResource() pdata.Logs {
 	ld := GenerateLogsOneEmptyResourceLogs()
 	rs0 := ld.ResourceLogs().At(0)
-	fillLogOne(rs0.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty())
+	fillLogOne(rs0.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty())
 	return ld
 }
 
 func GenerateLogsOneLogRecord() pdata.Logs {
 	ld := GenerateLogsOneEmptyLogRecord()
-	fillLogOne(ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0))
+	fillLogOne(ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0))
 	return ld
 }
 
 func GenerateLogsTwoLogRecordsSameResource() pdata.Logs {
 	ld := GenerateLogsOneEmptyLogRecord()
-	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
 	fillLogOne(logs.At(0))
 	fillLogTwo(logs.AppendEmpty())
 	return ld
@@ -69,12 +69,12 @@ func GenerateLogsTwoLogRecordsSameResourceOneDifferent() pdata.Logs {
 	ld := pdata.NewLogs()
 	rl0 := ld.ResourceLogs().AppendEmpty()
 	initResource1(rl0.Resource())
-	logs := rl0.InstrumentationLibraryLogs().AppendEmpty().Logs()
+	logs := rl0.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
 	fillLogOne(logs.AppendEmpty())
 	fillLogTwo(logs.AppendEmpty())
 	rl1 := ld.ResourceLogs().AppendEmpty()
 	initResource2(rl1.Resource())
-	fillLogThree(rl1.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty())
+	fillLogThree(rl1.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty())
 	return ld
 }
 func fillLogOne(log pdata.LogRecord) {
@@ -119,7 +119,7 @@ func fillLogThree(log pdata.LogRecord) {
 
 func GenerateLogsManyLogRecordsSameResource(count int) pdata.Logs {
 	ld := GenerateLogsOneEmptyLogRecord()
-	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
 	logs.EnsureCapacity(count)
 	for i := 0; i < count; i++ {
 		var l pdata.LogRecord

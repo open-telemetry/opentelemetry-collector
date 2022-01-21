@@ -49,7 +49,7 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 			}
 
 			// If possible to move all metrics do that.
-			srcIllLRC := srcIll.Logs().Len()
+			srcIllLRC := srcIll.LogRecords().Len()
 			if size >= srcIllLRC+totalCopiedLogRecords {
 				totalCopiedLogRecords += srcIllLRC
 				srcIll.MoveTo(destRl.InstrumentationLibraryLogs().AppendEmpty())
@@ -58,12 +58,12 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 
 			destIll := destRl.InstrumentationLibraryLogs().AppendEmpty()
 			srcIll.InstrumentationLibrary().CopyTo(destIll.InstrumentationLibrary())
-			srcIll.Logs().RemoveIf(func(srcMetric pdata.LogRecord) bool {
+			srcIll.LogRecords().RemoveIf(func(srcMetric pdata.LogRecord) bool {
 				// If we are done skip everything else.
 				if totalCopiedLogRecords == size {
 					return false
 				}
-				srcMetric.MoveTo(destIll.Logs().AppendEmpty())
+				srcMetric.MoveTo(destIll.LogRecords().AppendEmpty())
 				totalCopiedLogRecords++
 				return true
 			})
@@ -78,7 +78,7 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 // resourceLRC calculates the total number of log records in the pdata.ResourceLogs.
 func resourceLRC(rs pdata.ResourceLogs) (count int) {
 	for k := 0; k < rs.InstrumentationLibraryLogs().Len(); k++ {
-		count += rs.InstrumentationLibraryLogs().At(k).Logs().Len()
+		count += rs.InstrumentationLibraryLogs().At(k).LogRecords().Len()
 	}
 	return
 }
