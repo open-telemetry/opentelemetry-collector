@@ -45,7 +45,7 @@ func flags() *flag.FlagSet {
 	featuregate.Flags(flagSet)
 
 	flagSet.Var(configFlag, "config", "Locations to the config file(s), note that only a"+
-		" single (first) location can be set per flag entry e.g. `-config=file:/path/to/first --config=file:path/to/second`.")
+		" single location can be set per flag entry e.g. `-config=file:/path/to/first --config=file:path/to/second`.")
 
 	flagSet.Var(setFlag, "set",
 		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+
