@@ -55,8 +55,7 @@ func convert(propsStr []string, cfgMap *config.Map) error {
 		return err
 	}
 
-	// Create a map manually instead of using properties.Map() to allow env var expansion
-	// as used by original Viper-based config.Map.
+	// Create a map manually instead of using properties.Map() to not expand the env vars.
 	parsed := make(map[string]interface{}, props.Len())
 	for _, key := range props.Keys() {
 		value, _ := props.Get(key)
