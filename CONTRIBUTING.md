@@ -358,8 +358,8 @@ We also strive to perform breaking changes in two stages:
 version, and MAY remove it in the next version. For simple renames, the old name SHALL call the new one.
 
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it behind
-a [feature flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/) in the next version,
-and eventually removing it after yet another version.
+a [feature flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
+in a subsequent version, and eventually removing it after yet another version.
 
 #### Example #1 - Renaming a function
 
