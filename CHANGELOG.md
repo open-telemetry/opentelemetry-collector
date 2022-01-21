@@ -20,6 +20,10 @@
 - Remove support to some arches and platforms from `ocb` (opentelemetry-collector-builder) (#4710)
 - Remove deprecated legacy path ("v1/trace") support for otlp http receiver (#4720)
 
+## 🧰 Bug fixes 🧰
+
+- Ensure Windows path (e.g: C:) is recognized as a file path (#4726)
+
 ## 💡 Enhancements 💡
 
 - `service.NewConfigProvider`: copy slice argument, disallow changes from caller to the input slice (#4729)

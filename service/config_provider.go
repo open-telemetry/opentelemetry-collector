@@ -17,6 +17,7 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -185,13 +186,19 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return errs
 }
 
+// follows drive-letter specification:
+// https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
+var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
+
 func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.Retrieved, error) {
 	var retrs []configmapprovider.Retrieved
 	retCfgMap := config.NewMap()
 	for _, location := range cm.locations {
-		// For backwards compatibility, empty url scheme means "file".
+		// For backwards compatibility:
+		// - empty url scheme means "file".
+		// - "^[A-z]:" also means "file"
 		scheme := "file"
-		if idx := strings.Index(location, ":"); idx != -1 {
+		if idx := strings.Index(location, ":"); idx != -1 && !driverLetterRegexp.MatchString(location) {
 			scheme = location[:idx]
 		} else {
 			location = scheme + ":" + location
