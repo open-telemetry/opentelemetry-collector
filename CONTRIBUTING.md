@@ -387,6 +387,12 @@ that each of the following steps is done in a separate version:
    entry to the changelog.
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo() (Foo, error)`.
 
+#### Exceptions
+
+While the above is what we strive to follow, we acknowledge that some changes might be unfeasible to achieve in a
+non-breaking manner. Exceptions to the outlined rules are acceptable if consensus can be obtained from approvers in the
+pull request they are proposed. A reason for requesting the exception MUST be given in the pull request.
+
 ## Updating Changelog
 
 An entry into the [Changelog](./CHANGELOG.md) is required for the following reasons:
