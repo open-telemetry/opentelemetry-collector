@@ -351,7 +351,8 @@ Whenever possible, we adhere to semver as our minimum standards. Even before v1,
 without a good reason. Hence, when a change is known to cause a breaking change, it MUST be clearly marked in the
 changelog, and SHOULD include a line instructing users how to move forward.
 
-We also strive to perform breaking changes in two stages: 
+We also strive to perform breaking changes in two stages, deprecating it first (`vM.N`) and breaking it in a subsequent
+version (`vM.N+1`).
 
 - when we need to remove something, we MUST mark a feature as deprecated in one version, and MAY remove it in the next
   one
@@ -362,7 +363,12 @@ We also strive to perform breaking changes in two stages:
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
 behind a [feature
 flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
-in a subsequent version, and eventually removing it after yet another version.
+in a subsequent version, and eventually removing it after yet another version. This is how it would look like, considering
+that each of the following steps is done in a separate version:
+
+1. Mark the feature as deprecated, add a short lived feature flag with the feature enabled by default
+1. Change the feature flag to disable the feature by default, deprecating the flag at the same time
+1. Remove the feature and the flag
 
 #### Example #1 - Renaming a function
 
