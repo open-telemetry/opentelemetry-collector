@@ -186,10 +186,16 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.
 	var retrs []configmapprovider.Retrieved
 	retCfgMap := config.NewMap()
 	for _, location := range cm.locations {
-		// For backwards compatibility, empty url scheme means "file".
+		// For backwards compatibility:
+		// - empty url scheme means "file".
+		// - "C:" also means "file"
 		scheme := "file"
 		if idx := strings.Index(location, ":"); idx != -1 {
-			scheme = location[:idx]
+			if strings.HasPrefix(location, "C:") {
+				location = scheme + ":" + location
+			} else {
+				scheme = location[:idx]
+			}
 		} else {
 			location = scheme + ":" + location
 		}

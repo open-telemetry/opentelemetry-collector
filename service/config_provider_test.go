@@ -312,3 +312,37 @@ func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 	assert.NoError(t, cfgW.Shutdown(context.Background()))
 	watcherWG.Wait()
 }
+
+func TestBackwardsCompatibilityForFilePath(t *testing.T) {
+	factories, errF := componenttest.NopFactories()
+	require.NoError(t, errF)
+
+	tests := []struct {
+		name     string
+		location string
+		err      error
+	}{
+		{
+			name:     "unix",
+			location: `/test`,
+		},
+		{
+			name:     "file_unix",
+			location: `file:/test`,
+		},
+		{
+			name:     "windows",
+			location: `C:\test`,
+		},
+		{
+			name:     "file_windows",
+			location: `file:C:\test`,
+		},
+	}
+	for _, tt := range tests {
+		provider := NewDefaultConfigProvider(tt.location, []string{})
+		_, err := provider.Get(context.Background(), factories)
+		assert.Contains(t, err.Error(), "no such file or directory")
+	}
+
+}
