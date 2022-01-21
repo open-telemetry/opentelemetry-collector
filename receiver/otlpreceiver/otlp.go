@@ -195,15 +195,7 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, r.traceReceiver, pbEncoder)
 		}).Methods(http.MethodPost).Headers("Content-Type", pbContentType)
-		// For backwards compatibility see https://github.com/open-telemetry/opentelemetry-collector/issues/1968
-		r.httpMux.HandleFunc("/v1/trace", func(resp http.ResponseWriter, req *http.Request) {
-			handleTraces(resp, req, r.traceReceiver, pbEncoder)
-		}).Methods(http.MethodPost).Headers("Content-Type", pbContentType)
 		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
-			handleTraces(resp, req, r.traceReceiver, jsEncoder)
-		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
-		// For backwards compatibility see https://github.com/open-telemetry/opentelemetry-collector/issues/1968
-		r.httpMux.HandleFunc("/v1/trace", func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, r.traceReceiver, jsEncoder)
 		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
 	}

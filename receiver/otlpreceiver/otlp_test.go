@@ -148,20 +148,12 @@ func TestJsonHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	// Previously we used /v1/trace as the path. The correct path according to OTLP spec
-	// is /v1/traces. We currently support both on the receiving side to give graceful
-	// period for senders to roll out a fix, so we test for both paths to make sure
-	// the receiver works correctly.
-	targetURLPaths := []string{"/v1/trace", "/v1/traces"}
-
 	for _, test := range tests {
-		for _, targetURLPath := range targetURLPaths {
-			t.Run(test.name+targetURLPath, func(t *testing.T) {
-				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
-				sink.Reset()
-				testHTTPJSONRequest(t, url, sink, test.encoding, test.err)
-			})
-		}
+		t.Run(test.name, func(t *testing.T) {
+			url := fmt.Sprintf("http://%s/v1/traces", addr)
+			sink.Reset()
+			testHTTPJSONRequest(t, url, sink, test.encoding, test.err)
+		})
 	}
 }
 
@@ -260,20 +252,12 @@ func TestProtoHttp(t *testing.T) {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
 
-	// Previously we used /v1/trace as the path. The correct path according to OTLP spec
-	// is /v1/traces. We currently support both on the receiving side to give graceful
-	// period for senders to roll out a fix, so we test for both paths to make sure
-	// the receiver works correctly.
-	targetURLPaths := []string{"/v1/trace", "/v1/traces"}
-
 	for _, test := range tests {
-		for _, targetURLPath := range targetURLPaths {
-			t.Run(test.name+targetURLPath, func(t *testing.T) {
-				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
-				tSink.Reset()
-				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
-			})
-		}
+		t.Run(test.name, func(t *testing.T) {
+			url := fmt.Sprintf("http://%s/v1/traces", addr)
+			tSink.Reset()
+			testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
+		})
 	}
 }
 
