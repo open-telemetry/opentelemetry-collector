@@ -22,6 +22,7 @@
 
 ## 💡 Enhancements 💡
 
+- `service.NewConfigProvider`: copy slice argument, disallow changes from caller to the input slice (#4729)
 - `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
 - Remove expand cases that cannot happen with config.Map (#4649)
 - Add `max_request_body_size` to confighttp.HTTPServerSettings (#4677)
