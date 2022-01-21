@@ -71,8 +71,8 @@ type configProvider struct {
 	configUnmarshaler  configunmarshaler.ConfigUnmarshaler
 
 	sync.Mutex
-	ret     configmapprovider.Retrieved
-	watcher chan error
+	endWatch configmapprovider.EndWatchFunc
+	watcher  chan error
 }
 
 // NewConfigProvider returns a new ConfigProvider that provides the configuration:
@@ -123,17 +123,10 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 	}
 
 	var err error
-	cm.ret, err = cm.mergeRetrieve(ctx)
-	if err != nil {
-		// Nothing to close, no valid retrieved value.
-		cm.ret = nil
-		return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
-	}
-
 	var cfgMap *config.Map
-	cfgMap, err = cm.ret.Get(ctx)
+	cfgMap, cm.endWatch, err = cm.mergeRetrieve(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get the configuration: %w", err)
+		return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
 	}
 
 	// Apply all converters.
@@ -167,8 +160,8 @@ func (cm *configProvider) onChange(event *configmapprovider.ChangeEvent) {
 }
 
 func (cm *configProvider) closeIfNeeded(ctx context.Context) error {
-	if cm.ret != nil {
-		return cm.ret.Close(ctx)
+	if cm.endWatch != nil {
+		return cm.endWatch(ctx)
 	}
 	return nil
 }
@@ -185,8 +178,8 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.Retrieved, error) {
-	var retrs []configmapprovider.Retrieved
+func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Map, configmapprovider.EndWatchFunc, error) {
+	var endWatches []configmapprovider.EndWatchFunc
 	retCfgMap := config.NewMap()
 	for _, location := range cm.locations {
 		// For backwards compatibility, empty url scheme means "file".
@@ -198,30 +191,25 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.
 		}
 		p, ok := cm.configMapProviders[scheme]
 		if !ok {
-			return nil, fmt.Errorf("scheme %v is not supported for location %v", scheme, location)
+			return nil, nil, fmt.Errorf("scheme %v is not supported for location %v", scheme, location)
 		}
-		retr, err := p.Retrieve(ctx, location, cm.onChange)
+		cfgMap, endWatch, err := p.Retrieve(ctx, location, cm.onChange)
 		if err != nil {
-			return nil, err
-		}
-		cfgMap, err := retr.Get(ctx)
-		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if err = retCfgMap.Merge(cfgMap); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		retrs = append(retrs, retr)
+		if endWatch != nil {
+			endWatches = append(endWatches, endWatch)
+		}
 	}
-	return configmapprovider.NewRetrieved(
-		func(ctx context.Context) (*config.Map, error) {
-			return retCfgMap, nil
-		},
-		configmapprovider.WithClose(func(ctxF context.Context) error {
-			var err error
-			for _, ret := range retrs {
-				err = multierr.Append(err, ret.Close(ctxF))
-			}
-			return err
-		}))
+	endWatch := func(ctxF context.Context) error {
+		var err error
+		for _, endWatch := range endWatches {
+			err = multierr.Append(err, endWatch(ctxF))
+		}
+		return err
+	}
+	return retCfgMap, endWatch, nil
 }

@@ -16,6 +16,8 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/config"
 )
 
 // Provider is an interface that helps to retrieve a config map and watch for any
@@ -24,15 +26,13 @@ import (
 //
 // The typical usage is the following:
 //
-//		r := mapProvider.Retrieve("file:/path/to/config")
-//		r.Get()
+//		cfg, stopWatch, err := mapProvider.Retrieve(ctx, "file:/path/to/config", onChange)
 //		// wait for onChange() to be called.
-//		r.Close()
-//		r = mapProvider.Retrieve("file:/path/to/config")
-//		r.Get()
+//		if stopWatch != nil { stopWatch() }
+//		cfg, stopWatch, err = mapProvider.Retrieve(ctx, "file:/path/to/config", onChange)
 //		// wait for onChange() to be called.
-//		r.Close()
-//		// repeat Retrieve/Get/wait/Close cycle until it is time to shut down the Collector process.
+//		if stopWatch != nil { stopWatch() }
+//		// repeat Retrieve/wait/stopWatch cycle until it is time to shut down the Collector process.
 //		// ...
 //		mapProvider.Shutdown()
 type Provider interface {
@@ -52,7 +52,7 @@ type Provider interface {
 	//
 	// If ctx is cancelled should return immediately with an error.
 	// Should never be called concurrently with itself or with Shutdown.
-	Retrieve(ctx context.Context, location string, watcher WatcherFunc) (Retrieved, error)
+	Retrieve(ctx context.Context, location string, watcher WatcherFunc) (*config.Map, EndWatchFunc, error)
 
 	// Shutdown signals that the configuration for which this Provider was used to
 	// retrieve values is no longer in use and the Provider should close and release
@@ -65,6 +65,13 @@ type Provider interface {
 	// If ctx is cancelled should return immediately with an error.
 	Shutdown(ctx context.Context) error
 }
+
+// EndWatchFunc signals that the configuration (location) for which it was used to retrieve values is
+// no longer in use and should close and release any resources that it may have created.
+//
+// Should block until all resources are closed, and guarantee that `onChange` is not
+// going to be called after it returns except when `ctx` is cancelled.
+type EndWatchFunc func(context.Context) error
 
 type WatcherFunc func(*ChangeEvent)
 

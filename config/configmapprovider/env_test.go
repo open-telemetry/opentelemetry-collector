@@ -30,14 +30,14 @@ const envSchemePrefix = envSchemeName + ":"
 
 func TestEnv_EmptyName(t *testing.T) {
 	env := NewEnv()
-	_, err := env.Retrieve(context.Background(), "", nil)
+	_, _, err := env.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestEnv_UnsupportedScheme(t *testing.T) {
 	env := NewEnv()
-	_, err := env.Retrieve(context.Background(), "http://", nil)
+	_, _, err := env.Retrieve(context.Background(), "http://", nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
@@ -48,7 +48,7 @@ func TestEnv_InvalidYaml(t *testing.T) {
 	const envName = "invalid-yaml"
 	t.Setenv(envName, string(bytes))
 	env := NewEnv()
-	_, err = env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	_, _, err = env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
@@ -60,16 +60,14 @@ func TestEnv(t *testing.T) {
 	t.Setenv(envName, string(bytes))
 
 	env := NewEnv()
-	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	cfg, endWatch, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
-	cfg, err := ret.Get(context.Background())
-	assert.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})
 	assert.Equal(t, expectedMap.ToStringMap(), cfg.ToStringMap())
-	assert.NoError(t, ret.Close(context.Background()))
+	assert.Nil(t, endWatch)
 
 	assert.NoError(t, env.Shutdown(context.Background()))
 }

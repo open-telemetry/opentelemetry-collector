@@ -47,25 +47,23 @@ func NewFile() Provider {
 	return &fileMapProvider{}
 }
 
-func (fmp *fileMapProvider) Retrieve(_ context.Context, location string, _ WatcherFunc) (Retrieved, error) {
+func (fmp *fileMapProvider) Retrieve(_ context.Context, location string, _ WatcherFunc) (*config.Map, EndWatchFunc, error) {
 	if !strings.HasPrefix(location, fileSchemeName+":") {
-		return nil, fmt.Errorf("%v location is not supported by %v provider", location, fileSchemeName)
+		return nil, nil, fmt.Errorf("%v location is not supported by %v provider", location, fileSchemeName)
 	}
 
 	// Clean the path before using it.
 	content, err := ioutil.ReadFile(path.Clean(location[len(fileSchemeName)+1:]))
 	if err != nil {
-		return nil, fmt.Errorf("unable to read the file %v: %w", location, err)
+		return nil, nil, fmt.Errorf("unable to read the file %v: %w", location, err)
 	}
 
 	var data map[string]interface{}
 	if err = yaml.Unmarshal(content, &data); err != nil {
-		return nil, fmt.Errorf("unable to parse yaml: %w", err)
+		return nil, nil, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 
-	return NewRetrieved(func(ctx context.Context) (*config.Map, error) {
-		return config.NewMapFromStringMap(data), nil
-	})
+	return config.NewMapFromStringMap(data), nil, nil
 }
 
 func (*fileMapProvider) Shutdown(context.Context) error {

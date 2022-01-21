@@ -30,63 +30,59 @@ const fileSchemePrefix = fileSchemeName + ":"
 
 func TestFile_EmptyName(t *testing.T) {
 	fp := NewFile()
-	_, err := fp.Retrieve(context.Background(), "", nil)
+	_, _, err := fp.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestFile_UnsupportedScheme(t *testing.T) {
 	fp := NewFile()
-	_, err := fp.Retrieve(context.Background(), "http://", nil)
+	_, _, err := fp.Retrieve(context.Background(), "http://", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestFile_NonExistent(t *testing.T) {
 	fp := NewFile()
-	_, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "non-existent.yaml"), nil)
+	_, _, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "non-existent.yaml"), nil)
 	assert.Error(t, err)
-	_, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "non-existent.yaml")), nil)
+	_, _, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "non-existent.yaml")), nil)
 	assert.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestFile_InvalidYaml(t *testing.T) {
 	fp := NewFile()
-	_, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "invalid-yaml.yaml"), nil)
+	_, _, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "invalid-yaml.yaml"), nil)
 	assert.Error(t, err)
-	_, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "invalid-yaml.yaml")), nil)
+	_, _, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "invalid-yaml.yaml")), nil)
 	assert.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestFile_RelativePath(t *testing.T) {
 	fp := NewFile()
-	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "default-config.yaml"), nil)
+	cfg, endWatch, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "default-config.yaml"), nil)
 	require.NoError(t, err)
-	cfg, err := ret.Get(context.Background())
-	assert.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})
 	assert.Equal(t, expectedMap, cfg)
-	assert.NoError(t, ret.Close(context.Background()))
+	assert.Nil(t, endWatch)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestFile_AbsolutePath(t *testing.T) {
 	fp := NewFile()
-	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "default-config.yaml")), nil)
+	cfg, endWatch, err := fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "default-config.yaml")), nil)
 	require.NoError(t, err)
-	cfg, err := ret.Get(context.Background())
-	assert.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})
 	assert.Equal(t, expectedMap, cfg)
-	assert.NoError(t, ret.Close(context.Background()))
+	assert.Nil(t, endWatch)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
