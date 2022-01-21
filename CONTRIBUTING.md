@@ -353,29 +353,32 @@ changelog, and SHOULD include a line instructing users how to move forward.
 
 We also strive to perform breaking changes in two stages: 
 
-- when we need to remove something, we MUST mark a feature as deprecated in one version, and MAY remove it in the next one
-- when renaming types, functions, or attributes, we MUST create the new name first and MUST deprecate the old one in one
-version, and MAY remove it in the next version. For simple renames, the old name SHALL call the new one.
+- when we need to remove something, we MUST mark a feature as deprecated in one version, and MAY remove it in the next
+  one
+- when renaming types, functions, or attributes, we MUST create the new name and MUST deprecate the old one in one
+  version (step 1), and MAY remove it in a subsequent version (step 2). For simple renames, the old name SHALL call the
+  new one.
 
-When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it behind
-a [feature flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
+When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
+behind a [feature
+flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
 in a subsequent version, and eventually removing it after yet another version.
 
 #### Example #1 - Renaming a function
 
 1. Current version `v0.N` has `func GetFoo() Bar`
 1. We now decided that `GetBar` is a better name. As such, on `v0.N+1` we add a new `func GetBar() Bar` function,
-changing the existing `func GetFoo() Bar` to be an alias of the new function. Additionally, a log entry with a warning
-is added to the old function, along with an entry to the changelog.
+   changing the existing `func GetFoo() Bar` to be an alias of the new function. Additionally, a log entry with a
+   warning is added to the old function, along with an entry to the changelog.
 1. On `v0.N+2`, we MAY remove `func GetFoo() Bar`.
 
 #### Example #2 - Changing the return values of a function
 
 1. Current version `v0.N` has `func GetFoo() Foo`
-1. We now need to also return an error. We do it by creating a new function that will be equivalent to the existing
-one, so that current users can easily migrate to that: `func MustGetFoo() Foo`, which panics on errors. We release
-this in `v0.N+1`, deprecating the existing `func GetFoo() Foo` with it, adding a log entry with a warning and an
-entry to the changelog.
+1. We now need to also return an error. We do it by creating a new function that will be equivalent to the existing one,
+   so that current users can easily migrate to that: `func MustGetFoo() Foo`, which panics on errors. We release this in
+   `v0.N+1`, deprecating the existing `func GetFoo() Foo` with it, perhaps adding a log entry with a warning and an
+   entry to the changelog.
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo() (Foo, error)`.
 
 ## Updating Changelog
