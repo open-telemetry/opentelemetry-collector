@@ -19,7 +19,7 @@
 - Deprecate `configtelemetry.Level.Set()` (#4700)
 - Remove support to some arches and platforms from `ocb` (opentelemetry-collector-builder) (#4710)
 - Remove deprecated legacy path ("v1/trace") support for otlp http receiver (#4720)
-- Change the `service.NewDefaultConfigProvider` to accept a slice of strings (#4727).
+- Change the `service.NewDefaultConfigProvider` to accept a slice of location strings (#4727).
 
 ## 💡 Enhancements 💡
 
