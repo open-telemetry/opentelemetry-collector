@@ -25,10 +25,10 @@ on this audience. Make sure to cause minimal disruption when doing changes here.
 
 ### Downstream distributions
 
-In this capacity, the opentelemetry-collector repository acts as an API for other projects. This audience cares mostly
-about API compatibility, making them susceptible to our refactorings, even though suhch changes wouldn't cause any
-impact to end-users. See the "Breaking changes" in this document for more information on how to perform changes
-affecting this audience.
+In this capacity, the opentelemetry-collector repository's public Go types, functions, and interfaces act as an API for
+other projects. This audience cares mostly about API compatibility, making them susceptible to our refactorings, even
+though such changes wouldn't cause any impact to end-users. See the "Breaking changes" in this document for more
+information on how to perform changes affecting this audience.
 
 This audience might use tools like the
 [opentelemetry-collector-builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) as
