@@ -318,31 +318,45 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 	require.NoError(t, errF)
 
 	tests := []struct {
-		name     string
-		location string
-		err      error
+		name       string
+		location   string
+		errMessage string
 	}{
 		{
-			name:     "unix",
-			location: `/test`,
+			name:       "unix",
+			location:   `/test`,
+			errMessage: "open /test: no such file or directory",
 		},
 		{
-			name:     "file_unix",
-			location: `file:/test`,
+			name:       "file_unix",
+			location:   `file:/test`,
+			errMessage: "open /test: no such file or directory",
 		},
 		{
-			name:     "windows",
-			location: `C:\test`,
+			name:       "windows_C",
+			location:   `C:\test`,
+			errMessage: "open C:\\test: no such file or directory",
 		},
 		{
-			name:     "file_windows",
-			location: `file:C:\test`,
+			name:       "windows_z",
+			location:   `z:\test`,
+			errMessage: "open z:\\test: no such file or directory",
+		},
+		{
+			name:       "file_windows",
+			location:   `file:C:\test`,
+			errMessage: "open C:\\test: no such file or directory",
+		},
+		{
+			name:       "invalid_scheme",
+			location:   `LL:\test`,
+			errMessage: "scheme LL is not supported for location",
 		},
 	}
 	for _, tt := range tests {
 		provider := NewDefaultConfigProvider(tt.location, []string{})
 		_, err := provider.Get(context.Background(), factories)
-		assert.Contains(t, err.Error(), "no such file or directory")
+		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
 	}
 
 }

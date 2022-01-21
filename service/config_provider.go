@@ -17,6 +17,7 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -182,16 +183,18 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return errs
 }
 
+var fileRegexp = regexp.MustCompile("^[A-z]:")
+
 func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.Retrieved, error) {
 	var retrs []configmapprovider.Retrieved
 	retCfgMap := config.NewMap()
 	for _, location := range cm.locations {
 		// For backwards compatibility:
 		// - empty url scheme means "file".
-		// - "C:" also means "file"
+		// - "^[A-z]:" also means "file"
 		scheme := "file"
 		if idx := strings.Index(location, ":"); idx != -1 {
-			if strings.HasPrefix(location, "C:") {
+			if fileRegexp.MatchString(location) {
 				location = scheme + ":" + location
 			} else {
 				scheme = location[:idx]
