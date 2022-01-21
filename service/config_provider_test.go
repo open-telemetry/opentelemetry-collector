@@ -325,27 +325,27 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		{
 			name:       "unix",
 			location:   `/test`,
-			errMessage: "open /test: no such file or directory",
+			errMessage: "unable to read the file file:/test",
 		},
 		{
 			name:       "file_unix",
 			location:   `file:/test`,
-			errMessage: "open /test: no such file or directory",
+			errMessage: "unable to read the file file:/test",
 		},
 		{
 			name:       "windows_C",
 			location:   `C:\test`,
-			errMessage: "open C:\\test: no such file or directory",
+			errMessage: "unable to read the file file:C:\\test",
 		},
 		{
 			name:       "windows_z",
 			location:   `z:\test`,
-			errMessage: "open z:\\test: no such file or directory",
+			errMessage: "unable to read the file file:z:\\test",
 		},
 		{
 			name:       "file_windows",
 			location:   `file:C:\test`,
-			errMessage: "open C:\\test: no such file or directory",
+			errMessage: "unable to read the file file:C:\\test",
 		},
 		{
 			name:       "invalid_scheme",
