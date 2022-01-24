@@ -33,6 +33,7 @@
 - Move `compression.go` into `confighttp.go` to internalize functions in `compression.go` file. (#4651)
   - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
 - Add support for cgroupv2 memory limit (#4654)
+- Add Host property for Metadata (#Add Host property for Metadata)
 
 ## 🧰 Bug fixes 🧰
 
