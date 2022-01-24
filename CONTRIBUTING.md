@@ -177,15 +177,15 @@ To keep naming patterns consistent across the project, naming patterns are enfor
 - Methods that return a variable that uses the zero value or values provided via the method MUST have the prefix `New`. For example:
   - `func NewKinesisExporter(kpl aws.KinesisProducerLibrary)` allocates a variable that uses
     the variables passed on creation.
-  - `func NewKeyValueBuilder()` may allocate internal varialbes to a safe zero value.
-- Methods that return a variable that uses non zero value(s) that impacts business logic must use `NewDefault`. For example:
+  - `func NewKeyValueBuilder()` shall allocate internal variables to a safe zero value.
+- Methods that return a variable that uses non zero value(s) that impacts business logic MUST use the prefix `NewDefault`. For example:
   - `func NewDefaultKinesisConfig()` would return a configuration that is the suggested default
     and can be updated without concern of a race condition.
-- Methods that act upon an input variable should have a signature that reflect concisely the logic being done. For example:
-  - `func FilterAttributes(attrs []Attribute, match func(attr Attribute) bool) []Attribute` must only filter attributes out of the passed input
+- Methods that act upon an input variable MUST have a signature that reflect concisely the logic being done. For example:
+  - `func FilterAttributes(attrs []Attribute, match func(attr Attribute) bool) []Attribute` MUST only filter attributes out of the passed input
     slice and return a new slice with values that `match` returns true. It may not do more work than what the method name implies, ie, it
-    may not key a global history of all the slices that have been filtered.
-- Variable assigned in a package's global scope that is preconfigured with a recommended set of values must use `Default` as the prefix. For example:
+    must not key a global history of all the slices that have been filtered.
+- Variable assigned in a package's global scope that is preconfigured with a default set of values MUST use `Default` as the prefix. For example:
   - `var DefaultMarshallers = map[string]pdata.Marshallers{...}` is defined with an exporters package that allows for converting an encoding name,
     `zipkin`, and return the preconfigured marshaller to be used in the export process.
 
