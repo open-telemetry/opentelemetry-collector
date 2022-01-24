@@ -35,7 +35,7 @@
   - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
 - Add support for cgroupv2 memory limit (#4654)
 - Enable end users to provide multiple files for config location (#4727)
-- Add Host property for Metadata (#Add Host property for Metadata)
+- Add Host property for Metadata (#4736)
 
 ## 🧰 Bug fixes 🧰
 
