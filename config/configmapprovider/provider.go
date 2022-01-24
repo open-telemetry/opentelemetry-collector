@@ -42,7 +42,9 @@ type Provider interface {
 	//
 	// `location` must follow the "<scheme>:<opaque_data>" format. This format is compatible
 	// with the URI definition (see https://datatracker.ietf.org/doc/html/rfc3986). The "<scheme>"
-	// must be always included in the `location`.
+	// must be always included in the `location`. The scheme supported by any provider MUST be at
+	// least 2 characters long to avoid conflicting with a driver-letter identifier as specified
+	// in https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax.
 	//
 	// `watcher` callback is called when the config changes. watcher may be called from
 	// a different go routine. After watcher is called Retrieved.Get should be called

@@ -103,9 +103,9 @@ func NewConfigProvider(
 
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func NewDefaultConfigProvider(configFileName string, properties []string) ConfigProvider {
+func NewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
 	return NewConfigProvider(
-		[]string{configFileName},
+		configLocations,
 		map[string]configmapprovider.Provider{
 			"file": configmapprovider.NewFile(),
 			"env":  configmapprovider.NewEnv(),
