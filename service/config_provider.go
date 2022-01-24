@@ -16,6 +16,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -88,24 +89,28 @@ func NewConfigProvider(
 	locations []string,
 	configMapProviders map[string]configmapprovider.Provider,
 	cfgMapConverters []config.MapConverterFunc,
-	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+	configUnmarshaler configunmarshaler.ConfigUnmarshaler) (ConfigProvider, error) {
 	// Safe copy, ensures the slice cannot be changed from the caller.
 	locationsCopy := make([]string, len(locations))
 	copy(locationsCopy, locations)
+	// Returns an error if len(configLocations) is 0.
+	if len(locationsCopy) == 0 {
+		return nil, errors.New("Length of config Location cannot be 0.")
+	}
 	return &configProvider{
 		locations:          locationsCopy,
 		configMapProviders: configMapProviders,
 		cfgMapConverters:   cfgMapConverters,
 		configUnmarshaler:  configUnmarshaler,
 		watcher:            make(chan error, 1),
-	}
+	}, nil
 }
 
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func NewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
+func NewDefaultConfigProvider(configFileName string, properties []string) (ConfigProvider, error) {
 	return NewConfigProvider(
-		configLocations,
+		[]string{configFileName},
 		map[string]configmapprovider.Provider{
 			"file": configmapprovider.NewFile(),
 			"env":  configmapprovider.NewEnv(),
