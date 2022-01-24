@@ -157,6 +157,41 @@ func TestJsonHttp(t *testing.T) {
 	}
 }
 
+func TestInvalidContentType(t *testing.T) {
+	endpoint := testutil.GetAvailableLocalAddress(t)
+	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
+	cfg := &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Protocols: Protocols{
+			HTTP: &confighttp.HTTPServerSettings{
+				Endpoint: endpoint,
+			},
+		},
+	}
+
+	r, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader([]byte(`{}`)))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	_, err = ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
 func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.ErrOrSinkConsumer, encoding string, expectedErr error) {
 	var buf *bytes.Buffer
 	var err error

@@ -198,6 +198,9 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, r.traceReceiver, jsEncoder)
 		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
+		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
+			handleUnmatchedRequests(resp, req)
+		})
 	}
 	return nil
 }
@@ -232,4 +235,10 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
 	}
 	return nil
+}
+
+func handleUnmatchedRequests(resp http.ResponseWriter, req *http.Request) {
+	if req.Header.Get("Content-Type") == "" {
+		resp.WriteHeader(http.StatusUnsupportedMediaType)
+	}
 }
