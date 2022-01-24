@@ -14,6 +14,7 @@
 
 - Invalid requests now return an appropriate unsupported (`405`) or method not allowed (`415`) response (#4735)
 - `client.Info`: Add Host property for Metadata (#4736)
+- Add support for reloading TLS certificates (#4737)
 
 ## v0.43.1 Beta
 
