@@ -53,6 +53,8 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 		cl.Metadata = client.NewMetadata(req.Header.Clone())
 	}
 
+	cl.Host = req.Host
+
 	ctx := client.NewContext(req.Context(), cl)
 	return ctx
 }

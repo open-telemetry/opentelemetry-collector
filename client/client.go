@@ -107,6 +107,9 @@ type Info struct {
 	// this connection.
 	Auth AuthData
 
+	// Host fro the incomping request (http.Request.Host)
+	Host string
+
 	// Metadata is the request metadata from the client connecting to this connector.
 	// Experimental: *NOTE* this structure is subject to change or removal in the future.
 	Metadata Metadata
