@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.43.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Change configmapprovider.Provider to accept a location for retrieve (#4657)
@@ -24,6 +26,7 @@
 ## 🧰 Bug fixes 🧰
 
 - Ensure Windows path (e.g: C:) is recognized as a file path (#4726)
+- Fix structured logging issue for windows service (#4686)
 
 ## 💡 Enhancements 💡
 
@@ -36,10 +39,6 @@
   - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
 - Add support for cgroupv2 memory limit (#4654)
 - Enable end users to provide multiple files for config location (#4727)
-
-## 🧰 Bug fixes 🧰
-
-- Fix structured logging issue for windows service (#4686)
 
 ## v0.42.0 Beta
 
