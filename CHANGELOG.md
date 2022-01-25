@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🧰 Bug fixes 🧰
+
+- ExpandStringValues function support to map[string]interface{} (#4748) 
+
 ## v0.43.0 Beta
 
 ## 🛑 Breaking changes 🛑
