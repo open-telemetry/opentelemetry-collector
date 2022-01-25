@@ -1079,6 +1079,10 @@ type HistogramDataPoint struct {
 	// Flags that apply to this specific data point.  See DataPointFlags
 	// for the available flags and their meaning.
 	Flags uint32 `protobuf:"varint,10,opt,name=flags,proto3" json:"flags,omitempty"`
+	// Min is the minimum value over (start_time, end_time].
+	Min go_opentelemetry_io_collector_model_internal_data.OptionalDouble
+	// Max is the maximum value over (start_time, end_time].
+	Max go_opentelemetry_io_collector_model_internal_data.OptionalDouble
 }
 
 func (m *HistogramDataPoint) Reset()         { *m = HistogramDataPoint{} }
@@ -2740,6 +2744,22 @@ func (m *SummaryDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if !m.Min.IsEmpty() {
+		size, err := m.Min.MarshalTo(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		dAtA[i] = 0x5E
+	}
+	if !m.Max.IsEmpty() {
+		size, err := m.Max.MarshalTo(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		dAtA[i] = 0x56
+	}
 	if m.Flags != 0 {
 		i = encodeVarintMetrics(dAtA, i, uint64(m.Flags))
 		i--
@@ -3363,6 +3383,8 @@ func (m *SummaryDataPoint) Size() (n int) {
 	if m.Flags != 0 {
 		n += 1 + sovMetrics(uint64(m.Flags))
 	}
+	n += m.Min.Size()
+	n += m.Max.Size()
 	return n
 }
 
@@ -5672,6 +5694,16 @@ func (m *SummaryDataPoint) Unmarshal(dAtA []byte) error {
 				if b < 0x80 {
 					break
 				}
+			}
+		case 11:
+			// TODO: unmarshal here
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Min", wireType)
+			}
+		case 12:
+			// TODO: unmarshal here
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Max", wireType)
 			}
 		default:
 			iNdEx = preIndex

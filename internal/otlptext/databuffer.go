@@ -116,6 +116,13 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
+		// TODO: add tests for Min/Max
+		if !p.Min().IsEmpty() {
+			b.logEntry("Min: %f", p.Min().Value())
+		}
+		if !p.Max().IsEmpty() {
+			b.logEntry("Max: %f", p.Max().Value())
+		}
 
 		bounds := p.ExplicitBounds()
 		if len(bounds) != 0 {
