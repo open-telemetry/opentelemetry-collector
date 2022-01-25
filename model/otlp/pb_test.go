@@ -75,6 +75,31 @@ func TestProtobufMetricsSizer(t *testing.T) {
 	assert.Equal(t, len(bytes), size)
 }
 
+func TestProtobufMetricsSizerWithOptional(t *testing.T) {
+	sizer := NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
+	marshaler := NewProtobufMetricsMarshaler()
+	md := pdata.NewMetrics()
+	metric := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetDataType(pdata.MetricDataTypeHistogram)
+	datapoint := metric.Histogram().DataPoints().AppendEmpty()
+	min := pdata.NewOptionalDouble(0.1)
+	datapoint.SetMin(min)
+	max := pdata.NewOptionalDouble(100)
+	datapoint.SetMax(max)
+
+	size := sizer.MetricsSize(md)
+
+	bytes, err := marshaler.MarshalMetrics(md)
+	require.NoError(t, err)
+	assert.Equal(t, len(bytes), size)
+
+	p := NewProtobufMetricsUnmarshaler()
+	unmarshalled, err := p.UnmarshalMetrics(bytes)
+	assert.Error(t, err)
+	assert.Equal(t, metric, unmarshalled.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
+
+}
+
 func TestProtobufMetricsSizer_withNil(t *testing.T) {
 	sizer := NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
 

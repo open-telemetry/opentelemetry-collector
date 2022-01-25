@@ -1063,6 +1063,22 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 	assert.EqualValues(t, testValFlags, ms.Flags())
 }
 
+func TestHistogramDataPoint_Min(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, OptionalDouble{}, ms.Min())
+	testValMin := NewOptionalDouble(0.3)
+	ms.SetMin(testValMin)
+	assert.EqualValues(t, testValMin, ms.Min())
+}
+
+func TestHistogramDataPoint_Max(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, OptionalDouble{}, ms.Max())
+	testValMax := NewOptionalDouble(99.1)
+	ms.SetMax(testValMax)
+	assert.EqualValues(t, testValMax, ms.Max())
+}
+
 func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	es := NewExponentialHistogramDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
@@ -1977,6 +1993,8 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
+	tv.SetMin(NewOptionalDouble(0.3))
+	tv.SetMax(NewOptionalDouble(99.1))
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {

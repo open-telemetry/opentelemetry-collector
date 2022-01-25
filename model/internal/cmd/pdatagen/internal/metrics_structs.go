@@ -291,6 +291,8 @@ var histogramDataPoint = &messageValueStruct{
 		explicitBoundsField,
 		exemplarsField,
 		dataPointFlagsField,
+		minOptionalDoubleField,
+		maxOptionalDoubleField,
 	},
 }
 
@@ -526,4 +528,20 @@ var dataPointFlagsField = &primitiveTypedField{
 	rawType:         "uint32",
 	defaultVal:      "MetricDataPointFlagsNone",
 	testVal:         "MetricDataPointFlagsNone",
+}
+
+var minOptionalDoubleField = &primitiveStructField{
+	fieldName:       "Min",
+	originFieldName: "Min",
+	returnType:      "OptionalDouble",
+	defaultVal:      "OptionalDouble{}",
+	testVal:         "NewOptionalDouble(0.3)",
+}
+
+var maxOptionalDoubleField = &primitiveStructField{
+	fieldName:       "Max",
+	originFieldName: "Max",
+	returnType:      "OptionalDouble",
+	defaultVal:      "OptionalDouble{}",
+	testVal:         "NewOptionalDouble(99.1)",
 }

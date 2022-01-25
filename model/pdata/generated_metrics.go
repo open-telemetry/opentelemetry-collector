@@ -1408,6 +1408,26 @@ func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
+// Min returns the min associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Min() OptionalDouble {
+	return OptionalDouble{orig: ((*ms.orig).Min)}
+}
+
+// SetMin replaces the min associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMin(v OptionalDouble) {
+	(*ms.orig).Min = v.orig
+}
+
+// Max returns the max associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Max() OptionalDouble {
+	return OptionalDouble{orig: ((*ms.orig).Max)}
+}
+
+// SetMax replaces the max associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMax(v OptionalDouble) {
+	(*ms.orig).Max = v.orig
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1419,6 +1439,8 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.SetExplicitBounds(ms.ExplicitBounds())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+	dest.SetMin(ms.Min())
+	dest.SetMax(ms.Max())
 }
 
 // ExponentialHistogramDataPointSlice logically represents a slice of ExponentialHistogramDataPoint.
