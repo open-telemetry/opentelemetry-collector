@@ -7,11 +7,10 @@ meeting](https://github.com/open-telemetry/community#special-interest-groups).
 
 The OpenTelemetry Collector has two main target audiences:
 
-1. End-users, aiming to use an OpenTelemetry Collector binary as a middleware on their infra, sitting between their
-workloads and the telemetry data storage.
-1. Downstream distributions, which can be an official one as part of the OpenTelemetry Collector project, such as the
-"core" and "contrib", or external distributions, such as other open-source projects building on top of the collector or
-vendor-specific distributions.
+1. End-users, aiming to use an OpenTelemetry Collector binary.
+1. Collector distributions, consuming the APIs exposed by the OpenTelemetry core repository. Distributions can be an
+official OpenTelemetry community project, such as the OpenTelemetry Collector "core" and "contrib", or external
+distributions, such as other open-source projects building on top of the Collector or vendor-specific distributions.
 
 ### End-users
 
@@ -23,12 +22,12 @@ whenever you are developing OpenTelemetry Collector components (extensions, rece
 should have end-users' interests in mind. Similarly, changes to code within packages like `config` will have an impact
 on this audience. Make sure to cause minimal disruption when doing changes here.
 
-### Downstream distributions
+### Collector distributions
 
 In this capacity, the opentelemetry-collector repository's public Go types, functions, and interfaces act as an API for
-other projects. This audience cares mostly about API compatibility, making them susceptible to our refactorings, even
-though such changes wouldn't cause any impact to end-users. See the "Breaking changes" in this document for more
-information on how to perform changes affecting this audience.
+other projects. In addition to the end-user aspect mentioned above, this audience also cares about API compatibility,
+making them susceptible to our refactorings, even though such changes wouldn't cause any impact to end-users. See the
+"Breaking changes" in this document for more information on how to perform changes affecting this audience.
 
 This audience might use tools like the
 [opentelemetry-collector-builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) as
