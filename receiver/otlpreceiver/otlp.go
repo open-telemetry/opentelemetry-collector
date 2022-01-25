@@ -217,6 +217,9 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, r.metricsReceiver, jsEncoder)
 		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
+		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
+			handleUnmatchedRequests(resp, req)
+		})
 	}
 	return nil
 }
@@ -233,6 +236,9 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 		r.httpMux.HandleFunc("/v1/logs", func(w http.ResponseWriter, req *http.Request) {
 			handleLogs(w, req, r.logReceiver, jsEncoder)
 		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
+		r.httpMux.HandleFunc("/v1/logs", func(resp http.ResponseWriter, req *http.Request) {
+			handleUnmatchedRequests(resp, req)
+		})
 	}
 	return nil
 }
