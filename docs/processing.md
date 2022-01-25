@@ -1,5 +1,7 @@
 # OpenTelemetry Collector Processor Exploration
 
+**Status:** *Draft*
+
 ## Objective
 
 To describe a user experience and strategies for configuring processors in the OpenTelemetry collector.
