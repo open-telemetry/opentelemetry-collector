@@ -100,7 +100,6 @@
 ## 💡 Enhancements 💡
 
 - Extending the contribution guide to help clarify what is acceptable defaults and recommendations.
-
 ## v0.40.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -127,8 +126,8 @@
 - Force usage of `receiverhelper.NewFactory` to implement `component.ReceiverFactory` (#4338)
 - Force usage of `extensionhelper.NewFactory` to implement `component.ExtensionFactory` (#4338)
 - Move `service/parserprovider` package to `config/configmapprovider` (#4206)
-  - Rename `MapProvider` interface to `Provider`
-  - Remove `MapProvider` from helper names
+   - Rename `MapProvider` interface to `Provider`
+   - Remove `MapProvider` from helper names
 - Renamed slice-valued `pdata` types and functions for consistency. (#4325)
   - Rename `pdata.AnyValueArray` to `pdata.AttributeValueSlice`
   - Rename `ArrayVal()` to `SliceVal()`
@@ -149,7 +148,6 @@
 - Remove support to expand env variables in default configs (#4366)
 
 ## 💡 Enhancements 💡
-
 - Supports more compression methods(`snappy` and `zstd`) for configgrpc, in addition to current `gzip` (#4088)
 - Moved the OpenTelemetry Collector Builder to core (#4307)
 
@@ -587,6 +585,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Fix service zpages (#2996)
 - `batch` processor: Fix to avoid reordering and send max size (#3029)
 
+
 ## v0.25.0 Beta
 
 ## 🛑 Breaking changes 🛑
@@ -621,7 +620,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 ## 🧰 Bug fixes 🧰
 
 - `prometheus` receiver:
-  - Treat Summary and Histogram metrics without "\_sum" counter as valid metric (#2812)
+  - Treat Summary and Histogram metrics without "_sum" counter as valid metric (#2812)
   - Add `job` and `instance` as well-known labels (#2897)
 - `prometheusremotewrite` exporter:
   - Sort Sample by Timestamp to avoid out of order errors (#2941)
@@ -635,7 +634,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 
 - Remove legacy internal metrics for memorylimiter processor, `spans_dropped` and `trace_batches_dropped` (#2841)
   - For `spans_dropped` use `processor/refused_spans` with `processor=memorylimiter`
-- Rename pdata._.[Start|End]Time to pdata._.[Start|End]Timestamp (#2847)
+- Rename pdata.*.[Start|End]Time to pdata.*.[Start|End]Timestamp (#2847)
 - Rename pdata.DoubleExemplar to pdata.Exemplar (#2804)
 - Rename pdata.DoubleHistogram to pdata.Histogram (#2797)
 - Rename pdata.DoubleSummary to pdata.Summary (#2774)
@@ -777,7 +776,6 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 ## v0.19.0 Beta
 
 ## 🛑 Breaking changes 🛑
-
 - Remove deprecated `queued_retry` processor
 - Remove deprecated configs from `resource` processor: `type` (set "opencensus.type" key in "attributes.upsert" map instead) and `labels` (use "attributes.upsert" instead).
 
@@ -796,7 +794,6 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 ## v0.18.0 Beta
 
 ## 🛑 Breaking changes 🛑
-
 - Rename host metrics according to metrics spec and rename `swap` scraper to `paging` (#2311)
 
 ## 💡 Enhancements 💡
@@ -1030,14 +1027,12 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
   - This is a temporary change, and will affect mostly OpenCensus users who use metrics.
 
 ## 💡 Enhancements 💡
-
 - Support zipkin proto in `kafka` receiver (#1646)
 - Prometheus Remote Write Exporter supporting Cortex (#1577, #1643)
 - Add deployment environment semantic convention (#1722)
 - Add logs support to `batch` and `resource` processors (#1723, #1729)
 
 ## 🧰 Bug fixes 🧰
-
 - Identify config error when expected map is other value type (#1641)
 - Fix Kafka receiver closing ready channel multiple times (#1696)
 - Fix a panic issue while processing Zipkin spans with an empty service name (#1742)
@@ -1056,12 +1051,10 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Remove `ConsumerOld` interfaces (#1631)
 
 ## 🚀 New components 🚀
-
 - `prometheusremotewrite` exporter: Send metrics data in Prometheus TimeSeries format to Cortex or any Prometheus (#1544)
 - `kafka` receiver: Receive traces from Kafka (#1410)
 
 ## 💡 Enhancements 💡
-
 - `kafka` exporter: Enable queueing, retry, timeout (#1455)
 - Add `Headers` field in HTTPClientSettings (#1552)
 - Change OpenCensus receiver (#1556) and exporter (#1571) to the new interfaces
@@ -1072,7 +1065,6 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Make Kafka payload encoding configurable (#1584)
 
 ## 🧰 Bug fixes 🧰
-
 - Stop further processing if `filterprocessor` filters all data (#1500)
 - `processscraper`: Use same scrape time for all data points coming from same process (#1539)
 - Ensure that time conversion for 0 returns nil timestamps or Time where IsZero returns true (#1550)
@@ -1178,7 +1170,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 ## 🛑 Breaking changes 🛑
 
 - **Update OTLP to v0.4.0 (#1142)**: Collector will be incompatible with any other sender or receiver of OTLP protocol
-  of different versions
+of different versions
 - Make "--new-metrics" command line flag the default (#1148)
 - Change `endpoint` to `url` in Zipkin exporter config (#1186)
 - Change `tls_credentials` to `tls_settings` in Jaegar receiver config (#1233)
@@ -1226,7 +1218,7 @@ Released 2020-06-16
 - Internal API Changes (only impacts contributors)
   - Add context to `Start` and `Stop` methods in the component (#790)
   - Rename `AttributeValue` and `AttributeMap` method names (#781)
-    (other breaking changes in the internal trace data types)
+(other breaking changes in the internal trace data types)
   - Change entire repo to use the new vanityurl go.opentelemetry.io/collector (#977)
 
 ## 🚀 New components 🚀
@@ -1253,29 +1245,30 @@ Released 2020-06-16
 - Fix resource attribute mutation bug when exporting in `jaeger` proto (#907)
 - Fix metric/spans count, add tests for nil entries in the slices (#787)
 
+
 ## 🧩 Components 🧩
 
 ### Traces
 
-| Receivers  |   Processors   | Exporters  |
-| :--------: | :------------: | :--------: |
-|   Jaeger   |   Attributes   |    File    |
-| OpenCensus |     Batch      |   Jaeger   |
-|    OTLP    | Memory Limiter |  Logging   |
-|   Zipkin   |  Queued Retry  | OpenCensus |
-|            |    Resource    |    OTLP    |
-|            |    Sampling    |   Zipkin   |
-|            |      Span      |            |
+| Receivers | Processors | Exporters |
+|:----------:|:-----------:|:----------:|
+| Jaeger | Attributes | File |
+| OpenCensus | Batch | Jaeger |
+| OTLP | Memory Limiter | Logging |
+| Zipkin | Queued Retry | OpenCensus |
+| | Resource | OTLP |
+| | Sampling | Zipkin |
+| | Span ||
 
 ### Metrics
 
-|  Receivers  |   Processors   | Exporters  |
-| :---------: | :------------: | :--------: |
-| HostMetrics |     Batch      |    File    |
-| OpenCensus  |     Filter     |  Logging   |
-|    OTLP     | Memory Limiter | OpenCensus |
-| Prometheus  |                |    OTLP    |
-| VM Metrics  |                | Prometheus |
+| Receivers | Processors | Exporters |
+|:----------:|:-----------:|:----------:|
+| HostMetrics | Batch | File |
+| OpenCensus | Filter | Logging |
+| OTLP | Memory Limiter | OpenCensus |
+| Prometheus || OTLP |
+| VM Metrics || Prometheus |
 
 ### Extensions
 
@@ -1283,14 +1276,15 @@ Released 2020-06-16
 - Performance Profiler
 - zPages
 
+
 ## v0.3.0 Beta
 
 Released 2020-03-30
 
 ### Breaking changes
 
-- Make prometheus receiver config loading strict. #697
-  Prometheus receiver will now fail fast if the config contains unused keys in it.
+-  Make prometheus receiver config loading strict. #697
+Prometheus receiver will now fail fast if the config contains unused keys in it.
 
 ### Changes and fixes
 
@@ -1300,15 +1294,16 @@ Released 2020-03-30
 
 ### Components
 
-| Receivers / Exporters |   Processors   |      Extensions      |
-| :-------------------: | :------------: | :------------------: |
-|        Jaeger         |   Attributes   |     Health Check     |
-|      OpenCensus       |     Batch      | Performance Profiler |
-|     OpenTelemetry     | Memory Limiter |        zPages        |
-|        Zipkin         |  Queued Retry  |                      |
-|                       |    Resource    |                      |
-|                       |    Sampling    |                      |
-|                       |      Span      |                      |
+| Receivers / Exporters | Processors | Extensions |
+|:---------------------:|:-----------:|:-----------:|
+| Jaeger | Attributes | Health Check |
+| OpenCensus | Batch | Performance Profiler |
+| OpenTelemetry | Memory Limiter | zPages |
+| Zipkin | Queued Retry | |
+| | Resource | |
+| | Sampling | |
+| | Span | |
+
 
 ## v0.2.8 Alpha
 
@@ -1319,6 +1314,7 @@ Alpha v0.2.8 of OpenTelemetry Collector
 - Improved own metrics / observability.
 - Refactored component and factory interface definitions (breaking change #683)
 
+
 ## v0.2.7 Alpha
 
 Alpha v0.2.7 of OpenTelemetry Collector
@@ -1328,13 +1324,15 @@ Alpha v0.2.7 of OpenTelemetry Collector
 - Include resource labels for Zipkin exporter
 - New `HASH` action to attribute processor
 
+
+
 ## v0.2.6 Alpha
 
 Alpha v0.2.6 of OpenTelemetry Collector.
-
 - Update metrics prefix to `otelcol` and expose command line argument to modify the prefix value.
 - Extend Span processor to have include/exclude span logic.
 - Batch dropped span now emits zero when no spans are dropped.
+
 
 ## v0.2.5 Alpha
 
@@ -1342,6 +1340,7 @@ Alpha v0.2.5 of OpenTelemetry Collector.
 
 - Regexp-based filtering of spans based on service names.
 - Ability to choose strict or regexp matching for include/exclude filters.
+
 
 ## v0.2.4 Alpha
 
@@ -1352,6 +1351,7 @@ Alpha v0.2.4 of OpenTelemetry Collector.
 - File exporter for debugging.
 - Span processor is now enabled by default.
 
+
 ## v0.2.3 Alpha
 
 Alpha v0.2.3 of OpenTelemetry Collector.
@@ -1361,6 +1361,7 @@ Changes:
 9778b16 Refactor Jaeger Receiver config (#490)
 ec4ad0c Remove workers from OpenCensus receiver implementation (#497)
 4e01fa3 Update k8s config to use opentelemetry docker image and configuration (#459)
+
 
 ## v0.2.2 Alpha
 
@@ -1373,6 +1374,7 @@ Main changes visible to users since previous release:
 
 Note: v0.2.1 never existed and is skipped since it was tainted in some dependencies.
 
+
 ## v0.2.0 Alpha
 
 Alpha v0.2 of OpenTelemetry Collector.
@@ -1381,11 +1383,11 @@ Docker image: omnition/opentelemetry-collector:v0.2.0 (we are working on getting
 
 Main changes visible to users since previous release:
 
-- Rename from `service` to `collector`, the binary is now named `otelcol`
+* Rename from `service` to `collector`, the binary is now named `otelcol`
 
-- Configuration reorganized and using strict mode
+* Configuration reorganized and using strict mode
 
-- Concurrency issues for pipelines transforming data addressed
+* Concurrency issues for pipelines transforming data addressed
 
 Commits:
 
@@ -1411,6 +1413,7 @@ d205393 Add Owais to codeowners (#339)
 8fa6afe Translate OC resource labels to Jaeger process tags (#325)
 ```
 
+
 ## v0.0.2 Alpha
 
 Alpha release of OpenTelemetry Service.
@@ -1434,11 +1437,13 @@ fed4ed2 Add support to record metrics for metricsexporter (#315)
 0068d0a Passthrough CORS allowed origins (#260)
 ```
 
+
 ## v0.0.1 Alpha
 
 This is the first alpha release of OpenTelemetry Service.
 
 Docker image: omnition/opentelemetry-service:v0.0.1
+
 
 [v0.3.0]: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.2.10...v0.3.0
 [v0.2.10]: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.2.8...v0.2.10
