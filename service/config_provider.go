@@ -78,7 +78,7 @@ type configProvider struct {
 
 // NewConfigProvider returns a new ConfigProvider that provides the configuration:
 // * Retrieve the config.Map by merging all retrieved maps from all the configmapprovider.Provider in order.
-// * Then applies all the ConfigMapConverterFunc in the given order.
+// * Then applies all the config.MapConverterFunc in the given order.
 // * Then unmarshalls the final config.Config using the given configunmarshaler.ConfigUnmarshaler.
 //
 // The `configMapProviders` is a map of pairs <scheme,Provider>.
