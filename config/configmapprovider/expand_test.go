@@ -36,10 +36,13 @@ func TestNewExpandConverter(t *testing.T) {
 
 	const valueExtra = "some string"
 	const valueExtraMapValue = "some map value"
+	const valueExtraListMapValue = "some list map value"
 	const valueExtraListElement = "some list value"
 	t.Setenv("EXTRA", valueExtra)
 	t.Setenv("EXTRA_MAP_VALUE_1", valueExtraMapValue+"_1")
 	t.Setenv("EXTRA_MAP_VALUE_2", valueExtraMapValue+"_2")
+	t.Setenv("EXTRA_LIST_MAP_VALUE_1", valueExtraListMapValue+"_1")
+	t.Setenv("EXTRA_LIST_MAP_VALUE_2", valueExtraListMapValue+"_2")
 	t.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1")
 	t.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2")
 
