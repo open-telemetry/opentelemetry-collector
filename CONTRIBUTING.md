@@ -354,13 +354,13 @@ changelog, and SHOULD include a line instructing users how to move forward.
 We also strive to perform breaking changes in two stages, deprecating it first (`vM.N`) and breaking it in a subsequent
 version (`vM.N+1`).
 
-- when we need to remove something, we MUST mark a feature as deprecated in one version, and MAY remove it in the next
-  one
+- when we need to remove something, we MUST mark a feature as deprecated in one version, and MAY remove it in a
+  subsequent one
 - when renaming or refactoring types, functions, or attributes, we MUST create the new name and MUST deprecate the old
   one in one version (step 1), and MAY remove it in a subsequent version (step 2). For simple renames, the old name
   SHALL call the new one.
 - when a feature is being replaced in favor of an existing one, we MUST mark a feature as deprecated in one version, and
-  MAY remove it in the next one
+  MAY remove it in a subsequent one.
 
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
 behind a [feature
