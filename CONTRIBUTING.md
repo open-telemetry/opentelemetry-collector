@@ -3,6 +3,36 @@
 We'd love your help! Please join our weekly [SIG
 meeting](https://github.com/open-telemetry/community#special-interest-groups).
 
+## Target audiences
+
+The OpenTelemetry Collector has two main target audiences:
+
+1. End-users, aiming to use an OpenTelemetry Collector binary.
+1. Collector distributions, consuming the APIs exposed by the OpenTelemetry core repository. Distributions can be an
+official OpenTelemetry community project, such as the OpenTelemetry Collector "core" and "contrib", or external
+distributions, such as other open-source projects building on top of the Collector or vendor-specific distributions.
+
+### End-users
+
+End-users are the target audience for our binary distributions, as made available via the
+[opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository. To
+them, stability in the behavior is important, be it runtime or configuration. They are more numerous and harder to get
+in touch with, making our changes to the collector more disruptive to them than to other audiences. As a general rule,
+whenever you are developing OpenTelemetry Collector components (extensions, receivers, processors, exporters), you
+should have end-users' interests in mind. Similarly, changes to code within packages like `config` will have an impact
+on this audience. Make sure to cause minimal disruption when doing changes here.
+
+### Collector distributions
+
+In this capacity, the opentelemetry-collector repository's public Go types, functions, and interfaces act as an API for
+other projects. In addition to the end-user aspect mentioned above, this audience also cares about API compatibility,
+making them susceptible to our refactorings, even though such changes wouldn't cause any impact to end-users. See the
+"Breaking changes" in this document for more information on how to perform changes affecting this audience.
+
+This audience might use tools like the
+[opentelemetry-collector-builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) as
+part of their delivery pipeline. Be mindful that changes there might cause disruption to this audience.
+
 ## How to structure PRs to get expedient reviews?
 
 We recommend that any PR (unless it is trivial) to be smaller than 500 lines
