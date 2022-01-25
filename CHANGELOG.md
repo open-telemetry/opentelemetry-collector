@@ -15,16 +15,27 @@
 - Remove deprecate flags --metrics-level and --metrics-addr (#4695)
   - Usages of `--metrics-level={VALUE}` can be replaced by `--set=service.telemetry.metrics.level={VALUE}`;
   - Usages of `--metrics-addr={VALUE}` can be replaced by `--set=service.telemetry.metrics.address={VALUE}`;
+- Updated confighttp `ToClient` to support passing telemetry settings for instrumenting otlphttp exporter(#4449)
 - Deprecate `configtelemetry.Level.Set()` (#4700)
+- Remove support to some arches and platforms from `ocb` (opentelemetry-collector-builder) (#4710)
+- Remove deprecated legacy path ("v1/trace") support for otlp http receiver (#4720)
+- Change the `service.NewDefaultConfigProvider` to accept a slice of location strings (#4727).
+
+## 🧰 Bug fixes 🧰
+
+- Ensure Windows path (e.g: C:) is recognized as a file path (#4726)
 
 ## 💡 Enhancements 💡
 
 - Expose experimental API `configmapprovider.NewExpandConverter()` (#4672)
+- `service.NewConfigProvider`: copy slice argument, disallow changes from caller to the input slice (#4729)
 - `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
 - Remove expand cases that cannot happen with config.Map (#4649)
 - Add `max_request_body_size` to confighttp.HTTPServerSettings (#4677)
 - Move `compression.go` into `confighttp.go` to internalize functions in `compression.go` file. (#4651)
   - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
+- Add support for cgroupv2 memory limit (#4654)
+- Enable end users to provide multiple files for config location (#4727)
 
 ## 🧰 Bug fixes 🧰
 

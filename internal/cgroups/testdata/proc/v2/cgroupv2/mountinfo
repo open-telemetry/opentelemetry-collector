@@ -1,0 +1,1 @@
+34 33 0:29 / /sys/fs/cgroup rw,nosuid,nodev,noexec,relatime shared:10 - cgroup2 cgroup rw,nsdelegate

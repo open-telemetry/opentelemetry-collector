@@ -54,7 +54,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	set := CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
-		ConfigProvider: NewDefaultConfigProvider(path.Join("testdata", "otelcol-config.yaml"), nil),
+		ConfigProvider: NewDefaultConfigProvider([]string{path.Join("testdata", "otelcol-config.yaml")}, nil),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestCollector_Start(t *testing.T) {
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
 		ConfigProvider: NewDefaultConfigProvider(
-			path.Join("testdata", "otelcol-config.yaml"),
+			[]string{path.Join("testdata", "otelcol-config.yaml")},
 			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(metricsPort), 10)}),
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
 	})
@@ -157,7 +157,7 @@ func TestCollector_ReportError(t *testing.T) {
 	col, err := New(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
-		ConfigProvider: NewDefaultConfigProvider(path.Join("testdata", "otelcol-config.yaml"), nil),
+		ConfigProvider: NewDefaultConfigProvider([]string{path.Join("testdata", "otelcol-config.yaml")}, nil),
 	})
 	require.NoError(t, err)
 

@@ -148,20 +148,12 @@ func TestJsonHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	// Previously we used /v1/trace as the path. The correct path according to OTLP spec
-	// is /v1/traces. We currently support both on the receiving side to give graceful
-	// period for senders to roll out a fix, so we test for both paths to make sure
-	// the receiver works correctly.
-	targetURLPaths := []string{"/v1/trace", "/v1/traces"}
-
 	for _, test := range tests {
-		for _, targetURLPath := range targetURLPaths {
-			t.Run(test.name+targetURLPath, func(t *testing.T) {
-				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
-				sink.Reset()
-				testHTTPJSONRequest(t, url, sink, test.encoding, test.err)
-			})
-		}
+		t.Run(test.name, func(t *testing.T) {
+			url := fmt.Sprintf("http://%s/v1/traces", addr)
+			sink.Reset()
+			testHTTPJSONRequest(t, url, sink, test.encoding, test.err)
+		})
 	}
 }
 
@@ -260,20 +252,12 @@ func TestProtoHttp(t *testing.T) {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
 
-	// Previously we used /v1/trace as the path. The correct path according to OTLP spec
-	// is /v1/traces. We currently support both on the receiving side to give graceful
-	// period for senders to roll out a fix, so we test for both paths to make sure
-	// the receiver works correctly.
-	targetURLPaths := []string{"/v1/trace", "/v1/traces"}
-
 	for _, test := range tests {
-		for _, targetURLPath := range targetURLPaths {
-			t.Run(test.name+targetURLPath, func(t *testing.T) {
-				url := fmt.Sprintf("http://%s%s", addr, targetURLPath)
-				tSink.Reset()
-				testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
-			})
-		}
+		t.Run(test.name, func(t *testing.T) {
+			url := fmt.Sprintf("http://%s/v1/traces", addr)
+			tSink.Reset()
+			testHTTPProtobufRequest(t, url, tSink, test.encoding, traceBytes, test.err, td)
+		})
 	}
 }
 
@@ -668,8 +652,7 @@ func TestHTTPUseLegacyPortWhenUsingDefaultEndpoint(t *testing.T) {
 	require.Equal(t, defaultHTTPEndpoint, metric.cfg.HTTP.Endpoint)
 }
 
-func TestHTTPMaxRequestBodySize(t *testing.T) {
-	jsonDataLength := len(traceJSON)
+func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expectedStatusCode int) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
 	cfg := &Config{
@@ -677,7 +660,7 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 		Protocols: Protocols{
 			HTTP: &confighttp.HTTPServerSettings{
 				Endpoint:           endpoint,
-				MaxRequestBodySize: int64(jsonDataLength),
+				MaxRequestBodySize: int64(size),
 			},
 		},
 	}
@@ -691,7 +674,7 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 	assert.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(traceJSON))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
@@ -699,30 +682,18 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 	require.NoError(t, err)
 	_, err = ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
-	require.Equal(t, 200, resp.StatusCode)
+	require.Equal(t, expectedStatusCode, resp.StatusCode)
 
 	err = r.Shutdown(context.Background())
 	require.NoError(t, err)
+}
 
-	cfg.Protocols.HTTP.MaxRequestBodySize--
-	r, err = NewFactory().CreateTracesReceiver(
-		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
-		cfg,
-		consumertest.NewNop())
-	require.NoError(t, err)
-	assert.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+func TestHTTPMaxRequestBodySize_OK(t *testing.T) {
+	testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON), 200)
+}
 
-	req, err = http.NewRequest("POST", url, bytes.NewReader(traceJSON))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	resp, err = client.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, 400, resp.StatusCode)
-	body, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.Contains(t, string(body), "request body too large")
+func TestHTTPMaxRequestBodySize_TooLarge(t *testing.T) {
+	testHTTPMaxRequestBodySizeJSON(t, traceJSON, len(traceJSON)-1, 400)
 }
 
 func newGRPCReceiver(t *testing.T, name string, endpoint string, tc consumer.Traces, mc consumer.Metrics) component.Component {

@@ -136,3 +136,98 @@ func TestCGroupsCPUQuota(t *testing.T) {
 		}
 	}
 }
+
+func TestCGroupsIsCGroupV2(t *testing.T) {
+	testTable := []struct {
+		name            string
+		expectedIsV2    bool
+		shouldHaveError bool
+	}{
+		{
+			name:            "cgroupv1",
+			expectedIsV2:    false,
+			shouldHaveError: false,
+		},
+		{
+			name:            "cgroupv1v2",
+			expectedIsV2:    false,
+			shouldHaveError: false,
+		},
+		{
+			name:            "cgroupv2",
+			expectedIsV2:    true,
+			shouldHaveError: false,
+		},
+		{
+			name:            "nonexistent",
+			expectedIsV2:    false,
+			shouldHaveError: true,
+		},
+	}
+
+	for _, tt := range testTable {
+		mountInfoPath := filepath.Join(testDataProcPath, "v2", tt.name, "mountinfo")
+		isV2, err := isCGroupV2(mountInfoPath)
+
+		assert.Equal(t, tt.expectedIsV2, isV2, tt.name)
+
+		if tt.shouldHaveError {
+			assert.Error(t, err, tt.name)
+		} else {
+			assert.NoError(t, err, tt.name)
+		}
+	}
+}
+
+func TestCGroupsMemoryQuotaV2(t *testing.T) {
+	testTable := []struct {
+		name            string
+		expectedQuota   int64
+		expectedDefined bool
+		shouldHaveError bool
+	}{
+		{
+			name:            "memory",
+			expectedQuota:   int64(250000000),
+			expectedDefined: true,
+			shouldHaveError: false,
+		},
+		{
+			name:            "undefined",
+			expectedQuota:   int64(-1),
+			expectedDefined: false,
+			shouldHaveError: false,
+		},
+		{
+			name:            "invalid",
+			expectedQuota:   int64(-1),
+			expectedDefined: false,
+			shouldHaveError: true,
+		},
+		{
+			name:            "empty",
+			expectedQuota:   int64(-1),
+			expectedDefined: false,
+			shouldHaveError: true,
+		},
+	}
+
+	quota, defined, err := memoryQuotaV2("nonexistent", "nonexistent")
+	assert.Equal(t, int64(-1), quota, "nonexistent")
+	assert.Equal(t, false, defined, "nonexistent")
+	assert.NoError(t, err, "nonexistent")
+
+	cgroupBasePath := filepath.Join(testDataCGroupsPath, "v2")
+	for _, tt := range testTable {
+		cgroupPath := filepath.Join(cgroupBasePath, tt.name)
+		quota, defined, err := memoryQuotaV2(cgroupPath, "memory.max")
+		assert.Equal(t, tt.expectedQuota, quota, tt.name)
+		assert.Equal(t, tt.expectedDefined, defined, tt.name)
+
+		if tt.shouldHaveError {
+			assert.Error(t, err, tt.name)
+		} else {
+			assert.NoError(t, err, tt.name)
+		}
+	}
+}

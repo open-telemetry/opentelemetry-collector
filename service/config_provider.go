@@ -17,6 +17,7 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -87,8 +88,11 @@ func NewConfigProvider(
 	configMapProviders map[string]configmapprovider.Provider,
 	cfgMapConverters []config.MapConverterFunc,
 	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+	// Safe copy, ensures the slice cannot be changed from the caller.
+	locationsCopy := make([]string, len(locations))
+	copy(locationsCopy, locations)
 	return &configProvider{
-		locations:          locations,
+		locations:          locationsCopy,
 		configMapProviders: configMapProviders,
 		cfgMapConverters:   cfgMapConverters,
 		configUnmarshaler:  configUnmarshaler,
@@ -98,9 +102,9 @@ func NewConfigProvider(
 
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func NewDefaultConfigProvider(configFileName string, properties []string) ConfigProvider {
+func NewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
 	return NewConfigProvider(
-		[]string{configFileName},
+		configLocations,
 		map[string]configmapprovider.Provider{
 			"file": configmapprovider.NewFile(),
 			"env":  configmapprovider.NewEnv(),
@@ -181,13 +185,19 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return errs
 }
 
+// follows drive-letter specification:
+// https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
+var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
+
 func (cm *configProvider) mergeRetrieve(ctx context.Context) (configmapprovider.Retrieved, error) {
 	var retrs []configmapprovider.Retrieved
 	retCfgMap := config.NewMap()
 	for _, location := range cm.locations {
-		// For backwards compatibility, empty url scheme means "file".
+		// For backwards compatibility:
+		// - empty url scheme means "file".
+		// - "^[A-z]:" also means "file"
 		scheme := "file"
-		if idx := strings.Index(location, ":"); idx != -1 {
+		if idx := strings.Index(location, ":"); idx != -1 && !driverLetterRegexp.MatchString(location) {
 			scheme = location[:idx]
 		} else {
 			location = scheme + ":" + location

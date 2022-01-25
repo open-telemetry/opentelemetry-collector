@@ -312,3 +312,51 @@ func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 	assert.NoError(t, cfgW.Shutdown(context.Background()))
 	watcherWG.Wait()
 }
+
+func TestBackwardsCompatibilityForFilePath(t *testing.T) {
+	factories, errF := componenttest.NopFactories()
+	require.NoError(t, errF)
+
+	tests := []struct {
+		name       string
+		location   string
+		errMessage string
+	}{
+		{
+			name:       "unix",
+			location:   `/test`,
+			errMessage: "unable to read the file file:/test",
+		},
+		{
+			name:       "file_unix",
+			location:   `file:/test`,
+			errMessage: "unable to read the file file:/test",
+		},
+		{
+			name:       "windows_C",
+			location:   `C:\test`,
+			errMessage: "unable to read the file file:C:\\test",
+		},
+		{
+			name:       "windows_z",
+			location:   `z:\test`,
+			errMessage: "unable to read the file file:z:\\test",
+		},
+		{
+			name:       "file_windows",
+			location:   `file:C:\test`,
+			errMessage: "unable to read the file file:C:\\test",
+		},
+		{
+			name:       "invalid_scheme",
+			location:   `LL:\test`,
+			errMessage: "scheme LL is not supported for location",
+		},
+	}
+	for _, tt := range tests {
+		provider := NewDefaultConfigProvider([]string{tt.location}, []string{})
+		_, err := provider.Get(context.Background(), factories)
+		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
+	}
+
+}
