@@ -359,6 +359,8 @@ version (`vM.N+1`).
 - when renaming types, functions, or attributes, we MUST create the new name and MUST deprecate the old one in one
   version (step 1), and MAY remove it in a subsequent version (step 2). For simple renames, the old name SHALL call the
   new one.
+- when a feature is being replaced in favor of an existing one, we MUST mark a feature as deprecated in one version, and
+  MAY remove it in the next one
 
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
 behind a [feature
@@ -383,9 +385,19 @@ that each of the following steps is done in a separate version:
 1. Current version `v0.N` has `func GetFoo() Foo`
 1. We now need to also return an error. We do it by creating a new function that will be equivalent to the existing one,
    so that current users can easily migrate to that: `func MustGetFoo() Foo`, which panics on errors. We release this in
-   `v0.N+1`, deprecating the existing `func GetFoo() Foo` with it, perhaps adding a log entry with a warning and an
-   entry to the changelog.
+   `v0.N+1`, deprecating the existing `func GetFoo() Foo` with it, adding an entry to the changelog and perhaps a log
+   entry with a warning.
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo() (Foo, error)`.
+
+#### Example #3 - Changing the arguments of a function
+
+1. Current version `v0.N` has `func GetFoo() Foo`
+1. We now decided to do something that might be blocking as part of `func GetFoo() Foo`, so, we start accepting a
+   context: `func GetFooWithContext(context.Context) Foo`. We release this in `v0.N+1`, deprecating the existing `func
+   GetFoo() Foo` with it, adding an entry to the changelog and perhaps a log entry with a warning. The existing `func
+   GetFoo() Foo` is changed to call `func GetFooWithContext(context.Background()) Foo`.
+1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
+   needed.
 
 #### Exceptions
 
