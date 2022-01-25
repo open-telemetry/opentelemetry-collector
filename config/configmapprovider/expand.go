@@ -22,6 +22,8 @@ import (
 )
 
 // NewExpandConverter returns a service.ConfigMapConverterFunc, that expands all environment variables for a given config.Map.
+//
+// Notice: This API is experimental.
 func NewExpandConverter() config.MapConverterFunc {
 	return func(_ context.Context, cfgMap *config.Map) error {
 		for _, k := range cfgMap.AllKeys() {
