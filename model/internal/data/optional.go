@@ -52,13 +52,20 @@ func (o *OptionalDouble) MarshalTo(dAtA []byte) (n int, err error) {
 	return o.marshalToSizedBuffer(dAtA[:size])
 }
 
-// TODO: implement Unmarshal, MarshalJSON, UnmarshalJSON
+// TODO: implement MarshalJSON, UnmarshalJSON
 
 func (o *OptionalDouble) marshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	i -= 8
 	encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(o.DoubleValue))))
 	i--
-	dAtA[i] = 0x21
 	return len(dAtA) - i, nil
+}
+
+func (o *OptionalDouble) Unmarshal(dAtA []byte) error {
+	v := uint64(encoding_binary.LittleEndian.Uint64(dAtA))
+	v2 := float64(math.Float64frombits(v))
+	o.DoubleValue = v2
+	o.isSet = true
+	return nil
 }

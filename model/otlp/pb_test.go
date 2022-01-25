@@ -95,7 +95,7 @@ func TestProtobufMetricsSizerWithOptional(t *testing.T) {
 
 	p := NewProtobufMetricsUnmarshaler()
 	unmarshalled, err := p.UnmarshalMetrics(bytes)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, metric, unmarshalled.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
 
 }

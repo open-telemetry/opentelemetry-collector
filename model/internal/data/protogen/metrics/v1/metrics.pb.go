@@ -2744,21 +2744,19 @@ func (m *SummaryDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if !m.Min.IsEmpty() {
-		size, err := m.Min.MarshalTo(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		dAtA[i] = 0x5E
-	}
 	if !m.Max.IsEmpty() {
-		size, err := m.Max.MarshalTo(dAtA[:i])
-		if err != nil {
+		i -= m.Max.Size()
+		if _, err := m.Max.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
-		i -= size
-		dAtA[i] = 0x56
+		dAtA[i] = 0x61
+	}
+	if !m.Min.IsEmpty() {
+		i -= m.Min.Size()
+		if _, err := m.Min.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		dAtA[i] = 0x59
 	}
 	if m.Flags != 0 {
 		i = encodeVarintMetrics(dAtA, i, uint64(m.Flags))
@@ -5696,15 +5694,29 @@ func (m *SummaryDataPoint) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 11:
-			// TODO: unmarshal here
-			if wireType != 0 {
+			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Min", wireType)
 			}
+			postIndex := iNdEx + 8
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Min.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 12:
-			// TODO: unmarshal here
-			if wireType != 0 {
+			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Max", wireType)
 			}
+			postIndex := iNdEx + 8
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Max.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMetrics(dAtA[iNdEx:])
