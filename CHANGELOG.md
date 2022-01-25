@@ -4,7 +4,6 @@
 
 ## 🛑 Breaking changes 🛑
 
-- Expose experimental API `configmapprovider.NewExpandConverter()` (#4672)
 - Change configmapprovider.Provider to accept a location for retrieve (#4657)
 - Change Properties Provider to be a Converter (#4666)
 - Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
@@ -20,6 +19,7 @@
 
 ## 💡 Enhancements 💡
 
+- Expose experimental API `configmapprovider.NewExpandConverter()` (#4672)
 - `confighttp` and `configgrpc`: New config option `include_metadata` to persist request metadata/headers in `client.Info.Metadata` (experimental) (#4547)
 - Remove expand cases that cannot happen with config.Map (#4649)
 - Add `max_request_body_size` to confighttp.HTTPServerSettings (#4677)
