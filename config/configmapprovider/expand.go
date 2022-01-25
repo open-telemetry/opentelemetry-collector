@@ -43,6 +43,12 @@ func expandStringValues(value interface{}) interface{} {
 			nslice = append(nslice, expandStringValues(vint))
 		}
 		return nslice
+	case map[string]interface{}:
+		nmap := map[string]interface{}{}
+		for mk, mv := range v {
+			nmap[mk] = expandStringValues(mv)
+		}
+		return nmap
 	default:
 		return v
 	}
