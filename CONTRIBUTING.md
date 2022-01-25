@@ -356,9 +356,9 @@ version (`vM.N+1`).
 
 - when we need to remove something, we MUST mark a feature as deprecated in one version, and MAY remove it in the next
   one
-- when renaming types, functions, or attributes, we MUST create the new name and MUST deprecate the old one in one
-  version (step 1), and MAY remove it in a subsequent version (step 2). For simple renames, the old name SHALL call the
-  new one.
+- when renaming or refactoring types, functions, or attributes, we MUST create the new name and MUST deprecate the old
+  one in one version (step 1), and MAY remove it in a subsequent version (step 2). For simple renames, the old name
+  SHALL call the new one.
 - when a feature is being replaced in favor of an existing one, we MUST mark a feature as deprecated in one version, and
   MAY remove it in the next one
 
