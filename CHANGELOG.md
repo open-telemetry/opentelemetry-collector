@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Expose experimental API `configmapprovider.NewExpandConverter()` (#4672)
 - Change configmapprovider.Provider to accept a location for retrieve (#4657)
 - Change Properties Provider to be a Converter (#4666)
 - Define a type `WatcherFunc` for onChange func instead of func pointer (#4656)
@@ -11,7 +12,6 @@
 - Move service.ConfigMapConverterFunc to config.MapConverterFunc (#4673)
   - Add context to config.MapConverterFunc (#4678)
 - Builder: the skip compilation should only be supplied as a CLI flag. Previously, it was possible to specify that in the YAML file, contrary to the original intention (#4645)
-- Restore `configmapprovider.NewExpandConverter()` (#4672)
 - Builder: Remove deprecated config option module::core (#4693)
 - Remove deprecate flags --metrics-level and --metrics-addr (#4695)
   - Usages of `--metrics-level={VALUE}` can be replaced by `--set=service.telemetry.metrics.level={VALUE}`;
