@@ -403,7 +403,9 @@ that each of the following steps is done in a separate version:
 
 While the above is what we strive to follow, we acknowledge that some changes might be unfeasible to achieve in a
 non-breaking manner. Exceptions to the outlined rules are acceptable if consensus can be obtained from approvers in the
-pull request they are proposed. A reason for requesting the exception MUST be given in the pull request.
+pull request they are proposed. A reason for requesting the exception MUST be given in the pull request. Until unanimity
+is obtained, approvers and maintainers are encouraged to discuss the issue at hand. If a consensus (unanimity) cannot be
+obtained, the maintainers are then tasked in getting a decision using its regular means (voting, TC help, ...).
 
 ## Updating Changelog
 
