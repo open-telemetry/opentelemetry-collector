@@ -400,7 +400,11 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 	}
 	if includeMetadata {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
-			cl.Metadata = client.NewMetadata(md.Copy())
+			copiedMD := md.Copy()
+			if len(md[client.MetadataHostName]) == 0 && len(md[":authority"]) > 0 {
+				copiedMD[client.MetadataHostName] = md[":authority"]
+			}
+			cl.Metadata = client.NewMetadata(copiedMD)
 		}
 	}
 	return client.NewContext(ctx, cl)
