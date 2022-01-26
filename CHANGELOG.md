@@ -9,6 +9,10 @@
   Received deprecated messages and fields will be now ignored. In OTLP/JSON in the
   instrumentationLibraryLogs object the "logs" field is now named "logRecords" (#4724)
 
+## 💡 Enhancements 💡
+
+- `client.Info`: Add Host property for Metadata (#4736)
+
 ## v0.43.1 Beta
 
 ## 🧰 Bug fixes 🧰
@@ -52,7 +56,6 @@
   - create `configcompression` package to manage compression methods in `confighttp` and `configgrpc`
 - Add support for cgroupv2 memory limit (#4654)
 - Enable end users to provide multiple files for config location (#4727)
-- `client.Info`: Add Host property for Metadata (#4736)
 
 ## v0.42.0 Beta
 
