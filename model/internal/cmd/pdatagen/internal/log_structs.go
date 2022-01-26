@@ -71,15 +71,15 @@ var instrumentationLibraryLogs = &messageValueStruct{
 		instrumentationLibraryField,
 		schemaURLField,
 		&sliceField{
-			fieldName:       "Logs",
-			originFieldName: "Logs",
+			fieldName:       "LogRecords",
+			originFieldName: "LogRecords",
 			returnSlice:     logSlice,
 		},
 	},
 }
 
 var logSlice = &sliceOfPtrs{
-	structName: "LogSlice",
+	structName: "LogRecordSlice",
 	element:    logRecord,
 }
 

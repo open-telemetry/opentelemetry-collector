@@ -74,35 +74,6 @@ func TestSpanCountWithEmpty(t *testing.T) {
 	}}.SpanCount())
 }
 
-func TestSpanStatusCode(t *testing.T) {
-	td := NewTraces()
-	status := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().Status()
-
-	// Check handling of deprecated status code, see spec here:
-	// https://github.com/open-telemetry/opentelemetry-proto/blob/59c488bfb8fb6d0458ad6425758b70259ff4a2bd/opentelemetry/proto/trace/v1/trace.proto#L231
-	//
-	// 2. New senders, which are aware of the `code` field MUST set both the
-	// `deprecated_code` and `code` fields according to the following rules:
-	//
-	//   if code==STATUS_CODE_UNSET then `deprecated_code` MUST be
-	//   set to DEPRECATED_STATUS_CODE_OK.
-	status.orig.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR
-	status.SetCode(StatusCodeUnset)
-	assert.EqualValues(t, otlptrace.Status_DEPRECATED_STATUS_CODE_OK, status.orig.DeprecatedCode)
-
-	//   if code==STATUS_CODE_OK then `deprecated_code` MUST be
-	//   set to DEPRECATED_STATUS_CODE_OK.
-	status.orig.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR
-	status.SetCode(StatusCodeOk)
-	assert.EqualValues(t, otlptrace.Status_DEPRECATED_STATUS_CODE_OK, status.orig.DeprecatedCode)
-
-	//   if code==STATUS_CODE_ERROR then `deprecated_code` MUST be
-	//   set to DEPRECATED_STATUS_CODE_UNKNOWN_ERROR.
-	status.orig.DeprecatedCode = otlptrace.Status_DEPRECATED_STATUS_CODE_OK
-	status.SetCode(StatusCodeError)
-	assert.EqualValues(t, otlptrace.Status_DEPRECATED_STATUS_CODE_UNKNOWN_ERROR, status.orig.DeprecatedCode)
-}
-
 func TestToFromOtlp(t *testing.T) {
 	otlp := &otlptrace.TracesData{}
 	td := TracesFromInternalRep(internal.TracesFromOtlp(otlp))
