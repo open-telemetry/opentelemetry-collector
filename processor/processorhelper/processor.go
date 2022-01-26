@@ -39,7 +39,7 @@ type Option func(*baseSettings)
 // The default shutdown function does nothing and always returns nil.
 func WithStart(start componenthelper.StartFunc) Option {
 	return func(o *baseSettings) {
-		o.componentOptions = append(o.componentOptions, componenthelper.WithStart(start))
+		o.StartFunc = start
 	}
 }
 
@@ -47,7 +47,7 @@ func WithStart(start componenthelper.StartFunc) Option {
 // The default shutdown function does nothing and always returns nil.
 func WithShutdown(shutdown componenthelper.ShutdownFunc) Option {
 	return func(o *baseSettings) {
-		o.componentOptions = append(o.componentOptions, componenthelper.WithShutdown(shutdown))
+		o.ShutdownFunc = shutdown
 	}
 }
 
@@ -60,8 +60,9 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 }
 
 type baseSettings struct {
-	componentOptions []componenthelper.Option
-	consumerOptions  []consumerhelper.Option
+	componenthelper.StartFunc
+	componenthelper.ShutdownFunc
+	consumerOptions []consumerhelper.Option
 }
 
 // fromOptions returns the internal settings starting from the default and applying all options.
