@@ -177,7 +177,7 @@ To keep naming patterns consistent across the project, naming patterns are enfor
 - Methods that return a variable that uses the zero value or values provided via the method MUST have the prefix `New`. For example:
   - `func NewKinesisExporter(kpl aws.KinesisProducerLibrary)` allocates a variable that uses
     the variables passed on creation.
-  - `func NewKeyValueBuilder()` shall allocate internal variables to a safe zero value.
+  - `func NewKeyValueBuilder()` SHOULD allocate internal variables to a safe zero value.
 - Methods that return a variable that uses non zero value(s) that impacts business logic MUST use the prefix `NewDefault`. For example:
   - `func NewDefaultKinesisConfig()` would return a configuration that is the suggested default
     and can be updated without concern of a race condition.
@@ -195,7 +195,7 @@ To keep naming patterns consistent across the project, naming patterns are enfor
 In order to simplify developing within the project, library recommendations have been set
 and should be followed.
 
-| Scenario 	| Recommended                                  	| Recommended                                                                                                              	|
+| Scenario 	| Recommended                                  	| Rationale                                                                                                               	|
 |----------	|----------------------------------------------	|--------------------------------------------------------------------------------------------------------------------------	|
 | Hashing  	| ["hashing/fnv"](https://pkg.go.dev/hash/fnv) 	| The project adopted this as the default hashing method due to the efficiency and is reasonable for non cryptographic use 	|
 | Testing  	| Use `t.Parallel()` where possible            	| Enabling more test to be run in parallel will speed up the feedback process when working on the project.                 	|
