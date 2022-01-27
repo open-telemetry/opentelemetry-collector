@@ -46,6 +46,15 @@ exporters:
       insecure: true
 ```
 
+By default `gzip` compression is enabled. See [compression comparison](../../config/configgrpc/README.md#compression-comparison) for details benchmark information. To disable, configure as follows:
+
+```yaml
+exporters:
+  otlp:
+    ...
+    compression: none
+```
+
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:

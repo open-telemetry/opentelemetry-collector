@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -47,6 +48,8 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
+			// Default to gzip compression
+			Compression: configcompression.Gzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
