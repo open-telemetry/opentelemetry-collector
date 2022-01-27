@@ -204,13 +204,13 @@ func TestHandleInvalidRequests(t *testing.T) {
 		expectedResponseBody string
 	}{
 		{
-			name:        "POST /v1/traces",
+			name:        "POST /v1/traces, no content type",
 			uri:         "/v1/traces",
 			method:      http.MethodPost,
 			contentType: "",
 
 			expectedStatus:       http.StatusUnsupportedMediaType,
-			expectedResponseBody: "415 unsupported media type, supported: [application/json]",
+			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
 		},
 		{
 			name:        "PATCH /v1/traces",
@@ -219,16 +219,25 @@ func TestHandleInvalidRequests(t *testing.T) {
 			contentType: "application/json",
 
 			expectedStatus:       http.StatusMethodNotAllowed,
-			expectedResponseBody: "405 method not allowed, supported: [GET, POST]",
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
 		},
 		{
-			name:        "POST /v1/metrics",
+			name:        "GET /v1/traces",
+			uri:         "/v1/traces",
+			method:      http.MethodGet,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
+		},
+		{
+			name:        "POST /v1/metrics, no content type",
 			uri:         "/v1/metrics",
 			method:      http.MethodPost,
 			contentType: "",
 
 			expectedStatus:       http.StatusUnsupportedMediaType,
-			expectedResponseBody: "415 unsupported media type, supported: [application/json]",
+			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
 		},
 		{
 			name:        "PATCH /v1/metrics",
@@ -237,16 +246,25 @@ func TestHandleInvalidRequests(t *testing.T) {
 			contentType: "application/json",
 
 			expectedStatus:       http.StatusMethodNotAllowed,
-			expectedResponseBody: "405 method not allowed, supported: [GET, POST]",
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
 		},
 		{
-			name:        "POST /v1/logs",
+			name:        "GET /v1/metrics",
+			uri:         "/v1/metrics",
+			method:      http.MethodGet,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
+		},
+		{
+			name:        "POST /v1/logs, no content type",
 			uri:         "/v1/logs",
 			method:      http.MethodPost,
 			contentType: "",
 
 			expectedStatus:       http.StatusUnsupportedMediaType,
-			expectedResponseBody: "415 unsupported media type, supported: [application/json]",
+			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
 		},
 		{
 			name:        "PATCH /v1/logs",
@@ -255,7 +273,16 @@ func TestHandleInvalidRequests(t *testing.T) {
 			contentType: "application/json",
 
 			expectedStatus:       http.StatusMethodNotAllowed,
-			expectedResponseBody: "405 method not allowed, supported: [GET, POST]",
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
+		},
+		{
+			name:        "GET /v1/logs",
+			uri:         "/v1/logs",
+			method:      http.MethodGet,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
 		},
 	}
 
