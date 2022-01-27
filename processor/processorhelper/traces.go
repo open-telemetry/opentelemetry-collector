@@ -34,7 +34,8 @@ import (
 type ProcessTracesFunc func(context.Context, pdata.Traces) (pdata.Traces, error)
 
 type tracesProcessor struct {
-	component.Component
+	componenthelper.StartFunc
+	componenthelper.ShutdownFunc
 	consumer.Traces
 }
 
@@ -76,7 +77,8 @@ func NewTracesProcessor(
 	}
 
 	return &tracesProcessor{
-		Component: componenthelper.New(bs.componentOptions...),
-		Traces:    traceConsumer,
+		StartFunc:    bs.StartFunc,
+		ShutdownFunc: bs.ShutdownFunc,
+		Traces:       traceConsumer,
 	}, nil
 }

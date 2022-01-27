@@ -35,7 +35,7 @@ import (
 )
 
 func createTestQueue(extension storage.Extension, capacity int) *persistentQueue {
-	logger, _ := zap.NewDevelopment()
+	logger := zap.NewNop()
 
 	client, err := extension.GetClient(context.Background(), component.KindReceiver, config.ComponentID{}, "")
 	if err != nil {
@@ -73,7 +73,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 			if i == 0 {
 				require.Eventually(t, func() bool {
 					return wq.Size() == 0
-				}, 1000*time.Millisecond, 10*time.Millisecond)
+				}, 5*time.Second, 10*time.Millisecond)
 			}
 		}
 		require.Equal(t, 5, wq.Size())
@@ -100,12 +100,12 @@ func TestPersistentQueue_Close(t *testing.T) {
 	require.Eventually(t, func() bool {
 		wq.Stop()
 		return true
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 	// The additional stop should not panic
 	require.Eventually(t, func() bool {
 		wq.Stop()
 		return true
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 }
 
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {
@@ -162,7 +162,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 
 			require.Eventually(t, func() bool {
 				return c.numMessagesProduced == int(atomic.LoadInt32(&numMessagesConsumed))
-			}, 500*time.Millisecond, 10*time.Millisecond)
+			}, 5*time.Second, 10*time.Millisecond)
 		})
 	}
 }

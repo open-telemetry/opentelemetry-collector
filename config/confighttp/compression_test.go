@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright  The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package middleware
+package confighttp
 
 import (
 	"bytes"
@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -43,7 +44,7 @@ func TestHTTPClientCompression(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		encoding    CompressionType
+		encoding    configcompression.CompressionType
 		reqBody     []byte
 		shouldError bool
 	}{
@@ -118,8 +119,8 @@ func TestHTTPClientCompression(t *testing.T) {
 			require.NoError(t, err, "failed to create request to test handler")
 
 			client := http.Client{}
-			if tt.encoding != CompressionEmpty && tt.encoding != CompressionNone {
-				client.Transport = NewCompressRoundTripper(http.DefaultTransport, tt.encoding)
+			if configcompression.IsCompressed(tt.encoding) {
+				client.Transport = newCompressRoundTripper(http.DefaultTransport, tt.encoding)
 			}
 			res, err := client.Do(req)
 			if tt.shouldError {
@@ -201,7 +202,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			ln, err := net.Listen("tcp", addr)
 			require.NoError(t, err, "failed to create listener: %v", err)
 			srv := &http.Server{
-				Handler: HTTPContentDecompressor(handler),
+				Handler: httpContentDecompressor(handler),
 			}
 			go func() {
 				_ = srv.Serve(ln)
@@ -228,67 +229,6 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 				assert.Equal(t, tt.respBody, string(body))
 			}
 			require.NoError(t, srv.Close())
-		})
-	}
-}
-
-func TestUnmarshalText(t *testing.T) {
-	tests := []struct {
-		name            string
-		compressionName []byte
-		shouldError     bool
-	}{
-		{
-			name:            "ValidGzip",
-			compressionName: []byte("gzip"),
-			shouldError:     false,
-		},
-		{
-			name:            "ValidZlib",
-			compressionName: []byte("zlib"),
-			shouldError:     false,
-		},
-		{
-			name:            "ValidDeflate",
-			compressionName: []byte("deflate"),
-			shouldError:     false,
-		},
-		{
-			name:            "ValidSnappy",
-			compressionName: []byte("snappy"),
-			shouldError:     false,
-		},
-		{
-			name:            "ValidZstd",
-			compressionName: []byte("zstd"),
-			shouldError:     false,
-		},
-		{
-			name:            "ValidEmpty",
-			compressionName: []byte(""),
-			shouldError:     false,
-		},
-		{
-			name:            "ValidNone",
-			compressionName: []byte("none"),
-			shouldError:     false,
-		},
-		{
-			name:            "Invalid",
-			compressionName: []byte("ggip"),
-			shouldError:     true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			temp := CompressionNone
-			err := temp.UnmarshalText(tt.compressionName)
-			if tt.shouldError {
-				assert.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, temp, CompressionType(tt.compressionName))
 		})
 	}
 }

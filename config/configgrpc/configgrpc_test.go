@@ -36,9 +36,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/internal/middleware"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -91,7 +91,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: middleware.CompressionGzip,
+				Compression: configcompression.Gzip,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -119,7 +119,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: middleware.CompressionSnappy,
+				Compression: configcompression.Snappy,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -147,7 +147,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
-				Compression: middleware.CompressionZstd,
+				Compression: configcompression.Zstd,
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: false,
 				},
@@ -659,9 +659,10 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		input    context.Context
-		expected client.Info
+		desc       string
+		input      context.Context
+		doMetadata bool
+		expected   client.Info
 	}{
 		{
 			desc:     "no peer information, empty client",
@@ -711,10 +712,50 @@ func TestContextWithClient(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "existing client with metadata",
+			input: client.NewContext(context.Background(), client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			}),
+			doMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			},
+		},
+		{
+			desc: "existing client with metadata in context",
+			input: metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value"),
+			),
+			doMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}}),
+			},
+		},
+		{
+			desc: "existing client with metadata in context, no metadata processing",
+			input: metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value"),
+			),
+			expected: client.Info{},
+		},
+		{
+			desc: "existing client with Host and metadata",
+			input: metadata.NewIncomingContext(
+				client.NewContext(context.Background(), client.Info{}),
+				metadata.Pairs("test-metadata-key", "test-value", ":authority", "localhost:55443"),
+			),
+			doMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"test-metadata-key": {"test-value"}, ":authority": {"localhost:55443"}, "Host": {"localhost:55443"}}),
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			cl := client.FromContext(contextWithClient(tC.input))
+			cl := client.FromContext(contextWithClient(tC.input, tC.doMetadata))
 			assert.Equal(t, tC.expected, cl)
 		})
 	}
@@ -737,7 +778,7 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 	}
 
 	// test
-	err := enhanceStreamWithClientInformation(nil, stream, nil, handler)
+	err := enhanceStreamWithClientInformation(false)(nil, stream, nil, handler)
 
 	// verify
 	assert.NoError(t, err)

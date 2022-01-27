@@ -25,30 +25,25 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-type propertiesMapProvider struct {
-	properties []string
-}
-
-// NewProperties returns a Provider, that provides a config.Map from the given properties.
+// NewOverwritePropertiesConverter returns a service.ConfigMapConverterFunc, that overrides all the given properties into the
+// input map.
 //
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
-func NewProperties(properties []string) Provider {
-	return &propertiesMapProvider{
-		properties: properties,
+func NewOverwritePropertiesConverter(properties []string) config.MapConverterFunc {
+	return func(_ context.Context, cfgMap *config.Map) error {
+		return convert(properties, cfgMap)
 	}
 }
 
-func (pmp *propertiesMapProvider) Retrieve(_ context.Context, onChange func(*ChangeEvent)) (Retrieved, error) {
-	if len(pmp.properties) == 0 {
-		return NewRetrieved(func(ctx context.Context) (*config.Map, error) {
-			return config.NewMap(), nil
-		})
+func convert(propsStr []string, cfgMap *config.Map) error {
+	if len(propsStr) == 0 {
+		return nil
 	}
 
 	b := &bytes.Buffer{}
-	for _, property := range pmp.properties {
+	for _, property := range propsStr {
 		property = strings.TrimSpace(property)
 		b.WriteString(property)
 		b.WriteString("\n")
@@ -57,11 +52,10 @@ func (pmp *propertiesMapProvider) Retrieve(_ context.Context, onChange func(*Cha
 	var props *properties.Properties
 	var err error
 	if props, err = properties.Load(b.Bytes(), properties.UTF8); err != nil {
-		return nil, err
+		return err
 	}
 
-	// Create a map manually instead of using properties.Map() to allow env var expansion
-	// as used by original Viper-based config.Map.
+	// Create a map manually instead of using properties.Map() to not expand the env vars.
 	parsed := make(map[string]interface{}, props.Len())
 	for _, key := range props.Keys() {
 		value, _ := props.Get(key)
@@ -69,11 +63,5 @@ func (pmp *propertiesMapProvider) Retrieve(_ context.Context, onChange func(*Cha
 	}
 	prop := maps.Unflatten(parsed, ".")
 
-	return NewRetrieved(func(ctx context.Context) (*config.Map, error) {
-		return config.NewMapFromStringMap(prop), nil
-	})
-}
-
-func (*propertiesMapProvider) Shutdown(context.Context) error {
-	return nil
+	return cfgMap.Merge(config.NewMapFromStringMap(prop))
 }

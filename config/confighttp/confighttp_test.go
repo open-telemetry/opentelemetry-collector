@@ -36,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/internal/middleware"
 )
 
 type customRoundTripper struct {
@@ -132,7 +131,9 @@ func TestAllHTTPClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(ext)
+			tt := componenttest.NewNopTelemetrySettings()
+			tt.TracerProvider = nil
+			client, err := test.settings.ToClient(ext, tt)
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -146,8 +147,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
 				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
 				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
-			case *middleware.CompressRoundTripper:
-				assert.EqualValues(t, "gzip", transport.CompressionType())
+			case *compressRoundTripper:
+				assert.EqualValues(t, "gzip", transport.compressionType)
 			}
 		})
 	}
@@ -179,7 +180,9 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(ext)
+			tt := componenttest.NewNopTelemetrySettings()
+			tt.TracerProvider = nil
+			client, err := test.settings.ToClient(ext, tt)
 			assert.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
@@ -240,7 +243,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClient(map[config.ComponentID]component.Extension{})
+			_, err := test.settings.ToClient(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -311,7 +314,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(test.extensionMap)
+			client, err := test.settings.ToClient(test.extensionMap, componenttest.NewNopTelemetrySettings())
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
@@ -510,7 +513,7 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   prefix + ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{})
+			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)
@@ -727,7 +730,7 @@ func TestHttpHeaders(t *testing.T) {
 					"header1": "value1",
 				},
 			}
-			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{})
+			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)
@@ -738,17 +741,18 @@ func TestHttpHeaders(t *testing.T) {
 
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		input    *http.Request
-		expected client.Info
+		desc       string
+		input      *http.Request
+		doMetadata bool
+		expected   client.Info
 	}{
 		{
-			desc:     "request without client IP",
+			desc:     "request without client IP or headers",
 			input:    &http.Request{},
 			expected: client.Info{},
 		},
 		{
-			desc: "request without client IP",
+			desc: "request with client IP",
 			input: &http.Request{
 				RemoteAddr: "1.2.3.4:55443",
 			},
@@ -758,10 +762,39 @@ func TestContextWithClient(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "request with client headers, no metadata processing",
+			input: &http.Request{
+				Header: map[string][]string{"x-test-header": {"test-value"}},
+			},
+			doMetadata: false,
+			expected:   client.Info{},
+		},
+		{
+			desc: "request with client headers",
+			input: &http.Request{
+				Header: map[string][]string{"x-test-header": {"test-value"}},
+			},
+			doMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}}),
+			},
+		},
+		{
+			desc: "request with Host and client headers",
+			input: &http.Request{
+				Header: map[string][]string{"x-test-header": {"test-value"}},
+				Host:   "localhost:55443",
+			},
+			doMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}, "Host": {"localhost:55443"}}),
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			ctx := contextWithClient(tC.input)
+			ctx := contextWithClient(tC.input, tC.doMetadata)
 			assert.Equal(t, tC.expected, client.FromContext(ctx))
 		})
 	}
@@ -813,6 +846,35 @@ func TestInvalidServerAuth(t *testing.T) {
 	srv, err := hss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
 	require.Error(t, err)
 	require.Nil(t, srv)
+}
+
+func TestFailedServerAuth(t *testing.T) {
+	// prepare
+	hss := HTTPServerSettings{
+		Auth: &configauth.Authentication{
+			AuthenticatorID: config.NewComponentID("mock"),
+		},
+	}
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
+				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+					return ctx, fmt.Errorf("authentication failed")
+				}),
+			),
+		},
+	}
+
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	require.NoError(t, err)
+
+	// test
+	response := &httptest.ResponseRecorder{}
+	srv.Handler.ServeHTTP(response, httptest.NewRequest("GET", "/", nil))
+
+	// verify
+	assert.Equal(t, response.Result().StatusCode, http.StatusUnauthorized)
+	assert.Equal(t, response.Result().Status, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)))
 }
 
 type mockHost struct {

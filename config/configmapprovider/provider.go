@@ -24,11 +24,11 @@ import (
 //
 // The typical usage is the following:
 //
-//		r := mapProvider.Retrieve()
+//		r := mapProvider.Retrieve("file:/path/to/config")
 //		r.Get()
 //		// wait for onChange() to be called.
 //		r.Close()
-//		r = mapProvider.Retrieve()
+//		r = mapProvider.Retrieve("file:/path/to/config")
 //		r.Get()
 //		// wait for onChange() to be called.
 //		r.Close()
@@ -40,15 +40,21 @@ type Provider interface {
 	// contains the value to be injected in the configuration and the corresponding watcher that
 	// will be used to monitor for updates of the retrieved value.
 	//
-	// onChange callback is called when the config changes. onChange may be called from
-	// a different go routine. After onChange is called Retrieved.Get should be called
+	// `location` must follow the "<scheme>:<opaque_data>" format. This format is compatible
+	// with the URI definition (see https://datatracker.ietf.org/doc/html/rfc3986). The "<scheme>"
+	// must be always included in the `location`. The scheme supported by any provider MUST be at
+	// least 2 characters long to avoid conflicting with a driver-letter identifier as specified
+	// in https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax.
+	//
+	// `watcher` callback is called when the config changes. watcher may be called from
+	// a different go routine. After watcher is called Retrieved.Get should be called
 	// to get the new config. See description of Retrieved for more details.
-	// onChange may be nil, which indicates that the caller is not interested in
+	// watcher may be nil, which indicates that the caller is not interested in
 	// knowing about the changes.
 	//
 	// If ctx is cancelled should return immediately with an error.
 	// Should never be called concurrently with itself or with Shutdown.
-	Retrieve(ctx context.Context, onChange func(*ChangeEvent)) (Retrieved, error)
+	Retrieve(ctx context.Context, location string, watcher WatcherFunc) (Retrieved, error)
 
 	// Shutdown signals that the configuration for which this Provider was used to
 	// retrieve values is no longer in use and the Provider should close and release
@@ -61,6 +67,8 @@ type Provider interface {
 	// If ctx is cancelled should return immediately with an error.
 	Shutdown(ctx context.Context) error
 }
+
+type WatcherFunc func(*ChangeEvent)
 
 // ChangeEvent describes the particular change event that happened with the config.
 // TODO: see if this can be eliminated.

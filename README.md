@@ -27,6 +27,8 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/design.md">Design</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
+    <a href="https://opentelemetry.io/docs/collector/configuration/">Configuration</a>
+    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/monitoring.md">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="docs/performance.md">Performance</a>
@@ -103,7 +105,6 @@ Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-te
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
-- [Owais Lone](https://github.com/owais), Splunk
 
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 

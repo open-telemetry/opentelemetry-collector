@@ -18,15 +18,12 @@ import (
 	"flag"
 	"strings"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 var (
-	defaultConfig = ""
-
 	// Command-line flag that control the configuration file.
-	configFlag = &defaultConfig
+	configFlag = new(stringArrayValue)
 	setFlag    = new(stringArrayValue)
 )
 
@@ -40,15 +37,15 @@ func (s *stringArrayValue) Set(val string) error {
 }
 
 func (s *stringArrayValue) String() string {
-	return "[" + strings.Join(s.values, ",") + "]"
+	return "[" + strings.Join(s.values, ", ") + "]"
 }
 
 func flags() *flag.FlagSet {
 	flagSet := new(flag.FlagSet)
-	configtelemetry.Flags(flagSet)
 	featuregate.Flags(flagSet)
 
-	configFlag = flagSet.String("config", defaultConfig, "Path to the config file")
+	flagSet.Var(configFlag, "config", "Locations to the config file(s), note that only a"+
+		" single location can be set per flag entry e.g. `-config=file:/path/to/first --config=file:path/to/second`.")
 
 	flagSet.Var(setFlag, "set",
 		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+
@@ -58,8 +55,8 @@ func flags() *flag.FlagSet {
 	return flagSet
 }
 
-func getConfigFlag() string {
-	return *configFlag
+func getConfigFlag() []string {
+	return configFlag.values
 }
 
 func getSetFlag() []string {

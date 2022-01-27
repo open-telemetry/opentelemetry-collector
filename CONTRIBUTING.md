@@ -3,6 +3,36 @@
 We'd love your help! Please join our weekly [SIG
 meeting](https://github.com/open-telemetry/community#special-interest-groups).
 
+## Target audiences
+
+The OpenTelemetry Collector has two main target audiences:
+
+1. End-users, aiming to use an OpenTelemetry Collector binary.
+1. Collector distributions, consuming the APIs exposed by the OpenTelemetry core repository. Distributions can be an
+official OpenTelemetry community project, such as the OpenTelemetry Collector "core" and "contrib", or external
+distributions, such as other open-source projects building on top of the Collector or vendor-specific distributions.
+
+### End-users
+
+End-users are the target audience for our binary distributions, as made available via the
+[opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository. To
+them, stability in the behavior is important, be it runtime or configuration. They are more numerous and harder to get
+in touch with, making our changes to the collector more disruptive to them than to other audiences. As a general rule,
+whenever you are developing OpenTelemetry Collector components (extensions, receivers, processors, exporters), you
+should have end-users' interests in mind. Similarly, changes to code within packages like `config` will have an impact
+on this audience. Make sure to cause minimal disruption when doing changes here.
+
+### Collector distributions
+
+In this capacity, the opentelemetry-collector repository's public Go types, functions, and interfaces act as an API for
+other projects. In addition to the end-user aspect mentioned above, this audience also cares about API compatibility,
+making them susceptible to our refactorings, even though such changes wouldn't cause any impact to end-users. See the
+"Breaking changes" in this document for more information on how to perform changes affecting this audience.
+
+This audience might use tools like the
+[opentelemetry-collector-builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) as
+part of their delivery pipeline. Be mindful that changes there might cause disruption to this audience.
+
 ## How to structure PRs to get expedient reviews?
 
 We recommend that any PR (unless it is trivial) to be smaller than 500 lines
@@ -170,6 +200,27 @@ for coding advice). The code must adhere to the following robustness principles 
 are important for software that runs autonomously and continuously without direct
 interaction with a human (such as this Collector).
 
+### Naming convention
+
+To keep naming patterns consistent across the project, naming patterns are enforced to make intent clear by:
+
+- Methods that return a variable that uses the zero value or values provided via the method MUST have the prefix `New`. For example:
+  - `func NewKinesisExporter(kpl aws.KinesisProducerLibrary)` allocates a variable that uses
+    the variables passed on creation.
+  - `func NewKeyValueBuilder()` may allocate internal varialbes to a safe zero value.
+- Methods that return a variable that uses non zero value(s) that impacts business logic must use `NewDefault`. For example:
+  - `func NewDefaultKinesisConfig()` would return a configuration that is the suggested default
+    and can be updated without concern of a race condition.
+- Methods that act upon an input variable should have a signature that reflect concisely the logic being done. For example:
+  - `func FilterAttributes(attrs []Attribute, match func(attr Attribute) bool) []Attribute` must only filter attributes out of the passed input
+    slice and return a new slice with values that `match` returns true. It may not do more work than what the method name implies, ie, it
+    may not key a global history of all the slices that have been filtered.
+  - `func Add(v pdata.values)` 
+- Variable assigned in a package's global scope that is preconfigured with a recommended set of values must use `Default` as the prefix. For example:
+  - `var DefaultMarshallers = map[string]pdata.Marshallers{...}` is defined with an exporters package that allows for converting an encoding name,
+    `zipkin`, and return the preconfigured marshaller to be used in the export process.
+
+
 ### Recommended Libraries / Defaults
 
 In order to simplify developing within the project, library recommendations have been set
@@ -259,6 +310,24 @@ the event happens.
 
 Make log message human readable and also include data that is needed for easier
 understanding of what happened and in what context.
+
+### Executing External Processes
+
+The components should avoid executing arbitrary external processes with arbitrary command
+line arguments based on user input, including input received from the network or input
+read from the configuration file. Failure to follow this rule can result in arbitrary
+remote code execution, compelled by malicious actors that can craft the input.
+
+The following limitations are recommended:
+- If an external process needs to be executed limit and hard-code the location where
+  the executable file may be located, instead of allowing the input to dictate the
+  full path to the executable.
+- If possible limit the name of the executable file to be one from a hard-coded
+  list defined at compile time.
+- If command line arguments need to be passed to the process do not take the arguments
+  from the user input directly. Instead, compose the command line arguments indirectly,
+  if necessary, deriving the value from the user input. Limit as much as possible the
+  possible space of values for command line arguments.
 
 ### Observability
 

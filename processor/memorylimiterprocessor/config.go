@@ -55,6 +55,3 @@ var _ config.Processor = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	return nil
 }
-
-// Name of BallastSizeMiB config option.
-const ballastSizeMibKey = "ballast_size_mib"

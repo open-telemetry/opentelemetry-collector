@@ -16,33 +16,33 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/config"
 )
 
-type envMapProvider struct {
-	envName string
-}
+const envSchemeName = "env"
+
+type envMapProvider struct{}
 
 // NewEnv returns a new Provider that reads the configuration from the given environment variable.
-func NewEnv(envName string) Provider {
-	return &envMapProvider{
-		envName: envName,
-	}
+//
+// This Provider supports "env" scheme, and can be called with a selector:
+// `env:NAME_OF_ENVIRONMENT_VARIABLE`
+func NewEnv() Provider {
+	return &envMapProvider{}
 }
 
-func (emp *envMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (Retrieved, error) {
-	if emp.envName == "" {
-		return nil, errors.New("config environment not specified")
+func (emp *envMapProvider) Retrieve(_ context.Context, location string, _ WatcherFunc) (Retrieved, error) {
+	if !strings.HasPrefix(location, envSchemeName+":") {
+		return nil, fmt.Errorf("%v location is not supported by %v provider", location, envSchemeName)
 	}
 
-	content := os.Getenv(emp.envName)
-
+	content := os.Getenv(location[len(envSchemeName)+1:])
 	var data map[string]interface{}
 	if err := yaml.Unmarshal([]byte(content), &data); err != nil {
 		return nil, fmt.Errorf("unable to parse yaml: %w", err)

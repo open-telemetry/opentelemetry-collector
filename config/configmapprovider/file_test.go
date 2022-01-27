@@ -16,7 +16,8 @@ package configmapprovider
 
 import (
 	"context"
-	"path"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,28 +26,44 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+const fileSchemePrefix = fileSchemeName + ":"
+
 func TestFile_EmptyName(t *testing.T) {
-	exp := NewFile("")
-	_, err := exp.Retrieve(context.Background(), nil)
+	fp := NewFile()
+	_, err := fp.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestFile_UnsupportedScheme(t *testing.T) {
+	fp := NewFile()
+	_, err := fp.Retrieve(context.Background(), "http://", nil)
+	assert.Error(t, err)
+	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestFile_NonExistent(t *testing.T) {
-	env := NewFile(path.Join("testdata", "non-existent.yaml"))
-	_, err := env.Retrieve(context.Background(), nil)
+	fp := NewFile()
+	_, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "non-existent.yaml"), nil)
 	assert.Error(t, err)
+	_, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "non-existent.yaml")), nil)
+	assert.Error(t, err)
+	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestFile_InvalidYaml(t *testing.T) {
-	env := NewFile(path.Join("testdata", "invalid-yaml.yaml"))
-	_, err := env.Retrieve(context.Background(), nil)
+	fp := NewFile()
+	_, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "invalid-yaml.yaml"), nil)
 	assert.Error(t, err)
+	_, err = fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "invalid-yaml.yaml")), nil)
+	assert.Error(t, err)
+	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
-func TestFile(t *testing.T) {
-	env := NewFile(path.Join("testdata", "default-config.yaml"))
-	ret, err := env.Retrieve(context.Background(), nil)
-	assert.NoError(t, err)
+func TestFile_RelativePath(t *testing.T) {
+	fp := NewFile()
+	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "default-config.yaml"), nil)
+	require.NoError(t, err)
 	cfg, err := ret.Get(context.Background())
 	assert.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
@@ -55,5 +72,26 @@ func TestFile(t *testing.T) {
 	})
 	assert.Equal(t, expectedMap, cfg)
 	assert.NoError(t, ret.Close(context.Background()))
-	assert.NoError(t, env.Shutdown(context.Background()))
+	assert.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestFile_AbsolutePath(t *testing.T) {
+	fp := NewFile()
+	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "default-config.yaml")), nil)
+	require.NoError(t, err)
+	cfg, err := ret.Get(context.Background())
+	assert.NoError(t, err)
+	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
+		"processors::batch":         nil,
+		"exporters::otlp::endpoint": "localhost:4317",
+	})
+	assert.Equal(t, expectedMap, cfg)
+	assert.NoError(t, ret.Close(context.Background()))
+	assert.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func absolutePath(t *testing.T, relativePath string) string {
+	dir, err := os.Getwd()
+	require.NoError(t, err)
+	return filepath.Join(dir, relativePath)
 }

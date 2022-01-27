@@ -15,6 +15,7 @@
 package configtelemetry // import "go.opentelemetry.io/collector/config/configtelemetry"
 
 import (
+	"encoding"
 	"flag"
 	"fmt"
 	"strings"
@@ -34,39 +35,21 @@ const (
 	levelBasicStr    = "basic"
 	levelNormalStr   = "normal"
 	levelDetailedStr = "detailed"
-
-	metricsLevelCfg = "metrics-level"
-	metricsAddrCfg  = "metrics-addr"
 )
 
 const UseOpenTelemetryForInternalMetrics = false
 
-var (
-	metricsLevelPtr = new(Level)
-	metricsAddrPtr  = new(string)
-)
-
 // Flags is a helper function to add telemetry config flags to the service that exposes
 // the application flags.
-func Flags(flags *flag.FlagSet) {
-	flags.Var(
-		metricsLevelPtr,
-		metricsLevelCfg,
-		"Deprecated. Define the metrics configuration as part of the configuration file, under the 'service' section.")
-
-	// At least until we can use a generic, i.e.: OpenCensus, metrics exporter
-	// we default to Prometheus at port 8888, if not otherwise specified.
-	metricsAddrPtr = flags.String(
-		metricsAddrCfg,
-		GetMetricsAddrDefault(),
-		"Deprecated. Define the metrics configuration as part of the configuration file, under the 'service' section.")
-}
+// Deprecated: No-op, kept for backwards compatibility until v0.44.0.
+func Flags(*flag.FlagSet) {}
 
 // Level is the level of internal telemetry (metrics, logs, traces about the component itself)
 // that every component should generate.
 type Level int32
 
 var _ flag.Value = (*Level)(nil)
+var _ encoding.TextUnmarshaler = (*Level)(nil)
 
 func (l Level) String() string {
 	switch l {
@@ -82,7 +65,7 @@ func (l Level) String() string {
 	return "unknown"
 }
 
-// Set sets the telemetry level.
+// Deprecated: will be removed in v0.44.0.
 func (l *Level) Set(s string) error {
 	lvl, err := parseLevel(s)
 	if err != nil {
@@ -118,23 +101,4 @@ func parseLevel(str string) (Level, error) {
 		return LevelDetailed, nil
 	}
 	return LevelNone, fmt.Errorf("unknown metrics level %q", str)
-}
-
-// GetMetricsAddrDefault returns the default metrics bind address and port depending on
-// the current build type.
-// Deprecated: This function will be removed in the future.
-func GetMetricsAddrDefault() string {
-	return ":8888"
-}
-
-// Deprecated: This function will be removed in the future.
-func GetMetricsAddr() string {
-	return *metricsAddrPtr
-}
-
-// GetMetricsLevelFlagValue returns the value of the "--metrics-level" flag.
-// IMPORTANT: This must be used only in the core collector code for the moment.
-// Deprecated: This function will be removed in the future.
-func GetMetricsLevelFlagValue() Level {
-	return *metricsLevelPtr
 }

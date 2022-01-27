@@ -26,43 +26,50 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+const envSchemePrefix = envSchemeName + ":"
+
 func TestEnv_EmptyName(t *testing.T) {
-	exp := NewEnv("")
-	_, err := exp.Retrieve(context.Background(), nil)
+	env := NewEnv()
+	_, err := env.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
+	assert.NoError(t, env.Shutdown(context.Background()))
+}
+
+func TestEnv_UnsupportedScheme(t *testing.T) {
+	env := NewEnv()
+	_, err := env.Retrieve(context.Background(), "http://", nil)
+	assert.Error(t, err)
+	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestEnv_InvalidYaml(t *testing.T) {
 	bytes, err := os.ReadFile(path.Join("testdata", "invalid-yaml.yaml"))
 	require.NoError(t, err)
 	const envName = "invalid-yaml"
-	require.NoError(t, os.Setenv(envName, string(bytes)))
-	t.Cleanup(func() {
-		require.NoError(t, os.Unsetenv(envName))
-	})
-	env := NewEnv(envName)
-	_, err = env.Retrieve(context.Background(), nil)
+	t.Setenv(envName, string(bytes))
+	env := NewEnv()
+	_, err = env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	assert.Error(t, err)
+	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestEnv(t *testing.T) {
 	bytes, err := os.ReadFile(path.Join("testdata", "default-config.yaml"))
 	require.NoError(t, err)
 	const envName = "default-config"
-	require.NoError(t, os.Setenv(envName, string(bytes)))
-	t.Cleanup(func() {
-		require.NoError(t, os.Unsetenv(envName))
-	})
-	env := NewEnv(envName)
-	ret, err := env.Retrieve(context.Background(), nil)
-	assert.NoError(t, err)
+	t.Setenv(envName, string(bytes))
+
+	env := NewEnv()
+	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	require.NoError(t, err)
 	cfg, err := ret.Get(context.Background())
 	assert.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})
-	assert.Equal(t, expectedMap, cfg)
+	assert.Equal(t, expectedMap.ToStringMap(), cfg.ToStringMap())
 	assert.NoError(t, ret.Close(context.Background()))
+
 	assert.NoError(t, env.Shutdown(context.Background()))
 }

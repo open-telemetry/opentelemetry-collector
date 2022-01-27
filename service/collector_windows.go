@@ -156,7 +156,15 @@ func (w windowsEventLogCore) Enabled(level zapcore.Level) bool {
 }
 
 func (w windowsEventLogCore) With(fields []zapcore.Field) zapcore.Core {
-	return withWindowsCore(w.elog)(w.core.With(fields))
+	enc := w.encoder.Clone()
+	for _, field := range fields {
+		field.AddTo(enc)
+	}
+	return windowsEventLogCore{
+		core:    w.core,
+		elog:    w.elog,
+		encoder: enc,
+	}
 }
 
 func (w windowsEventLogCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {

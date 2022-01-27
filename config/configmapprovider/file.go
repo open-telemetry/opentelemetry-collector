@@ -16,34 +16,46 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
+	"path"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
 	"go.opentelemetry.io/collector/config"
 )
 
-type fileMapProvider struct {
-	fileName string
+const fileSchemeName = "file"
+
+type fileMapProvider struct{}
+
+// NewFile returns a new Provider that reads the configuration from a file.
+//
+// This Provider supports "file" scheme, and can be called with a "location" that follows:
+//   file-location = "file:" local-path
+//   local-path    = [ drive-letter ] file-path
+//   drive-letter  = ALPHA ":"
+// The "file-path" can be relative or absolute, and it can be any OS supported format.
+//
+// Examples:
+// `file:path/to/file` - relative path (unix, windows)
+// `file:/path/to/file` - absolute path (unix, windows)
+// `file:c:/path/to/file` - absolute path including drive-letter (windows)
+// `file:c:\path\to\file` - absolute path including drive-letter (windows)
+func NewFile() Provider {
+	return &fileMapProvider{}
 }
 
-// NewFile returns a new Provider that reads the configuration from the given file.
-func NewFile(fileName string) Provider {
-	return &fileMapProvider{
-		fileName: fileName,
-	}
-}
-
-func (fmp *fileMapProvider) Retrieve(_ context.Context, _ func(*ChangeEvent)) (Retrieved, error) {
-	if fmp.fileName == "" {
-		return nil, errors.New("config file not specified")
+func (fmp *fileMapProvider) Retrieve(_ context.Context, location string, _ WatcherFunc) (Retrieved, error) {
+	if !strings.HasPrefix(location, fileSchemeName+":") {
+		return nil, fmt.Errorf("%v location is not supported by %v provider", location, fileSchemeName)
 	}
 
-	content, err := ioutil.ReadFile(fmp.fileName)
+	// Clean the path before using it.
+	content, err := ioutil.ReadFile(path.Clean(location[len(fileSchemeName)+1:]))
 	if err != nil {
-		return nil, fmt.Errorf("unable to read the file %v: %w", fmp.fileName, err)
+		return nil, fmt.Errorf("unable to read the file %v: %w", location, err)
 	}
 
 	var data map[string]interface{}

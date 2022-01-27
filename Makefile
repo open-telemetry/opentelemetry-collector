@@ -198,7 +198,7 @@ otelcorecol:
 
 .PHONY: genotelcorecol
 genotelcorecol:
-	pushd cmd/builder/ && go run ./ --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol --skip-compilation && popd
+	pushd cmd/builder/ && go run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 
 .PHONY: genmdata
 genmdata:
@@ -234,7 +234,7 @@ gendependabot: $(eval SHELL:=/bin/bash)
 OPENTELEMETRY_PROTO_SRC_DIR=model/internal/opentelemetry-proto
 
 # The SHA matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v0.11.0
+OPENTELEMETRY_PROTO_VERSION=v0.12.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
