@@ -159,36 +159,97 @@ func TestJsonHttp(t *testing.T) {
 
 func TestInvalidContentType(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
 	cfg := &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Protocols: Protocols{
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: endpoint,
-			},
-		},
+		Protocols:        Protocols{HTTP: &confighttp.HTTPServerSettings{Endpoint: endpoint}},
 	}
 
-	r, err := NewFactory().CreateTracesReceiver(
+	// Traces
+	tr, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
-	assert.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NotNil(t, tr)
+	require.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader([]byte(`{}`)))
+	// Metrics
+	mr, err := NewFactory().CreateMetricsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop())
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "")
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-	_, err = ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+	assert.NotNil(t, tr)
+	require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
 
-	err = r.Shutdown(context.Background())
+	// Logs
+	lr, err := NewFactory().CreateLogsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, tr)
+	require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))
+
+	tests := []struct {
+		name   string
+		uri    string
+		method string
+		err    error
+	}{
+		{
+			name:   "POST /v1/traces",
+			uri:    "/v1/traces",
+			method: http.MethodPost,
+		},
+		{
+			name:   "PATCH /v1/traces",
+			uri:    "/v1/traces",
+			method: http.MethodPatch,
+		},
+		{
+			name:   "POST /v1/metrics",
+			uri:    "/v1/metrics",
+			method: http.MethodPost,
+		},
+		{
+			name:   "PATCH /v1/metrics",
+			uri:    "/v1/metrics",
+			method: http.MethodPatch,
+		},
+		{
+			name:   "POST /v1/logs",
+			uri:    "/v1/logs",
+			method: http.MethodPost,
+		},
+		{
+			name:   "PATCH /v1/logs",
+			uri:    "/v1/logs",
+			method: http.MethodPatch,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			url := fmt.Sprintf("http://%s/%s", endpoint, test.uri)
+			req, err := http.NewRequest("POST", url, bytes.NewReader([]byte(`{}`)))
+			require.NoError(t, err)
+
+			req.Header.Set("Content-Type", "")
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+
+			_, err = ioutil.ReadAll(resp.Body)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		})
+	}
+
+	err = tr.Shutdown(context.Background())
 	require.NoError(t, err)
 }
 
