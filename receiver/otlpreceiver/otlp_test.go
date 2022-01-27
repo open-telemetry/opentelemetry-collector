@@ -272,6 +272,8 @@ func TestHandleInvalidRequests(t *testing.T) {
 
 			body, err := ioutil.ReadAll(resp.Body)
 			require.NoError(t, err)
+
+			require.Equal(t, resp.Header.Get("Content-Type"), "text/plain")
 			require.Equal(t, resp.StatusCode, test.expectedStatus)
 			require.EqualValues(t, body, test.expectedResponseBody)
 		})
