@@ -289,16 +289,16 @@ func TestHandleInvalidRequests(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			url := fmt.Sprintf("http://%s%s", endpoint, test.uri)
-			req, err := http.NewRequest(test.method, url, bytes.NewReader([]byte(`{}`)))
-			require.NoError(t, err)
+			req, err2 := http.NewRequest(test.method, url, bytes.NewReader([]byte(`{}`)))
+			require.NoError(t, err2)
 			req.Header.Set("Content-Type", test.contentType)
 
 			client := &http.Client{}
-			resp, err := client.Do(req)
-			require.NoError(t, err)
+			resp, err2 := client.Do(req)
+			require.NoError(t, err2)
 
-			body, err := ioutil.ReadAll(resp.Body)
-			require.NoError(t, err)
+			body, err2 := ioutil.ReadAll(resp.Body)
+			require.NoError(t, err2)
 
 			require.Equal(t, resp.Header.Get("Content-Type"), "text/plain")
 			require.Equal(t, resp.StatusCode, test.expectedStatus)
