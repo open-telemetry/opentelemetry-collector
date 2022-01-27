@@ -244,7 +244,16 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 }
 
 func handleUnmatchedRequests(resp http.ResponseWriter, req *http.Request) {
+	if req.Method == http.MethodPatch {
+		status := http.StatusMethodNotAllowed
+		resp.WriteHeader(status)
+		resp.Write([]byte(fmt.Sprintf("%v method not allowed, supported: [GET, POST]", status)))
+		return
+	}
 	if req.Header.Get("Content-Type") == "" {
-		resp.WriteHeader(http.StatusUnsupportedMediaType)
+		status := http.StatusUnsupportedMediaType
+		resp.WriteHeader(status)
+		resp.Write([]byte(fmt.Sprintf("%v unsupported media type, supported: [application/json]", status)))
+		return
 	}
 }

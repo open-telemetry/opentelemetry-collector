@@ -157,7 +157,7 @@ func TestJsonHttp(t *testing.T) {
 	}
 }
 
-func TestInvalidContentType(t *testing.T) {
+func TestHandleInvalidRequests(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
@@ -195,57 +195,85 @@ func TestInvalidContentType(t *testing.T) {
 	require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))
 
 	tests := []struct {
-		name   string
-		uri    string
-		method string
-		err    error
+		name        string
+		uri         string
+		method      string
+		contentType string
+
+		expectedStatus       int
+		expectedResponseBody string
 	}{
 		{
-			name:   "POST /v1/traces",
-			uri:    "/v1/traces",
-			method: http.MethodPost,
+			name:        "POST /v1/traces",
+			uri:         "/v1/traces",
+			method:      http.MethodPost,
+			contentType: "",
+
+			expectedStatus:       http.StatusUnsupportedMediaType,
+			expectedResponseBody: "415 unsupported media type, supported: [application/json]",
 		},
 		{
-			name:   "PATCH /v1/traces",
-			uri:    "/v1/traces",
-			method: http.MethodPatch,
+			name:        "PATCH /v1/traces",
+			uri:         "/v1/traces",
+			method:      http.MethodPatch,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [GET, POST]",
 		},
 		{
-			name:   "POST /v1/metrics",
-			uri:    "/v1/metrics",
-			method: http.MethodPost,
+			name:        "POST /v1/metrics",
+			uri:         "/v1/metrics",
+			method:      http.MethodPost,
+			contentType: "",
+
+			expectedStatus:       http.StatusUnsupportedMediaType,
+			expectedResponseBody: "415 unsupported media type, supported: [application/json]",
 		},
 		{
-			name:   "PATCH /v1/metrics",
-			uri:    "/v1/metrics",
-			method: http.MethodPatch,
+			name:        "PATCH /v1/metrics",
+			uri:         "/v1/metrics",
+			method:      http.MethodPatch,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [GET, POST]",
 		},
 		{
-			name:   "POST /v1/logs",
-			uri:    "/v1/logs",
-			method: http.MethodPost,
+			name:        "POST /v1/logs",
+			uri:         "/v1/logs",
+			method:      http.MethodPost,
+			contentType: "",
+
+			expectedStatus:       http.StatusUnsupportedMediaType,
+			expectedResponseBody: "415 unsupported media type, supported: [application/json]",
 		},
 		{
-			name:   "PATCH /v1/logs",
-			uri:    "/v1/logs",
-			method: http.MethodPatch,
+			name:        "PATCH /v1/logs",
+			uri:         "/v1/logs",
+			method:      http.MethodPatch,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [GET, POST]",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			url := fmt.Sprintf("http://%s/%s", endpoint, test.uri)
-			req, err := http.NewRequest("POST", url, bytes.NewReader([]byte(`{}`)))
+			url := fmt.Sprintf("http://%s%s", endpoint, test.uri)
+			req, err := http.NewRequest(test.method, url, bytes.NewReader([]byte(`{}`)))
 			require.NoError(t, err)
+			req.Header.Set("Content-Type", test.contentType)
 
-			req.Header.Set("Content-Type", "")
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			require.NoError(t, err)
 
-			_, err = ioutil.ReadAll(resp.Body)
+			body, err := ioutil.ReadAll(resp.Body)
 			require.NoError(t, err)
-			require.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+			require.Equal(t, resp.StatusCode, test.expectedStatus)
+			require.EqualValues(t, body, test.expectedResponseBody)
 		})
 	}
 
