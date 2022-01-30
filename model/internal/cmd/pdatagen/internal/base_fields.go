@@ -83,11 +83,6 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = ${rawType}(v)
 }`
 
-const accessorsPrimitiveWithoutSetterTypedTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ${returnType}((*ms.orig).${originFieldName})
-}`
-
 const accessorsPrimitiveStructTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ${returnType}{orig: ((*ms.orig).${originFieldName})}
@@ -270,15 +265,10 @@ type primitiveTypedField struct {
 	defaultVal      string
 	testVal         string
 	rawType         string
-	manualSetter    bool
 }
 
 func (ptf *primitiveTypedField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 	template := accessorsPrimitiveTypedTemplate
-	if ptf.manualSetter {
-		// Generate code without setter. Setter will be manually coded.
-		template = accessorsPrimitiveWithoutSetterTypedTemplate
-	}
 
 	sb.WriteString(os.Expand(template, func(name string) string {
 		switch name {
