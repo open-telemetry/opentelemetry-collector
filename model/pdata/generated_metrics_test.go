@@ -465,6 +465,86 @@ func TestMetric_Unit(t *testing.T) {
 	assert.EqualValues(t, testValUnit, ms.Unit())
 }
 
+func TestMetric_Gauge(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeGauge)
+	fillTestGauge(ms.Gauge())
+	assert.EqualValues(t, generateTestGauge(), ms.Gauge())
+}
+
+func TestMetric_CopyTo_Gauge(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeGauge)
+	fillTestGauge(ms.Gauge())
+	dest := NewMetric()
+	ms.CopyTo(dest)
+	assert.EqualValues(t, ms, dest)
+}
+
+func TestMetric_Sum(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeSum)
+	fillTestSum(ms.Sum())
+	assert.EqualValues(t, generateTestSum(), ms.Sum())
+}
+
+func TestMetric_CopyTo_Sum(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeSum)
+	fillTestSum(ms.Sum())
+	dest := NewMetric()
+	ms.CopyTo(dest)
+	assert.EqualValues(t, ms, dest)
+}
+
+func TestMetric_Histogram(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeHistogram)
+	fillTestHistogram(ms.Histogram())
+	assert.EqualValues(t, generateTestHistogram(), ms.Histogram())
+}
+
+func TestMetric_CopyTo_Histogram(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeHistogram)
+	fillTestHistogram(ms.Histogram())
+	dest := NewMetric()
+	ms.CopyTo(dest)
+	assert.EqualValues(t, ms, dest)
+}
+
+func TestMetric_ExponentialHistogram(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeExponentialHistogram)
+	fillTestExponentialHistogram(ms.ExponentialHistogram())
+	assert.EqualValues(t, generateTestExponentialHistogram(), ms.ExponentialHistogram())
+}
+
+func TestMetric_CopyTo_ExponentialHistogram(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeExponentialHistogram)
+	fillTestExponentialHistogram(ms.ExponentialHistogram())
+	dest := NewMetric()
+	ms.CopyTo(dest)
+	assert.EqualValues(t, ms, dest)
+}
+
+func TestMetric_Summary(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeSummary)
+	fillTestSummary(ms.Summary())
+	assert.EqualValues(t, generateTestSummary(), ms.Summary())
+}
+
+func TestMetric_CopyTo_Summary(t *testing.T) {
+	ms := NewMetric()
+	ms.SetDataType(MetricDataTypeSummary)
+	fillTestSummary(ms.Summary())
+	dest := NewMetric()
+	ms.CopyTo(dest)
+	assert.EqualValues(t, ms, dest)
+}
+
 func TestGauge_MoveTo(t *testing.T) {
 	ms := generateTestGauge()
 	dest := NewGauge()
@@ -762,6 +842,7 @@ func TestNumberDataPoint_DoubleVal(t *testing.T) {
 	ms.SetDoubleVal(testValDoubleVal)
 	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
 }
+
 func TestNumberDataPoint_IntVal(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.EqualValues(t, int64(0), ms.IntVal())
@@ -1670,6 +1751,7 @@ func TestExemplar_DoubleVal(t *testing.T) {
 	ms.SetDoubleVal(testValDoubleVal)
 	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
 }
+
 func TestExemplar_IntVal(t *testing.T) {
 	ms := NewExemplar()
 	assert.EqualValues(t, int64(0), ms.IntVal())
@@ -1778,8 +1860,8 @@ func fillTestMetric(tv Metric) {
 	tv.SetName("test_name")
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
-	(*tv.orig).Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
-	fillTestGauge(tv.Gauge())
+	tv.SetDataType(MetricDataTypeSum)
+	fillTestSum(tv.Sum())
 }
 
 func generateTestGauge() Gauge {
@@ -1861,7 +1943,6 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetDoubleVal(float64(17.13))
-
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
 }
@@ -2020,8 +2101,7 @@ func generateTestExemplar() Exemplar {
 
 func fillTestExemplar(tv Exemplar) {
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetDoubleVal(float64(17.13))
-
+	tv.SetIntVal(int64(17))
 	fillTestAttributeMap(tv.FilteredAttributes())
 	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))

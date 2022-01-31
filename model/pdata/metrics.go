@@ -188,66 +188,6 @@ func (ms Metric) SetDataType(ty MetricDataType) {
 	}
 }
 
-// Gauge returns the data as Gauge.
-// Calling this function when DataType() != MetricDataTypeGauge will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) Gauge() Gauge {
-	return newGauge(ms.orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
-}
-
-// Sum returns the data as Sum.
-// Calling this function when DataType() != MetricDataTypeSum will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) Sum() Sum {
-	return newSum(ms.orig.Data.(*otlpmetrics.Metric_Sum).Sum)
-}
-
-// Histogram returns the data as Histogram.
-// Calling this function when DataType() != MetricDataTypeHistogram will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) Histogram() Histogram {
-	return newHistogram(ms.orig.Data.(*otlpmetrics.Metric_Histogram).Histogram)
-}
-
-// ExponentialHistogram returns the data as ExponentialHistogram.
-// Calling this function when DataType() != MetricDataTypeExponentialHistogram will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) ExponentialHistogram() ExponentialHistogram {
-	return newExponentialHistogram(ms.orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram)
-}
-
-// Summary returns the data as Summary.
-// Calling this function when DataType() != MetricDataTypeSummary will cause a panic.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) Summary() Summary {
-	return newSummary(ms.orig.Data.(*otlpmetrics.Metric_Summary).Summary)
-}
-
-func copyData(src, dest *otlpmetrics.Metric) {
-	switch srcData := (src).Data.(type) {
-	case *otlpmetrics.Metric_Gauge:
-		data := &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
-		newGauge(srcData.Gauge).CopyTo(newGauge(data.Gauge))
-		dest.Data = data
-	case *otlpmetrics.Metric_Sum:
-		data := &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-		newSum(srcData.Sum).CopyTo(newSum(data.Sum))
-		dest.Data = data
-	case *otlpmetrics.Metric_Histogram:
-		data := &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
-		newHistogram(srcData.Histogram).CopyTo(newHistogram(data.Histogram))
-		dest.Data = data
-	case *otlpmetrics.Metric_ExponentialHistogram:
-		data := &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: &otlpmetrics.ExponentialHistogram{}}
-		newExponentialHistogram(srcData.ExponentialHistogram).CopyTo(newExponentialHistogram(data.ExponentialHistogram))
-		dest.Data = data
-	case *otlpmetrics.Metric_Summary:
-		data := &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}
-		newSummary(srcData.Summary).CopyTo(newSummary(data.Summary))
-		dest.Data = data
-	}
-}
-
 // MetricAggregationTemporality defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
 type MetricAggregationTemporality int32
