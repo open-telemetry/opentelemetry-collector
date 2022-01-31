@@ -119,7 +119,7 @@ func NewConfigProvider(
 
 // MustNewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func MustNewDefaultConfigProvider(configLocations []string string, properties []string) ConfigProvider {
+func MustNewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
 	return NewDefaultConfigProvider(configLocations, properties)
 }
 
