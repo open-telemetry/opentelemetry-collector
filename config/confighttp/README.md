@@ -77,14 +77,14 @@ Example:
 ```yaml
 receivers:
   otlp:
-    cors:
-      allowed_origins:
-        - https://foo.bar.com
-        - https://*.test.com
-      allowed_headers:
-        - Example-Header
-      max_age: 7200
-    endpoint: 0.0.0.0:55690
     protocols:
       http:
+        cors:
+          allowed_origins:
+            - https://foo.bar.com
+            - https://*.test.com
+          allowed_headers:
+            - Example-Header
+          max_age: 7200
+        endpoint: 0.0.0.0:55690
 ```
