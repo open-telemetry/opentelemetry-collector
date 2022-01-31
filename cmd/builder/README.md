@@ -50,7 +50,7 @@ $ /tmp/dist/otelcol-custom --config=/tmp/otelcol.yaml
 
 ## Installation
 
-Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-builder/releases/latest) page.
+Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector/releases/latest) page.
 
 ## Running
 
