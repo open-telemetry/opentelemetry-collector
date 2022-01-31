@@ -9,10 +9,6 @@
   Received deprecated messages and fields will be now ignored. In OTLP/JSON in the
   instrumentationLibraryLogs object the "logs" field is now named "logRecords" (#4724)
 
-## 💡 Enhancements 💡
-
-- `client.Info`: Add Host property for Metadata (#4736)
-
 ## v0.43.1 Beta
 
 ## 🧰 Bug fixes 🧰
