@@ -168,8 +168,6 @@ func (mf *messageValueField) generateAccessors(ms baseStruct, sb *strings.Builde
 			return strings.ToLower(mf.fieldName)
 		case "returnType":
 			return mf.returnMessage.structName
-		case "structOriginFullName":
-			return mf.returnMessage.originFullName
 		case "originFieldName":
 			return mf.originFieldName
 		default:
