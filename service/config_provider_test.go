@@ -354,7 +354,7 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		provider := NewDefaultConfigProvider(tt.location, []string{})
+		provider := MustNewDefaultConfigProvider(tt.location, []string{})
 		_, err := provider.Get(context.Background(), factories)
 		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
 	}
