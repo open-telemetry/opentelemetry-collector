@@ -50,12 +50,7 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 	}
 
 	if includeMetadata {
-		md := req.Header.Clone()
-		if len(md.Get(client.MetadataHostName)) == 0 && req.Host != "" {
-			md.Add(client.MetadataHostName, req.Host)
-		}
-
-		cl.Metadata = client.NewMetadata(md)
+		cl.Metadata = client.NewMetadata(req.Header.Clone())
 	}
 
 	ctx := client.NewContext(req.Context(), cl)
