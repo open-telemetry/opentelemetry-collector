@@ -157,6 +157,159 @@ func TestJsonHttp(t *testing.T) {
 	}
 }
 
+func TestHandleInvalidRequests(t *testing.T) {
+	endpoint := testutil.GetAvailableLocalAddress(t)
+	cfg := &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Protocols:        Protocols{HTTP: &confighttp.HTTPServerSettings{Endpoint: endpoint}},
+	}
+
+	// Traces
+	tr, err := NewFactory().CreateTracesReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, tr)
+	require.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Metrics
+	mr, err := NewFactory().CreateMetricsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, tr)
+	require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Logs
+	lr, err := NewFactory().CreateLogsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, tr)
+	require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))
+
+	tests := []struct {
+		name        string
+		uri         string
+		method      string
+		contentType string
+
+		expectedStatus       int
+		expectedResponseBody string
+	}{
+		{
+			name:        "POST /v1/traces, no content type",
+			uri:         "/v1/traces",
+			method:      http.MethodPost,
+			contentType: "",
+
+			expectedStatus:       http.StatusUnsupportedMediaType,
+			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
+		},
+		{
+			name:        "PATCH /v1/traces",
+			uri:         "/v1/traces",
+			method:      http.MethodPatch,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
+		},
+		{
+			name:        "GET /v1/traces",
+			uri:         "/v1/traces",
+			method:      http.MethodGet,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
+		},
+		{
+			name:        "POST /v1/metrics, no content type",
+			uri:         "/v1/metrics",
+			method:      http.MethodPost,
+			contentType: "",
+
+			expectedStatus:       http.StatusUnsupportedMediaType,
+			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
+		},
+		{
+			name:        "PATCH /v1/metrics",
+			uri:         "/v1/metrics",
+			method:      http.MethodPatch,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
+		},
+		{
+			name:        "GET /v1/metrics",
+			uri:         "/v1/metrics",
+			method:      http.MethodGet,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
+		},
+		{
+			name:        "POST /v1/logs, no content type",
+			uri:         "/v1/logs",
+			method:      http.MethodPost,
+			contentType: "",
+
+			expectedStatus:       http.StatusUnsupportedMediaType,
+			expectedResponseBody: "415 unsupported media type, supported: [application/json, application/x-protobuf]",
+		},
+		{
+			name:        "PATCH /v1/logs",
+			uri:         "/v1/logs",
+			method:      http.MethodPatch,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
+		},
+		{
+			name:        "GET /v1/logs",
+			uri:         "/v1/logs",
+			method:      http.MethodGet,
+			contentType: "application/json",
+
+			expectedStatus:       http.StatusMethodNotAllowed,
+			expectedResponseBody: "405 method not allowed, supported: [POST]",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			url := fmt.Sprintf("http://%s%s", endpoint, test.uri)
+			req, err2 := http.NewRequest(test.method, url, bytes.NewReader([]byte(`{}`)))
+			require.NoError(t, err2)
+			req.Header.Set("Content-Type", test.contentType)
+
+			client := &http.Client{}
+			resp, err2 := client.Do(req)
+			require.NoError(t, err2)
+
+			body, err2 := ioutil.ReadAll(resp.Body)
+			require.NoError(t, err2)
+
+			require.Equal(t, resp.Header.Get("Content-Type"), "text/plain")
+			require.Equal(t, resp.StatusCode, test.expectedStatus)
+			require.EqualValues(t, body, test.expectedResponseBody)
+		})
+	}
+
+	err = tr.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
 func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.ErrOrSinkConsumer, encoding string, expectedErr error) {
 	var buf *bytes.Buffer
 	var err error
