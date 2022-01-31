@@ -197,7 +197,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfgW := NewConfigProvider(tt.locations, tt.parserProvider, tt.cfgMapConverters, tt.configUnmarshaler)
+			cfgW := MustNewConfigProvider(tt.locations, tt.parserProvider, tt.cfgMapConverters, tt.configUnmarshaler)
 			_, errN := cfgW.Get(context.Background(), factories)
 			if tt.expectNewErr {
 				assert.Error(t, errN)
@@ -232,7 +232,7 @@ func TestConfigProvider(t *testing.T) {
 		return &mockProvider{ret: &fakeRetrieved{retM: cfgMap}}
 	}()
 
-	cfgW := NewConfigProvider(
+	cfgW := MustNewConfigProvider(
 		[]string{"watcher:"},
 		map[string]configmapprovider.Provider{"watcher": configMapProvider},
 		nil,
@@ -260,7 +260,7 @@ func TestConfigProviderNoWatcher(t *testing.T) {
 	require.NoError(t, errF)
 
 	watcherWG := sync.WaitGroup{}
-	cfgW := NewConfigProvider(
+	cfgW := MustNewConfigProvider(
 		[]string{path.Join("testdata", "otelcol-nop.yaml")},
 		map[string]configmapprovider.Provider{"file": configmapprovider.NewFile()},
 		nil,
@@ -292,7 +292,7 @@ func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 	}()
 
 	watcherWG := sync.WaitGroup{}
-	cfgW := NewConfigProvider(
+	cfgW := MustNewConfigProvider(
 		[]string{"watcher:"},
 		map[string]configmapprovider.Provider{"watcher": configMapProvider},
 		nil,
@@ -354,7 +354,7 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		provider := NewDefaultConfigProvider([]string{tt.location}, []string{})
+		provider := MustNewDefaultConfigProvider([]string{tt.location}, []string{})
 		_, err := provider.Get(context.Background(), factories)
 		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
 	}

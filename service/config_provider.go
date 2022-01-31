@@ -75,6 +75,23 @@ type configProvider struct {
 	watcher chan error
 }
 
+// MustNewConfigProvider returns a new ConfigProvider that provides the configuration:
+// * Retrieve the config.Map by merging all retrieved maps from all the configmapprovider.Provider in order.
+// * Then applies all the ConfigMapConverterFunc in the given order.
+// * Then unmarshalls the final config.Config using the given configunmarshaler.ConfigUnmarshaler.
+//
+// The `configMapProviders` is a map of pairs <scheme,Provider>.
+//
+// Notice: This API is experimental.
+func MustNewConfigProvider(
+	locations []string,
+	configMapProviders map[string]configmapprovider.Provider,
+	cfgMapConverters []config.MapConverterFunc,
+	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+	return NewConfigProvider(locations, configMapProviders, cfgMapConverters, configUnmarshaler)
+}
+
+// Deprecated: use MustNewConfigProvider instead
 // NewConfigProvider returns a new ConfigProvider that provides the configuration:
 // * Retrieve the config.Map by merging all retrieved maps from all the configmapprovider.Provider in order.
 // * Then applies all the config.MapConverterFunc in the given order.
@@ -100,6 +117,13 @@ func NewConfigProvider(
 	}
 }
 
+// MustNewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
+// defined by the given configFile and overwrites fields using properties.
+func MustNewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
+	return NewDefaultConfigProvider(configLocations, properties)
+}
+
+// Deprecated: use MustNewDefaultConfigProvider instead
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
 func NewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
