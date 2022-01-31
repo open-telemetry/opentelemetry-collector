@@ -85,7 +85,7 @@ func (ld Logs) LogRecordCount() int {
 		ill := rs.InstrumentationLibraryLogs()
 		for i := 0; i < ill.Len(); i++ {
 			logs := ill.At(i)
-			logCount += logs.Logs().Len()
+			logCount += logs.LogRecords().Len()
 		}
 	}
 	return logCount
@@ -94,6 +94,19 @@ func (ld Logs) LogRecordCount() int {
 // ResourceLogs returns the ResourceLogsSlice associated with this Logs.
 func (ld Logs) ResourceLogs() ResourceLogsSlice {
 	return newResourceLogsSlice(&ld.orig.ResourceLogs)
+}
+
+// Deprecated: use LogRecordSlice
+type LogSlice = LogRecordSlice
+
+// Deprecated: use `LogRecords`.
+func (ms InstrumentationLibraryLogs) Logs() LogRecordSlice {
+	return ms.LogRecords()
+}
+
+// Deprecated: use NewLogRecordSlice
+func NewLogSlice() LogRecordSlice {
+	return NewLogRecordSlice()
 }
 
 // SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.

@@ -131,6 +131,8 @@ type AuthData interface {
 	GetAttributeNames() []string
 }
 
+const MetadataHostName = "Host"
+
 // NewContext takes an existing context and derives a new context with the
 // client.Info value stored on it.
 func NewContext(ctx context.Context, c Info) context.Context {

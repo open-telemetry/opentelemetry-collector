@@ -596,7 +596,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
-		logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+		logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			logs.At(logIndex).SetName(getTestLogName(requestNum, logIndex))
 		}
@@ -614,7 +614,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	receivedMds := sink.AllLogs()
 	logsReceivedByName := logsReceivedByName(receivedMds)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		logs := logDataSlice[requestNum].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+		logs := logDataSlice[requestNum].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			require.EqualValues(t,
 				logs.At(logIndex),
@@ -667,7 +667,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	for _, ld := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
-			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).Logs().Len())
+			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).LogRecords().Len())
 		}
 	}
 
@@ -732,7 +732,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	for _, ld := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
-			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).Logs().Len())
+			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).LogRecords().Len())
 		}
 	}
 }
@@ -775,7 +775,7 @@ func logsReceivedByName(lds []pdata.Logs) map[string]pdata.LogRecord {
 		for i := 0; i < rms.Len(); i++ {
 			ilms := rms.At(i).InstrumentationLibraryLogs()
 			for j := 0; j < ilms.Len(); j++ {
-				logs := ilms.At(j).Logs()
+				logs := ilms.At(j).LogRecords()
 				for k := 0; k < logs.Len(); k++ {
 					log := logs.At(k)
 					logsReceivedByName[log.Name()] = log

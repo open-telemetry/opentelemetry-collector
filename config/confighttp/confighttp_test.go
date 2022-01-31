@@ -780,6 +780,17 @@ func TestContextWithClient(t *testing.T) {
 				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}}),
 			},
 		},
+		{
+			desc: "request with Host and client headers",
+			input: &http.Request{
+				Header: map[string][]string{"x-test-header": {"test-value"}},
+				Host:   "localhost:55443",
+			},
+			doMetadata: true,
+			expected: client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"x-test-header": {"test-value"}, "Host": {"localhost:55443"}}),
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
