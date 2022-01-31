@@ -9,7 +9,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
-	github.com/klauspost/compress v1.14.1
+	github.com/klauspost/compress v1.14.2
 	github.com/knadh/koanf v1.4.0
 	github.com/magiconair/properties v1.8.5
 	github.com/mitchellh/mapstructure v1.4.3
@@ -37,7 +37,7 @@ require (
 	go.uber.org/zap v1.20.0
 	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
-	google.golang.org/grpc v1.43.0
+	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )
