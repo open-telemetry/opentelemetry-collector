@@ -395,6 +395,67 @@ with clear instructions on how to install the required libraries.
 Furthermore, if your package requires CGO, it MUST be able to compile and operate in a no op mode
 or report a warning back to the collector with a clear error saying CGO is required to work.
 
+### Breaking changes
+
+Whenever possible, we adhere to semver as our minimum standards. Even before v1, we strive to not break compatibility
+without a good reason. Hence, when a change is known to cause a breaking change, it MUST be clearly marked in the
+changelog, and SHOULD include a line instructing users how to move forward.
+
+We also strive to perform breaking changes in two stages, deprecating it first (`vM.N`) and breaking it in a subsequent
+version (`vM.N+1`).
+
+- when we need to remove something, we MUST mark a feature as deprecated in one version, and MAY remove it in a
+  subsequent one
+- when renaming or refactoring types, functions, or attributes, we MUST create the new name and MUST deprecate the old
+  one in one version (step 1), and MAY remove it in a subsequent version (step 2). For simple renames, the old name
+  SHALL call the new one.
+- when a feature is being replaced in favor of an existing one, we MUST mark a feature as deprecated in one version, and
+  MAY remove it in a subsequent one.
+
+When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
+behind a [feature
+flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
+in a subsequent version, and eventually removing it after yet another version. This is how it would look like, considering
+that each of the following steps is done in a separate version:
+
+1. Mark the feature as deprecated, add a short lived feature flag with the feature enabled by default
+1. Change the feature flag to disable the feature by default, deprecating the flag at the same time
+1. Remove the feature and the flag
+
+#### Example #1 - Renaming a function
+
+1. Current version `v0.N` has `func GetFoo() Bar`
+1. We now decided that `GetBar` is a better name. As such, on `v0.N+1` we add a new `func GetBar() Bar` function,
+   changing the existing `func GetFoo() Bar` to be an alias of the new function. Additionally, a log entry with a
+   warning is added to the old function, along with an entry to the changelog.
+1. On `v0.N+2`, we MAY remove `func GetFoo() Bar`.
+
+#### Example #2 - Changing the return values of a function
+
+1. Current version `v0.N` has `func GetFoo() Foo`
+1. We now need to also return an error. We do it by creating a new function that will be equivalent to the existing one,
+   so that current users can easily migrate to that: `func MustGetFoo() Foo`, which panics on errors. We release this in
+   `v0.N+1`, deprecating the existing `func GetFoo() Foo` with it, adding an entry to the changelog and perhaps a log
+   entry with a warning.
+1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo() (Foo, error)`.
+
+#### Example #3 - Changing the arguments of a function
+
+1. Current version `v0.N` has `func GetFoo() Foo`
+1. We now decided to do something that might be blocking as part of `func GetFoo() Foo`, so, we start accepting a
+   context: `func GetFooWithContext(context.Context) Foo`. We release this in `v0.N+1`, deprecating the existing `func
+   GetFoo() Foo` with it, adding an entry to the changelog and perhaps a log entry with a warning. The existing `func
+   GetFoo() Foo` is changed to call `func GetFooWithContext(context.Background()) Foo`.
+1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
+   needed.
+
+#### Exceptions
+
+While the above is what we strive to follow, we acknowledge that some changes might be unfeasible to achieve in a
+non-breaking manner. Exceptions to the outlined rules are acceptable if consensus can be obtained from approvers in the
+pull request they are proposed. A reason for requesting the exception MUST be given in the pull request. Until unanimity
+is obtained, approvers and maintainers are encouraged to discuss the issue at hand. If a consensus (unanimity) cannot be
+obtained, the maintainers are then tasked in getting a decision using its regular means (voting, TC help, ...).
 
 ## Updating Changelog
 
