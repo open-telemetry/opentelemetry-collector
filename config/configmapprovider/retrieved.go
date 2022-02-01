@@ -21,38 +21,42 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// Retrieved holds the result of a call to the Retrieve method of a Provider object.
-// This interface cannot be directly implemented. Implementations must use the NewRetrieved helper.
-type Retrieved interface {
-	// Get returns the config Map. Should never be called after Close.
-	// Should never be called concurrently with itself or Close.
-	Get(ctx context.Context) (*config.Map, error)
+// Get returns the config Map. Should never be called after Close.
+// Should never be called concurrently with itself or Close.
+//
+// Deprecated: Not needed, will be removed soon.
+func (r Retrieved) Get(ctx context.Context) (*config.Map, error) {
+	return r.Map, nil
+}
 
-	// Close signals that the configuration for which it was used to retrieve values is
-	// no longer in use and should close and release any watchers that it may have created.
-	//
-	// Should block until all resources are closed, and guarantee that `onChange` is not
-	// going to be called after it returns except when `ctx` is cancelled.
-	//
-	// Should never be called concurrently with itself or Get.
-	Close(ctx context.Context) error
-
-	// privateRetrieved is an unexported func to disallow direct implementation.
-	privateRetrieved()
+// Close signals that the configuration for which it was used to retrieve values is
+// no longer in use and should close and release any watchers that it may have created.
+//
+// Should block until all resources are closed, and guarantee that `onChange` is not
+// going to be called after it returns except when `ctx` is cancelled.
+//
+// Should never be called concurrently with itself or Get.
+//
+// Deprecated: Not needed, will be removed soon.
+func (r Retrieved) Close(ctx context.Context) error {
+	if r.CloseFunc == nil {
+		return nil
+	}
+	return r.CloseFunc(ctx)
 }
 
 // GetFunc specifies the function invoked when the Retrieved.Get is being called.
+// Deprecated: Not needed, will be removed soon.
 type GetFunc func(context.Context) (*config.Map, error)
 
 // Get implements the Retrieved.Get.
+// Deprecated: Not needed, will be removed soon.
 func (f GetFunc) Get(ctx context.Context) (*config.Map, error) {
 	return f(ctx)
 }
 
-// CloseFunc specifies the function invoked when the Retrieved.Close is being called.
-type CloseFunc func(context.Context) error
-
 // Close implements the Retrieved.Close.
+// Deprecated: Not needed, will be removed soon.
 func (f CloseFunc) Close(ctx context.Context) error {
 	if f == nil {
 		return nil
@@ -61,33 +65,33 @@ func (f CloseFunc) Close(ctx context.Context) error {
 }
 
 // RetrievedOption represents the possible options for NewRetrieved.
-type RetrievedOption func(*retrieved)
+// Deprecated: Not needed, will be removed soon.
+type RetrievedOption func(*Retrieved)
 
 // WithClose overrides the default `Close` function for a Retrieved.
 // The default always returns nil.
+// Deprecated: Not needed, will be removed soon.
 func WithClose(closeFunc CloseFunc) RetrievedOption {
-	return func(o *retrieved) {
+	return func(o *Retrieved) {
 		o.CloseFunc = closeFunc
 	}
 }
 
-type retrieved struct {
-	GetFunc
-	CloseFunc
-}
-
-func (retrieved) privateRetrieved() {}
-
 // NewRetrieved returns a Retrieved configured with the provided options.
+// Deprecated: Not needed, will be removed soon.
 func NewRetrieved(getFunc GetFunc, options ...RetrievedOption) (Retrieved, error) {
 	if getFunc == nil {
-		return nil, errors.New("nil getFunc")
+		return Retrieved{}, errors.New("nil getFunc")
 	}
-	ret := &retrieved{
-		GetFunc: getFunc,
+	cfg, err := getFunc(context.Background())
+	if err != nil {
+		return Retrieved{}, err
+	}
+	ret := Retrieved{
+		Map: cfg,
 	}
 	for _, op := range options {
-		op(ret)
+		op(&ret)
 	}
 	return ret, nil
 }

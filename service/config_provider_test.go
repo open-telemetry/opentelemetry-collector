@@ -34,20 +34,24 @@ import (
 )
 
 type mockProvider struct {
-	ret  *fakeRetrieved
+	retM *config.Map
 	errR error
 	errS error
+	errW error
+	errC error
 }
 
 func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher configmapprovider.WatcherFunc) (configmapprovider.Retrieved, error) {
 	if m.errR != nil {
-		return nil, m.errR
+		return configmapprovider.Retrieved{}, m.errR
 	}
-	if m.ret == nil {
-		return &fakeRetrieved{}, nil
+	if m.retM == nil {
+		return configmapprovider.Retrieved{Map: config.NewMap()}, nil
 	}
-	m.ret.watcher = watcher
-	return m.ret, nil
+	if watcher != nil {
+		watcher(&configmapprovider.ChangeEvent{Error: m.errW})
+	}
+	return configmapprovider.Retrieved{Map: m.retM, CloseFunc: func(ctx context.Context) error { return m.errC }}, nil
 }
 
 func (m *mockProvider) Scheme() string {
@@ -64,32 +68,6 @@ type errConfigUnmarshaler struct {
 
 func (ecu *errConfigUnmarshaler) Unmarshal(*config.Map, component.Factories) (*config.Config, error) {
 	return nil, ecu.err
-}
-
-type fakeRetrieved struct {
-	configmapprovider.Retrieved
-	retM    *config.Map
-	errG    error
-	errW    error
-	errC    error
-	watcher configmapprovider.WatcherFunc
-}
-
-func (er *fakeRetrieved) Get(context.Context) (*config.Map, error) {
-	if er.watcher != nil {
-		er.watcher(&configmapprovider.ChangeEvent{Error: er.errW})
-	}
-	if er.errG != nil {
-		return nil, er.errG
-	}
-	if er.retM == nil {
-		return config.NewMap(), nil
-	}
-	return er.retM, nil
-}
-
-func (er *fakeRetrieved) Close(context.Context) error {
-	return er.errC
 }
 
 func TestConfigProvider_Errors(t *testing.T) {
@@ -121,16 +99,6 @@ func TestConfigProvider_Errors(t *testing.T) {
 			parserProvider: map[string]configmapprovider.Provider{
 				"mock": &mockProvider{},
 				"err":  &mockProvider{errR: errors.New("retrieve_err")},
-			},
-			configUnmarshaler: configunmarshaler.NewDefault(),
-			expectNewErr:      true,
-		},
-		{
-			name:      "get_err",
-			locations: []string{"mock:", "err:"},
-			parserProvider: map[string]configmapprovider.Provider{
-				"mock": &mockProvider{},
-				"err":  &mockProvider{ret: &fakeRetrieved{errG: errors.New("retrieve_err")}},
 			},
 			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectNewErr:      true,
@@ -174,7 +142,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 				require.NoError(t, err)
 				return map[string]configmapprovider.Provider{
 					"mock": &mockProvider{},
-					"err":  &mockProvider{ret: &fakeRetrieved{retM: cfgMap, errW: errors.New("watch_err")}},
+					"err":  &mockProvider{retM: cfgMap, errW: errors.New("watch_err")},
 				}
 			}(),
 			configUnmarshaler: configunmarshaler.NewDefault(),
@@ -188,7 +156,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 				require.NoError(t, err)
 				return map[string]configmapprovider.Provider{
 					"mock": &mockProvider{},
-					"err":  &mockProvider{ret: &fakeRetrieved{retM: cfgMap, errC: errors.New("close_err")}},
+					"err":  &mockProvider{retM: cfgMap, errC: errors.New("close_err")},
 				}
 			}(),
 			configUnmarshaler: configunmarshaler.NewDefault(),
@@ -229,7 +197,7 @@ func TestConfigProvider(t *testing.T) {
 		// Use fakeRetrieved with nil errors to have Watchable interface implemented.
 		cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
-		return &mockProvider{ret: &fakeRetrieved{retM: cfgMap}}
+		return &mockProvider{retM: cfgMap}
 	}()
 
 	cfgW := MustNewConfigProvider(
@@ -288,7 +256,7 @@ func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 		// Use fakeRetrieved with nil errors to have Watchable interface implemented.
 		cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
-		return &mockProvider{ret: &fakeRetrieved{retM: cfgMap, errW: configsource.ErrSessionClosed}}
+		return &mockProvider{retM: cfgMap, errW: configsource.ErrSessionClosed}
 	}()
 
 	watcherWG := sync.WaitGroup{}

@@ -32,27 +32,29 @@ func TestNewRetrieved_NilGetFunc(t *testing.T) {
 
 func TestNewRetrieved_Default(t *testing.T) {
 	expectedCfg := config.NewMapFromStringMap(map[string]interface{}{"test": nil})
-	expectedErr := errors.New("test")
-	ret, err := NewRetrieved(func(context.Context) (*config.Map, error) { return expectedCfg, expectedErr })
+	ret, err := NewRetrieved(func(context.Context) (*config.Map, error) { return expectedCfg, nil })
 	require.NoError(t, err)
 	cfg, err := ret.Get(context.Background())
+	require.NoError(t, err)
 	assert.Equal(t, expectedCfg, cfg)
-	assert.Equal(t, expectedErr, err)
 	assert.NoError(t, ret.Close(context.Background()))
-	// Check that the private func even if called does not panic.
-	assert.NotPanics(t, func() { ret.privateRetrieved() })
+}
+
+func TestNewRetrieved_GetError(t *testing.T) {
+	expectedErr := errors.New("test")
+	_, err := NewRetrieved(func(context.Context) (*config.Map, error) { return nil, expectedErr })
+	assert.Equal(t, expectedErr, err)
 }
 
 func TestNewRetrieved_WithClose(t *testing.T) {
 	expectedCfg := config.NewMapFromStringMap(map[string]interface{}{"test": nil})
-	expectedErr := errors.New("test")
 	expectedCloseErr := errors.New("test")
 	ret, err := NewRetrieved(
-		func(context.Context) (*config.Map, error) { return expectedCfg, expectedErr },
+		func(context.Context) (*config.Map, error) { return expectedCfg, nil },
 		WithClose(func(ctx context.Context) error { return expectedCloseErr }))
 	require.NoError(t, err)
 	cfg, err := ret.Get(context.Background())
+	require.NoError(t, err)
 	assert.Equal(t, expectedCfg, cfg)
-	assert.Equal(t, expectedErr, err)
 	assert.Equal(t, expectedCloseErr, ret.Close(context.Background()))
 }
