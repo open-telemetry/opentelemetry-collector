@@ -42,7 +42,7 @@ import (
 	"bufio"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -166,7 +166,7 @@ func MemoryQuotaV2() (int64, bool, error) {
 }
 
 func memoryQuotaV2(cgroupv2MountPoint, cgroupv2MemoryMax string) (int64, bool, error) {
-	memoryMaxParams, err := os.Open(path.Clean(path.Join(cgroupv2MountPoint, cgroupv2MemoryMax)))
+	memoryMaxParams, err := os.Open(filepath.Clean(filepath.Join(cgroupv2MountPoint, cgroupv2MemoryMax)))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return -1, false, nil

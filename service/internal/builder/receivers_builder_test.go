@@ -16,7 +16,7 @@ package builder
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -90,7 +90,7 @@ func testReceivers(t *testing.T, test testCase) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "pipelines_builder.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "pipelines_builder.yaml"), factories)
 	require.NoError(t, err)
 
 	// Build the pipeline
@@ -275,7 +275,7 @@ func TestBuildReceivers_Unused(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	assert.NoError(t, err)
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "unused_receiver.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "unused_receiver.yaml"), factories)
 	assert.NoError(t, err)
 
 	// Build the pipeline
@@ -311,7 +311,7 @@ func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.configFile, func(t *testing.T) {
 
-			cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
+			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
 			assert.NoError(t, err)
 			require.NotNil(t, cfg)
 

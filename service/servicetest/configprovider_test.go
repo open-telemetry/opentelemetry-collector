@@ -15,7 +15,7 @@
 package servicetest
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
-	cfg, err := LoadConfig(path.Join("testdata", "config.yaml"), factories)
+	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 
 	// Verify extensions.
@@ -70,10 +70,10 @@ func TestLoadConfigAndValidate(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
-	cfgValidate, errValidate := LoadConfigAndValidate(path.Join("testdata", "config.yaml"), factories)
+	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, errValidate)
 
-	cfg, errLoad := LoadConfig(path.Join("testdata", "config.yaml"), factories)
+	cfg, errLoad := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, errLoad)
 
 	assert.Equal(t, cfg, cfgValidate)

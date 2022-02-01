@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -53,7 +53,7 @@ func (fmp *fileMapProvider) Retrieve(_ context.Context, location string, _ Watch
 	}
 
 	// Clean the path before using it.
-	content, err := ioutil.ReadFile(path.Clean(location[len(fileSchemeName)+1:]))
+	content, err := ioutil.ReadFile(filepath.Clean(location[len(fileSchemeName)+1:]))
 	if err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", location, err)
 	}
