@@ -406,10 +406,25 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 	return client.NewContext(ctx, cl)
 }
 
-func authUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate configauth.AuthenticateFunc) (interface{}, error) {
-	headers, ok := metadata.FromIncomingContext(ctx)
+func getHeadersForAuthenticate(ctx context.Context) (map[string][]string, error) {
+	originalHeaders, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, errMetadataNotFound
+	}
+
+	headers := originalHeaders.Copy()
+
+	if len(headers.Get(client.HeaderHostName)) == 0 && len(originalHeaders[":authority"]) > 0 {
+		headers[client.HeaderHostName] = originalHeaders[":authority"]
+	}
+
+	return headers, nil
+}
+
+func authUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate configauth.AuthenticateFunc) (interface{}, error) {
+	headers, errHeaders := getHeadersForAuthenticate(ctx)
+	if errHeaders != nil {
+		return nil, errHeaders
 	}
 
 	ctx, err := authenticate(ctx, headers)
@@ -422,9 +437,9 @@ func authUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.Un
 
 func authStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate configauth.AuthenticateFunc) error {
 	ctx := stream.Context()
-	headers, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return errMetadataNotFound
+	headers, errHeaders := getHeadersForAuthenticate(ctx)
+	if errHeaders != nil {
+		return errHeaders
 	}
 
 	ctx, err := authenticate(ctx, headers)

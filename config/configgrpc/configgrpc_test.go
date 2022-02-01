@@ -881,6 +881,30 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	assert.True(t, handlerCalled)
 }
 
+func TestDefaultUnaryInterceptorAuthValidHeaders(t *testing.T) {
+	// prepare
+	var authHeaders map[string][]string
+	authCalled := false
+	authFunc := func(ctx2 context.Context, headers map[string][]string) (context.Context, error) {
+		authHeaders = headers
+		authCalled = true
+		ctx := client.NewContext(context.Background(), client.Info{})
+
+		return ctx, nil
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return nil, nil
+	}
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs(":authority", "test:80"))
+
+	// test
+	authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+
+	// verify
+	assert.True(t, authCalled)
+	assert.Equal(t, authHeaders, map[string][]string{":authority": {"test:80"}, "Host": {"test:80"}})
+}
+
 func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	// prepare
 	authCalled := false
@@ -953,6 +977,34 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, authCalled)
 	assert.True(t, handlerCalled)
+}
+
+func TestDefaultStreamInterceptorAuthValidHeaders(t *testing.T) {
+	// prepare
+	var authHeaders map[string][]string
+	authCalled := false
+	authFunc := func(ctx2 context.Context, headers map[string][]string) (context.Context, error) {
+		authHeaders = headers
+		authCalled = true
+		ctx := client.NewContext(context.Background(), client.Info{})
+
+		return ctx, nil
+	}
+	handler := func(srv interface{}, stream grpc.ServerStream) error {
+		// ensure that the client information is propagated down to the underlying stream
+		return nil
+	}
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs(":authority", "test:80"))
+	streamServer := &mockServerStream{
+		ctx: ctx,
+	}
+
+	// test
+	authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+
+	// verify
+	assert.True(t, authCalled)
+	assert.Equal(t, authHeaders, map[string][]string{":authority": {"test:80"}, "Host": {"test:80"}})
 }
 
 func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
