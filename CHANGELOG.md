@@ -129,6 +129,7 @@
   in 0.11.0 are no longer converted to the messages and fields that replaced the deprecated ones.
   Received deprecated messages and fields will be now ignored. In OTLP/JSON in the
   instrumentationLibraryLogs object the "logs" field is now named "logRecords" (#4724)
+- Deprecate `service.NewWindowsService`, add `service.NewSvcHandler` (#4783).
 
 ### 🚩 Deprecations 🚩
 

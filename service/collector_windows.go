@@ -30,12 +30,19 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 )
 
+// Deprecated: [v0.48.0] will be made private soon.
 type WindowsService struct {
 	settings CollectorSettings
 	col      *Collector
 }
 
+// Deprecated: [v0.48.0] use NewSvcHandler.
 func NewWindowsService(set CollectorSettings) *WindowsService {
+	return &WindowsService{settings: set}
+}
+
+// NewSvcHandler constructs a new svc.Handler using the given CollectorSettings.
+func NewSvcHandler(set CollectorSettings) svc.Handler {
 	return &WindowsService{settings: set}
 }
 
