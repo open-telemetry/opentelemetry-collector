@@ -4,12 +4,12 @@ dist:
 
 extensions:
   - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.43.0
+    gomod: go.opentelemetry.io/collector v0.43.1
 
 receivers:
   - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    gomod: go.opentelemetry.io/collector v0.43.0
+    gomod: go.opentelemetry.io/collector v0.43.1
 
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
-    gomod: go.opentelemetry.io/collector v0.43.0
+    gomod: go.opentelemetry.io/collector v0.43.1
