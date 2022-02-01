@@ -620,7 +620,7 @@ func (ms Metric) CopyTo(dest Metric) {
 	copyData(ms.orig, dest.orig)
 }
 
-// Gauge represents the type of a double scalar metric that always exports the "current value" for every data point.
+// Gauge represents the type of a numeric metric that always exports the "current value" for every data point.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
@@ -661,7 +661,7 @@ func (ms Gauge) CopyTo(dest Gauge) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
 
-// Sum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.
+// Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
