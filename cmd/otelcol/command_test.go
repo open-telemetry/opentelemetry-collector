@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package otelcol
 
 import (
 	"context"
@@ -25,20 +25,21 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/internalinterface"
 	"go.opentelemetry.io/collector/internal/testcomponents"
+	"go.opentelemetry.io/collector/service"
 )
 
 func TestNewCommand(t *testing.T) {
-	set := CollectorSettings{}
-	cmd := NewCommand(set)
+	set := service.CollectorSettings{}
+	cmd := NewCobraCommand(set)
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Equal(t, set.BuildInfo.Version, cmd.Version)
 }
 
 func TestNewCommandMapProviderIsNil(t *testing.T) {
-	settings := CollectorSettings{}
+	settings := service.CollectorSettings{}
 	settings.ConfigProvider = nil
-	cmd := NewCommand(settings)
+	cmd := NewCobraCommand(settings)
 	err := cmd.Execute()
 	require.Error(t, err)
 }
@@ -48,8 +49,8 @@ func TestNewCommandInvalidFactories(t *testing.T) {
 	require.NoError(t, err)
 	f := &badConfigExtensionFactory{}
 	factories.Extensions[f.Type()] = f
-	settings := CollectorSettings{Factories: factories}
-	cmd := NewCommand(settings)
+	settings := service.CollectorSettings{Factories: factories}
+	cmd := NewCobraCommand(settings)
 	err = cmd.Execute()
 	require.Error(t, err)
 }

@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package service // import "go.opentelemetry.io/collector/service"
+package otelcol // import "go.opentelemetry.io/collector/cmd/otelcol"
 
 import (
 	"context"
@@ -30,17 +30,18 @@ import (
 	"golang.org/x/sys/windows/svc/eventlog"
 )
 
-type WindowsService struct {
+type windowsService struct {
 	settings CollectorSettings
 	col      *Collector
 }
 
-func NewWindowsService(set CollectorSettings) *WindowsService {
-	return &WindowsService{settings: set}
+// NewSvcHandler constructs a new svc.Handler using the given service.CollectorSettings.
+func NewSvcHandler(set CollectorSettings) svc.Handler {
+	return &windowsService{settings: set}
 }
 
 // Execute implements https://godoc.org/golang.org/x/sys/windows/svc#Handler
-func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	// The first argument supplied to service.Execute is the service name. If this is
 	// not provided for some reason, raise a relevant error to the system event log
 	if len(args) == 0 {
@@ -83,7 +84,7 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 	return false, 0
 }
 
-func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
+func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
 	// Parse all the flags manually.
 	if err := flags().Parse(os.Args[1:]); err != nil {
 		return err
@@ -116,7 +117,7 @@ func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 	return <-colErrorChannel
 }
 
-func (s *WindowsService) stop(colErrorChannel chan error) error {
+func (s *windowsService) stop(colErrorChannel chan error) error {
 	// simulate a SIGTERM signal to terminate the collector server
 	s.col.signalsChannel <- syscall.SIGTERM
 	// return the response of col.Start

@@ -13,3 +13,7 @@ receivers:
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
     gomod: go.opentelemetry.io/collector v0.43.1
+
+replaces:
+  - go.opentelemetry.io/collector => ../../
+  - go.opentelemetry.io/collector/model => ../../model

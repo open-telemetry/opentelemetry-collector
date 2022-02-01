@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service // import "go.opentelemetry.io/collector/service"
+package otelcol // import "go.opentelemetry.io/collector/cmd/otelcol"
 
 import (
 	"github.com/spf13/cobra"
 
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
-// NewCommand constructs a new cobra.Command using the given Collector.
-// TODO: Make this independent of the collector internals.
-func NewCommand(set CollectorSettings) *cobra.Command {
+// NewCobraCommand constructs a new cobra.Command using the given service.CollectorSettings.
+func NewCobraCommand(set service.CollectorSettings) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:          set.BuildInfo.Command,
 		Version:      set.BuildInfo.Version,
@@ -30,9 +30,9 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			featuregate.Apply(featuregate.GetFlags())
 			if set.ConfigProvider == nil {
-				set.ConfigProvider = MustNewDefaultConfigProvider(getConfigFlag(), getSetFlag())
+				set.ConfigProvider = service.MustNewDefaultConfigProvider(getConfigFlag(), getSetFlag())
 			}
-			col, err := New(set)
+			col, err := service.New(set)
 			if err != nil {
 				return err
 			}

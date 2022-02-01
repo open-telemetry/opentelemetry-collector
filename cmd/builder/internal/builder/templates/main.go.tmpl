@@ -8,6 +8,7 @@ package main
 import (
 	"log"
 
+	"go.opentelemetry.io/collector/cmd/otelcol"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
 )
@@ -30,7 +31,7 @@ func main() {
 }
 
 func runInteractive(params service.CollectorSettings) error {
-	cmd := service.NewCommand(params)
+	cmd := otelcol.NewCobraCommand(params)
 	if err := cmd.Execute(); err != nil {
 		log.Fatalf("collector server run finished with error: %v", err)
 	}
