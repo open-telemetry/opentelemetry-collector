@@ -128,7 +128,7 @@ var metric = &messageValueStruct{
 
 var doubleGauge = &messageValueStruct{
 	structName:     "Gauge",
-	description:    "// Gauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
+	description:    "// Gauge represents the type of a numeric metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.Gauge",
 	fields: []baseField{
 		&sliceField{
@@ -141,7 +141,7 @@ var doubleGauge = &messageValueStruct{
 
 var doubleSum = &messageValueStruct{
 	structName:     "Sum",
-	description:    "// Sum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
+	description:    "// Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Sum",
 	fields: []baseField{
 		aggregationTemporalityField,
