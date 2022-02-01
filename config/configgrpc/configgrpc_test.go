@@ -898,9 +898,11 @@ func TestDefaultUnaryInterceptorAuthValidHeaders(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs(":authority", "test:80"))
 
 	// test
-	authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
 
 	// verify
+	assert.Nil(t, res)
+	assert.NoError(t, err)
 	assert.True(t, authCalled)
 	assert.Equal(t, authHeaders, map[string][]string{":authority": {"test:80"}, "Host": {"test:80"}})
 }
@@ -1000,9 +1002,10 @@ func TestDefaultStreamInterceptorAuthValidHeaders(t *testing.T) {
 	}
 
 	// test
-	authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
 
 	// verify
+	assert.NoError(t, err)
 	assert.True(t, authCalled)
 	assert.Equal(t, authHeaders, map[string][]string{":authority": {"test:80"}, "Host": {"test:80"}})
 }
