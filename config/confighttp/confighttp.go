@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -339,7 +340,11 @@ type CORSSettings struct {
 
 func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := authenticate(r.Context(), r.Header)
+		headers := r.Header.Clone()
+		if len(headers.Get(client.HeaderHostName)) == 0 && r.Host != "" {
+			headers.Add(client.HeaderHostName, r.Host)
+		}
+		ctx, err := authenticate(r.Context(), headers)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return

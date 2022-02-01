@@ -825,6 +825,43 @@ func TestServerAuth(t *testing.T) {
 	assert.True(t, authCalled)
 }
 
+func TestServerAuthValidHeaders(t *testing.T) {
+	// prepare
+	authCalled := false
+	var authHeaders map[string][]string
+	hss := HTTPServerSettings{
+		Auth: &configauth.Authentication{
+			AuthenticatorID: config.NewComponentID("mock"),
+		},
+	}
+
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
+				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+					authCalled = true
+					authHeaders = headers
+					return ctx, nil
+				}),
+			),
+		},
+	}
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), handler)
+	require.NoError(t, err)
+
+	// test
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Host = "test:80"
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, req)
+
+	// verify
+	assert.True(t, authCalled)
+	assert.Equal(t, authHeaders, map[string][]string{"Host": {"test:80"}})
+}
+
 func TestInvalidServerAuth(t *testing.T) {
 	hss := HTTPServerSettings{
 		Auth: &configauth.Authentication{
