@@ -51,10 +51,13 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
+	configProvider, err := NewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil)
+	require.NoError(t, err)
+
 	set := CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
-		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		ConfigProvider: configProvider,
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -93,12 +96,16 @@ func TestCollector_Start(t *testing.T) {
 	}
 
 	metricsPort := testutil.GetAvailablePort(t)
+	configProvider, err := NewDefaultConfigProvider(
+		[]string{filepath.Join("testdata", "otelcol-config.yaml")},
+		[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(metricsPort), 10)})
+
+	require.NoError(t, err)
+
 	col, err := New(CollectorSettings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		ConfigProvider: MustNewDefaultConfigProvider(
-			[]string{filepath.Join("testdata", "otelcol-config.yaml")},
-			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(metricsPort), 10)}),
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: configProvider,
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
 	})
 	require.NoError(t, err)
@@ -172,10 +179,13 @@ func TestCollector_ReportError(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
+	configProvider, err := NewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil)
+	require.NoError(t, err)
+
 	col, err := New(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
-		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		ConfigProvider: configProvider,
 	})
 	require.NoError(t, err)
 

@@ -44,6 +44,8 @@
 
 - Deprecate `pdata.NumberDataPoint.Type()` and `pdata.Exemplar.Type()` in favor of `NumberDataPoint.ValueType()` and
   `Exemplar.ValueType()` (#4850)
+- Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` and
+  `service.NewDefaultConfigProvider` (#4762)
 
 ## v0.44.0 Beta
 

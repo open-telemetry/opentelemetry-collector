@@ -165,7 +165,9 @@ func TestConfigProvider_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfgW := MustNewConfigProvider(tt.locations, tt.parserProvider, tt.cfgMapConverters, tt.configUnmarshaler)
+			cfgW, err := NewConfigProvider(tt.locations, tt.parserProvider, tt.cfgMapConverters, tt.configUnmarshaler)
+			assert.NoError(t, err)
+
 			_, errN := cfgW.Get(context.Background(), factories)
 			if tt.expectNewErr {
 				assert.Error(t, errN)
@@ -200,11 +202,12 @@ func TestConfigProvider(t *testing.T) {
 		return &mockProvider{retM: cfgMap}
 	}()
 
-	cfgW := MustNewConfigProvider(
+	cfgW, err := NewConfigProvider(
 		[]string{"watcher:"},
 		map[string]configmapprovider.Provider{"watcher": configMapProvider},
 		nil,
 		configunmarshaler.NewDefault())
+	require.NoError(t, err)
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
 
@@ -228,11 +231,12 @@ func TestConfigProviderNoWatcher(t *testing.T) {
 	require.NoError(t, errF)
 
 	watcherWG := sync.WaitGroup{}
-	cfgW := MustNewConfigProvider(
+	cfgW, err := NewConfigProvider(
 		[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
 		map[string]configmapprovider.Provider{"file": configmapprovider.NewFile()},
 		nil,
 		configunmarshaler.NewDefault())
+	require.NoError(t, err)
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
 
@@ -260,12 +264,14 @@ func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 	}()
 
 	watcherWG := sync.WaitGroup{}
-	cfgW := MustNewConfigProvider(
+	cfgW, err := NewConfigProvider(
 		[]string{"watcher:"},
 		map[string]configmapprovider.Provider{"watcher": configMapProvider},
 		nil,
 		configunmarshaler.NewDefault())
 	_, errN := cfgW.Get(context.Background(), factories)
+	require.NoError(t, err)
+
 	assert.NoError(t, errN)
 
 	watcherWG.Add(1)
@@ -322,8 +328,9 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		provider := MustNewDefaultConfigProvider([]string{tt.location}, []string{})
-		_, err := provider.Get(context.Background(), factories)
+		provider, err := NewDefaultConfigProvider([]string{tt.location}, []string{})
+		assert.NoError(t, err)
+		_, err = provider.Get(context.Background(), factories)
 		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
 	}
 

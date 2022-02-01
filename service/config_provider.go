@@ -75,6 +75,7 @@ type configProvider struct {
 	watcher chan error
 }
 
+// Deprecated: use NewConfigProvider instead
 // MustNewConfigProvider returns a new ConfigProvider that provides the configuration:
 // * Retrieve the config.Map by merging all retrieved maps from all the configmapprovider.Provider in order.
 // * Then applies all the ConfigMapConverterFunc in the given order.
@@ -88,10 +89,13 @@ func MustNewConfigProvider(
 	configMapProviders map[string]configmapprovider.Provider,
 	cfgMapConverters []config.MapConverterFunc,
 	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
-	return NewConfigProvider(locations, configMapProviders, cfgMapConverters, configUnmarshaler)
+	configProvider, err := NewConfigProvider(locations, configMapProviders, cfgMapConverters, configUnmarshaler)
+	if err != nil {
+		panic(err)
+	}
+	return configProvider
 }
 
-// Deprecated: [v0.44.0] use MustNewConfigProvider instead
 // NewConfigProvider returns a new ConfigProvider that provides the configuration:
 // * Retrieve the config.Map by merging all retrieved maps from all the configmapprovider.Provider in order.
 // * Then applies all the config.MapConverterFunc in the given order.
@@ -104,7 +108,11 @@ func NewConfigProvider(
 	locations []string,
 	configMapProviders map[string]configmapprovider.Provider,
 	cfgMapConverters []config.MapConverterFunc,
-	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+	configUnmarshaler configunmarshaler.ConfigUnmarshaler) (ConfigProvider, error) {
+
+	if len(locations) == 0 {
+		return nil, fmt.Errorf("cannot create ConfigProvider: no locations provided")
+	}
 	// Safe copy, ensures the slice cannot be changed from the caller.
 	locationsCopy := make([]string, len(locations))
 	copy(locationsCopy, locations)
@@ -114,19 +122,23 @@ func NewConfigProvider(
 		cfgMapConverters:   cfgMapConverters,
 		configUnmarshaler:  configUnmarshaler,
 		watcher:            make(chan error, 1),
-	}
+	}, nil
 }
 
+// Deprecated: use NewDefaultConfigProvider instead
 // MustNewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
 func MustNewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
-	return NewDefaultConfigProvider(configLocations, properties)
+	configProvider, err := NewDefaultConfigProvider(configLocations, properties)
+	if err != nil {
+		panic(err)
+	}
+	return configProvider
 }
 
-// Deprecated: [v.0.44.0] use MustNewDefaultConfigProvider instead
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
-func NewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
+func NewDefaultConfigProvider(configLocations []string, properties []string) (ConfigProvider, error) {
 	return NewConfigProvider(
 		configLocations,
 		map[string]configmapprovider.Provider{
