@@ -16,7 +16,7 @@ package configmapprovider
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,12 +46,12 @@ func TestNewExpandConverter(t *testing.T) {
 	t.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1")
 	t.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2")
 
-	expectedCfgMap, errExpected := loadConfigMap(path.Join("testdata", "expand-with-no-env.yaml"))
+	expectedCfgMap, errExpected := loadConfigMap(filepath.Join("testdata", "expand-with-no-env.yaml"))
 	require.NoError(t, errExpected, "Unable to get expected config")
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			cfgMap, err := loadConfigMap(path.Join("testdata", test.name))
+			cfgMap, err := loadConfigMap(filepath.Join("testdata", test.name))
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
@@ -91,7 +91,7 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 	t.Setenv("MAP_VALUE_2", receiverExtraMapValue)
 
 	// Retrieve the config
-	cfgMap, err := loadConfigMap(path.Join("testdata", "expand-escaped-env.yaml"))
+	cfgMap, err := loadConfigMap(filepath.Join("testdata", "expand-escaped-env.yaml"))
 	require.NoError(t, err, "Unable to get config")
 
 	expectedMap := map[string]interface{}{

@@ -17,7 +17,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,7 +39,7 @@ func TestToStringMap(t *testing.T) {
 	}{
 		{
 			name:     "Sample Collector configuration",
-			fileName: path.Join("testdata", "config.yaml"),
+			fileName: filepath.Join("testdata", "config.yaml"),
 			stringMap: map[string]interface{}{
 				"receivers": map[string]interface{}{
 					"nop":            nil,
@@ -75,7 +75,7 @@ func TestToStringMap(t *testing.T) {
 		},
 		{
 			name:     "Sample types",
-			fileName: path.Join("testdata", "basic_types.yaml"),
+			fileName: filepath.Join("testdata", "basic_types.yaml"),
 			stringMap: map[string]interface{}{
 				"typed.options": map[string]interface{}{
 					"floating.point.example": 3.14,
@@ -88,7 +88,7 @@ func TestToStringMap(t *testing.T) {
 		},
 		{
 			name:     "Embedded keys",
-			fileName: path.Join("testdata", "embedded_keys.yaml"),
+			fileName: filepath.Join("testdata", "embedded_keys.yaml"),
 			stringMap: map[string]interface{}{
 				"typed": map[string]interface{}{"options": map[string]interface{}{
 					"floating": map[string]interface{}{"point": map[string]interface{}{"example": 3.14}},
@@ -111,7 +111,7 @@ func TestToStringMap(t *testing.T) {
 
 // newMapFromFile creates a new config.Map by reading the given file.
 func newMapFromFile(fileName string) (*Map, error) {
-	content, err := ioutil.ReadFile(path.Clean(fileName))
+	content, err := ioutil.ReadFile(filepath.Clean(fileName))
 	if err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
 	}

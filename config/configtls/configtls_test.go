@@ -15,7 +15,7 @@
 package configtls
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,78 +34,78 @@ func TestOptionsToConfig(t *testing.T) {
 		},
 		{
 			name:    "should load custom CA",
-			options: TLSSetting{CAFile: path.Join("testdata", "testCA.pem")},
+			options: TLSSetting{CAFile: filepath.Join("testdata", "testCA.pem")},
 		},
 		{
 			name:        "should fail with invalid CA file path",
-			options:     TLSSetting{CAFile: path.Join("testdata", "not/valid")},
+			options:     TLSSetting{CAFile: filepath.Join("testdata", "not/valid")},
 			expectError: "failed to load CA",
 		},
 		{
 			name:        "should fail with invalid CA file content",
-			options:     TLSSetting{CAFile: path.Join("testdata", "testCA-bad.txt")},
+			options:     TLSSetting{CAFile: filepath.Join("testdata", "testCA-bad.txt")},
 			expectError: "failed to parse CA",
 		},
 		{
 			name: "should load valid TLS  settings",
 			options: TLSSetting{
-				CAFile:   path.Join("testdata", "testCA.pem"),
-				CertFile: path.Join("testdata", "test-cert.pem"),
-				KeyFile:  path.Join("testdata", "test-key.pem"),
+				CAFile:   filepath.Join("testdata", "testCA.pem"),
+				CertFile: filepath.Join("testdata", "test-cert.pem"),
+				KeyFile:  filepath.Join("testdata", "test-key.pem"),
 			},
 		},
 		{
 			name: "should fail with missing TLS KeyFile",
 			options: TLSSetting{
-				CAFile:   path.Join("testdata", "testCA.pem"),
-				CertFile: path.Join("testdata", "test-cert.pem"),
+				CAFile:   filepath.Join("testdata", "testCA.pem"),
+				CertFile: filepath.Join("testdata", "test-cert.pem"),
 			},
 			expectError: "both certificate and key must be supplied",
 		},
 		{
 			name: "should fail with invalid TLS KeyFile",
 			options: TLSSetting{
-				CAFile:   path.Join("testdata", "testCA.pem"),
-				CertFile: path.Join("testdata", "test-cert.pem"),
-				KeyFile:  path.Join("testdata", "not/valid"),
+				CAFile:   filepath.Join("testdata", "testCA.pem"),
+				CertFile: filepath.Join("testdata", "test-cert.pem"),
+				KeyFile:  filepath.Join("testdata", "not/valid"),
 			},
 			expectError: "failed to load TLS cert and key",
 		},
 		{
 			name: "should fail with missing TLS Cert",
 			options: TLSSetting{
-				CAFile:  path.Join("testdata", "testCA.pem"),
-				KeyFile: path.Join("testdata", "test-key.pem"),
+				CAFile:  filepath.Join("testdata", "testCA.pem"),
+				KeyFile: filepath.Join("testdata", "test-key.pem"),
 			},
 			expectError: "both certificate and key must be supplied",
 		},
 		{
 			name: "should fail with invalid TLS Cert",
 			options: TLSSetting{
-				CAFile:   path.Join("testdata", "testCA.pem"),
-				CertFile: path.Join("testdata", "not/valid"),
-				KeyFile:  path.Join("testdata", "test-key.pem"),
+				CAFile:   filepath.Join("testdata", "testCA.pem"),
+				CertFile: filepath.Join("testdata", "not/valid"),
+				KeyFile:  filepath.Join("testdata", "test-key.pem"),
 			},
 			expectError: "failed to load TLS cert and key",
 		},
 		{
 			name: "should fail with invalid TLS CA",
 			options: TLSSetting{
-				CAFile: path.Join("testdata", "not/valid"),
+				CAFile: filepath.Join("testdata", "not/valid"),
 			},
 			expectError: "failed to load CA",
 		},
 		{
 			name: "should fail with invalid CA pool",
 			options: TLSSetting{
-				CAFile: path.Join("testdata", "testCA-bad.txt"),
+				CAFile: filepath.Join("testdata", "testCA-bad.txt"),
 			},
 			expectError: "failed to parse CA",
 		},
 		{
 			name: "should pass with valid CA pool",
 			options: TLSSetting{
-				CAFile: path.Join("testdata", "testCA.pem"),
+				CAFile: filepath.Join("testdata", "testCA.pem"),
 			},
 		},
 		{
