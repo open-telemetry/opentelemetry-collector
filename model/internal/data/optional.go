@@ -57,14 +57,14 @@ func (o *OptionalDouble) MarshalTo(dAtA []byte) (n int, err error) {
 func (o *OptionalDouble) marshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	i -= 8
-	encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(o.DoubleValue))))
+	encoding_binary.LittleEndian.PutUint64(dAtA[i:], math.Float64bits(o.DoubleValue))
 	i--
 	return len(dAtA) - i, nil
 }
 
 func (o *OptionalDouble) Unmarshal(dAtA []byte) error {
-	v := uint64(encoding_binary.LittleEndian.Uint64(dAtA))
-	v2 := float64(math.Float64frombits(v))
+	v := encoding_binary.LittleEndian.Uint64(dAtA)
+	v2 := math.Float64frombits(v)
 	o.DoubleValue = v2
 	o.isSet = true
 	return nil
