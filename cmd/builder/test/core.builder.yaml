@@ -1,5 +1,5 @@
 dist:
-  module: go.opentelemetry.io/collector/builder/test/nocore
+  module: go.opentelemetry.io/collector/builder/test/core
   otelcol_version: 0.43.0
 
 extensions:

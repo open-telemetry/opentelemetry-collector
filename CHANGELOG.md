@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.44.0 Beta
+
 ## 🛑 Breaking changes 🛑
 
 - Deprecate `service.NewConfigProvider`, and a new version `service.MustNewConfigProvider` (#4734).
