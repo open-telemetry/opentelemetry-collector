@@ -53,15 +53,42 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = v
 }`
 
-const accessorsOneofPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+const accessorsOneOfMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+// Calling this function when ${typeAccessor}() != ${typeName} will cause a panic.
+// Calling this function on zero-initialized ${structName} will cause a panic.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return (*ms.orig).GetAs${fieldType}()
+	return new${returnType}((*ms.orig).${originOneOfFieldName}.(*${originStructType}).${originFieldName})
+}`
+
+const accessorsOneOfMessageTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	ms.Set${typeAccessor}(${typeName})
+	fillTest${returnType}(ms.${fieldName}())
+	assert.EqualValues(t, generateTest${returnType}(), ms.${fieldName}())
+}
+
+func Test${structName}_CopyTo_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	ms.Set${typeAccessor}(${typeName})
+	fillTest${returnType}(ms.${fieldName}())
+	dest := New${structName}()
+	ms.CopyTo(dest)
+	assert.EqualValues(t, ms, dest)
+}`
+
+const copyToValueOneOfMessageTemplate = `	case ${typeName}:
+		dest.Set${typeAccessor}(${typeName})
+		ms.${fieldName}().CopyTo(dest.${fieldName}())`
+
+const accessorsOneOfPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) ${fieldName}() ${returnType} {
+	return (*ms.orig).Get${originFieldName}()
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	(*ms.orig).${originFieldName} = &${originFullName}_As${fieldType}{
-		As${fieldType}: v,
+	(*ms.orig).${originOneOfFieldName} = &${originStructType}{
+		${originFieldName}: v,
 	}
 }`
 
@@ -371,56 +398,77 @@ func (ptf *primitiveStructField) generateCopyToValue(sb *strings.Builder) {
 
 var _ baseField = (*primitiveStructField)(nil)
 
-// oneofField is used in case where the proto defines an "oneof".
-type oneofField struct {
-	copyFuncName    string
-	originFieldName string
-	testVal         string
-	fillTestName    string
+type oneOfField struct {
+	originTypePrefix string
+	originFieldName  string
+	// TODO: Generate type accessors.
+	typeAccessor string
+	typeName     string
+	testValueIdx int
+	values       []oneOfValue
 }
 
-func (one oneofField) generateAccessors(baseStruct, *strings.Builder) {}
-
-func (one oneofField) generateAccessorsTest(baseStruct, *strings.Builder) {}
-
-func (one oneofField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\t(*tv.orig)." + one.originFieldName + " = " + one.testVal + "\n")
-	sb.WriteString("\tfillTest" + one.fillTestName + "(tv." + one.fillTestName + "())")
+func (of *oneOfField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+	for _, v := range of.values {
+		v.generateAccessors(ms, of, sb)
+		sb.WriteString("\n")
+	}
 }
 
-func (one oneofField) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\t" + one.copyFuncName + "(ms.orig, dest.orig)")
+func (of *oneOfField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+	for _, v := range of.values {
+		v.generateTests(ms.(*messageValueStruct), of, sb)
+		sb.WriteString("\n")
+	}
 }
 
-var _ baseField = (*oneofField)(nil)
+func (of *oneOfField) generateSetWithTestValue(sb *strings.Builder) {
+	of.values[of.testValueIdx].generateSetWithTestValue(of, sb)
+}
+
+func (of *oneOfField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tswitch ms." + of.typeAccessor + "() {\n")
+	for _, v := range of.values {
+		v.generateCopyToValue(of, sb)
+	}
+	sb.WriteString("\t}\n")
+}
+
+var _ baseField = (*oneOfField)(nil)
+
+type oneOfValue interface {
+	generateAccessors(ms baseStruct, of *oneOfField, sb *strings.Builder)
+	generateTests(ms baseStruct, of *oneOfField, sb *strings.Builder)
+	generateSetWithTestValue(of *oneOfField, sb *strings.Builder)
+	generateCopyToValue(of *oneOfField, sb *strings.Builder)
+}
 
 type oneOfPrimitiveValue struct {
-	name            string
+	fieldName       string
+	fieldType       string
 	defaultVal      string
 	testVal         string
 	returnType      string
 	originFieldName string
-	originFullName  string
-	fieldType       string
 }
 
-func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsOneofPrimitiveTemplate, func(name string) string {
+func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsOneOfPrimitiveTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
 		case "fieldName":
-			return opv.name
+			return opv.fieldName
 		case "lowerFieldName":
-			return strings.ToLower(opv.name)
+			return strings.ToLower(opv.fieldName)
 		case "returnType":
 			return opv.returnType
 		case "originFieldName":
 			return opv.originFieldName
-		case "originFullName":
-			return opv.originFullName
-		case "fieldType":
-			return opv.fieldType
+		case "originOneOfFieldName":
+			return of.originFieldName
+		case "originStructType":
+			return of.originTypePrefix + opv.originFieldName
 		default:
 			panic(name)
 		}
@@ -428,7 +476,7 @@ func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, sb *strings.Bui
 	sb.WriteString("\n")
 }
 
-func (opv *oneOfPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, _ *oneOfField, sb *strings.Builder) {
 	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -436,7 +484,7 @@ func (opv *oneOfPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *strings
 		case "defaultVal":
 			return opv.defaultVal
 		case "fieldName":
-			return opv.name
+			return opv.fieldName
 		case "testValue":
 			return opv.testVal
 		default:
@@ -446,48 +494,90 @@ func (opv *oneOfPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *strings
 	sb.WriteString("\n")
 }
 
-func (opv *oneOfPrimitiveValue) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\t tv.Set" + opv.name + "(" + opv.testVal + ")\n")
+func (opv *oneOfPrimitiveValue) generateSetWithTestValue(_ *oneOfField, sb *strings.Builder) {
+	sb.WriteString("\t tv.Set" + opv.fieldName + "(" + opv.testVal + ")")
 }
 
-func (opv *oneOfPrimitiveValue) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\tcase MetricValueType" + opv.fieldType + ":\n")
-	sb.WriteString("\t dest.Set" + opv.name + "(ms." + opv.name + "())\n")
+func (opv *oneOfPrimitiveValue) generateCopyToValue(of *oneOfField, sb *strings.Builder) {
+	sb.WriteString("\tcase " + of.typeName + opv.fieldType + ":\n")
+	sb.WriteString("\t dest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
 }
 
-var _ baseField = (*oneOfPrimitiveValue)(nil)
+var _ oneOfValue = (*oneOfPrimitiveValue)(nil)
 
-type numberField struct {
-	fields []*oneOfPrimitiveValue
+type oneOfMessageValue struct {
+	fieldName       string
+	originFieldName string
+	returnMessage   *messageValueStruct
 }
 
-func (nf *numberField) generateAccessors(ms baseStruct, sb *strings.Builder) {
-	for _, field := range nf.fields {
-		field.generateAccessors(ms, sb)
-	}
+func (omv *oneOfMessageValue) generateAccessors(ms baseStruct, of *oneOfField, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsOneOfMessageTemplate, func(name string) string {
+		switch name {
+		case "fieldName":
+			return omv.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(omv.fieldName)
+		case "originFieldName":
+			return omv.originFieldName
+		case "originOneOfFieldName":
+			return of.originFieldName
+		case "originStructType":
+			return of.originTypePrefix + omv.originFieldName
+		case "returnType":
+			return omv.returnMessage.structName
+		case "structName":
+			return ms.getName()
+		case "typeAccessor":
+			return of.typeAccessor
+		case "typeName":
+			return of.typeName + omv.returnMessage.structName
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString("\n")
 }
 
-func (nf *numberField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
-	for _, field := range nf.fields {
-		field.generateAccessorsTest(ms, sb)
-	}
+func (omv *oneOfMessageValue) generateTests(ms baseStruct, of *oneOfField, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsOneOfMessageTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "fieldName":
+			return omv.fieldName
+		case "returnType":
+			return omv.returnMessage.structName
+		case "typeAccessor":
+			return of.typeAccessor
+		case "typeName":
+			return of.typeName + omv.returnMessage.structName
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString("\n")
 }
 
-func (nf *numberField) generateSetWithTestValue(sb *strings.Builder) {
-	for _, field := range nf.fields {
-		field.generateSetWithTestValue(sb)
-		// TODO: this test should be generated for all number values,
-		//       for now, it's ok to only set one value
-		return
-	}
+func (omv *oneOfMessageValue) generateSetWithTestValue(of *oneOfField, sb *strings.Builder) {
+	sb.WriteString("tv.Set" + of.typeAccessor + "(" + of.typeName + omv.returnMessage.structName + ")\n")
+	sb.WriteString("fillTest" + omv.returnMessage.structName + "(tv." + omv.fieldName + "())")
 }
 
-func (nf *numberField) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("\tswitch ms.Type() {\n")
-	for _, field := range nf.fields {
-		field.generateCopyToValue(sb)
-	}
-	sb.WriteString("\t}\n")
+func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *strings.Builder) {
+	sb.WriteString(os.Expand(copyToValueOneOfMessageTemplate, func(name string) string {
+		switch name {
+		case "fieldName":
+			return omv.fieldName
+		case "typeAccessor":
+			return of.typeAccessor
+		case "typeName":
+			return of.typeName + omv.fieldName
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString("\n")
 }
 
-var _ baseField = (*numberField)(nil)
+var _ oneOfValue = (*oneOfMessageValue)(nil)

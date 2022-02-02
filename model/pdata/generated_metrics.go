@@ -612,12 +612,64 @@ func (ms Metric) SetUnit(v string) {
 	(*ms.orig).Unit = v
 }
 
+// Gauge returns the gauge associated with this Metric.
+// Calling this function when DataType() != MetricDataTypeGauge will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) Gauge() Gauge {
+	return newGauge((*ms.orig).Data.(*otlpmetrics.Metric_Gauge).Gauge)
+}
+
+// Sum returns the sum associated with this Metric.
+// Calling this function when DataType() != MetricDataTypeSum will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) Sum() Sum {
+	return newSum((*ms.orig).Data.(*otlpmetrics.Metric_Sum).Sum)
+}
+
+// Histogram returns the histogram associated with this Metric.
+// Calling this function when DataType() != MetricDataTypeHistogram will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) Histogram() Histogram {
+	return newHistogram((*ms.orig).Data.(*otlpmetrics.Metric_Histogram).Histogram)
+}
+
+// ExponentialHistogram returns the exponentialhistogram associated with this Metric.
+// Calling this function when DataType() != MetricDataTypeExponentialHistogram will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) ExponentialHistogram() ExponentialHistogram {
+	return newExponentialHistogram((*ms.orig).Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram)
+}
+
+// Summary returns the summary associated with this Metric.
+// Calling this function when DataType() != MetricDataTypeSummary will cause a panic.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) Summary() Summary {
+	return newSummary((*ms.orig).Data.(*otlpmetrics.Metric_Summary).Summary)
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
-	copyData(ms.orig, dest.orig)
+	switch ms.DataType() {
+	case MetricDataTypeGauge:
+		dest.SetDataType(MetricDataTypeGauge)
+		ms.Gauge().CopyTo(dest.Gauge())
+	case MetricDataTypeSum:
+		dest.SetDataType(MetricDataTypeSum)
+		ms.Sum().CopyTo(dest.Sum())
+	case MetricDataTypeHistogram:
+		dest.SetDataType(MetricDataTypeHistogram)
+		ms.Histogram().CopyTo(dest.Histogram())
+	case MetricDataTypeExponentialHistogram:
+		dest.SetDataType(MetricDataTypeExponentialHistogram)
+		ms.ExponentialHistogram().CopyTo(dest.ExponentialHistogram())
+	case MetricDataTypeSummary:
+		dest.SetDataType(MetricDataTypeSummary)
+		ms.Summary().CopyTo(dest.Summary())
+	}
+
 }
 
 // Gauge represents the type of a numeric metric that always exports the "current value" for every data point.

@@ -33,64 +33,6 @@ const (
 	endTime   = uint64(12578940000000054321)
 )
 
-func TestCopyData(t *testing.T) {
-	tests := []struct {
-		name string
-		src  *otlpmetrics.Metric
-	}{
-		{
-			name: "Gauge",
-			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_Gauge{
-					Gauge: &otlpmetrics.Gauge{},
-				},
-			},
-		},
-		{
-			name: "Sum",
-			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_Sum{
-					Sum: &otlpmetrics.Sum{},
-				},
-			},
-		},
-		{
-			name: "Histogram",
-			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_Histogram{
-					Histogram: &otlpmetrics.Histogram{},
-				},
-			},
-		},
-		{
-			name: "ExponentialHistogram",
-			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_ExponentialHistogram{
-					ExponentialHistogram: &otlpmetrics.ExponentialHistogram{},
-				},
-			},
-		},
-		{
-			name: "Summary",
-			src: &otlpmetrics.Metric{
-				Data: &otlpmetrics.Metric_Summary{
-					Summary: &otlpmetrics.Summary{},
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			dest := &otlpmetrics.Metric{}
-			assert.Nil(t, dest.Data)
-			assert.NotNil(t, test.src.Data)
-			copyData(test.src, dest)
-			assert.EqualValues(t, test.src, dest)
-		})
-	}
-}
-
 func TestMetricDataTypeString(t *testing.T) {
 	assert.Equal(t, "None", MetricDataTypeNone.String())
 	assert.Equal(t, "Gauge", MetricDataTypeGauge.String())
