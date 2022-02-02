@@ -58,7 +58,7 @@ func WithShutdown(shutdownFunc componenthelper.ShutdownFunc) Option {
 // NewServerAuthenticator returns a ServerAuthenticator configured with the provided options.
 func NewServerAuthenticator(options ...Option) ServerAuthenticator {
 	bc := &defaultServerAuthenticator{
-		AuthenticateFunc: func(ctx context.Context, headers map[string][]string) (context.Context, error) { return ctx, nil },
+		AuthenticateFunc: func(ctx context.Context, requestMap map[string][]string) (context.Context, error) { return ctx, nil },
 		StartFunc:        func(ctx context.Context, host component.Host) error { return nil },
 		ShutdownFunc:     func(ctx context.Context) error { return nil },
 	}
@@ -71,8 +71,8 @@ func NewServerAuthenticator(options ...Option) ServerAuthenticator {
 }
 
 // Authenticate performs the authentication.
-func (a *defaultServerAuthenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	return a.AuthenticateFunc(ctx, headers)
+func (a *defaultServerAuthenticator) Authenticate(ctx context.Context, requestMap map[string][]string) (context.Context, error) {
+	return a.AuthenticateFunc(ctx, requestMap)
 }
 
 // Start the component.

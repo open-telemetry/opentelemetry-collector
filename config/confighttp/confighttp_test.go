@@ -812,9 +812,9 @@ func TestServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
-				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
-					assert.ElementsMatch(t, headers["X-Test-Header"], []string{"test-value"})
-					assert.ElementsMatch(t, headers["query"], []string{"test"})
+				configauth.WithAuthenticate(func(ctx context.Context, requestMap map[string][]string) (context.Context, error) {
+					assert.ElementsMatch(t, requestMap["X-Test-Header"], []string{"test-value"})
+					assert.ElementsMatch(t, requestMap["query"], []string{"test"})
 					authCalled = true
 					return ctx, nil
 				}),
@@ -866,7 +866,7 @@ func TestFailedServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
-				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				configauth.WithAuthenticate(func(ctx context.Context, requestMap map[string][]string) (context.Context, error) {
 					return ctx, fmt.Errorf("authentication failed")
 				}),
 			),
