@@ -167,7 +167,6 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 //
 // Must use NewResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type ResourceSpans struct {
 	orig *otlptrace.ResourceSpans
 }
@@ -362,7 +361,6 @@ func (es InstrumentationLibrarySpansSlice) RemoveIf(f func(InstrumentationLibrar
 //
 // Must use NewInstrumentationLibrarySpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type InstrumentationLibrarySpans struct {
 	orig *otlptrace.InstrumentationLibrarySpans
 }
@@ -558,7 +556,6 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 //
 // Must use NewSpan function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type Span struct {
 	orig *otlptrace.Span
 }
@@ -876,7 +873,6 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 //
 // Must use NewSpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type SpanEvent struct {
 	orig *otlptrace.Span_Event
 }
@@ -1089,7 +1085,6 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 //
 // Must use NewSpanLink function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type SpanLink struct {
 	orig *otlptrace.Span_Link
 }
@@ -1175,7 +1170,6 @@ func (ms SpanLink) CopyTo(dest SpanLink) {
 //
 // Must use NewSpanStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type SpanStatus struct {
 	orig *otlptrace.Status
 }

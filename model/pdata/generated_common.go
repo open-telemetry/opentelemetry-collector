@@ -28,7 +28,6 @@ import (
 //
 // Must use NewInstrumentationLibrary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type InstrumentationLibrary struct {
 	orig *otlpcommon.InstrumentationLibrary
 }

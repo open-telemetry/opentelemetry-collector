@@ -167,7 +167,6 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 //
 // Must use NewResourceLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type ResourceLogs struct {
 	orig *otlplogs.ResourceLogs
 }
@@ -362,7 +361,6 @@ func (es InstrumentationLibraryLogsSlice) RemoveIf(f func(InstrumentationLibrary
 //
 // Must use NewInstrumentationLibraryLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type InstrumentationLibraryLogs struct {
 	orig *otlplogs.InstrumentationLibraryLogs
 }
@@ -558,7 +556,6 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 //
 // Must use NewLogRecord function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-//
 type LogRecord struct {
 	orig *otlplogs.LogRecord
 }
