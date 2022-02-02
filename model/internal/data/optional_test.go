@@ -29,7 +29,7 @@ func TestOptionalDoublePresent(t *testing.T) {
 	len, err := field.MarshalTo(data)
 	require.NoError(t, err)
 	require.Equal(t, 9, len)
-	require.Equal(t, []byte{0x21, 0xcd, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0x24, 0x40}, data)
+	require.Equal(t, []byte{0x0, 0xcd, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0x24, 0x40}, data)
 }
 
 func TestOptionalDoubleNotPresent(t *testing.T) {

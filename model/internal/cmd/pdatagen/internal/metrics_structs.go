@@ -342,6 +342,8 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		},
 		exemplarsField,
 		dataPointFlagsField,
+		minOptionalDoubleField,
+		maxOptionalDoubleField,
 	},
 }
 

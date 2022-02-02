@@ -1249,6 +1249,10 @@ type ExponentialHistogramDataPoint struct {
 	// (Optional) List of exemplars collected from
 	// measurements that were used to form the data point
 	Exemplars []Exemplar `protobuf:"bytes,11,rep,name=exemplars,proto3" json:"exemplars"`
+	// Min is the minimum value over (start_time, end_time].
+	Min go_opentelemetry_io_collector_model_internal_data.OptionalDouble
+	// Max is the maximum value over (start_time, end_time].
+	Max go_opentelemetry_io_collector_model_internal_data.OptionalDouble
 }
 
 func (m *ExponentialHistogramDataPoint) Reset()         { *m = ExponentialHistogramDataPoint{} }
@@ -2488,6 +2492,20 @@ func (m *HistogramDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if !m.Max.IsEmpty() {
+		i -= m.Max.Size()
+		if _, err := m.Max.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		dAtA[i] = 0x61
+	}
+	if !m.Min.IsEmpty() {
+		i -= m.Min.Size()
+		if _, err := m.Min.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		dAtA[i] = 0x59
+	}
 	if m.Flags != 0 {
 		i = encodeVarintMetrics(dAtA, i, uint64(m.Flags))
 		i--
@@ -2744,20 +2762,6 @@ func (m *SummaryDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if !m.Max.IsEmpty() {
-		i -= m.Max.Size()
-		if _, err := m.Max.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		dAtA[i] = 0x61
-	}
-	if !m.Min.IsEmpty() {
-		i -= m.Min.Size()
-		if _, err := m.Min.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		dAtA[i] = 0x59
-	}
 	if m.Flags != 0 {
 		i = encodeVarintMetrics(dAtA, i, uint64(m.Flags))
 		i--
@@ -3280,6 +3284,8 @@ func (m *HistogramDataPoint) Size() (n int) {
 	if m.Flags != 0 {
 		n += 1 + sovMetrics(uint64(m.Flags))
 	}
+	n += m.Min.Size()
+	n += m.Max.Size()
 	return n
 }
 
@@ -3326,6 +3332,8 @@ func (m *ExponentialHistogramDataPoint) Size() (n int) {
 			n += 1 + l + sovMetrics(uint64(l))
 		}
 	}
+	n += m.Min.Size()
+	n += m.Max.Size()
 	return n
 }
 
@@ -3381,8 +3389,6 @@ func (m *SummaryDataPoint) Size() (n int) {
 	if m.Flags != 0 {
 		n += 1 + sovMetrics(uint64(m.Flags))
 	}
-	n += m.Min.Size()
-	n += m.Max.Size()
 	return n
 }
 
@@ -5093,6 +5099,30 @@ func (m *HistogramDataPoint) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 11:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Min", wireType)
+			}
+			postIndex := iNdEx + 8
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Min.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Max", wireType)
+			}
+			postIndex := iNdEx + 8
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Max.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMetrics(dAtA[iNdEx:])
@@ -5365,6 +5395,30 @@ func (m *ExponentialHistogramDataPoint) Unmarshal(dAtA []byte) error {
 			}
 			m.Exemplars = append(m.Exemplars, Exemplar{})
 			if err := m.Exemplars[len(m.Exemplars)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Min", wireType)
+			}
+			postIndex := iNdEx + 8
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Min.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Max", wireType)
+			}
+			postIndex := iNdEx + 8
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Max.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -5693,30 +5747,6 @@ func (m *SummaryDataPoint) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 11:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Min", wireType)
-			}
-			postIndex := iNdEx + 8
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Min.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 12:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Max", wireType)
-			}
-			postIndex := iNdEx + 8
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Max.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMetrics(dAtA[iNdEx:])

@@ -1287,6 +1287,22 @@ func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	assert.EqualValues(t, testValFlags, ms.Flags())
 }
 
+func TestExponentialHistogramDataPoint_Min(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, OptionalDouble{}, ms.Min())
+	testValMin := NewOptionalDouble(0.3)
+	ms.SetMin(testValMin)
+	assert.EqualValues(t, testValMin, ms.Min())
+}
+
+func TestExponentialHistogramDataPoint_Max(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, OptionalDouble{}, ms.Max())
+	testValMax := NewOptionalDouble(99.1)
+	ms.SetMax(testValMax)
+	assert.EqualValues(t, testValMax, ms.Max())
+}
+
 func TestBuckets_MoveTo(t *testing.T) {
 	ms := generateTestBuckets()
 	dest := NewBuckets()
@@ -2029,6 +2045,8 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	fillTestBuckets(tv.Negative())
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
+	tv.SetMin(NewOptionalDouble(0.3))
+	tv.SetMax(NewOptionalDouble(99.1))
 }
 
 func generateTestBuckets() Buckets {

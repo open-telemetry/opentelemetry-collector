@@ -1703,6 +1703,26 @@ func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
+// Min returns the min associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Min() OptionalDouble {
+	return OptionalDouble{orig: ((*ms.orig).Min)}
+}
+
+// SetMin replaces the min associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetMin(v OptionalDouble) {
+	(*ms.orig).Min = v.orig
+}
+
+// Max returns the max associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Max() OptionalDouble {
+	return OptionalDouble{orig: ((*ms.orig).Max)}
+}
+
+// SetMax replaces the max associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetMax(v OptionalDouble) {
+	(*ms.orig).Max = v.orig
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1716,6 +1736,8 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	ms.Negative().CopyTo(dest.Negative())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+	dest.SetMin(ms.Min())
+	dest.SetMax(ms.Max())
 }
 
 // Buckets are a set of bucket counts, encoded in a contiguous array of counts.
