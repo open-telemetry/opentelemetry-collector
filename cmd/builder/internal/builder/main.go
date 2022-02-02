@@ -126,7 +126,7 @@ func GetModules(cfg Config) error {
 }
 
 func processAndWrite(cfg Config, tmpl *template.Template, outFile string, tmplParams interface{}) error {
-	out, err := os.Create(filepath.Join(cfg.Distribution.OutputPath, outFile))
+	out, err := os.Create(filepath.Clean(filepath.Join(cfg.Distribution.OutputPath, outFile)))
 	if err != nil {
 		return err
 	}

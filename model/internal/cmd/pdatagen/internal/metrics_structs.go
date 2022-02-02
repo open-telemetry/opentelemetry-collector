@@ -35,8 +35,8 @@ var metricsFile = &File{
 		instrumentationLibraryMetrics,
 		metricSlice,
 		metric,
-		doubleGauge,
-		doubleSum,
+		gauge,
+		sum,
 		histogram,
 		exponentialHistogram,
 		summary,
@@ -122,13 +122,46 @@ var metric = &messageValueStruct{
 			defaultVal:      `""`,
 			testVal:         `"1"`,
 		},
-		oneofDataField,
+		&oneOfField{
+			typeAccessor:     "DataType",
+			typeName:         "MetricDataType",
+			originFieldName:  "Data",
+			originTypePrefix: "otlpmetrics.Metric_",
+			testValueIdx:     1, // Sum
+			values: []oneOfValue{
+				&oneOfMessageValue{
+					fieldName:       "Gauge",
+					originFieldName: "Gauge",
+					returnMessage:   doubleGauge,
+				},
+				&oneOfMessageValue{
+					fieldName:       "Sum",
+					originFieldName: "Sum",
+					returnMessage:   doubleSum,
+				},
+				&oneOfMessageValue{
+					fieldName:       "Histogram",
+					originFieldName: "Histogram",
+					returnMessage:   histogram,
+				},
+				&oneOfMessageValue{
+					fieldName:       "ExponentialHistogram",
+					originFieldName: "ExponentialHistogram",
+					returnMessage:   exponentialHistogram,
+				},
+				&oneOfMessageValue{
+					fieldName:       "Summary",
+					originFieldName: "Summary",
+					returnMessage:   summary,
+				},
+			},
+		},
 	},
 }
 
-var doubleGauge = &messageValueStruct{
+var gauge = &messageValueStruct{
 	structName:     "Gauge",
-	description:    "// Gauge represents the type of a double scalar metric that always exports the \"current value\" for every data point.",
+	description:    "// Gauge represents the type of a numeric metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.Gauge",
 	fields: []baseField{
 		&sliceField{
@@ -139,9 +172,9 @@ var doubleGauge = &messageValueStruct{
 	},
 }
 
-var doubleSum = &messageValueStruct{
+var sum = &messageValueStruct{
 	structName:     "Sum",
-	description:    "// Sum represents the type of a numeric double scalar metric that is calculated as a sum of all reported measurements over a time interval.",
+	description:    "// Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Sum",
 	fields: []baseField{
 		aggregationTemporalityField,
@@ -209,25 +242,28 @@ var numberDataPoint = &messageValueStruct{
 		attributes,
 		startTimeField,
 		timeField,
-		&numberField{
-			fields: []*oneOfPrimitiveValue{
-				{
-					originFullName:  "otlpmetrics.NumberDataPoint",
-					name:            "DoubleVal",
-					originFieldName: "Value",
+		&oneOfField{
+			typeAccessor:     "Type",
+			typeName:         "MetricValueType",
+			originFieldName:  "Value",
+			originTypePrefix: "otlpmetrics.NumberDataPoint_",
+			testValueIdx:     0, // Double
+			values: []oneOfValue{
+				&oneOfPrimitiveValue{
+					fieldName:       "DoubleVal",
+					fieldType:       "Double",
+					originFieldName: "AsDouble",
 					returnType:      "float64",
 					defaultVal:      "float64(0.0)",
 					testVal:         "float64(17.13)",
-					fieldType:       "Double",
 				},
-				{
-					originFullName:  "otlpmetrics.NumberDataPoint",
-					name:            "IntVal",
-					originFieldName: "Value",
+				&oneOfPrimitiveValue{
+					fieldName:       "IntVal",
+					fieldType:       "Int",
+					originFieldName: "AsInt",
 					returnType:      "int64",
 					defaultVal:      "int64(0)",
 					testVal:         "int64(17)",
-					fieldType:       "Int",
 				},
 			},
 		},
@@ -377,21 +413,24 @@ var exemplar = &messageValueStruct{
 	originFullName: "otlpmetrics.Exemplar",
 	fields: []baseField{
 		timeField,
-		&numberField{
-			fields: []*oneOfPrimitiveValue{
-				{
-					originFullName:  "otlpmetrics.Exemplar",
-					name:            "DoubleVal",
-					originFieldName: "Value",
+		&oneOfField{
+			typeAccessor:     "Type",
+			typeName:         "MetricValueType",
+			originFieldName:  "Value",
+			originTypePrefix: "otlpmetrics.Exemplar_",
+			testValueIdx:     1, // Int
+			values: []oneOfValue{
+				&oneOfPrimitiveValue{
+					fieldName:       "DoubleVal",
+					originFieldName: "AsDouble",
 					returnType:      "float64",
 					defaultVal:      "float64(0.0)",
 					testVal:         "float64(17.13)",
 					fieldType:       "Double",
 				},
-				{
-					originFullName:  "otlpmetrics.Exemplar",
-					name:            "IntVal",
-					originFieldName: "Value",
+				&oneOfPrimitiveValue{
+					fieldName:       "IntVal",
+					originFieldName: "AsInt",
 					returnType:      "int64",
 					defaultVal:      "int64(0)",
 					testVal:         "int64(17)",
@@ -478,13 +517,6 @@ var aggregationTemporalityField = &primitiveTypedField{
 	rawType:         "otlpmetrics.AggregationTemporality",
 	defaultVal:      "MetricAggregationTemporalityUnspecified",
 	testVal:         "MetricAggregationTemporalityCumulative",
-}
-
-var oneofDataField = &oneofField{
-	copyFuncName:    "copyData",
-	originFieldName: "Data",
-	testVal:         "&otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}",
-	fillTestName:    "Gauge",
 }
 
 var dataPointFlagsField = &primitiveTypedField{

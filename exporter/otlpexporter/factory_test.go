@@ -16,7 +16,7 @@ package otlpexporter
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -169,7 +169,7 @@ func TestCreateTracesExporter(t *testing.T) {
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
-							CAFile: path.Join("testdata", "test_cert.pem"),
+							CAFile: filepath.Join("testdata", "test_cert.pem"),
 						},
 					},
 				},

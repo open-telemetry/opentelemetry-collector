@@ -16,7 +16,7 @@ package builder
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -208,7 +208,7 @@ func TestBuildExporters_NotSupportedDataType(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.configFile, func(t *testing.T) {
 
-			cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", test.configFile), factories)
+			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
 			require.Nil(t, err)
 
 			exporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)

@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -160,11 +160,11 @@ map:
 		},
 	})
 
-	file := path.Join("testdata", "yaml_injection.yaml")
+	file := filepath.Join("testdata", "yaml_injection.yaml")
 	cp, err := configtest.LoadConfigMap(file)
 	require.NoError(t, err)
 
-	expectedFile := path.Join("testdata", "yaml_injection_expected.yaml")
+	expectedFile := filepath.Join("testdata", "yaml_injection_expected.yaml")
 	expectedConfigMap, err := configtest.LoadConfigMap(expectedFile)
 	require.NoError(t, err)
 	expectedCfg := expectedConfigMap.ToStringMap()
@@ -189,11 +189,11 @@ func TestConfigSourceManager_ArraysAndMaps(t *testing.T) {
 		},
 	})
 
-	file := path.Join("testdata", "arrays_and_maps.yaml")
+	file := filepath.Join("testdata", "arrays_and_maps.yaml")
 	cp, err := configtest.LoadConfigMap(file)
 	require.NoError(t, err)
 
-	expectedFile := path.Join("testdata", "arrays_and_maps_expected.yaml")
+	expectedFile := filepath.Join("testdata", "arrays_and_maps_expected.yaml")
 	expectedConfigMap, err := configtest.LoadConfigMap(expectedFile)
 	require.NoError(t, err)
 
@@ -243,11 +243,11 @@ func TestConfigSourceManager_ParamsHandling(t *testing.T) {
 		"tstcfgsrc": &tstCfgSrc,
 	})
 
-	file := path.Join("testdata", "params_handling.yaml")
+	file := filepath.Join("testdata", "params_handling.yaml")
 	cp, err := configtest.LoadConfigMap(file)
 	require.NoError(t, err)
 
-	expectedFile := path.Join("testdata", "params_handling_expected.yaml")
+	expectedFile := filepath.Join("testdata", "params_handling_expected.yaml")
 	expectedConfigMap, err := configtest.LoadConfigMap(expectedFile)
 	require.NoError(t, err)
 
@@ -379,11 +379,11 @@ func TestConfigSourceManager_EnvVarHandling(t *testing.T) {
 		"tstcfgsrc": &tstCfgSrc,
 	})
 
-	file := path.Join("testdata", "envvar_cfgsrc_mix.yaml")
+	file := filepath.Join("testdata", "envvar_cfgsrc_mix.yaml")
 	cp, err := configtest.LoadConfigMap(file)
 	require.NoError(t, err)
 
-	expectedFile := path.Join("testdata", "envvar_cfgsrc_mix_expected.yaml")
+	expectedFile := filepath.Join("testdata", "envvar_cfgsrc_mix_expected.yaml")
 	expectedConfigMap, err := configtest.LoadConfigMap(expectedFile)
 	require.NoError(t, err)
 
