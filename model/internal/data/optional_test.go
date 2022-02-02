@@ -30,6 +30,10 @@ func TestOptionalDoublePresent(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 9, len)
 	require.Equal(t, []byte{0x0, 0xcd, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0x24, 0x40}, data)
+	field = OptionalDouble{}
+	err = field.Unmarshal([]byte{0xcd, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0x24, 0x40})
+	require.NoError(t, err)
+	require.Equal(t, 10.4, field.DoubleValue)
 }
 
 func TestOptionalDoubleNotPresent(t *testing.T) {
