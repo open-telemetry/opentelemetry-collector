@@ -813,6 +813,8 @@ func TestServerAuth(t *testing.T) {
 		ext: map[config.ComponentID]component.Extension{
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
 				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+					assert.ElementsMatch(t, headers["X-Test-Header"], []string{"test-value"})
+					assert.ElementsMatch(t, headers["query"], []string{"test"})
 					authCalled = true
 					return ctx, nil
 				}),
@@ -829,7 +831,13 @@ func TestServerAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/", nil))
+	req := httptest.NewRequest("GET", "/", nil)
+	// Use canonical names
+	req.Header.Set("X-Test-Header", "test-value")
+	query := req.URL.Query()
+	query.Add("query", "test")
+	req.URL.RawQuery = query.Encode()
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, req)
 
 	// verify
 	assert.True(t, handlerCalled)

@@ -339,7 +339,14 @@ type CORSSettings struct {
 
 func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := authenticate(r.Context(), r.Header)
+		requestMap := make(map[string][]string)
+		for k, v := range r.URL.Query() {
+			requestMap[k] = v
+		}
+		for k, v := range r.Header {
+			requestMap[k] = v
+		}
+		ctx, err := authenticate(r.Context(), requestMap)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
