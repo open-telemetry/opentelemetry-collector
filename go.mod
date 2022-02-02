@@ -21,7 +21,7 @@ require (
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/model v0.43.1
+	go.opentelemetry.io/collector/model v0.44.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0
 	go.opentelemetry.io/contrib/zpages v0.28.0

@@ -6,7 +6,7 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.43.1
+	go.opentelemetry.io/collector v0.44.0
 	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d
 )
 
@@ -54,7 +54,7 @@ require (
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.43.1 // indirect
+	go.opentelemetry.io/collector/model v0.44.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.28.0 // indirect

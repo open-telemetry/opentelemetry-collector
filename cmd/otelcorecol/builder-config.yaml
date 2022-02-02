@@ -7,24 +7,24 @@ dist:
 
 receivers:
   - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    gomod: go.opentelemetry.io/collector v0.43.1
+    gomod: go.opentelemetry.io/collector v0.44.0
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
-    gomod: go.opentelemetry.io/collector v0.43.1
+    gomod: go.opentelemetry.io/collector v0.44.0
   - import: go.opentelemetry.io/collector/exporter/otlpexporter
-    gomod: go.opentelemetry.io/collector v0.43.1
+    gomod: go.opentelemetry.io/collector v0.44.0
   - import: go.opentelemetry.io/collector/exporter/otlphttpexporter
-    gomod: go.opentelemetry.io/collector v0.43.1
+    gomod: go.opentelemetry.io/collector v0.44.0
 extensions:
   - import: go.opentelemetry.io/collector/extension/ballastextension
-    gomod: go.opentelemetry.io/collector v0.43.1
+    gomod: go.opentelemetry.io/collector v0.44.0
   - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.43.1
+    gomod: go.opentelemetry.io/collector v0.44.0
 processors:
   - import: go.opentelemetry.io/collector/processor/batchprocessor
-    gomod: go.opentelemetry.io/collector v0.43.1
+    gomod: go.opentelemetry.io/collector v0.44.0
   - import: go.opentelemetry.io/collector/processor/memorylimiterprocessor
-    gomod: go.opentelemetry.io/collector v0.43.1
+    gomod: go.opentelemetry.io/collector v0.44.0
 
 replaces:
   - go.opentelemetry.io/collector => ../../
