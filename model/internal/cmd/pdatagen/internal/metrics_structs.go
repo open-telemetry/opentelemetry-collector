@@ -132,12 +132,12 @@ var metric = &messageValueStruct{
 				&oneOfMessageValue{
 					fieldName:       "Gauge",
 					originFieldName: "Gauge",
-					returnMessage:   doubleGauge,
+					returnMessage:   gauge,
 				},
 				&oneOfMessageValue{
 					fieldName:       "Sum",
 					originFieldName: "Sum",
-					returnMessage:   doubleSum,
+					returnMessage:   sum,
 				},
 				&oneOfMessageValue{
 					fieldName:       "Histogram",
