@@ -62,6 +62,19 @@ func DefaultQueueSettings() QueueSettings {
 	}
 }
 
+// Validate checks if the QueueSettings configuration is valid
+func (qCfg *QueueSettings) Validate() error {
+	if !qCfg.Enabled {
+		return nil
+	}
+
+	if qCfg.QueueSize <= 0 {
+		return fmt.Errorf("queue size must be positive")
+	}
+
+	return nil
+}
+
 var (
 	errNoStorageClient        = errors.New("no storage client extension found")
 	errMultipleStorageClients = errors.New("multiple storage extensions found")
