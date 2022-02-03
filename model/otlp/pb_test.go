@@ -82,10 +82,8 @@ func TestProtobufMetricsSizerWithOptional(t *testing.T) {
 	metric := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
 	datapoint := metric.Histogram().DataPoints().AppendEmpty()
-	min := pdata.NewOptionalDouble(0.1)
-	datapoint.SetMin(min)
-	max := pdata.NewOptionalDouble(100)
-	datapoint.SetMax(max)
+	datapoint.SetMin(0.1)
+	datapoint.SetMax(100)
 
 	size := sizer.MetricsSize(md)
 

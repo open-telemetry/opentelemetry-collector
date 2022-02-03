@@ -290,3 +290,27 @@ func (ms Exemplar) Type() MetricValueType {
 	}
 	return MetricValueTypeNone
 }
+
+// HasMin returns whether the ExponentialHistogramDataPoint contains a
+// min value or not.
+func (ms ExponentialHistogramDataPoint) HasMin() bool {
+	return !(*ms.orig).Min.IsEmpty()
+}
+
+// HasMax returns whether the ExponentialHistogramDataPoint contains a
+// max value or not.
+func (ms ExponentialHistogramDataPoint) HasMax() bool {
+	return !(*ms.orig).Max.IsEmpty()
+}
+
+// HasMin returns whether the HistogramDataPoint contains a
+// min value or not.
+func (ms HistogramDataPoint) HasMin() bool {
+	return !(*ms.orig).Min.IsEmpty()
+}
+
+// HasMax returns whether the HistogramDataPoint contains a
+// max value or not.
+func (ms HistogramDataPoint) HasMax() bool {
+	return !(*ms.orig).Max.IsEmpty()
+}

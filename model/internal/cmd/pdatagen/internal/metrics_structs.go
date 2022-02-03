@@ -532,18 +532,18 @@ var dataPointFlagsField = &primitiveTypedField{
 	testVal:         "MetricDataPointFlagsNone",
 }
 
-var minOptionalDoubleField = &primitiveStructField{
+var minOptionalDoubleField = &primitiveField{
 	fieldName:       "Min",
-	originFieldName: "Min",
-	returnType:      "OptionalDouble",
-	defaultVal:      "OptionalDouble{}",
-	testVal:         "NewOptionalDouble(0.3)",
+	originFieldName: "Min.DoubleValue",
+	returnType:      "float64",
+	defaultVal:      "0.0",
+	testVal:         "0.3",
 }
 
-var maxOptionalDoubleField = &primitiveStructField{
+var maxOptionalDoubleField = &primitiveField{
 	fieldName:       "Max",
-	originFieldName: "Max",
-	returnType:      "OptionalDouble",
-	defaultVal:      "OptionalDouble{}",
-	testVal:         "NewOptionalDouble(99.1)",
+	originFieldName: "Max.DoubleValue",
+	returnType:      "float64",
+	defaultVal:      "0.0",
+	testVal:         "99.1",
 }

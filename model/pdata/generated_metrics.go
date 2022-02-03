@@ -1409,23 +1409,23 @@ func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 }
 
 // Min returns the min associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Min() OptionalDouble {
-	return OptionalDouble{orig: ((*ms.orig).Min)}
+func (ms HistogramDataPoint) Min() float64 {
+	return (*ms.orig).Min.DoubleValue
 }
 
 // SetMin replaces the min associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetMin(v OptionalDouble) {
-	(*ms.orig).Min = v.orig
+func (ms HistogramDataPoint) SetMin(v float64) {
+	(*ms.orig).Min.DoubleValue = v
 }
 
 // Max returns the max associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Max() OptionalDouble {
-	return OptionalDouble{orig: ((*ms.orig).Max)}
+func (ms HistogramDataPoint) Max() float64 {
+	return (*ms.orig).Max.DoubleValue
 }
 
 // SetMax replaces the max associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetMax(v OptionalDouble) {
-	(*ms.orig).Max = v.orig
+func (ms HistogramDataPoint) SetMax(v float64) {
+	(*ms.orig).Max.DoubleValue = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1704,23 +1704,23 @@ func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Min() OptionalDouble {
-	return OptionalDouble{orig: ((*ms.orig).Min)}
+func (ms ExponentialHistogramDataPoint) Min() float64 {
+	return (*ms.orig).Min.DoubleValue
 }
 
 // SetMin replaces the min associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetMin(v OptionalDouble) {
-	(*ms.orig).Min = v.orig
+func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
+	(*ms.orig).Min.DoubleValue = v
 }
 
 // Max returns the max associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Max() OptionalDouble {
-	return OptionalDouble{orig: ((*ms.orig).Max)}
+func (ms ExponentialHistogramDataPoint) Max() float64 {
+	return (*ms.orig).Max.DoubleValue
 }
 
 // SetMax replaces the max associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetMax(v OptionalDouble) {
-	(*ms.orig).Max = v.orig
+func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
+	(*ms.orig).Max.DoubleValue = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.

@@ -117,11 +117,11 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
 		// TODO: add tests for Min/Max
-		if !p.Min().IsEmpty() {
-			b.logEntry("Min: %f", p.Min().Value())
+		if !p.HasMin() {
+			b.logEntry("Min: %f", p.Min())
 		}
-		if !p.Max().IsEmpty() {
-			b.logEntry("Max: %f", p.Max().Value())
+		if !p.HasMax() {
+			b.logEntry("Max: %f", p.Max())
 		}
 
 		bounds := p.ExplicitBounds()
@@ -151,11 +151,11 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pdata.ExponentialHisto
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
 		// TODO: add tests for Min/Max
-		if !p.Min().IsEmpty() {
-			b.logEntry("Min: %f", p.Min().Value())
+		if !p.HasMin() {
+			b.logEntry("Min: %f", p.Min())
 		}
-		if !p.Max().IsEmpty() {
-			b.logEntry("Max: %f", p.Max().Value())
+		if !p.HasMax() {
+			b.logEntry("Max: %f", p.Max())
 		}
 
 		scale := int(p.Scale())

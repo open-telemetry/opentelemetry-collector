@@ -1065,16 +1065,16 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 
 func TestHistogramDataPoint_Min(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, OptionalDouble{}, ms.Min())
-	testValMin := NewOptionalDouble(0.3)
+	assert.EqualValues(t, 0.0, ms.Min())
+	testValMin := 0.3
 	ms.SetMin(testValMin)
 	assert.EqualValues(t, testValMin, ms.Min())
 }
 
 func TestHistogramDataPoint_Max(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, OptionalDouble{}, ms.Max())
-	testValMax := NewOptionalDouble(99.1)
+	assert.EqualValues(t, 0.0, ms.Max())
+	testValMax := 99.1
 	ms.SetMax(testValMax)
 	assert.EqualValues(t, testValMax, ms.Max())
 }
@@ -1289,16 +1289,16 @@ func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_Min(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	assert.EqualValues(t, OptionalDouble{}, ms.Min())
-	testValMin := NewOptionalDouble(0.3)
+	assert.EqualValues(t, 0.0, ms.Min())
+	testValMin := 0.3
 	ms.SetMin(testValMin)
 	assert.EqualValues(t, testValMin, ms.Min())
 }
 
 func TestExponentialHistogramDataPoint_Max(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	assert.EqualValues(t, OptionalDouble{}, ms.Max())
-	testValMax := NewOptionalDouble(99.1)
+	assert.EqualValues(t, 0.0, ms.Max())
+	testValMax := 99.1
 	ms.SetMax(testValMax)
 	assert.EqualValues(t, testValMax, ms.Max())
 }
@@ -2009,8 +2009,8 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
-	tv.SetMin(NewOptionalDouble(0.3))
-	tv.SetMax(NewOptionalDouble(99.1))
+	tv.SetMin(0.3)
+	tv.SetMax(99.1)
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
@@ -2045,8 +2045,8 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	fillTestBuckets(tv.Negative())
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
-	tv.SetMin(NewOptionalDouble(0.3))
-	tv.SetMax(NewOptionalDouble(99.1))
+	tv.SetMin(0.3)
+	tv.SetMax(99.1)
 }
 
 func generateTestBuckets() Buckets {
