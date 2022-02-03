@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/internalinterface"
@@ -93,7 +92,6 @@ var nopExporterInstance = &nopExporter{
 
 // nopExporter stores consumed traces and metrics for testing purposes.
 type nopExporter struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	nopComponent
 	consumertest.Consumer
 }
