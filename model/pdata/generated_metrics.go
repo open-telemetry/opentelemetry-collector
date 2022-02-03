@@ -609,6 +609,24 @@ func (ms Metric) SetUnit(v string) {
 	(*ms.orig).Unit = v
 }
 
+// DataType returns the type of the data for this Metric.
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) DataType() MetricDataType {
+	switch ms.orig.Data.(type) {
+	case *otlpmetrics.Metric_Gauge:
+		return MetricDataTypeGauge
+	case *otlpmetrics.Metric_Sum:
+		return MetricDataTypeSum
+	case *otlpmetrics.Metric_Histogram:
+		return MetricDataTypeHistogram
+	case *otlpmetrics.Metric_ExponentialHistogram:
+		return MetricDataTypeExponentialHistogram
+	case *otlpmetrics.Metric_Summary:
+		return MetricDataTypeSummary
+	}
+	return MetricDataTypeNone
+}
+
 // Gauge returns the gauge associated with this Metric.
 // Calling this function when DataType() != MetricDataTypeGauge will cause a panic.
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -1104,6 +1122,18 @@ func (ms NumberDataPoint) Timestamp() Timestamp {
 // SetTimestamp replaces the timestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
+}
+
+// Type returns the type of the value for this NumberDataPoint.
+// Calling this function on zero-initialized NumberDataPoint will cause a panic.
+func (ms NumberDataPoint) Type() MetricValueType {
+	switch ms.orig.Value.(type) {
+	case *otlpmetrics.NumberDataPoint_AsDouble:
+		return MetricValueTypeDouble
+	case *otlpmetrics.NumberDataPoint_AsInt:
+		return MetricValueTypeInt
+	}
+	return MetricValueTypeNone
 }
 
 // DoubleVal returns the doubleval associated with this NumberDataPoint.
@@ -2342,6 +2372,18 @@ func (ms Exemplar) Timestamp() Timestamp {
 // SetTimestamp replaces the timestamp associated with this Exemplar.
 func (ms Exemplar) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
+}
+
+// Type returns the type of the value for this Exemplar.
+// Calling this function on zero-initialized Exemplar will cause a panic.
+func (ms Exemplar) Type() MetricValueType {
+	switch ms.orig.Value.(type) {
+	case *otlpmetrics.Exemplar_AsDouble:
+		return MetricValueTypeDouble
+	case *otlpmetrics.Exemplar_AsInt:
+		return MetricValueTypeInt
+	}
+	return MetricValueTypeNone
 }
 
 // DoubleVal returns the doubleval associated with this Exemplar.
