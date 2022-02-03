@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
@@ -52,10 +53,23 @@ type ExtensionCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// ExtensionFactory is a factory interface for extensions to the service.
-//
-// This interface cannot be directly implemented. Implementations must
-// use the extensionhelper.NewFactory to implement it.
+// ExtensionDefaultConfigFunc is the equivalent of component.ExtensionFactory.CreateDefaultConfig()
+type ExtensionDefaultConfigFunc func() config.Extension
+
+// CreateDefaultConfig implements ExtensionFactory.CreateDefaultConfig()
+func (f ExtensionDefaultConfigFunc) CreateDefaultConfig() config.Extension {
+	return f()
+}
+
+// CreateExtensionFunc is the equivalent of component.ExtensionFactory.CreateExtension()
+type CreateExtensionFunc func(context.Context, ExtensionCreateSettings, config.Extension) (Extension, error)
+
+// CreateExtension implements ExtensionFactory.CreateExtension.
+func (f CreateExtensionFunc) CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg config.Extension) (Extension, error) {
+	return f(ctx, set, cfg)
+}
+
+// ExtensionFactory is a factory for extensions to the service.
 type ExtensionFactory interface {
 	Factory
 
@@ -68,6 +82,29 @@ type ExtensionFactory interface {
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Extension
 
-	// CreateExtension creates a service extension based on the given config.
+	// CreateExtension creates an extension based on the given config.
 	CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg config.Extension) (Extension, error)
+}
+
+type extensionFactory struct {
+	internalinterface.BaseInternal
+	cfgType config.Type
+	ExtensionDefaultConfigFunc
+	CreateExtensionFunc
+}
+
+func NewExtensionFactory(
+	cfgType config.Type,
+	createDefaultConfig ExtensionDefaultConfigFunc,
+	createServiceExtension CreateExtensionFunc) ExtensionFactory {
+	return &extensionFactory{
+		cfgType:                    cfgType,
+		ExtensionDefaultConfigFunc: createDefaultConfig,
+		CreateExtensionFunc:        createServiceExtension,
+	}
+}
+
+// Type gets the type of the Extension config created by this factory.
+func (ef *extensionFactory) Type() config.Type {
+	return ef.cfgType
 }

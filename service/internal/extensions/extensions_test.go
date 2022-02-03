@@ -24,11 +24,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 func TestService_setupExtensions(t *testing.T) {
-	errExtensionFactory := extensionhelper.NewFactory(
+	errExtensionFactory := component.NewExtensionFactory(
 		"err",
 		func() config.Extension {
 			cfg := config.NewExtensionSettings(config.NewComponentID("err"))
@@ -125,7 +124,7 @@ func TestService_setupExtensions(t *testing.T) {
 }
 
 func newBadExtensionFactory() component.ExtensionFactory {
-	return extensionhelper.NewFactory(
+	return component.NewExtensionFactory(
 		"bf",
 		func() config.Extension {
 			return &struct {
