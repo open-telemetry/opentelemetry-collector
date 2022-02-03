@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
@@ -34,8 +33,8 @@ import (
 type ProcessMetricsFunc func(context.Context, pdata.Metrics) (pdata.Metrics, error)
 
 type metricsProcessor struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	component.StartFunc
+	component.ShutdownFunc
 	consumer.Metrics
 }
 

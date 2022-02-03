@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"go.opentelemetry.io/collector/component/componenthelper"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
@@ -37,7 +37,7 @@ type Option func(*baseSettings)
 
 // WithStart overrides the default Start function for an processor.
 // The default shutdown function does nothing and always returns nil.
-func WithStart(start componenthelper.StartFunc) Option {
+func WithStart(start component.StartFunc) Option {
 	return func(o *baseSettings) {
 		o.StartFunc = start
 	}
@@ -45,7 +45,7 @@ func WithStart(start componenthelper.StartFunc) Option {
 
 // WithShutdown overrides the default Shutdown function for an processor.
 // The default shutdown function does nothing and always returns nil.
-func WithShutdown(shutdown componenthelper.ShutdownFunc) Option {
+func WithShutdown(shutdown component.ShutdownFunc) Option {
 	return func(o *baseSettings) {
 		o.ShutdownFunc = shutdown
 	}
@@ -60,8 +60,8 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 }
 
 type baseSettings struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	component.StartFunc
+	component.ShutdownFunc
 	consumerOptions []consumerhelper.Option
 }
 

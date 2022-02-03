@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
@@ -91,8 +90,8 @@ func (req *baseRequest) OnProcessingFinished() {
 
 // baseSettings represents all the options that users can configure.
 type baseSettings struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	component.StartFunc
+	component.ShutdownFunc
 	consumerOptions []consumerhelper.Option
 	TimeoutSettings
 	QueueSettings
@@ -122,7 +121,7 @@ type Option func(*baseSettings)
 
 // WithStart overrides the default Start function for an exporter.
 // The default start function does nothing and always returns nil.
-func WithStart(start componenthelper.StartFunc) Option {
+func WithStart(start component.StartFunc) Option {
 	return func(o *baseSettings) {
 		o.StartFunc = start
 	}
@@ -130,7 +129,7 @@ func WithStart(start componenthelper.StartFunc) Option {
 
 // WithShutdown overrides the default Shutdown function for an exporter.
 // The default shutdown function does nothing and always returns nil.
-func WithShutdown(shutdown componenthelper.ShutdownFunc) Option {
+func WithShutdown(shutdown component.ShutdownFunc) Option {
 	return func(o *baseSettings) {
 		o.ShutdownFunc = shutdown
 	}
@@ -171,8 +170,8 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	component.StartFunc
+	component.ShutdownFunc
 	obsrep   *obsExporter
 	sender   requestSender
 	qrSender *queuedRetrySender

@@ -61,6 +61,28 @@ type Component interface {
 	Shutdown(ctx context.Context) error
 }
 
+// StartFunc specifies the function invoked when the component.Component is being started.
+type StartFunc func(context.Context, Host) error
+
+// Start starts the component.
+func (f StartFunc) Start(ctx context.Context, host Host) error {
+	if f == nil {
+		return nil
+	}
+	return f(ctx, host)
+}
+
+// ShutdownFunc specifies the function invoked when the component.Component is being shutdown.
+type ShutdownFunc func(context.Context) error
+
+// Shutdown shuts down the component.
+func (f ShutdownFunc) Shutdown(ctx context.Context) error {
+	if f == nil {
+		return nil
+	}
+	return f(ctx)
+}
+
 // Kind represents component kinds.
 type Kind int
 

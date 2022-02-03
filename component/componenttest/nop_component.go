@@ -15,10 +15,10 @@
 package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
-	"go.opentelemetry.io/collector/component/componenthelper"
+	"go.opentelemetry.io/collector/component"
 )
 
 type nopComponent struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	component.StartFunc
+	component.ShutdownFunc
 }
