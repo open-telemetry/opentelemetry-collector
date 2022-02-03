@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/internalinterface"
 )
@@ -72,6 +71,5 @@ var nopExtensionInstance = &nopExtension{}
 
 // nopExtension stores consumed traces and metrics for testing purposes.
 type nopExtension struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	nopComponent
 }

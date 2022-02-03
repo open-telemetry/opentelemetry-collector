@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -97,7 +96,6 @@ var nopProcessorInstance = &nopProcessor{
 
 // nopProcessor stores consumed traces and metrics for testing purposes.
 type nopProcessor struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	nopComponent
 	consumertest.Consumer
 }
