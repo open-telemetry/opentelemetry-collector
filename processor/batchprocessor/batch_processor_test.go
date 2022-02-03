@@ -598,7 +598,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
 		logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
-			logs.At(logIndex).SetName(getTestLogName(requestNum, logIndex))
+			logs.At(logIndex).SetSeverityText(getTestLogSeverityText(requestNum, logIndex))
 		}
 		logDataSlice = append(logDataSlice, ld.Clone())
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
@@ -612,13 +612,13 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 
 	require.Equal(t, requestCount*logsPerRequest, sink.LogRecordCount())
 	receivedMds := sink.AllLogs()
-	logsReceivedByName := logsReceivedByName(receivedMds)
+	logsReceivedBySeverityText := logsReceivedBySeverityText(receivedMds)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		logs := logDataSlice[requestNum].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			require.EqualValues(t,
 				logs.At(logIndex),
-				logsReceivedByName[getTestLogName(requestNum, logIndex)])
+				logsReceivedBySeverityText[getTestLogSeverityText(requestNum, logIndex)])
 		}
 	}
 }
@@ -763,12 +763,12 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	require.Equal(t, 1, len(sink.AllLogs()))
 }
 
-func getTestLogName(requestNum, index int) string {
+func getTestLogSeverityText(requestNum, index int) string {
 	return fmt.Sprintf("test-log-int-%d-%d", requestNum, index)
 }
 
-func logsReceivedByName(lds []pdata.Logs) map[string]pdata.LogRecord {
-	logsReceivedByName := map[string]pdata.LogRecord{}
+func logsReceivedBySeverityText(lds []pdata.Logs) map[string]pdata.LogRecord {
+	logsReceivedBySeverityText := map[string]pdata.LogRecord{}
 	for i := range lds {
 		ld := lds[i]
 		rms := ld.ResourceLogs()
@@ -778,12 +778,12 @@ func logsReceivedByName(lds []pdata.Logs) map[string]pdata.LogRecord {
 				logs := ilms.At(j).LogRecords()
 				for k := 0; k < logs.Len(); k++ {
 					log := logs.At(k)
-					logsReceivedByName[log.Name()] = log
+					logsReceivedBySeverityText[log.SeverityText()] = log
 				}
 			}
 		}
 	}
-	return logsReceivedByName
+	return logsReceivedBySeverityText
 }
 
 func TestShutdown(t *testing.T) {

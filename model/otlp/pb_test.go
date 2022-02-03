@@ -85,7 +85,7 @@ func TestProtobufLogsSizer(t *testing.T) {
 	sizer := NewProtobufLogsMarshaler().(pdata.LogsSizer)
 	marshaler := NewProtobufLogsMarshaler()
 	ld := pdata.NewLogs()
-	ld.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty().SetName("foo")
+	ld.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("error")
 
 	size := sizer.LogsSize(ld)
 
@@ -190,7 +190,6 @@ func generateBenchmarkLogs(logsCount int) pdata.Logs {
 	ilm.LogRecords().EnsureCapacity(logsCount)
 	for i := 0; i < logsCount; i++ {
 		im := ilm.LogRecords().AppendEmpty()
-		im.SetName("test_name")
 		im.SetTimestamp(endTime)
 	}
 	return md
