@@ -82,7 +82,7 @@ func Test${structName}_MoveAndAppendTo(t *testing.T) {
 func Test${structName}_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
 	emptySlice := New${structName}()
-	emptySlice.RemoveIf(func (el ${elementName}) bool {
+	emptySlice.RemoveIf(func(el ${elementName}) bool {
 		t.Fail()
 		return false
 	})
@@ -90,7 +90,7 @@ func Test${structName}_RemoveIf(t *testing.T) {
 	// Test RemoveIf
 	filtered := generateTest${structName}()
 	pos := 0
-	filtered.RemoveIf(func (el ${elementName}) bool {
+	filtered.RemoveIf(func(el ${elementName}) bool {
 		pos++
 		return pos%3 == 0
 	})
