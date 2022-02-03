@@ -53,6 +53,16 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = v
 }`
 
+const oneOfTypeAccessorHeaderTemplate = `// ${typeAccessor} returns the type of the ${lowerOriginFieldName} for this ${structName}.
+// Calling this function on zero-initialized ${structName} will cause a panic.
+func (ms ${structName}) ${typeAccessor}() ${typeName} {
+	switch ms.orig.${originFieldName}.(type) {`
+
+const oneOfTypeAccessorHeaderTestTemplate = `func Test${structName}${typeAccessor}(t *testing.T) {
+	tv := New${structName}()
+	assert.Equal(t, ${typeName}None, tv.${typeAccessor}())
+	assert.Equal(t, "", ${typeName}(1000).String())`
+
 const accessorsOneOfMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 // Calling this function when ${typeAccessor}() != ${typeName} will cause a panic.
 // Calling this function on zero-initialized ${structName} will cause a panic.
@@ -401,25 +411,76 @@ var _ baseField = (*primitiveStructField)(nil)
 type oneOfField struct {
 	originTypePrefix string
 	originFieldName  string
-	// TODO: Generate type accessors.
-	typeAccessor string
-	typeName     string
-	testValueIdx int
-	values       []oneOfValue
+	typeAccessor     string
+	typeName         string
+	testValueIdx     int
+	values           []oneOfValue
 }
 
 func (of *oneOfField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+	of.generateTypeAccessors(ms, sb)
+	sb.WriteString("\n")
 	for _, v := range of.values {
 		v.generateAccessors(ms, of, sb)
 		sb.WriteString("\n")
 	}
 }
 
+func (of *oneOfField) generateTypeAccessors(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(oneOfTypeAccessorHeaderTemplate, func(name string) string {
+		switch name {
+		case "lowerOriginFieldName":
+			return strings.ToLower(of.originFieldName)
+		case "originFieldName":
+			return of.originFieldName
+		case "structName":
+			return ms.getName()
+		case "typeAccessor":
+			return of.typeAccessor
+		case "typeName":
+			return of.typeName
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString("\n")
+	for _, v := range of.values {
+		v.generateTypeSwitchCase(of, sb)
+	}
+	sb.WriteString("\t}\n")
+	sb.WriteString("\treturn " + of.typeName + "None\n")
+	sb.WriteString("}\n")
+}
+
 func (of *oneOfField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+	of.generateTypeAccessorsTest(ms, sb)
+	sb.WriteString("\n")
 	for _, v := range of.values {
 		v.generateTests(ms.(*messageValueStruct), of, sb)
 		sb.WriteString("\n")
 	}
+}
+
+func (of *oneOfField) generateTypeAccessorsTest(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(oneOfTypeAccessorHeaderTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "typeAccessor":
+			return of.typeAccessor
+		case "typeName":
+			return of.typeName
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString("\n")
+	for _, v := range of.values {
+		v.generateSetWithTestValue(of, sb)
+		sb.WriteString("\n\tassert.Equal(t, \"" + v.getFieldType() + "\", " + of.typeName + v.getFieldType() + ".String())\n")
+		sb.WriteString("\tassert.Equal(t, " + of.typeName + v.getFieldType() + ", tv." + of.typeAccessor + "())\n")
+	}
+	sb.WriteString("}\n")
 }
 
 func (of *oneOfField) generateSetWithTestValue(sb *strings.Builder) {
@@ -437,10 +498,12 @@ func (of *oneOfField) generateCopyToValue(sb *strings.Builder) {
 var _ baseField = (*oneOfField)(nil)
 
 type oneOfValue interface {
+	getFieldType() string
 	generateAccessors(ms baseStruct, of *oneOfField, sb *strings.Builder)
 	generateTests(ms baseStruct, of *oneOfField, sb *strings.Builder)
 	generateSetWithTestValue(of *oneOfField, sb *strings.Builder)
 	generateCopyToValue(of *oneOfField, sb *strings.Builder)
+	generateTypeSwitchCase(of *oneOfField, sb *strings.Builder)
 }
 
 type oneOfPrimitiveValue struct {
@@ -450,6 +513,10 @@ type oneOfPrimitiveValue struct {
 	testVal         string
 	returnType      string
 	originFieldName string
+}
+
+func (opv *oneOfPrimitiveValue) getFieldType() string {
+	return opv.fieldType
 }
 
 func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField, sb *strings.Builder) {
@@ -503,12 +570,21 @@ func (opv *oneOfPrimitiveValue) generateCopyToValue(of *oneOfField, sb *strings.
 	sb.WriteString("\t dest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
 }
 
+func (opv *oneOfPrimitiveValue) generateTypeSwitchCase(of *oneOfField, sb *strings.Builder) {
+	sb.WriteString("\tcase *" + of.originTypePrefix + opv.originFieldName + ":\n")
+	sb.WriteString("\t\treturn " + of.typeName + opv.fieldType + "\n")
+}
+
 var _ oneOfValue = (*oneOfPrimitiveValue)(nil)
 
 type oneOfMessageValue struct {
 	fieldName       string
 	originFieldName string
 	returnMessage   *messageValueStruct
+}
+
+func (omv *oneOfMessageValue) getFieldType() string {
+	return omv.fieldName
 }
 
 func (omv *oneOfMessageValue) generateAccessors(ms baseStruct, of *oneOfField, sb *strings.Builder) {
@@ -578,6 +654,11 @@ func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *strings.Bu
 		}
 	}))
 	sb.WriteString("\n")
+}
+
+func (omv *oneOfMessageValue) generateTypeSwitchCase(of *oneOfField, sb *strings.Builder) {
+	sb.WriteString("\tcase *" + of.originTypePrefix + omv.originFieldName + ":\n")
+	sb.WriteString("\t\treturn " + of.typeName + omv.fieldName + "\n")
 }
 
 var _ oneOfValue = (*oneOfMessageValue)(nil)

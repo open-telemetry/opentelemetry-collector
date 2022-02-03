@@ -153,24 +153,6 @@ func (mdt MetricDataType) String() string {
 	return ""
 }
 
-// DataType returns the type of the data for this Metric.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DataType() MetricDataType {
-	switch ms.orig.Data.(type) {
-	case *otlpmetrics.Metric_Gauge:
-		return MetricDataTypeGauge
-	case *otlpmetrics.Metric_Sum:
-		return MetricDataTypeSum
-	case *otlpmetrics.Metric_Histogram:
-		return MetricDataTypeHistogram
-	case *otlpmetrics.Metric_ExponentialHistogram:
-		return MetricDataTypeExponentialHistogram
-	case *otlpmetrics.Metric_Summary:
-		return MetricDataTypeSummary
-	}
-	return MetricDataTypeNone
-}
-
 // SetDataType clears any existing data and initialize it with an empty data of the given type.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetDataType(ty MetricDataType) {
@@ -265,28 +247,4 @@ func (mdt MetricValueType) String() string {
 		return "Double"
 	}
 	return ""
-}
-
-// Type returns the type of the value for this NumberDataPoint.
-// Calling this function on zero-initialized NumberDataPoint will cause a panic.
-func (ms NumberDataPoint) Type() MetricValueType {
-	switch ms.orig.Value.(type) {
-	case *otlpmetrics.NumberDataPoint_AsDouble:
-		return MetricValueTypeDouble
-	case *otlpmetrics.NumberDataPoint_AsInt:
-		return MetricValueTypeInt
-	}
-	return MetricValueTypeNone
-}
-
-// Type returns the type of the value for this Exemplar.
-// Calling this function on zero-initialized Exemplar will cause a panic.
-func (ms Exemplar) Type() MetricValueType {
-	switch ms.orig.Value.(type) {
-	case *otlpmetrics.Exemplar_AsDouble:
-		return MetricValueTypeDouble
-	case *otlpmetrics.Exemplar_AsInt:
-		return MetricValueTypeInt
-	}
-	return MetricValueTypeNone
 }

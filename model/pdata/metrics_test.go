@@ -33,62 +33,6 @@ const (
 	endTime   = uint64(12578940000000054321)
 )
 
-func TestMetricDataTypeString(t *testing.T) {
-	assert.Equal(t, "None", MetricDataTypeNone.String())
-	assert.Equal(t, "Gauge", MetricDataTypeGauge.String())
-	assert.Equal(t, "Sum", MetricDataTypeSum.String())
-	assert.Equal(t, "Histogram", MetricDataTypeHistogram.String())
-	assert.Equal(t, "ExponentialHistogram", MetricDataTypeExponentialHistogram.String())
-	assert.Equal(t, "Summary", MetricDataTypeSummary.String())
-	assert.Equal(t, "", (MetricDataTypeSummary + 1).String())
-}
-
-func TestMetricDataType(t *testing.T) {
-	m := NewMetric()
-	assert.Equal(t, "None", MetricDataTypeNone.String())
-	assert.Equal(t, MetricDataTypeNone, m.DataType())
-	m.SetDataType(MetricDataTypeGauge)
-	assert.Equal(t, "Gauge", MetricDataTypeGauge.String())
-	assert.Equal(t, MetricDataTypeGauge, m.DataType())
-	m.SetDataType(MetricDataTypeSum)
-	assert.Equal(t, "Sum", MetricDataTypeSum.String())
-	assert.Equal(t, MetricDataTypeSum, m.DataType())
-	m.SetDataType(MetricDataTypeHistogram)
-	assert.Equal(t, "Histogram", MetricDataTypeHistogram.String())
-	assert.Equal(t, MetricDataTypeHistogram, m.DataType())
-	m.SetDataType(MetricDataTypeExponentialHistogram)
-	assert.Equal(t, "ExponentialHistogram", MetricDataTypeExponentialHistogram.String())
-	assert.Equal(t, MetricDataTypeExponentialHistogram, m.DataType())
-	m.SetDataType(MetricDataTypeSummary)
-	assert.Equal(t, "Summary", MetricDataTypeSummary.String())
-	assert.Equal(t, MetricDataTypeSummary, m.DataType())
-}
-
-func TestPointMetricValueTypeString(t *testing.T) {
-	assert.Equal(t, "None", MetricValueTypeNone.String())
-	assert.Equal(t, "Int", MetricValueTypeInt.String())
-	assert.Equal(t, "Double", MetricValueTypeDouble.String())
-	assert.Equal(t, "", (MetricValueTypeDouble + 1).String())
-}
-
-func TestPointMetricValueType(t *testing.T) {
-	m := NewNumberDataPoint()
-	assert.Equal(t, MetricValueTypeNone, m.Type())
-	m.SetIntVal(10)
-	assert.Equal(t, MetricValueTypeInt, m.Type())
-	m.SetDoubleVal(10.0)
-	assert.Equal(t, MetricValueTypeDouble, m.Type())
-}
-
-func TestExemplarMetricValueType(t *testing.T) {
-	m := NewExemplar()
-	assert.Equal(t, MetricValueTypeNone, m.Type())
-	m.SetIntVal(10)
-	assert.Equal(t, MetricValueTypeInt, m.Type())
-	m.SetDoubleVal(10.0)
-	assert.Equal(t, MetricValueTypeDouble, m.Type())
-}
-
 func TestResourceMetricsWireCompatibility(t *testing.T) {
 	// This test verifies that OTLP ProtoBufs generated using goproto lib in
 	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
