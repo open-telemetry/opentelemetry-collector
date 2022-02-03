@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
@@ -52,22 +53,37 @@ type ExtensionCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// ExtensionFactory is a factory interface for extensions to the service.
-//
-// This interface cannot be directly implemented. Implementations must
-// use the extensionhelper.NewFactory to implement it.
-type ExtensionFactory interface {
-	Factory
+// ExtensionCreateDefaultConfigFunc is the equivalent of component.ExtensionFactory.CreateDefaultConfig()
+type ExtensionCreateDefaultConfigFunc func() config.Extension
 
-	// CreateDefaultConfig creates the default configuration for the Extension.
-	// This method can be called multiple times depending on the pipeline
-	// configuration and should not cause side-effects that prevent the creation
-	// of multiple instances of the Extension.
-	// The object returned by this method needs to pass the checks implemented by
-	// 'configtest.CheckConfigStruct'. It is recommended to have these checks in the
-	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() config.Extension
+// CreateDefaultConfig creates the default configuration for the Extension.
+// This method can be called multiple times depending on the pipeline
+// configuration and should not cause side-effects that prevent the creation
+// of multiple instances of the Extension.
+// The object returned by this method needs to pass the checks implemented by
+// 'configtest.CheckConfigStruct'. It is recommended to have these checks in the
+// tests of any implementation of the Factory interface.
+func (f ExtensionCreateDefaultConfigFunc) CreateDefaultConfig() config.Extension {
+	return f()
+}
 
-	// CreateExtension creates a service extension based on the given config.
-	CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg config.Extension) (Extension, error)
+// CreateExtensionFunc is the equivalent of component.ExtensionFactory.CreateExtension()
+type CreateExtensionFunc func(context.Context, ExtensionCreateSettings, config.Extension) (Extension, error)
+
+// CreateExtension creates a service extension based on the given config.
+func (f CreateExtensionFunc) CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg config.Extension) (Extension, error) {
+	return f(ctx, set, cfg)
+}
+
+// ExtensionFactory is a factory for extensions to the service.
+type ExtensionFactory struct {
+	internalinterface.InternalInterface
+	CfgType config.Type
+	ExtensionCreateDefaultConfigFunc
+	CreateExtensionFunc
+}
+
+// Type gets the type of the Extension config created by this factory.
+func (ef ExtensionFactory) Type() config.Type {
+	return ef.CfgType
 }

@@ -55,7 +55,7 @@ func TestService_GetFactory(t *testing.T) {
 	assert.EqualValues(t, nil, factory)
 
 	factory = srv.GetFactory(component.KindExtension, "nop")
-	assert.EqualValues(t, factories.Extensions["nop"], factory)
+	assert.Equal(t, factories.Extensions["nop"], factory)
 	factory = srv.GetFactory(component.KindExtension, "wrongtype")
 	assert.EqualValues(t, nil, factory)
 

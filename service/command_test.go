@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
@@ -46,8 +45,7 @@ func TestNewCommandMapProviderIsNil(t *testing.T) {
 func TestNewCommandInvalidFactories(t *testing.T) {
 	factories, err := testcomponents.ExampleComponents()
 	require.NoError(t, err)
-	f := &badConfigExtensionFactory{}
-	factories.Extensions[f.Type()] = f
+	factories.Extensions[badConfigExtensionFactory.Type()] = badConfigExtensionFactory
 	settings := CollectorSettings{Factories: factories}
 	cmd := NewCommand(settings)
 	err = cmd.Execute()
@@ -56,21 +54,15 @@ func TestNewCommandInvalidFactories(t *testing.T) {
 
 // badConfigExtensionFactory was created to force error path from factory returning
 // a config not satisfying the validation.
-type badConfigExtensionFactory struct {
-	internalinterface.BaseInternal
-}
-
-func (b badConfigExtensionFactory) Type() config.Type {
-	return "bad_config"
-}
-
-func (b badConfigExtensionFactory) CreateDefaultConfig() config.Extension {
-	return &struct {
-		config.ExtensionSettings
-		BadTagField int `mapstructure:"tag-with-dashes"`
-	}{}
-}
-
-func (b badConfigExtensionFactory) CreateExtension(_ context.Context, _ component.ExtensionCreateSettings, _ config.Extension) (component.Extension, error) {
-	return nil, nil
+var badConfigExtensionFactory = component.ExtensionFactory{
+	CfgType: "bad_config",
+	ExtensionCreateDefaultConfigFunc: func() config.Extension {
+		return &struct {
+			config.ExtensionSettings
+			BadTagField int `mapstructure:"tag-with-dashes"`
+		}{}
+	},
+	CreateExtensionFunc: func(context.Context, component.ExtensionCreateSettings, config.Extension) (component.Extension, error) {
+		return nil, nil
+	},
 }

@@ -15,60 +15,29 @@
 package extensionhelper // import "go.opentelemetry.io/collector/extension/extensionhelper"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
-// FactoryOption apply changes to ExporterOptions.
-type FactoryOption func(o *factory)
+// Deprecated: not needed, will be removed soon.
+type FactoryOption struct{}
 
-// CreateDefaultConfig is the equivalent of component.ExtensionFactory.CreateDefaultConfig()
-type CreateDefaultConfig func() config.Extension
+// Deprecated: use component.ExtensionCreateDefaultConfigFunc.
+type CreateDefaultConfig = component.ExtensionCreateDefaultConfigFunc
 
-// CreateServiceExtension is the equivalent of component.ExtensionFactory.CreateExtension()
-type CreateServiceExtension func(context.Context, component.ExtensionCreateSettings, config.Extension) (component.Extension, error)
+// Deprecated: use component.CreateExtensionFunc.
+type CreateServiceExtension = component.CreateExtensionFunc
 
-type factory struct {
-	internalinterface.BaseInternal
-	cfgType                config.Type
-	createDefaultConfig    CreateDefaultConfig
-	createServiceExtension CreateServiceExtension
-}
-
-// NewFactory returns a component.ExtensionFactory.
+// Deprecated: use component.ExtensionFactory directly.
 func NewFactory(
 	cfgType config.Type,
-	createDefaultConfig CreateDefaultConfig,
-	createServiceExtension CreateServiceExtension,
+	createDefaultConfig component.ExtensionCreateDefaultConfigFunc,
+	createServiceExtension component.CreateExtensionFunc,
 	options ...FactoryOption) component.ExtensionFactory {
-	f := &factory{
-		cfgType:                cfgType,
-		createDefaultConfig:    createDefaultConfig,
-		createServiceExtension: createServiceExtension,
-	}
-	for _, opt := range options {
-		opt(f)
+	f := component.ExtensionFactory{
+		CfgType:                          cfgType,
+		ExtensionCreateDefaultConfigFunc: createDefaultConfig,
+		CreateExtensionFunc:              createServiceExtension,
 	}
 	return f
-}
-
-// Type gets the type of the Extension config created by this factory.
-func (f *factory) Type() config.Type {
-	return f.cfgType
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (f *factory) CreateDefaultConfig() config.Extension {
-	return f.createDefaultConfig()
-}
-
-// CreateExtension creates a component.TraceExtension based on this config.
-func (f *factory) CreateExtension(
-	ctx context.Context,
-	set component.ExtensionCreateSettings,
-	cfg config.Extension) (component.Extension, error) {
-	return f.createServiceExtension(ctx, set, cfg)
 }
