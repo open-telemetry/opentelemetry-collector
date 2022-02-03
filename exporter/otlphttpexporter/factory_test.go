@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -45,6 +46,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ocfg.RetrySettings.InitialInterval, 5*time.Second, "default retry InitialInterval")
 	assert.Equal(t, ocfg.RetrySettings.MaxInterval, 30*time.Second, "default retry MaxInterval")
 	assert.Equal(t, ocfg.QueueSettings.Enabled, true, "default sending queue is enabled")
+	assert.Equal(t, ocfg.Compression, configcompression.Gzip)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -131,6 +133,46 @@ func TestCreateTracesExporter(t *testing.T) {
 			},
 			mustFailOnCreate: false,
 			mustFailOnStart:  true,
+		},
+		{
+			name: "NoneCompression",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint:    endpoint,
+					Compression: "none",
+				},
+			},
+		},
+		{
+			name: "GzipCompression",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint:    endpoint,
+					Compression: configcompression.Gzip,
+				},
+			},
+		},
+		{
+			name: "SnappyCompression",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint:    endpoint,
+					Compression: configcompression.Snappy,
+				},
+			},
+		},
+		{
+			name: "ZstdCompression",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint:    endpoint,
+					Compression: configcompression.Zstd,
+				},
+			},
 		},
 	}
 

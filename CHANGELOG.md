@@ -11,6 +11,7 @@
   in 0.11.0 are no longer converted to the messages and fields that replaced the deprecated ones.
   Received deprecated messages and fields will be now ignored. In OTLP/JSON in the
   instrumentationLibraryLogs object the "logs" field is now named "logRecords" (#4724)
+- `otlphttp` and `otlp` exporters enable gzip compression by default (#4632)
 
 ## 💡 Enhancements 💡
 

@@ -43,6 +43,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ocfg.RetrySettings, exporterhelper.DefaultRetrySettings())
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.DefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.DefaultTimeoutSettings())
+	assert.Equal(t, ocfg.Compression, configcompression.Gzip)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -97,6 +98,16 @@ func TestCreateTracesExporter(t *testing.T) {
 						Timeout:             25 * time.Second,
 						PermitWithoutStream: true,
 					},
+				},
+			},
+		},
+		{
+			name: "NoneCompression",
+			config: Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				GRPCClientSettings: configgrpc.GRPCClientSettings{
+					Endpoint:    endpoint,
+					Compression: "none",
 				},
 			},
 		},

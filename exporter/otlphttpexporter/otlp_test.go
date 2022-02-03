@@ -15,6 +15,8 @@
 package otlphttpexporter
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/hex"
@@ -243,7 +245,11 @@ func TestLogsRoundTrip(t *testing.T) {
 func TestIssue_4221(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() { assert.NoError(t, r.Body.Close()) }()
-		data, err := ioutil.ReadAll(r.Body)
+		compressedData, err := ioutil.ReadAll(r.Body)
+		require.NoError(t, err)
+		gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData))
+		require.NoError(t, err)
+		data, err := ioutil.ReadAll(gzipReader)
 		require.NoError(t, err)
 		base64Data := base64.StdEncoding.EncodeToString(data)
 		// Verify same base64 encoded string is received.
