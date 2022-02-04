@@ -601,6 +601,85 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	}, internal.MetricsToOtlp(md.InternalRep()))
 }
 
+func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
+	newAttributes := NewAttributeMapFromMap(map[string]AttributeValue{"k": NewAttributeValueString("v")})
+
+	md := MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpmetrics.MetricsData{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+					},
+				},
+			},
+		},
+	}))
+	resourceMetrics := md.ResourceMetrics()
+	metric := resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	// Mutate MetricDescriptor
+	metric.SetName("new_my_metric_exponential_histogram")
+	assert.EqualValues(t, "new_my_metric_exponential_histogram", metric.Name())
+	metric.SetDescription("My new metric")
+	assert.EqualValues(t, "My new metric", metric.Description())
+	metric.SetUnit("1")
+	assert.EqualValues(t, "1", metric.Unit())
+	// Mutate DataPoints
+	dhd := metric.Histogram()
+	assert.EqualValues(t, 2, dhd.DataPoints().Len())
+	metric.SetDataType(MetricDataTypeExponentialHistogram)
+	metric.ExponentialHistogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
+	histogramDataPoints := metric.ExponentialHistogram().DataPoints()
+	histogramDataPoints.AppendEmpty()
+	assert.EqualValues(t, 1, histogramDataPoints.Len())
+	histogramDataPoints.At(0).SetStartTimestamp(Timestamp(startTime + 1))
+	assert.EqualValues(t, startTime+1, histogramDataPoints.At(0).StartTimestamp())
+	histogramDataPoints.At(0).SetTimestamp(Timestamp(endTime + 1))
+	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
+	histogramDataPoints.At(0).Attributes().Delete("key0")
+	histogramDataPoints.At(0).Attributes().UpsertString("k", "v")
+	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes())
+	// Test that everything is updated.
+	assert.EqualValues(t, &otlpmetrics.MetricsData{
+		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
+			{
+				Resource: generateTestProtoResource(),
+				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+					{
+						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Metrics: []*otlpmetrics.Metric{
+							{
+								Name:        "new_my_metric_exponential_histogram",
+								Description: "My new metric",
+								Unit:        "1",
+								Data: &otlpmetrics.Metric_ExponentialHistogram{
+									ExponentialHistogram: &otlpmetrics.ExponentialHistogram{
+										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
+										DataPoints: []*otlpmetrics.ExponentialHistogramDataPoint{
+											{
+												Attributes: []otlpcommon.KeyValue{
+													{
+														Key:   "k",
+														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
+													},
+												},
+												StartTimeUnixNano: startTime + 1,
+												TimeUnixNano:      endTime + 1,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, internal.MetricsToOtlp(md.InternalRep()))
+}
+
 func TestMetricsClone(t *testing.T) {
 	metrics := NewMetrics()
 	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
