@@ -37,7 +37,7 @@ var _ config.Exporter = (*Config)(nil)
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
 	if err := cfg.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("queue settings has invalid configuration %w", err)
+		return fmt.Errorf("queue settings has invalid configuration: %w", err)
 	}
 
 	return nil
