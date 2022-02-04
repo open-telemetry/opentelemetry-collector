@@ -20,6 +20,7 @@ package pdata
 import (
 	"sort"
 
+	"go.opentelemetry.io/collector/model/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 )
 
@@ -1413,9 +1414,15 @@ func (ms HistogramDataPoint) Min() float64 {
 	return (*ms.orig).Min.DoubleValue
 }
 
+// HasMin returns true if the HistogramDataPoint contains a
+// Min value, false otherwise.
+func (ms HistogramDataPoint) HasMin() bool {
+	return !ms.orig.Min.IsEmpty()
+}
+
 // SetMin replaces the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMin(v float64) {
-	(*ms.orig).Min.DoubleValue = v
+	(*ms.orig).Min = data.NewOptionalDouble(v)
 }
 
 // Max returns the max associated with this HistogramDataPoint.
@@ -1423,9 +1430,15 @@ func (ms HistogramDataPoint) Max() float64 {
 	return (*ms.orig).Max.DoubleValue
 }
 
+// HasMax returns true if the HistogramDataPoint contains a
+// Max value, false otherwise.
+func (ms HistogramDataPoint) HasMax() bool {
+	return !ms.orig.Max.IsEmpty()
+}
+
 // SetMax replaces the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMax(v float64) {
-	(*ms.orig).Max.DoubleValue = v
+	(*ms.orig).Max = data.NewOptionalDouble(v)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1708,9 +1721,15 @@ func (ms ExponentialHistogramDataPoint) Min() float64 {
 	return (*ms.orig).Min.DoubleValue
 }
 
+// HasMin returns true if the ExponentialHistogramDataPoint contains a
+// Min value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasMin() bool {
+	return !ms.orig.Min.IsEmpty()
+}
+
 // SetMin replaces the min associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
-	(*ms.orig).Min.DoubleValue = v
+	(*ms.orig).Min = data.NewOptionalDouble(v)
 }
 
 // Max returns the max associated with this ExponentialHistogramDataPoint.
@@ -1718,9 +1737,15 @@ func (ms ExponentialHistogramDataPoint) Max() float64 {
 	return (*ms.orig).Max.DoubleValue
 }
 
+// HasMax returns true if the ExponentialHistogramDataPoint contains a
+// Max value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasMax() bool {
+	return !ms.orig.Max.IsEmpty()
+}
+
 // SetMax replaces the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
-	(*ms.orig).Max.DoubleValue = v
+	(*ms.orig).Max = data.NewOptionalDouble(v)
 }
 
 // CopyTo copies all properties from the current struct to the dest.

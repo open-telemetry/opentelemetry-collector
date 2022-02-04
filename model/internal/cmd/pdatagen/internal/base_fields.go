@@ -120,6 +120,22 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = v.orig
 }`
 
+const accessorsOptionalTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) ${fieldName}() ${returnType} {
+	return (*ms.orig).${originFieldName}
+}
+
+// Has${fieldName} returns true if the ${structName} contains a
+// ${fieldName} value, false otherwise.
+func (ms ${structName}) Has${fieldName}() bool {
+	return !ms.orig.${fieldName}.IsEmpty()
+}
+
+// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+	(*ms.orig).${fieldName} = data.NewOptionalDouble(v)
+}`
+
 type baseField interface {
 	generateAccessors(ms baseStruct, sb *strings.Builder)
 
@@ -581,3 +597,63 @@ func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *strings.Bu
 }
 
 var _ oneOfValue = (*oneOfMessageValue)(nil)
+
+// Types that has defined a custom type (e.g. "type Timestamp uint64")
+type optionalField struct {
+	fieldName       string
+	originFieldName string
+	returnType      string
+	defaultVal      string
+	testVal         string
+	rawType         string
+}
+
+func (of *optionalField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+	template := accessorsOptionalTemplate
+
+	sb.WriteString(os.Expand(template, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "fieldName":
+			return of.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(of.fieldName)
+		case "returnType":
+			return of.returnType
+		case "rawType":
+			return of.rawType
+		case "originFieldName":
+			return of.originFieldName
+		default:
+			panic(name)
+		}
+	}))
+}
+
+func (of *optionalField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "defaultVal":
+			return of.defaultVal
+		case "fieldName":
+			return of.fieldName
+		case "testValue":
+			return of.testVal
+		default:
+			panic(name)
+		}
+	}))
+}
+
+func (of *optionalField) generateSetWithTestValue(sb *strings.Builder) {
+	sb.WriteString("\ttv.Set" + of.fieldName + "(" + of.testVal + ")")
+}
+
+func (of *optionalField) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("\tdest.Set" + of.fieldName + "(ms." + of.fieldName + "())")
+}
+
+var _ baseField = (*optionalField)(nil)

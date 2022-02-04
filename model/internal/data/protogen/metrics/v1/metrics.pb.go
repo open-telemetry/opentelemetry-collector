@@ -1080,9 +1080,9 @@ type HistogramDataPoint struct {
 	// for the available flags and their meaning.
 	Flags uint32 `protobuf:"varint,10,opt,name=flags,proto3" json:"flags,omitempty"`
 	// Min is the minimum value over (start_time, end_time].
-	Min go_opentelemetry_io_collector_model_internal_data.OptionalDouble
+	Min go_opentelemetry_io_collector_model_internal_data.OptionalDouble `fixed64,11,opt,name=min,proto3,oneof" json:"min,omitempty"`
 	// Max is the maximum value over (start_time, end_time].
-	Max go_opentelemetry_io_collector_model_internal_data.OptionalDouble
+	Max go_opentelemetry_io_collector_model_internal_data.OptionalDouble `fixed64,12,opt,name=max,proto3,oneof" json:"max,omitempty"`
 }
 
 func (m *HistogramDataPoint) Reset()         { *m = HistogramDataPoint{} }
@@ -1250,9 +1250,9 @@ type ExponentialHistogramDataPoint struct {
 	// measurements that were used to form the data point
 	Exemplars []Exemplar `protobuf:"bytes,11,rep,name=exemplars,proto3" json:"exemplars"`
 	// Min is the minimum value over (start_time, end_time].
-	Min go_opentelemetry_io_collector_model_internal_data.OptionalDouble
+	Min go_opentelemetry_io_collector_model_internal_data.OptionalDouble `protobuf:"fixed64,12,opt,name=min,proto3,oneof" json:"min,omitempty"`
 	// Max is the maximum value over (start_time, end_time].
-	Max go_opentelemetry_io_collector_model_internal_data.OptionalDouble
+	Max go_opentelemetry_io_collector_model_internal_data.OptionalDouble `protobuf:"fixed64,13,opt,name=max,proto3,oneof" json:"max,omitempty"`
 }
 
 func (m *ExponentialHistogramDataPoint) Reset()         { *m = ExponentialHistogramDataPoint{} }
@@ -2605,6 +2605,20 @@ func (m *ExponentialHistogramDataPoint) MarshalToSizedBuffer(dAtA []byte) (int, 
 	_ = i
 	var l int
 	_ = l
+	if !m.Max.IsEmpty() {
+		i -= m.Max.Size()
+		if _, err := m.Max.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		dAtA[i] = 0x69
+	}
+	if !m.Min.IsEmpty() {
+		i -= m.Min.Size()
+		if _, err := m.Min.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		dAtA[i] = 0x61
+	}
 	if len(m.Exemplars) > 0 {
 		for iNdEx := len(m.Exemplars) - 1; iNdEx >= 0; iNdEx-- {
 			{
