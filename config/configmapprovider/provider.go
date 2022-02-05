@@ -16,6 +16,8 @@ package configmapprovider // import "go.opentelemetry.io/collector/config/config
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/config"
 )
 
 // Provider is an interface that helps to retrieve a config map and watch for any
@@ -24,15 +26,13 @@ import (
 //
 // The typical usage is the following:
 //
-//		r := mapProvider.Retrieve("file:/path/to/config")
-//		r.Get()
-//		// wait for onChange() to be called.
+//		r, err := mapProvider.Retrieve("file:/path/to/config")
+//      // Use r.Map; wait for onChange() to be called.
 //		r.Close()
-//		r = mapProvider.Retrieve("file:/path/to/config")
-//		r.Get()
-//		// wait for onChange() to be called.
+//		r, err = mapProvider.Retrieve("file:/path/to/config")
+//      // Use r.Map; wait for onChange() to be called.
 //		r.Close()
-//		// repeat Retrieve/Get/wait/Close cycle until it is time to shut down the Collector process.
+//		// repeat retrieve/wait/close cycle until it is time to shut down the Collector process.
 //		// ...
 //		mapProvider.Shutdown()
 type Provider interface {
@@ -76,4 +76,33 @@ type ChangeEvent struct {
 	// Error is nil if the config is changed and needs to be re-fetched.
 	// Any non-nil error indicates that there was a problem with watching the config changes.
 	Error error
+}
+
+// Retrieved holds the result of a call to the Retrieve method of a Provider object.
+type Retrieved struct {
+	Map *config.Map
+
+	// CloseFunc specifies a function to be invoked when the configuration for which it was
+	// used to retrieve values is no longer in use and should close and release any watchers
+	// that it may have created.
+	//
+	// If nil, then nothing to be closed.
+	CloseFunc
+}
+
+// CloseFunc a function to close and release any watchers that it may have created.
+//
+// Should block until all resources are closed, and guarantee that `onChange` is not
+// going to be called after it returns except when `ctx` is cancelled.
+//
+// Should never be called concurrently with itself.
+type CloseFunc func(context.Context) error
+
+// Close calls the func only if not nil.
+// Deprecated: Not needed, will be removed soon. You have access to the func.
+func (f CloseFunc) Close(ctx context.Context) error {
+	if f == nil {
+		return nil
+	}
+	return f(ctx)
 }

@@ -39,18 +39,16 @@ func NewEnv() Provider {
 
 func (emp *envMapProvider) Retrieve(_ context.Context, location string, _ WatcherFunc) (Retrieved, error) {
 	if !strings.HasPrefix(location, envSchemeName+":") {
-		return nil, fmt.Errorf("%v location is not supported by %v provider", location, envSchemeName)
+		return Retrieved{}, fmt.Errorf("%v location is not supported by %v provider", location, envSchemeName)
 	}
 
 	content := os.Getenv(location[len(envSchemeName)+1:])
 	var data map[string]interface{}
 	if err := yaml.Unmarshal([]byte(content), &data); err != nil {
-		return nil, fmt.Errorf("unable to parse yaml: %w", err)
+		return Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 
-	return NewRetrieved(func(ctx context.Context) (*config.Map, error) {
-		return config.NewMapFromStringMap(data), nil
-	})
+	return Retrieved{Map: config.NewMapFromStringMap(data)}, nil
 }
 
 func (*envMapProvider) Shutdown(context.Context) error {
