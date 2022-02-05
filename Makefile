@@ -90,8 +90,7 @@ gofmt:
 .PHONY: gotidy
 gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="go mod tidy -go=1.16"
-	$(MAKE) for-all CMD="go mod tidy -go=1.17"
+	$(MAKE) for-all CMD="go mod tidy -compat=1.17"
 
 .PHONY: addlicense
 addlicense:
