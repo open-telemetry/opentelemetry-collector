@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- Transform configmapprovider.Retrieved interface to a struct (#4789)
+
 ## v0.44.0 Beta
 
 ## 🛑 Breaking changes 🛑

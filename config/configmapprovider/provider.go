@@ -28,10 +28,10 @@ import (
 //
 //		r, err := mapProvider.Retrieve("file:/path/to/config")
 //      // Use r.Map; wait for onChange() to be called.
-//		r.CloseFunc()
+//		r.Close()
 //		r, err = mapProvider.Retrieve("file:/path/to/config")
 //      // Use r.Map; wait for onChange() to be called.
-//		r.CloseFunc()
+//		r.Close()
 //		// repeat retrieve/wait/close cycle until it is time to shut down the Collector process.
 //		// ...
 //		mapProvider.Shutdown()
@@ -97,3 +97,12 @@ type Retrieved struct {
 //
 // Should never be called concurrently with itself.
 type CloseFunc func(context.Context) error
+
+// Close calls the func only if not nil.
+// Deprecated: Not needed, will be removed soon. You have access to the func.
+func (f CloseFunc) Close(ctx context.Context) error {
+	if f == nil {
+		return nil
+	}
+	return f(ctx)
+}
