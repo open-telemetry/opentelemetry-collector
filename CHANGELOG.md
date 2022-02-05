@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- Deprecate `service/defaultcomponents` go package (#4622)
+
 ## v0.44.0 Beta
 
 ## 🛑 Breaking changes 🛑

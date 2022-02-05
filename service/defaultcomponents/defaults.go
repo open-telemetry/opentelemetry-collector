@@ -29,8 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
-// Components returns the default set of components used by the
-// OpenTelemetry collector.
+// Deprecated: Will be removed soon.
 func Components() (
 	component.Factories,
 	error,
