@@ -319,13 +319,18 @@ check-contrib:
 	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"
 
 # List of directories where certificates are stored for unit tests.
-CERT_DIRS := config/configgrpc/testdata \
-             config/confighttp/testdata
+CERT_DIRS := localhost|""|config/configgrpc/testdata \
+             localhost|""|config/confighttp/testdata \
+             example1|"-1"|config/configtls/testdata \
+             example2|"-2"|config/configtls/testdata
+cert-domain = $(firstword $(subst |, ,$1))
+cert-suffix = $(word 2,$(subst |, ,$1))
+cert-dir = $(word 3,$(subst |, ,$1))
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs
 certs:
-	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
+	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(call cert-dir,$(dir)) -s $(call cert-suffix,$(dir)) -m $(call cert-domain,$(dir))))
 
 # Generate certificates for unit tests relying on certificates without copying certs to specific test directories.
 .PHONY: certs-dryrun
