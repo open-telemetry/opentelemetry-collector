@@ -4,6 +4,7 @@
 
 ## 🛑 Breaking changes 🛑
 
+- Remove deprecated funcs in configtelemetry (#4808)
 - Deprecate `service/defaultcomponents` go package (#4622)
 
 ## 💡 Enhancements 💡
