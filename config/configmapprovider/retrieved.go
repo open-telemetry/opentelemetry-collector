@@ -24,28 +24,28 @@ import (
 // Get returns the config Map. Should never be called after Close.
 // Should never be called concurrently with itself or Close.
 //
-// Deprecated: Not needed, will be removed soon. You have access to the struct members.
+// Deprecated: [v0.45.0] Not needed, will be removed soon. You have access to the struct members.
 func (r Retrieved) Get(ctx context.Context) (*config.Map, error) {
 	return r.Map, nil
 }
 
 // GetFunc specifies the function invoked when the Retrieved.Get is being called.
-// Deprecated: Not needed, will be removed soon. You have access to the struct members.
+// Deprecated: [v0.45.0] Not needed, will be removed soon. You have access to the struct members.
 type GetFunc func(context.Context) (*config.Map, error)
 
 // Get implements the Retrieved.Get.
-// Deprecated: Not needed, will be removed soon. You have access to the struct members.
+// Deprecated: [v0.45.0] Not needed, will be removed soon. You have access to the struct members.
 func (f GetFunc) Get(ctx context.Context) (*config.Map, error) {
 	return f(ctx)
 }
 
 // RetrievedOption represents the possible options for NewRetrieved.
-// Deprecated: Not needed, will be removed soon. You have access to the struct members.
+// Deprecated: [v0.45.0] Not needed, will be removed soon. You have access to the struct members.
 type RetrievedOption func(*Retrieved)
 
 // WithClose overrides the default `Close` function for a Retrieved.
 // The default always returns nil.
-// Deprecated: Not needed, will be removed soon. You have access to the struct members.
+// Deprecated: [v0.45.0] Not needed, will be removed soon. You have access to the struct members.
 func WithClose(closeFunc CloseFunc) RetrievedOption {
 	return func(o *Retrieved) {
 		o.CloseFunc = closeFunc
@@ -53,7 +53,7 @@ func WithClose(closeFunc CloseFunc) RetrievedOption {
 }
 
 // NewRetrieved returns a Retrieved configured with the provided options.
-// Deprecated: Not needed, will be removed soon. You have access to the struct members.
+// Deprecated: [v0.45.0] Not needed, will be removed soon. You have access to the struct members.
 func NewRetrieved(getFunc GetFunc, options ...RetrievedOption) (Retrieved, error) {
 	if getFunc == nil {
 		return Retrieved{}, errors.New("nil getFunc")

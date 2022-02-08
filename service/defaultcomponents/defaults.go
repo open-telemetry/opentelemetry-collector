@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
-// Deprecated: Will be removed soon.
+// Deprecated: [v0.45.0] Will be removed soon.
 func Components() (
 	component.Factories,
 	error,
