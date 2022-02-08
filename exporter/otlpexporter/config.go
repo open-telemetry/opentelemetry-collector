@@ -15,6 +15,8 @@
 package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexporter"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -34,5 +36,9 @@ var _ config.Exporter = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("queue settings has invalid configuration: %w", err)
+	}
+
 	return nil
 }
