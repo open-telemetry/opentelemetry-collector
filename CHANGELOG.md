@@ -9,6 +9,7 @@
 
 ## 💡 Enhancements 💡
 
+- Reject invalid queue size exporterhelper (#4799)
 - Transform configmapprovider.Retrieved interface to a struct (#4789)
 
 ## v0.44.0 Beta
