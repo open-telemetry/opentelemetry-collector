@@ -78,7 +78,6 @@ func GenerateLogsTwoLogRecordsSameResourceOneDifferent() pdata.Logs {
 	return ld
 }
 func fillLogOne(log pdata.LogRecord) {
-	log.SetName("logA")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(pdata.SeverityNumberINFO)
@@ -94,7 +93,6 @@ func fillLogOne(log pdata.LogRecord) {
 }
 
 func fillLogTwo(log pdata.LogRecord) {
-	log.SetName("logB")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(pdata.SeverityNumberINFO)
@@ -108,7 +106,6 @@ func fillLogTwo(log pdata.LogRecord) {
 }
 
 func fillLogThree(log pdata.LogRecord) {
-	log.SetName("logC")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(pdata.SeverityNumberWARN)

@@ -55,11 +55,11 @@ var logsOTLP = func() pdata.Logs {
 	il := rl.InstrumentationLibraryLogs().AppendEmpty()
 	il.InstrumentationLibrary().SetName("name")
 	il.InstrumentationLibrary().SetVersion("version")
-	il.LogRecords().AppendEmpty().SetName("testMetric")
+	il.LogRecords().AppendEmpty().SetSeverityText("Error")
 	return ld
 }()
 
-var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibraryLogs":[{"instrumentationLibrary":{"name":"name","version":"version"},"logRecords":[{"name":"testMetric","body":{},"traceId":"","spanId":""}]}]}]}`
+var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibraryLogs":[{"instrumentationLibrary":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":""}]}]}]}`
 
 func TestTracesJSON(t *testing.T) {
 	encoder := NewJSONTracesMarshaler()
