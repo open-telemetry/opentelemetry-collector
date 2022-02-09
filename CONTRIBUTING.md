@@ -412,6 +412,14 @@ version (`vM.N+1`).
 - when a feature is being replaced in favor of an existing one, we MUST mark a feature as deprecated in one version, and
   MAY remove it in a subsequent one.
 
+Deprecation notice SHOULD contain a version starting from which the deprecation takes effect for tracking purposes. For
+example, if `GetFoo` function is going to be deprecated in `v0.45.0` version, it gets the following godoc line:
+
+```go
+// Deprecated: [v0.45.0] Use MustGetFoo instead.
+func GetFoo() Bar {
+```
+
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
 behind a [feature
 flag](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)

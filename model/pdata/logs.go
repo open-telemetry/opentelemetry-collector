@@ -96,15 +96,15 @@ func (ld Logs) ResourceLogs() ResourceLogsSlice {
 	return newResourceLogsSlice(&ld.orig.ResourceLogs)
 }
 
-// Deprecated: use LogRecordSlice
+// Deprecated: [v0.44.0] use LogRecordSlice
 type LogSlice = LogRecordSlice
 
-// Deprecated: use `LogRecords`.
+// Deprecated: [v0.44.0] use `LogRecords`.
 func (ms InstrumentationLibraryLogs) Logs() LogRecordSlice {
 	return ms.LogRecords()
 }
 
-// Deprecated: use NewLogRecordSlice
+// Deprecated: [v0.44.0] use NewLogRecordSlice
 func NewLogSlice() LogRecordSlice {
 	return NewLogRecordSlice()
 }

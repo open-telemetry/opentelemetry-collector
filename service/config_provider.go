@@ -91,7 +91,7 @@ func MustNewConfigProvider(
 	return NewConfigProvider(locations, configMapProviders, cfgMapConverters, configUnmarshaler)
 }
 
-// Deprecated: use MustNewConfigProvider instead
+// Deprecated: [v0.44.0] use MustNewConfigProvider instead
 // NewConfigProvider returns a new ConfigProvider that provides the configuration:
 // * Retrieve the config.Map by merging all retrieved maps from all the configmapprovider.Provider in order.
 // * Then applies all the config.MapConverterFunc in the given order.
@@ -123,7 +123,7 @@ func MustNewDefaultConfigProvider(configLocations []string, properties []string)
 	return NewDefaultConfigProvider(configLocations, properties)
 }
 
-// Deprecated: use MustNewDefaultConfigProvider instead
+// Deprecated: [v.0.44.0] use MustNewDefaultConfigProvider instead
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
 func NewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
