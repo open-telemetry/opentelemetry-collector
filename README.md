@@ -66,16 +66,16 @@ functionality and configuration:
 
 | Signal | Component | Status |
 |--------|-----------|--------|
-|Trace   | OTLP protocol | Stable |
+|Traces  | OTLP protocol | Stable |
 || OTLP receiver functionality | Stable |
-|| OTLP receiver configuration | Beta |
+|| OTLP receiver configuration | Stable |
 || OTLP exporter functionality | Stable |
-|| OTLP exporter configuration | Beta |
-|Metric  | OTLP protocol | Stable |
+|| OTLP exporter configuration | Stable |
+|Metrics | OTLP protocol | Stable |
 || OTLP receiver functionality | Stable |
-|| OTLP receiver configuration | Beta |
+|| OTLP receiver configuration | Stable |
 || OTLP exporter functionality | Stable |
-|| OTLP exporter configuration | Beta |
+|| OTLP exporter configuration | Stable |
 |Logs    | OTLP protocol | Beta |
 || OTLP receiver functionality | Beta |
 || OTLP receiver configuration | Beta |
