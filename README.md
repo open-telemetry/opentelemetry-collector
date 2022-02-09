@@ -101,13 +101,13 @@ Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-tele
 
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
-- [Alex Boten](https://github.com/codeboten), Lightstep
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
+- [Alex Boten](https://github.com/codeboten), Lightstep
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
