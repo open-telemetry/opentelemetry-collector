@@ -135,6 +135,24 @@ func TestCollector_Start(t *testing.T) {
 	}, time.Second*2, time.Millisecond*200)
 }
 
+// TestCollector_ShutdownNoop verifies that shutdown can be called even if a collector
+// has yet to be started and it will execute without error.
+func TestCollector_ShutdownNoop(t *testing.T) {
+	factories, err := testcomponents.DefaultFactories()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	// Should be able to call Shutdown on an unstarted collector and nothing happens
+	require.NotPanics(t, func() { col.Shutdown() })
+}
+
 type mockColTelemetry struct{}
 
 func (tel *mockColTelemetry) init(*Collector) error {
