@@ -6,6 +6,10 @@
 
 - Add validation to check at least one endpoint is specified in otlphttpexporter's configuration (#4860)
 
+## 🧰 Bug fixes 🧰
+
+- Initialized logger with collector to avoid potential race condition panic on `Shutdown` (#4827)
+
 ## v0.45.0 Beta
 
 ### 🛑 Breaking changes 🛑
