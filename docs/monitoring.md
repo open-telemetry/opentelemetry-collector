@@ -1,9 +1,7 @@
 # Monitoring
 
 Many metrics are provided by the Collector for its monitoring. Below some
-key recommendations for alerting and monitoring are listed. All metrics
-referenced below are using the `--new-metrics` option that is enabled by
-default.
+key recommendations for alerting and monitoring are listed. 
 
 ## Critical Monitoring
 
