@@ -109,3 +109,24 @@ func (f *File) GenerateTestFile() string {
 	sb.WriteString(newLine)
 	return sb.String()
 }
+
+// GenerateFile generates the aliases for data structures for this File.
+func (f *File) GenerateAliasFile() string {
+	var sb strings.Builder
+
+	// Write headers
+	sb.WriteString(header)
+	sb.WriteString(newLine + newLine)
+
+	// Add import
+	sb.WriteString("import \"go.opentelemetry.io/collector/model/internal/pdata\"" + newLine + newLine)
+
+	// Write all types and funcs
+	for _, s := range f.structs {
+		if ag, ok := s.(aliasGenerator); ok {
+			ag.generateAlias(&sb)
+		}
+	}
+	sb.WriteString(newLine)
+	return sb.String()
+}
