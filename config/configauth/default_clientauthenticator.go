@@ -18,9 +18,10 @@ import (
 	"context"
 	"net/http"
 
+	"google.golang.org/grpc/credentials"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
-	"google.golang.org/grpc/credentials"
 )
 
 var _ ClientAuthenticator = (*defaultClientAuthenticator)(nil)
