@@ -41,6 +41,7 @@ type TracesSizer interface {
 }
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
+// Use NewTraces to create new instance, zero-initialized instance is not valid for use.
 type Traces struct {
 	orig *otlptrace.TracesData
 }
