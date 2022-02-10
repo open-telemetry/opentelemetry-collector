@@ -42,6 +42,12 @@ func TestClientDefaultValues(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("per-rpc-credentials", func(t *testing.T) {
+		p, err := e.PerRPCCredentials()
+		assert.Nil(t, p)
+		assert.NoError(t, err)
+	})
+
 	t.Run("shutdown", func(t *testing.T) {
 		err := e.Shutdown(context.Background())
 		assert.NoError(t, err)
