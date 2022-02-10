@@ -51,6 +51,10 @@ var (
 	//go:embed templates/properties_table.html
 	propertiesTableBytes    []byte
 	propertiesTableTemplate = parseTemplate("properties_table", propertiesTableBytes)
+
+	//go:embed templates/features_table.html
+	featuresTableBytes    []byte
+	featuresTableTemplate = parseTemplate("features_table", featuresTableBytes)
 )
 
 func parseTemplate(name string, bytes []byte) *template.Template {
@@ -155,4 +159,23 @@ func getKey(row [2]string) string {
 
 func getValue(row [2]string) string {
 	return row[1]
+}
+
+// FeatureGateTableData contains data for feature gate table template.
+type FeatureGateTableData struct {
+	Rows []FeatureGateTableRowData
+}
+
+// FeatureGateTableRowData contains data for one row in feature gate table template.
+type FeatureGateTableRowData struct {
+	ID          string
+	Enabled     bool
+	Description string
+}
+
+// WriteHTMLFeaturesTable writes a table summarizing registered feature gates.
+func WriteHTMLFeaturesTable(w io.Writer, ftd FeatureGateTableData) {
+	if err := featuresTableTemplate.Execute(w, ftd); err != nil {
+		log.Printf("zpages: executing template: %v", err)
+	}
 }
