@@ -63,6 +63,11 @@ func (srv *service) handleServicezRequest(w http.ResponseWriter, r *http.Request
 		ComponentEndpoint: extensionzPath,
 		Link:              true,
 	})
+	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
+		Name:              "Features",
+		ComponentEndpoint: featurezPath,
+		Link:              true,
+	})
 	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build And Runtime", Properties: version.RuntimeVar()})
 	zpages.WriteHTMLPageFooter(w)
 }
