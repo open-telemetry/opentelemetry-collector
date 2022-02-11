@@ -38,7 +38,7 @@ func (textTracesMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
 		for j := 0; j < ilss.Len(); j++ {
 			buf.logEntry("InstrumentationLibrarySpans #%d", j)
 			ils := ilss.At(j)
-			buf.logEntry("InstrumentationLibraryMetrics SchemaURL: %s", ils.SchemaUrl())
+			buf.logEntry("InstrumentationLibrarySpans SchemaURL: %s", ils.SchemaUrl())
 			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
 
 			spans := ils.Spans()
