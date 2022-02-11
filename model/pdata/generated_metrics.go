@@ -1124,9 +1124,9 @@ func (ms NumberDataPoint) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
-// Type returns the type of the value for this NumberDataPoint.
+// ValueType returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
-func (ms NumberDataPoint) Type() MetricValueType {
+func (ms NumberDataPoint) ValueType() MetricValueType {
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		return MetricValueTypeDouble
@@ -1180,7 +1180,7 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
-	switch ms.Type() {
+	switch ms.ValueType() {
 	case MetricValueTypeDouble:
 		dest.SetDoubleVal(ms.DoubleVal())
 	case MetricValueTypeInt:
@@ -2374,9 +2374,9 @@ func (ms Exemplar) SetTimestamp(v Timestamp) {
 	(*ms.orig).TimeUnixNano = uint64(v)
 }
 
-// Type returns the type of the value for this Exemplar.
+// ValueType returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
-func (ms Exemplar) Type() MetricValueType {
+func (ms Exemplar) ValueType() MetricValueType {
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		return MetricValueTypeDouble
@@ -2438,7 +2438,7 @@ func (ms Exemplar) SetSpanID(v SpanID) {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
-	switch ms.Type() {
+	switch ms.ValueType() {
 	case MetricValueTypeDouble:
 		dest.SetDoubleVal(ms.DoubleVal())
 	case MetricValueTypeInt:
