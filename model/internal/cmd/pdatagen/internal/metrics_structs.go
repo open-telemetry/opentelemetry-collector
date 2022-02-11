@@ -123,7 +123,6 @@ var metric = &messageValueStruct{
 			testVal:         `"1"`,
 		},
 		&oneOfField{
-			typeAccessor:     "DataType",
 			typeName:         "MetricDataType",
 			originFieldName:  "Data",
 			originTypePrefix: "otlpmetrics.Metric_",
@@ -243,7 +242,6 @@ var numberDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		&oneOfField{
-			typeAccessor:     "Type",
 			typeName:         "MetricValueType",
 			originFieldName:  "Value",
 			originTypePrefix: "otlpmetrics.NumberDataPoint_",
@@ -414,7 +412,6 @@ var exemplar = &messageValueStruct{
 	fields: []baseField{
 		timeField,
 		&oneOfField{
-			typeAccessor:     "Type",
 			typeName:         "MetricValueType",
 			originFieldName:  "Value",
 			originTypePrefix: "otlpmetrics.Exemplar_",
