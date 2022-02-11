@@ -38,7 +38,7 @@ func (textLogsMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 		for j := 0; j < ills.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryLogs #%d", j)
 			ils := ills.At(j)
-			buf.logEntry("InstrumentationLibraryMetrics SchemaURL: %s", ils.SchemaUrl())
+			buf.logEntry("InstrumentationLibraryLogs SchemaURL: %s", ils.SchemaUrl())
 			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
 
 			logs := ils.LogRecords()
