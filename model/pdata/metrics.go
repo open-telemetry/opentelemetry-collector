@@ -40,11 +40,8 @@ type MetricsSizer interface {
 	MetricsSize(md Metrics) int
 }
 
-// Metrics is an opaque interface that allows transition to the new internal Metrics data, but also facilitates the
-// transition to the new components, especially for traces.
-//
-// Outside of the core repository, the metrics pipeline cannot be converted to the new model since data.MetricData is
-// part of the internal package.
+// Metrics is the top-level struct that is propagated through the metrics pipeline.
+// Use NewMetrics to create new instance, zero-initialized instance is not valid for use.
 type Metrics struct {
 	orig *otlpmetrics.MetricsData
 }

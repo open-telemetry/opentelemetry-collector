@@ -41,11 +41,7 @@ type LogsSizer interface {
 }
 
 // Logs is the top-level struct that is propagated through the logs pipeline.
-//
-// This is a reference type (like builtin map).
-//
-// Must use NewLogs functions to create new instances.
-// Important: zero-initialized instance is not valid for use.
+// Use NewLogs to create new instance, zero-initialized instance is not valid for use.
 type Logs struct {
 	orig *otlplogs.LogsData
 }
