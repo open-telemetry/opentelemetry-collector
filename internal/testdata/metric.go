@@ -60,14 +60,6 @@ func GenerateMetricsOneEmptyInstrumentationLibrary() pdata.Metrics {
 	return md
 }
 
-func GenerateMetricsOneMetricNoResource() pdata.Metrics {
-	md := GenerateMetricsOneEmptyResourceMetrics()
-	rm0 := md.ResourceMetrics().At(0)
-	rm0ils0 := rm0.InstrumentationLibraryMetrics().AppendEmpty()
-	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	return md
-}
-
 func GenerateMetricsOneMetric() pdata.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
@@ -80,35 +72,6 @@ func GenerateMetricsTwoMetrics() pdata.Metrics {
 	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	return md
-}
-
-func GenerateMetricsOneCounterOneSummaryMetrics() pdata.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	initSummaryMetric(rm0ils0.Metrics().AppendEmpty())
-	return md
-}
-
-func GenerateMetricsOneMetricNoAttributes() pdata.Metrics {
-	md := GenerateMetricsOneMetric()
-	dps := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints()
-	dps.At(0).Attributes().Clear()
-	dps.At(1).Attributes().Clear()
-	return md
-}
-
-func GenerateMetricsAllTypesNoDataPoints() pdata.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-	ms := ilm0.Metrics()
-	initMetric(ms.AppendEmpty(), TestGaugeDoubleMetricName, pdata.MetricDataTypeGauge)
-	initMetric(ms.AppendEmpty(), TestGaugeIntMetricName, pdata.MetricDataTypeGauge)
-	initMetric(ms.AppendEmpty(), TestSumDoubleMetricName, pdata.MetricDataTypeSum)
-	initMetric(ms.AppendEmpty(), TestSumIntMetricName, pdata.MetricDataTypeSum)
-	initMetric(ms.AppendEmpty(), TestHistogramMetricName, pdata.MetricDataTypeHistogram)
-	initMetric(ms.AppendEmpty(), TestSummaryMetricName, pdata.MetricDataTypeSummary)
 	return md
 }
 

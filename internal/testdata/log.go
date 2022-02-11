@@ -44,13 +44,6 @@ func GenerateLogsOneEmptyLogRecord() pdata.Logs {
 	return ld
 }
 
-func GenerateLogsOneLogRecordNoResource() pdata.Logs {
-	ld := GenerateLogsOneEmptyResourceLogs()
-	rs0 := ld.ResourceLogs().At(0)
-	fillLogOne(rs0.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty())
-	return ld
-}
-
 func GenerateLogsOneLogRecord() pdata.Logs {
 	ld := GenerateLogsOneEmptyLogRecord()
 	fillLogOne(ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0))

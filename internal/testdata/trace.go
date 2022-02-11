@@ -50,13 +50,6 @@ func GenerateTracesOneEmptyInstrumentationLibrary() pdata.Traces {
 	return td
 }
 
-func GenerateTracesOneSpanNoResource() pdata.Traces {
-	td := GenerateTracesOneEmptyResourceSpans()
-	rs0 := td.ResourceSpans().At(0)
-	fillSpanOne(rs0.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty())
-	return td
-}
-
 func GenerateTracesOneSpan() pdata.Traces {
 	td := GenerateTracesOneEmptyInstrumentationLibrary()
 	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
