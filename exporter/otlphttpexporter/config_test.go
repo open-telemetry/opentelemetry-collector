@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	factories.Exporters[typeStr] = factory
 	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.NotNil(t, cfg)
 
 	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
