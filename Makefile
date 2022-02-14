@@ -17,8 +17,8 @@ ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 CMD?=
 TOOLS_MOD_DIR := ./internal/tools
 
-GOOS=$(shell go env GOOS)
-GOARCH=$(shell go env GOARCH)
+GOOS=$(shell $(GOCMD) env GOOS)
+GOARCH=$(shell $(GOCMD) env GOARCH)
 
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
@@ -56,7 +56,7 @@ all-modules:
 
 .PHONY: gomoddownload
 gomoddownload:
-	@$(MAKE) for-all CMD="go mod download"
+	@$(MAKE) for-all CMD="$(GOCMD) mod download"
 
 .PHONY: gotest
 gotest:
@@ -90,7 +90,7 @@ gofmt:
 .PHONY: gotidy
 gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="go mod tidy -compat=1.17"
+	$(MAKE) for-all CMD="$(GOCMD) mod tidy -compat=1.17"
 
 .PHONY: addlicense
 addlicense:
@@ -125,19 +125,19 @@ misspell-correction:
 
 .PHONY: install-tools
 install-tools:
-	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
-	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
-	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && go install github.com/ory/go-acc
-	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
-	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && go install github.com/wadey/gocovmerge
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/semconvgen
-	cd $(TOOLS_MOD_DIR) && go install golang.org/x/exp/cmd/apidiff
-	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && go install github.com/jcchavezs/porto/cmd/porto
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/client9/misspell/cmd/misspell
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/google/addlicense
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/ory/go-acc
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/pavius/impi/cmd/impi
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/wadey/gocovmerge
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/checkdoc
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/semconvgen
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/exp/cmd/apidiff
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
 
 .PHONY: run
 run: otelcorecol
@@ -192,16 +192,16 @@ delete-tag:
 # Build the Collector executable.
 .PHONY: otelcorecol
 otelcorecol:
-	pushd cmd/otelcorecol && GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
+	pushd cmd/otelcorecol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
 
 .PHONY: genotelcorecol
 genotelcorecol:
-	pushd cmd/builder/ && go run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
+	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 
 .PHONY: genmdata
 genmdata:
-	$(MAKE) for-all CMD="go generate ./..."
+	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
 DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: internal-gendependabot
@@ -293,7 +293,7 @@ genproto_sub:
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
 genpdata:
-	go run model/internal/cmd/pdatagen/main.go
+	$(GOCMD) run model/internal/cmd/pdatagen/main.go
 	$(MAKE) fmt
 
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
@@ -309,13 +309,13 @@ gensemconv:
 .PHONY: check-contrib
 check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
-	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
-	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -replace go.opentelemetry.io/collector/model=$(CURDIR)/model"
-	make -C $(CONTRIB_PATH) for-all CMD="go mod tidy -go=1.16"
-	make -C $(CONTRIB_PATH) for-all CMD="go mod tidy -go=1.17"
+	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
+	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/model=$(CURDIR)/model"
+	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy -go=1.16"
+	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy -go=1.17"
 	make -C $(CONTRIB_PATH) test
 	@echo Restoring contrib to no longer use this core checkout
-	make -C $(CONTRIB_PATH) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"
+	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector"
 
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := localhost|""|config/configgrpc/testdata \
