@@ -11,6 +11,7 @@
 
 - Reject invalid queue size exporterhelper (#4799)
 - Transform configmapprovider.Retrieved interface to a struct (#4789)
+- Added feature gate summary to zpages extension (#4834)
 
 ## 🚩 Deprecations 🚩
 
