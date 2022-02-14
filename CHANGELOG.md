@@ -11,6 +11,7 @@
 
 - Reject invalid queue size exporterhelper (#4799)
 - Transform configmapprovider.Retrieved interface to a struct (#4789)
+- Add validation to check at least one endpoint is specified in otlphttpexporter's configuration (#4860)
 
 ## 🚩 Deprecations 🚩
 
