@@ -118,7 +118,7 @@ func (f *factory) CreateMetricsReceiver(
 	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
-// CreateLogsReceiver creates a metrics processor based on this config.
+// CreateLogsReceiver creates a component.LogsReceiver based on this config.
 func (f *factory) CreateLogsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
