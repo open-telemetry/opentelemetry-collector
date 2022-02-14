@@ -63,7 +63,6 @@ require (
 	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.4.0 // indirect
-	go.opentelemetry.io/otel/sdk/export/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.4.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
