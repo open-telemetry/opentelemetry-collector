@@ -17,19 +17,7 @@ The following settings are required:
 using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
 If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
-
-By default, TLS is enabled:
-
-- `tls:`
-
-  - `insecure` (default = `false`): whether to enable client transport security for the exporter's connection.
-
-As a result, the following parameters are also required:
-
-- `tls:`
-
-  - `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to false.
-  - `key_file` (no default): path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
+- `tls`: see [TLS Configuration Settings](../../config/configtls/README.md) for the full set of available options.
 
 Example:
 
