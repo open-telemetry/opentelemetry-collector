@@ -48,8 +48,11 @@ type RetrySettings struct {
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
 }
 
-// DefaultRetrySettings returns the default settings for RetrySettings.
-func DefaultRetrySettings() RetrySettings {
+// Deprecated: [v0.46.0] use NewDefaultRetrySettings instead.
+var DefaultRetrySettings = NewDefaultRetrySettings
+
+// NewDefaultRetrySettings returns the default settings for RetrySettings.
+func NewDefaultRetrySettings() RetrySettings {
 	return RetrySettings{
 		Enabled:         true,
 		InitialInterval: 5 * time.Second,

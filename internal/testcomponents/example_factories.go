@@ -46,11 +46,11 @@ func ExampleComponents() (
 	return
 }
 
-// DefaultFactories returns the set of components in "testdata/otelcol-config.yaml". This is only used by tests.
-func DefaultFactories() (
-	component.Factories,
-	error,
-) {
+// Deprecated: [v0.46.0] use NewDefaultFactories instead.
+var DefaultFactories = NewDefaultFactories
+
+// NewDefaultFactories returns the set of components in "testdata/otelcol-config.yaml". This is only used by tests.
+func NewDefaultFactories() (component.Factories, error) {
 	var errs error
 
 	extensions, err := component.MakeExtensionFactoryMap(

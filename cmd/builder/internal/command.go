@@ -27,7 +27,7 @@ import (
 
 var (
 	cfgFile string
-	cfg     = builder.DefaultConfig()
+	cfg     = builder.NewDefaultConfig()
 )
 
 // Command is the main entrypoint for this application

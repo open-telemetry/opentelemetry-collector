@@ -129,8 +129,8 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rCfg := DefaultRetrySettings()
-	qCfg := DefaultQueueSettings()
+	rCfg := NewDefaultRetrySettings()
+	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 2
 	wantErr := errors.New("some-error")

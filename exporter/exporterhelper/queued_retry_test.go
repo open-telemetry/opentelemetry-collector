@@ -45,8 +45,8 @@ func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
 }
 
 func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
-	qCfg := DefaultQueueSettings()
-	rCfg := DefaultRetrySettings()
+	qCfg := NewDefaultQueueSettings()
+	rCfg := NewDefaultRetrySettings()
 	mockR := newMockRequest(context.Background(), 2, consumererror.NewPermanent(errors.New("bad data")))
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", mockRequestUnmarshaler(mockR))
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -68,8 +68,8 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 }
 
 func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
-	qCfg := DefaultQueueSettings()
-	rCfg := DefaultRetrySettings()
+	qCfg := NewDefaultQueueSettings()
+	rCfg := NewDefaultRetrySettings()
 	rCfg.Enabled = false
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -92,9 +92,9 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 }
 
 func TestQueuedRetry_OnError(t *testing.T) {
-	qCfg := DefaultQueueSettings()
+	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := DefaultRetrySettings()
+	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 0
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -119,9 +119,9 @@ func TestQueuedRetry_OnError(t *testing.T) {
 }
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
-	qCfg := DefaultQueueSettings()
+	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := DefaultRetrySettings()
+	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -152,9 +152,9 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 }
 
 func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
-	qCfg := DefaultQueueSettings()
+	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := DefaultRetrySettings()
+	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -179,9 +179,9 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 }
 
 func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
-	qCfg := DefaultQueueSettings()
+	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := DefaultRetrySettings()
+	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
@@ -226,9 +226,9 @@ func (e wrappedError) Unwrap() error {
 }
 
 func TestQueuedRetry_ThrottleError(t *testing.T) {
-	qCfg := DefaultQueueSettings()
+	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	rCfg := DefaultRetrySettings()
+	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 10 * time.Millisecond
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -257,10 +257,10 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 }
 
 func TestQueuedRetry_RetryOnError(t *testing.T) {
-	qCfg := DefaultQueueSettings()
+	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.QueueSize = 1
-	rCfg := DefaultRetrySettings()
+	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 0
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -285,9 +285,9 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 }
 
 func TestQueuedRetry_DropOnFull(t *testing.T) {
-	qCfg := DefaultQueueSettings()
+	qCfg := NewDefaultQueueSettings()
 	qCfg.QueueSize = 0
-	rCfg := DefaultRetrySettings()
+	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -304,8 +304,8 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	qCfg := DefaultQueueSettings()
-	rCfg := DefaultRetrySettings()
+	qCfg := NewDefaultQueueSettings()
+	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
 	be.qrSender.consumerSender = ocs
@@ -337,9 +337,9 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 }
 
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
-	qCfg := DefaultQueueSettings()
+	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 0 // to make every request go straight to the queue
-	rCfg := DefaultRetrySettings()
+	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -369,7 +369,7 @@ func TestNoCancellationContext(t *testing.T) {
 }
 
 func TestQueueSettings_Validate(t *testing.T) {
-	qCfg := DefaultQueueSettings()
+	qCfg := NewDefaultQueueSettings()
 	assert.NoError(t, qCfg.Validate())
 
 	qCfg.QueueSize = 0
