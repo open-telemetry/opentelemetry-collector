@@ -24,12 +24,7 @@ The following settings can be optionally configured:
    If this setting is present the `endpoint` setting is ignored for metrics.
 - `logs_endpoint` (no default): The target URL to send log data to (e.g.: https://example.com:4318/v1/logs).
    If this setting is present the `endpoint` setting is ignored logs.
-
-- `tls:`
-  - `insecure` (default = false): when set to true disables verifying the server's certificate chain and host name. The connection is still encrypted but server identity is not verified.
-  - `ca_file` path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false.
-  - `cert_file` path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to false.
-  - `key_file` path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
+- `tls`: see [TLS Configuration Settings](../../config/configtls/README.md) for the full set of available options.
 - `timeout` (default = 30s): HTTP request time limit. For details see https://golang.org/pkg/net/http/#Client
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
