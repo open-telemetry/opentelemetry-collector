@@ -48,6 +48,7 @@ const (
 	Running
 	Closing
 	Closed
+	Created
 )
 
 // (Internal note) Collector Lifecycle:
@@ -90,12 +91,14 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	state := atomic.Value{}
-	state.Store(Starting)
+	state.Store(Created)
 	return &Collector{
 		logger: zap.NewNop(), // Set a Nop logger as a place holder until a logger is created based on configuration
 
 		set:   set,
 		state: state,
+
+		shutdownChan: make(chan struct{}),
 	}, nil
 
 }
@@ -113,12 +116,16 @@ func (col *Collector) GetLogger() *zap.Logger {
 
 // Shutdown shuts down the collector server.
 func (col *Collector) Shutdown() {
-	defer func() {
-		if r := recover(); r != nil {
-			col.logger.Info("shutdownChan already closed")
-		}
-	}()
-	close(col.shutdownChan)
+	// Only shutdown if we're in a Running or Starting State else noop
+	state := col.GetState()
+	if state == Running || state == Starting {
+		defer func() {
+			if r := recover(); r != nil {
+				col.logger.Info("shutdownChan already closed")
+			}
+		}()
+		close(col.shutdownChan)
+	}
 }
 
 // runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
@@ -131,7 +138,6 @@ func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
-	col.shutdownChan = make(chan struct{})
 	col.setCollectorState(Running)
 LOOP:
 	for {

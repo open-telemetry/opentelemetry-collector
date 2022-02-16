@@ -48,6 +48,7 @@
   that calls shutdown to terminate it; this is done per memory limiter instance.
   Added memory limiter factory to cache initiated object and be reused by similar config. This guarantees a single
   running `checkMemLimits` per config (#4886)
+- Resolved race condition in collector when calling `Shutdown`
 
 ## v0.45.0 Beta
 

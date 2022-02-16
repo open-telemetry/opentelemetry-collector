@@ -179,6 +179,52 @@ func TestCollector_ShutdownNoop(t *testing.T) {
 	require.NotPanics(t, func() { col.Shutdown() })
 }
 
+func TestCollector_ShutdownBeforeRun(t *testing.T) {
+	// use a mock AppTelemetry struct to return an error on shutdown
+	preservedAppTelemetry := collectorTelemetry
+	collectorTelemetry = &colTelemetry{}
+	defer func() { collectorTelemetry = preservedAppTelemetry }()
+
+	factories, err := testcomponents.DefaultFactories()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	// Calling shutdown before collector is running should not stop it from running
+	col.Shutdown()
+	select {
+	case <-col.shutdownChan:
+		require.Fail(t, "shutdownChan was closed early")
+	case <-time.After(time.Second):
+		// Channel did not report closed after 1 second move on with test.
+	}
+
+	colDone := make(chan struct{})
+	go func() {
+		defer close(colDone)
+		colErr := col.Run(context.Background())
+		if colErr != nil {
+			err = colErr
+		}
+	}()
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, time.Second*2, time.Millisecond*200)
+
+	col.Shutdown()
+	<-colDone
+	assert.Eventually(t, func() bool {
+		return Closed == col.GetState()
+	}, time.Second*2, time.Millisecond*200)
+}
+
 type mockColTelemetry struct{}
 
 func (tel *mockColTelemetry) init(*Collector) error {
