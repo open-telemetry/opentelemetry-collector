@@ -2,16 +2,20 @@
 
 ## Unreleased
 
+## v0.45.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated funcs in configtelemetry (#4808)
 - Deprecate `service/defaultcomponents` go package (#4622)
+- `otlphttp` and `otlp` exporters enable gzip compression by default (#4632)
 
 ### 💡 Enhancements 💡
 
 - Reject invalid queue size exporterhelper (#4799)
 - Transform configmapprovider.Retrieved interface to a struct (#4789)
 - Added feature gate summary to zpages extension (#4834)
+- Add support for reloading TLS certificates (#4737)
 
 ### 🚩 Deprecations 🚩
 
@@ -27,13 +31,11 @@
   in 0.11.0 are no longer converted to the messages and fields that replaced the deprecated ones.
   Received deprecated messages and fields will be now ignored. In OTLP/JSON in the
   instrumentationLibraryLogs object the "logs" field is now named "logRecords" (#4724)
-- `otlphttp` and `otlp` exporters enable gzip compression by default (#4632)
 
 ### 💡 Enhancements 💡
 
 - Invalid requests now return an appropriate unsupported (`405`) or method not allowed (`415`) response (#4735)
 - `client.Info`: Add Host property for Metadata (#4736)
-- Add support for reloading TLS certificates (#4737)
 
 ## v0.43.1 Beta
 
