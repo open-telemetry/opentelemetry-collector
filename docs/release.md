@@ -23,7 +23,7 @@ We release both core and contrib collectors with the same versions where the con
       * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/versions.yaml)
       * Run `make multimod-prerelease`
     * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
-    * Update the collector version in the manifest used by `make run` to the new release in `./internal/buildscripts/builder-config.yaml`.
+    * Update the collector version in the manifest used by `make run` to the new release in `./cmd/otelcorecol/builder-config.yaml`.
 
 1. Make sure the current main branch build successfully passes (Core and Contrib). For Contrib also check that the spawn-stability-tests-job triggered by the main build-publish job also passes. Check that the corresponding "-dev" images exist in Dockerhub (Core and Contrib).
 
