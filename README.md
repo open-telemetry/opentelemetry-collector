@@ -11,8 +11,8 @@
 </p>
 
 <p align="center">
-  <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector">
-    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector?style=for-the-badge"></a>
+  <a href="https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml">
+    <img alt="Go Report Card" src="https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml/badge.svg?branch=main"></a>
   <a href="https://circleci.com/gh/open-telemetry/opentelemetry-collector">
     <img alt="Build Status" src="https://img.shields.io/circleci/build/github/open-telemetry/opentelemetry-collector?style=for-the-badge"></a>
   <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/main/">
