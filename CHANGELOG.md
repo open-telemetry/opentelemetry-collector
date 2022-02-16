@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- Add validation to check at least one endpoint is specified in otlphttpexporter's configuration (#4860)
+
 ## v0.45.0 Beta
 
 ### 🛑 Breaking changes 🛑
