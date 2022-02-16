@@ -21,6 +21,10 @@
 - Added feature gate summary to zpages extension (#4834)
 - Add support for reloading TLS certificates (#4737)
 
+### 🧰 Bug fixes 🧰
+
+- `confighttp`: Allow CORS requests with configured auth (#4869)
+
 ### 🚩 Deprecations 🚩
 
 - Deprecate `pdata.NumberDataPoint.Type()` and `pdata.Exemplar.Type()` in favor of `NumberDataPoint.ValueType()` and

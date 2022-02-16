@@ -639,6 +639,40 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 	require.NoError(t, s.Close())
 }
 
+func TestHttpCorsWithAuthentication(t *testing.T) {
+	hss := &HTTPServerSettings{
+		CORS: &CORSSettings{
+			AllowedOrigins: []string{"*"},
+		},
+		Auth: &configauth.Authentication{
+			AuthenticatorID: config.NewComponentID("mock"),
+		},
+	}
+
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
+				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+					return ctx, fmt.Errorf("authentication failed")
+				}),
+			),
+		},
+	}
+
+	srv, err := hss.ToServer(host, componenttest.NewNopTelemetrySettings(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodOptions, "/", nil)
+	req.Header.Set("Origin", "http://localhost")
+	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
+	srv.Handler.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusNoContent, rec.Result().StatusCode)
+	assert.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
+}
+
 func verifyCorsResp(t *testing.T, url string, origin string, maxAge int, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest("OPTIONS", url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)

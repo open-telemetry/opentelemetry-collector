@@ -271,6 +271,15 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
 	}
 
+	if hss.Auth != nil {
+		authenticator, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
+		if err != nil {
+			return nil, err
+		}
+
+		handler = authInterceptor(handler, authenticator.Authenticate)
+	}
+
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
 		co := cors.Options{
 			AllowedOrigins:   hss.CORS.AllowedOrigins,
@@ -281,15 +290,6 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		handler = cors.New(co).Handler(handler)
 	}
 	// TODO: emit a warning when non-empty CorsHeaders and empty CorsOrigins.
-
-	if hss.Auth != nil {
-		authenticator, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
-		if err != nil {
-			return nil, err
-		}
-
-		handler = authInterceptor(handler, authenticator.Authenticate)
-	}
 
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Consider to use component ID string as prefix for all the operations.
