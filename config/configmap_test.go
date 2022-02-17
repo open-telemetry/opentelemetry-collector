@@ -123,3 +123,60 @@ func newMapFromFile(fileName string) (*Map, error) {
 
 	return NewMapFromStringMap(data), nil
 }
+
+func TestExpandNilStructPointersFunc(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"boolean": nil,
+		"struct":  nil,
+		"map_struct": map[string]interface{}{
+			"struct": nil,
+		},
+	}
+	parser := NewMapFromStringMap(stringMap)
+	cfg := &TestConfig{}
+	assert.Nil(t, cfg.Struct)
+	assert.NoError(t, parser.UnmarshalExact(cfg))
+	assert.Nil(t, cfg.Boolean)
+	// assert.False(t, *cfg.Boolean)
+	assert.Nil(t, cfg.Struct)
+	assert.NotNil(t, cfg.MapStruct)
+	// TODO: Investigate this unexpected result.
+	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
+}
+
+func TestExpandNilStructPointersFunc_DefaultNotNilConfigNil(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"boolean": nil,
+		"struct":  nil,
+		"map_struct": map[string]interface{}{
+			"struct": nil,
+		},
+	}
+	parser := NewMapFromStringMap(stringMap)
+	varBool := true
+	s1 := &Struct{Name: "s1"}
+	s2 := &Struct{Name: "s2"}
+	cfg := &TestConfig{
+		Boolean:   &varBool,
+		Struct:    s1,
+		MapStruct: map[string]*Struct{"struct": s2},
+	}
+	assert.NoError(t, parser.UnmarshalExact(cfg))
+	assert.NotNil(t, cfg.Boolean)
+	assert.True(t, *cfg.Boolean)
+	assert.NotNil(t, cfg.Struct)
+	assert.Equal(t, s1, cfg.Struct)
+	assert.NotNil(t, cfg.MapStruct)
+	// TODO: Investigate this unexpected result.
+	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
+}
+
+type TestConfig struct {
+	Boolean   *bool              `mapstructure:"boolean"`
+	Struct    *Struct            `mapstructure:"struct"`
+	MapStruct map[string]*Struct `mapstructure:"map_struct"`
+}
+
+type Struct struct {
+	Name string
+}
