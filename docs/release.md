@@ -83,10 +83,7 @@ The last step of the release process creates artifacts for the new version of th
 
 1. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
 
-1. Create a tag for this release and push it to `open-telemetry/opentelemetry-collector-releases`:
-    * `git tag -m "Release v0.45.0" v0.45.0`
-
-    * `git push git@github.com:open-telemetry/opentelemetry-collector-releases.git v0.45.0`
+1. Tag with the new release version by running the `make add-tag TAG=v0.45.0` command. Push them to `open-telemetry/opentelemetry-collector-releases` with `make push-tag TAG=v0.45.0`. Wait for the new tag build to pass successfully.
 
 1. Ensure the "Release" action passes, this will
 
