@@ -92,6 +92,8 @@ func New(set CollectorSettings) (*Collector, error) {
 	state := atomic.Value{}
 	state.Store(Starting)
 	return &Collector{
+		logger: zap.NewNop(), // Set a Nop logger as a place holder until a logger is created based on configuration
+
 		set:   set,
 		state: state,
 	}, nil
