@@ -116,9 +116,9 @@ Like #4522, but for v0.45.0
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-03-02 | v0.43.0 | @codeboten      |
-| 2022-03-02 | v0.44.0 | @bogdandrutu    |
-| 2022-03-02 | v0.45.0 | @jpkrohling     |
+| 2022-01-25 | v0.43.0 | @codeboten      |
+| 2022-02-03 | v0.44.0 | @bogdandrutu    |
+| 2022-02-17 | v0.45.0 | @jpkrohling     |
 | 2022-03-02 | v0.46.0 | @jpkrohling     |
 | 2022-03-16 | v0.47.0 | undetermined    |
 | 2022-03-30 | v0.48.0 | undetermined    |
