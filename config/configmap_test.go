@@ -137,7 +137,7 @@ func TestExpandNilStructPointersFunc(t *testing.T) {
 	assert.Nil(t, cfg.Struct)
 	assert.NoError(t, parser.UnmarshalExact(cfg))
 	assert.Nil(t, cfg.Boolean)
-	//assert.False(t, *cfg.Boolean)
+	// assert.False(t, *cfg.Boolean)
 	assert.Nil(t, cfg.Struct)
 	assert.NotNil(t, cfg.MapStruct)
 	// TODO: Investigate this unexpected result.
