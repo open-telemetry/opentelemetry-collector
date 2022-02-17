@@ -109,6 +109,44 @@ func TestToStringMap(t *testing.T) {
 	}
 }
 
+type testConfig struct {
+	Next    nextConfig `mapstructure:"next"`
+	Another string     `mapstructure:"another"`
+}
+
+func (tc *testConfig) Unmarshal(component *Map) error {
+	if err := component.UnmarshalExact(tc); err != nil {
+		return err
+	}
+	tc.Another = tc.Another + " is not called"
+	return nil
+}
+
+type nextConfig struct {
+	String string `mapstructure:"string"`
+}
+
+func (nc *nextConfig) Unmarshal(component *Map) error {
+	if err := component.UnmarshalExact(nc); err != nil {
+		return err
+	}
+	nc.String = nc.String + " is called"
+	return nil
+}
+
+func TestUnmarshallable(t *testing.T) {
+	cfgMap := NewMapFromStringMap(map[string]interface{}{
+		"next": map[string]interface{}{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+	})
+	tc := &testConfig{}
+	assert.NoError(t, cfgMap.UnmarshalExact(tc))
+	assert.Equal(t, "make sure this", tc.Another)
+	assert.Equal(t, "make sure this is called", tc.Next.String)
+}
+
 // newMapFromFile creates a new config.Map by reading the given file.
 func newMapFromFile(fileName string) (*Map, error) {
 	content, err := ioutil.ReadFile(filepath.Clean(fileName))
