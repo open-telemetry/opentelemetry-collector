@@ -40,9 +40,9 @@ func GetAvailableLocalAddress(t *testing.T) string {
 	require.NoError(t, err, "Failed to get a free local port")
 	// There is a possible race if something else takes this same port before
 	// the test uses it, however, that is unlikely in practice.
-	t.Cleanup(func() {
+	defer func() {
 		assert.NoError(t, ln.Close())
-	})
+	}()
 	return ln.Addr().String()
 }
 
