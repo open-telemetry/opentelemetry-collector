@@ -16,6 +16,7 @@ package memorylimiterprocessor // import "go.opentelemetry.io/collector/processo
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -30,14 +31,24 @@ const (
 
 var processorCapabilities = consumer.Capabilities{MutatesData: false}
 
+type factory struct {
+	// memoryLimiters stores memoryLimiter instances with unique configs that multiple processors can reuse.
+	// This avoids running multiple memory checks (ie: GC) for every processor using the same processor config.
+	memoryLimiters map[config.ComponentID]*memoryLimiter
+	lock           sync.Mutex
+}
+
 // NewFactory returns a new factory for the Memory Limiter processor.
 func NewFactory() component.ProcessorFactory {
+	f := &factory{
+		memoryLimiters: map[config.ComponentID]*memoryLimiter{},
+	}
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor),
-		component.WithLogsProcessor(createLogsProcessor))
+		component.WithTracesProcessor(f.createTracesProcessor),
+		component.WithMetricsProcessor(f.createMetricsProcessor),
+		component.WithLogsProcessor(f.createLogsProcessor))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
@@ -48,57 +59,78 @@ func createDefaultConfig() config.Processor {
 	}
 }
 
-func createTracesProcessor(
+func (f *factory) createTracesProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	ml, err := newMemoryLimiter(set, cfg.(*Config))
+	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		ml.processTraces,
+		memLimiter.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithStart(ml.start),
-		processorhelper.WithShutdown(ml.shutdown))
+		processorhelper.WithStart(memLimiter.start),
+		processorhelper.WithShutdown(memLimiter.shutdown))
 }
 
-func createMetricsProcessor(
+func (f *factory) createMetricsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	ml, err := newMemoryLimiter(set, cfg.(*Config))
+	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
-		ml.processMetrics,
+		memLimiter.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
+		processorhelper.WithStart(memLimiter.start),
+		processorhelper.WithShutdown(memLimiter.shutdown))
 }
 
-func createLogsProcessor(
+func (f *factory) createLogsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	ml, err := newMemoryLimiter(set, cfg.(*Config))
+	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 	return processorhelper.NewLogsProcessor(
 		cfg,
 		nextConsumer,
-		ml.processLogs,
+		memLimiter.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
+		processorhelper.WithStart(memLimiter.start),
+		processorhelper.WithShutdown(memLimiter.shutdown))
+}
+
+// getMemoryLimiter checks if we have a cached memoryLimiter with a specific config,
+// otherwise initialize and add one to the store.
+func (f *factory) getMemoryLimiter(set component.ProcessorCreateSettings, cfg config.Processor) (*memoryLimiter, error) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	if memLimiter, ok := f.memoryLimiters[cfg.ID()]; ok {
+		return memLimiter, nil
+	}
+
+	memLimiter, err := newMemoryLimiter(set, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+
+	f.memoryLimiters[cfg.ID()] = memLimiter
+	return memLimiter, nil
 }

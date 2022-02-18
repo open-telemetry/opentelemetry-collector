@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -81,6 +82,9 @@ type memoryLimiter struct {
 	configMismatchedLogged bool
 
 	obsrep *obsreport.Processor
+
+	refCounterLock sync.Mutex
+	refCounter     int
 }
 
 // Minimum interval between forced GC when in soft limited mode. We don't want to
@@ -148,13 +152,20 @@ func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
 			break
 		}
 	}
-
 	ml.startMonitoring()
 	return nil
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
-	ml.ticker.Stop()
+	ml.refCounterLock.Lock()
+	defer ml.refCounterLock.Unlock()
+
+	if ml.refCounter == 0 {
+		return fmt.Errorf("no existing monitoring routine is running")
+	} else if ml.refCounter == 1 {
+		ml.ticker.Stop()
+	}
+	ml.refCounter--
 	return nil
 }
 
@@ -230,14 +241,20 @@ func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
 	return ms
 }
 
-// startMonitoring starts a ticker'd goroutine that will check memory usage
-// every checkInterval period.
+// startMonitoring starts a single ticker'd goroutine per instance
+// that will check memory usage every checkInterval period.
 func (ml *memoryLimiter) startMonitoring() {
-	go func() {
-		for range ml.ticker.C {
-			ml.checkMemLimits()
-		}
-	}()
+	ml.refCounterLock.Lock()
+	defer ml.refCounterLock.Unlock()
+
+	ml.refCounter++
+	if ml.refCounter == 1 {
+		go func() {
+			for range ml.ticker.C {
+				ml.checkMemLimits()
+			}
+		}()
+	}
 }
 
 // forcingDrop indicates when memory resources need to be released.

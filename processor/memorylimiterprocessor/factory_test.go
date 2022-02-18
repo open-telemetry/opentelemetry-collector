@@ -16,6 +16,7 @@ package memorylimiterprocessor
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -61,18 +62,33 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
+	errorCheck := fmt.Errorf("no existing monitoring routine is running")
 	tp, err = factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
-	assert.NoError(t, tp.Shutdown(context.Background()))
+	// test if we can shutdown a monitoring routine that has not started
+	assert.Error(t, errorCheck, tp.Shutdown(context.Background()))
+	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 
 	mp, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
-	assert.NoError(t, mp.Shutdown(context.Background()))
+	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 
 	lp, err = factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
+	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+
 	assert.NoError(t, lp.Shutdown(context.Background()))
+	assert.NoError(t, tp.Shutdown(context.Background()))
+	assert.NoError(t, mp.Shutdown(context.Background()))
+	// verify that no monitoring routine is running
+	assert.Error(t, errorCheck, tp.Shutdown(context.Background()))
+
+	// start and shutdown a new monitoring routine
+	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, lp.Shutdown(context.Background()))
+	// calling it again should throw an error
+	assert.Error(t, errorCheck, lp.Shutdown(context.Background()))
 }
