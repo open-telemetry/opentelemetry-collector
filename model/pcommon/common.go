@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata // import "go.opentelemetry.io/collector/model/pdata"
+package pcommon // import "go.opentelemetry.io/collector/model/pcommon"
 
 // This file contains data structures that are common for all telemetry types,
 // such as timestamps, attributes, etc.
@@ -85,7 +85,7 @@ type AttributeValue struct {
 	orig *otlpcommon.AnyValue
 }
 
-func newAttributeValue(orig *otlpcommon.AnyValue) AttributeValue {
+func AttributeValueFromOrig(orig *otlpcommon.AnyValue) AttributeValue {
 	return AttributeValue{orig}
 }
 
@@ -194,7 +194,7 @@ func (a AttributeValue) MapVal() AttributeMap {
 	if kvlist == nil {
 		return NewAttributeMap()
 	}
-	return newAttributeMap(&kvlist.Values)
+	return AttributeMapFromOrig(&kvlist.Values)
 }
 
 // SliceVal returns the slice value associated with this AttributeValue.
@@ -269,7 +269,7 @@ func (a AttributeValue) copyTo(dest *otlpcommon.AnyValue) {
 			return
 		}
 		// Deep copy to dest.
-		newAttributeMap(&v.KvlistValue.Values).CopyTo(newAttributeMap(&kv.KvlistValue.Values))
+		AttributeMapFromOrig(&v.KvlistValue.Values).CopyTo(AttributeMapFromOrig(&kv.KvlistValue.Values))
 	case *otlpcommon.AnyValue_ArrayValue:
 		av, ok := dest.Value.(*otlpcommon.AnyValue_ArrayValue)
 		if !ok {
@@ -325,14 +325,14 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 
 		for i, val := range avv {
 			val := val
-			newAv := newAttributeValue(&vv[i])
+			newAv := AttributeValueFromOrig(&vv[i])
 
 			// According to the specification, array values must be scalar.
 			if avType := newAv.Type(); avType == AttributeValueTypeArray || avType == AttributeValueTypeMap {
 				return false
 			}
 
-			if !newAv.Equal(newAttributeValue(&val)) {
+			if !newAv.Equal(AttributeValueFromOrig(&val)) {
 				return false
 			}
 		}
@@ -344,7 +344,7 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 			return false
 		}
 
-		am := newAttributeMap(&avv)
+		am := AttributeMapFromOrig(&avv)
 
 		for _, val := range cc {
 			newAv, ok := am.Get(val.Key)
@@ -352,7 +352,7 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 				return false
 			}
 
-			if !newAv.Equal(newAttributeValue(&val.Value)) {
+			if !newAv.Equal(AttributeValueFromOrig(&val.Value)) {
 				return false
 			}
 		}
@@ -474,7 +474,7 @@ func NewAttributeMapFromMap(attrMap map[string]AttributeValue) AttributeMap {
 	return AttributeMap{&origs}
 }
 
-func newAttributeMap(orig *[]otlpcommon.KeyValue) AttributeMap {
+func AttributeMapFromOrig(orig *[]otlpcommon.KeyValue) AttributeMap {
 	return AttributeMap{orig}
 }
 

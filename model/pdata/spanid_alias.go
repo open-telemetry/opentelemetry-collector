@@ -12,35 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 import (
-	"os"
-
-	"go.opentelemetry.io/collector/model/internal/cmd/pdatagen/internal"
+	"go.opentelemetry.io/collector/model/pcommon"
 )
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
+// SpanID is an alias for pcommon.SpanID struct.
+type SpanID = pcommon.SpanID
 
-func main() {
-	for _, fp := range internal.AllFiles {
-		name := fp.Name
-		if name == "resource" {
-			name = "common"
-		}
-		f, err := os.Create("./model/p" + name + "/generated_" + fp.Name + ".go")
-		check(err)
-		_, err = f.WriteString(fp.GenerateFile())
-		check(err)
-		check(f.Close())
-		f, err = os.Create("./model/p" + name + "/generated_" + fp.Name + "_test.go")
-		check(err)
-		_, err = f.WriteString(fp.GenerateTestFile())
-		check(err)
-		check(f.Close())
-	}
-}
+// InvalidSpanID is an alias for pcommon.InvalidSpanID function.
+var InvalidSpanID = pcommon.InvalidSpanID
+
+// NewSpanID is an alias for a function to create new SpanID.
+var NewSpanID = pcommon.NewSpanID

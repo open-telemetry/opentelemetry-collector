@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata // import "go.opentelemetry.io/collector/model/pdata"
+package plog // import "go.opentelemetry.io/collector/model/plog"
 
 import (
 	"go.opentelemetry.io/collector/model/internal"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 // LogsMarshaler marshals pdata.Logs into bytes.
@@ -88,21 +89,21 @@ func (ld Logs) LogRecordCount() int {
 }
 
 // ResourceLogs returns the ResourceLogsSlice associated with this Logs.
-func (ld Logs) ResourceLogs() ResourceLogsSlice {
-	return newResourceLogsSlice(&ld.orig.ResourceLogs)
+func (ld Logs) ResourceLogs() pdata.ResourceLogsSlice {
+	return pdata.newResourceLogsSlice(&ld.orig.ResourceLogs)
 }
 
 // Deprecated: [v0.44.0] use LogRecordSlice
-type LogSlice = LogRecordSlice
+type LogSlice = pdata.LogRecordSlice
 
 // Deprecated: [v0.44.0] use `LogRecords`.
-func (ms InstrumentationLibraryLogs) Logs() LogRecordSlice {
+func (ms pdata.InstrumentationLibraryLogs) Logs() pdata.LogRecordSlice {
 	return ms.LogRecords()
 }
 
 // Deprecated: [v0.44.0] use NewLogRecordSlice
-func NewLogSlice() LogRecordSlice {
-	return NewLogRecordSlice()
+func NewLogSlice() pdata.LogRecordSlice {
+	return pdata.NewLogRecordSlice()
 }
 
 // SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.

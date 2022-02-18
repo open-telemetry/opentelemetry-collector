@@ -12,22 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata
+package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/model/pcommon"
 )
 
-func TestTraceID(t *testing.T) {
-	tid := InvalidTraceID()
-	assert.Equal(t, [16]byte{}, tid.Bytes())
-	assert.True(t, tid.IsEmpty())
-	assert.Equal(t, "", tid.HexString())
+// Timestamp is a an alias for pcommon.Timestamp.
+type Timestamp = pcommon.Timestamp
 
-	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
-	assert.False(t, tid.IsEmpty())
-	assert.Equal(t, "01020304050607080807060504030201", tid.HexString())
-}
+// NewTimestampFromTime is an alias for pcommon.NewTimestampFromTime function.
+var NewTimestampFromTime = pcommon.NewTimestampFromTime

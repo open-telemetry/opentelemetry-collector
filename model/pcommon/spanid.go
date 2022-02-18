@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata // import "go.opentelemetry.io/collector/model/pdata"
+package pcommon // import "go.opentelemetry.io/collector/model/pcommon"
 
 import (
 	"go.opentelemetry.io/collector/model/internal/data"
@@ -31,6 +31,15 @@ func InvalidSpanID() SpanID {
 // NewSpanID returns a new SpanID from the given byte array.
 func NewSpanID(bytes [8]byte) SpanID {
 	return SpanID{orig: data.NewSpanID(bytes)}
+}
+
+// SpanIDFromOrig returns a new SpanID from the given data.SpanID.
+func SpanIDFromOrig(orig data.SpanID) SpanID {
+	return SpanID{orig: orig}
+}
+
+func SetSpanID(spanID SpanID, orig data.SpanID) {
+	spanID.orig = orig
 }
 
 // Bytes returns the byte array representation of the SpanID.

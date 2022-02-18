@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata // import "go.opentelemetry.io/collector/model/pdata"
+package pcommon // import "go.opentelemetry.io/collector/model/pcommon"
 
 import (
 	"go.opentelemetry.io/collector/model/internal/data"
@@ -31,6 +31,15 @@ func InvalidTraceID() TraceID {
 // NewTraceID returns a new TraceID from the given byte array.
 func NewTraceID(bytes [16]byte) TraceID {
 	return TraceID{orig: data.NewTraceID(bytes)}
+}
+
+// TraceIDFromOrig returns a new TraceID from the given data.TraceID.
+func TraceIDFromOrig(orig data.TraceID) TraceID {
+	return TraceID{orig: orig}
+}
+
+func SetTraceID(traceID TraceID, orig data.TraceID) {
+	traceID.orig = orig
 }
 
 // Bytes returns the byte array representation of the TraceID.
