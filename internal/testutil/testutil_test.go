@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,7 +39,9 @@ func testEndpointAvailable(t *testing.T, endpoint string) {
 	ln0, err := net.Listen("tcp", endpoint)
 	require.NoError(t, err)
 	require.NotNil(t, ln0)
-	defer ln0.Close()
+	t.Cleanup(func() {
+		assert.NoError(t, ln0.Close())
+	})
 
 	// Ensure that the endpoint wasn't something like ":0" by checking that a
 	// second listener will fail.

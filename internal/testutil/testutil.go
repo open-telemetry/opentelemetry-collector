@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,7 +40,9 @@ func GetAvailableLocalAddress(t *testing.T) string {
 	require.NoError(t, err, "Failed to get a free local port")
 	// There is a possible race if something else takes this same port before
 	// the test uses it, however, that is unlikely in practice.
-	defer ln.Close()
+	defer func() {
+		assert.NoError(t, ln.Close())
+	}()
 	return ln.Addr().String()
 }
 
@@ -92,7 +95,7 @@ func getExclusionsList(t *testing.T) []portpair {
 }
 
 func createExclusionsList(exclusionsText string, t *testing.T) []portpair {
-	exclusions := []portpair{}
+	var exclusions []portpair
 
 	parts := strings.Split(exclusionsText, "--------")
 	require.Equal(t, len(parts), 3)
