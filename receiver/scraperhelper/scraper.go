@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -46,14 +45,14 @@ type Scraper interface {
 type ScraperOption func(*baseScraper)
 
 // WithStart sets the function that will be called on startup.
-func WithStart(start componenthelper.StartFunc) ScraperOption {
+func WithStart(start component.StartFunc) ScraperOption {
 	return func(o *baseScraper) {
 		o.StartFunc = start
 	}
 }
 
 // WithShutdown sets the function that will be called on shutdown.
-func WithShutdown(shutdown componenthelper.ShutdownFunc) ScraperOption {
+func WithShutdown(shutdown component.ShutdownFunc) ScraperOption {
 	return func(o *baseScraper) {
 		o.ShutdownFunc = shutdown
 	}
@@ -62,8 +61,8 @@ func WithShutdown(shutdown componenthelper.ShutdownFunc) ScraperOption {
 var _ Scraper = (*baseScraper)(nil)
 
 type baseScraper struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	component.StartFunc
+	component.ShutdownFunc
 	ScrapeFunc
 	id config.ComponentID
 }

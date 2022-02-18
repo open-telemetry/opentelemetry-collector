@@ -4,9 +4,10 @@
 
 ### 🛑 Breaking changes 🛑
 
-- Deprecated methods `config.DefaultConfig`, `confighttp.DefaultHTTPSettings`, `exporterhelper.DefaultTimeoutSettings`, 
+- Deprecated funcs `config.DefaultConfig`, `confighttp.DefaultHTTPSettings`, `exporterhelper.DefaultTimeoutSettings`, 
   `exporthelper.DefaultQueueSettings`, `exporterhelper.DefaultRetrySettings`, `testcomponents.DefaultFactories`, and
   `scraperhelper.DefaultScraperControllerSettings` in favour for their `NewDefault` method to adhere to contribution guidelines (#4865)
+- Deprecated funcs `componenthelper.StartFunc`, `componenthelper.ShutdownFunc` in favour of `component.StartFunc` and `component.ShutdownFunc` (#4803)
 
 ### 💡 Enhancements 💡
 
