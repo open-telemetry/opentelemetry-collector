@@ -155,7 +155,7 @@ func TestScrapeController(t *testing.T) {
 			if !test.nilNextConsumer {
 				nextConsumer = sink
 			}
-			defaultCfg := DefaultScraperControllerSettings("receiver")
+			defaultCfg := NewDefaultScraperControllerSettings("receiver")
 			cfg := &defaultCfg
 			if test.scraperControllerSettings != nil {
 				cfg = test.scraperControllerSettings
@@ -332,7 +332,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 	scrapeMetricsCh := make(chan int, 10)
 	tsm := &testScrapeMetrics{ch: scrapeMetricsCh}
 
-	defaultCfg := DefaultScraperControllerSettings("")
+	defaultCfg := NewDefaultScraperControllerSettings("")
 	cfg := &defaultCfg
 
 	tickerCh := make(chan time.Time)

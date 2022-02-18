@@ -63,8 +63,11 @@ type Module struct {
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
 }
 
-// DefaultConfig creates a new config, with default values
-func DefaultConfig() Config {
+// Deprecated: [v0.46.0] Use NewDefaultConfig instead
+var DefaultConfig = NewDefaultConfig
+
+// NewDefaultConfig creates a new config, with default values
+func NewDefaultConfig() Config {
 	log, err := zap.NewDevelopment()
 	if err != nil {
 		panic(fmt.Sprintf("failed to obtain a logger instance: %v", err))

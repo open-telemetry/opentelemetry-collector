@@ -33,8 +33,11 @@ type TimeoutSettings struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-// DefaultTimeoutSettings returns the default settings for TimeoutSettings.
-func DefaultTimeoutSettings() TimeoutSettings {
+// Deprecated: [v0.46.0] use NewDefaultTimeoutSettings instead.
+var DefaultTimeoutSettings = NewDefaultTimeoutSettings
+
+// NewDefaultTimeoutSettings returns the default settings for TimeoutSettings.
+func NewDefaultTimeoutSettings() TimeoutSettings {
 	return TimeoutSettings{
 		Timeout: 5 * time.Second,
 	}
@@ -100,7 +103,7 @@ type baseSettings struct {
 func fromOptions(options ...Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
-		TimeoutSettings: DefaultTimeoutSettings(),
+		TimeoutSettings: NewDefaultTimeoutSettings(),
 		// TODO: Enable queuing by default (call DefaultQueueSettings)
 		QueueSettings: QueueSettings{Enabled: false},
 		// TODO: Enable retry by default (call DefaultRetrySettings)

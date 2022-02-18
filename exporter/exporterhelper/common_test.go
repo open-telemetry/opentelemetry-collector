@@ -53,7 +53,7 @@ func TestBaseExporterWithOptions(t *testing.T) {
 		fromOptions(
 			WithStart(func(ctx context.Context, host component.Host) error { return want }),
 			WithShutdown(func(ctx context.Context) error { return want }),
-			WithTimeout(DefaultTimeoutSettings())),
+			WithTimeout(NewDefaultTimeoutSettings())),
 		"",
 		nopRequestUnmarshaler(),
 	)

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Deprecated methods `config.DefaultConfig`, `confighttp.DefaultHTTPSettings`, `exporterhelper.DefaultTimeoutSettings`, 
+  `exporthelper.DefaultQueueSettings`, `exporterhelper.DefaultRetrySettings`, `testcomponents.DefaultFactories`, and
+  `scraperhelper.DefaultScraperControllerSettings` in favour for their `NewDefault` method to adhere to contribution guidelines (#4865)
+
 ### 💡 Enhancements 💡
 
 - Add validation to check at least one endpoint is specified in otlphttpexporter's configuration (#4860)

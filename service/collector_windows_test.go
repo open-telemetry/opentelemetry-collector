@@ -33,7 +33,7 @@ import (
 func TestWindowsService_Execute(t *testing.T) {
 	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-config.yaml")}
 
-	factories, err := testcomponents.DefaultFactories()
+	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
 	s := NewWindowsService(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})

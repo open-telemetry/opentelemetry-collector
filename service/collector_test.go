@@ -48,7 +48,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	collectorTelemetry = &colTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := testcomponents.DefaultFactories()
+	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
 	set := CollectorSettings{
@@ -81,7 +81,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 }
 
 func TestCollector_Start(t *testing.T) {
-	factories, err := testcomponents.DefaultFactories()
+	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 	var once sync.Once
 	loggingHookCalled := false
@@ -138,7 +138,7 @@ func TestCollector_Start(t *testing.T) {
 // TestCollector_ShutdownNoop verifies that shutdown can be called even if a collector
 // has yet to be started and it will execute without error.
 func TestCollector_ShutdownNoop(t *testing.T) {
-	factories, err := testcomponents.DefaultFactories()
+	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
 	set := CollectorSettings{
@@ -169,7 +169,7 @@ func TestCollector_ReportError(t *testing.T) {
 	collectorTelemetry = &mockColTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := testcomponents.DefaultFactories()
+	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
 	col, err := New(CollectorSettings{
