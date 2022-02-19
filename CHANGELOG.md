@@ -8,6 +8,10 @@
   `exporthelper.DefaultQueueSettings`, `exporterhelper.DefaultRetrySettings`, `testcomponents.DefaultFactories`, and
   `scraperhelper.DefaultScraperControllerSettings` in favour for their `NewDefault` method to adhere to contribution guidelines (#4865)
 - Deprecated funcs `componenthelper.StartFunc`, `componenthelper.ShutdownFunc` in favour of `component.StartFunc` and `component.ShutdownFunc` (#4803)
+- Move helpers from extensionhelper to component (#4805)
+  - Deprecated `extensionhelper.CreateDefaultConfig` in favour of `component.ExtensionDefaultConfigFunc`
+  - Deprecated `extensionhelper.CreateServiceExtension` in favour of `component.CreateExtensionFunc`
+  - Deprecated `extensionhelper.NewFactory` in favour of `component.NewExtensionFactory`
 
 ### 💡 Enhancements 💡
 
