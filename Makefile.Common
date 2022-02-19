@@ -41,7 +41,7 @@ lint-unstable:
 
 .PHONY: porto
 porto:
-	porto -w --include-internal  ./
+	porto -w --include-internal ./
 
 .PHONY: impi
 impi:
