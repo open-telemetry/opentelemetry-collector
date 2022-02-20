@@ -165,7 +165,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfgW, err := NewConfigProvider(tt.locations, tt.parserProvider, tt.cfgMapConverters, tt.configUnmarshaler)
+			cfgW, err := NewConfigProvider(tt.locations, WithConfigMapProviders(tt.parserProvider), WithCfgMapConverters(tt.cfgMapConverters), WithConfigUnmarshaler(tt.configUnmarshaler))
 			assert.NoError(t, err)
 
 			_, errN := cfgW.Get(context.Background(), factories)
@@ -204,9 +204,8 @@ func TestConfigProvider(t *testing.T) {
 
 	cfgW, err := NewConfigProvider(
 		[]string{"watcher:"},
-		map[string]configmapprovider.Provider{"watcher": configMapProvider},
-		nil,
-		configunmarshaler.NewDefault())
+		WithConfigMapProviders(map[string]configmapprovider.Provider{"watcher": configMapProvider}),
+		WithConfigUnmarshaler(configunmarshaler.NewDefault()))
 	require.NoError(t, err)
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
@@ -233,9 +232,8 @@ func TestConfigProviderNoWatcher(t *testing.T) {
 	watcherWG := sync.WaitGroup{}
 	cfgW, err := NewConfigProvider(
 		[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
-		map[string]configmapprovider.Provider{"file": configmapprovider.NewFile()},
-		nil,
-		configunmarshaler.NewDefault())
+		WithConfigMapProviders(map[string]configmapprovider.Provider{"file": configmapprovider.NewFile()}),
+		WithConfigUnmarshaler(configunmarshaler.NewDefault()))
 	require.NoError(t, err)
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
@@ -266,9 +264,8 @@ func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 	watcherWG := sync.WaitGroup{}
 	cfgW, err := NewConfigProvider(
 		[]string{"watcher:"},
-		map[string]configmapprovider.Provider{"watcher": configMapProvider},
-		nil,
-		configunmarshaler.NewDefault())
+		WithConfigMapProviders(map[string]configmapprovider.Provider{"watcher": configMapProvider}),
+		WithConfigUnmarshaler(configunmarshaler.NewDefault()))
 	_, errN := cfgW.Get(context.Background(), factories)
 	require.NoError(t, err)
 

@@ -75,6 +75,36 @@ type configProvider struct {
 	watcher chan error
 }
 
+// ConfigProviderOptions has options that change the behavior of ConfigProvider
+// returned by NewConfigProvider()
+type ConfigProviderOptions struct {
+	configMapProviders map[string]configmapprovider.Provider
+	cfgMapConverters   []config.MapConverterFunc
+	configUnmarshaler  configunmarshaler.ConfigUnmarshaler
+}
+
+// ConfigProviderOption is an option to change the behavior of ConfigProvider
+// returned by NewConfigProvider()
+type ConfigProviderOption func(opts *ConfigProviderOptions)
+
+func WithConfigMapProviders(c map[string]configmapprovider.Provider) ConfigProviderOption {
+	return func(opts *ConfigProviderOptions) {
+		opts.configMapProviders = c
+	}
+}
+
+func WithCfgMapConverters(c []config.MapConverterFunc) ConfigProviderOption {
+	return func(opts *ConfigProviderOptions) {
+		opts.cfgMapConverters = c
+	}
+}
+
+func WithConfigUnmarshaler(c configunmarshaler.ConfigUnmarshaler) ConfigProviderOption {
+	return func(opts *ConfigProviderOptions) {
+		opts.configUnmarshaler = c
+	}
+}
+
 // Deprecated: use NewConfigProvider instead
 // MustNewConfigProvider returns a new ConfigProvider that provides the configuration:
 // * Retrieve the config.Map by merging all retrieved maps from all the configmapprovider.Provider in order.
@@ -89,7 +119,7 @@ func MustNewConfigProvider(
 	configMapProviders map[string]configmapprovider.Provider,
 	cfgMapConverters []config.MapConverterFunc,
 	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
-	configProvider, err := NewConfigProvider(locations, configMapProviders, cfgMapConverters, configUnmarshaler)
+	configProvider, err := NewConfigProvider(locations, WithConfigMapProviders(configMapProviders), WithCfgMapConverters(cfgMapConverters), WithConfigUnmarshaler(configUnmarshaler))
 	if err != nil {
 		panic(err)
 	}
@@ -106,9 +136,12 @@ func MustNewConfigProvider(
 // Notice: This API is experimental.
 func NewConfigProvider(
 	locations []string,
-	configMapProviders map[string]configmapprovider.Provider,
-	cfgMapConverters []config.MapConverterFunc,
-	configUnmarshaler configunmarshaler.ConfigUnmarshaler) (ConfigProvider, error) {
+	opts ...ConfigProviderOption) (ConfigProvider, error) {
+
+	configOpts := &ConfigProviderOptions{}
+	for _, o := range opts {
+		o(configOpts)
+	}
 
 	if len(locations) == 0 {
 		return nil, fmt.Errorf("cannot create ConfigProvider: no locations provided")
@@ -118,9 +151,9 @@ func NewConfigProvider(
 	copy(locationsCopy, locations)
 	return &configProvider{
 		locations:          locationsCopy,
-		configMapProviders: configMapProviders,
-		cfgMapConverters:   cfgMapConverters,
-		configUnmarshaler:  configUnmarshaler,
+		configMapProviders: configOpts.configMapProviders,
+		cfgMapConverters:   configOpts.cfgMapConverters,
+		configUnmarshaler:  configOpts.configUnmarshaler,
 		watcher:            make(chan error, 1),
 	}, nil
 }
@@ -139,17 +172,20 @@ func MustNewDefaultConfigProvider(configLocations []string, properties []string)
 // NewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
 // defined by the given configFile and overwrites fields using properties.
 func NewDefaultConfigProvider(configLocations []string, properties []string) (ConfigProvider, error) {
+	configMapProvider := map[string]configmapprovider.Provider{
+		"file": configmapprovider.NewFile(),
+		"env":  configmapprovider.NewEnv(),
+	}
+	cfgMapConverter := []config.MapConverterFunc{
+		configmapprovider.NewOverwritePropertiesConverter(properties),
+		configmapprovider.NewExpandConverter(),
+	}
 	return NewConfigProvider(
 		configLocations,
-		map[string]configmapprovider.Provider{
-			"file": configmapprovider.NewFile(),
-			"env":  configmapprovider.NewEnv(),
-		},
-		[]config.MapConverterFunc{
-			configmapprovider.NewOverwritePropertiesConverter(properties),
-			configmapprovider.NewExpandConverter(),
-		},
-		configunmarshaler.NewDefault())
+		WithCfgMapConverters(cfgMapConverter),
+		WithConfigUnmarshaler(configunmarshaler.NewDefault()),
+		WithConfigMapProviders(configMapProvider),
+	)
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
