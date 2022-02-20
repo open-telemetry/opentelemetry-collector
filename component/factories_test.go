@@ -45,11 +45,48 @@ func TestMakeExtensionFactoryMap(t *testing.T) {
 			in:   []ExtensionFactory{p1, p2, NewExtensionFactory("p1", nil, nil)},
 		},
 	}
-
 	for i := range testCases {
 		tt := testCases[i]
 		t.Run(tt.name, func(t *testing.T) {
 			out, err := MakeExtensionFactoryMap(tt.in...)
+			if tt.out == nil {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.out, out)
+		})
+	}
+}
+
+func TestMakeProcessorFactoryMap(t *testing.T) {
+	type testCase struct {
+		name string
+		in   []ProcessorFactory
+		out  map[config.Type]ProcessorFactory
+	}
+
+	p1 := NewProcessorFactory("p1", nil)
+	p2 := NewProcessorFactory("p2", nil)
+	testCases := []testCase{
+		{
+			name: "different names",
+			in:   []ProcessorFactory{p1, p2},
+			out: map[config.Type]ProcessorFactory{
+				p1.Type(): p1,
+				p2.Type(): p2,
+			},
+		},
+		{
+			name: "same name",
+			in:   []ProcessorFactory{p1, p2, NewProcessorFactory("p1", nil)},
+		},
+	}
+
+	for i := range testCases {
+		tt := testCases[i]
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := MakeProcessorFactoryMap(tt.in...)
 			if tt.out == nil {
 				assert.Error(t, err)
 				return

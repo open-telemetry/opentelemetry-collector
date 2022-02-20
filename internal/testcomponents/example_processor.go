@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 // ExampleProcessorCfg is for testing purposes. We are defining an example config and factory
@@ -35,12 +34,12 @@ type ExampleProcessorCfg struct {
 const procType = "exampleprocessor"
 
 // ExampleProcessorFactory is factory for exampleProcessor.
-var ExampleProcessorFactory = processorhelper.NewFactory(
+var ExampleProcessorFactory = component.NewProcessorFactory(
 	procType,
 	createDefaultConfig,
-	processorhelper.WithTraces(createTracesProcessor),
-	processorhelper.WithMetrics(createMetricsProcessor),
-	processorhelper.WithLogs(createLogsProcessor))
+	component.WithTracesProcessor(createTracesProcessor),
+	component.WithMetricsProcessor(createMetricsProcessor),
+	component.WithLogsProcessor(createLogsProcessor))
 
 // CreateDefaultConfig creates the default configuration for the Processor.
 func createDefaultConfig() config.Processor {

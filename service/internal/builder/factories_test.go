@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testcomponents"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -60,7 +59,7 @@ func newBadReceiverFactory() component.ReceiverFactory {
 }
 
 func newBadProcessorFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory("bf", func() config.Processor {
+	return component.NewProcessorFactory("bf", func() config.Processor {
 		return &struct {
 			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{

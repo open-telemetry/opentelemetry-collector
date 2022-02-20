@@ -12,6 +12,12 @@
   - Deprecated `extensionhelper.CreateDefaultConfig` in favour of `component.ExtensionDefaultConfigFunc`
   - Deprecated `extensionhelper.CreateServiceExtension` in favour of `component.CreateExtensionFunc`
   - Deprecated `extensionhelper.NewFactory` in favour of `component.NewExtensionFactory`
+- Move helpers from processorhelper to component (#4889)
+  - Deprecated `processorhelper.CreateDefaultConfig` in favour of `component.ProcessorDefaultConfigFunc`
+  - Deprecated `processorhelper.WithTraces` in favour of `component.WithTracesProcessor`
+  - Deprecated `processorhelper.WithMetrics` in favour of `component.WithMetricsProcessor`
+  - Deprecated `processorhelper.WithLogs` in favour of `component.WithLogsProcessor`
+  - Deprecated `processorhelper.NewFactory` in favour of `component.NewProcessorFactory`
 
 ### 💡 Enhancements 💡
 
