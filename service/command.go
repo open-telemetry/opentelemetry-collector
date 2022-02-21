@@ -17,6 +17,8 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"github.com/spf13/cobra"
 
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -30,7 +32,10 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			featuregate.Apply(featuregate.GetFlags())
 			if set.ConfigProvider == nil {
-				configProvider, err := NewDefaultConfigProvider(getConfigFlag(), getSetFlag())
+				cfgMapConverter := []config.MapConverterFunc{
+					configmapprovider.NewOverwritePropertiesConverter(getSetFlag()),
+				}
+				configProvider, err := NewConfigProvider(getConfigFlag(), WithCfgMapConverters(cfgMapConverter))
 				if err != nil {
 					return err
 				}

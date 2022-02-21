@@ -36,6 +36,8 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
@@ -51,7 +53,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
-	configProvider, err := NewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil)
+	configProvider, err := NewConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")})
 	require.NoError(t, err)
 
 	set := CollectorSettings{
@@ -96,9 +98,15 @@ func TestCollector_Start(t *testing.T) {
 	}
 
 	metricsPort := testutil.GetAvailablePort(t)
-	configProvider, err := NewDefaultConfigProvider(
-		[]string{filepath.Join("testdata", "otelcol-config.yaml")},
-		[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(metricsPort), 10)})
+
+	cfgMapConverter := []config.MapConverterFunc{
+		configmapprovider.NewOverwritePropertiesConverter(
+			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(metricsPort), 10)},
+		),
+	}
+
+	configProvider, err := NewConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")},
+		WithCfgMapConverters(cfgMapConverter))
 
 	require.NoError(t, err)
 
@@ -179,7 +187,7 @@ func TestCollector_ReportError(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
-	configProvider, err := NewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil)
+	configProvider, err := NewConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")})
 	require.NoError(t, err)
 
 	col, err := New(CollectorSettings{
