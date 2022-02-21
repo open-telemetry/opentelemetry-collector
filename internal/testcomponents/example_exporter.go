@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -44,12 +43,12 @@ func (cfg *ExampleExporter) Unmarshal(componentParser *config.Map) error {
 const expType = "exampleexporter"
 
 // ExampleExporterFactory is factory for ExampleExporter.
-var ExampleExporterFactory = exporterhelper.NewFactory(
+var ExampleExporterFactory = component.NewExporterFactory(
 	expType,
 	createExporterDefaultConfig,
-	exporterhelper.WithTraces(createTracesExporter),
-	exporterhelper.WithMetrics(createMetricsExporter),
-	exporterhelper.WithLogs(createLogsExporter))
+	component.WithTracesExporter(createTracesExporter),
+	component.WithMetricsExporter(createMetricsExporter),
+	component.WithLogsExporter(createLogsExporter))
 
 // CreateDefaultConfig creates the default configuration for the Exporter.
 func createExporterDefaultConfig() config.Exporter {
@@ -61,27 +60,15 @@ func createExporterDefaultConfig() config.Exporter {
 	}
 }
 
-func createTracesExporter(
-	_ context.Context,
-	_ component.ExporterCreateSettings,
-	_ config.Exporter,
-) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
-func createMetricsExporter(
-	_ context.Context,
-	_ component.ExporterCreateSettings,
-	_ config.Exporter,
-) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 
-func createLogsExporter(
-	_ context.Context,
-	_ component.ExporterCreateSettings,
-	_ config.Exporter,
-) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error) {
 	return &ExampleExporterConsumer{}, nil
 }
 

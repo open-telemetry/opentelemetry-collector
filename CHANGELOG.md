@@ -18,6 +18,12 @@
   - Deprecated `processorhelper.WithMetrics` in favour of `component.WithMetricsProcessor`
   - Deprecated `processorhelper.WithLogs` in favour of `component.WithLogsProcessor`
   - Deprecated `processorhelper.NewFactory` in favour of `component.NewProcessorFactory`
+- Move helpers from exporterhelper to component (#4899)
+  - Deprecated `exporterhelper.CreateDefaultConfig` in favour of `component.ExporterDefaultConfigFunc`
+  - Deprecated `exporterhelper.WithTraces` in favour of `component.WithTracesExporter`
+  - Deprecated `exporterhelper.WithMetrics` in favour of `component.WithMetricsExporter`
+  - Deprecated `exporterhelper.WithLogs` in favour of `component.WithLogsExporter`
+  - Deprecated `exporterhelper.NewFactory` in favour of `component.NewExporterFactory`
 
 ### 💡 Enhancements 💡
 

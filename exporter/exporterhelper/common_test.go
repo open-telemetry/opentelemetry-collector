@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	defaultExporterCfg  = config.NewExporterSettings(config.NewComponentID(typeStr))
+	defaultExporterCfg  = config.NewExporterSettings(config.NewComponentID("test"))
 	exporterTag, _      = tag.NewKey("exporter")
 	defaultExporterTags = []tag.Tag{
 		{Key: exporterTag, Value: "test"},
