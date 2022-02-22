@@ -93,7 +93,7 @@ gotidy:
 	$(MAKE) for-all CMD="$(GOCMD) mod tidy -compat=1.17"
 
 .PHONY: gogenerate
-genmdata:
+gogenerate:
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
 .PHONY: addlicense
