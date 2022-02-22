@@ -31,6 +31,11 @@ fmt:
 	gofmt -w -s ./
 	goimports -w  -local go.opentelemetry.io/collector ./
 
+.PHONY: tidy
+tidy:
+	rm -fr go.sum
+	$(GOCMD) mod tidy -compat=1.17
+
 .PHONY: lint
 lint:
 	$(LINT) run --allow-parallel-runners
@@ -39,10 +44,14 @@ lint:
 lint-unstable:
 	$(LINT) run --allow-parallel-runners --build-tags enable_unstable
 
-.PHONY: porto
-porto:
-	porto -w --include-internal ./
+.PHONY: generate
+generate:
+	$(GOCMD) generate ./...
 
 .PHONY: impi
 impi:
 	@$(IMPI) --local go.opentelemetry.io/collector --scheme stdThirdPartyLocal ./...
+
+.PHONY: moddownload
+moddownload:
+	$(GOCMD) mod download

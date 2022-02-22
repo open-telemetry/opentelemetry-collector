@@ -56,45 +56,44 @@ all-modules:
 
 .PHONY: gomoddownload
 gomoddownload:
-	@$(MAKE) for-all CMD="$(GOCMD) mod download"
+	@$(MAKE) for-all-target TARGET="moddownload"
 
 .PHONY: gotest
 gotest:
-	@$(MAKE) for-all CMD="make test test-unstable"
+	@$(MAKE) for-all-target TARGET="test test-unstable"
 
 .PHONY: gobenchmark
 gobenchmark:
-	@$(MAKE) for-all CMD="make benchmark"
+	@$(MAKE) for-all-target TARGET="benchmark"
 
 .PHONY: gotest-with-cover
 gotest-with-cover:
-	@$(MAKE) for-all CMD="make test-with-cover"
+	@$(MAKE) for-all-target TARGET="test-with-cover"
 	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
 .PHONY: goporto
 goporto:
-	@$(MAKE) for-all CMD="make porto"
+	porto -w --include-internal ./
 
 .PHONY: golint
 golint:
-	@$(MAKE) for-all CMD="make lint lint-unstable"
+	@$(MAKE) for-all-target TARGET="lint lint-unstable"
 
 .PHONY: goimpi
 goimpi:
-	@$(MAKE) for-all CMD="make impi"
+	@$(MAKE) for-all-target TARGET="impi"
 
 .PHONY: gofmt
 gofmt:
-	@$(MAKE) for-all CMD="make fmt"
+	@$(MAKE) for-all-target TARGET="fmt"
 
 .PHONY: gotidy
 gotidy:
-	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="$(GOCMD) mod tidy -compat=1.17"
+	@$(MAKE) for-all-target TARGET="tidy"
 
 .PHONY: gogenerate
 gogenerate:
-	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	@$(MAKE) for-all-target TARGET="generate"
 
 .PHONY: addlicense
 addlicense:
@@ -147,15 +146,13 @@ install-tools:
 run: otelcorecol
 	./bin/otelcorecol_$(GOOS)_$(GOARCH) --config ${RUN_CONFIG} ${RUN_ARGS}
 
-.PHONY: for-all
-for-all:
-	@echo "running $${CMD} in root"
-	@$${CMD}
-	@set -e; for dir in $(ALL_MODULES); do \
-	  (cd "$${dir}" && \
-	  	echo "running $${CMD} in $${dir}" && \
-	 	$${CMD} ); \
-	done
+GOMODULES = $(ALL_MODULES) $(PWD)
+.PHONY: $(GOMODULES)
+MODULEDIRS = $(GOMODULES:%=for-all-target-%)
+.PHONY: for-all-target
+for-all-target: $(MODULEDIRS)
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
 
 .PHONY: check-component
 check-component:
@@ -309,13 +306,12 @@ gensemconv:
 .PHONY: check-contrib
 check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
-	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
-	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/model=$(CURDIR)/model"
-	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy -go=1.16"
-	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod tidy -go=1.17"
-	make -C $(CONTRIB_PATH) test
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/model=$(CURDIR)/model"
+	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
+	@$(MAKE) -C $(CONTRIB_PATH) test
 	@echo Restoring contrib to no longer use this core checkout
-	make -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector"
 
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := localhost|""|config/configgrpc/testdata \
