@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // ExampleReceiver is for testing purposes. We are defining an example config and factory
@@ -36,15 +35,15 @@ type ExampleReceiver struct {
 	ExtraListSetting []string          `mapstructure:"extra_list"`
 }
 
-var receiverType = config.Type("examplereceiver")
+const receiverType = config.Type("examplereceiver")
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
-var ExampleReceiverFactory = receiverhelper.NewFactory(
+var ExampleReceiverFactory = component.NewReceiverFactory(
 	receiverType,
 	createReceiverDefaultConfig,
-	receiverhelper.WithTraces(createTracesReceiver),
-	receiverhelper.WithMetrics(createMetricsReceiver),
-	receiverhelper.WithLogs(createLogsReceiver))
+	component.WithTracesReceiver(createTracesReceiver),
+	component.WithMetricsReceiver(createMetricsReceiver),
+	component.WithLogsReceiver(createLogsReceiver))
 
 func createReceiverDefaultConfig() config.Receiver {
 	return &ExampleReceiver{

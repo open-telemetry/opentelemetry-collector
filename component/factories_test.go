@@ -59,6 +59,44 @@ func TestMakeExtensionFactoryMap(t *testing.T) {
 	}
 }
 
+func TestMakeReceiverFactoryMap(t *testing.T) {
+	type testCase struct {
+		name string
+		in   []ReceiverFactory
+		out  map[config.Type]ReceiverFactory
+	}
+
+	p1 := NewReceiverFactory("p1", nil)
+	p2 := NewReceiverFactory("p2", nil)
+	testCases := []testCase{
+		{
+			name: "different names",
+			in:   []ReceiverFactory{p1, p2},
+			out: map[config.Type]ReceiverFactory{
+				p1.Type(): p1,
+				p2.Type(): p2,
+			},
+		},
+		{
+			name: "same name",
+			in:   []ReceiverFactory{p1, p2, NewReceiverFactory("p1", nil)},
+		},
+	}
+
+	for i := range testCases {
+		tt := testCases[i]
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := MakeReceiverFactoryMap(tt.in...)
+			if tt.out == nil {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.out, out)
+		})
+	}
+}
+
 func TestMakeProcessorFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string
