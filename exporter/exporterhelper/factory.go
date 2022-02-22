@@ -15,114 +15,32 @@
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
-// FactoryOption apply changes to ExporterOptions.
-type FactoryOption func(o *factory)
+// Deprecated: [v0.46.0] use component.ExporterFactoryOption.
+type FactoryOption = component.ExporterFactoryOption
 
-// CreateDefaultConfig is the equivalent of component.ExporterFactory.CreateDefaultConfig()
-type CreateDefaultConfig func() config.Exporter
+// Deprecated: [v0.46.0] use component.ExporterCreateDefaultConfigFunc.
+type CreateDefaultConfig = component.ExporterCreateDefaultConfigFunc
 
-// CreateTracesExporter is the equivalent of component.ExporterFactory.CreateTracesExporter()
-type CreateTracesExporter func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error)
+// Deprecated: [v0.46.0] use component.CreateTracesExporterFunc.
+type CreateTracesExporter = component.CreateTracesExporterFunc
 
-// CreateMetricsExporter is the equivalent of component.ExporterFactory.CreateMetricsExporter()
-type CreateMetricsExporter func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error)
+// Deprecated: [v0.46.0] use component.CreateMetricsExporterFunc.
+type CreateMetricsExporter = component.CreateMetricsExporterFunc
 
-// CreateLogsExporter is the equivalent of component.ExporterFactory.CreateLogsExporter()
-type CreateLogsExporter func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error)
+// Deprecated: [v0.46.0] use component.CreateLogsExporterFunc.
+type CreateLogsExporter = component.CreateLogsExporterFunc
 
-type factory struct {
-	internalinterface.BaseInternal
-	cfgType               config.Type
-	createDefaultConfig   CreateDefaultConfig
-	createTracesExporter  CreateTracesExporter
-	createMetricsExporter CreateMetricsExporter
-	createLogsExporter    CreateLogsExporter
-}
+// Deprecated: [v0.46.0] use component.WithTracesExporter.
+var WithTraces = component.WithTracesExporter
 
-// WithTraces overrides the default "error not supported" implementation for CreateTracesReceiver.
-func WithTraces(createTracesExporter CreateTracesExporter) FactoryOption {
-	return func(o *factory) {
-		o.createTracesExporter = createTracesExporter
-	}
-}
+// Deprecated: [v0.46.0] use component.WithMetricsExporter.
+var WithMetrics = component.WithMetricsExporter
 
-// WithMetrics overrides the default "error not supported" implementation for CreateMetricsReceiver.
-func WithMetrics(createMetricsExporter CreateMetricsExporter) FactoryOption {
-	return func(o *factory) {
-		o.createMetricsExporter = createMetricsExporter
-	}
-}
+// Deprecated: [v0.46.0] use component.WithLogsExporter.
+var WithLogs = component.WithLogsExporter
 
-// WithLogs overrides the default "error not supported" implementation for CreateLogsReceiver.
-func WithLogs(createLogsExporter CreateLogsExporter) FactoryOption {
-	return func(o *factory) {
-		o.createLogsExporter = createLogsExporter
-	}
-}
-
-// NewFactory returns a component.ExporterFactory.
-func NewFactory(
-	cfgType config.Type,
-	createDefaultConfig CreateDefaultConfig,
-	options ...FactoryOption) component.ExporterFactory {
-	f := &factory{
-		cfgType:             cfgType,
-		createDefaultConfig: createDefaultConfig,
-	}
-	for _, opt := range options {
-		opt(f)
-	}
-	return f
-}
-
-// Type gets the type of the Exporter config created by this factory.
-func (f *factory) Type() config.Type {
-	return f.cfgType
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (f *factory) CreateDefaultConfig() config.Exporter {
-	return f.createDefaultConfig()
-}
-
-// CreateTracesExporter creates a component.TracesExporter based on this config.
-func (f *factory) CreateTracesExporter(
-	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter) (component.TracesExporter, error) {
-	if f.createTracesExporter != nil {
-		return f.createTracesExporter(ctx, set, cfg)
-	}
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsExporter creates a component.MetricsExporter based on this config.
-func (f *factory) CreateMetricsExporter(
-	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter) (component.MetricsExporter, error) {
-	if f.createMetricsExporter != nil {
-		return f.createMetricsExporter(ctx, set, cfg)
-	}
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
-
-// CreateLogsExporter creates a metrics processor based on this config.
-func (f *factory) CreateLogsExporter(
-	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
-	if f.createLogsExporter != nil {
-		return f.createLogsExporter(ctx, set, cfg)
-	}
-	return nil, componenterror.ErrDataTypeIsNotSupported
-}
+// Deprecated: [v0.46.0] use component.NewExporterFactory.
+var NewFactory = component.NewExporterFactory
