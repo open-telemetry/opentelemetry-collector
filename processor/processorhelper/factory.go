@@ -15,120 +15,32 @@
 package processorhelper // import "go.opentelemetry.io/collector/processor/processorhelper"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
-// FactoryOption apply changes to ProcessorOptions.
-type FactoryOption func(o *factory)
+// Deprecated: [v0.46.0] use component.ProcessorFactoryOption.
+type FactoryOption = component.ProcessorFactoryOption
 
-// CreateDefaultConfig is the equivalent of component.ProcessorFactory.CreateDefaultConfig()
-type CreateDefaultConfig func() config.Processor
+// Deprecated: [v0.46.0] use component.ProcessorCreateDefaultConfigFunc.
+type CreateDefaultConfig = component.ProcessorCreateDefaultConfigFunc
 
-// CreateTracesProcessor is the equivalent of component.ProcessorFactory.CreateTracesProcessor()
-type CreateTracesProcessor func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Traces) (component.TracesProcessor, error)
+// Deprecated: [v0.46.0] use component.CreateTracesProcessorFunc.
+type CreateTracesProcessor = component.CreateTracesProcessorFunc
 
-// CreateMetricsProcessor is the equivalent of component.ProcessorFactory.CreateMetricsProcessor()
-type CreateMetricsProcessor func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Metrics) (component.MetricsProcessor, error)
+// Deprecated: [v0.46.0] use component.CreateMetricsProcessorFunc.
+type CreateMetricsProcessor = component.CreateMetricsProcessorFunc
 
-// CreateLogsProcessor is the equivalent of component.ProcessorFactory.CreateLogsProcessor()
-type CreateLogsProcessor func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Logs) (component.LogsProcessor, error)
+// Deprecated: [v0.46.0] use component.CreateLogsProcessorFunc.
+type CreateLogsProcessor = component.CreateLogsProcessorFunc
 
-type factory struct {
-	internalinterface.BaseInternal
-	cfgType                config.Type
-	createDefaultConfig    CreateDefaultConfig
-	createTracesProcessor  CreateTracesProcessor
-	createMetricsProcessor CreateMetricsProcessor
-	createLogsProcessor    CreateLogsProcessor
-}
+// Deprecated: [v0.46.0] use component.WithTracesProcessor.
+var WithTraces = component.WithTracesProcessor
 
-// WithTraces overrides the default "error not supported" implementation for CreateTracesProcessor.
-func WithTraces(createTracesProcessor CreateTracesProcessor) FactoryOption {
-	return func(o *factory) {
-		o.createTracesProcessor = createTracesProcessor
-	}
-}
+// Deprecated: [v0.46.0] use component.WithMetricsProcessor.
+var WithMetrics = component.WithMetricsProcessor
 
-// WithMetrics overrides the default "error not supported" implementation for CreateMetricsProcessor.
-func WithMetrics(createMetricsProcessor CreateMetricsProcessor) FactoryOption {
-	return func(o *factory) {
-		o.createMetricsProcessor = createMetricsProcessor
-	}
-}
+// Deprecated: [v0.46.0] use component.WithLogsProcessor.
+var WithLogs = component.WithLogsProcessor
 
-// WithLogs overrides the default "error not supported" implementation for CreateLogsProcessor.
-func WithLogs(createLogsProcessor CreateLogsProcessor) FactoryOption {
-	return func(o *factory) {
-		o.createLogsProcessor = createLogsProcessor
-	}
-}
-
-// NewFactory returns a component.ProcessorFactory.
-func NewFactory(
-	cfgType config.Type,
-	createDefaultConfig CreateDefaultConfig,
-	options ...FactoryOption) component.ProcessorFactory {
-	f := &factory{
-		cfgType:             cfgType,
-		createDefaultConfig: createDefaultConfig,
-	}
-	for _, opt := range options {
-		opt(f)
-	}
-	return f
-}
-
-// Type gets the type of the Processor config created by this factory.
-func (f *factory) Type() config.Type {
-	return f.cfgType
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (f *factory) CreateDefaultConfig() config.Processor {
-	return f.createDefaultConfig()
-}
-
-// CreateTracesProcessor creates a component.TracesProcessor based on this config.
-func (f *factory) CreateTracesProcessor(
-	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
-	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
-	if f.createTracesProcessor == nil {
-		return nil, componenterror.ErrDataTypeIsNotSupported
-	}
-	return f.createTracesProcessor(ctx, set, cfg, nextConsumer)
-}
-
-// CreateMetricsProcessor creates a component.MetricsProcessor based on this config.
-func (f *factory) CreateMetricsProcessor(
-	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
-	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
-	if f.createMetricsProcessor == nil {
-		return nil, componenterror.ErrDataTypeIsNotSupported
-	}
-	return f.createMetricsProcessor(ctx, set, cfg, nextConsumer)
-}
-
-// CreateLogsProcessor creates a component.LogsProcessor based on this config.
-func (f *factory) CreateLogsProcessor(
-	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
-	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
-	if f.createLogsProcessor == nil {
-		return nil, componenterror.ErrDataTypeIsNotSupported
-	}
-	return f.createLogsProcessor(ctx, set, cfg, nextConsumer)
-}
+// Deprecated: [v0.46.0] use component.NewProcessorFactory.
+var NewFactory = component.NewProcessorFactory
