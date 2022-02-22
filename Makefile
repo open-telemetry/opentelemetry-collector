@@ -92,6 +92,10 @@ gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
 	$(MAKE) for-all CMD="$(GOCMD) mod tidy -compat=1.17"
 
+.PHONY: gogenerate
+gogenerate:
+	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
+
 .PHONY: addlicense
 addlicense:
 	@ADDLICENSEOUT=`$(ADDLICENSE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
@@ -198,10 +202,6 @@ otelcorecol:
 .PHONY: genotelcorecol
 genotelcorecol:
 	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
-
-.PHONY: genmdata
-genmdata:
-	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
 DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: internal-gendependabot

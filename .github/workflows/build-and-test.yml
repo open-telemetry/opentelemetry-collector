@@ -64,12 +64,51 @@ jobs:
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
-      - name: Lint
-        run: make -j5 checklicense misspell checkdoc goimpi golint goporto
-      - name: Gen Metadata
+      - name: golint
+        run: make -j2 golint
+      - name: goimpi
+        run: make goimpi
+
+  checks:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2.2.0
+        with:
+          go-version: 1.17
+      - name: Setup Go Environment
         run: |
-          make genmdata
-          git diff --exit-code || (echo 'Generated code is out of date, please run "make genmdata" and commit the changes in this PR.' && exit 1)
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Cache Go
+        id: module-cache
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/go/pkg/mod
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
+      - name: checklicense
+        run: make checklicense
+      - name: misspell
+        run: make misspell
+      - name: checkdoc
+        run: make checkdoc
+      - name: go:porto
+        run: |
+          make goporto
+          git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
+      - name: go:generate
+        run: |
+          make gogenerate
+          git diff --exit-code || (echo 'Generated code is out of date, please run "make gogenerate" and commit the changes in this PR.' && exit 1)
       - name: Gen Pdata
         run: |
           make genpdata
