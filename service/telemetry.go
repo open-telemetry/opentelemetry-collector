@@ -57,6 +57,14 @@ const (
 	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 )
 
+func init() {
+	featuregate.Register(featuregate.Gate{
+		ID:          useOtelForInternalMetricsfeatureGateID,
+		Description: "controls whether the collector to uses open telemetry for internal metrics",
+		Enabled:     configtelemetry.UseOpenTelemetryForInternalMetrics,
+	})
+}
+
 type collectorTelemetryExporter interface {
 	init(col *Collector) error
 	shutdown() error
