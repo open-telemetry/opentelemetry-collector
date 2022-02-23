@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/testcomponents"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 func createTestFactories() component.Factories {
@@ -48,7 +47,7 @@ func createTestFactories() component.Factories {
 }
 
 func newBadReceiverFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory("bf", func() config.Receiver {
+	return component.NewReceiverFactory("bf", func() config.Receiver {
 		return &struct {
 			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{

@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // NewNopReceiverCreateSettings returns a new nop settings for Create*Receiver functions.
@@ -35,57 +34,31 @@ type nopReceiverConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
-// nopReceiverFactory is factory for nopReceiver.
-type nopReceiverFactory struct {
-	internalinterface.BaseInternal
-}
-
-var nopReceiverFactoryInstance = &nopReceiverFactory{}
+var nopReceiverFactory = component.NewReceiverFactory(
+	"nop",
+	func() config.Receiver {
+		return &nopReceiverConfig{
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
+		}
+	},
+	component.WithTracesReceiver(createTracesReceiver),
+	component.WithMetricsReceiver(createMetricsReceiver),
+	component.WithLogsReceiver(createLogsReceiver))
 
 // NewNopReceiverFactory returns a component.ReceiverFactory that constructs nop receivers.
 func NewNopReceiverFactory() component.ReceiverFactory {
-	return nopReceiverFactoryInstance
+	return nopReceiverFactory
 }
 
-// Type gets the type of the Receiver config created by this factory.
-func (f *nopReceiverFactory) Type() config.Type {
-	return config.NewComponentID("nop").Type()
-}
-
-// CreateDefaultConfig creates the default configuration for the Receiver.
-func (f *nopReceiverFactory) CreateDefaultConfig() config.Receiver {
-	return &nopReceiverConfig{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
-	}
-}
-
-// CreateTracesReceiver implements component.ReceiverFactory interface.
-func (f *nopReceiverFactory) CreateTracesReceiver(
-	_ context.Context,
-	_ component.ReceiverCreateSettings,
-	_ config.Receiver,
-	_ consumer.Traces,
-) (component.TracesReceiver, error) {
+func createTracesReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {
 	return nopReceiverInstance, nil
 }
 
-// CreateMetricsReceiver implements component.ReceiverFactory interface.
-func (f *nopReceiverFactory) CreateMetricsReceiver(
-	_ context.Context,
-	_ component.ReceiverCreateSettings,
-	_ config.Receiver,
-	_ consumer.Metrics,
-) (component.MetricsReceiver, error) {
+func createMetricsReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Metrics) (component.MetricsReceiver, error) {
 	return nopReceiverInstance, nil
 }
 
-// CreateLogsReceiver implements component.ReceiverFactory interface.
-func (f *nopReceiverFactory) CreateLogsReceiver(
-	_ context.Context,
-	_ component.ReceiverCreateSettings,
-	_ config.Receiver,
-	_ consumer.Logs,
-) (component.LogsReceiver, error) {
+func createLogsReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Logs) (component.LogsReceiver, error) {
 	return nopReceiverInstance, nil
 }
 

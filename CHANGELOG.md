@@ -24,6 +24,12 @@
   - Deprecated `exporterhelper.WithMetrics` in favour of `component.WithMetricsExporter`
   - Deprecated `exporterhelper.WithLogs` in favour of `component.WithLogsExporter`
   - Deprecated `exporterhelper.NewFactory` in favour of `component.NewExporterFactory`
+- Move helpers from receiverhelper to component (#4891)
+  - Deprecated `receiverhelper.CreateDefaultConfig` in favour of `component.ReceiverDefaultConfigFunc`
+  - Deprecated `receiverhelper.WithTraces` in favour of `component.WithTracesReceiver`
+  - Deprecated `receiverhelper.WithMetrics` in favour of `component.WithMetricsReceiver`
+  - Deprecated `receiverhelper.WithLogs` in favour of `component.WithLogsReceiver`
+  - Deprecated `receiverhelper.NewFactory` in favour of `component.NewReceiverFactory`
 
 ### 💡 Enhancements 💡
 
