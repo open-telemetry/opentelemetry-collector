@@ -30,6 +30,7 @@
   - Deprecated `receiverhelper.WithMetrics` in favour of `component.WithMetricsReceiver`
   - Deprecated `receiverhelper.WithLogs` in favour of `component.WithLogsReceiver`
   - Deprecated `receiverhelper.NewFactory` in favour of `component.NewReceiverFactory`
+- Change otel collector to enable open telemetry metrics through feature gate instead of a constant
 
 ### 💡 Enhancements 💡
 

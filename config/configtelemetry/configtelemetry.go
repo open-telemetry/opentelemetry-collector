@@ -36,6 +36,10 @@ const (
 	levelDetailedStr = "detailed"
 )
 
+// Deprecated: UseOpenTelemetryForInternalMetrics has been deprecated. Uses feature flag in
+// service.useOtelForInternalMetricsfeatureGateID to handle this feature
+const UseOpenTelemetryForInternalMetrics = false
+
 // Level is the level of internal telemetry (metrics, logs, traces about the component itself)
 // that every component should generate.
 type Level int32

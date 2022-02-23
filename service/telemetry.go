@@ -52,9 +52,9 @@ const (
 	zapKeyTelemetryAddress = "address"
 	zapKeyTelemetryLevel   = "level"
 
-	// UseOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
+	// useOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
 	// telemetry for internal metrics.
-	UseOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
+	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 )
 
 type collectorTelemetryExporter interface {
@@ -103,7 +103,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 	instanceID := instanceUUID.String()
 
 	var pe http.Handler
-	if featuregate.IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
+	if featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
 		otelHandler, err := tel.initOpenTelemetry()
 		if err != nil {
 			return err

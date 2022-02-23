@@ -142,7 +142,7 @@ func TestCollector_Start(t *testing.T) {
 
 func TestCollector_StartWithOtelInternalMetrics(t *testing.T) {
 	featuregate.Register(featuregate.Gate{
-		ID:          UseOtelForInternalMetricsfeatureGateID,
+		ID:          useOtelForInternalMetricsfeatureGateID,
 		Description: "controls whether the collector to uses open telemetry for internal metrics",
 		Enabled:     true,
 	})
