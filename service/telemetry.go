@@ -24,6 +24,7 @@ import (
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
 	"go.opencensus.io/stats/view"
+	"go.opentelemetry.io/collector/service/featuregate"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
@@ -50,6 +51,10 @@ const AddCollectorVersionTag = true
 const (
 	zapKeyTelemetryAddress = "address"
 	zapKeyTelemetryLevel   = "level"
+
+	// UseOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
+	// telemetry for internal metrics.
+	UseOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 )
 
 type collectorTelemetryExporter interface {
@@ -98,7 +103,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 	instanceID := instanceUUID.String()
 
 	var pe http.Handler
-	if configtelemetry.UseOpenTelemetryForInternalMetrics {
+	if featuregate.IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
 		otelHandler, err := tel.initOpenTelemetry()
 		if err != nil {
 			return err

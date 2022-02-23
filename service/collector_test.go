@@ -32,6 +32,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -80,7 +81,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	}, time.Second*2, time.Millisecond*200)
 }
 
-func TestCollector_Start(t *testing.T) {
+func testCollectorStartHelper(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 	var once sync.Once
@@ -133,6 +134,19 @@ func TestCollector_Start(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return Closed == col.GetState()
 	}, time.Second*2, time.Millisecond*200)
+}
+
+func TestCollector_Start(t *testing.T) {
+	testCollectorStartHelper(t)
+}
+
+func TestCollector_StartWithOtelInternalMetrics(t *testing.T) {
+	featuregate.Register(featuregate.Gate{
+		ID:          UseOtelForInternalMetricsfeatureGateID,
+		Description: "controls whether the collector to uses open telemetry for internal metrics",
+		Enabled:     true,
+	})
+	testCollectorStartHelper(t)
 }
 
 // TestCollector_ShutdownNoop verifies that shutdown can be called even if a collector
