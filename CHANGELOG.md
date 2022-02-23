@@ -8,6 +8,22 @@
 - Rename `pdata.AttributeMap.Delete` to `pdata.AttributeMap.Remove` (#4914)
 - pdata: deprecate funcs working with InternalRep (#4957)
 
+### 🚩 Deprecations 🚩
+
+- Change behavior of pdata.AttributeValue oneof value field accessors (#4909)
+  - Deprecated `AttributeValue.StringVal` in favor of `AttributeValue.StringValue`
+  - Deprecated `AttributeValue.IntVal` in favor of `AttributeValue.IntValue`
+  - Deprecated `AttributeValue.DoubleVal` in favor of `AttributeValue.DoubleValue`
+  - Deprecated `AttributeValue.BoolVal` in favor of `AttributeValue.BoolValue`
+  - Deprecated `AttributeValue.MapVal` in favor of `AttributeValue.MapValue`
+  - Deprecated `AttributeValue.SliceVal` in favor of `AttributeValue.SliceValue`
+  - Deprecated `AttributeValue.BytesVal` in favor of `AttributeValue.BytesValue`
+  - Deprecated `AttributeValue.SetStringVal` in favor of `AttributeValue.SetStringValue`
+  - Deprecated `AttributeValue.SetIntVal` in favor of `AttributeValue.SetIntValue`
+  - Deprecated `AttributeValue.SetDoubleVal` in favor of `AttributeValue.SetDoubleValue`
+  - Deprecated `AttributeValue.SetBoolVal` in favor of `AttributeValue.SetBoolValue`
+  - Deprecated `AttributeValue.SetBytesVal` in favor of `AttributeValue.SetBytesValue`
+
 ### 💡 Enhancements 💡
 
 - Add `pdata.AttributeMap.RemoveIf`, which is a more performant way to remove multiple keys (#4914)

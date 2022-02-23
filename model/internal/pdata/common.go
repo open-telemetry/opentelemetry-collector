@@ -72,7 +72,7 @@ func (avt AttributeValueType) String() string {
 // value representation. For the same reason passing by value and calling setters
 // will modify the original, e.g.:
 //
-//   func f1(val AttributeValue) { val.SetIntVal(234) }
+//   func f1(val AttributeValue) { val.SetIntValue(234) }
 //   func f2() {
 //       v := NewAttributeValueString("a string")
 //       f1(v)
@@ -159,29 +159,61 @@ func (a AttributeValue) Type() AttributeValueType {
 // StringVal returns the string value associated with this AttributeValue.
 // If the Type() is not AttributeValueTypeString then returns empty string.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use StringValue instead.
 func (a AttributeValue) StringVal() string {
 	return a.orig.GetStringValue()
+}
+
+// StringValue returns the string value associated with this AttributeValue.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// Calling this function when Type() != AttributeValueTypeString will cause a panic.
+func (a AttributeValue) StringValue() string {
+	return a.orig.Value.(*otlpcommon.AnyValue_StringValue).StringValue
 }
 
 // IntVal returns the int64 value associated with this AttributeValue.
 // If the Type() is not AttributeValueTypeInt then returns int64(0).
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use IntValue instead.
 func (a AttributeValue) IntVal() int64 {
 	return a.orig.GetIntValue()
+}
+
+// IntValue returns the int64 value associated with this AttributeValue.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// Calling this function when Type() != AttributeValueTypeInt will cause a panic.
+func (a AttributeValue) IntValue() int64 {
+	return a.orig.Value.(*otlpcommon.AnyValue_IntValue).IntValue
 }
 
 // DoubleVal returns the float64 value associated with this AttributeValue.
 // If the Type() is not AttributeValueTypeDouble then returns float64(0).
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use DoubleValue instead.
 func (a AttributeValue) DoubleVal() float64 {
 	return a.orig.GetDoubleValue()
+}
+
+// DoubleValue returns the float64 value associated with this AttributeValue.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// Calling this function when Type() != AttributeValueTypeDouble will cause a panic.
+func (a AttributeValue) DoubleValue() float64 {
+	return a.orig.Value.(*otlpcommon.AnyValue_DoubleValue).DoubleValue
 }
 
 // BoolVal returns the bool value associated with this AttributeValue.
 // If the Type() is not AttributeValueTypeBool then returns false.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use BoolValue instead.
 func (a AttributeValue) BoolVal() bool {
 	return a.orig.GetBoolValue()
+}
+
+// BoolValue returns the bool value associated with this AttributeValue.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// Calling this function when Type() != AttributeValueTypeBool will cause a panic.
+func (a AttributeValue) BoolValue() bool {
+	return a.orig.Value.(*otlpcommon.AnyValue_BoolValue).BoolValue
 }
 
 // MapVal returns the map value associated with this AttributeValue.
@@ -189,6 +221,7 @@ func (a AttributeValue) BoolVal() bool {
 // such empty map has no effect on this AttributeValue.
 //
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use MapValue instead.
 func (a AttributeValue) MapVal() AttributeMap {
 	kvlist := a.orig.GetKvlistValue()
 	if kvlist == nil {
@@ -197,11 +230,19 @@ func (a AttributeValue) MapVal() AttributeMap {
 	return newAttributeMap(&kvlist.Values)
 }
 
+// MapValue returns the map value associated with this AttributeValue.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// Calling this function when Type() != AttributeValueTypeMap will cause a panic.
+func (a AttributeValue) MapValue() AttributeMap {
+	return newAttributeMap(&a.orig.Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue.Values)
+}
+
 // SliceVal returns the slice value associated with this AttributeValue.
 // If the Type() is not AttributeValueTypeArray then returns an empty slice. Note that modifying
 // such empty slice has no effect on this AttributeValue.
 //
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use SliceValue instead.
 func (a AttributeValue) SliceVal() AttributeValueSlice {
 	arr := a.orig.GetArrayValue()
 	if arr == nil {
@@ -210,39 +251,86 @@ func (a AttributeValue) SliceVal() AttributeValueSlice {
 	return newAttributeValueSlice(&arr.Values)
 }
 
+// SliceValue returns the slice value associated with this AttributeValue.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// Calling this function when Type() != AttributeValueTypeArray will cause a panic.
+func (a AttributeValue) SliceValue() AttributeValueSlice {
+	return newAttributeValueSlice(&a.orig.Value.(*otlpcommon.AnyValue_ArrayValue).ArrayValue.Values)
+}
+
 // BytesVal returns the []byte value associated with this AttributeValue.
 // If the Type() is not AttributeValueTypeBytes then returns false.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 // Modifying the returned []byte in-place is forbidden.
+// Deprecated: [v0.47.0] Use BytesValue instead.
 func (a AttributeValue) BytesVal() []byte {
 	return a.orig.GetBytesValue()
+}
+
+// BytesValue returns the []byte value associated with this AttributeValue.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// Calling this function when Type() != AttributeValueTypeBytes will cause a panic.
+func (a AttributeValue) BytesValue() []byte {
+	return a.orig.Value.(*otlpcommon.AnyValue_BytesValue).BytesValue
 }
 
 // SetStringVal replaces the string value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeString.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use SetStringValue instead.
 func (a AttributeValue) SetStringVal(v string) {
+	a.SetStringValue(v)
+}
+
+// SetStringValue replaces the string value associated with this AttributeValue,
+// it also changes the type to be AttributeValueTypeString.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+func (a AttributeValue) SetStringValue(v string) {
 	a.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: v}
 }
 
 // SetIntVal replaces the int64 value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeInt.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use SetIntValue instead.
 func (a AttributeValue) SetIntVal(v int64) {
+	a.SetIntValue(v)
+}
+
+// SetIntValue replaces the int64 value associated with this AttributeValue,
+// it also changes the type to be AttributeValueTypeInt.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+func (a AttributeValue) SetIntValue(v int64) {
 	a.orig.Value = &otlpcommon.AnyValue_IntValue{IntValue: v}
 }
 
 // SetDoubleVal replaces the float64 value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeDouble.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use SetDoubleValue instead.
 func (a AttributeValue) SetDoubleVal(v float64) {
+	a.SetDoubleValue(v)
+}
+
+// SetDoubleValue replaces the float64 value associated with this AttributeValue,
+// it also changes the type to be AttributeValueTypeDouble.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+func (a AttributeValue) SetDoubleValue(v float64) {
 	a.orig.Value = &otlpcommon.AnyValue_DoubleValue{DoubleValue: v}
 }
 
 // SetBoolVal replaces the bool value associated with this AttributeValue,
 // it also changes the type to be AttributeValueTypeBool.
 // Calling this function on zero-initialized AttributeValue will cause a panic.
+// Deprecated: [v0.47.0] Use SetBoolValue instead.
 func (a AttributeValue) SetBoolVal(v bool) {
+	a.SetBoolValue(v)
+}
+
+// SetBoolValue replaces the bool value associated with this AttributeValue,
+// it also changes the type to be AttributeValueTypeBool.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+func (a AttributeValue) SetBoolValue(v bool) {
 	a.orig.Value = &otlpcommon.AnyValue_BoolValue{BoolValue: v}
 }
 
@@ -251,7 +339,17 @@ func (a AttributeValue) SetBoolVal(v bool) {
 // Calling this function on zero-initialized AttributeValue will cause a panic.
 // The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
 // across multiple attributes is forbidden.
+// Deprecated: [v0.47.0] Use SetBytesValue instead.
 func (a AttributeValue) SetBytesVal(v []byte) {
+	a.SetBytesValue(v)
+}
+
+// SetBytesValue replaces the []byte value associated with this AttributeValue,
+// it also changes the type to be AttributeValueTypeBytes.
+// Calling this function on zero-initialized AttributeValue will cause a panic.
+// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+// across multiple attributes is forbidden.
+func (a AttributeValue) SetBytesValue(v []byte) {
 	a.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: v}
 }
 
@@ -365,7 +463,7 @@ func (a AttributeValue) Equal(av AttributeValue) bool {
 }
 
 // AsString converts an OTLP AttributeValue object of any type to its equivalent string
-// representation. This differs from StringVal which only returns a non-empty value
+// representation. This differs from StringValue which only returns a value
 // if the AttributeValueType is AttributeValueTypeString.
 func (a AttributeValue) AsString() string {
 	switch a.Type() {
@@ -373,26 +471,26 @@ func (a AttributeValue) AsString() string {
 		return ""
 
 	case AttributeValueTypeString:
-		return a.StringVal()
+		return a.StringValue()
 
 	case AttributeValueTypeBool:
-		return strconv.FormatBool(a.BoolVal())
+		return strconv.FormatBool(a.BoolValue())
 
 	case AttributeValueTypeDouble:
-		return strconv.FormatFloat(a.DoubleVal(), 'f', -1, 64)
+		return strconv.FormatFloat(a.DoubleValue(), 'f', -1, 64)
 
 	case AttributeValueTypeInt:
-		return strconv.FormatInt(a.IntVal(), 10)
+		return strconv.FormatInt(a.IntValue(), 10)
 
 	case AttributeValueTypeMap:
-		jsonStr, _ := json.Marshal(a.MapVal().AsRaw())
+		jsonStr, _ := json.Marshal(a.MapValue().AsRaw())
 		return string(jsonStr)
 
 	case AttributeValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(a.BytesVal())
+		return base64.StdEncoding.EncodeToString(a.BytesValue())
 
 	case AttributeValueTypeArray:
-		jsonStr, _ := json.Marshal(a.SliceVal().asRaw())
+		jsonStr, _ := json.Marshal(a.SliceValue().asRaw())
 		return string(jsonStr)
 
 	default:
@@ -403,14 +501,14 @@ func (a AttributeValue) AsString() string {
 func newAttributeKeyValueString(k string, v string) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := AttributeValue{&orig.Value}
-	akv.SetStringVal(v)
+	akv.SetStringValue(v)
 	return orig
 }
 
 func newAttributeKeyValueInt(k string, v int64) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := AttributeValue{&orig.Value}
-	akv.SetIntVal(v)
+	akv.SetIntValue(v)
 	return orig
 }
 
@@ -424,7 +522,7 @@ func newAttributeKeyValueDouble(k string, v float64) otlpcommon.KeyValue {
 func newAttributeKeyValueBool(k string, v bool) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := AttributeValue{&orig.Value}
-	akv.SetBoolVal(v)
+	akv.SetBoolValue(v)
 	return orig
 }
 
@@ -442,7 +540,7 @@ func newAttributeKeyValue(k string, av AttributeValue) otlpcommon.KeyValue {
 func newAttributeKeyValueBytes(k string, v []byte) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := AttributeValue{&orig.Value}
-	akv.SetBytesVal(v)
+	akv.SetBytesValue(v)
 	return orig
 }
 
@@ -631,7 +729,7 @@ func (am AttributeMap) Update(k string, v AttributeValue) {
 // No action is applied to the map where the key does not exist.
 func (am AttributeMap) UpdateString(k string, v string) {
 	if av, existing := am.Get(k); existing {
-		av.SetStringVal(v)
+		av.SetStringValue(v)
 	}
 }
 
@@ -639,7 +737,7 @@ func (am AttributeMap) UpdateString(k string, v string) {
 // No action is applied to the map where the key does not exist.
 func (am AttributeMap) UpdateInt(k string, v int64) {
 	if av, existing := am.Get(k); existing {
-		av.SetIntVal(v)
+		av.SetIntValue(v)
 	}
 }
 
@@ -647,7 +745,7 @@ func (am AttributeMap) UpdateInt(k string, v int64) {
 // No action is applied to the map where the key does not exist.
 func (am AttributeMap) UpdateDouble(k string, v float64) {
 	if av, existing := am.Get(k); existing {
-		av.SetDoubleVal(v)
+		av.SetDoubleValue(v)
 	}
 }
 
@@ -655,7 +753,7 @@ func (am AttributeMap) UpdateDouble(k string, v float64) {
 // No action is applied to the map where the key does not exist.
 func (am AttributeMap) UpdateBool(k string, v bool) {
 	if av, existing := am.Get(k); existing {
-		av.SetBoolVal(v)
+		av.SetBoolValue(v)
 	}
 }
 
@@ -665,7 +763,7 @@ func (am AttributeMap) UpdateBool(k string, v bool) {
 // across multiple attributes is forbidden.
 func (am AttributeMap) UpdateBytes(k string, v []byte) {
 	if av, existing := am.Get(k); existing {
-		av.SetBytesVal(v)
+		av.SetBytesValue(v)
 	}
 }
 
@@ -690,7 +788,7 @@ func (am AttributeMap) Upsert(k string, v AttributeValue) {
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertString(k string, v string) {
 	if av, existing := am.Get(k); existing {
-		av.SetStringVal(v)
+		av.SetStringValue(v)
 	} else {
 		*am.orig = append(*am.orig, newAttributeKeyValueString(k, v))
 	}
@@ -701,7 +799,7 @@ func (am AttributeMap) UpsertString(k string, v string) {
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertInt(k string, v int64) {
 	if av, existing := am.Get(k); existing {
-		av.SetIntVal(v)
+		av.SetIntValue(v)
 	} else {
 		*am.orig = append(*am.orig, newAttributeKeyValueInt(k, v))
 	}
@@ -712,7 +810,7 @@ func (am AttributeMap) UpsertInt(k string, v int64) {
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertDouble(k string, v float64) {
 	if av, existing := am.Get(k); existing {
-		av.SetDoubleVal(v)
+		av.SetDoubleValue(v)
 	} else {
 		*am.orig = append(*am.orig, newAttributeKeyValueDouble(k, v))
 	}
@@ -723,7 +821,7 @@ func (am AttributeMap) UpsertDouble(k string, v float64) {
 // updated to the map where the key already existed.
 func (am AttributeMap) UpsertBool(k string, v bool) {
 	if av, existing := am.Get(k); existing {
-		av.SetBoolVal(v)
+		av.SetBoolValue(v)
 	} else {
 		*am.orig = append(*am.orig, newAttributeKeyValueBool(k, v))
 	}
@@ -736,7 +834,7 @@ func (am AttributeMap) UpsertBool(k string, v bool) {
 // across multiple attributes is forbidden.
 func (am AttributeMap) UpsertBytes(k string, v []byte) {
 	if av, existing := am.Get(k); existing {
-		av.SetBytesVal(v)
+		av.SetBytesValue(v)
 	} else {
 		*am.orig = append(*am.orig, newAttributeKeyValueBytes(k, v))
 	}
@@ -809,21 +907,21 @@ func (am AttributeMap) AsRaw() map[string]interface{} {
 	am.Range(func(k string, v AttributeValue) bool {
 		switch v.Type() {
 		case AttributeValueTypeString:
-			rawMap[k] = v.StringVal()
+			rawMap[k] = v.StringValue()
 		case AttributeValueTypeInt:
-			rawMap[k] = v.IntVal()
+			rawMap[k] = v.IntValue()
 		case AttributeValueTypeDouble:
-			rawMap[k] = v.DoubleVal()
+			rawMap[k] = v.DoubleValue()
 		case AttributeValueTypeBool:
-			rawMap[k] = v.BoolVal()
+			rawMap[k] = v.BoolValue()
 		case AttributeValueTypeBytes:
-			rawMap[k] = v.BytesVal()
+			rawMap[k] = v.BytesValue()
 		case AttributeValueTypeEmpty:
 			rawMap[k] = nil
 		case AttributeValueTypeMap:
-			rawMap[k] = v.MapVal().AsRaw()
+			rawMap[k] = v.MapValue().AsRaw()
 		case AttributeValueTypeArray:
-			rawMap[k] = v.SliceVal().asRaw()
+			rawMap[k] = v.SliceValue().asRaw()
 		}
 		return true
 	})
@@ -837,15 +935,15 @@ func (es AttributeValueSlice) asRaw() []interface{} {
 		v := es.At(i)
 		switch v.Type() {
 		case AttributeValueTypeString:
-			rawSlice = append(rawSlice, v.StringVal())
+			rawSlice = append(rawSlice, v.StringValue())
 		case AttributeValueTypeInt:
-			rawSlice = append(rawSlice, v.IntVal())
+			rawSlice = append(rawSlice, v.IntValue())
 		case AttributeValueTypeDouble:
-			rawSlice = append(rawSlice, v.DoubleVal())
+			rawSlice = append(rawSlice, v.DoubleValue())
 		case AttributeValueTypeBool:
-			rawSlice = append(rawSlice, v.BoolVal())
+			rawSlice = append(rawSlice, v.BoolValue())
 		case AttributeValueTypeBytes:
-			rawSlice = append(rawSlice, v.BytesVal())
+			rawSlice = append(rawSlice, v.BytesValue())
 		case AttributeValueTypeEmpty:
 			rawSlice = append(rawSlice, nil)
 		default:
