@@ -94,10 +94,10 @@ We follow the production maturity level defined [here](https://github.com/open-t
 When used as a library, the OpenTelemetry Collector attempts to track the currently supported versions of Go, as [defined by the Go team](https://go.dev/doc/devel/release#policy).
 Removing support for an unsupported Go version is not considered a breaking change.
 
-Support for Go versions on the OpenTelemetry Collector will be updated as follows:
+Starting with the release of Go 1.18, support for Go versions on the OpenTelemetry Collector will be updated as follows:
 
 1. The first release after the release of a new Go minor version `N` will add build and tests steps for the new Go minor version.
-2. The first release after three months of a new Go minor version `N` will remove support for Go version `N-2`.
+2. The first release after the release of a new Go minor version `N` will remove support for Go version `N-2`.
 
 Official OpenTelemetry Collector distro binaries may be built with any supported Go version.
 
