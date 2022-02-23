@@ -15,55 +15,61 @@
 package component
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 )
 
-type TestReceiverFactory struct {
-	ReceiverFactory
-	name config.Type
+func TestNewReceiverFactory(t *testing.T) {
+	const typeStr = "test"
+	defaultCfg := config.NewReceiverSettings(config.NewComponentID(typeStr))
+	factory := NewReceiverFactory(
+		typeStr,
+		func() config.Receiver { return &defaultCfg })
+	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	_, err := factory.CreateTracesReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
+	assert.Error(t, err)
+	_, err = factory.CreateMetricsReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
+	assert.Error(t, err)
+	_, err = factory.CreateLogsReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
+	assert.Error(t, err)
 }
 
-// Type gets the type of the Receiver config created by this factory.
-func (f *TestReceiverFactory) Type() config.Type {
-	return f.name
+func TestNewReceiverFactory_WithOptions(t *testing.T) {
+	const typeStr = "test"
+	defaultCfg := config.NewReceiverSettings(config.NewComponentID(typeStr))
+	factory := NewReceiverFactory(
+		typeStr,
+		func() config.Receiver { return &defaultCfg },
+		WithTracesReceiver(createTracesReceiver),
+		WithMetricsReceiver(createMetricsReceiver),
+		WithLogsReceiver(createLogsReceiver))
+	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+
+	_, err := factory.CreateTracesReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
+
+	_, err = factory.CreateMetricsReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
+
+	_, err = factory.CreateLogsReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
 }
 
-func TestBuildReceivers(t *testing.T) {
-	type testCase struct {
-		in  []ReceiverFactory
-		out map[config.Type]ReceiverFactory
-	}
+func createTracesReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Traces) (TracesReceiver, error) {
+	return nil, nil
+}
 
-	testCases := []testCase{
-		{
-			in: []ReceiverFactory{
-				&TestReceiverFactory{name: "e1"},
-				&TestReceiverFactory{name: "e2"},
-			},
-			out: map[config.Type]ReceiverFactory{
-				"e1": &TestReceiverFactory{name: "e1"},
-				"e2": &TestReceiverFactory{name: "e2"},
-			},
-		},
-		{
-			in: []ReceiverFactory{
-				&TestReceiverFactory{name: "e1"},
-				&TestReceiverFactory{name: "e1"},
-			},
-		},
-	}
+func createMetricsReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Metrics) (MetricsReceiver, error) {
+	return nil, nil
+}
 
-	for _, c := range testCases {
-		out, err := MakeReceiverFactoryMap(c.in...)
-		if c.out == nil {
-			assert.Error(t, err)
-			continue
-		}
-		assert.NoError(t, err)
-		assert.Equal(t, c.out, out)
-	}
+func createLogsReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Logs) (LogsReceiver, error) {
+	return nil, nil
 }

@@ -15,6 +15,7 @@
 package component
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,48 +23,52 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-type TestExporterFactory struct {
-	ExporterFactory
-	name string
+func TestNewExporterFactory(t *testing.T) {
+	const typeStr = "test"
+	defaultCfg := config.NewExporterSettings(config.NewComponentID(typeStr))
+	factory := NewExporterFactory(
+		typeStr,
+		func() config.Exporter { return &defaultCfg })
+	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	_, err := factory.CreateTracesExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
+	assert.Error(t, err)
+	_, err = factory.CreateMetricsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
+	assert.Error(t, err)
+	_, err = factory.CreateLogsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
+	assert.Error(t, err)
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *TestExporterFactory) Type() config.Type {
-	return config.Type(f.name)
+func TestNewExporterFactory_WithOptions(t *testing.T) {
+	const typeStr = "test"
+	defaultCfg := config.NewExporterSettings(config.NewComponentID(typeStr))
+	factory := NewExporterFactory(
+		typeStr,
+		func() config.Exporter { return &defaultCfg },
+		WithTracesExporter(createTracesExporter),
+		WithMetricsExporter(createMetricsExporter),
+		WithLogsExporter(createLogsExporter))
+	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+
+	_, err := factory.CreateTracesExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
+	assert.NoError(t, err)
+
+	_, err = factory.CreateMetricsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
+	assert.NoError(t, err)
+
+	_, err = factory.CreateLogsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
+	assert.NoError(t, err)
 }
 
-func TestBuildExporters(t *testing.T) {
-	type testCase struct {
-		in  []ExporterFactory
-		out map[config.Type]ExporterFactory
-	}
+func createTracesExporter(context.Context, ExporterCreateSettings, config.Exporter) (TracesExporter, error) {
+	return nil, nil
+}
 
-	testCases := []testCase{
-		{
-			in: []ExporterFactory{
-				&TestExporterFactory{name: "exp1"},
-				&TestExporterFactory{name: "exp2"},
-			},
-			out: map[config.Type]ExporterFactory{
-				"exp1": &TestExporterFactory{name: "exp1"},
-				"exp2": &TestExporterFactory{name: "exp2"},
-			},
-		},
-		{
-			in: []ExporterFactory{
-				&TestExporterFactory{name: "exp1"},
-				&TestExporterFactory{name: "exp1"},
-			},
-		},
-	}
+func createMetricsExporter(context.Context, ExporterCreateSettings, config.Exporter) (MetricsExporter, error) {
+	return nil, nil
+}
 
-	for _, c := range testCases {
-		out, err := MakeExporterFactoryMap(c.in...)
-		if c.out == nil {
-			assert.Error(t, err)
-			continue
-		}
-		assert.NoError(t, err)
-		assert.Equal(t, c.out, out)
-	}
+func createLogsExporter(context.Context, ExporterCreateSettings, config.Exporter) (LogsExporter, error) {
+	return nil, nil
 }

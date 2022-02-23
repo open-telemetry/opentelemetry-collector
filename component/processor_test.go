@@ -15,57 +15,61 @@
 package component
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 )
 
-var _ ProcessorFactory = (*TestProcessorFactory)(nil)
-
-type TestProcessorFactory struct {
-	ProcessorFactory
-	name string
+func TestNewProcessorFactory(t *testing.T) {
+	const typeStr = "test"
+	defaultCfg := config.NewProcessorSettings(config.NewComponentID(typeStr))
+	factory := NewProcessorFactory(
+		typeStr,
+		func() config.Processor { return &defaultCfg })
+	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	_, err := factory.CreateTracesProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	assert.Error(t, err)
+	_, err = factory.CreateMetricsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	assert.Error(t, err)
+	_, err = factory.CreateLogsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	assert.Error(t, err)
 }
 
-// Type gets the type of the Processor config created by this factory.
-func (f *TestProcessorFactory) Type() config.Type {
-	return config.Type(f.name)
+func TestNewProcessorFactory_WithOptions(t *testing.T) {
+	const typeStr = "test"
+	defaultCfg := config.NewProcessorSettings(config.NewComponentID(typeStr))
+	factory := NewProcessorFactory(
+		typeStr,
+		func() config.Processor { return &defaultCfg },
+		WithTracesProcessor(createTracesProcessor),
+		WithMetricsProcessor(createMetricsProcessor),
+		WithLogsProcessor(createLogsProcessor))
+	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+
+	_, err := factory.CreateTracesProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
+
+	_, err = factory.CreateMetricsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
+
+	_, err = factory.CreateLogsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
 }
 
-func TestMakeProcessorFactoryMap(t *testing.T) {
-	type testCase struct {
-		in  []ProcessorFactory
-		out map[config.Type]ProcessorFactory
-	}
+func createTracesProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Traces) (TracesProcessor, error) {
+	return nil, nil
+}
 
-	testCases := []testCase{
-		{
-			in: []ProcessorFactory{
-				&TestProcessorFactory{name: "p1"},
-				&TestProcessorFactory{name: "p2"},
-			},
-			out: map[config.Type]ProcessorFactory{
-				"p1": &TestProcessorFactory{name: "p1"},
-				"p2": &TestProcessorFactory{name: "p2"},
-			},
-		},
-		{
-			in: []ProcessorFactory{
-				&TestProcessorFactory{name: "p1"},
-				&TestProcessorFactory{name: "p1"},
-			},
-		},
-	}
+func createMetricsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
+	return nil, nil
+}
 
-	for _, c := range testCases {
-		out, err := MakeProcessorFactoryMap(c.in...)
-		if c.out == nil {
-			assert.Error(t, err)
-			continue
-		}
-		assert.NoError(t, err)
-		assert.Equal(t, c.out, out)
-	}
+func createLogsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Logs) (LogsProcessor, error) {
+	return nil, nil
 }

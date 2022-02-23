@@ -17,10 +17,7 @@ package builder
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testcomponents"
-	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 func createTestFactories() component.Factories {
@@ -50,7 +47,7 @@ func createTestFactories() component.Factories {
 }
 
 func newBadReceiverFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory("bf", func() config.Receiver {
+	return component.NewReceiverFactory("bf", func() config.Receiver {
 		return &struct {
 			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
@@ -60,7 +57,7 @@ func newBadReceiverFactory() component.ReceiverFactory {
 }
 
 func newBadProcessorFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory("bf", func() config.Processor {
+	return component.NewProcessorFactory("bf", func() config.Processor {
 		return &struct {
 			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
@@ -70,7 +67,7 @@ func newBadProcessorFactory() component.ProcessorFactory {
 }
 
 func newBadExporterFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory("bf", func() config.Exporter {
+	return component.NewExporterFactory("bf", func() config.Exporter {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{

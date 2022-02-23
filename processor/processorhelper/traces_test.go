@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-var testTracesCfg = config.NewProcessorSettings(config.NewComponentID(typeStr))
+var testTracesCfg = config.NewProcessorSettings(config.NewComponentID("test"))
 
 func TestNewTracesProcessor(t *testing.T) {
 	tp, err := NewTracesProcessor(&testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))

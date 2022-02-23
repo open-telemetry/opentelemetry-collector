@@ -12,6 +12,24 @@
   - Deprecated `extensionhelper.CreateDefaultConfig` in favour of `component.ExtensionDefaultConfigFunc`
   - Deprecated `extensionhelper.CreateServiceExtension` in favour of `component.CreateExtensionFunc`
   - Deprecated `extensionhelper.NewFactory` in favour of `component.NewExtensionFactory`
+- Move helpers from processorhelper to component (#4889)
+  - Deprecated `processorhelper.CreateDefaultConfig` in favour of `component.ProcessorDefaultConfigFunc`
+  - Deprecated `processorhelper.WithTraces` in favour of `component.WithTracesProcessor`
+  - Deprecated `processorhelper.WithMetrics` in favour of `component.WithMetricsProcessor`
+  - Deprecated `processorhelper.WithLogs` in favour of `component.WithLogsProcessor`
+  - Deprecated `processorhelper.NewFactory` in favour of `component.NewProcessorFactory`
+- Move helpers from exporterhelper to component (#4899)
+  - Deprecated `exporterhelper.CreateDefaultConfig` in favour of `component.ExporterDefaultConfigFunc`
+  - Deprecated `exporterhelper.WithTraces` in favour of `component.WithTracesExporter`
+  - Deprecated `exporterhelper.WithMetrics` in favour of `component.WithMetricsExporter`
+  - Deprecated `exporterhelper.WithLogs` in favour of `component.WithLogsExporter`
+  - Deprecated `exporterhelper.NewFactory` in favour of `component.NewExporterFactory`
+- Move helpers from receiverhelper to component (#4891)
+  - Deprecated `receiverhelper.CreateDefaultConfig` in favour of `component.ReceiverDefaultConfigFunc`
+  - Deprecated `receiverhelper.WithTraces` in favour of `component.WithTracesReceiver`
+  - Deprecated `receiverhelper.WithMetrics` in favour of `component.WithMetricsReceiver`
+  - Deprecated `receiverhelper.WithLogs` in favour of `component.WithLogsReceiver`
+  - Deprecated `receiverhelper.NewFactory` in favour of `component.NewReceiverFactory`
 
 ### 💡 Enhancements 💡
 
