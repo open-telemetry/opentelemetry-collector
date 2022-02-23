@@ -525,6 +525,26 @@ func (am AttributeMap) Delete(key string) bool {
 	return false
 }
 
+// DeleteIf deletes the entries for which the function in question returns true
+func (am AttributeMap) DeleteIf(f func(string, AttributeValue) bool) {
+	newLen := 0
+	for i := 0; i < len(*am.orig); i++ {
+		akv := &(*am.orig)[i]
+		if f(akv.Key, AttributeValue{&akv.Value}) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*am.orig)[newLen] = (*am.orig)[i]
+		newLen++
+	}
+	// TODO: Prevent memory leak by erasing truncated values.
+	*am.orig = (*am.orig)[:newLen]
+}
+
 // Insert adds the AttributeValue to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 //
