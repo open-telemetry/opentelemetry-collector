@@ -18,8 +18,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/posflag"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
@@ -28,6 +32,7 @@ import (
 var (
 	cfgFile string
 	cfg     = builder.NewDefaultConfig()
+	k       = koanf.New(".")
 )
 
 // Command is the main entrypoint for this application
@@ -69,10 +74,8 @@ func Command() (*cobra.Command, error) {
 	// version of this binary
 	cmd.AddCommand(versionCommand())
 
-	// tie Viper to flags
-	if err := viper.BindPFlags(cmd.Flags()); err != nil {
-		cfg.Logger.Error("failed to bind flags", zap.Error(err))
-		return nil, err
+	if err := k.Load(posflag.Provider(cmd.Flags(), ".", k), nil); err != nil {
+		cfg.Logger.Error("failed to load command line arguments", zap.Error(err))
 	}
 
 	return cmd, nil
@@ -80,31 +83,28 @@ func Command() (*cobra.Command, error) {
 
 func initConfig() error {
 	cfg.Logger.Info("OpenTelemetry Collector distribution builder", zap.String("version", version), zap.String("date", date))
-
-	vp := viper.New()
-
-	// a couple of Viper goodies, to make it easier to use env vars when flags are not desirable
-	vp.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	vp.AutomaticEnv()
-
-	// load values from config file -- required for the modules configuration
-	if cfgFile != "" {
-		vp.SetConfigFile(cfgFile)
-	} else {
-		vp.AddConfigPath("$HOME")
-		vp.SetConfigName(".otelcol-builder")
+	// use the default path if there is no config file being specified
+	if cfgFile == "" {
+		cfgFile = "$HOME/.otelcol-builder.yaml"
 	}
 
 	// load the config file
-	if err := vp.ReadInConfig(); err != nil {
-		return err
+	if err := k.Load(file.Provider(cfgFile), yaml.Parser()); err != nil {
+		cfg.Logger.Error("failed to load config file", zap.String("config-file", cfgFile), zap.Error(err))
 	}
-	cfg.Logger.Info("Using config file", zap.String("path", vp.ConfigFileUsed()))
 
-	// convert Viper's internal state into our configuration object
-	if err := vp.UnmarshalExact(&cfg); err != nil {
-		cfg.Logger.Error("failed to parse the config", zap.Error(err))
+	// handle env variables
+	if err := k.Load(env.Provider("", ".", func(s string) string {
+		return strings.ReplaceAll(s, ".", "_")
+	}), nil); err != nil {
+		cfg.Logger.Error("failed to load env var", zap.Error(err))
+	}
+
+	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "mapstructure"}); err != nil {
+		cfg.Logger.Error("failed to unmarshal config", zap.Error(err))
 		return err
 	}
+
+	cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
 	return nil
 }
