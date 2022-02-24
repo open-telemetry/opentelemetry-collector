@@ -39,6 +39,11 @@
 ## 🧰 Bug fixes 🧰
 
 - Initialized logger with collector to avoid potential race condition panic on `Shutdown` (#4827)
+- In addition to traces, now logs and metrics processors will start the memory limiter.
+  Added thread-safe logic so only the first processor can launch the `checkMemLimits` go-routine and the last processor
+  that calls shutdown to terminate it; this is done per memory limiter instance.
+  Added memory limiter factory to cache initiated object and be reused by similar config. This guarantees a single
+  running `checkMemLimits` per config (#4886)
 
 ## v0.45.0 Beta
 

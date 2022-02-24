@@ -95,6 +95,7 @@ func TestNew(t *testing.T) {
 				return
 			}
 			if got != nil {
+				assert.NoError(t, got.start(context.Background(), componenttest.NewNopHost()))
 				assert.NoError(t, got.shutdown(context.Background()))
 			}
 		})
