@@ -138,14 +138,14 @@ func TestAttributeValueMap(t *testing.T) {
 	require.True(t, exists)
 	assert.Equal(t, NewAttributeValueString("somestr2"), got)
 
-	deleted := m1.MapVal().Delete("double_key")
-	assert.True(t, deleted)
+	removed := m1.MapVal().Remove("double_key")
+	assert.True(t, removed)
 	assert.EqualValues(t, 1, m1.MapVal().Len())
 	_, exists = m1.MapVal().Get("double_key")
 	assert.False(t, exists)
 
-	deleted = m1.MapVal().Delete("child_map")
-	assert.True(t, deleted)
+	removed = m1.MapVal().Remove("child_map")
+	assert.True(t, removed)
 	assert.EqualValues(t, 0, m1.MapVal().Len())
 	_, exists = m1.MapVal().Get("child_map")
 	assert.False(t, exists)
@@ -348,9 +348,9 @@ func TestNilAttributeMap(t *testing.T) {
 	upsertMapBytes.UpsertBytes("k", []byte{1, 2, 3, 4, 5})
 	assert.EqualValues(t, generateTestBytesAttributeMap(), upsertMapBytes)
 
-	deleteMap := NewAttributeMap()
-	assert.False(t, deleteMap.Delete("k"))
-	assert.EqualValues(t, NewAttributeMap(), deleteMap)
+	removeMap := NewAttributeMap()
+	assert.False(t, removeMap.Remove("k"))
+	assert.EqualValues(t, NewAttributeMap(), removeMap)
 
 	// Test Sort
 	assert.EqualValues(t, NewAttributeMap(), NewAttributeMap().Sort())
@@ -525,20 +525,20 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
 	assert.EqualValues(t, []byte{1}, val.BytesVal())
 
-	assert.True(t, sm.Delete("other_key"))
-	assert.True(t, sm.Delete("other_key_string"))
-	assert.True(t, sm.Delete("other_key_int"))
-	assert.True(t, sm.Delete("other_key_double"))
-	assert.True(t, sm.Delete("other_key_bool"))
-	assert.True(t, sm.Delete("other_key_bytes"))
-	assert.True(t, sm.Delete("yet_another_key"))
-	assert.True(t, sm.Delete("yet_another_key_string"))
-	assert.True(t, sm.Delete("yet_another_key_int"))
-	assert.True(t, sm.Delete("yet_another_key_double"))
-	assert.True(t, sm.Delete("yet_another_key_bool"))
-	assert.True(t, sm.Delete("yet_another_key_bytes"))
-	assert.False(t, sm.Delete("other_key"))
-	assert.False(t, sm.Delete("yet_another_key"))
+	assert.True(t, sm.Remove("other_key"))
+	assert.True(t, sm.Remove("other_key_string"))
+	assert.True(t, sm.Remove("other_key_int"))
+	assert.True(t, sm.Remove("other_key_double"))
+	assert.True(t, sm.Remove("other_key_bool"))
+	assert.True(t, sm.Remove("other_key_bytes"))
+	assert.True(t, sm.Remove("yet_another_key"))
+	assert.True(t, sm.Remove("yet_another_key_string"))
+	assert.True(t, sm.Remove("yet_another_key_int"))
+	assert.True(t, sm.Remove("yet_another_key_double"))
+	assert.True(t, sm.Remove("yet_another_key_bool"))
+	assert.True(t, sm.Remove("yet_another_key_bytes"))
+	assert.False(t, sm.Remove("other_key"))
+	assert.False(t, sm.Remove("yet_another_key"))
 
 	// Test that the initial key is still there.
 	val, exist = sm.Get("test_key")
@@ -731,7 +731,7 @@ func TestAttributeMap_Clear(t *testing.T) {
 	assert.Nil(t, *am.orig)
 }
 
-func TestAttributeMap_DeleteIf(t *testing.T) {
+func TestAttributeMap_RemoveIf(t *testing.T) {
 	rawMap := map[string]AttributeValue{
 		"k_string": NewAttributeValueString("123"),
 		"k_int":    NewAttributeValueInt(123),
@@ -743,7 +743,7 @@ func TestAttributeMap_DeleteIf(t *testing.T) {
 	am := NewAttributeMapFromMap(rawMap)
 	assert.Equal(t, 6, am.Len())
 
-	am.DeleteIf(func(key string, val AttributeValue) bool {
+	am.RemoveIf(func(key string, val AttributeValue) bool {
 		return key == "k_int" || val.Type() == AttributeValueTypeBool
 	})
 	assert.Equal(t, 4, am.Len())
@@ -827,12 +827,12 @@ func BenchmarkAttributeMap_RangeOverMap(b *testing.B) {
 	}
 }
 
-func BenchmarkAttributeMap_Delete(b *testing.B) {
+func BenchmarkAttributeMap_Remove(b *testing.B) {
 	b.StopTimer()
-	// Delete all of the even keys
-	keysToDelete := map[string]struct{}{}
+	// Remove all of the even keys
+	keysToRemove := map[string]struct{}{}
 	for j := 0; j < 50; j++ {
-		keysToDelete[fmt.Sprintf("%d", j*2)] = struct{}{}
+		keysToRemove[fmt.Sprintf("%d", j*2)] = struct{}{}
 	}
 	for i := 0; i < b.N; i++ {
 		m := NewAttributeMap()
@@ -840,19 +840,19 @@ func BenchmarkAttributeMap_Delete(b *testing.B) {
 			m.InsertString(fmt.Sprintf("%d", j), "string value")
 		}
 		b.StartTimer()
-		for k := range keysToDelete {
-			m.Delete(k)
+		for k := range keysToRemove {
+			m.Remove(k)
 		}
 		b.StopTimer()
 	}
 }
 
-func BenchmarkAttributeMap_DeleteIf(b *testing.B) {
+func BenchmarkAttributeMap_RemoveIf(b *testing.B) {
 	b.StopTimer()
-	// Delete all of the even keys
-	keysToDelete := map[string]struct{}{}
+	// Remove all of the even keys
+	keysToRemove := map[string]struct{}{}
 	for j := 0; j < 50; j++ {
-		keysToDelete[fmt.Sprintf("%d", j*2)] = struct{}{}
+		keysToRemove[fmt.Sprintf("%d", j*2)] = struct{}{}
 	}
 	for i := 0; i < b.N; i++ {
 		m := NewAttributeMap()
@@ -860,9 +860,9 @@ func BenchmarkAttributeMap_DeleteIf(b *testing.B) {
 			m.InsertString(fmt.Sprintf("%d", j), "string value")
 		}
 		b.StartTimer()
-		m.DeleteIf(func(key string, _ AttributeValue) bool {
-			_, delete := keysToDelete[key]
-			return delete
+		m.RemoveIf(func(key string, _ AttributeValue) bool {
+			_, remove := keysToRemove[key]
+			return remove
 		})
 		b.StopTimer()
 	}
