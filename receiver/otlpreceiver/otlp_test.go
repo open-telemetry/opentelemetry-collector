@@ -24,14 +24,11 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -49,7 +46,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
-	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/model/otlp"
@@ -768,41 +764,6 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	assert.NotNil(t, r)
 	assert.EqualError(t, r.Start(context.Background(), componenttest.NewNopHost()),
 		`failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
-}
-
-func TestHTTPUseLegacyPortWhenUsingDefaultEndpoint(t *testing.T) {
-	r := newHTTPReceiver(t, defaultHTTPEndpoint, consumertest.NewNop(), consumertest.NewNop())
-	require.NotNil(t, r)
-
-	logCore, logs := observer.New(zap.InfoLevel)
-	logger := zap.New(logCore)
-
-	metric := r.(*sharedcomponent.SharedComponent).Unwrap().(*otlpReceiver)
-	metric.settings.Logger = logger
-
-	t.Cleanup(func() { require.NoError(t, r.Shutdown(context.Background())) })
-
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-
-	require.True(t, func() bool {
-		for _, l := range logs.All() {
-			if strings.Contains(l.Message, "Setting up a second HTTP listener on legacy endpoint 0.0.0.0:55681") {
-				return true
-			}
-		}
-		return false
-	}())
-
-	require.False(t, func() bool {
-		for _, l := range logs.All() {
-			if strings.Contains(l.Message, "Legacy HTTP endpoint 0.0.0.0:55681 is configured, please use 0.0.0.0:4318 instead.") {
-				return true
-			}
-		}
-		return false
-	}())
-
-	require.Equal(t, defaultHTTPEndpoint, metric.cfg.HTTP.Endpoint)
 }
 
 func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expectedStatusCode int) {

@@ -30,6 +30,7 @@
   - Deprecated `receiverhelper.WithMetrics` in favour of `component.WithMetricsReceiver`
   - Deprecated `receiverhelper.WithLogs` in favour of `component.WithLogsReceiver`
   - Deprecated `receiverhelper.NewFactory` in favour of `component.NewReceiverFactory`
+- Remove support for legacy otlp/http port. (#4916)
 
 ### 💡 Enhancements 💡
 
