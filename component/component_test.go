@@ -12,19 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internalinterface // import "go.opentelemetry.io/collector/internal/internalinterface"
+package component
 
-// InternalInterface is an interface used to prevent library consumers
-// to implement a given interface.
-type InternalInterface interface {
-	// unexportedMethod is a dummy method to force this interface to not be implemented.
-	unexportedMethod()
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestBaseInternal(t *testing.T) {
+	base := baseFactory{}
+	assert.NotPanics(t, base.unexportedFactoryFunc)
 }
-
-var _ InternalInterface = (*BaseInternal)(nil)
-
-// BaseInternal must be embedded on structs implementing InternalInterface.
-type BaseInternal struct{}
-
-// unexportedMethod implements the internal interface.
-func (*BaseInternal) unexportedMethod() {}

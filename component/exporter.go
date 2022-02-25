@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // Exporter exports telemetry data from the collector to a destination.
@@ -131,8 +130,7 @@ func (f CreateLogsExporterFunc) CreateLogsExporter(ctx context.Context, set Expo
 }
 
 type exporterFactory struct {
-	internalinterface.BaseInternal
-	cfgType config.Type
+	baseFactory
 	ExporterCreateDefaultConfigFunc
 	CreateTracesExporterFunc
 	CreateMetricsExporterFunc
@@ -163,16 +161,11 @@ func WithLogsExporter(createLogsExporter CreateLogsExporterFunc) ExporterFactory
 // NewExporterFactory returns a ExporterFactory.
 func NewExporterFactory(cfgType config.Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
 	f := &exporterFactory{
-		cfgType:                         cfgType,
+		baseFactory:                     baseFactory{cfgType: cfgType},
 		ExporterCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
 		opt(f)
 	}
 	return f
-}
-
-// Type returns the type of the Exporter created by this ExporterFactory.
-func (f *exporterFactory) Type() config.Type {
-	return f.cfgType
 }

@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
@@ -87,8 +86,7 @@ type ExtensionFactory interface {
 }
 
 type extensionFactory struct {
-	internalinterface.BaseInternal
-	cfgType config.Type
+	baseFactory
 	ExtensionDefaultConfigFunc
 	CreateExtensionFunc
 }
@@ -98,13 +96,8 @@ func NewExtensionFactory(
 	createDefaultConfig ExtensionDefaultConfigFunc,
 	createServiceExtension CreateExtensionFunc) ExtensionFactory {
 	return &extensionFactory{
-		cfgType:                    cfgType,
+		baseFactory:                baseFactory{cfgType: cfgType},
 		ExtensionDefaultConfigFunc: createDefaultConfig,
 		CreateExtensionFunc:        createServiceExtension,
 	}
-}
-
-// Type gets the type of the Extension config created by this factory.
-func (ef *extensionFactory) Type() config.Type {
-	return ef.cfgType
 }
