@@ -104,6 +104,12 @@ type Factory interface {
 	unexportedFactoryFunc()
 }
 
-type baseFactory struct{}
+type baseFactory struct {
+	cfgType config.Type
+}
 
 func (baseFactory) unexportedFactoryFunc() {}
+
+func (bf baseFactory) Type() config.Type {
+	return bf.cfgType
+}

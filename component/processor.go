@@ -161,7 +161,6 @@ func (f CreateLogsProcessorFunc) CreateLogsProcessor(
 
 type processorFactory struct {
 	baseFactory
-	cfgType config.Type
 	ProcessorCreateDefaultConfigFunc
 	CreateTracesProcessorFunc
 	CreateMetricsProcessorFunc
@@ -192,16 +191,11 @@ func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc) ProcessorFac
 // NewProcessorFactory returns a ProcessorFactory.
 func NewProcessorFactory(cfgType config.Type, createDefaultConfig ProcessorCreateDefaultConfigFunc, options ...ProcessorFactoryOption) ProcessorFactory {
 	f := &processorFactory{
-		cfgType:                          cfgType,
+		baseFactory:                      baseFactory{cfgType: cfgType},
 		ProcessorCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
 		opt(f)
 	}
 	return f
-}
-
-// Type returns the type of the Processor created by this ProcessorFactory.
-func (f *processorFactory) Type() config.Type {
-	return f.cfgType
 }

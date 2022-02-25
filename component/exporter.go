@@ -131,7 +131,6 @@ func (f CreateLogsExporterFunc) CreateLogsExporter(ctx context.Context, set Expo
 
 type exporterFactory struct {
 	baseFactory
-	cfgType config.Type
 	ExporterCreateDefaultConfigFunc
 	CreateTracesExporterFunc
 	CreateMetricsExporterFunc
@@ -162,16 +161,11 @@ func WithLogsExporter(createLogsExporter CreateLogsExporterFunc) ExporterFactory
 // NewExporterFactory returns a ExporterFactory.
 func NewExporterFactory(cfgType config.Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
 	f := &exporterFactory{
-		cfgType:                         cfgType,
+		baseFactory:                     baseFactory{cfgType: cfgType},
 		ExporterCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
 		opt(f)
 	}
 	return f
-}
-
-// Type returns the type of the Exporter created by this ExporterFactory.
-func (f *exporterFactory) Type() config.Type {
-	return f.cfgType
 }

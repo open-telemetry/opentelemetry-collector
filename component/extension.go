@@ -87,7 +87,6 @@ type ExtensionFactory interface {
 
 type extensionFactory struct {
 	baseFactory
-	cfgType config.Type
 	ExtensionDefaultConfigFunc
 	CreateExtensionFunc
 }
@@ -97,13 +96,8 @@ func NewExtensionFactory(
 	createDefaultConfig ExtensionDefaultConfigFunc,
 	createServiceExtension CreateExtensionFunc) ExtensionFactory {
 	return &extensionFactory{
-		cfgType:                    cfgType,
+		baseFactory:                baseFactory{cfgType: cfgType},
 		ExtensionDefaultConfigFunc: createDefaultConfig,
 		CreateExtensionFunc:        createServiceExtension,
 	}
-}
-
-// Type gets the type of the Extension config created by this factory.
-func (ef *extensionFactory) Type() config.Type {
-	return ef.cfgType
 }

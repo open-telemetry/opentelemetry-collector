@@ -193,7 +193,6 @@ func (f CreateLogsReceiverFunc) CreateLogsReceiver(
 
 type receiverFactory struct {
 	baseFactory
-	cfgType config.Type
 	ReceiverCreateDefaultConfigFunc
 	CreateTracesReceiverFunc
 	CreateMetricsReceiverFunc
@@ -224,16 +223,11 @@ func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc) ReceiverFactory
 // NewReceiverFactory returns a ReceiverFactory.
 func NewReceiverFactory(cfgType config.Type, createDefaultConfig ReceiverCreateDefaultConfigFunc, options ...ReceiverFactoryOption) ReceiverFactory {
 	f := &receiverFactory{
-		cfgType:                         cfgType,
+		baseFactory:                     baseFactory{cfgType: cfgType},
 		ReceiverCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
 		opt(f)
 	}
 	return f
-}
-
-// Type returns the type of the Receiver created by this ReceiverFactory.
-func (f *receiverFactory) Type() config.Type {
-	return f.cfgType
 }
