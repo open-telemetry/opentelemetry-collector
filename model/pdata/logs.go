@@ -92,19 +92,6 @@ func (ld Logs) ResourceLogs() ResourceLogsSlice {
 	return newResourceLogsSlice(&ld.orig.ResourceLogs)
 }
 
-// Deprecated: [v0.44.0] use LogRecordSlice
-type LogSlice = LogRecordSlice
-
-// Deprecated: [v0.44.0] use `LogRecords`.
-func (ms InstrumentationLibraryLogs) Logs() LogRecordSlice {
-	return ms.LogRecords()
-}
-
-// Deprecated: [v0.44.0] use NewLogRecordSlice
-func NewLogSlice() LogRecordSlice {
-	return NewLogRecordSlice()
-}
-
 // SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.
 type SeverityNumber int32
 
