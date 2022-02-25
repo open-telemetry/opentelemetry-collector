@@ -32,6 +32,7 @@
   - Deprecated `receiverhelper.NewFactory` in favour of `component.NewReceiverFactory`
 - Remove support for legacy otlp/http port. (#4916)
 - Remove deprecated funcs in pdata (#4809)
+- Remove deprecated Retrieve funcs/calls (#4922)
 
 ### 💡 Enhancements 💡
 

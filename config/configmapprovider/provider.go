@@ -97,12 +97,3 @@ type Retrieved struct {
 //
 // Should never be called concurrently with itself.
 type CloseFunc func(context.Context) error
-
-// Close calls the func only if not nil.
-// Deprecated: [v0.45.0] Not needed, will be removed soon. You have access to the func.
-func (f CloseFunc) Close(ctx context.Context) error {
-	if f == nil {
-		return nil
-	}
-	return f(ctx)
-}

@@ -64,14 +64,11 @@ func TestFile_RelativePath(t *testing.T) {
 	fp := NewFile()
 	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "default-config.yaml"), nil)
 	require.NoError(t, err)
-	cfg, err := ret.Get(context.Background())
-	assert.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})
-	assert.Equal(t, expectedMap, cfg)
-	assert.NoError(t, ret.Close(context.Background()))
+	assert.Equal(t, expectedMap, ret.Map)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
@@ -79,14 +76,11 @@ func TestFile_AbsolutePath(t *testing.T) {
 	fp := NewFile()
 	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "default-config.yaml")), nil)
 	require.NoError(t, err)
-	cfg, err := ret.Get(context.Background())
-	assert.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})
-	assert.Equal(t, expectedMap, cfg)
-	assert.NoError(t, ret.Close(context.Background()))
+	assert.Equal(t, expectedMap, ret.Map)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
