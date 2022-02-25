@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // Processor defines the common functions that must be implemented by TracesProcessor
@@ -60,7 +59,6 @@ type ProcessorCreateSettings struct {
 // This interface cannot be directly implemented. Implementations must
 // use the NewProcessorFactory to implement it.
 type ProcessorFactory interface {
-	internalinterface.InternalInterface
 	Factory
 
 	// CreateDefaultConfig creates the default configuration for the Processor.
@@ -162,7 +160,7 @@ func (f CreateLogsProcessorFunc) CreateLogsProcessor(
 }
 
 type processorFactory struct {
-	internalinterface.BaseInternal
+	baseFactory
 	cfgType config.Type
 	ProcessorCreateDefaultConfigFunc
 	CreateTracesProcessorFunc

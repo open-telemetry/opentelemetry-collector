@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // Receiver allows the collector to receive metrics, traces and logs.
@@ -193,7 +192,7 @@ func (f CreateLogsReceiverFunc) CreateLogsReceiver(
 }
 
 type receiverFactory struct {
-	internalinterface.BaseInternal
+	baseFactory
 	cfgType config.Type
 	ReceiverCreateDefaultConfigFunc
 	CreateTracesReceiverFunc

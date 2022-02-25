@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/internal/internalinterface"
 )
 
 // Exporter exports telemetry data from the collector to a destination.
@@ -131,7 +130,7 @@ func (f CreateLogsExporterFunc) CreateLogsExporter(ctx context.Context, set Expo
 }
 
 type exporterFactory struct {
-	internalinterface.BaseInternal
+	baseFactory
 	cfgType config.Type
 	ExporterCreateDefaultConfigFunc
 	CreateTracesExporterFunc
