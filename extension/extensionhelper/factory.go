@@ -19,16 +19,16 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// Deprecated: [v0.45.0] not needed, will be removed soon.
+// Deprecated: [v0.46.0] not needed, will be removed soon.
 type FactoryOption struct{}
 
-// Deprecated: [v0.45.0] use component.ExtensionDefaultConfigFunc.
+// Deprecated: [v0.46.0] use component.ExtensionDefaultConfigFunc.
 type CreateDefaultConfig = component.ExtensionDefaultConfigFunc
 
-// Deprecated: [v0.45.0] use component.CreateExtensionFunc.
+// Deprecated: [v0.46.0] use component.CreateExtensionFunc.
 type CreateServiceExtension = component.CreateExtensionFunc
 
-// Deprecated: [v0.45.0] use component.NewExtensionFactory.
+// Deprecated: [v0.46.0] use component.NewExtensionFactory.
 func NewFactory(
 	cfgType config.Type,
 	createDefaultConfig component.ExtensionDefaultConfigFunc,
