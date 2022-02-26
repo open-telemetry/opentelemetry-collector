@@ -34,11 +34,11 @@ Prometheus metrics are exposed locally on port `8888` and path `/metrics`.
 
 For containerized environments it may be desirable to expose this port on a
 public interface instead of just locally. The metrics address can be configured
-by passing the `--metrics-addr` flag to the `otelcol` process. See `--help` for
+by passing the `--set=service.telemetry.metrics.address=` flag to the `otelcol` process. See `--help` for
 more details.
 
 ```bash
-$ otelcol --metrics-addr 0.0.0.0:8888
+$ otelcol --set "service.telemetry.metrics.address=0.0.0.0:8888"
 ```
 
 A grafana dashboard for these metrics can be found
