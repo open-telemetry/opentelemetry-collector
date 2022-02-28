@@ -457,14 +457,6 @@ that each of the following steps is done in a separate version:
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
    needed.
 
-#### Exceptions
-
-While the above is what we strive to follow, we acknowledge that some changes might be unfeasible to achieve in a
-non-breaking manner. Exceptions to the outlined rules are acceptable if consensus can be obtained from approvers in the
-pull request they are proposed. A reason for requesting the exception MUST be given in the pull request. Until unanimity
-is obtained, approvers and maintainers are encouraged to discuss the issue at hand. If a consensus (unanimity) cannot be
-obtained, the maintainers are then tasked in getting a decision using its regular means (voting, TC help, ...).
-
 ## Updating Changelog
 
 An entry into the [Changelog](./CHANGELOG.md) is required for the following reasons:
@@ -502,3 +494,12 @@ go: github.com/golangci/golangci-lint@v1.31.0 requires
 `go env GOPROXY` should return `https://proxy.golang.org,direct`. If it does not, set it as an environment variable:
 
 `export GOPROXY=https://proxy.golang.org,direct`
+
+## Exceptions and changes in the rules
+
+While the ruling on this and other documents in this repository is what we strive to follow, we acknowledge that rules may be 
+unfeasible to be applied in some situations or that procedures may need to change over time. Exceptions or changes to the rules 
+on this and other documents are acceptable if consensus can be obtained from approvers in the pull request they are proposed.
+A reason for requesting the exception MUST be given in the pull request. Until unanimity is obtained, approvers and maintainers are 
+encouraged to discuss the issue at hand. If a consensus (unanimity) cannot be obtained, the maintainers are then tasked in getting a 
+decision using its regular means (voting, TC help, ...).
