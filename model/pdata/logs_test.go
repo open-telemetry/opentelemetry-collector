@@ -79,6 +79,15 @@ func TestToFromLogProto(t *testing.T) {
 	assert.EqualValues(t, &otlplogs.LogsData{}, ld.orig)
 }
 
+func TestLogsMoveTo(t *testing.T) {
+	logs := NewLogs()
+	fillTestResourceLogsSlice(logs.ResourceLogs())
+	dest := NewLogs()
+	logs.MoveTo(dest)
+	assert.EqualValues(t, NewLogs(), logs)
+	assert.EqualValues(t, generateTestResourceLogsSlice(), dest.ResourceLogs())
+}
+
 func TestLogsClone(t *testing.T) {
 	logs := NewLogs()
 	fillTestResourceLogsSlice(logs.ResourceLogs())

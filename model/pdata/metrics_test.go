@@ -192,6 +192,15 @@ func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	assert.EqualValues(t, 0, metrics.DataPointCount())
 }
 
+func TestMetricsMoveTo(t *testing.T) {
+	metrics := NewMetrics()
+	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	dest := NewMetrics()
+	metrics.MoveTo(dest)
+	assert.EqualValues(t, NewMetrics(), metrics)
+	assert.EqualValues(t, generateTestResourceMetricsSlice(), dest.ResourceMetrics())
+}
+
 func TestOtlpToInternalReadOnly(t *testing.T) {
 	md := Metrics{orig: &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
