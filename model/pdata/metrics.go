@@ -245,13 +245,3 @@ func (mdt MetricValueType) String() string {
 	}
 	return ""
 }
-
-// Deprecated: [v0.45.0] Use ValueType instead.
-func (ms NumberDataPoint) Type() MetricValueType {
-	return ms.ValueType()
-}
-
-// Deprecated: [v0.45.0] Use ValueType instead.
-func (ms Exemplar) Type() MetricValueType {
-	return ms.ValueType()
-}
