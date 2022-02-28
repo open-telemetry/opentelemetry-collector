@@ -548,7 +548,6 @@ func (am AttributeMap) RemoveIf(f func(string, AttributeValue) bool) {
 		(*am.orig)[newLen] = (*am.orig)[i]
 		newLen++
 	}
-	// TODO: Prevent memory leak by erasing truncated values.
 	*am.orig = (*am.orig)[:newLen]
 }
 
