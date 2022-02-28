@@ -230,7 +230,7 @@ gendependabot: $(eval SHELL:=/bin/bash)
 OPENTELEMETRY_PROTO_SRC_DIR=model/internal/opentelemetry-proto
 
 # The SHA matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v0.12.0
+OPENTELEMETRY_PROTO_VERSION=6f6a18c6b9522672bc0cbbe70a3d973f9a08ef2b
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))

@@ -51,3 +51,6 @@ s+repeated Exemplar exemplars = \(.*\);+repeated Exemplar exemplars = \1\
 
 s+Buckets \(.*\)tive = \(.*\);+Buckets \1tive = \2\
   [ (gogoproto.nullable) = false ];+g
+
+# optional fixed64 foo = 1 -> oneof foo_ { fixed64 foo = 1;}
+s+optional \(.*\) \(.*\) = \(.*\);+ oneof \2_ { \1 \2 = \3;}+g
