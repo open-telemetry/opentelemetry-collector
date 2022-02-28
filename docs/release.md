@@ -113,11 +113,10 @@ Like #4522, but for v0.45.0
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-01-25 | v0.43.0 | @codeboten      |
-| 2022-02-03 | v0.44.0 | @bogdandrutu    |
-| 2022-02-17 | v0.45.0 | @jpkrohling     |
-| 2022-03-02 | v0.46.0 | @jpkrohling     |
-| 2022-03-16 | v0.47.0 | undetermined    |
-| 2022-03-30 | v0.48.0 | undetermined    |
-| 2022-04-13 | v0.49.0 | undetermined    |
-| 2022-04-27 | v0.50.0 | undetermined    |
+| 2022-03-02 | v0.46.0 | @Aneurysm9      |
+| 2022-03-16 | v0.47.0 | @mx-psi         |
+| 2022-03-30 | v0.48.0 | @tigrannajaryan |
+| 2022-04-13 | v0.49.0 | @dmitryax       |
+| 2022-04-27 | v0.50.0 | @codeboten      |
+| 2022-05-11 | v0.51.0 | @bogdandrutu    |
+| 2022-05-25 | v0.52.0 | @jpkrohling     |
