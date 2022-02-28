@@ -255,3 +255,22 @@ func (ms NumberDataPoint) Type() MetricValueType {
 func (ms Exemplar) Type() MetricValueType {
 	return ms.ValueType()
 }
+
+// OptionalType wraps optional fields into oneof fields
+type OptionalType int32
+
+const (
+	OptionalTypeNone OptionalType = iota
+	OptionalTypeDouble
+)
+
+// String returns the string representation of the OptionalType.
+func (ot OptionalType) String() string {
+	switch ot {
+	case OptionalTypeNone:
+		return "None"
+	case OptionalTypeDouble:
+		return "Double"
+	}
+	return ""
+}

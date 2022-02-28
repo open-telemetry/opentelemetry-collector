@@ -1438,6 +1438,50 @@ func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
+// Min_Type returns the type of the min_ for this HistogramDataPoint.
+// Calling this function on zero-initialized HistogramDataPoint will cause a panic.
+func (ms HistogramDataPoint) Min_Type() OptionalType {
+	switch ms.orig.Min_.(type) {
+	case *otlpmetrics.HistogramDataPoint_Min:
+		return OptionalTypeDouble
+	}
+	return OptionalTypeNone
+}
+
+// Min returns the min associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Min() float64 {
+	return (*ms.orig).GetMin()
+}
+
+// SetMin replaces the min associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMin(v float64) {
+	(*ms.orig).Min_ = &otlpmetrics.HistogramDataPoint_Min{
+		Min: v,
+	}
+}
+
+// Max_Type returns the type of the max_ for this HistogramDataPoint.
+// Calling this function on zero-initialized HistogramDataPoint will cause a panic.
+func (ms HistogramDataPoint) Max_Type() OptionalType {
+	switch ms.orig.Max_.(type) {
+	case *otlpmetrics.HistogramDataPoint_Max:
+		return OptionalTypeDouble
+	}
+	return OptionalTypeNone
+}
+
+// Max returns the max associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Max() float64 {
+	return (*ms.orig).GetMax()
+}
+
+// SetMax replaces the max associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMax(v float64) {
+	(*ms.orig).Max_ = &otlpmetrics.HistogramDataPoint_Max{
+		Max: v,
+	}
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1449,6 +1493,16 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.SetExplicitBounds(ms.ExplicitBounds())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+	switch ms.Min_Type() {
+	case OptionalTypeDouble:
+		dest.SetMin(ms.Min())
+	}
+
+	switch ms.Max_Type() {
+	case OptionalTypeDouble:
+		dest.SetMax(ms.Max())
+	}
+
 }
 
 // ExponentialHistogramDataPointSlice logically represents a slice of ExponentialHistogramDataPoint.
