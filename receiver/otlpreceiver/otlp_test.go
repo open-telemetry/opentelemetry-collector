@@ -74,10 +74,26 @@ var traceJSON = []byte(`
 			  "spans": [
 				{
 				  "trace_id": "5B8EFFF798038103D269B633813FC60C",
+				  "span_id": "EEE19B7EC3C1B174",
+				  "parent_span_id": "EEE19B7EC3C1B173",
+				  "name": "testSpan",
+				  "start_time_unix_nano": 1544712660300000000,
+				  "end_time_unix_nano": 1544712660600000000,
+				  "kind": 2,
+				  "attributes": [
+					{
+					  "key": "attr1",
+					  "value": { "intValue": 55 }
+					}
+				  ]
+				},
+				{
+				  "trace_id": "5B8EFFF798038103D269B633813FC60C",
 				  "span_id": "EEE19B7EC3C1B173",
 				  "name": "testSpan",
 				  "start_time_unix_nano": 1544712660000000000,
 				  "end_time_unix_nano": 1544712661000000000,
+				  "kind": "SPAN_KIND_CLIENT",
 				  "attributes": [
 					{
 					  "key": "attr1",
@@ -96,13 +112,24 @@ var traceOtlp = func() pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().UpsertString(semconv.AttributeHostName, "testHost")
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
-	span.SetName("testSpan")
-	span.SetStartTimestamp(1544712660000000000)
-	span.SetEndTimestamp(1544712661000000000)
-	span.Attributes().UpsertInt("attr1", 55)
+	spans := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
+	span1 := spans.AppendEmpty()
+	span1.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
+	span1.SetSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x74}))
+	span1.SetParentSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
+	span1.SetName("testSpan")
+	span1.SetStartTimestamp(1544712660300000000)
+	span1.SetEndTimestamp(1544712660600000000)
+	span1.SetKind(pdata.SpanKindServer)
+	span1.Attributes().UpsertInt("attr1", 55)
+	span2 := spans.AppendEmpty()
+	span2.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
+	span2.SetSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
+	span2.SetName("testSpan")
+	span2.SetStartTimestamp(1544712660000000000)
+	span2.SetEndTimestamp(1544712661000000000)
+	span2.SetKind(pdata.SpanKindClient)
+	span2.Attributes().UpsertInt("attr1", 55)
 	return td
 }()
 
