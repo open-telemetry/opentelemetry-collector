@@ -185,7 +185,7 @@ func TestCollector_ShutdownBeforeRun(t *testing.T) {
 	collectorTelemetry = &colTelemetry{}
 	defer func() { collectorTelemetry = preservedAppTelemetry }()
 
-	factories, err := testcomponents.DefaultFactories()
+	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
 	set := CollectorSettings{
@@ -196,14 +196,8 @@ func TestCollector_ShutdownBeforeRun(t *testing.T) {
 	col, err := New(set)
 	require.NoError(t, err)
 
-	// Calling shutdown before collector is running should not stop it from running
+	// Calling shutdown before collector is running should cause it to return quickly
 	col.Shutdown()
-	select {
-	case <-col.shutdownChan:
-		require.Fail(t, "shutdownChan was closed early")
-	case <-time.After(time.Second):
-		// Channel did not report closed after 1 second move on with test.
-	}
 
 	colDone := make(chan struct{})
 	go func() {
@@ -213,10 +207,6 @@ func TestCollector_ShutdownBeforeRun(t *testing.T) {
 			err = colErr
 		}
 	}()
-
-	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
-	}, time.Second*2, time.Millisecond*200)
 
 	col.Shutdown()
 	<-colDone

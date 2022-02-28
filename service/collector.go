@@ -48,7 +48,6 @@ const (
 	Running
 	Closing
 	Closed
-	Created
 )
 
 // (Internal note) Collector Lifecycle:
@@ -91,7 +90,7 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	state := atomic.Value{}
-	state.Store(Created)
+	state.Store(Starting)
 	return &Collector{
 		logger: zap.NewNop(), // Set a Nop logger as a place holder until a logger is created based on configuration
 
