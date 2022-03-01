@@ -56,10 +56,10 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate ResourceMetrics as pdata struct.
-	pdataRM := generateTestResourceMetrics()
+	metrics := generateTestResourceMetrics()
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(pdataRM.orig)
+	wire1, err := gogoproto.Marshal(metrics.orig)
 	assert.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -80,7 +80,7 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.True(t, assert.EqualValues(t, pdataRM.orig, &gogoprotoRM))
+	assert.True(t, assert.EqualValues(t, metrics.orig, &gogoprotoRM))
 }
 
 func TestMetricCount(t *testing.T) {
