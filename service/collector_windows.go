@@ -29,6 +29,8 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
 
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -144,7 +146,15 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 
 func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Collector, error) {
 	if set.ConfigProvider == nil {
-		set.ConfigProvider = MustNewDefaultConfigProvider(getConfigFlag(), getSetFlag())
+		var err error
+		set.ConfigProvider, err = NewConfigProvider(
+			getConfigFlag(),
+			WithConfigMapConverters([]config.MapConverterFunc{
+				configmapprovider.NewOverwritePropertiesConverter(getSetFlag()),
+				configmapprovider.NewExpandConverter()}))
+		if err != nil {
+			return nil, err
+		}
 	}
 	set.LoggingOptions = append(
 		set.LoggingOptions,

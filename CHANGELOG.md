@@ -14,6 +14,9 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate configmapprovider package, replace with mapconverter (#5167)
+- Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` (#4762)
+  - There is no equivalent to provide custom ConfigUnmarshaler, if you need to apply changes to the parsed config wrap the default ConfigProvider.
+>>>>>>> 2daa6ab9 (Change deprecated NewConfigProvider to use options and do input validation)
 
 ### 💡 Enhancements 💡
 
@@ -47,6 +50,7 @@
 
 - Move MapProvider to config, split providers in their own package (#5030)
 - API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4978)
+- API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4975)
   - `pdata.AttributeValue` struct is deprecated in favor of `pdata.Value`
   - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
   - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
