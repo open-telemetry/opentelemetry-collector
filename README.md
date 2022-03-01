@@ -111,6 +111,10 @@ Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-tele
 - [Punya Biswal](https://github.com/punya), Google
 - [Steve Flanders](https://github.com/flands), Splunk
 
+Emeritus Triagers:
+
+- [Andrew Hsu](https://github.com/andrewhsu), Lightstep
+
 Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
@@ -118,11 +122,25 @@ Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-te
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
+Emeritus Approvers:
+
+- [James Bebbington](https://github.com/james-bebbington), Google
+- [Jay Camp](https://github.com/jrcamp), Splunk
+- [Nail Islamov](https://github.com/nilebox), Google
+- [Owais Lone](https://github.com/owais), Splunk
+- [Rahul Patel](https://github.com/rghetia), Google
+- [Steven Karis](https://github.com/sjkaris), Splunk
+- [Yang Song](https://github.com/songy23), Google
+
 Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
 - [Alex Boten](https://github.com/codeboten), Lightstep
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
+
+Emeritus Maintainers:
+
+- [Paulo Janotti](https://github.com/pjanotti), Splunk
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
 
