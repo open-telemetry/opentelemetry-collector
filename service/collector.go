@@ -50,6 +50,20 @@ const (
 	Closed
 )
 
+func (s State) String() string {
+	switch s {
+	case Starting:
+		return "Starting"
+	case Running:
+		return "Running"
+	case Closing:
+		return "Closing"
+	case Closed:
+		return "Closed"
+	}
+	return ""
+}
+
 // (Internal note) Collector Lifecycle:
 // - New constructs a new Collector.
 // - Run starts the collector.
