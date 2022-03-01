@@ -294,32 +294,14 @@ var histogramDataPoint = &messageValueStruct{
 			originFieldName:  "Min_",
 			originTypePrefix: "otlpmetrics.HistogramDataPoint_",
 			testValueIdx:     0, // Double
-			values: []oneOfValue{
-				&oneOfPrimitiveValue{
-					fieldName:       "Min",
-					fieldType:       "Double",
-					originFieldName: "Min",
-					returnType:      "float64",
-					defaultVal:      "float64(0.0)",
-					testVal:         "float64(17.13)",
-				},
-			},
+			values:           []oneOfValue{minField},
 		},
 		&oneOfField{
 			typeName:         "OptionalType",
 			originFieldName:  "Max_",
 			originTypePrefix: "otlpmetrics.HistogramDataPoint_",
 			testValueIdx:     0, // Double
-			values: []oneOfValue{
-				&oneOfPrimitiveValue{
-					fieldName:       "Max",
-					fieldType:       "Double",
-					originFieldName: "Max",
-					returnType:      "float64",
-					defaultVal:      "float64(0.0)",
-					testVal:         "float64(17.13)",
-				},
-			},
+			values:           []oneOfValue{maxField},
 		},
 	},
 }
@@ -370,6 +352,20 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		},
 		exemplarsField,
 		dataPointFlagsField,
+		&oneOfField{
+			typeName:         "OptionalType",
+			originFieldName:  "Min_",
+			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
+			testValueIdx:     0, // Double
+			values:           []oneOfValue{minField},
+		},
+		&oneOfField{
+			typeName:         "OptionalType",
+			originFieldName:  "Max_",
+			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
+			testValueIdx:     0, // Double
+			values:           []oneOfValue{maxField},
+		},
 	},
 }
 
@@ -555,4 +551,22 @@ var dataPointFlagsField = &primitiveTypedField{
 	rawType:         "uint32",
 	defaultVal:      "MetricDataPointFlagsNone",
 	testVal:         "MetricDataPointFlagsNone",
+}
+
+var minField = &oneOfPrimitiveValue{
+	fieldName:       "Min",
+	fieldType:       "Double",
+	originFieldName: "Min",
+	returnType:      "float64",
+	defaultVal:      "float64(0.0)",
+	testVal:         "float64(17.13)",
+}
+
+var maxField = &oneOfPrimitiveValue{
+	fieldName:       "Max",
+	fieldType:       "Double",
+	originFieldName: "Max",
+	returnType:      "float64",
+	defaultVal:      "float64(0.0)",
+	testVal:         "float64(17.13)",
 }

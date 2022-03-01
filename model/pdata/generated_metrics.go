@@ -1765,6 +1765,50 @@ func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
+// Min_Type returns the type of the min_ for this ExponentialHistogramDataPoint.
+// Calling this function on zero-initialized ExponentialHistogramDataPoint will cause a panic.
+func (ms ExponentialHistogramDataPoint) Min_Type() OptionalType {
+	switch ms.orig.Min_.(type) {
+	case *otlpmetrics.ExponentialHistogramDataPoint_Min:
+		return OptionalTypeDouble
+	}
+	return OptionalTypeNone
+}
+
+// Min returns the min associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Min() float64 {
+	return (*ms.orig).GetMin()
+}
+
+// SetMin replaces the min associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
+	(*ms.orig).Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{
+		Min: v,
+	}
+}
+
+// Max_Type returns the type of the max_ for this ExponentialHistogramDataPoint.
+// Calling this function on zero-initialized ExponentialHistogramDataPoint will cause a panic.
+func (ms ExponentialHistogramDataPoint) Max_Type() OptionalType {
+	switch ms.orig.Max_.(type) {
+	case *otlpmetrics.ExponentialHistogramDataPoint_Max:
+		return OptionalTypeDouble
+	}
+	return OptionalTypeNone
+}
+
+// Max returns the max associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Max() float64 {
+	return (*ms.orig).GetMax()
+}
+
+// SetMax replaces the max associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
+	(*ms.orig).Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{
+		Max: v,
+	}
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1778,6 +1822,16 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	ms.Negative().CopyTo(dest.Negative())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+	switch ms.Min_Type() {
+	case OptionalTypeDouble:
+		dest.SetMin(ms.Min())
+	}
+
+	switch ms.Max_Type() {
+	case OptionalTypeDouble:
+		dest.SetMax(ms.Max())
+	}
+
 }
 
 // Buckets are a set of bucket counts, encoded in a contiguous array of counts.
