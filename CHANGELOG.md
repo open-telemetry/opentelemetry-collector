@@ -33,6 +33,7 @@
 - Remove support for legacy otlp/http port. (#4916)
 - Remove deprecated funcs in pdata (#4809)
 - Remove deprecated Retrieve funcs/calls (#4922)
+- Remove deprecated NewConfigProvider funcs (#4937)
 
 ### 💡 Enhancements 💡
 
