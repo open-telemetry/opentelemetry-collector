@@ -24,7 +24,6 @@ import (
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/service/featuregate"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
@@ -39,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/internal/version"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/service/featuregate"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
@@ -60,13 +60,8 @@ const (
 func init() {
 	featuregate.Register(featuregate.Gate{
 		ID:          useOtelForInternalMetricsfeatureGateID,
-<<<<<<< Updated upstream
-		Description: "controls whether the collector uses OpenTelemetry for internal metrics",
-		Enabled:     configtelemetry.UseOpenTelemetryForInternalMetrics,
-=======
 		Description: "controls whether the collector to uses open telemetry for internal metrics",
 		Enabled:     false,
->>>>>>> Stashed changes
 	})
 }
 
