@@ -68,50 +68,113 @@ type ConfigProvider interface {
 }
 
 type configProvider struct {
-	locations          []string
-	configMapProviders map[string]config.MapProvider
-	cfgMapConverters   []config.MapConverterFunc
-	configUnmarshaler  configunmarshaler.ConfigUnmarshaler
+	locations           []string
+	configMapProviders  map[string]config.MapProvider
+	configMapConverters []config.MapConverterFunc
+	configUnmarshaler   configunmarshaler.ConfigUnmarshaler
 
 	sync.Mutex
 	closer  config.CloseFunc
 	watcher chan error
 }
 
-// MustNewConfigProvider returns a new ConfigProvider that provides the configuration:
-// * Retrieve the config.Map by merging all retrieved maps from all the config.MapProvider in order.
-// * Then applies all the ConfigMapConverterFunc in the given order.
-// * Then unmarshalls the final config.Config using the given configunmarshaler.ConfigUnmarshaler.
-//
-// The `configMapProviders` is a map of pairs <scheme,Provider>.
+// ConfigProviderOption is an option to change the behavior of ConfigProvider
+// returned by NewConfigProvider()
+type ConfigProviderOption func(opts *configProvider)
+
+// WithConfigMapProvider appends to the default available providers.
+// This provider overwrites any existing provider with the same scheme.
+func WithConfigMapProvider(mp config.MapProvider) ConfigProviderOption {
+	return func(opts *configProvider) {
+		opts.configMapProviders[mp.Scheme()] = mp
+	}
+}
+
+// WithConfigMapConverters overwrites the default converters.
+func WithConfigMapConverters(c []config.MapConverterFunc) ConfigProviderOption {
+	return func(opts *configProvider) {
+		opts.configMapConverters = c
+	}
+}
+
+// WithConfigUnmarshaler overwrites the default unmarshaler.
+// Deprecated: [v0.49.0] because providing custom ConfigUnmarshaler is not necessary since users can wrap/implement
+// ConfigProvider if needed to change the resulted config. This functionality will be kept for at least 2 minor versions,
+// and if nobody express a need for it will be removed.
+func WithConfigUnmarshaler(c configunmarshaler.ConfigUnmarshaler) ConfigProviderOption {
+	return func(opts *configProvider) {
+		opts.configUnmarshaler = c
+	}
+}
+
+// Deprecated: [v0.49.0] use NewConfigProvider instead.
 func MustNewConfigProvider(
 	locations []string,
 	configMapProviders map[string]config.MapProvider,
 	cfgMapConverters []config.MapConverterFunc,
 	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+	opts := []ConfigProviderOption{
+		WithConfigMapConverters(cfgMapConverters),
+		WithConfigUnmarshaler(configUnmarshaler),
+	}
+	for _, c := range configMapProviders {
+		opts = append(opts, WithConfigMapProvider(c))
+	}
+	cfgProvider, err := NewConfigProvider(locations, opts...)
+	if err != nil {
+		panic(err)
+	}
+	return cfgProvider
+}
+
+// NewConfigProvider returns a new ConfigProvider that provides the configuration:
+// * Retrieve the config.Map by merging all retrieved maps from the given `locations` in order.
+// * Then applies all the config.MapConverterFunc in the given order.
+// * Then unmarshals the config.Map into the service Config.
+func NewConfigProvider(locations []string, opts ...ConfigProviderOption) (ConfigProvider, error) {
+	if len(locations) == 0 {
+		return nil, fmt.Errorf("cannot create ConfigProvider: no locations provided")
+	}
 	// Safe copy, ensures the slice cannot be changed from the caller.
 	locationsCopy := make([]string, len(locations))
 	copy(locationsCopy, locations)
-	return &configProvider{
-		locations:          locationsCopy,
-		configMapProviders: configMapProviders,
-		cfgMapConverters:   cfgMapConverters,
-		configUnmarshaler:  configUnmarshaler,
-		watcher:            make(chan error, 1),
-	}
-}
 
-// MustNewDefaultConfigProvider returns the default ConfigProvider from slice of location strings
-// (e.g. file:/path/to/config.yaml) and property overrides (e.g. service.telemetry.metrics.address=localhost:8888).
-func MustNewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
-	return MustNewConfigProvider(
-		configLocations,
-		makeConfigMapProviderMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
-		[]config.MapConverterFunc{
-			configmapprovider.NewOverwritePropertiesConverter(properties),
+	opts = append([]ConfigProviderOption{
+		WithConfigMapProvider(filemapprovider.New()),
+		WithConfigMapProvider(envmapprovider.New()),
+		WithConfigMapProvider(yamlmapprovider.New()),
+	}, opts...)
+
+	provider := configProvider{
+		locations:          locationsCopy,
+		configMapProviders: make(map[string]config.MapProvider),
+		configMapConverters: []config.MapConverterFunc{
 			configmapprovider.NewExpandConverter(),
 		},
-		configunmarshaler.NewDefault())
+		configUnmarshaler: configunmarshaler.NewDefault(),
+		watcher:           make(chan error, 1),
+	}
+
+	// Override default values with user options
+	for _, o := range opts {
+		o(&provider)
+	}
+
+	return &provider, nil
+}
+
+// Deprecated: [v0.49.0] use NewConfigProvider instead.
+func MustNewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
+	cfgProvider, err := NewConfigProvider(
+		configLocations,
+		WithConfigMapConverters([]config.MapConverterFunc{
+			configmapprovider.NewOverwritePropertiesConverter(properties),
+			configmapprovider.NewExpandConverter(),
+		}))
+	if err != nil {
+		panic(err)
+	}
+	return cfgProvider
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
@@ -127,7 +190,7 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 	cm.closer = ret.CloseFunc
 
 	// Apply all converters.
-	for _, cfgMapConv := range cm.cfgMapConverters {
+	for _, cfgMapConv := range cm.configMapConverters {
 		if err = cfgMapConv(ctx, ret.Map); err != nil {
 			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
 		}
@@ -217,12 +280,4 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Retrieved,
 			return err
 		},
 	}, nil
-}
-
-func makeConfigMapProviderMap(providers ...config.MapProvider) map[string]config.MapProvider {
-	ret := make(map[string]config.MapProvider, len(providers))
-	for _, provider := range providers {
-		ret[provider.Scheme()] = provider
-	}
-	return ret
 }
