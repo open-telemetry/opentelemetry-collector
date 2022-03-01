@@ -136,11 +136,19 @@ func testCollectorStartHelper(t *testing.T) {
 	}, time.Second*2, time.Millisecond*200)
 }
 
+// as telemetry instance is initialized only once, we need to reset it before each test so the metrics endpoint can
+// have correct handler spawned
+func resetCollectorTelemetry() {
+	collectorTelemetry = &colTelemetry{}
+}
+
 func TestCollector_Start(t *testing.T) {
+	resetCollectorTelemetry()
 	testCollectorStartHelper(t)
 }
 
 func TestCollector_StartWithOtelInternalMetrics(t *testing.T) {
+	resetCollectorTelemetry()
 	originalFlag := featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID)
 	defer func() {
 		featuregate.Apply(map[string]bool{
