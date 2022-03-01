@@ -12,6 +12,7 @@
 
 - Remove `Type` funcs in pdata (#4933)
 - Remove all deprecated funcs/structs from v0.46.0 (#4995)
+- AsString for pdata.AttributeValue now returns the JSON-encoded string of floats. (#4934)
 
 ### 🚩 Deprecations 🚩
 

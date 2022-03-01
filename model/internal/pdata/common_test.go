@@ -1024,6 +1024,11 @@ func TestAsString(t *testing.T) {
 			expected: "1.61803399",
 		},
 		{
+			name:     "small float64",
+			input:    NewValueDouble(.000000009),
+			expected: "9e-9",
+		},
+		{
 			name:     "boolean",
 			input:    NewValueBool(true),
 			expected: "true",

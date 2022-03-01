@@ -379,7 +379,8 @@ func (v Value) AsString() string {
 		return strconv.FormatBool(v.BoolVal())
 
 	case ValueTypeDouble:
-		return strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
+		jsonStr, _ := json.Marshal(v.DoubleVal())
+		return string(jsonStr)
 
 	case ValueTypeInt:
 		return strconv.FormatInt(v.IntVal(), 10)
