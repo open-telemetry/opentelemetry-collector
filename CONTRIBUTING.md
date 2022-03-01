@@ -495,10 +495,10 @@ go: github.com/golangci/golangci-lint@v1.31.0 requires
 
 `export GOPROXY=https://proxy.golang.org,direct`
 
-## Exceptions and changes in the rules
+## Exceptions
 
 While the ruling on this and other documents in this repository is what we strive to follow, we acknowledge that rules may be 
-unfeasible to be applied in some situations or that procedures may need to change over time. Exceptions or changes to the rules 
+unfeasible to be applied in some situations. Exceptions to the rules 
 on this and other documents are acceptable if consensus can be obtained from approvers in the pull request they are proposed.
 A reason for requesting the exception MUST be given in the pull request. Until unanimity is obtained, approvers and maintainers are 
 encouraged to discuss the issue at hand. If a consensus (unanimity) cannot be obtained, the maintainers are then tasked in getting a 
