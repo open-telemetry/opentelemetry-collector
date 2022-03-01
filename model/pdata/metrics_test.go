@@ -521,6 +521,8 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	histogramDataPoints.At(0).SetExplicitBounds([]float64{1})
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).ExplicitBounds())
 	histogramDataPoints.At(0).SetBucketCounts([]uint64{21, 32})
+	histogramDataPoints.At(0).SetMin(10.1)
+	histogramDataPoints.At(0).SetMax(27)
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -549,6 +551,8 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 												TimeUnixNano:      endTime + 1,
 												BucketCounts:      []uint64{21, 32},
 												ExplicitBounds:    []float64{1},
+												Min_:              histogramDataPoints.At(0).orig.Min_,
+												Max_:              histogramDataPoints.At(0).orig.Max_,
 											},
 										},
 									},
