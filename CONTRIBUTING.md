@@ -497,7 +497,7 @@ go: github.com/golangci/golangci-lint@v1.31.0 requires
 
 ## Exceptions
 
-While the ruling on this and other documents in this repository is what we strive to follow, we acknowledge that rules may be 
+While the rules in this and other documents in this repository is what we strive to follow, we acknowledge that rules may be 
 unfeasible to be applied in some situations. Exceptions to the rules 
 on this and other documents are acceptable if consensus can be obtained from approvers in the pull request they are proposed.
 A reason for requesting the exception MUST be given in the pull request. Until unanimity is obtained, approvers and maintainers are 
