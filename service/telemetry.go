@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/internal/version"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/service/featuregate"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
@@ -50,7 +51,20 @@ const AddCollectorVersionTag = true
 const (
 	zapKeyTelemetryAddress = "address"
 	zapKeyTelemetryLevel   = "level"
+
+	// useOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
+	// telemetry for internal metrics.
+	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 )
+
+func init() {
+	//nolint:staticcheck
+	featuregate.Register(featuregate.Gate{
+		ID:          useOtelForInternalMetricsfeatureGateID,
+		Description: "controls whether the collector to uses open telemetry for internal metrics",
+		Enabled:     configtelemetry.UseOpenTelemetryForInternalMetrics,
+	})
+}
 
 type collectorTelemetryExporter interface {
 	init(col *Collector) error
@@ -98,7 +112,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 	instanceID := instanceUUID.String()
 
 	var pe http.Handler
-	if configtelemetry.UseOpenTelemetryForInternalMetrics {
+	if featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
 		otelHandler, err := tel.initOpenTelemetry()
 		if err != nil {
 			return err

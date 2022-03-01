@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
@@ -80,7 +81,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	}, time.Second*2, time.Millisecond*200)
 }
 
-func TestCollector_Start(t *testing.T) {
+func testCollectorStartHelper(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 	var once sync.Once
@@ -133,6 +134,31 @@ func TestCollector_Start(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return Closed == col.GetState()
 	}, time.Second*2, time.Millisecond*200)
+}
+
+// as telemetry instance is initialized only once, we need to reset it before each test so the metrics endpoint can
+// have correct handler spawned
+func resetCollectorTelemetry() {
+	collectorTelemetry = &colTelemetry{}
+}
+
+func TestCollector_Start(t *testing.T) {
+	resetCollectorTelemetry()
+	testCollectorStartHelper(t)
+}
+
+func TestCollector_StartWithOtelInternalMetrics(t *testing.T) {
+	resetCollectorTelemetry()
+	originalFlag := featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID)
+	defer func() {
+		featuregate.Apply(map[string]bool{
+			useOtelForInternalMetricsfeatureGateID: originalFlag,
+		})
+	}()
+	featuregate.Apply(map[string]bool{
+		useOtelForInternalMetricsfeatureGateID: true,
+	})
+	testCollectorStartHelper(t)
 }
 
 // TestCollector_ShutdownNoop verifies that shutdown can be called even if a collector
