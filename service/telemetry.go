@@ -58,10 +58,11 @@ const (
 )
 
 func init() {
+	//nolint:staticcheck
 	featuregate.Register(featuregate.Gate{
 		ID:          useOtelForInternalMetricsfeatureGateID,
 		Description: "controls whether the collector to uses open telemetry for internal metrics",
-		Enabled:     false,
+		Enabled:     configtelemetry.UseOpenTelemetryForInternalMetrics,
 	})
 }
 
