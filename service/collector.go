@@ -119,9 +119,7 @@ func (col *Collector) Shutdown() {
 	state := col.GetState()
 	if state == Running || state == Starting {
 		defer func() {
-			if r := recover(); r != nil {
-				col.logger.Info("shutdownChan already closed")
-			}
+			recover()
 		}()
 		close(col.shutdownChan)
 	}
