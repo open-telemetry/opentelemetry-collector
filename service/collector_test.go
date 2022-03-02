@@ -41,6 +41,13 @@ import (
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
+func TestStateString(t *testing.T) {
+	assert.Equal(t, "Starting", Starting.String())
+	assert.Equal(t, "Running", Running.String())
+	assert.Equal(t, "Closing", Closing.String())
+	assert.Equal(t, "Closed", Closed.String())
+}
+
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
 // to test for initialization without setting CLI flags.
 func TestCollector_StartAsGoRoutine(t *testing.T) {
