@@ -670,18 +670,6 @@ func TestMetricsDataPointFlags(t *testing.T) {
 	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(0).Flags().String())
 }
 
-// TestNumberDataPointType tests deprecated NumberDataPoint.Type
-func TestNumberDataPointType(t *testing.T) {
-	tv := NewNumberDataPoint()
-	assert.Equal(t, tv.ValueType(), tv.Type())
-}
-
-// TestExemplarType tests deprecated Exemplar.Type
-func TestExemplarType(t *testing.T) {
-	tv := NewExemplar()
-	assert.Equal(t, tv.ValueType(), tv.Type())
-}
-
 func BenchmarkMetricsClone(b *testing.B) {
 	metrics := NewMetrics()
 	fillTestResourceMetricsSlice(metrics.ResourceMetrics())

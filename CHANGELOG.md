@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Remove `Type` funcs in pdata (#4933)
+
 ## v0.46.0 Beta
 
 ### 🛑 Breaking changes 🛑
