@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.46.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Deprecated funcs `config.DefaultConfig`, `confighttp.DefaultHTTPSettings`, `exporterhelper.DefaultTimeoutSettings`, 
