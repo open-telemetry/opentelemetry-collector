@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## v0.45.0 Beta
+## v0.46.0 Beta
 
 ### 🛑 Breaking changes 🛑
 
