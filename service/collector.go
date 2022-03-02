@@ -119,7 +119,7 @@ func (col *Collector) Shutdown() {
 	state := col.GetState()
 	if state == Running || state == Starting {
 		defer func() {
-			recover()
+			recover() // nolint:errcheck
 		}()
 		close(col.shutdownChan)
 	}
