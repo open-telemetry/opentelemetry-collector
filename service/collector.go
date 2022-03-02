@@ -85,7 +85,7 @@ type Collector struct {
 	zPagesSpanProcessor *zpages.SpanProcessor
 
 	service *service
-	state   atomic.Value
+	state   int32
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -103,14 +103,11 @@ func New(set CollectorSettings) (*Collector, error) {
 		return nil, errors.New("invalid nil config provider")
 	}
 
-	state := atomic.Value{}
-	state.Store(Starting)
 	return &Collector{
 		logger: zap.NewNop(), // Set a Nop logger as a place holder until a logger is created based on configuration
 
-		set:   set,
-		state: state,
-
+		set:          set,
+		state:        int32(Starting),
 		shutdownChan: make(chan struct{}),
 	}, nil
 
@@ -118,7 +115,7 @@ func New(set CollectorSettings) (*Collector, error) {
 
 // GetState returns current state of the collector server.
 func (col *Collector) GetState() State {
-	return col.state.Load().(State)
+	return State(atomic.LoadInt32(&col.state))
 }
 
 // GetLogger returns logger used by the Collector.
@@ -283,7 +280,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
-	col.state.Store(state)
+	atomic.StoreInt32(&col.state, int32(state))
 }
 
 func getBallastSize(host component.Host) uint64 {
