@@ -29,7 +29,7 @@ import (
 )
 
 func TestService_GetFactory(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	_, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	srv := createExampleService(t)
@@ -39,23 +39,15 @@ func TestService_GetFactory(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	factory := srv.GetFactory(component.KindReceiver, "nop")
-	assert.EqualValues(t, factories.Receivers["nop"], factory)
-	factory = srv.GetFactory(component.KindReceiver, "wrongtype")
+	factory := srv.GetFactory(component.KindReceiver, "wrongtype")
 	assert.EqualValues(t, nil, factory)
 
-	factory = srv.GetFactory(component.KindProcessor, "nop")
-	assert.EqualValues(t, factories.Processors["nop"], factory)
 	factory = srv.GetFactory(component.KindProcessor, "wrongtype")
 	assert.EqualValues(t, nil, factory)
 
-	factory = srv.GetFactory(component.KindExporter, "nop")
-	assert.EqualValues(t, factories.Exporters["nop"], factory)
 	factory = srv.GetFactory(component.KindExporter, "wrongtype")
 	assert.EqualValues(t, nil, factory)
 
-	factory = srv.GetFactory(component.KindExtension, "nop")
-	assert.EqualValues(t, factories.Extensions["nop"], factory)
 	factory = srv.GetFactory(component.KindExtension, "wrongtype")
 	assert.EqualValues(t, nil, factory)
 
