@@ -73,7 +73,7 @@ will not be enabled.
 [origin]: https://developer.mozilla.org/en-US/docs/Glossary/Origin
 [attribute-processor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md
 
-you can enable [`attribute processor`][attribute-processor] to append `X-Forwarded-For` value to span's attribute using custom key.
+You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. you also need to enable the "include_metadata"
 
 Example:
 
@@ -82,6 +82,7 @@ receivers:
   otlp:
     protocols:
       http:
+        include_metadata: true
         cors:
           allowed_origins:
             - https://foo.bar.com
