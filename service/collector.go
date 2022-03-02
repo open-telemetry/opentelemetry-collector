@@ -61,7 +61,7 @@ func (s State) String() string {
 	case Closed:
 		return "Closed"
 	}
-	return ""
+	return "UNKNOWN"
 }
 
 // (Internal note) Collector Lifecycle:
