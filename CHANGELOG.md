@@ -4,6 +4,12 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove `Type` funcs in pdata (#4933)
+
+## v0.46.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Deprecated funcs `config.DefaultConfig`, `confighttp.DefaultHTTPSettings`, `exporterhelper.DefaultTimeoutSettings`, 
   `exporthelper.DefaultQueueSettings`, `exporterhelper.DefaultRetrySettings`, `testcomponents.DefaultFactories`, and
   `scraperhelper.DefaultScraperControllerSettings` in favour for their `NewDefault` method to adhere to contribution guidelines (#4865)
@@ -30,9 +36,11 @@
   - Deprecated `receiverhelper.WithMetrics` in favour of `component.WithMetricsReceiver`
   - Deprecated `receiverhelper.WithLogs` in favour of `component.WithLogsReceiver`
   - Deprecated `receiverhelper.NewFactory` in favour of `component.NewReceiverFactory`
+- Change otel collector to enable open telemetry metrics through feature gate instead of a constant
 - Remove support for legacy otlp/http port. (#4916)
 - Remove deprecated funcs in pdata (#4809)
-- Remove `Type` funcs in pdata (#4933)
+- Remove deprecated Retrieve funcs/calls (#4922)
+- Remove deprecated NewConfigProvider funcs (#4937)
 
 ### 💡 Enhancements 💡
 
@@ -46,6 +54,7 @@
   that calls shutdown to terminate it; this is done per memory limiter instance.
   Added memory limiter factory to cache initiated object and be reused by similar config. This guarantees a single
   running `checkMemLimits` per config (#4886)
+- Resolved race condition in collector when calling `Shutdown` (#4878)
 
 ## v0.45.0 Beta
 

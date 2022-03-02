@@ -120,6 +120,5 @@ func loadConfigMap(fileName string) (*config.Map, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return ret.Get(context.Background())
+	return ret.Map, nil
 }

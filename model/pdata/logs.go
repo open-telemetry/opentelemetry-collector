@@ -65,6 +65,13 @@ func (ld Logs) InternalRep() internal.LogsWrapper {
 	return internal.LogsFromOtlp(ld.orig)
 }
 
+// MoveTo moves all properties from the current struct to dest
+// resetting the current instance to its zero value.
+func (ld Logs) MoveTo(dest Logs) {
+	*dest.orig = *ld.orig
+	*ld.orig = otlplogs.LogsData{}
+}
+
 // Clone returns a copy of Logs.
 func (ld Logs) Clone() Logs {
 	cloneLd := NewLogs()

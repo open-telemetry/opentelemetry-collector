@@ -50,6 +50,20 @@ const (
 	Closed
 )
 
+func (s State) String() string {
+	switch s {
+	case Starting:
+		return "Starting"
+	case Running:
+		return "Running"
+	case Closing:
+		return "Closing"
+	case Closed:
+		return "Closed"
+	}
+	return "UNKNOWN"
+}
+
 // (Internal note) Collector Lifecycle:
 // - New constructs a new Collector.
 // - Run starts the collector.
@@ -96,6 +110,8 @@ func New(set CollectorSettings) (*Collector, error) {
 
 		set:   set,
 		state: state,
+
+		shutdownChan: make(chan struct{}),
 	}, nil
 
 }
@@ -113,12 +129,14 @@ func (col *Collector) GetLogger() *zap.Logger {
 
 // Shutdown shuts down the collector server.
 func (col *Collector) Shutdown() {
-	defer func() {
-		if r := recover(); r != nil {
-			col.logger.Info("shutdownChan already closed")
-		}
-	}()
-	close(col.shutdownChan)
+	// Only shutdown if we're in a Running or Starting State else noop
+	state := col.GetState()
+	if state == Running || state == Starting {
+		defer func() {
+			recover() // nolint:errcheck
+		}()
+		close(col.shutdownChan)
+	}
 }
 
 // runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
@@ -131,7 +149,6 @@ func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
-	col.shutdownChan = make(chan struct{})
 	col.setCollectorState(Running)
 LOOP:
 	for {

@@ -63,6 +63,13 @@ func (td Traces) InternalRep() internal.TracesWrapper {
 	return internal.TracesFromOtlp(td.orig)
 }
 
+// MoveTo moves all properties from the current struct to dest
+// resetting the current instance to its zero value.
+func (td Traces) MoveTo(dest Traces) {
+	*dest.orig = *td.orig
+	*td.orig = otlptrace.TracesData{}
+}
+
 // Clone returns a copy of Traces.
 func (td Traces) Clone() Traces {
 	cloneTd := NewTraces()

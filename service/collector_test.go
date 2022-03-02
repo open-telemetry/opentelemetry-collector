@@ -38,7 +38,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
+
+func TestStateString(t *testing.T) {
+	assert.Equal(t, "Starting", Starting.String())
+	assert.Equal(t, "Running", Running.String())
+	assert.Equal(t, "Closing", Closing.String())
+	assert.Equal(t, "Closed", Closed.String())
+}
 
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
 // to test for initialization without setting CLI flags.
@@ -80,7 +88,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	}, time.Second*2, time.Millisecond*200)
 }
 
-func TestCollector_Start(t *testing.T) {
+func testCollectorStartHelper(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 	var once sync.Once
@@ -135,6 +143,31 @@ func TestCollector_Start(t *testing.T) {
 	}, time.Second*2, time.Millisecond*200)
 }
 
+// as telemetry instance is initialized only once, we need to reset it before each test so the metrics endpoint can
+// have correct handler spawned
+func resetCollectorTelemetry() {
+	collectorTelemetry = &colTelemetry{}
+}
+
+func TestCollector_Start(t *testing.T) {
+	resetCollectorTelemetry()
+	testCollectorStartHelper(t)
+}
+
+func TestCollector_StartWithOtelInternalMetrics(t *testing.T) {
+	resetCollectorTelemetry()
+	originalFlag := featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID)
+	defer func() {
+		featuregate.Apply(map[string]bool{
+			useOtelForInternalMetricsfeatureGateID: originalFlag,
+		})
+	}()
+	featuregate.Apply(map[string]bool{
+		useOtelForInternalMetricsfeatureGateID: true,
+	})
+	testCollectorStartHelper(t)
+}
+
 // TestCollector_ShutdownNoop verifies that shutdown can be called even if a collector
 // has yet to be started and it will execute without error.
 func TestCollector_ShutdownNoop(t *testing.T) {
@@ -151,6 +184,42 @@ func TestCollector_ShutdownNoop(t *testing.T) {
 
 	// Should be able to call Shutdown on an unstarted collector and nothing happens
 	require.NotPanics(t, func() { col.Shutdown() })
+}
+
+func TestCollector_ShutdownBeforeRun(t *testing.T) {
+	// use a mock AppTelemetry struct to return an error on shutdown
+	preservedAppTelemetry := collectorTelemetry
+	collectorTelemetry = &colTelemetry{}
+	defer func() { collectorTelemetry = preservedAppTelemetry }()
+
+	factories, err := testcomponents.NewDefaultFactories()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	// Calling shutdown before collector is running should cause it to return quickly
+	col.Shutdown()
+
+	colDone := make(chan struct{})
+	go func() {
+		defer close(colDone)
+		colErr := col.Run(context.Background())
+		if colErr != nil {
+			err = colErr
+		}
+	}()
+
+	col.Shutdown()
+	<-colDone
+	assert.Eventually(t, func() bool {
+		return Closed == col.GetState()
+	}, time.Second*2, time.Millisecond*200)
 }
 
 type mockColTelemetry struct{}

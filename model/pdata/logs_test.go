@@ -17,26 +17,29 @@ package pdata
 import (
 	"testing"
 
+	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	goproto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"go.opentelemetry.io/collector/model/internal"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 )
 
 func TestLogRecordCount(t *testing.T) {
-	md := NewLogs()
-	assert.EqualValues(t, 0, md.LogRecordCount())
+	logs := NewLogs()
+	assert.EqualValues(t, 0, logs.LogRecordCount())
 
-	rl := md.ResourceLogs().AppendEmpty()
-	assert.EqualValues(t, 0, md.LogRecordCount())
+	rl := logs.ResourceLogs().AppendEmpty()
+	assert.EqualValues(t, 0, logs.LogRecordCount())
 
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	assert.EqualValues(t, 0, md.LogRecordCount())
+	assert.EqualValues(t, 0, logs.LogRecordCount())
 
 	ill.LogRecords().AppendEmpty()
-	assert.EqualValues(t, 1, md.LogRecordCount())
+	assert.EqualValues(t, 1, logs.LogRecordCount())
 
-	rms := md.ResourceLogs()
+	rms := logs.ResourceLogs()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 	illl := rms.AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords()
@@ -44,7 +47,7 @@ func TestLogRecordCount(t *testing.T) {
 		illl.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
-	assert.EqualValues(t, 6, md.LogRecordCount())
+	assert.EqualValues(t, 6, logs.LogRecordCount())
 }
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
@@ -74,9 +77,51 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 
 func TestToFromLogProto(t *testing.T) {
 	wrapper := internal.LogsFromOtlp(&otlplogs.LogsData{})
-	ld := LogsFromInternalRep(wrapper)
-	assert.EqualValues(t, NewLogs(), ld)
-	assert.EqualValues(t, &otlplogs.LogsData{}, ld.orig)
+	logs := LogsFromInternalRep(wrapper)
+	assert.EqualValues(t, NewLogs(), logs)
+	assert.EqualValues(t, &otlplogs.LogsData{}, logs.orig)
+}
+
+func TestResourceLogsWireCompatibility(t *testing.T) {
+	// This test verifies that OTLP ProtoBufs generated using goproto lib in
+	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
+	// this repository are wire compatible.
+
+	// Generate ResourceLogs as pdata struct.
+	logs := generateTestResourceLogs()
+
+	// Marshal its underlying ProtoBuf to wire.
+	wire1, err := gogoproto.Marshal(logs.orig)
+	assert.NoError(t, err)
+	assert.NotNil(t, wire1)
+
+	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
+	var goprotoMessage emptypb.Empty
+	err = goproto.Unmarshal(wire1, &goprotoMessage)
+	assert.NoError(t, err)
+
+	// Marshal to the wire again.
+	wire2, err := goproto.Marshal(&goprotoMessage)
+	assert.NoError(t, err)
+	assert.NotNil(t, wire2)
+
+	// Unmarshal from the wire into gogoproto's representation.
+	var gogoprotoRS2 otlplogs.ResourceLogs
+	err = gogoproto.Unmarshal(wire2, &gogoprotoRS2)
+	assert.NoError(t, err)
+
+	// Now compare that the original and final ProtoBuf messages are the same.
+	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
+	assert.EqualValues(t, logs.orig, &gogoprotoRS2)
+}
+
+func TestLogsMoveTo(t *testing.T) {
+	logs := NewLogs()
+	fillTestResourceLogsSlice(logs.ResourceLogs())
+	dest := NewLogs()
+	logs.MoveTo(dest)
+	assert.EqualValues(t, NewLogs(), logs)
+	assert.EqualValues(t, generateTestResourceLogsSlice(), dest.ResourceLogs())
 }
 
 func TestLogsClone(t *testing.T) {

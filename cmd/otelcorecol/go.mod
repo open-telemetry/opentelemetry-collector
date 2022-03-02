@@ -6,7 +6,7 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.0
+	go.opentelemetry.io/collector v0.46.0
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 )
 
@@ -32,7 +32,7 @@ require (
 	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
@@ -54,7 +54,7 @@ require (
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.45.0 // indirect
+	go.opentelemetry.io/collector/model v0.46.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.29.0 // indirect

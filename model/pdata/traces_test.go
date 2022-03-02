@@ -27,19 +27,19 @@ import (
 )
 
 func TestSpanCount(t *testing.T) {
-	md := NewTraces()
-	assert.EqualValues(t, 0, md.SpanCount())
+	traces := NewTraces()
+	assert.EqualValues(t, 0, traces.SpanCount())
 
-	rs := md.ResourceSpans().AppendEmpty()
-	assert.EqualValues(t, 0, md.SpanCount())
+	rs := traces.ResourceSpans().AppendEmpty()
+	assert.EqualValues(t, 0, traces.SpanCount())
 
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-	assert.EqualValues(t, 0, md.SpanCount())
+	assert.EqualValues(t, 0, traces.SpanCount())
 
 	ils.Spans().AppendEmpty()
-	assert.EqualValues(t, 1, md.SpanCount())
+	assert.EqualValues(t, 1, traces.SpanCount())
 
-	rms := md.ResourceSpans()
+	rms := traces.ResourceSpans()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
 	ilss := rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
@@ -47,7 +47,7 @@ func TestSpanCount(t *testing.T) {
 		ilss.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
-	assert.EqualValues(t, 6, md.SpanCount())
+	assert.EqualValues(t, 6, traces.SpanCount())
 }
 
 func TestSpanCountWithEmpty(t *testing.T) {
@@ -76,9 +76,9 @@ func TestSpanCountWithEmpty(t *testing.T) {
 
 func TestToFromOtlp(t *testing.T) {
 	otlp := &otlptrace.TracesData{}
-	td := TracesFromInternalRep(internal.TracesFromOtlp(otlp))
-	assert.EqualValues(t, NewTraces(), td)
-	assert.EqualValues(t, otlp, internal.TracesToOtlp(td.InternalRep()))
+	traces := TracesFromInternalRep(internal.TracesFromOtlp(otlp))
+	assert.EqualValues(t, NewTraces(), traces)
+	assert.EqualValues(t, otlp, internal.TracesToOtlp(traces.InternalRep()))
 	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
 	// circular dependency.
 }
@@ -89,10 +89,10 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate ResourceSpans as pdata struct.
-	pdataRS := generateTestResourceSpans()
+	traces := generateTestResourceSpans()
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(pdataRS.orig)
+	wire1, err := gogoproto.Marshal(traces.orig)
 	assert.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -113,7 +113,16 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.EqualValues(t, pdataRS.orig, &gogoprotoRS2)
+	assert.EqualValues(t, traces.orig, &gogoprotoRS2)
+}
+
+func TestTracesMoveTo(t *testing.T) {
+	traces := NewTraces()
+	fillTestResourceSpansSlice(traces.ResourceSpans())
+	dest := NewTraces()
+	traces.MoveTo(dest)
+	assert.EqualValues(t, NewTraces(), traces)
+	assert.EqualValues(t, generateTestResourceSpansSlice(), dest.ResourceSpans())
 }
 
 func TestTracesClone(t *testing.T) {
