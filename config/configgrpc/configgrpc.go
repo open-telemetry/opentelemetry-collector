@@ -157,6 +157,9 @@ type GRPCServerSettings struct {
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	// Experimental: *NOTE* this option is subject to change or removal in the future.
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
+
+	// EnableReflection will add grpc reflection apis to the receiver
+	EnableReflection bool `mapstructure:"enable_reflection,omitempty"`
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.

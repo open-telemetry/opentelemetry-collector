@@ -23,6 +23,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -121,6 +122,10 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 
 		if r.logReceiver != nil {
 			otlpgrpc.RegisterLogsServer(r.serverGRPC, r.logReceiver)
+		}
+
+		if r.cfg.GRPC.EnableReflection {
+			reflection.Register(r.serverGRPC)
 		}
 
 		err = r.startGRPCServer(r.cfg.GRPC, host)
