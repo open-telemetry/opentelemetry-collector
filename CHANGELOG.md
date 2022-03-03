@@ -6,6 +6,10 @@
 
 - Remove `Type` funcs in pdata (#4933)
 
+## 🧰 Bug fixes 🧰
+
+- Collector `Run` will now exit when a context cancels ()
+
 ## v0.46.0 Beta
 
 ### 🛑 Breaking changes 🛑
