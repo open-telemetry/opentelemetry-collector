@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
 - adding option to enable grpc reflection (#4951)
 
 ### 🛑 Breaking changes 🛑
