@@ -780,6 +780,15 @@ func BenchmarkAttributeValue_SetIntVal(b *testing.B) {
 	}
 }
 
+func BenchmarkAttributeValueFloat_AsString(b *testing.B) {
+	av := NewValueDouble(2359871345.583429543)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		av.AsString()
+	}
+}
+
 func BenchmarkAttributeMap_Range(b *testing.B) {
 	const numElements = 20
 	rawOrig := make([]otlpcommon.KeyValue, numElements)
