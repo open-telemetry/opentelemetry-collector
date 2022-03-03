@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- adding option to enable grpc reflection (#4951)
+
 ### 🛑 Breaking changes 🛑
 
 - Remove `Type` funcs in pdata (#4933)
