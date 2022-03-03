@@ -8,7 +8,7 @@
 
 ## 🧰 Bug fixes 🧰
 
-- Collector `Run` will now exit when a context cancels ()
+- Collector `Run` will now exit when a context cancels (#4954)
 
 ## v0.46.0 Beta
 
