@@ -124,8 +124,10 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 			otlpgrpc.RegisterLogsServer(r.serverGRPC, r.logReceiver)
 		}
 
-		if r.cfg.GRPC.EnableReflection {
-			reflection.Register(r.serverGRPC)
+		if r.cfg.GRPC.Reflection != nil {
+			if r.cfg.GRPC.Reflection.Enabled {
+				reflection.Register(r.serverGRPC)
+			}
 		}
 
 		err = r.startGRPCServer(r.cfg.GRPC, host)
