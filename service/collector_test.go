@@ -46,6 +46,7 @@ func TestStateString(t *testing.T) {
 	assert.Equal(t, "Running", Running.String())
 	assert.Equal(t, "Closing", Closing.String())
 	assert.Equal(t, "Closed", Closed.String())
+	assert.Equal(t, "UNKNOWN", State(13).String())
 }
 
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
@@ -60,9 +61,10 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
-		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")},
+			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(testutil.GetAvailablePort(t)), 10)}),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -70,22 +72,17 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		colErr := col.Run(context.Background())
-		if colErr != nil {
-			err = colErr
-		}
+		require.NoError(t, col.Run(context.Background()))
 	}()
 
 	assert.Eventually(t, func() bool {
 		return Running == col.GetState()
-	}, time.Second*2, time.Millisecond*200)
+	}, 2*time.Second, 200*time.Millisecond)
 
 	col.Shutdown()
 	col.Shutdown()
 	<-colDone
-	assert.Eventually(t, func() bool {
-		return Closed == col.GetState()
-	}, time.Second*2, time.Millisecond*200)
+	assert.Equal(t, Closed, col.GetState())
 }
 
 func testCollectorStartHelper(t *testing.T) {
@@ -114,12 +111,12 @@ func testCollectorStartHelper(t *testing.T) {
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		assert.NoError(t, col.Run(context.Background()))
+		require.NoError(t, col.Run(context.Background()))
 	}()
 
 	assert.Eventually(t, func() bool {
 		return Running == col.GetState()
-	}, time.Second*2, time.Millisecond*200)
+	}, 2*time.Second, 200*time.Millisecond)
 	assert.Equal(t, col.logger, col.GetLogger())
 	assert.True(t, loggingHookCalled)
 
@@ -135,12 +132,10 @@ func testCollectorStartHelper(t *testing.T) {
 	assertMetrics(t, metricsPort, mandatoryLabels)
 
 	assertZPages(t)
-
 	col.signalsChannel <- syscall.SIGTERM
+
 	<-colDone
-	assert.Eventually(t, func() bool {
-		return Closed == col.GetState()
-	}, time.Second*2, time.Millisecond*200)
+	assert.Equal(t, Closed, col.GetState())
 }
 
 // as telemetry instance is initialized only once, we need to reset it before each test so the metrics endpoint can
@@ -209,17 +204,12 @@ func TestCollector_ShutdownBeforeRun(t *testing.T) {
 	colDone := make(chan struct{})
 	go func() {
 		defer close(colDone)
-		colErr := col.Run(context.Background())
-		if colErr != nil {
-			err = colErr
-		}
+		require.NoError(t, col.Run(context.Background()))
 	}()
 
 	col.Shutdown()
 	<-colDone
-	assert.Eventually(t, func() bool {
-		return Closed == col.GetState()
-	}, time.Second*2, time.Millisecond*200)
+	assert.Equal(t, Closed, col.GetState())
 }
 
 type mockColTelemetry struct{}
@@ -256,12 +246,11 @@ func TestCollector_ReportError(t *testing.T) {
 
 	assert.Eventually(t, func() bool {
 		return Running == col.GetState()
-	}, time.Second*2, time.Millisecond*200)
+	}, 2*time.Second, 200*time.Millisecond)
 	col.service.ReportFatalError(errors.New("err2"))
+
 	<-colDone
-	assert.Eventually(t, func() bool {
-		return Closed == col.GetState()
-	}, time.Second*2, time.Millisecond*200)
+	assert.Equal(t, Closed, col.GetState())
 }
 
 func assertMetrics(t *testing.T, metricsPort uint16, mandatoryLabels []string) {
