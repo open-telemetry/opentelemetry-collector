@@ -90,6 +90,13 @@ receivers:
             - https://test.com # Fully qualified domain name. Allows https://test.com only.
           allowed_headers:
             - ExampleHeader
+  # The following entry demonstrates how to use grpc reflection configuration.
+  otlp/grpc-reflection:
+    protocols:
+      grpc:
+        reflection:
+          enabled: true
+
 processors:
   nop:
 

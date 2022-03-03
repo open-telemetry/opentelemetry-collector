@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 10)
+	assert.Equal(t, len(cfg.Receivers), 11)
 
 	assert.Equal(t, cfg.Receivers[config.NewComponentID(typeStr)], factory.CreateDefaultConfig())
 
@@ -195,6 +195,17 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		})
+
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "grpc-reflection")],
+		&Config{
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "grpc-reflection")),
+			Protocols: Protocols{
+				GRPC: &configgrpc.GRPCServerSettings{
+					Reflection: &configgrpc.GRPCReflectionSettings{Enabled: true},
+				},
+			},
+		})
+
 }
 
 func TestFailedLoadConfig(t *testing.T) {
