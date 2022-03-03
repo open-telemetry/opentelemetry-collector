@@ -253,6 +253,43 @@ func TestCollector_ReportError(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
+// TestCollector_ContextCancel tests that the collector gracefully exits on context cancel
+func TestCollector_ContextCancel(t *testing.T) {
+	// use a mock AppTelemetry struct to return an error on shutdown
+	preservedAppTelemetry := collectorTelemetry
+	collectorTelemetry = &colTelemetry{}
+	defer func() { collectorTelemetry = preservedAppTelemetry }()
+
+	factories, err := testcomponents.NewDefaultFactories()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")},
+			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(testutil.GetAvailablePort(t)), 10)}),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	colDone := make(chan struct{})
+	go func() {
+		defer close(colDone)
+		require.NoError(t, col.Run(ctx))
+	}()
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	cancel()
+
+	<-colDone
+	assert.Equal(t, Closed, col.GetState())
+}
+
 func assertMetrics(t *testing.T, metricsPort uint16, mandatoryLabels []string) {
 	client := &http.Client{}
 	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/metrics", metricsPort))

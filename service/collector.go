@@ -174,6 +174,10 @@ LOOP:
 		case <-col.shutdownChan:
 			col.logger.Info("Received shutdown request")
 			break LOOP
+		case <-ctx.Done():
+			col.logger.Error("Context done, terminating process", zap.Error(ctx.Err()))
+			// Call shutdown with background context as the passed in context has been canceled
+			return col.shutdown(context.Background())
 		}
 	}
 	return col.shutdown(ctx)
