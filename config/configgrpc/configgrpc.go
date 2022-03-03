@@ -124,8 +124,8 @@ type KeepaliveEnforcementPolicy struct {
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
 
-// GRPCReflectionConfig defines settings for gRPC reflection configuration.
-type GRPCReflectionConfig struct {
+// GRPCReflectionSettings defines settings for gRPC reflection configuration.
+type GRPCReflectionSettings struct {
 	Enabled bool `mapstructure:"enabled,omitempty"`
 }
 
@@ -164,7 +164,7 @@ type GRPCServerSettings struct {
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 
 	// Reflection config for the receiver
-	Reflection *GRPCReflectionConfig `mapstructure:"reflection,omitempty"`
+	Reflection *GRPCReflectionSettings `mapstructure:"reflection,omitempty"`
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.
