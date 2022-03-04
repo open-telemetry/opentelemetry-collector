@@ -513,7 +513,14 @@ func (am AttributeMap) Get(key string) (AttributeValue, bool) {
 
 // Delete deletes the entry associated with the key and returns true if the key
 // was present in the map, otherwise returns false.
+// Deprecated: [v0.46.0] Use Remove instead.
 func (am AttributeMap) Delete(key string) bool {
+	return am.Remove(key)
+}
+
+// Remove removes the entry associated with the key and returns true if the key
+// was present in the map, otherwise returns false.
+func (am AttributeMap) Remove(key string) bool {
 	for i := range *am.orig {
 		akv := &(*am.orig)[i]
 		if akv.Key == key {
@@ -523,6 +530,25 @@ func (am AttributeMap) Delete(key string) bool {
 		}
 	}
 	return false
+}
+
+// RemoveIf removes the entries for which the function in question returns true
+func (am AttributeMap) RemoveIf(f func(string, AttributeValue) bool) {
+	newLen := 0
+	for i := 0; i < len(*am.orig); i++ {
+		akv := &(*am.orig)[i]
+		if f(akv.Key, AttributeValue{&akv.Value}) {
+			continue
+		}
+		if newLen == i {
+			// Nothing to move, element is at the right place.
+			newLen++
+			continue
+		}
+		(*am.orig)[newLen] = (*am.orig)[i]
+		newLen++
+	}
+	*am.orig = (*am.orig)[:newLen]
 }
 
 // Insert adds the AttributeValue to the map when the key does not exist.

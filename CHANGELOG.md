@@ -5,8 +5,13 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove `Type` funcs in pdata (#4933)
+- Rename `pdata.AttributeMap.Delete` to `pdata.AttributeMap.Remove` (#4914)
 
-## 🧰 Bug fixes 🧰
+### 💡 Enhancements 💡
+
+- Add `pdata.AttributeMap.RemoveIf`, which is a more performant way to remove multiple keys (#4914)
+
+### 🧰 Bug fixes 🧰
 
 - Collector `Run` will now exit when a context cancels (#4954)
 

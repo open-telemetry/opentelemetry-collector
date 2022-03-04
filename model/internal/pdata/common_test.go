@@ -16,6 +16,7 @@ package pdata
 
 import (
 	"encoding/base64"
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -137,14 +138,14 @@ func TestAttributeValueMap(t *testing.T) {
 	require.True(t, exists)
 	assert.Equal(t, NewAttributeValueString("somestr2"), got)
 
-	deleted := m1.MapVal().Delete("double_key")
-	assert.True(t, deleted)
+	removed := m1.MapVal().Remove("double_key")
+	assert.True(t, removed)
 	assert.EqualValues(t, 1, m1.MapVal().Len())
 	_, exists = m1.MapVal().Get("double_key")
 	assert.False(t, exists)
 
-	deleted = m1.MapVal().Delete("child_map")
-	assert.True(t, deleted)
+	removed = m1.MapVal().Remove("child_map")
+	assert.True(t, removed)
 	assert.EqualValues(t, 0, m1.MapVal().Len())
 	_, exists = m1.MapVal().Get("child_map")
 	assert.False(t, exists)
@@ -347,9 +348,9 @@ func TestNilAttributeMap(t *testing.T) {
 	upsertMapBytes.UpsertBytes("k", []byte{1, 2, 3, 4, 5})
 	assert.EqualValues(t, generateTestBytesAttributeMap(), upsertMapBytes)
 
-	deleteMap := NewAttributeMap()
-	assert.False(t, deleteMap.Delete("k"))
-	assert.EqualValues(t, NewAttributeMap(), deleteMap)
+	removeMap := NewAttributeMap()
+	assert.False(t, removeMap.Remove("k"))
+	assert.EqualValues(t, NewAttributeMap(), removeMap)
 
 	// Test Sort
 	assert.EqualValues(t, NewAttributeMap(), NewAttributeMap().Sort())
@@ -524,20 +525,20 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
 	assert.EqualValues(t, []byte{1}, val.BytesVal())
 
-	assert.True(t, sm.Delete("other_key"))
-	assert.True(t, sm.Delete("other_key_string"))
-	assert.True(t, sm.Delete("other_key_int"))
-	assert.True(t, sm.Delete("other_key_double"))
-	assert.True(t, sm.Delete("other_key_bool"))
-	assert.True(t, sm.Delete("other_key_bytes"))
-	assert.True(t, sm.Delete("yet_another_key"))
-	assert.True(t, sm.Delete("yet_another_key_string"))
-	assert.True(t, sm.Delete("yet_another_key_int"))
-	assert.True(t, sm.Delete("yet_another_key_double"))
-	assert.True(t, sm.Delete("yet_another_key_bool"))
-	assert.True(t, sm.Delete("yet_another_key_bytes"))
-	assert.False(t, sm.Delete("other_key"))
-	assert.False(t, sm.Delete("yet_another_key"))
+	assert.True(t, sm.Remove("other_key"))
+	assert.True(t, sm.Remove("other_key_string"))
+	assert.True(t, sm.Remove("other_key_int"))
+	assert.True(t, sm.Remove("other_key_double"))
+	assert.True(t, sm.Remove("other_key_bool"))
+	assert.True(t, sm.Remove("other_key_bytes"))
+	assert.True(t, sm.Remove("yet_another_key"))
+	assert.True(t, sm.Remove("yet_another_key_string"))
+	assert.True(t, sm.Remove("yet_another_key_int"))
+	assert.True(t, sm.Remove("yet_another_key_double"))
+	assert.True(t, sm.Remove("yet_another_key_bool"))
+	assert.True(t, sm.Remove("yet_another_key_bytes"))
+	assert.False(t, sm.Remove("other_key"))
+	assert.False(t, sm.Remove("yet_another_key"))
 
 	// Test that the initial key is still there.
 	val, exist = sm.Get("test_key")
@@ -730,6 +731,30 @@ func TestAttributeMap_Clear(t *testing.T) {
 	assert.Nil(t, *am.orig)
 }
 
+func TestAttributeMap_RemoveIf(t *testing.T) {
+	rawMap := map[string]AttributeValue{
+		"k_string": NewAttributeValueString("123"),
+		"k_int":    NewAttributeValueInt(123),
+		"k_double": NewAttributeValueDouble(1.23),
+		"k_bool":   NewAttributeValueBool(true),
+		"k_empty":  NewAttributeValueEmpty(),
+		"k_bytes":  NewAttributeValueBytes([]byte{}),
+	}
+	am := NewAttributeMapFromMap(rawMap)
+	assert.Equal(t, 6, am.Len())
+
+	am.RemoveIf(func(key string, val AttributeValue) bool {
+		return key == "k_int" || val.Type() == AttributeValueTypeBool
+	})
+	assert.Equal(t, 4, am.Len())
+	_, exists := am.Get("k_string")
+	assert.True(t, exists)
+	_, exists = am.Get("k_bool")
+	assert.False(t, exists)
+	_, exists = am.Get("k_int")
+	assert.False(t, exists)
+}
+
 func BenchmarkAttributeValue_CopyTo(b *testing.B) {
 	av := NewAttributeValueString("k")
 	c := NewAttributeValueInt(123)
@@ -799,6 +824,47 @@ func BenchmarkAttributeMap_RangeOverMap(b *testing.B) {
 		if numEls != numElements {
 			b.Fail()
 		}
+	}
+}
+
+func BenchmarkAttributeMap_Remove(b *testing.B) {
+	b.StopTimer()
+	// Remove all of the even keys
+	keysToRemove := map[string]struct{}{}
+	for j := 0; j < 50; j++ {
+		keysToRemove[fmt.Sprintf("%d", j*2)] = struct{}{}
+	}
+	for i := 0; i < b.N; i++ {
+		m := NewAttributeMap()
+		for j := 0; j < 100; j++ {
+			m.InsertString(fmt.Sprintf("%d", j), "string value")
+		}
+		b.StartTimer()
+		for k := range keysToRemove {
+			m.Remove(k)
+		}
+		b.StopTimer()
+	}
+}
+
+func BenchmarkAttributeMap_RemoveIf(b *testing.B) {
+	b.StopTimer()
+	// Remove all of the even keys
+	keysToRemove := map[string]struct{}{}
+	for j := 0; j < 50; j++ {
+		keysToRemove[fmt.Sprintf("%d", j*2)] = struct{}{}
+	}
+	for i := 0; i < b.N; i++ {
+		m := NewAttributeMap()
+		for j := 0; j < 100; j++ {
+			m.InsertString(fmt.Sprintf("%d", j), "string value")
+		}
+		b.StartTimer()
+		m.RemoveIf(func(key string, _ AttributeValue) bool {
+			_, remove := keysToRemove[key]
+			return remove
+		})
+		b.StopTimer()
 	}
 }
 
