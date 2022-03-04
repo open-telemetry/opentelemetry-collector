@@ -28,14 +28,19 @@ func check(e error) {
 
 func main() {
 	for _, fp := range internal.AllFiles {
-		f, err := os.Create("./model/pdata/generated_" + fp.Name + ".go")
+		f, err := os.Create("./model/internal/pdata/generated_" + fp.Name + ".go")
 		check(err)
 		_, err = f.WriteString(fp.GenerateFile())
 		check(err)
 		check(f.Close())
-		f, err = os.Create("./model/pdata/generated_" + fp.Name + "_test.go")
+		f, err = os.Create("./model/internal/pdata/generated_" + fp.Name + "_test.go")
 		check(err)
 		_, err = f.WriteString(fp.GenerateTestFile())
+		check(err)
+		check(f.Close())
+		f, err = os.Create("./model/pdata/generated_" + fp.Name + "_alias.go")
+		check(err)
+		_, err = f.WriteString(fp.GenerateAliasFile())
 		check(err)
 		check(f.Close())
 	}

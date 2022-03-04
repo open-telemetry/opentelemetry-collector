@@ -111,6 +111,12 @@ func fillTest${structName}(tv ${structName}) {
 	}
 }`
 
+const commonSliceAliasTemplate = `// ${structName} is an alias for pdata.${structName} struct.
+type ${structName} = pdata.${structName}
+
+// New${structName} is an alias for a function to create ${structName}.
+var New${structName} = pdata.New${structName}`
+
 const slicePtrTemplate = `// ${structName} logically represents a slice of ${elementName}.
 //
 // This is a reference type. If passed by value and callee modifies it, the
@@ -471,6 +477,18 @@ func (ss *sliceOfPtrs) templateFields() func(name string) string {
 	}
 }
 
+func (ss *sliceOfPtrs) generateAlias(sb *strings.Builder) {
+	sb.WriteString(os.Expand(commonSliceAliasTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ss.structName
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString(newLine + newLine)
+}
+
 var _ baseStruct = (*sliceOfPtrs)(nil)
 
 // Will generate code only for a slice of value fields.
@@ -510,6 +528,18 @@ func (ss *sliceOfValues) templateFields() func(name string) string {
 			panic(name)
 		}
 	}
+}
+
+func (ss *sliceOfValues) generateAlias(sb *strings.Builder) {
+	sb.WriteString(os.Expand(commonSliceAliasTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ss.structName
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString(newLine + newLine)
 }
 
 var _ baseStruct = (*sliceOfValues)(nil)
