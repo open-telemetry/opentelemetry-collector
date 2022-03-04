@@ -22,7 +22,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"go.opentelemetry.io/collector/model/internal"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 )
 
@@ -76,8 +75,7 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 }
 
 func TestToFromLogProto(t *testing.T) {
-	wrapper := internal.LogsFromOtlp(&otlplogs.LogsData{})
-	logs := LogsFromInternalRep(wrapper)
+	logs := LogsFromOtlp(&otlplogs.LogsData{})
 	assert.EqualValues(t, NewLogs(), logs)
 	assert.EqualValues(t, &otlplogs.LogsData{}, logs.orig)
 }

@@ -19,7 +19,7 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 
-	"go.opentelemetry.io/collector/model/internal"
+	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -48,18 +48,18 @@ func newJSONMarshaler() *jsonMarshaler {
 
 func (e *jsonMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 	buf := bytes.Buffer{}
-	err := e.delegate.Marshal(&buf, internal.LogsToOtlp(ld.InternalRep()))
+	err := e.delegate.Marshal(&buf, ipdata.LogsToOtlp(ld))
 	return buf.Bytes(), err
 }
 
 func (e *jsonMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
 	buf := bytes.Buffer{}
-	err := e.delegate.Marshal(&buf, internal.MetricsToOtlp(md.InternalRep()))
+	err := e.delegate.Marshal(&buf, ipdata.MetricsToOtlp(md))
 	return buf.Bytes(), err
 }
 
 func (e *jsonMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
 	buf := bytes.Buffer{}
-	err := e.delegate.Marshal(&buf, internal.TracesToOtlp(td.InternalRep()))
+	err := e.delegate.Marshal(&buf, ipdata.TracesToOtlp(td))
 	return buf.Bytes(), err
 }

@@ -16,7 +16,10 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for metric data structures.
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import (
+	"go.opentelemetry.io/collector/model/internal"
+	"go.opentelemetry.io/collector/model/internal/pdata"
+)
 
 // MetricsMarshaler is an alias for pdata.MetricsMarshaler interface.
 type MetricsMarshaler = pdata.MetricsMarshaler
@@ -33,9 +36,10 @@ type Metrics = pdata.Metrics
 // NewMetrics is an alias for a function to create new Metrics.
 var NewMetrics = pdata.NewMetrics
 
-// MetricsFromInternalRep is an alias for MetricsFromInternalRep.
-// TODO: Can be removed, internal pdata.MetricsFromInternalRep should be used instead.
-var MetricsFromInternalRep = pdata.MetricsFromInternalRep
+// Deprecated: [v0.47.0] will be removed soon, only used internally.
+func MetricsFromInternalRep(internal.MetricsWrapper) Metrics {
+	return Metrics{}
+}
 
 // MetricDataType is an alias for pdata.MetricDataType type.
 type MetricDataType = pdata.MetricDataType

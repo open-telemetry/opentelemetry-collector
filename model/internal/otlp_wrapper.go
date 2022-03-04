@@ -14,59 +14,11 @@
 
 package internal // import "go.opentelemetry.io/collector/model/internal"
 
-import (
-	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
-	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
-	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
-)
+// Deprecated: [v0.47.0] will be removed soon, only used internally.
+type MetricsWrapper struct{}
 
-// MetricsWrapper is an intermediary struct that is declared in an internal package
-// as a way to prevent certain functions of pdata.Metrics data type to be callable by
-// any code outside of this module.
-type MetricsWrapper struct {
-	req *otlpmetrics.MetricsData
-}
+// Deprecated: [v0.47.0] will be removed soon, only used internally.
+type TracesWrapper struct{}
 
-// MetricsToOtlp internal helper to convert MetricsWrapper to protobuf representation.
-func MetricsToOtlp(mw MetricsWrapper) *otlpmetrics.MetricsData {
-	return mw.req
-}
-
-// MetricsFromOtlp internal helper to convert protobuf representation to MetricsWrapper.
-func MetricsFromOtlp(req *otlpmetrics.MetricsData) MetricsWrapper {
-	return MetricsWrapper{req: req}
-}
-
-// TracesWrapper is an intermediary struct that is declared in an internal package
-// as a way to prevent certain functions of pdata.Traces data type to be callable by
-// any code outside of this module.
-type TracesWrapper struct {
-	req *otlptrace.TracesData
-}
-
-// TracesToOtlp internal helper to convert TracesWrapper to protobuf representation.
-func TracesToOtlp(mw TracesWrapper) *otlptrace.TracesData {
-	return mw.req
-}
-
-// TracesFromOtlp internal helper to convert protobuf representation to TracesWrapper.
-func TracesFromOtlp(req *otlptrace.TracesData) TracesWrapper {
-	return TracesWrapper{req: req}
-}
-
-// LogsWrapper is an intermediary struct that is declared in an internal package
-// as a way to prevent certain functions of pdata.Logs data type to be callable by
-// any code outside of this module.
-type LogsWrapper struct {
-	req *otlplogs.LogsData
-}
-
-// LogsToOtlp internal helper to convert LogsWrapper to protobuf representation.
-func LogsToOtlp(l LogsWrapper) *otlplogs.LogsData {
-	return l.req
-}
-
-// LogsFromOtlp internal helper to convert protobuf representation to LogsWrapper.
-func LogsFromOtlp(req *otlplogs.LogsData) LogsWrapper {
-	return LogsWrapper{req: req}
-}
+// Deprecated: [v0.47.0] will be removed soon, only used internally.
+type LogsWrapper struct{}

@@ -51,16 +51,9 @@ func NewTraces() Traces {
 	return Traces{orig: &otlptrace.TracesData{}}
 }
 
-// TracesFromInternalRep creates Traces from the internal representation.
-// Should not be used outside this module.
-func TracesFromInternalRep(wrapper internal.TracesWrapper) Traces {
-	return Traces{orig: internal.TracesToOtlp(wrapper)}
-}
-
-// InternalRep returns internal representation of the Traces.
-// Should not be used outside this module.
+// Deprecated: [v0.47.0] will be removed soon, only used internally.
 func (td Traces) InternalRep() internal.TracesWrapper {
-	return internal.TracesFromOtlp(td.orig)
+	return internal.TracesWrapper{}
 }
 
 // MoveTo moves all properties from the current struct to dest
