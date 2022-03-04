@@ -28,8 +28,14 @@ import (
 
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/nonrecording"
+	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
+	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
+	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
+
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -82,7 +88,7 @@ type Collector struct {
 	logger *zap.Logger
 
 	tracerProvider      trace.TracerProvider
-	meterProvider       metric.MeterProvider
+	controller          *controller.Controller
 	zPagesSpanProcessor *zpages.SpanProcessor
 
 	service *service
@@ -206,7 +212,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		Telemetry: component.TelemetrySettings{
 			Logger:         col.logger,
 			TracerProvider: col.tracerProvider,
-			MeterProvider:  col.meterProvider,
+			MeterProvider:  col.controller,
 			MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		},
 		ZPagesSpanProcessor: col.zPagesSpanProcessor,
@@ -235,7 +241,17 @@ func (col *Collector) Run(ctx context.Context) error {
 	// global TracerProvider.
 	otel.SetTracerProvider(col.tracerProvider)
 
-	col.meterProvider = nonrecording.NewNoopMeterProvider()
+	config := otelprometheus.Config{}
+	col.controller = controller.New(
+		processor.NewFactory(
+			selector.NewWithHistogramDistribution(
+				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
+			),
+			aggregation.CumulativeTemporalitySelector(),
+			processor.WithMemory(true),
+		),
+	)
+	global.SetMeterProvider(col.controller)
 
 	col.asyncErrorChannel = make(chan error)
 

@@ -25,12 +25,6 @@ import (
 	"github.com/google/uuid"
 	"go.opencensus.io/stats/view"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -113,7 +107,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 
 	var pe http.Handler
 	if featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
-		otelHandler, err := tel.initOpenTelemetry()
+		otelHandler, err := tel.initOpenTelemetry(col)
 		if err != nil {
 			return err
 		}
@@ -193,24 +187,14 @@ func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http
 	return pe, nil
 }
 
-func (tel *colTelemetry) initOpenTelemetry() (http.Handler, error) {
+func (tel *colTelemetry) initOpenTelemetry(col *Collector) (http.Handler, error) {
 	config := otelprometheus.Config{}
-	c := controller.New(
-		processor.NewFactory(
-			selector.NewWithHistogramDistribution(
-				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
-			),
-			aggregation.CumulativeTemporalitySelector(),
-			processor.WithMemory(true),
-		),
-	)
 
-	pe, err := otelprometheus.New(config, c)
+	pe, err := otelprometheus.New(config, col.controller)
 	if err != nil {
 		return nil, err
 	}
 
-	global.SetMeterProvider(pe.MeterProvider())
 	return pe, err
 }
 
