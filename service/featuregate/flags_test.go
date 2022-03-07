@@ -52,9 +52,44 @@ func TestFlagValue_basic(t *testing.T) {
 			input:    FlagValue{"foo": true, "bar": false},
 			expected: "-bar,foo",
 		},
+		{
+			name:     "multiple positive items with namespaces",
+			input:    FlagValue{"foo.bar": true, "bar.baz": true},
+			expected: "bar.baz,foo.bar",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expected, tc.input.String())
+			v := FlagValue{}
+			assert.NoError(t, v.Set(tc.expected))
+			assert.Equal(t, tc.input, v)
+		})
+	}
+}
+
+func TestFlagValue_withPlus(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		expected string
+		input    FlagValue
+	}{
+		{
+			name:     "single item",
+			input:    FlagValue{"foo": true},
+			expected: "+foo",
+		},
+		{
+			name:     "multiple items",
+			input:    FlagValue{"foo": true, "bar": false},
+			expected: "-bar,+foo",
+		},
+		{
+			name:     "multiple positive items with namespaces",
+			input:    FlagValue{"foo.bar": true, "bar.baz": true},
+			expected: "+bar.baz,+foo.bar",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
 			v := FlagValue{}
 			assert.NoError(t, v.Set(tc.expected))
 			assert.Equal(t, tc.input, v)
