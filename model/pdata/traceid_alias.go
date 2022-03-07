@@ -19,7 +19,7 @@ import "go.opentelemetry.io/collector/model/internal/pdata"
 // TraceID is an alias for pdata.TraceID struct.
 type TraceID = pdata.TraceID
 
-// TraceID is an alias for pdata.InvalidTraceID function.
+// InvalidTraceID is an alias for pdata.InvalidTraceID function.
 var InvalidTraceID = pdata.InvalidTraceID
 
 // NewTraceID is an alias for a function to create new TraceID.

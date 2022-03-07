@@ -356,7 +356,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	assert.EqualValues(t, endTime+1, gaugeDataPoints.At(0).Timestamp())
 	gaugeDataPoints.At(0).SetDoubleVal(124.1)
 	assert.EqualValues(t, 124.1, gaugeDataPoints.At(0).DoubleVal())
-	gaugeDataPoints.At(0).Attributes().Delete("key0")
+	gaugeDataPoints.At(0).Attributes().Remove("key0")
 	gaugeDataPoints.At(0).Attributes().UpsertString("k", "v")
 	assert.EqualValues(t, newAttributes, gaugeDataPoints.At(0).Attributes())
 
@@ -440,7 +440,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	assert.EqualValues(t, endTime+1, doubleDataPoints.At(0).Timestamp())
 	doubleDataPoints.At(0).SetDoubleVal(124.1)
 	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).DoubleVal())
-	doubleDataPoints.At(0).Attributes().Delete("key0")
+	doubleDataPoints.At(0).Attributes().Remove("key0")
 	doubleDataPoints.At(0).Attributes().UpsertString("k", "v")
 	assert.EqualValues(t, newAttributes, doubleDataPoints.At(0).Attributes())
 
@@ -523,7 +523,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	assert.EqualValues(t, startTime+1, histogramDataPoints.At(0).StartTimestamp())
 	histogramDataPoints.At(0).SetTimestamp(Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
-	histogramDataPoints.At(0).Attributes().Delete("key0")
+	histogramDataPoints.At(0).Attributes().Remove("key0")
 	histogramDataPoints.At(0).Attributes().UpsertString("k", "v")
 	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes())
 	histogramDataPoints.At(0).SetExplicitBounds([]float64{1})
@@ -607,7 +607,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	assert.EqualValues(t, startTime+1, histogramDataPoints.At(0).StartTimestamp())
 	histogramDataPoints.At(0).SetTimestamp(Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
-	histogramDataPoints.At(0).Attributes().Delete("key0")
+	histogramDataPoints.At(0).Attributes().Remove("key0")
 	histogramDataPoints.At(0).Attributes().UpsertString("k", "v")
 	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes())
 	// Test that everything is updated.

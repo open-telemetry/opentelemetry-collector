@@ -98,8 +98,8 @@ func MustNewConfigProvider(
 	}
 }
 
-// MustNewDefaultConfigProvider returns the default ConfigProvider, and it creates configuration from a file
-// defined by the given configFile and overwrites fields using properties.
+// MustNewDefaultConfigProvider returns the default ConfigProvider from slice of location strings
+// (e.g. file:/path/to/config.yaml) and property overrides (e.g. service.telemetry.metrics.address=localhost:8888).
 func MustNewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
 	return MustNewConfigProvider(
 		configLocations,

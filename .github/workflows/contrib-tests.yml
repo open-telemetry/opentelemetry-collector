@@ -15,7 +15,7 @@ jobs:
       - name: Setup Permissions
         run: sudo chmod -R 777 $GITHUB_WORKSPACE /github /__w/_temp
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run Contrib Tests
         run: |
           contrib_path=/tmp/opentelemetry-collector-contrib
