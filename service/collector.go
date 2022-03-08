@@ -35,7 +35,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
-
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -251,6 +250,8 @@ func (col *Collector) Run(ctx context.Context) error {
 			processor.WithMemory(true),
 		),
 	)
+	// Set the constructed meter provider as Global, in case any component uses the
+	// global MeterProvider.
 	global.SetMeterProvider(col.controller)
 
 	col.asyncErrorChannel = make(chan error)
