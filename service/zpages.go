@@ -169,7 +169,7 @@ func handleFeaturezRequest(w http.ResponseWriter, r *http.Request) {
 
 func getFeaturesTableData() zpages.FeatureGateTableData {
 	data := zpages.FeatureGateTableData{}
-	for _, g := range featuregate.List() {
+	for _, g := range featuregate.GetRegistry().List() {
 		data.Rows = append(data.Rows, zpages.FeatureGateTableRowData{
 			ID:          g.ID,
 			Enabled:     g.Enabled,

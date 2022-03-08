@@ -28,7 +28,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		Version:      set.BuildInfo.Version,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			featuregate.Apply(featuregate.GetFlags())
+			featuregate.GetRegistry().Apply(featuregate.GetFlags())
 			if set.ConfigProvider == nil {
 				set.ConfigProvider = MustNewDefaultConfigProvider(getConfigFlag(), getSetFlag())
 			}
