@@ -165,7 +165,8 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 			TelemetrySettings: component.TelemetrySettings{
 				Logger: pb.settings.Logger.With(
 					zap.String(components.ZapKindKey, components.ZapKindProcessor),
-					zap.String(components.ZapNameKey, procID.String())),
+					zap.String(components.ZapNameKey, procID.String()),
+					zap.String(components.ZapKindPipeline, pipelineID.String())),
 				TracerProvider: pb.settings.TracerProvider,
 				MeterProvider:  pb.settings.MeterProvider,
 				MetricsLevel:   pb.config.Telemetry.Metrics.Level,
@@ -218,7 +219,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 		}
 	}
 
-	pipelineLogger := pb.settings.Logger.With(zap.String(components.ZapNameKey, components.ZapKindPipeline),
+	pipelineLogger := pb.settings.Logger.With(zap.String(components.ZapKindKey, components.ZapKindPipeline),
 		zap.String(components.ZapNameKey, pipelineID.String()))
 	pipelineLogger.Info("Pipeline was built.")
 
