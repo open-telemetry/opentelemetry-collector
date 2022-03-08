@@ -6,6 +6,7 @@
 
 - Remove `Type` funcs in pdata (#4933)
 - Rename `pdata.AttributeMap.Delete` to `pdata.AttributeMap.Remove` (#4914)
+- pdata: deprecate funcs working with InternalRep (#4957)
 
 ### 💡 Enhancements 💡
 

@@ -51,16 +51,9 @@ func NewMetrics() Metrics {
 	return Metrics{orig: &otlpmetrics.MetricsData{}}
 }
 
-// MetricsFromInternalRep creates Metrics from the internal representation.
-// Should not be used outside this module.
-func MetricsFromInternalRep(wrapper internal.MetricsWrapper) Metrics {
-	return Metrics{orig: internal.MetricsToOtlp(wrapper)}
-}
-
-// InternalRep returns internal representation of the Metrics.
-// Should not be used outside this module.
+// Deprecated: [v0.47.0] will be removed soon, only used internally.
 func (md Metrics) InternalRep() internal.MetricsWrapper {
-	return internal.MetricsFromOtlp(md.orig)
+	return internal.MetricsWrapper{}
 }
 
 // Clone returns a copy of MetricData.

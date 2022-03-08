@@ -20,9 +20,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"go.opentelemetry.io/collector/model/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
+	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -111,11 +111,11 @@ func (tr TracesRequest) MarshalJSON() ([]byte, error) {
 }
 
 func (tr TracesRequest) SetTraces(td pdata.Traces) {
-	tr.orig.ResourceSpans = internal.TracesToOtlp(td.InternalRep()).ResourceSpans
+	tr.orig.ResourceSpans = ipdata.TracesToOtlp(td).ResourceSpans
 }
 
 func (tr TracesRequest) Traces() pdata.Traces {
-	return pdata.TracesFromInternalRep(internal.TracesFromOtlp(&otlptrace.TracesData{ResourceSpans: tr.orig.ResourceSpans}))
+	return ipdata.TracesFromOtlp(&otlptrace.TracesData{ResourceSpans: tr.orig.ResourceSpans})
 }
 
 // TracesClient is the client API for OTLP-GRPC Traces service.

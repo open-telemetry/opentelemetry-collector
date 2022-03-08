@@ -51,18 +51,9 @@ func NewLogs() Logs {
 	return Logs{orig: &otlplogs.LogsData{}}
 }
 
-// LogsFromInternalRep creates the internal Logs representation from the ProtoBuf. Should
-// not be used outside this module. This is intended to be used only by OTLP exporter and
-// File exporter, which legitimately need to work with OTLP Protobuf structs.
-func LogsFromInternalRep(logs internal.LogsWrapper) Logs {
-	return Logs{orig: internal.LogsToOtlp(logs)}
-}
-
-// InternalRep returns internal representation of the logs. Should not be used outside
-// this module. This is intended to be used only by OTLP exporter and File exporter,
-// which legitimately need to work with OTLP Protobuf structs.
+// Deprecated: [v0.47.0] will be removed soon, only used internally.
 func (ld Logs) InternalRep() internal.LogsWrapper {
-	return internal.LogsFromOtlp(ld.orig)
+	return internal.LogsWrapper{}
 }
 
 // MoveTo moves all properties from the current struct to dest
