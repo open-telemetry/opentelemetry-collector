@@ -16,7 +16,10 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for log data structures.
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import (
+	"go.opentelemetry.io/collector/model/internal"
+	"go.opentelemetry.io/collector/model/internal/pdata"
+)
 
 // LogsMarshaler is an alias for pdata.LogsMarshaler interface.
 type LogsMarshaler = pdata.LogsMarshaler
@@ -33,9 +36,10 @@ type Logs = pdata.Logs
 // NewLogs is an alias for a function to create new Logs.
 var NewLogs = pdata.NewLogs
 
-// LogsFromInternalRep is an alias for pdata.LogsFromInternalRep function.
-// TODO: Can be removed, internal pdata.LogsFromInternalRep should be used instead.
-var LogsFromInternalRep = pdata.LogsFromInternalRep
+// Deprecated: [v0.47.0] will be removed soon, only used internally.
+func LogsFromInternalRep(internal.LogsWrapper) Logs {
+	return Logs{}
+}
 
 // SeverityNumber is an alias for pdata.SeverityNumber type.
 type SeverityNumber = pdata.SeverityNumber

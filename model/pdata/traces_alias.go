@@ -16,7 +16,10 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for trace data structures.
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import (
+	"go.opentelemetry.io/collector/model/internal"
+	"go.opentelemetry.io/collector/model/internal/pdata"
+)
 
 // TracesMarshaler is an alias for pdata.TracesMarshaler interface.
 type TracesMarshaler = pdata.TracesMarshaler
@@ -33,9 +36,10 @@ type Traces = pdata.Traces
 // NewTraces is an alias for a function to create new Traces.
 var NewTraces = pdata.NewTraces
 
-// TracesFromInternalRep is an alias for pdata.TracesFromInternalRep.
-// TODO: Can be removed, internal pdata.TracesFromInternalRep should be used instead.
-var TracesFromInternalRep = pdata.TracesFromInternalRep
+// Deprecated: [v0.47.0] will be removed soon, only used internally.
+func TracesFromInternalRep(internal.TracesWrapper) Traces {
+	return Traces{}
+}
 
 // TraceState is an alias for pdata.TraceState type.
 type TraceState = pdata.TraceState

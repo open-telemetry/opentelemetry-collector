@@ -21,9 +21,9 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"google.golang.org/grpc"
 
-	"go.opentelemetry.io/collector/model/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
+	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -115,11 +115,11 @@ func (lr LogsRequest) MarshalJSON() ([]byte, error) {
 }
 
 func (lr LogsRequest) SetLogs(ld pdata.Logs) {
-	lr.orig.ResourceLogs = internal.LogsToOtlp(ld.InternalRep()).ResourceLogs
+	lr.orig.ResourceLogs = ipdata.LogsToOtlp(ld).ResourceLogs
 }
 
 func (lr LogsRequest) Logs() pdata.Logs {
-	return pdata.LogsFromInternalRep(internal.LogsFromOtlp(&otlplogs.LogsData{ResourceLogs: lr.orig.ResourceLogs}))
+	return ipdata.LogsFromOtlp(&otlplogs.LogsData{ResourceLogs: lr.orig.ResourceLogs})
 }
 
 // LogsClient is the client API for OTLP-GRPC Logs service.

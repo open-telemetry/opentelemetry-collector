@@ -22,7 +22,6 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"go.opentelemetry.io/collector/model/internal"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -76,9 +75,9 @@ func TestSpanCountWithEmpty(t *testing.T) {
 
 func TestToFromOtlp(t *testing.T) {
 	otlp := &otlptrace.TracesData{}
-	traces := TracesFromInternalRep(internal.TracesFromOtlp(otlp))
+	traces := TracesFromOtlp(otlp)
 	assert.EqualValues(t, NewTraces(), traces)
-	assert.EqualValues(t, otlp, internal.TracesToOtlp(traces.InternalRep()))
+	assert.EqualValues(t, otlp, TracesToOtlp(traces))
 	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
 	// circular dependency.
 }

@@ -15,7 +15,7 @@
 package otlp // import "go.opentelemetry.io/collector/model/otlp"
 
 import (
-	"go.opentelemetry.io/collector/model/internal"
+	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -46,25 +46,25 @@ var _ pdata.MetricsSizer = (*pbMarshaler)(nil)
 var _ pdata.LogsSizer = (*pbMarshaler)(nil)
 
 func (e *pbMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
-	return internal.LogsToOtlp(ld.InternalRep()).Marshal()
+	return ipdata.LogsToOtlp(ld).Marshal()
 }
 
 func (e *pbMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
-	return internal.MetricsToOtlp(md.InternalRep()).Marshal()
+	return ipdata.MetricsToOtlp(md).Marshal()
 }
 
 func (e *pbMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
-	return internal.TracesToOtlp(td.InternalRep()).Marshal()
+	return ipdata.TracesToOtlp(td).Marshal()
 }
 
 func (e *pbMarshaler) TracesSize(td pdata.Traces) int {
-	return internal.TracesToOtlp(td.InternalRep()).Size()
+	return ipdata.TracesToOtlp(td).Size()
 }
 
 func (e *pbMarshaler) MetricsSize(md pdata.Metrics) int {
-	return internal.MetricsToOtlp(md.InternalRep()).Size()
+	return ipdata.MetricsToOtlp(md).Size()
 }
 
 func (e *pbMarshaler) LogsSize(ld pdata.Logs) int {
-	return internal.LogsToOtlp(ld.InternalRep()).Size()
+	return ipdata.LogsToOtlp(ld).Size()
 }
