@@ -169,13 +169,14 @@ func TestCollector_Start(t *testing.T) {
 
 func TestCollector_StartWithOtelInternalMetrics(t *testing.T) {
 	resetCollectorTelemetry()
-	originalFlag := featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID)
+	reg := featuregate.NewRegistry()
+	originalFlag := reg.IsEnabled(useOtelForInternalMetricsfeatureGateID)
 	defer func() {
-		featuregate.Apply(map[string]bool{
+		reg.Apply(map[string]bool{
 			useOtelForInternalMetricsfeatureGateID: originalFlag,
 		})
 	}()
-	featuregate.Apply(map[string]bool{
+	reg.Apply(map[string]bool{
 		useOtelForInternalMetricsfeatureGateID: true,
 	})
 	testCollectorStartHelper(t)

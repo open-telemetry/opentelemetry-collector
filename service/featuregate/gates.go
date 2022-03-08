@@ -27,38 +27,32 @@ type Gate struct {
 	Enabled     bool
 }
 
-var reg = &registry{gates: make(map[string]Gate)}
+var reg = &Registry{gates: make(map[string]Gate)}
 
-// IsEnabled returns true if a registered feature gate is enabled and false otherwise.
-func IsEnabled(id string) bool {
-	return reg.isEnabled(id)
+func GetRegistry() *Registry {
+	return reg
 }
 
-// List returns a slice of copies of all registered Gates.
-func List() []Gate {
-	return reg.list()
+func NewRegistry() Registry {
+	return Registry{gates: make(map[string]Gate)}
 }
 
 // Register a Gate. May only be called in an init() function.
 // Will panic() if a Gate with the same ID is already registered.
-func Register(g Gate) {
-	if err := reg.add(g); err != nil {
+func (r *Registry) Register(g Gate) {
+	if err := r.add(g); err != nil {
 		panic(err)
 	}
 }
 
-// Apply a configuration in the form of a map of Gate identifiers to boolean values.
-// Sets only those values provided in the map, other gate values are not changed.
-func Apply(cfg map[string]bool) {
-	reg.apply(cfg)
-}
-
-type registry struct {
+type Registry struct {
 	sync.RWMutex
 	gates map[string]Gate
 }
 
-func (r *registry) apply(cfg map[string]bool) {
+// Apply a configuration in the form of a map of Gate identifiers to boolean values.
+// Sets only those values provided in the map, other gate values are not changed.
+func (r *Registry) Apply(cfg map[string]bool) {
 	r.Lock()
 	defer r.Unlock()
 	for id, val := range cfg {
@@ -69,7 +63,7 @@ func (r *registry) apply(cfg map[string]bool) {
 	}
 }
 
-func (r *registry) add(g Gate) error {
+func (r *Registry) add(g Gate) error {
 	r.Lock()
 	defer r.Unlock()
 	if _, ok := r.gates[g.ID]; ok {
@@ -80,14 +74,16 @@ func (r *registry) add(g Gate) error {
 	return nil
 }
 
-func (r *registry) isEnabled(id string) bool {
+// IsEnabled returns true if a registered feature gate is enabled and false otherwise.
+func (r *Registry) IsEnabled(id string) bool {
 	r.RLock()
 	defer r.RUnlock()
 	g, ok := r.gates[id]
 	return ok && g.Enabled
 }
 
-func (r *registry) list() []Gate {
+// List returns a slice of copies of all registered Gates.
+func (r *Registry) List() []Gate {
 	r.RLock()
 	defer r.RUnlock()
 	ret := make([]Gate, len(r.gates))

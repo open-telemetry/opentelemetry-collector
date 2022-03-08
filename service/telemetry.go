@@ -57,8 +57,12 @@ const (
 )
 
 func init() {
+	initWithRegistry(featuregate.GetRegistry())
+}
+
+func initWithRegistry(registry *featuregate.Registry) {
 	//nolint:staticcheck
-	featuregate.Register(featuregate.Gate{
+	registry.Register(featuregate.Gate{
 		ID:          useOtelForInternalMetricsfeatureGateID,
 		Description: "controls whether the collector to uses open telemetry for internal metrics",
 		Enabled:     false,
@@ -111,7 +115,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 	instanceID := instanceUUID.String()
 
 	var pe http.Handler
-	if featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
+	if featuregate.GetRegistry().IsEnabled(useOtelForInternalMetricsfeatureGateID) {
 		otelHandler, err := tel.initOpenTelemetry(col)
 		if err != nil {
 			return err
