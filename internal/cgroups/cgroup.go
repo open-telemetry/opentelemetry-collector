@@ -41,7 +41,9 @@ package cgroups // import "go.opentelemetry.io/collector/internal/cgroups"
 
 import (
 	"bufio"
+	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -83,6 +85,26 @@ func (cg *CGroup) readFirstLine(param string) (string, error) {
 		return "", err
 	}
 	return "", io.ErrUnexpectedEOF
+}
+
+// readFile reads each line from a cgroup param file and process each line with handler
+func (cg *CGroup) readFile(param string, handler func(string) bool) error {
+	contents, err := ioutil.ReadFile(cg.ParamPath(param))
+	if err != nil {
+		return err
+	}
+
+	reader := bufio.NewReader(bytes.NewBuffer(contents))
+	for {
+		line, _, err := reader.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		if !handler(string(line)) {
+			break
+		}
+	}
+	return nil
 }
 
 // readInt parses the first line from a cgroup param file as int.

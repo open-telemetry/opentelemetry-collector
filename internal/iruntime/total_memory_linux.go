@@ -49,6 +49,12 @@ func TotalMemory() (uint64, error) {
 		if err != nil {
 			return 0, err
 		}
+		if memoryQuota == unlimitedMemorySize || !defined {
+			memoryQuota, defined, err = cgv1.HierarchyMemoryQuota()
+			if err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	// If memory is not defined or is set to unlimitedMemorySize (v1 unset),
