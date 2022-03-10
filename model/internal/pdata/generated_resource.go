@@ -56,7 +56,18 @@ func (ms Resource) Attributes() AttributeMap {
 	return newAttributeMap(&(*ms.orig).Attributes)
 }
 
+// DroppedAttributesCount returns the droppedattributescount associated with this Resource.
+func (ms Resource) DroppedAttributesCount() uint32 {
+	return (*ms.orig).DroppedAttributesCount
+}
+
+// SetDroppedAttributesCount replaces the droppedattributescount associated with this Resource.
+func (ms Resource) SetDroppedAttributesCount(v uint32) {
+	(*ms.orig).DroppedAttributesCount = v
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Resource) CopyTo(dest Resource) {
 	ms.Attributes().CopyTo(dest.Attributes())
+	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }

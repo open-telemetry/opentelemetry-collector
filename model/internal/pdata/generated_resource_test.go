@@ -45,6 +45,14 @@ func TestResource_Attributes(t *testing.T) {
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
+func TestResource_DroppedAttributesCount(t *testing.T) {
+	ms := NewResource()
+	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
+	testValDroppedAttributesCount := uint32(17)
+	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
+	assert.EqualValues(t, testValDroppedAttributesCount, ms.DroppedAttributesCount())
+}
+
 func generateTestResource() Resource {
 	tv := NewResource()
 	fillTestResource(tv)
@@ -53,4 +61,5 @@ func generateTestResource() Resource {
 
 func fillTestResource(tv Resource) {
 	fillTestAttributeMap(tv.Attributes())
+	tv.SetDroppedAttributesCount(uint32(17))
 }
