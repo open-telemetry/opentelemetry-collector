@@ -21,7 +21,6 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 )
 
 var _ ClientAuthenticator = (*defaultClientAuthenticator)(nil)
@@ -30,15 +29,15 @@ var _ ClientAuthenticator = (*defaultClientAuthenticator)(nil)
 type ClientOption func(*defaultClientAuthenticator)
 
 type defaultClientAuthenticator struct {
-	componenthelper.StartFunc
-	componenthelper.ShutdownFunc
+	component.StartFunc
+	component.ShutdownFunc
 	roundTripperFunc      func(base http.RoundTripper) (http.RoundTripper, error)
 	perRPCCredentialsFunc func() (credentials.PerRPCCredentials, error)
 }
 
 // WithClientStart overrides the default `Start` function for a component.Component.
 // The default always returns nil.
-func WithClientStart(startFunc componenthelper.StartFunc) ClientOption {
+func WithClientStart(startFunc component.StartFunc) ClientOption {
 	return func(o *defaultClientAuthenticator) {
 		o.StartFunc = startFunc
 	}
@@ -46,7 +45,7 @@ func WithClientStart(startFunc componenthelper.StartFunc) ClientOption {
 
 // WithClientShutdown overrides the default `Shutdown` function for a component.Component.
 // The default always returns nil.
-func WithClientShutdown(shutdownFunc componenthelper.ShutdownFunc) ClientOption {
+func WithClientShutdown(shutdownFunc component.ShutdownFunc) ClientOption {
 	return func(o *defaultClientAuthenticator) {
 		o.ShutdownFunc = shutdownFunc
 	}
@@ -94,10 +93,12 @@ func (a *defaultClientAuthenticator) Shutdown(ctx context.Context) error {
 	return a.ShutdownFunc(ctx)
 }
 
+// RoundTripper adds the base HTTP RoundTripper in this authenticator's round tripper.
 func (a *defaultClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return a.roundTripperFunc(base)
 }
 
+// PerRPCCredentials returns this authenticator's credentials.PerRPCCredentials implementation.
 func (a *defaultClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return a.perRPCCredentialsFunc()
 }
