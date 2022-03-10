@@ -91,7 +91,14 @@ const copyToValueOneOfMessageTemplate = `	case ${typeName}:
 		ms.${fieldName}().CopyTo(dest.${fieldName}())`
 
 const accessorsOneOfPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+// Calling this function when ValueType() != ${valueType} will cause a panic.
 func (ms ${structName}) ${fieldName}() ${returnType} {
+	return (*ms.orig).Value.(*${originStructType}).${originFieldName}
+}
+
+// ${deprecatedFieldName} returns the ${lowerFieldName} associated with this ${structName}.
+// Deprecated: [v0.47.0] Use ${fieldName} instead.
+func (ms ${structName}) ${deprecatedFieldName}() ${returnType} {
 	return (*ms.orig).Get${originFieldName}()
 }
 
@@ -100,6 +107,18 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originOneOfFieldName} = &${originStructType}{
 		${originFieldName}: v,
 	}
+}
+
+// Set${deprecatedFieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+// Deprecated: [v0.47.0] Use Set${fieldName} instead.
+func (ms ${structName}) Set${deprecatedFieldName}(v ${returnType}) {
+	ms.Set${fieldName}(v)
+}`
+
+const accessorsOneOfPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	ms.Set${fieldName}(${testValue})
+	assert.EqualValues(t, ${testValue}, ms.${fieldName}())
 }`
 
 const accessorsPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
@@ -504,12 +523,13 @@ type oneOfValue interface {
 }
 
 type oneOfPrimitiveValue struct {
-	fieldName       string
-	fieldType       string
-	defaultVal      string
-	testVal         string
-	returnType      string
-	originFieldName string
+	fieldName           string
+	deprecatedFieldName string
+	fieldType           string
+	defaultVal          string
+	testVal             string
+	returnType          string
+	originFieldName     string
 }
 
 func (opv *oneOfPrimitiveValue) getFieldType() string {
@@ -523,6 +543,8 @@ func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField,
 			return ms.getName()
 		case "fieldName":
 			return opv.fieldName
+		case "deprecatedFieldName":
+			return opv.deprecatedFieldName
 		case "lowerFieldName":
 			return strings.ToLower(opv.fieldName)
 		case "returnType":
@@ -533,6 +555,8 @@ func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField,
 			return of.originFieldName
 		case "originStructType":
 			return of.originTypePrefix + opv.originFieldName
+		case "valueType":
+			return of.typeName + opv.getFieldType()
 		default:
 			panic(name)
 		}
@@ -541,7 +565,7 @@ func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField,
 }
 
 func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, _ *oneOfField, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsOneOfPrimitiveTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
@@ -549,6 +573,23 @@ func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, _ *oneOfField, sb *
 			return opv.defaultVal
 		case "fieldName":
 			return opv.fieldName
+		case "testValue":
+			return opv.testVal
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString("\n\n")
+
+	// Tests for deprecated fields
+	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "defaultVal":
+			return opv.defaultVal
+		case "fieldName":
+			return opv.deprecatedFieldName
 		case "testValue":
 			return opv.testVal
 		default:

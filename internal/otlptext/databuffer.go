@@ -99,9 +99,9 @@ func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
 		b.logEntry("Timestamp: %s", p.Timestamp())
 		switch p.ValueType() {
 		case pdata.MetricValueTypeInt:
-			b.logEntry("Value: %d", p.IntVal())
+			b.logEntry("Value: %d", p.IntValue())
 		case pdata.MetricValueTypeDouble:
-			b.logEntry("Value: %f", p.DoubleVal())
+			b.logEntry("Value: %f", p.DoubleValue())
 		}
 	}
 }

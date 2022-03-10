@@ -860,10 +860,16 @@ func TestNumberDataPointValueType(t *testing.T) {
 	tv := NewNumberDataPoint()
 	assert.Equal(t, MetricValueTypeNone, tv.ValueType())
 	assert.Equal(t, "", MetricValueType(1000).String())
-	tv.SetDoubleVal(float64(17.13))
+	tv.SetDoubleValue(float64(17.13))
 	assert.Equal(t, MetricValueTypeDouble, tv.ValueType())
-	tv.SetIntVal(int64(17))
+	tv.SetIntValue(int64(17))
 	assert.Equal(t, MetricValueTypeInt, tv.ValueType())
+}
+
+func TestNumberDataPoint_DoubleValue(t *testing.T) {
+	ms := NewNumberDataPoint()
+	ms.SetDoubleValue(float64(17.13))
+	assert.EqualValues(t, float64(17.13), ms.DoubleValue())
 }
 
 func TestNumberDataPoint_DoubleVal(t *testing.T) {
@@ -872,6 +878,12 @@ func TestNumberDataPoint_DoubleVal(t *testing.T) {
 	testValDoubleVal := float64(17.13)
 	ms.SetDoubleVal(testValDoubleVal)
 	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
+}
+
+func TestNumberDataPoint_IntValue(t *testing.T) {
+	ms := NewNumberDataPoint()
+	ms.SetIntValue(int64(17))
+	assert.EqualValues(t, int64(17), ms.IntValue())
 }
 
 func TestNumberDataPoint_IntVal(t *testing.T) {
@@ -1779,10 +1791,16 @@ func TestExemplarValueType(t *testing.T) {
 	tv := NewExemplar()
 	assert.Equal(t, MetricValueTypeNone, tv.ValueType())
 	assert.Equal(t, "", MetricValueType(1000).String())
-	tv.SetDoubleVal(float64(17.13))
+	tv.SetDoubleValue(float64(17.13))
 	assert.Equal(t, MetricValueTypeDouble, tv.ValueType())
-	tv.SetIntVal(int64(17))
+	tv.SetIntValue(int64(17))
 	assert.Equal(t, MetricValueTypeInt, tv.ValueType())
+}
+
+func TestExemplar_DoubleValue(t *testing.T) {
+	ms := NewExemplar()
+	ms.SetDoubleValue(float64(17.13))
+	assert.EqualValues(t, float64(17.13), ms.DoubleValue())
 }
 
 func TestExemplar_DoubleVal(t *testing.T) {
@@ -1791,6 +1809,12 @@ func TestExemplar_DoubleVal(t *testing.T) {
 	testValDoubleVal := float64(17.13)
 	ms.SetDoubleVal(testValDoubleVal)
 	assert.EqualValues(t, testValDoubleVal, ms.DoubleVal())
+}
+
+func TestExemplar_IntValue(t *testing.T) {
+	ms := NewExemplar()
+	ms.SetIntValue(int64(17))
+	assert.EqualValues(t, int64(17), ms.IntValue())
 }
 
 func TestExemplar_IntVal(t *testing.T) {
@@ -1983,7 +2007,7 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	fillTestAttributeMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetDoubleVal(float64(17.13))
+	tv.SetDoubleValue(float64(17.13))
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
 }
@@ -2142,7 +2166,7 @@ func generateTestExemplar() Exemplar {
 
 func fillTestExemplar(tv Exemplar) {
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetIntVal(int64(17))
+	tv.SetIntValue(int64(17))
 	fillTestAttributeMap(tv.FilteredAttributes())
 	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))

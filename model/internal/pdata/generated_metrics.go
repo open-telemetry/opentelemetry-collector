@@ -1136,28 +1136,54 @@ func (ms NumberDataPoint) ValueType() MetricValueType {
 	return MetricValueTypeNone
 }
 
-// DoubleVal returns the doubleval associated with this NumberDataPoint.
+// DoubleValue returns the doublevalue associated with this NumberDataPoint.
+// Calling this function when ValueType() != MetricValueTypeDouble will cause a panic.
+func (ms NumberDataPoint) DoubleValue() float64 {
+	return (*ms.orig).Value.(*otlpmetrics.NumberDataPoint_AsDouble).AsDouble
+}
+
+// DoubleVal returns the doublevalue associated with this NumberDataPoint.
+// Deprecated: [v0.47.0] Use DoubleValue instead.
 func (ms NumberDataPoint) DoubleVal() float64 {
 	return (*ms.orig).GetAsDouble()
 }
 
-// SetDoubleVal replaces the doubleval associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetDoubleVal(v float64) {
+// SetDoubleValue replaces the doublevalue associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetDoubleValue(v float64) {
 	(*ms.orig).Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
 	}
 }
 
-// IntVal returns the intval associated with this NumberDataPoint.
+// SetDoubleVal replaces the doublevalue associated with this NumberDataPoint.
+// Deprecated: [v0.47.0] Use SetDoubleValue instead.
+func (ms NumberDataPoint) SetDoubleVal(v float64) {
+	ms.SetDoubleValue(v)
+}
+
+// IntValue returns the intvalue associated with this NumberDataPoint.
+// Calling this function when ValueType() != MetricValueTypeInt will cause a panic.
+func (ms NumberDataPoint) IntValue() int64 {
+	return (*ms.orig).Value.(*otlpmetrics.NumberDataPoint_AsInt).AsInt
+}
+
+// IntVal returns the intvalue associated with this NumberDataPoint.
+// Deprecated: [v0.47.0] Use IntValue instead.
 func (ms NumberDataPoint) IntVal() int64 {
 	return (*ms.orig).GetAsInt()
 }
 
-// SetIntVal replaces the intval associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetIntVal(v int64) {
+// SetIntValue replaces the intvalue associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetIntValue(v int64) {
 	(*ms.orig).Value = &otlpmetrics.NumberDataPoint_AsInt{
 		AsInt: v,
 	}
+}
+
+// SetIntVal replaces the intvalue associated with this NumberDataPoint.
+// Deprecated: [v0.47.0] Use SetIntValue instead.
+func (ms NumberDataPoint) SetIntVal(v int64) {
+	ms.SetIntValue(v)
 }
 
 // Exemplars returns the Exemplars associated with this NumberDataPoint.
@@ -1182,9 +1208,9 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case MetricValueTypeDouble:
-		dest.SetDoubleVal(ms.DoubleVal())
+		dest.SetDoubleValue(ms.DoubleValue())
 	case MetricValueTypeInt:
-		dest.SetIntVal(ms.IntVal())
+		dest.SetIntValue(ms.IntValue())
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
@@ -2386,28 +2412,54 @@ func (ms Exemplar) ValueType() MetricValueType {
 	return MetricValueTypeNone
 }
 
-// DoubleVal returns the doubleval associated with this Exemplar.
+// DoubleValue returns the doublevalue associated with this Exemplar.
+// Calling this function when ValueType() != MetricValueTypeDouble will cause a panic.
+func (ms Exemplar) DoubleValue() float64 {
+	return (*ms.orig).Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble
+}
+
+// DoubleVal returns the doublevalue associated with this Exemplar.
+// Deprecated: [v0.47.0] Use DoubleValue instead.
 func (ms Exemplar) DoubleVal() float64 {
 	return (*ms.orig).GetAsDouble()
 }
 
-// SetDoubleVal replaces the doubleval associated with this Exemplar.
-func (ms Exemplar) SetDoubleVal(v float64) {
+// SetDoubleValue replaces the doublevalue associated with this Exemplar.
+func (ms Exemplar) SetDoubleValue(v float64) {
 	(*ms.orig).Value = &otlpmetrics.Exemplar_AsDouble{
 		AsDouble: v,
 	}
 }
 
-// IntVal returns the intval associated with this Exemplar.
+// SetDoubleVal replaces the doublevalue associated with this Exemplar.
+// Deprecated: [v0.47.0] Use SetDoubleValue instead.
+func (ms Exemplar) SetDoubleVal(v float64) {
+	ms.SetDoubleValue(v)
+}
+
+// IntValue returns the intvalue associated with this Exemplar.
+// Calling this function when ValueType() != MetricValueTypeInt will cause a panic.
+func (ms Exemplar) IntValue() int64 {
+	return (*ms.orig).Value.(*otlpmetrics.Exemplar_AsInt).AsInt
+}
+
+// IntVal returns the intvalue associated with this Exemplar.
+// Deprecated: [v0.47.0] Use IntValue instead.
 func (ms Exemplar) IntVal() int64 {
 	return (*ms.orig).GetAsInt()
 }
 
-// SetIntVal replaces the intval associated with this Exemplar.
-func (ms Exemplar) SetIntVal(v int64) {
+// SetIntValue replaces the intvalue associated with this Exemplar.
+func (ms Exemplar) SetIntValue(v int64) {
 	(*ms.orig).Value = &otlpmetrics.Exemplar_AsInt{
 		AsInt: v,
 	}
+}
+
+// SetIntVal replaces the intvalue associated with this Exemplar.
+// Deprecated: [v0.47.0] Use SetIntValue instead.
+func (ms Exemplar) SetIntVal(v int64) {
+	ms.SetIntValue(v)
 }
 
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
@@ -2440,9 +2492,9 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case MetricValueTypeDouble:
-		dest.SetDoubleVal(ms.DoubleVal())
+		dest.SetDoubleValue(ms.DoubleValue())
 	case MetricValueTypeInt:
-		dest.SetIntVal(ms.IntVal())
+		dest.SetIntValue(ms.IntValue())
 	}
 
 	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())

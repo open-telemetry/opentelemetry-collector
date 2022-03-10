@@ -131,12 +131,12 @@ func initGaugeIntMetric(im pdata.Metric) {
 	initMetricAttributes1(idp0.Attributes())
 	idp0.SetStartTimestamp(TestMetricStartTimestamp)
 	idp0.SetTimestamp(TestMetricTimestamp)
-	idp0.SetIntVal(123)
+	idp0.SetIntValue(123)
 	idp1 := idps.AppendEmpty()
 	initMetricAttributes2(idp1.Attributes())
 	idp1.SetStartTimestamp(TestMetricStartTimestamp)
 	idp1.SetTimestamp(TestMetricTimestamp)
-	idp1.SetIntVal(456)
+	idp1.SetIntValue(456)
 }
 
 func initGaugeDoubleMetric(im pdata.Metric) {
@@ -147,12 +147,12 @@ func initGaugeDoubleMetric(im pdata.Metric) {
 	initMetricAttributes12(idp0.Attributes())
 	idp0.SetStartTimestamp(TestMetricStartTimestamp)
 	idp0.SetTimestamp(TestMetricTimestamp)
-	idp0.SetDoubleVal(1.23)
+	idp0.SetDoubleValue(1.23)
 	idp1 := idps.AppendEmpty()
 	initMetricAttributes13(idp1.Attributes())
 	idp1.SetStartTimestamp(TestMetricStartTimestamp)
 	idp1.SetTimestamp(TestMetricTimestamp)
-	idp1.SetDoubleVal(4.56)
+	idp1.SetDoubleValue(4.56)
 }
 
 func initSumIntMetric(im pdata.Metric) {
@@ -163,12 +163,12 @@ func initSumIntMetric(im pdata.Metric) {
 	initMetricAttributes1(idp0.Attributes())
 	idp0.SetStartTimestamp(TestMetricStartTimestamp)
 	idp0.SetTimestamp(TestMetricTimestamp)
-	idp0.SetIntVal(123)
+	idp0.SetIntValue(123)
 	idp1 := idps.AppendEmpty()
 	initMetricAttributes2(idp1.Attributes())
 	idp1.SetStartTimestamp(TestMetricStartTimestamp)
 	idp1.SetTimestamp(TestMetricTimestamp)
-	idp1.SetIntVal(456)
+	idp1.SetIntValue(456)
 }
 
 func initSumDoubleMetric(dm pdata.Metric) {
@@ -179,13 +179,13 @@ func initSumDoubleMetric(dm pdata.Metric) {
 	initMetricAttributes12(ddp0.Attributes())
 	ddp0.SetStartTimestamp(TestMetricStartTimestamp)
 	ddp0.SetTimestamp(TestMetricTimestamp)
-	ddp0.SetDoubleVal(1.23)
+	ddp0.SetDoubleValue(1.23)
 
 	ddp1 := ddps.AppendEmpty()
 	initMetricAttributes13(ddp1.Attributes())
 	ddp1.SetStartTimestamp(TestMetricStartTimestamp)
 	ddp1.SetTimestamp(TestMetricTimestamp)
-	ddp1.SetDoubleVal(4.56)
+	ddp1.SetDoubleValue(4.56)
 }
 
 func initHistogramMetric(hm pdata.Metric) {
@@ -208,7 +208,7 @@ func initHistogramMetric(hm pdata.Metric) {
 	hdp1.SetBucketCounts([]uint64{0, 1})
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
-	exemplar.SetDoubleVal(15)
+	exemplar.SetDoubleValue(15)
 	initMetricAttachment(exemplar.FilteredAttributes())
 	hdp1.SetExplicitBounds([]float64{1})
 }
@@ -260,7 +260,7 @@ func initExponentialHistogramMetric(hm pdata.Metric) {
 
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
-	exemplar.SetDoubleVal(15)
+	exemplar.SetDoubleValue(15)
 	initMetricAttachment(exemplar.FilteredAttributes())
 }
 

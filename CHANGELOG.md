@@ -13,6 +13,18 @@
 - Add `pdata.AttributeMap.RemoveIf`, which is a more performant way to remove multiple keys (#4914)
 - Add `pipeline` key with pipeline identifier to processor loggers (#4968)
 
+### 🚩 Deprecations 🚩
+
+- Change behavior of oneof numeric value field accessors (#4950)
+  - Deprecated `Exemplar.IntVal` in favor of `Exemplar.IntValue`
+  - Deprecated `Exemplar.SetIntVal` in favor of `Exemplar.SetIntValue`
+  - Deprecated `Exemplar.DoubleVal` in favor of `Exemplar.DoubleValue`
+  - Deprecated `Exemplar.SetDoubleVal` in favor of `Exemplar.SetDoubleValue`
+  - Deprecated `NumberDataPoint.IntVal` in favor of `NumberDataPoint.IntValue`
+  - Deprecated `NumberDataPoint.SetIntVal` in favor of `NumberDataPoint.SetIntValue`
+  - Deprecated `NumberDataPoint.DoubleVal` in favor of `NumberDataPoint.DoubleValue`
+  - Deprecated `NumberDataPoint.SetDoubleVal` in favor of `NumberDataPoint.SetDoubleValue`
+
 ### 🧰 Bug fixes 🧰
 
 - Collector `Run` will now exit when a context cancels (#4954)

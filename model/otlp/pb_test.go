@@ -210,7 +210,7 @@ func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
 		idp := im.Sum().DataPoints().AppendEmpty()
 		idp.SetStartTimestamp(startTime)
 		idp.SetTimestamp(endTime)
-		idp.SetIntVal(123)
+		idp.SetIntValue(123)
 	}
 	return md
 }
