@@ -1297,3 +1297,129 @@ func constructTestAttributeSubarray() AttributeValue {
 	value.SliceValue().AppendEmpty().SetStringValue("strTwo")
 	return value
 }
+
+func BenchmarkAttributeValueStringAccessor(b *testing.B) {
+	val := NewAttributeValueString("string value")
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.StringValue()
+	}
+}
+
+func BenchmarkAttributeValueIntAccessor(b *testing.B) {
+	val := NewAttributeValueInt(11)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.IntValue()
+	}
+}
+
+func BenchmarkAttributeValueDoubleAccessor(b *testing.B) {
+	val := NewAttributeValueDouble(1.1)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.DoubleValue()
+	}
+}
+
+func BenchmarkAttributeValueBoolAccessor(b *testing.B) {
+	val := NewAttributeValueBool(true)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.BoolValue()
+	}
+}
+
+func BenchmarkAttributeValueBytesAccessor(b *testing.B) {
+	val := NewAttributeValueBytes([]byte{1, 2, 3, 4})
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.BytesValue()
+	}
+}
+
+func BenchmarkAttributeValueMapAccessor(b *testing.B) {
+	val := simpleAttributeValueMap()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.MapValue()
+	}
+}
+
+func BenchmarkAttributeValueArrayAccessor(b *testing.B) {
+	val := simpleAttributeValueArray()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.SliceValue()
+	}
+}
+
+func BenchmarkAttributeValueStringDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueString("string value")
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.StringVal()
+	}
+}
+
+func BenchmarkAttributeValueIntDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueInt(11)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.IntVal()
+	}
+}
+
+func BenchmarkAttributeValueDoubleDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueDouble(1.1)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.DoubleVal()
+	}
+}
+
+func BenchmarkAttributeValueBoolDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueBool(true)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.BoolVal()
+	}
+}
+
+func BenchmarkAttributeValueBytesDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueBytes([]byte{1, 2, 3, 4})
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.BytesVal()
+	}
+}
+
+func BenchmarkAttributeValueMapDeprecatedAccessor(b *testing.B) {
+	val := simpleAttributeValueMap()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.MapVal()
+	}
+}
+
+func BenchmarkAttributeValueArrayDeprecatedAccessor(b *testing.B) {
+	val := simpleAttributeValueArray()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.SliceVal()
+	}
+}
