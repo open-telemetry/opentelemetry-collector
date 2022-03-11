@@ -35,6 +35,7 @@ var resource = &messageValueStruct{
 	originFullName: "otlpresource.Resource",
 	fields: []baseField{
 		attributes,
+		droppedAttributesCount,
 	},
 }
 
