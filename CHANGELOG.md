@@ -57,6 +57,7 @@
 ### 💡 Enhancements 💡
 
 - Add validation to check at least one endpoint is specified in otlphttpexporter's configuration (#4860)
+- Implement default client authenticators (#4837)
 
 ## 🧰 Bug fixes 🧰
 
