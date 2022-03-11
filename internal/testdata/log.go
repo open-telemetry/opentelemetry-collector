@@ -82,7 +82,7 @@ func fillLogOne(log pdata.LogRecord) {
 	attrs.InsertString("app", "server")
 	attrs.InsertInt("instance_num", 1)
 
-	log.Body().SetStringVal("This is a log message")
+	log.Body().SetStringValue("This is a log message")
 }
 
 func fillLogTwo(log pdata.LogRecord) {
@@ -95,7 +95,7 @@ func fillLogTwo(log pdata.LogRecord) {
 	attrs.InsertString("customer", "acme")
 	attrs.InsertString("env", "dev")
 
-	log.Body().SetStringVal("something happened")
+	log.Body().SetStringValue("something happened")
 }
 
 func fillLogThree(log pdata.LogRecord) {
@@ -104,7 +104,7 @@ func fillLogThree(log pdata.LogRecord) {
 	log.SetSeverityNumber(pdata.SeverityNumberWARN)
 	log.SetSeverityText("Warning")
 
-	log.Body().SetStringVal("something else happened")
+	log.Body().SetStringValue("something else happened")
 }
 
 func GenerateLogsManyLogRecordsSameResource(count int) pdata.Logs {

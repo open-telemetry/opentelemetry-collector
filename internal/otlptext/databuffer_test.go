@@ -24,6 +24,26 @@ import (
 
 func TestNestedArraySerializesCorrectly(t *testing.T) {
 	ava := pdata.NewAttributeValueArray()
+	avaVal, err := ava.SliceValue()
+	assert.NoError(t, err)
+	avaVal.AppendEmpty().SetStringValue("foo")
+	avaVal.AppendEmpty().SetIntValue(42)
+
+	ava2 := pdata.NewAttributeValueArray()
+	ava2Val, err := ava2.SliceValue()
+	assert.NoError(t, err)
+	ava2Val.AppendEmpty().SetStringValue("bar")
+	ava2.CopyTo(avaVal.AppendEmpty())
+
+	avaVal.AppendEmpty().SetBoolValue(true)
+	avaVal.AppendEmpty().SetDoubleValue(5.5)
+
+	assert.Equal(t, 5, avaVal.Len())
+	assert.Equal(t, "[foo, 42, [bar], true, 5.5]", attributeValueToString(ava))
+}
+
+func TestNestedArraySerializesCorrectlyDeprecated(t *testing.T) {
+	ava := pdata.NewAttributeValueArray()
 	ava.SliceVal().AppendEmpty().SetStringVal("foo")
 	ava.SliceVal().AppendEmpty().SetIntVal(42)
 
@@ -40,11 +60,13 @@ func TestNestedArraySerializesCorrectly(t *testing.T) {
 
 func TestNestedMapSerializesCorrectly(t *testing.T) {
 	ava := pdata.NewAttributeValueMap()
-	av := ava.MapVal()
+	av, err := ava.MapValue()
+	assert.NoError(t, err)
 	av.Insert("foo", pdata.NewAttributeValueString("test"))
 
 	ava2 := pdata.NewAttributeValueMap()
-	av2 := ava2.MapVal()
+	av2, err := ava2.MapValue()
+	assert.NoError(t, err)
 	av2.InsertInt("bar", 13)
 	av.Insert("zoo", ava2)
 
@@ -53,6 +75,6 @@ func TestNestedMapSerializesCorrectly(t *testing.T) {
      -> zoo: MAP({"bar":13})
 }`
 
-	assert.Equal(t, 2, ava.MapVal().Len())
+	assert.Equal(t, 2, av.Len())
 	assert.Equal(t, expected, attributeValueToString(ava))
 }

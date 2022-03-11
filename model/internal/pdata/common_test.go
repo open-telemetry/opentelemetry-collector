@@ -26,7 +26,7 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 )
 
-func TestAttributeValue(t *testing.T) {
+func TestAttributeValueDeprecated(t *testing.T) {
 	v := NewAttributeValueString("abc")
 	assert.EqualValues(t, AttributeValueTypeString, v.Type())
 	assert.EqualValues(t, "abc", v.StringVal())
@@ -62,10 +62,69 @@ func TestAttributeValue(t *testing.T) {
 	assert.EqualValues(t, AttributeValueTypeBool, v.Type())
 	assert.True(t, v.BoolVal())
 
+	v.SetBytesVal([]byte{1, 2, 3, 4})
+	assert.EqualValues(t, AttributeValueTypeBytes, v.Type())
+	assert.EqualValues(t, []byte{1, 2, 3, 4}, v.BytesVal())
+}
+
+func TestAttributeValue(t *testing.T) {
+	v := NewAttributeValueString("abc")
+	assert.EqualValues(t, AttributeValueTypeString, v.Type())
+	val, err := v.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "abc", val)
+
+	v = NewAttributeValueInt(123)
+	assert.EqualValues(t, AttributeValueTypeInt, v.Type())
+	intValue, err := v.IntValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 123, intValue)
+
+	v = NewAttributeValueDouble(3.4)
+	assert.EqualValues(t, AttributeValueTypeDouble, v.Type())
+	doubleValue, err := v.DoubleValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 3.4, doubleValue)
+
+	v = NewAttributeValueBool(true)
+	assert.EqualValues(t, AttributeValueTypeBool, v.Type())
+	boolValue, err := v.BoolValue()
+	assert.NoError(t, err)
+	assert.True(t, boolValue)
+
+	v = NewAttributeValueEmpty()
+	assert.EqualValues(t, AttributeValueTypeEmpty, v.Type())
+
+	v.SetStringValue("abc")
+	assert.EqualValues(t, AttributeValueTypeString, v.Type())
+	stringValue, err := v.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "abc", stringValue)
+
+	v.SetIntValue(123)
+	assert.EqualValues(t, AttributeValueTypeInt, v.Type())
+	intValue, err = v.IntValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 123, intValue)
+
+	v.SetDoubleValue(3.4)
+	assert.EqualValues(t, AttributeValueTypeDouble, v.Type())
+	doubleValue, err = v.DoubleValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 3.4, doubleValue)
+
+	v.SetBoolValue(true)
+	assert.EqualValues(t, AttributeValueTypeBool, v.Type())
+	boolValue, err = v.BoolValue()
+	assert.NoError(t, err)
+	assert.True(t, boolValue)
+
 	bytesValue := []byte{1, 2, 3, 4}
 	v = NewAttributeValueBytes(bytesValue)
 	assert.EqualValues(t, AttributeValueTypeBytes, v.Type())
-	assert.EqualValues(t, bytesValue, v.BytesVal())
+	bytesValue, err = v.BytesValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, bytesValue, bytesValue)
 }
 
 func TestAttributeValueType(t *testing.T) {
@@ -79,7 +138,7 @@ func TestAttributeValueType(t *testing.T) {
 	assert.EqualValues(t, "BYTES", AttributeValueTypeBytes.String())
 }
 
-func TestAttributeValueMap(t *testing.T) {
+func TestAttributeValueMapDeprecated(t *testing.T) {
 	m1 := NewAttributeValueMap()
 	assert.Equal(t, AttributeValueTypeMap, m1.Type())
 	assert.Equal(t, NewAttributeMap(), m1.MapVal())
@@ -156,26 +215,164 @@ func TestAttributeValueMap(t *testing.T) {
 	assert.EqualValues(t, NewAttributeMap(), m1.MapVal())
 }
 
+func TestAttributeValueMap(t *testing.T) {
+	m1 := NewAttributeValueMap()
+	assert.Equal(t, AttributeValueTypeMap, m1.Type())
+	val, err := m1.MapValue()
+	assert.NoError(t, err)
+	assert.Equal(t, NewAttributeMap(), val)
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 0, val.Len())
+
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	val.InsertDouble("double_key", 123)
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, val.Len())
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	got, exists := val.Get("double_key")
+	assert.True(t, exists)
+	assert.Equal(t, NewAttributeValueDouble(123), got)
+
+	// Create a second map.
+	m2 := NewAttributeValueMap()
+	val, err = m2.MapValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 0, val.Len())
+
+	// Modify the source map that was inserted.
+	val, err = m2.MapValue()
+	assert.NoError(t, err)
+	val.UpsertString("key_in_child", "somestr")
+	val, err = m2.MapValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, val.Len())
+	val, err = m2.MapValue()
+	assert.NoError(t, err)
+	got, exists = val.Get("key_in_child")
+	assert.True(t, exists)
+	assert.Equal(t, NewAttributeValueString("somestr"), got)
+
+	// Insert the second map as a child. This should perform a deep copy.
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	val.Insert("child_map", m2)
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 2, val.Len())
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	got, exists = val.Get("double_key")
+	assert.True(t, exists)
+	assert.Equal(t, NewAttributeValueDouble(123), got)
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	got, exists = val.Get("child_map")
+	assert.True(t, exists)
+	assert.Equal(t, m2, got)
+
+	// Modify the source map m2 that was inserted into m1.
+	val, err = m2.MapValue()
+	assert.NoError(t, err)
+	val.UpdateString("key_in_child", "somestr2")
+	val, err = m2.MapValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1, val.Len())
+	val, err = m2.MapValue()
+	assert.NoError(t, err)
+	got, exists = val.Get("key_in_child")
+	assert.True(t, exists)
+	assert.Equal(t, NewAttributeValueString("somestr2"), got)
+
+	// The child map inside m1 should not be modified.
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	childMap, childMapExists := val.Get("child_map")
+	require.True(t, childMapExists)
+	val, err = childMap.MapValue()
+	assert.NoError(t, err)
+	got, exists = val.Get("key_in_child")
+	require.True(t, exists)
+	assert.Equal(t, NewAttributeValueString("somestr"), got)
+
+	// Now modify the inserted map (not the source)
+	val, err = childMap.MapValue()
+	assert.NoError(t, err)
+	val.UpdateString("key_in_child", "somestr3")
+	val, err = childMap.MapValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1, val.Len())
+	val, err = childMap.MapValue()
+	assert.NoError(t, err)
+	got, exists = val.Get("key_in_child")
+	require.True(t, exists)
+	assert.Equal(t, NewAttributeValueString("somestr3"), got)
+
+	// The source child map should not be modified.
+	val, err = m2.MapValue()
+	assert.NoError(t, err)
+	got, exists = val.Get("key_in_child")
+	require.True(t, exists)
+	assert.Equal(t, NewAttributeValueString("somestr2"), got)
+
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	deleted := val.Delete("double_key")
+	assert.True(t, deleted)
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1, val.Len())
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	_, exists = val.Get("double_key")
+	assert.False(t, exists)
+
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	deleted = val.Delete("child_map")
+	assert.True(t, deleted)
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 0, val.Len())
+	val, err = m1.MapValue()
+	assert.NoError(t, err)
+	_, exists = val.Get("child_map")
+	assert.False(t, exists)
+}
+
 func TestNilOrigSetAttributeValue(t *testing.T) {
 	av := NewAttributeValueEmpty()
-	av.SetStringVal("abc")
-	assert.EqualValues(t, "abc", av.StringVal())
+	av.SetStringValue("abc")
+	stringValue, err := av.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "abc", stringValue)
 
 	av = NewAttributeValueEmpty()
-	av.SetIntVal(123)
-	assert.EqualValues(t, 123, av.IntVal())
+	av.SetIntValue(123)
+	intValue, err := av.IntValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 123, intValue)
 
 	av = NewAttributeValueEmpty()
-	av.SetBoolVal(true)
-	assert.True(t, av.BoolVal())
+	av.SetBoolValue(true)
+	boolValue, err := av.BoolValue()
+	assert.NoError(t, err)
+	assert.True(t, boolValue)
 
 	av = NewAttributeValueEmpty()
-	av.SetDoubleVal(1.23)
-	assert.EqualValues(t, 1.23, av.DoubleVal())
+	av.SetDoubleValue(1.23)
+	doubleValue, err := av.DoubleValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1.23, doubleValue)
 
 	av = NewAttributeValueEmpty()
-	av.SetBytesVal([]byte{1, 2, 3})
-	assert.Equal(t, []byte{1, 2, 3}, av.BytesVal())
+	av.SetBytesValue([]byte{1, 2, 3})
+	bytesValue, err := av.BytesValue()
+	assert.NoError(t, err)
+	assert.Equal(t, []byte{1, 2, 3}, bytesValue)
 }
 
 func TestAttributeValueEqual(t *testing.T) {
@@ -234,34 +431,48 @@ func TestAttributeValueEqual(t *testing.T) {
 	assert.True(t, av1.Equal(av2))
 
 	av1 = NewAttributeValueArray()
-	av1.SliceVal().AppendEmpty().SetIntVal(123)
+	sliceValue, err := av1.SliceValue()
+	assert.NoError(t, err)
+	sliceValue.AppendEmpty().SetIntValue(123)
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av2 = NewAttributeValueArray()
-	av2.SliceVal().AppendEmpty().SetDoubleVal(123)
+	sliceValue, err = av2.SliceValue()
+	assert.NoError(t, err)
+	sliceValue.AppendEmpty().SetDoubleValue(123)
 	assert.False(t, av1.Equal(av2))
 
-	NewAttributeValueInt(123).CopyTo(av2.SliceVal().At(0))
+	sliceValue, err = av2.SliceValue()
+	assert.NoError(t, err)
+	NewAttributeValueInt(123).CopyTo(sliceValue.At(0))
 	assert.True(t, av1.Equal(av2))
 
-	av1.CopyTo(av2.SliceVal().AppendEmpty())
+	sliceValue, err = av2.SliceValue()
+	assert.NoError(t, err)
+	av1.CopyTo(sliceValue.AppendEmpty())
 	assert.False(t, av1.Equal(av2))
 
 	av1 = NewAttributeValueMap()
-	av1.MapVal().UpsertString("foo", "bar")
+	mapValue, err := av1.MapValue()
+	assert.NoError(t, err)
+	mapValue.UpsertString("foo", "bar")
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av2 = NewAttributeValueMap()
-	av2.MapVal().UpsertString("foo", "bar")
+	mapValue, err = av2.MapValue()
+	assert.NoError(t, err)
+	mapValue.UpsertString("foo", "bar")
 	assert.True(t, av1.Equal(av2))
 
-	fooVal, ok := av2.MapVal().Get("foo")
+	mapValue, err = av2.MapValue()
+	assert.NoError(t, err)
+	fooVal, ok := mapValue.Get("foo")
 	if !ok {
 		assert.Fail(t, "expected to find value with key foo")
 	}
-	fooVal.SetStringVal("not-bar")
+	fooVal.SetStringValue("not-bar")
 	assert.False(t, av1.Equal(av2))
 }
 
@@ -374,156 +585,209 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "test_value", val.StringVal())
+	stringValue, err := val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "test_value", stringValue)
 
 	val, exist = sm.Get("test_key2")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeEmpty, val.Type())
+
+	// Not supported by StringValue() func.
+	// TODO: Remove this line along with deprecated StringVal func.
 	assert.EqualValues(t, "", val.StringVal())
 
 	sm.Insert("other_key", NewAttributeValueString("other_value"))
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "other_value", val.StringVal())
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "other_value", stringValue)
 
 	sm.InsertString("other_key_string", "other_value")
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "other_value", val.StringVal())
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "other_value", stringValue)
 
 	sm.InsertInt("other_key_int", 123)
 	val, exist = sm.Get("other_key_int")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeInt, val.Type())
-	assert.EqualValues(t, 123, val.IntVal())
+	intValue, err := val.IntValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 123, intValue)
 
 	sm.InsertDouble("other_key_double", 1.23)
 	val, exist = sm.Get("other_key_double")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeDouble, val.Type())
-	assert.EqualValues(t, 1.23, val.DoubleVal())
+	doubleValue, err := val.DoubleValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1.23, doubleValue)
 
 	sm.InsertBool("other_key_bool", true)
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeBool, val.Type())
-	assert.True(t, val.BoolVal())
+	boolValue, err := val.BoolValue()
+	assert.NoError(t, err)
+	assert.True(t, boolValue)
 
 	sm.InsertBytes("other_key_bytes", []byte{1, 2, 3})
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{1, 2, 3}, val.BytesVal())
+	bytesValue, err := val.BytesValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, []byte{1, 2, 3}, bytesValue)
 
 	sm.Update("other_key", NewAttributeValueString("yet_another_value"))
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "yet_another_value", val.StringVal())
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "yet_another_value", stringValue)
 
 	sm.UpdateString("other_key_string", "yet_another_value")
 	val, exist = sm.Get("other_key_string")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "yet_another_value", val.StringVal())
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "yet_another_value", stringValue)
 
 	sm.UpdateInt("other_key_int", 456)
 	val, exist = sm.Get("other_key_int")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeInt, val.Type())
-	assert.EqualValues(t, 456, val.IntVal())
+	intValue, err = val.IntValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 456, intValue)
 
 	sm.UpdateDouble("other_key_double", 4.56)
 	val, exist = sm.Get("other_key_double")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeDouble, val.Type())
-	assert.EqualValues(t, 4.56, val.DoubleVal())
+	doubleValue, err = val.DoubleValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 4.56, doubleValue)
 
 	sm.UpdateBool("other_key_bool", false)
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeBool, val.Type())
-	assert.False(t, val.BoolVal())
+	boolValue, err = val.BoolValue()
+	assert.NoError(t, err)
+	assert.False(t, boolValue)
 
 	sm.UpdateBytes("other_key_bytes", []byte{4, 5, 6})
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{4, 5, 6}, val.BytesVal())
+	bytesValue, err = val.BytesValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, []byte{4, 5, 6}, bytesValue)
 
 	sm.Upsert("other_key", NewAttributeValueString("other_value"))
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "other_value", val.StringVal())
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "other_value", stringValue)
 
 	sm.UpsertString("other_key_string", "other_value")
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "other_value", val.StringVal())
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "other_value", stringValue)
 
 	sm.UpsertInt("other_key_int", 123)
 	val, exist = sm.Get("other_key_int")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeInt, val.Type())
-	assert.EqualValues(t, 123, val.IntVal())
+	intValue, err = val.IntValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 123, intValue)
 
 	sm.UpsertDouble("other_key_double", 1.23)
 	val, exist = sm.Get("other_key_double")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeDouble, val.Type())
-	assert.EqualValues(t, 1.23, val.DoubleVal())
+	doubleValue, err = val.DoubleValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1.23, doubleValue)
 
 	sm.UpsertBool("other_key_bool", true)
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeBool, val.Type())
-	assert.True(t, val.BoolVal())
+	boolValue, err = val.BoolValue()
+	assert.NoError(t, err)
+	assert.True(t, boolValue)
 
 	sm.UpsertBytes("other_key_bytes", []byte{7, 8, 9})
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{7, 8, 9}, val.BytesVal())
+	bytesValue, err = val.BytesValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, []byte{7, 8, 9}, bytesValue)
 
 	sm.Upsert("yet_another_key", NewAttributeValueString("yet_another_value"))
 	val, exist = sm.Get("yet_another_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "yet_another_value", val.StringVal())
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "yet_another_value", stringValue)
 
 	sm.UpsertString("yet_another_key_string", "yet_another_value")
 	val, exist = sm.Get("yet_another_key_string")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "yet_another_value", val.StringVal())
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "yet_another_value", stringValue)
 
 	sm.UpsertInt("yet_another_key_int", 456)
 	val, exist = sm.Get("yet_another_key_int")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeInt, val.Type())
-	assert.EqualValues(t, 456, val.IntVal())
+	intValue, err = val.IntValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 456, intValue)
 
 	sm.UpsertDouble("yet_another_key_double", 4.56)
 	val, exist = sm.Get("yet_another_key_double")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeDouble, val.Type())
-	assert.EqualValues(t, 4.56, val.DoubleVal())
+	doubleValue, err = val.DoubleValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 4.56, doubleValue)
 
 	sm.UpsertBool("yet_another_key_bool", false)
 	val, exist = sm.Get("yet_another_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeBool, val.Type())
-	assert.False(t, val.BoolVal())
+	boolValue, err = val.BoolValue()
+	assert.NoError(t, err)
+	assert.False(t, boolValue)
 
 	sm.UpsertBytes("yet_another_key_bytes", []byte{1})
 	val, exist = sm.Get("yet_another_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{1}, val.BytesVal())
+	bytesValue, err = val.BytesValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, []byte{1}, bytesValue)
 
 	assert.True(t, sm.Remove("other_key"))
 	assert.True(t, sm.Remove("other_key_string"))
@@ -544,12 +808,13 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	val, exist = sm.Get("test_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "test_value", val.StringVal())
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "test_value", stringValue)
 
 	val, exist = sm.Get("test_key2")
 	assert.True(t, exist)
 	assert.EqualValues(t, AttributeValueTypeEmpty, val.Type())
-	assert.EqualValues(t, "", val.StringVal())
 
 	_, exist = sm.Get("test_key3")
 	assert.False(t, exist)
@@ -618,13 +883,13 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 }
 
 func TestAttributeValue_CopyTo(t *testing.T) {
-	// Test nil KvlistValue case for MapVal() func.
+	// Test nil KvlistValue case for MapValue() func.
 	dest := NewAttributeValueEmpty()
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
 	AttributeValue{orig: orig}.CopyTo(dest)
 	assert.Nil(t, dest.orig.Value.(*otlpcommon.AnyValue_KvlistValue).KvlistValue)
 
-	// Test nil ArrayValue case for SliceVal() func.
+	// Test nil ArrayValue case for SliceValue() func.
 	dest = NewAttributeValueEmpty()
 	orig = &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}
 	AttributeValue{orig: orig}.CopyTo(dest)
@@ -680,24 +945,29 @@ func TestAttributeMap_Update(t *testing.T) {
 	av, exists := sm.Get("test_key")
 	assert.True(t, exists)
 	assert.EqualValues(t, AttributeValueTypeString, av.Type())
-	assert.EqualValues(t, "test_value", av.StringVal())
-	av.SetIntVal(123)
+	stringValue, err := av.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "test_value", stringValue)
+	av.SetIntValue(123)
 
 	av2, exists := sm.Get("test_key")
 	assert.True(t, exists)
 	assert.EqualValues(t, AttributeValueTypeInt, av2.Type())
-	assert.EqualValues(t, 123, av2.IntVal())
+	intValue, err := av2.IntValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 123, intValue)
 
 	av, exists = sm.Get("test_key2")
 	assert.True(t, exists)
 	assert.EqualValues(t, AttributeValueTypeEmpty, av.Type())
-	assert.EqualValues(t, "", av.StringVal())
-	av.SetIntVal(123)
+	av.SetIntValue(123)
 
 	av2, exists = sm.Get("test_key2")
 	assert.True(t, exists)
 	assert.EqualValues(t, AttributeValueTypeInt, av2.Type())
-	assert.EqualValues(t, 123, av2.IntVal())
+	intValue, err = av2.IntValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, 123, intValue)
 }
 
 func TestAttributeMap_EnsureCapacity_Zero(t *testing.T) {
@@ -763,7 +1033,8 @@ func BenchmarkAttributeValue_CopyTo(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		c.copyTo(av.orig)
 	}
-	if av.IntVal() != 123 {
+	val, _ := av.IntValue()
+	if val != 123 {
 		b.Fail()
 	}
 }
@@ -773,9 +1044,10 @@ func BenchmarkAttributeValue_SetIntVal(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		av.SetIntVal(int64(n))
+		av.SetIntValue(int64(n))
 	}
-	if av.IntVal() != int64(b.N-1) {
+	val, _ := av.IntValue()
+	if val != int64(b.N-1) {
 		b.Fail()
 	}
 }
@@ -892,7 +1164,7 @@ func BenchmarkStringMap_RangeOverMap(b *testing.B) {
 }
 
 func fillTestAttributeValue(dest AttributeValue) {
-	dest.SetStringVal("v")
+	dest.SetStringValue("v")
 }
 
 func generateTestAttributeValue() AttributeValue {
@@ -942,7 +1214,7 @@ func generateTestBytesAttributeMap() AttributeMap {
 	})
 }
 
-func TestAttributeValueArray(t *testing.T) {
+func TestAttributeValueArrayDeprecated(t *testing.T) {
 	a1 := NewAttributeValueArray()
 	assert.EqualValues(t, AttributeValueTypeArray, a1.Type())
 	assert.EqualValues(t, NewAttributeValueSlice(), a1.SliceVal())
@@ -979,6 +1251,47 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, NewAttributeValueSlice(), a1.SliceVal())
 }
 
+func TestAttributeValueArray(t *testing.T) {
+	a1 := NewAttributeValueArray()
+	assert.EqualValues(t, AttributeValueTypeArray, a1.Type())
+	a1Val, err := a1.SliceValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, NewAttributeValueSlice(), a1Val)
+	assert.EqualValues(t, 0, a1Val.Len())
+
+	a1Val.AppendEmpty().SetDoubleValue(123)
+	assert.EqualValues(t, 1, a1Val.Len())
+	assert.EqualValues(t, NewAttributeValueDouble(123), a1Val.At(0))
+	// Create a second array.
+	a2 := NewAttributeValueArray()
+	a2Val, err := a2.SliceValue()
+	assert.EqualValues(t, 0, a2Val.Len())
+
+	a2Val.AppendEmpty().SetStringValue("somestr")
+	assert.NoError(t, err)
+	assert.EqualValues(t, 1, a2Val.Len())
+	assert.EqualValues(t, NewAttributeValueString("somestr"), a2Val.At(0))
+
+	// Insert the second array as a child.
+	a2.CopyTo(a1Val.AppendEmpty())
+	assert.EqualValues(t, 2, a1Val.Len())
+	assert.EqualValues(t, NewAttributeValueDouble(123), a1Val.At(0))
+	assert.EqualValues(t, a2, a1Val.At(1))
+
+	// Check that the array was correctly inserted.
+	childArray := a1Val.At(1)
+	sliceValue, err := childArray.SliceValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, AttributeValueTypeArray, childArray.Type())
+	assert.EqualValues(t, 1, sliceValue.Len())
+
+	v := sliceValue.At(0)
+	assert.EqualValues(t, AttributeValueTypeString, v.Type())
+	stringValue, err := v.StringValue()
+	assert.NoError(t, err)
+	assert.EqualValues(t, "somestr", stringValue)
+}
+
 func TestAttributeSliceWithNilValues(t *testing.T) {
 	origWithNil := []otlpcommon.AnyValue{
 		{},
@@ -990,16 +1303,19 @@ func TestAttributeSliceWithNilValues(t *testing.T) {
 
 	val := sm.At(0)
 	assert.EqualValues(t, AttributeValueTypeEmpty, val.Type())
-	assert.EqualValues(t, "", val.StringVal())
 
 	val = sm.At(1)
+	stringValue, err := val.StringValue()
+	assert.NoError(t, err)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "test_value", val.StringVal())
+	assert.EqualValues(t, "test_value", stringValue)
 
-	sm.AppendEmpty().SetStringVal("other_value")
+	sm.AppendEmpty().SetStringValue("other_value")
 	val = sm.At(2)
+	stringValue, err = val.StringValue()
+	assert.NoError(t, err)
 	assert.EqualValues(t, AttributeValueTypeString, val.Type())
-	assert.EqualValues(t, "other_value", val.StringVal())
+	assert.EqualValues(t, "other_value", stringValue)
 }
 
 func TestAsString(t *testing.T) {
@@ -1069,11 +1385,13 @@ func TestAsString(t *testing.T) {
 
 func TestAsRaw(t *testing.T) {
 	arr := NewAttributeValueArray()
-	arr.SliceVal().AppendEmpty().SetBoolVal(false)
-	arr.SliceVal().AppendEmpty().SetBytesVal([]byte("test"))
-	arr.SliceVal().AppendEmpty().SetDoubleVal(12.9)
-	arr.SliceVal().AppendEmpty().SetIntVal(91)
-	arr.SliceVal().AppendEmpty().SetStringVal("another string")
+	val, err := arr.SliceValue()
+	assert.NoError(t, err)
+	val.AppendEmpty().SetBoolValue(false)
+	val.AppendEmpty().SetBytesValue([]byte("test"))
+	val.AppendEmpty().SetDoubleValue(12.9)
+	val.AppendEmpty().SetIntValue(91)
+	val.AppendEmpty().SetStringValue("another string")
 
 	tests := []struct {
 		name     string
@@ -1116,7 +1434,7 @@ func TestAsRaw(t *testing.T) {
 
 func simpleAttributeValueMap() AttributeValue {
 	ret := NewAttributeValueMap()
-	attrMap := ret.MapVal()
+	attrMap, _ := ret.MapValue()
 	attrMap.UpsertString("strKey", "strVal")
 	attrMap.UpsertInt("intKey", 7)
 	attrMap.UpsertDouble("floatKey", 18.6)
@@ -1129,25 +1447,153 @@ func simpleAttributeValueMap() AttributeValue {
 
 func simpleAttributeValueArray() AttributeValue {
 	ret := NewAttributeValueArray()
-	attrArr := ret.SliceVal()
-	attrArr.AppendEmpty().SetStringVal("strVal")
-	attrArr.AppendEmpty().SetIntVal(7)
-	attrArr.AppendEmpty().SetDoubleVal(18.6)
-	attrArr.AppendEmpty().SetBoolVal(false)
+	attrArr, _ := ret.SliceValue()
+	attrArr.AppendEmpty().SetStringValue("strVal")
+	attrArr.AppendEmpty().SetIntValue(7)
+	attrArr.AppendEmpty().SetDoubleValue(18.6)
+	attrArr.AppendEmpty().SetBoolValue(false)
 	attrArr.AppendEmpty()
 	return ret
 }
 
 func constructTestAttributeSubmap() AttributeValue {
 	value := NewAttributeValueMap()
-	value.MapVal().UpsertString("keyOne", "valOne")
-	value.MapVal().UpsertString("keyTwo", "valTwo")
+	mapValue, _ := value.MapValue()
+	mapValue.UpsertString("keyOne", "valOne")
+	mapValue.UpsertString("keyTwo", "valTwo")
 	return value
 }
 
 func constructTestAttributeSubarray() AttributeValue {
 	value := NewAttributeValueArray()
-	value.SliceVal().AppendEmpty().SetStringVal("strOne")
-	value.SliceVal().AppendEmpty().SetStringVal("strTwo")
+	sliceValue, _ := value.SliceValue()
+	sliceValue.AppendEmpty().SetStringValue("strOne")
+	sliceValue.AppendEmpty().SetStringValue("strTwo")
 	return value
+}
+
+func BenchmarkAttributeValueStringAccessor(b *testing.B) {
+	val := NewAttributeValueString("string value")
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.StringValue()
+	}
+}
+
+func BenchmarkAttributeValueIntAccessor(b *testing.B) {
+	val := NewAttributeValueInt(11)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.IntValue()
+	}
+}
+
+func BenchmarkAttributeValueDoubleAccessor(b *testing.B) {
+	val := NewAttributeValueDouble(1.1)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.DoubleValue()
+	}
+}
+
+func BenchmarkAttributeValueBoolAccessor(b *testing.B) {
+	val := NewAttributeValueBool(true)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.BoolValue()
+	}
+}
+
+func BenchmarkAttributeValueBytesAccessor(b *testing.B) {
+	val := NewAttributeValueBytes([]byte{1, 2, 3, 4})
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.BytesValue()
+	}
+}
+
+func BenchmarkAttributeValueMapAccessor(b *testing.B) {
+	val := simpleAttributeValueMap()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.MapValue()
+	}
+}
+
+func BenchmarkAttributeValueArrayAccessor(b *testing.B) {
+	val := simpleAttributeValueArray()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.SliceValue()
+	}
+}
+
+func BenchmarkAttributeValueStringDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueString("string value")
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.StringVal()
+	}
+}
+
+func BenchmarkAttributeValueIntDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueInt(11)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.IntVal()
+	}
+}
+
+func BenchmarkAttributeValueDoubleDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueDouble(1.1)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.DoubleVal()
+	}
+}
+
+func BenchmarkAttributeValueBoolDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueBool(true)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.BoolVal()
+	}
+}
+
+func BenchmarkAttributeValueBytesDeprecatedAccessor(b *testing.B) {
+	val := NewAttributeValueBytes([]byte{1, 2, 3, 4})
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.BytesVal()
+	}
+}
+
+func BenchmarkAttributeValueMapDeprecatedAccessor(b *testing.B) {
+	val := simpleAttributeValueMap()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.MapVal()
+	}
+}
+
+func BenchmarkAttributeValueArrayDeprecatedAccessor(b *testing.B) {
+	val := simpleAttributeValueArray()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.SliceVal()
+	}
 }
