@@ -16,6 +16,7 @@
 ### 🧰 Bug fixes 🧰
 
 - Collector `Run` will now exit when a context cancels (#4954)
+- Add missing droppedAttributesCount to pdata generated resource (#4979)
 
 ## v0.46.0 Beta
 
