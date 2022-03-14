@@ -17,6 +17,7 @@ package pdata
 import (
 	"encoding/base64"
 	"fmt"
+	"math"
 	"strconv"
 	"testing"
 
@@ -1036,6 +1037,11 @@ func TestAsString(t *testing.T) {
 			name:     "small float64",
 			input:    NewValueDouble(.000000009),
 			expected: "9e-9",
+		},
+		{
+			name:     "bad float64",
+			input:    NewAttributeValueDouble(math.Inf(1)),
+			expected: "json: unsupported value: +Inf",
 		},
 		{
 			name:     "boolean",
