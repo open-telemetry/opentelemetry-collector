@@ -212,6 +212,31 @@ func TestCollector_ShutdownBeforeRun(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
+// TestCollector_ClosedStateOnStartUpError tests the collector changes it's state to Closed when a startup error occurs
+func TestCollector_ClosedStateOnStartUpError(t *testing.T) {
+	preservedAppTelemetry := collectorTelemetry
+	collectorTelemetry = &colTelemetry{}
+	defer func() { collectorTelemetry = preservedAppTelemetry }()
+
+	factories, err := testcomponents.NewDefaultFactories()
+	require.NoError(t, err)
+
+	// Load a bad config causing startup to fail
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}, nil),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	// Expect run to error
+	require.Error(t, col.Run(context.Background()))
+
+	// Expect state to be closed
+	assert.Equal(t, Closed, col.GetState())
+}
+
 type mockColTelemetry struct{}
 
 func (tel *mockColTelemetry) init(*Collector) error {

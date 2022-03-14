@@ -239,10 +239,12 @@ func (col *Collector) Run(ctx context.Context) error {
 	col.asyncErrorChannel = make(chan error)
 
 	if err := col.setupConfigurationComponents(ctx); err != nil {
+		col.setCollectorState(Closed)
 		return err
 	}
 
 	if err := collectorTelemetry.init(col); err != nil {
+		col.setCollectorState(Closed)
 		return err
 	}
 
