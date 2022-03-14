@@ -511,9 +511,7 @@ func (am AttributeMap) Get(key string) (AttributeValue, bool) {
 	return AttributeValue{nil}, false
 }
 
-// Delete deletes the entry associated with the key and returns true if the key
-// was present in the map, otherwise returns false.
-// Deprecated: [v0.46.0] Use Remove instead.
+// Deprecated: [v0.47.0] Use Remove instead.
 func (am AttributeMap) Delete(key string) bool {
 	return am.Remove(key)
 }

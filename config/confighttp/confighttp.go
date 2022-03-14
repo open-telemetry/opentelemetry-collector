@@ -82,9 +82,6 @@ type HTTPClientSettings struct {
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 }
 
-// Deprecated: [v0.46.0] Use NewDefaultHTTPClientSettings instead.
-var DefaultHTTPClientSettings = NewDefaultHTTPClientSettings
-
 // NewDefaultHTTPClientSettings returns HTTPClientSettings type object with
 // the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.

@@ -32,9 +32,6 @@ type TimeoutSettings struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-// Deprecated: [v0.46.0] use NewDefaultTimeoutSettings instead.
-var DefaultTimeoutSettings = NewDefaultTimeoutSettings
-
 // NewDefaultTimeoutSettings returns the default settings for TimeoutSettings.
 func NewDefaultTimeoutSettings() TimeoutSettings {
 	return TimeoutSettings{

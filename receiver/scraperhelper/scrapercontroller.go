@@ -39,9 +39,6 @@ type ScraperControllerSettings struct {
 	CollectionInterval      time.Duration            `mapstructure:"collection_interval"`
 }
 
-// Deprecated: [v0.46.0] use NewDefaultScraperControllerSettings instead.
-var DefaultScraperControllerSettings = NewDefaultScraperControllerSettings
-
 // NewDefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
 func NewDefaultScraperControllerSettings(cfgType config.Type) ScraperControllerSettings {
