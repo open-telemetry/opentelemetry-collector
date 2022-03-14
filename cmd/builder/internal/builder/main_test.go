@@ -25,18 +25,18 @@ import (
 )
 
 func TestGenerateDefault(t *testing.T) {
-	require.NoError(t, Generate(DefaultConfig()))
+	require.NoError(t, Generate(NewDefaultConfig()))
 }
 
 func TestGenerateInvalidCollectorVersion(t *testing.T) {
-	cfg := DefaultConfig()
+	cfg := NewDefaultConfig()
 	cfg.Distribution.OtelColVersion = "invalid"
 	err := Generate(cfg)
 	require.NoError(t, err)
 }
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
-	cfg := DefaultConfig()
+	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = "/invalid"
 	err := Generate(cfg)
 	require.Error(t, err)
@@ -49,7 +49,7 @@ func TestGenerateAndCompileDefault(t *testing.T) {
 		log.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
-	cfg := DefaultConfig()
+	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = dir
 
 	// we override this version, otherwise this would break during releases

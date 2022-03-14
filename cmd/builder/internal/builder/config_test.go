@@ -131,8 +131,8 @@ func TestInvalidModule(t *testing.T) {
 	}
 }
 
-func TestDefaultConfig(t *testing.T) {
-	cfg := DefaultConfig()
+func TestNewDefaultConfig(t *testing.T) {
+	cfg := NewDefaultConfig()
 	require.NoError(t, cfg.ParseModules())
 	require.NoError(t, cfg.Validate())
 }
