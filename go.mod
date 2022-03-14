@@ -9,7 +9,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
-	github.com/klauspost/compress v1.15.0
+	github.com/klauspost/compress v1.15.1
 	github.com/knadh/koanf v1.4.0
 	github.com/magiconair/properties v1.8.6
 	github.com/mitchellh/mapstructure v1.4.3
@@ -18,7 +18,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil/v3 v3.22.2
 	github.com/spf13/cast v1.4.1
-	github.com/spf13/cobra v1.3.0
+	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector/model v0.46.0
@@ -36,7 +36,7 @@ require (
 	go.uber.org/zap v1.21.0
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
-	google.golang.org/grpc v1.44.0
+	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )
