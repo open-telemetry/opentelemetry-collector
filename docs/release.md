@@ -95,7 +95,7 @@ The last step of the release process creates artifacts for the new version of th
 
 1. `unknown revision internal/coreinternal/v0.45.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module. 
 
-## Release history and schedule
+## Release schedule
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
