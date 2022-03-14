@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// NewOverwritePropertiesConverter returns a service.ConfigMapConverterFunc, that overrides all the given properties into the
+// NewOverwritePropertiesConverter returns a config.MapConverterFunc, that overrides all the given properties into the
 // input map.
 //
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
