@@ -34,20 +34,18 @@ type nopExporterConfig struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
-var nopExporterFactory = component.NewExporterFactory(
-	"nop",
-	func() config.Exporter {
-		return &nopExporterConfig{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID("nop")),
-		}
-	},
-	component.WithTracesExporter(createTracesExporter),
-	component.WithMetricsExporter(createMetricsExporter),
-	component.WithLogsExporter(createLogsExporter))
-
 // NewNopExporterFactory returns a component.ExporterFactory that constructs nop exporters.
 func NewNopExporterFactory() component.ExporterFactory {
-	return nopExporterFactory
+	return component.NewExporterFactory(
+		"nop",
+		func() config.Exporter {
+			return &nopExporterConfig{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID("nop")),
+			}
+		},
+		component.WithTracesExporter(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
+		component.WithLogsExporter(createLogsExporter))
 }
 
 func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {

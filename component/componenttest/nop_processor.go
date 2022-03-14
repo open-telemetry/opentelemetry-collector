@@ -35,21 +35,19 @@ type nopProcessorConfig struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
-var nopProcessorFactory = component.NewProcessorFactory(
-	"nop",
-	func() config.Processor {
-		return &nopProcessorConfig{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop")),
-		}
-	},
-	component.WithTracesProcessor(createTracesProcessor),
-	component.WithMetricsProcessor(createMetricsProcessor),
-	component.WithLogsProcessor(createLogsProcessor),
-)
-
 // NewNopProcessorFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopProcessorFactory() component.ProcessorFactory {
-	return nopProcessorFactory
+	return component.NewProcessorFactory(
+		"nop",
+		func() config.Processor {
+			return &nopProcessorConfig{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop")),
+			}
+		},
+		component.WithTracesProcessor(createTracesProcessor),
+		component.WithMetricsProcessor(createMetricsProcessor),
+		component.WithLogsProcessor(createLogsProcessor),
+	)
 }
 
 func createTracesProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Traces) (component.TracesProcessor, error) {
