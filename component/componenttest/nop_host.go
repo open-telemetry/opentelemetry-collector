@@ -22,11 +22,9 @@ import (
 // nopHost mocks a receiver.ReceiverHost for test purposes.
 type nopHost struct{}
 
-var nopHostInstance component.Host = &nopHost{}
-
 // NewNopHost returns a new instance of nopHost with proper defaults for most tests.
 func NewNopHost() component.Host {
-	return nopHostInstance
+	return &nopHost{}
 }
 
 func (nh *nopHost) ReportFatalError(_ error) {}

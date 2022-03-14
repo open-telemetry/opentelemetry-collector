@@ -34,20 +34,18 @@ type nopReceiverConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
-var nopReceiverFactory = component.NewReceiverFactory(
-	"nop",
-	func() config.Receiver {
-		return &nopReceiverConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
-		}
-	},
-	component.WithTracesReceiver(createTracesReceiver),
-	component.WithMetricsReceiver(createMetricsReceiver),
-	component.WithLogsReceiver(createLogsReceiver))
-
 // NewNopReceiverFactory returns a component.ReceiverFactory that constructs nop receivers.
 func NewNopReceiverFactory() component.ReceiverFactory {
-	return nopReceiverFactory
+	return component.NewReceiverFactory(
+		"nop",
+		func() config.Receiver {
+			return &nopReceiverConfig{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
+			}
+		},
+		component.WithTracesReceiver(createTracesReceiver),
+		component.WithMetricsReceiver(createMetricsReceiver),
+		component.WithLogsReceiver(createLogsReceiver))
 }
 
 func createTracesReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {

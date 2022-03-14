@@ -33,20 +33,18 @@ type nopExtensionConfig struct {
 	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
-var nopExtensionFactoryInstance = component.NewExtensionFactory(
-	"nop",
-	func() config.Extension {
-		return &nopExtensionConfig{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("nop")),
-		}
-	},
-	func(context.Context, component.ExtensionCreateSettings, config.Extension) (component.Extension, error) {
-		return nopExtensionInstance, nil
-	})
-
 // NewNopExtensionFactory returns a component.ExtensionFactory that constructs nop extensions.
 func NewNopExtensionFactory() component.ExtensionFactory {
-	return nopExtensionFactoryInstance
+	return component.NewExtensionFactory(
+		"nop",
+		func() config.Extension {
+			return &nopExtensionConfig{
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("nop")),
+			}
+		},
+		func(context.Context, component.ExtensionCreateSettings, config.Extension) (component.Extension, error) {
+			return nopExtensionInstance, nil
+		})
 }
 
 var nopExtensionInstance = &nopExtension{}
