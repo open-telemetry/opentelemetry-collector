@@ -21,7 +21,7 @@ We release both core and contrib collectors with the same versions where the con
 
 1. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.45.0` as the version to be released, following `v0.44.0`.
 
-1. To keep track of the progress, it might be helpful to create a tracking issue similar to [#4870](https://github.com/open-telemetry/opentelemetry-collector/issues/4870). You are responsible for all of them, except the operator one. A template for the tracking issue can be found at the [Appendix A](#appendix-a), and once the issue is created, you can create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
+1. To keep track of the progress, it might be helpful to create a [tracking issue](https://github.com/open-telemetry/opentelemetry-collector/issues/new?assignees=&labels=release&template=release.md&title=Release+vX.X.X) similar to [#4870](https://github.com/open-telemetry/opentelemetry-collector/issues/4870). You are responsible for all of them, except the operator one. Once the issue is created, you can create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
 
 1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes, submit a PR. Open this PR as draft. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later.
 
@@ -95,21 +95,7 @@ The last step of the release process creates artifacts for the new version of th
 
 1. `unknown revision internal/coreinternal/v0.45.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module. 
 
-## Appendix A
-
-```
-Like #4522, but for v0.45.0
-
-- [ ] Prepare core release v0.45.0
-- [ ] Tag and release core v0.45.0
-- [ ] Prepare contrib release v0.45.0
-- [ ] Tag and release contrib v0.45.0
-- [ ] Prepare otelcol-releases v0.45.0
-- [ ] Release binaries and container images v0.45.0
-- [ ] Release the operator v0.45.0
-```
-
-## Release history and schedule
+## Release schedule
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
