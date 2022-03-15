@@ -9,6 +9,14 @@
 - pdata: deprecate funcs working with InternalRep (#4957)
 - Remove all deprecated funcs/structs from v0.46.0 (#4995)
 
+### 🚩 Deprecations 🚩
+
+- API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4975)
+  - `pdata.AttributeValue` struct is deprecated in favor of `pdata.Value`
+  - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
+  - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
+  - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
+
 ### 💡 Enhancements 💡
 
 - Add `pdata.AttributeMap.RemoveIf`, which is a more performant way to remove multiple keys (#4914)

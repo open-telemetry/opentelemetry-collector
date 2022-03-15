@@ -43,7 +43,7 @@ func (b *dataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
 	}
 
 	b.logEntry("%s:", label)
-	am.Range(func(k string, v pdata.AttributeValue) bool {
+	am.Range(func(k string, v pdata.Value) bool {
 		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
 		return true
 	})
@@ -221,7 +221,7 @@ func (b *dataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		e.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		e.Attributes().Range(func(k string, v pdata.Value) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
 			return true
 		})
@@ -246,29 +246,29 @@ func (b *dataBuffer) logLinks(description string, sl pdata.SpanLinkSlice) {
 			continue
 		}
 		b.logEntry("     -> Attributes:")
-		l.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		l.Attributes().Range(func(k string, v pdata.Value) bool {
 			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
 			return true
 		})
 	}
 }
 
-func attributeValueToString(av pdata.AttributeValue) string {
-	switch av.Type() {
-	case pdata.AttributeValueTypeString:
-		return av.StringVal()
-	case pdata.AttributeValueTypeBool:
-		return strconv.FormatBool(av.BoolVal())
-	case pdata.AttributeValueTypeDouble:
-		return strconv.FormatFloat(av.DoubleVal(), 'f', -1, 64)
-	case pdata.AttributeValueTypeInt:
-		return strconv.FormatInt(av.IntVal(), 10)
-	case pdata.AttributeValueTypeArray:
-		return attributeValueSliceToString(av.SliceVal())
-	case pdata.AttributeValueTypeMap:
-		return attributeMapToString(av.MapVal())
+func attributeValueToString(v pdata.Value) string {
+	switch v.Type() {
+	case pdata.ValueTypeString:
+		return v.StringVal()
+	case pdata.ValueTypeBool:
+		return strconv.FormatBool(v.BoolVal())
+	case pdata.ValueTypeDouble:
+		return strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
+	case pdata.ValueTypeInt:
+		return strconv.FormatInt(v.IntVal(), 10)
+	case pdata.ValueTypeArray:
+		return attributeValueSliceToString(v.SliceVal())
+	case pdata.ValueTypeMap:
+		return attributeMapToString(v.MapVal())
 	default:
-		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", av.Type())
+		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", v.Type())
 	}
 }
 
@@ -291,7 +291,7 @@ func attributeMapToString(av pdata.AttributeMap) string {
 	var b strings.Builder
 	b.WriteString("{\n")
 
-	av.Sort().Range(func(k string, v pdata.AttributeValue) bool {
+	av.Sort().Range(func(k string, v pdata.Value) bool {
 		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), v.AsString())
 		return true
 	})

@@ -19,33 +19,88 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
-// AttributeValueType is an alias for pdata.AttributeValueType type.
-type AttributeValueType = pdata.AttributeValueType
+// ValueType is an alias for pdata.ValueType type.
+type ValueType = pdata.ValueType
+
+// AttributeValueType is an alias for pdata.ValueType type.
+// Deprecated: [v0.47.0] Use ValueType instead.
+type AttributeValueType = pdata.ValueType
 
 const (
-	AttributeValueTypeEmpty  = pdata.AttributeValueTypeEmpty
-	AttributeValueTypeString = pdata.AttributeValueTypeString
-	AttributeValueTypeInt    = pdata.AttributeValueTypeInt
-	AttributeValueTypeDouble = pdata.AttributeValueTypeDouble
-	AttributeValueTypeBool   = pdata.AttributeValueTypeBool
-	AttributeValueTypeMap    = pdata.AttributeValueTypeMap
-	AttributeValueTypeArray  = pdata.AttributeValueTypeArray
-	AttributeValueTypeBytes  = pdata.AttributeValueTypeBytes
+	ValueTypeEmpty  = pdata.ValueTypeEmpty
+	ValueTypeString = pdata.ValueTypeString
+	ValueTypeInt    = pdata.ValueTypeInt
+	ValueTypeDouble = pdata.ValueTypeDouble
+	ValueTypeBool   = pdata.ValueTypeBool
+	ValueTypeMap    = pdata.ValueTypeMap
+	ValueTypeArray  = pdata.ValueTypeArray
+	ValueTypeBytes  = pdata.ValueTypeBytes
+
+	// Deprecated: [v0.47.0] Use ValueTypeEmpty instead.
+	AttributeValueTypeEmpty = pdata.ValueTypeEmpty
+
+	// Deprecated: [v0.47.0] Use ValueTypeString instead.
+	AttributeValueTypeString = pdata.ValueTypeString
+
+	// Deprecated: [v0.47.0] Use ValueTypeInt instead.
+	AttributeValueTypeInt = pdata.ValueTypeInt
+
+	// Deprecated: [v0.47.0] Use ValueTypeDouble instead.
+	AttributeValueTypeDouble = pdata.ValueTypeDouble
+
+	// Deprecated: [v0.47.0] Use ValueTypeBool instead.
+	AttributeValueTypeBool = pdata.ValueTypeBool
+
+	// Deprecated: [v0.47.0] Use ValueTypeMap instead.
+	AttributeValueTypeMap = pdata.ValueTypeMap
+
+	// Deprecated: [v0.47.0] Use ValueTypeArray instead.
+	AttributeValueTypeArray = pdata.ValueTypeArray
+
+	// Deprecated: [v0.47.0] Use ValueTypeBytes instead.
+	AttributeValueTypeBytes = pdata.ValueTypeBytes
 )
 
-// AttributeValue is an alias for pdata.AttributeValue struct.
-type AttributeValue = pdata.AttributeValue
+// Value is an alias for pdata.Value struct.
+type Value = pdata.Value
 
-// Aliases for functions to create pdata.AttributeValue.
+// Deprecated: [v0.47.0] Use Value instead.
+type AttributeValue = pdata.Value
+
+// Aliases for functions to create pdata.Value.
 var (
-	NewAttributeValueEmpty  = pdata.NewAttributeValueEmpty
-	NewAttributeValueString = pdata.NewAttributeValueString
-	NewAttributeValueInt    = pdata.NewAttributeValueInt
-	NewAttributeValueDouble = pdata.NewAttributeValueDouble
-	NewAttributeValueBool   = pdata.NewAttributeValueBool
-	NewAttributeValueMap    = pdata.NewAttributeValueMap
-	NewAttributeValueArray  = pdata.NewAttributeValueArray
-	NewAttributeValueBytes  = pdata.NewAttributeValueBytes
+	NewValueEmpty  = pdata.NewValueEmpty
+	NewValueString = pdata.NewValueString
+	NewValueInt    = pdata.NewValueInt
+	NewValueDouble = pdata.NewValueDouble
+	NewValueBool   = pdata.NewValueBool
+	NewValueMap    = pdata.NewValueMap
+	NewValueArray  = pdata.NewValueArray
+	NewValueBytes  = pdata.NewValueBytes
+
+	// Deprecated: [v0.47.0] Use NewValueEmpty instead.
+	NewAttributeValueEmpty = pdata.NewValueEmpty
+
+	// Deprecated: [v0.47.0] Use NewValueString instead.
+	NewAttributeValueString = pdata.NewValueString
+
+	// Deprecated: [v0.47.0] Use NewValueInt instead.
+	NewAttributeValueInt = pdata.NewValueInt
+
+	// Deprecated: [v0.47.0] Use NewValueDouble instead.
+	NewAttributeValueDouble = pdata.NewValueDouble
+
+	// Deprecated: [v0.47.0] Use NewValueBool instead.
+	NewAttributeValueBool = pdata.NewValueBool
+
+	// Deprecated: [v0.47.0] Use NewValueMap instead.
+	NewAttributeValueMap = pdata.NewValueMap
+
+	// Deprecated: [v0.47.0] Use NewValueArray instead.
+	NewAttributeValueArray = pdata.NewValueArray
+
+	// Deprecated: [v0.47.0] Use NewValueBytes instead.
+	NewAttributeValueBytes = pdata.NewValueBytes
 )
 
 // AttributeMap is an alias for pdata.AttributeMap struct.
