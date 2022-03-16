@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove pdata `InternalRep` deprecated funcs (#5018)
+- Remove service/defaultcomponents deprecated package (#5019)
 
 ## v0.47.0 Beta
 
