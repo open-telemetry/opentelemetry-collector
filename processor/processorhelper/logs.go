@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -56,7 +55,7 @@ func NewLogsProcessor(
 
 	eventOptions := spanAttributes(cfg.ID())
 	bs := fromOptions(options)
-	logsConsumer, err := consumerhelper.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
+	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error

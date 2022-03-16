@@ -11,6 +11,7 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate `pdata.AttributeMap.Delete` in favor of `pdata.AttributeMap.Remove` (#4914)
+- Deprecate consumerhelper, move helpers to consumer (#5006)
 
 ### 💡 Enhancements 💡
 
