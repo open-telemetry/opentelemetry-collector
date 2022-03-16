@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Remove pdata `InternalRep` deprecated funcs (#5018)
+
 ## v0.47.0 Beta
 
 ### 🛑 Breaking changes 🛑
