@@ -15,41 +15,11 @@
 package consumerhelper // import "go.opentelemetry.io/collector/consumer/consumerhelper"
 
 import (
-	"errors"
-
 	"go.opentelemetry.io/collector/consumer"
 )
 
-var errNilFunc = errors.New("nil consumer func")
+// Deprecated: [v0.47.0] use consumer.Option
+type Option = consumer.Option
 
-type baseConsumer struct {
-	capabilities consumer.Capabilities
-}
-
-// Option applies changes to internalOptions.
-type Option func(*baseConsumer)
-
-// WithCapabilities overrides the default GetCapabilities function for a processor.
-// The default GetCapabilities function returns mutable capabilities.
-func WithCapabilities(capabilities consumer.Capabilities) Option {
-	return func(o *baseConsumer) {
-		o.capabilities = capabilities
-	}
-}
-
-// Capabilities implementation of the base Consumer.
-func (bs baseConsumer) Capabilities() consumer.Capabilities {
-	return bs.capabilities
-}
-
-func newBaseConsumer(options ...Option) *baseConsumer {
-	bs := &baseConsumer{
-		capabilities: consumer.Capabilities{MutatesData: false},
-	}
-
-	for _, op := range options {
-		op(bs)
-	}
-
-	return bs
-}
+// Deprecated: [v0.47.0] use consumer.WithCapabilities
+var WithCapabilities = consumer.WithCapabilities

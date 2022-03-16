@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -55,21 +54,21 @@ func WithShutdown(shutdown component.ShutdownFunc) Option {
 // The default GetCapabilities function returns mutable capabilities.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseSettings) {
-		o.consumerOptions = append(o.consumerOptions, consumerhelper.WithCapabilities(capabilities))
+		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
 	}
 }
 
 type baseSettings struct {
 	component.StartFunc
 	component.ShutdownFunc
-	consumerOptions []consumerhelper.Option
+	consumerOptions []consumer.Option
 }
 
 // fromOptions returns the internal settings starting from the default and applying all options.
 func fromOptions(options []Option) *baseSettings {
 	// Start from the default options:
 	opts := &baseSettings{
-		consumerOptions: []consumerhelper.Option{consumerhelper.WithCapabilities(consumer.Capabilities{MutatesData: true})},
+		consumerOptions: []consumer.Option{consumer.WithCapabilities(consumer.Capabilities{MutatesData: true})},
 	}
 
 	for _, op := range options {

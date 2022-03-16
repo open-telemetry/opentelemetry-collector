@@ -15,32 +15,11 @@
 package consumerhelper // import "go.opentelemetry.io/collector/consumer/consumerhelper"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// ConsumeLogsFunc is a helper function that is similar to ConsumeLogs.
-type ConsumeLogsFunc func(ctx context.Context, ld pdata.Logs) error
+// Deprecated: [v0.47.0] use consumer.ConsumeLogsFunc
+type ConsumeLogsFunc = consumer.ConsumeLogsFunc
 
-// ConsumeLogs calls f(ctx, ld).
-func (f ConsumeLogsFunc) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	return f(ctx, ld)
-}
-
-type baseLogs struct {
-	*baseConsumer
-	ConsumeLogsFunc
-}
-
-// NewLogs returns a consumer.Logs configured with the provided options.
-func NewLogs(consume ConsumeLogsFunc, options ...Option) (consumer.Logs, error) {
-	if consume == nil {
-		return nil, errNilFunc
-	}
-	return &baseLogs{
-		baseConsumer:    newBaseConsumer(options...),
-		ConsumeLogsFunc: consume,
-	}, nil
-}
+// Deprecated: [v0.47.0] use consumer.NewLogs
+var NewLogs = consumer.NewLogs

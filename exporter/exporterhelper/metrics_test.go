@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -200,7 +199,7 @@ func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.Equal(t, want, me.Shutdown(context.Background()))
 }
 
-func newPushMetricsData(retError error) consumerhelper.ConsumeMetricsFunc {
+func newPushMetricsData(retError error) consumer.ConsumeMetricsFunc {
 	return func(ctx context.Context, td pdata.Metrics) error {
 		return retError
 	}

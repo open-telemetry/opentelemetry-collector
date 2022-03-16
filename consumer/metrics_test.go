@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package consumerhelper
+package consumer
 
 import (
 	"context"
@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -29,7 +28,7 @@ func TestDefaultMetrics(t *testing.T) {
 	cp, err := NewMetrics(func(context.Context, pdata.Metrics) error { return nil })
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
-	assert.Equal(t, consumer.Capabilities{MutatesData: false}, cp.Capabilities())
+	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
 }
 
 func TestNilFuncMetrics(t *testing.T) {
@@ -40,10 +39,10 @@ func TestNilFuncMetrics(t *testing.T) {
 func TestWithCapabilitiesMetrics(t *testing.T) {
 	cp, err := NewMetrics(
 		func(context.Context, pdata.Metrics) error { return nil },
-		WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		WithCapabilities(Capabilities{MutatesData: true}))
 	assert.NoError(t, err)
 	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
-	assert.Equal(t, consumer.Capabilities{MutatesData: true}, cp.Capabilities())
+	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
 }
 
 func TestConsumeMetrics(t *testing.T) {
