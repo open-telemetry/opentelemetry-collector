@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Remove service/defaultcomponents deprecated package (#5019)
+
 ## v0.47.0 Beta
 
 ### 🛑 Breaking changes 🛑
