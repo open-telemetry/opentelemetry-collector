@@ -23,7 +23,7 @@ import "go.opentelemetry.io/collector/model/internal/pdata"
 type ValueType = pdata.ValueType
 
 // AttributeValueType is an alias for pdata.ValueType type.
-// Deprecated: [v0.47.0] Use ValueType instead.
+// Deprecated: [v0.48.0] Use ValueType instead.
 type AttributeValueType = pdata.ValueType
 
 const (
@@ -36,35 +36,35 @@ const (
 	ValueTypeArray  = pdata.ValueTypeArray
 	ValueTypeBytes  = pdata.ValueTypeBytes
 
-	// Deprecated: [v0.47.0] Use ValueTypeEmpty instead.
+	// Deprecated: [v0.48.0] Use ValueTypeEmpty instead.
 	AttributeValueTypeEmpty = pdata.ValueTypeEmpty
 
-	// Deprecated: [v0.47.0] Use ValueTypeString instead.
+	// Deprecated: [v0.48.0] Use ValueTypeString instead.
 	AttributeValueTypeString = pdata.ValueTypeString
 
-	// Deprecated: [v0.47.0] Use ValueTypeInt instead.
+	// Deprecated: [v0.48.0] Use ValueTypeInt instead.
 	AttributeValueTypeInt = pdata.ValueTypeInt
 
-	// Deprecated: [v0.47.0] Use ValueTypeDouble instead.
+	// Deprecated: [v0.48.0] Use ValueTypeDouble instead.
 	AttributeValueTypeDouble = pdata.ValueTypeDouble
 
-	// Deprecated: [v0.47.0] Use ValueTypeBool instead.
+	// Deprecated: [v0.48.0] Use ValueTypeBool instead.
 	AttributeValueTypeBool = pdata.ValueTypeBool
 
-	// Deprecated: [v0.47.0] Use ValueTypeMap instead.
+	// Deprecated: [v0.48.0] Use ValueTypeMap instead.
 	AttributeValueTypeMap = pdata.ValueTypeMap
 
-	// Deprecated: [v0.47.0] Use ValueTypeArray instead.
+	// Deprecated: [v0.48.0] Use ValueTypeArray instead.
 	AttributeValueTypeArray = pdata.ValueTypeArray
 
-	// Deprecated: [v0.47.0] Use ValueTypeBytes instead.
+	// Deprecated: [v0.48.0] Use ValueTypeBytes instead.
 	AttributeValueTypeBytes = pdata.ValueTypeBytes
 )
 
 // Value is an alias for pdata.Value struct.
 type Value = pdata.Value
 
-// Deprecated: [v0.47.0] Use Value instead.
+// Deprecated: [v0.48.0] Use Value instead.
 type AttributeValue = pdata.Value
 
 // Aliases for functions to create pdata.Value.
@@ -78,28 +78,28 @@ var (
 	NewValueArray  = pdata.NewValueArray
 	NewValueBytes  = pdata.NewValueBytes
 
-	// Deprecated: [v0.47.0] Use NewValueEmpty instead.
+	// Deprecated: [v0.48.0] Use NewValueEmpty instead.
 	NewAttributeValueEmpty = pdata.NewValueEmpty
 
-	// Deprecated: [v0.47.0] Use NewValueString instead.
+	// Deprecated: [v0.48.0] Use NewValueString instead.
 	NewAttributeValueString = pdata.NewValueString
 
-	// Deprecated: [v0.47.0] Use NewValueInt instead.
+	// Deprecated: [v0.48.0] Use NewValueInt instead.
 	NewAttributeValueInt = pdata.NewValueInt
 
-	// Deprecated: [v0.47.0] Use NewValueDouble instead.
+	// Deprecated: [v0.48.0] Use NewValueDouble instead.
 	NewAttributeValueDouble = pdata.NewValueDouble
 
-	// Deprecated: [v0.47.0] Use NewValueBool instead.
+	// Deprecated: [v0.48.0] Use NewValueBool instead.
 	NewAttributeValueBool = pdata.NewValueBool
 
-	// Deprecated: [v0.47.0] Use NewValueMap instead.
+	// Deprecated: [v0.48.0] Use NewValueMap instead.
 	NewAttributeValueMap = pdata.NewValueMap
 
-	// Deprecated: [v0.47.0] Use NewValueArray instead.
+	// Deprecated: [v0.48.0] Use NewValueArray instead.
 	NewAttributeValueArray = pdata.NewValueArray
 
-	// Deprecated: [v0.47.0] Use NewValueBytes instead.
+	// Deprecated: [v0.48.0] Use NewValueBytes instead.
 	NewAttributeValueBytes = pdata.NewValueBytes
 )
 
