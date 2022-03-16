@@ -15,32 +15,11 @@
 package consumerhelper // import "go.opentelemetry.io/collector/consumer/consumerhelper"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// ConsumeMetricsFunc is a helper function that is similar to ConsumeMetrics.
-type ConsumeMetricsFunc func(ctx context.Context, ld pdata.Metrics) error
+// Deprecated: [v0.47.0] use consumer.ConsumeMetricsFunc
+type ConsumeMetricsFunc = consumer.ConsumeMetricsFunc
 
-// ConsumeMetrics calls f(ctx, ld).
-func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, ld pdata.Metrics) error {
-	return f(ctx, ld)
-}
-
-type baseMetrics struct {
-	*baseConsumer
-	ConsumeMetricsFunc
-}
-
-// NewMetrics returns a consumer.Metrics configured with the provided options.
-func NewMetrics(consume ConsumeMetricsFunc, options ...Option) (consumer.Metrics, error) {
-	if consume == nil {
-		return nil, errNilFunc
-	}
-	return &baseMetrics{
-		baseConsumer:       newBaseConsumer(options...),
-		ConsumeMetricsFunc: consume,
-	}, nil
-}
+// Deprecated: [v0.47.0] use consumer.NewMetrics
+var NewMetrics = consumer.NewMetrics

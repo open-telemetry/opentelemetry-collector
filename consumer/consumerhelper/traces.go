@@ -15,32 +15,11 @@
 package consumerhelper // import "go.opentelemetry.io/collector/consumer/consumerhelper"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// ConsumeTracesFunc is a helper function that is similar to ConsumeTraces.
-type ConsumeTracesFunc func(ctx context.Context, ld pdata.Traces) error
+// Deprecated: [v0.47.0] use consumer.ConsumeTracesFunc
+type ConsumeTracesFunc = consumer.ConsumeTracesFunc
 
-// ConsumeTraces calls f(ctx, ld).
-func (f ConsumeTracesFunc) ConsumeTraces(ctx context.Context, ld pdata.Traces) error {
-	return f(ctx, ld)
-}
-
-type baseTraces struct {
-	*baseConsumer
-	ConsumeTracesFunc
-}
-
-// NewTraces returns a consumer.Traces configured with the provided options.
-func NewTraces(consume ConsumeTracesFunc, options ...Option) (consumer.Traces, error) {
-	if consume == nil {
-		return nil, errNilFunc
-	}
-	return &baseTraces{
-		baseConsumer:      newBaseConsumer(options...),
-		ConsumeTracesFunc: consume,
-	}, nil
-}
+// Deprecated: [v0.47.0] use consumer.NewTraces
+var NewTraces = consumer.NewTraces
