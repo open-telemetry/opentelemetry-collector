@@ -1040,7 +1040,7 @@ func TestAsString(t *testing.T) {
 		},
 		{
 			name:     "bad float64",
-			input:    NewAttributeValueDouble(math.Inf(1)),
+			input:    NewValueDouble(math.Inf(1)),
 			expected: "json: unsupported value: +Inf",
 		},
 		{
