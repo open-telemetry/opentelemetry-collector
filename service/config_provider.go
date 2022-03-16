@@ -106,6 +106,7 @@ func MustNewDefaultConfigProvider(configLocations []string, properties []string)
 		map[string]configmapprovider.Provider{
 			"file": configmapprovider.NewFile(),
 			"env":  configmapprovider.NewEnv(),
+			"yaml": configmapprovider.NewYAML(),
 		},
 		[]config.MapConverterFunc{
 			configmapprovider.NewOverwritePropertiesConverter(properties),

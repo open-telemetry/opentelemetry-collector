@@ -5,22 +5,23 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove `Type` funcs in pdata (#4933)
-- Rename `pdata.AttributeMap.Delete` to `pdata.AttributeMap.Remove` (#4914)
-- pdata: deprecate funcs working with InternalRep (#4957)
 - Remove all deprecated funcs/structs from v0.46.0 (#4995)
 
 ### 🚩 Deprecations 🚩
 
+- pdata: deprecate funcs working with InternalRep (#4957)
 - API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4975)
   - `pdata.AttributeValue` struct is deprecated in favor of `pdata.Value`
   - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
   - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
   - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
+- Deprecate `pdata.AttributeMap.Delete` in favor of `pdata.AttributeMap.Remove` (#4914)
 
 ### 💡 Enhancements 💡
 
 - Add `pdata.AttributeMap.RemoveIf`, which is a more performant way to remove multiple keys (#4914)
 - Add `pipeline` key with pipeline identifier to processor loggers (#4968)
+- Add a new yaml provider, allows providing yaml bytes (#4998)
 
 ### 🧰 Bug fixes 🧰
 
@@ -31,6 +32,14 @@
 ## v0.46.0 Beta
 
 ### 🛑 Breaking changes 🛑
+
+- Change otel collector to enable open telemetry metrics through feature gate instead of a constant (#4912)
+- Remove support for legacy otlp/http port. (#4916)
+- Remove deprecated funcs in pdata (#4809)
+- Remove deprecated Retrieve funcs/calls (#4922)
+- Remove deprecated NewConfigProvider funcs (#4937)
+
+### 🚩 Deprecations 🚩
 
 - Deprecated funcs `config.DefaultConfig`, `confighttp.DefaultHTTPSettings`, `exporterhelper.DefaultTimeoutSettings`, 
   `exporthelper.DefaultQueueSettings`, `exporterhelper.DefaultRetrySettings`, `testcomponents.DefaultFactories`, and
@@ -58,11 +67,6 @@
   - Deprecated `receiverhelper.WithMetrics` in favour of `component.WithMetricsReceiver`
   - Deprecated `receiverhelper.WithLogs` in favour of `component.WithLogsReceiver`
   - Deprecated `receiverhelper.NewFactory` in favour of `component.NewReceiverFactory`
-- Change otel collector to enable open telemetry metrics through feature gate instead of a constant
-- Remove support for legacy otlp/http port. (#4916)
-- Remove deprecated funcs in pdata (#4809)
-- Remove deprecated Retrieve funcs/calls (#4922)
-- Remove deprecated NewConfigProvider funcs (#4937)
 
 ### 💡 Enhancements 💡
 
@@ -84,8 +88,13 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated funcs in configtelemetry (#4808)
-- Deprecate `service/defaultcomponents` go package (#4622)
 - `otlphttp` and `otlp` exporters enable gzip compression by default (#4632)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `service/defaultcomponents` go package (#4622)
+- Deprecate `pdata.NumberDataPoint.Type()` and `pdata.Exemplar.Type()` in favor of `NumberDataPoint.ValueType()` and
+  `Exemplar.ValueType()` (#4850)
 
 ### 💡 Enhancements 💡
 
@@ -98,20 +107,18 @@
 
 - `confighttp`: Allow CORS requests with configured auth (#4869)
 
-### 🚩 Deprecations 🚩
-
-- Deprecate `pdata.NumberDataPoint.Type()` and `pdata.Exemplar.Type()` in favor of `NumberDataPoint.ValueType()` and
-  `Exemplar.ValueType()` (#4850)
-
 ## v0.44.0 Beta
 
 ### 🛑 Breaking changes 🛑
 
-- Deprecate `service.NewConfigProvider`, and a new version `service.MustNewConfigProvider` (#4734).
 - Updated to OTLP 0.12.0. Deprecated traces and metrics messages that existed
   in 0.11.0 are no longer converted to the messages and fields that replaced the deprecated ones.
   Received deprecated messages and fields will be now ignored. In OTLP/JSON in the
   instrumentationLibraryLogs object the "logs" field is now named "logRecords" (#4724)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `service.NewConfigProvider`, and a new version `service.MustNewConfigProvider` (#4734).
 
 ### 💡 Enhancements 💡
 
@@ -140,10 +147,13 @@
   - Usages of `--metrics-level={VALUE}` can be replaced by `--set=service.telemetry.metrics.level={VALUE}`;
   - Usages of `--metrics-addr={VALUE}` can be replaced by `--set=service.telemetry.metrics.address={VALUE}`;
 - Updated confighttp `ToClient` to support passing telemetry settings for instrumenting otlphttp exporter(#4449)
-- Deprecate `configtelemetry.Level.Set()` (#4700)
 - Remove support to some arches and platforms from `ocb` (opentelemetry-collector-builder) (#4710)
 - Remove deprecated legacy path ("v1/trace") support for otlp http receiver (#4720)
 - Change the `service.NewDefaultConfigProvider` to accept a slice of location strings (#4727).
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `configtelemetry.Level.Set()` (#4700)
 
 ### 🧰 Bug fixes 🧰
 
@@ -377,8 +387,6 @@
 - Artifacts are no longer published in this repository, check [here](https://github.com/open-telemetry/opentelemetry-collector-releases) (#3941)
 - Remove deprecated `tracetranslator.AttributeValueToString` and `tracetranslator.AttributeMapToMap` (#3873)
 - Change semantic conventions for status (code, msg) as per specifications (#3872)
-- Add `pdata.NewTimestampFromTime`, deprecate `pdata.TimestampFromTime` (#3868)
-- Add `pdata.NewAttributeMapFromMap`, deprecate `pdata.AttributeMap.InitFromMap` (#3936)
 - Move `fileexporter` to contrib (#3474)
 - Move `jaegerexporter` to contrib (#3474)
 - Move `kafkaexporter` to contrib (#3474)
@@ -408,6 +416,11 @@
 - Move `exporter/exporterhelper/resource_to_telemetry` to contrib (#3474)
 - Move `processor/processorhelper/attraction` to contrib (#3474)
 - Move `translator/conventions` to `model/semconv` (#3901)
+
+### 🚩 Deprecations 🚩
+
+- Add `pdata.NewTimestampFromTime`, deprecate `pdata.TimestampFromTime` (#3868)
+- Add `pdata.NewAttributeMapFromMap`, deprecate `pdata.AttributeMap.InitFromMap` (#3936)
 
 ## v0.33.0 Beta
 
@@ -515,8 +528,11 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - zipkinv1 implement directly Unmarshaler interface (#3504)
 - zipkinv2 implement directly Marshaler/Unmarshaler interface (#3505)
 - Change exporterhelper to accept ExporterCreateSettings instead of just logger (#3569)
-- Deprecate Resize() from pdata slice APIs (#3573)
 - Use Func pattern in processorhelper, consistent with others (#3570)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate Resize() from pdata slice APIs (#3573)
 
 ### 💡 Enhancements 💡
 
@@ -685,10 +701,13 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Rename `ApplicationStartInfo.ExeName` to `BuildInfo.Command`
 - Rename `ApplicationStartInfo.LongName` to `BuildInfo.Description`
 
+### 🚩 Deprecations 🚩
+
+- Add AppendEmpty and deprecate Append for slices (#2970)
+
 ### 💡 Enhancements 💡
 
 - `kafka` exporter: Add logs support (#2943)
-- Add AppendEmpty and deprecate Append for slices (#2970)
 - Update mdatagen to create factories of init instead of new (#2978)
 - `zipkin` receiver: Reduce the judgment of zipkin v1 version (#2990)
 - Custom authenticator logic to accept a `component.Host` which will extract the authenticator to use based on a new authenticator name property (#2767)
@@ -780,13 +799,16 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Move `configmodels` to `config` (#2808)
 - Move `fluentforward` receiver to contrib (#2723)
 
+### 🚩 Deprecations 🚩
+
+- Deprecate `consumetest.New[${SIGNAL}]Nop` in favor of `consumetest.NewNop` (#2878)
+- Deprecate `consumetest.New[${SIGNAL}]Err` in favor of `consumetest.NewErr` (#2878)
+
 ### 💡 Enhancements 💡
 
 - `batch` processor: - Support max batch size for logs (#2736)
 - Use `Endpoint` for health check extension (#2782)
 - Use `confignet.TCPAddr` for `pprof` and `zpages` extensions (#2829)
-- Deprecate `consumetest.New[${SIGNAL}]Nop` in favor of `consumetest.NewNop` (#2878)
-- Deprecate `consumetest.New[${SIGNAL}]Err` in favor of `consumetest.NewErr` (#2878)
 - Add watcher to values retrieved via config sources (#2803)
 - Updates for cloud semantic conventions (#2809)
   - `cloud.infrastructure_service` -> `cloud.platform`
@@ -1020,13 +1042,16 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Rename component.TraceReceiver to component.TracesReceiver #1975
 - Rename component.TraceProcessor to component.TracesProcessor #1976
 - Rename component.TraceExporter to component.TracesExporter #1975
-- Deprecate NopExporter, add NopConsumer (#1972)
-- Deprecate SinkExporter, add SinkConsumer (#1973)
 - Move `tailsampling` processor to contrib (#2012)
 - Remove NewAttributeValueSlice (#2028) and mark NewAttributeValue as deprecated (#2022)
 - Remove pdata.StringValue (#2021)
 - Remove pdata.InitFromAttributeMap, use CopyTo if needed (#2042)
 - Remove SetMapVal and SetArrayVal for pdata.AttributeValue (#2039)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate NopExporter, add NopConsumer (#1972)
+- Deprecate SinkExporter, add SinkConsumer (#1973)
 
 ### 💡 Enhancements 💡
 
@@ -1101,12 +1126,15 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
   - Add filters for mount point and filesystem type (#1866)
 - Add cloud.provider semantic conventions (#1865)
 - `attribute` processor: Add log support (#1783)
-- Deprecate OpenCensus-based internal data structures (#1843)
 - Introduce SpanID data type, not yet used in Protobuf messages ($1854, #1855)
 - Enable `otlp` trace by default in the released docker image (#1883)
 - `tailsampling` processor: Combine batches of spans into a single batch (#1864)
 - `filter` processor: Update to use pdata (#1885)
 - Allow MSI upgrades (#1914)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate OpenCensus-based internal data structures (#1843)
 
 ### 🧰 Bug fixes 🧰
 
