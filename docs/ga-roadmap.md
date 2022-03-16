@@ -45,8 +45,6 @@ When that work finishes, we can add them to the Phase 3, or later.
 
 ### Phase 1
 
-**Tentative Date:** 2021-03-31
-
 **Key Results:** At the end of this phase the Collector’s core API will be marked as Stable.
 
 At the end of this phase we want to achieve core APIs stability. This will allow developers
@@ -94,8 +92,6 @@ that we mark as stable.
 
 ### Phase 2
 
-**Tentative Date:** 2021-04-31
-
 **Key Results:** At the end of this phase the Collector’s end-to-end support for OTLP traces
 only be marked as GA.
 
@@ -136,7 +132,6 @@ that passes them is good to be shipped.
 
 ### Phase 3
 
-Tentative Date: 2021-05-31
 **Key Results:** At the end of this phase all Collector’s core components (receivers,
 processors, exporters, extensions) for traces only will be marked as GA.
 
