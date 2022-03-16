@@ -6,7 +6,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="CONTRIBUTING.md">Getting Involved</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://app.slack.com/client/T08PSQ7BQ/CJFCJHG4Q">Getting In Touch</a>
+    <a href="https://cloud-native.slack.com/archives/C01N6P7KR6W">Getting In Touch</a>
   </strong>
 </p>
 
