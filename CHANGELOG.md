@@ -6,6 +6,14 @@
 
 - Remove service/defaultcomponents deprecated package (#5019)
 
+### 🚩 Deprecations 🚩
+
+- API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4975)
+  - `pdata.AttributeValue` struct is deprecated in favor of `pdata.Value`
+  - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
+  - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
+  - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
+
 ## v0.47.0 Beta
 
 ### 🛑 Breaking changes 🛑
@@ -16,11 +24,6 @@
 ### 🚩 Deprecations 🚩
 
 - pdata: deprecate funcs working with InternalRep (#4957)
-- API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4975)
-  - `pdata.AttributeValue` struct is deprecated in favor of `pdata.Value`
-  - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
-  - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
-  - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
 - Deprecate `pdata.AttributeMap.Delete` in favor of `pdata.AttributeMap.Remove` (#4914)
 - Deprecate consumerhelper, move helpers to consumer (#5006)
 
