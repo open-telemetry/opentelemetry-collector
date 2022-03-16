@@ -16,6 +16,7 @@
 
 - Add `pdata.AttributeMap.RemoveIf`, which is a more performant way to remove multiple keys (#4914)
 - Add `pipeline` key with pipeline identifier to processor loggers (#4968)
+- Add a new yaml provider, allows providing yaml bytes (#4998)
 
 ### 🧰 Bug fixes 🧰
 
