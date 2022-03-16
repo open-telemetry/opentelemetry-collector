@@ -650,8 +650,8 @@ func (ms LogRecord) SetName(v string) {
 }
 
 // Body returns the body associated with this LogRecord.
-func (ms LogRecord) Body() AttributeValue {
-	return newAttributeValue(&(*ms.orig).Body)
+func (ms LogRecord) Body() Value {
+	return newValue(&(*ms.orig).Body)
 }
 
 // Attributes returns the Attributes associated with this LogRecord.

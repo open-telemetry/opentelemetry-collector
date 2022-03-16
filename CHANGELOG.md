@@ -11,11 +11,16 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove `Type` funcs in pdata (#4933)
-- pdata: deprecate funcs working with InternalRep (#4957)
 - Remove all deprecated funcs/structs from v0.46.0 (#4995)
 
 ### 🚩 Deprecations 🚩
 
+- pdata: deprecate funcs working with InternalRep (#4957)
+- API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4975)
+  - `pdata.AttributeValue` struct is deprecated in favor of `pdata.Value`
+  - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
+  - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
+  - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
 - Deprecate `pdata.AttributeMap.Delete` in favor of `pdata.AttributeMap.Remove` (#4914)
 - Deprecate consumerhelper, move helpers to consumer (#5006)
 

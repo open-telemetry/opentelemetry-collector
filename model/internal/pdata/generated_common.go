@@ -77,7 +77,7 @@ func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
 	dest.SetVersion(ms.Version())
 }
 
-// AttributeValueSlice logically represents a slice of AttributeValue.
+// AttributeValueSlice logically represents a slice of Value.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
@@ -115,8 +115,8 @@ func (es AttributeValueSlice) Len() int {
 //       e := es.At(i)
 //       ... // Do something with the element
 //   }
-func (es AttributeValueSlice) At(ix int) AttributeValue {
-	return newAttributeValue(&(*es.orig)[ix])
+func (es AttributeValueSlice) At(ix int) Value {
+	return newValue(&(*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice to the dest.
@@ -130,7 +130,7 @@ func (es AttributeValueSlice) CopyTo(dest AttributeValueSlice) {
 	}
 
 	for i := range *es.orig {
-		newAttributeValue(&(*es.orig)[i]).CopyTo(newAttributeValue(&(*dest.orig)[i]))
+		newValue(&(*es.orig)[i]).CopyTo(newValue(&(*dest.orig)[i]))
 	}
 }
 
@@ -156,9 +156,9 @@ func (es AttributeValueSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// AppendEmpty will append to the end of the slice an empty AttributeValue.
-// It returns the newly added AttributeValue.
-func (es AttributeValueSlice) AppendEmpty() AttributeValue {
+// AppendEmpty will append to the end of the slice an empty Value.
+// It returns the newly added Value.
+func (es AttributeValueSlice) AppendEmpty() Value {
 	*es.orig = append(*es.orig, otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
 }
@@ -177,7 +177,7 @@ func (es AttributeValueSlice) MoveAndAppendTo(dest AttributeValueSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es AttributeValueSlice) RemoveIf(f func(AttributeValue) bool) {
+func (es AttributeValueSlice) RemoveIf(f func(Value) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
