@@ -383,6 +383,8 @@ type Span struct {
 	//
 	// The OpenTelemetry API specification further restricts the allowed value types:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/common.md#attributes
+	// Attribute keys MUST be unique (it is not allowed to have more than one
+	// attribute with the same key).
 	Attributes []v11.KeyValue `protobuf:"bytes,9,rep,name=attributes,proto3" json:"attributes"`
 	// dropped_attributes_count is the number of attributes that were discarded. Attributes
 	// can be discarded because their keys are too long or because there are too many
@@ -530,6 +532,8 @@ type Span_Event struct {
 	// This field is semantically required to be set to non-empty string.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// attributes is a collection of attribute key/value pairs on the event.
+	// Attribute keys MUST be unique (it is not allowed to have more than one
+	// attribute with the same key).
 	Attributes []v11.KeyValue `protobuf:"bytes,3,rep,name=attributes,proto3" json:"attributes"`
 	// dropped_attributes_count is the number of dropped attributes. If the value is 0,
 	// then no attributes were dropped.
@@ -610,6 +614,8 @@ type Span_Link struct {
 	// The trace_state associated with the link.
 	TraceState string `protobuf:"bytes,3,opt,name=trace_state,json=traceState,proto3" json:"trace_state,omitempty"`
 	// attributes is a collection of attribute key/value pairs on the link.
+	// Attribute keys MUST be unique (it is not allowed to have more than one
+	// attribute with the same key).
 	Attributes []v11.KeyValue `protobuf:"bytes,4,rep,name=attributes,proto3" json:"attributes"`
 	// dropped_attributes_count is the number of dropped attributes. If the value is 0,
 	// then no attributes were dropped.
