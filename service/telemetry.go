@@ -62,7 +62,7 @@ func init() {
 	featuregate.Register(featuregate.Gate{
 		ID:          useOtelForInternalMetricsfeatureGateID,
 		Description: "controls whether the collector to uses open telemetry for internal metrics",
-		Enabled:     configtelemetry.UseOpenTelemetryForInternalMetrics,
+		Enabled:     false,
 	})
 }
 
