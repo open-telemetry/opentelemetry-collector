@@ -15,7 +15,6 @@
 package pdata // import "go.opentelemetry.io/collector/model/internal/pdata"
 
 import (
-	"go.opentelemetry.io/collector/model/internal"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 )
 
@@ -49,11 +48,6 @@ type Logs struct {
 // NewLogs creates a new Logs.
 func NewLogs() Logs {
 	return Logs{orig: &otlplogs.LogsData{}}
-}
-
-// Deprecated: [v0.47.0] will be removed soon, only used internally.
-func (ld Logs) InternalRep() internal.LogsWrapper {
-	return internal.LogsWrapper{}
 }
 
 // MoveTo moves all properties from the current struct to dest

@@ -15,7 +15,6 @@
 package pdata // import "go.opentelemetry.io/collector/model/internal/pdata"
 
 import (
-	"go.opentelemetry.io/collector/model/internal"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 )
 
@@ -49,11 +48,6 @@ type Metrics struct {
 // NewMetrics creates a new Metrics.
 func NewMetrics() Metrics {
 	return Metrics{orig: &otlpmetrics.MetricsData{}}
-}
-
-// Deprecated: [v0.47.0] will be removed soon, only used internally.
-func (md Metrics) InternalRep() internal.MetricsWrapper {
-	return internal.MetricsWrapper{}
 }
 
 // Clone returns a copy of MetricData.
