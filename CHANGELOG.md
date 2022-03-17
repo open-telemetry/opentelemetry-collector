@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated `consumerhelper` package (#5028)
 - Remove pdata `InternalRep` deprecated funcs (#5018)
 - Remove service/defaultcomponents deprecated package (#5019)
 - Remove deprecated UseOpenTelemetryForInternalMetrics (#5026)
