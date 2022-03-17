@@ -8,6 +8,9 @@
 - Remove pdata `InternalRep` deprecated funcs (#5018)
 - Remove service/defaultcomponents deprecated package (#5019)
 - Remove deprecated UseOpenTelemetryForInternalMetrics (#5026)
+- Change outcome of `pdata.Value.MapVal()` and `pdata.Value.SliceVal()` functions misuse. In case of
+  type mismatch, they now return an invalid zero-initialized instance instead of a detached
+  collection (#5034)
 
 ### 🚩 Deprecations 🚩
 
