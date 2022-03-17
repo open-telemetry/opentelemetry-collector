@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
+package envmapprovider // import "go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
 
 import (
 	"context"
@@ -25,32 +25,32 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-const envSchemeName = "env"
+const schemeName = "env"
 
-type envMapProvider struct{}
+type mapProvider struct{}
 
-// NewEnv returns a new Provider that reads the configuration from the given environment variable.
+// New returns a new config.MapProvider that reads the configuration from the given environment variable.
 //
 // This Provider supports "env" scheme, and can be called with a selector:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE`
-func NewEnv() Provider {
-	return &envMapProvider{}
+func New() config.MapProvider {
+	return &mapProvider{}
 }
 
-func (emp *envMapProvider) Retrieve(_ context.Context, location string, _ WatcherFunc) (Retrieved, error) {
-	if !strings.HasPrefix(location, envSchemeName+":") {
-		return Retrieved{}, fmt.Errorf("%v location is not supported by %v provider", location, envSchemeName)
+func (emp *mapProvider) Retrieve(_ context.Context, location string, _ config.WatcherFunc) (config.Retrieved, error) {
+	if !strings.HasPrefix(location, schemeName+":") {
+		return config.Retrieved{}, fmt.Errorf("%v location is not supported by %v provider", location, schemeName)
 	}
 
-	content := os.Getenv(location[len(envSchemeName)+1:])
+	content := os.Getenv(location[len(schemeName)+1:])
 	var data map[string]interface{}
 	if err := yaml.Unmarshal([]byte(content), &data); err != nil {
-		return Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
+		return config.Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 
-	return Retrieved{Map: config.NewMapFromStringMap(data)}, nil
+	return config.Retrieved{Map: config.NewMapFromStringMap(data)}, nil
 }
 
-func (*envMapProvider) Shutdown(context.Context) error {
+func (*mapProvider) Shutdown(context.Context) error {
 	return nil
 }

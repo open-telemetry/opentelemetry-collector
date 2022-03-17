@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 )
 
 func TestNewExpandConverter(t *testing.T) {
@@ -116,7 +117,7 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 }
 
 func loadConfigMap(fileName string) (*config.Map, error) {
-	ret, err := NewFile().Retrieve(context.Background(), "file:"+fileName, nil)
+	ret, err := filemapprovider.New().Retrieve(context.Background(), "file:"+fileName, nil)
 	if err != nil {
 		return nil, err
 	}
