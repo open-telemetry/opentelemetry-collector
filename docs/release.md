@@ -15,6 +15,12 @@ We release both core and contrib collectors with the same versions where the con
 * [open-telemetry/opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
 * [open-telemetry/opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases)
 
+## Release manager
+
+A release manager is the person responsible for a specific release. While the manager might request help from other folks, they are the ultimate responsible for the success of a release.
+
+In order to have more people comfortable with the release process, and in order to decrease the burden on a small number of volunteers, all core approvers are release managers from time to time, listed under the [Release Schedule](#release-schedule) section. That table is updated at every release, with the current manager adding themselves to the bottom of the table, removing themselves from the top of the table.
+
 ## Releasing opentelemetry-collector
 
 1. Make sure the current `main` branch build successfully passes (Core and Contrib).
