@@ -99,10 +99,10 @@ The last step of the release process creates artifacts for the new version of th
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-03-16 | v0.47.0 | @mx-psi         |
 | 2022-03-30 | v0.48.0 | @tigrannajaryan |
 | 2022-04-13 | v0.49.0 | @dmitryax       |
 | 2022-04-27 | v0.50.0 | @codeboten      |
 | 2022-05-11 | v0.51.0 | @bogdandrutu    |
 | 2022-05-25 | v0.52.0 | @jpkrohling     |
 | 2022-06-01 | v0.53.0 | @Aneurysm9      |
+| 2022-06-15 | v0.54.0 | @mx-psi         |
