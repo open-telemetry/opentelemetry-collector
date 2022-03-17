@@ -17,6 +17,7 @@ package pdata
 import (
 	"encoding/base64"
 	"fmt"
+	"math"
 	"strconv"
 	"testing"
 
@@ -780,6 +781,15 @@ func BenchmarkAttributeValue_SetIntVal(b *testing.B) {
 	}
 }
 
+func BenchmarkAttributeValueFloat_AsString(b *testing.B) {
+	av := NewValueDouble(2359871345.583429543)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		av.AsString()
+	}
+}
+
 func BenchmarkAttributeMap_Range(b *testing.B) {
 	const numElements = 20
 	rawOrig := make([]otlpcommon.KeyValue, numElements)
@@ -1022,6 +1032,16 @@ func TestAsString(t *testing.T) {
 			name:     "float64",
 			input:    NewValueDouble(1.61803399),
 			expected: "1.61803399",
+		},
+		{
+			name:     "small float64",
+			input:    NewValueDouble(.000000009),
+			expected: "9e-9",
+		},
+		{
+			name:     "bad float64",
+			input:    NewValueDouble(math.Inf(1)),
+			expected: "json: unsupported value: +Inf",
 		},
 		{
 			name:     "boolean",
