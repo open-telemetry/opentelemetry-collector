@@ -568,13 +568,13 @@ func TestMapIterationNil(t *testing.T) {
 }
 
 func TestMap_Range(t *testing.T) {
-	rawMap := map[string]Value{
-		"k_string": NewValueString("123"),
-		"k_int":    NewValueInt(123),
-		"k_double": NewValueDouble(1.23),
-		"k_bool":   NewValueBool(true),
-		"k_empty":  NewValueEmpty(),
-		"k_bytes":  NewValueBytes([]byte{}),
+	rawMap := map[string]interface{}{
+		"k_string": "123",
+		"k_int":    int64(123),
+		"k_double": float64(1.23),
+		"k_bool":   true,
+		"k_empty":  nil,
+		"k_bytes":  []byte{},
 	}
 	am := NewMapFromRaw(rawMap)
 	assert.Equal(t, 6, am.Len())
@@ -587,21 +587,45 @@ func TestMap_Range(t *testing.T) {
 	assert.Equal(t, 1, calls)
 
 	am.Range(func(k string, v Value) bool {
-		assert.True(t, v.Equal(rawMap[k]))
+		assert.Equal(t, rawMap[k], v.asRaw())
 		delete(rawMap, k)
 		return true
 	})
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
-func TestMap_InitFromMap(t *testing.T) {
-	am := NewMapFromRaw(map[string]Value(nil))
+func TestMap_InitFromRaw(t *testing.T) {
+	am := NewMapFromRaw(map[string]interface{}(nil))
+	assert.EqualValues(t, NewMap(), am)
+
+	rawMap := map[string]interface{}{
+		"k_string": "123",
+		"k_int":    123,
+		"k_double": 1.23,
+		"k_bool":   true,
+		"k_null":   nil,
+		"k_bytes":  []byte{1, 2, 3},
+	}
+	rawOrig := []otlpcommon.KeyValue{
+		newAttributeKeyValueString("k_string", "123"),
+		newAttributeKeyValueInt("k_int", 123),
+		newAttributeKeyValueDouble("k_double", 1.23),
+		newAttributeKeyValueBool("k_bool", true),
+		newAttributeKeyValueNull("k_null"),
+		newAttributeKeyValueBytes("k_bytes", []byte{1, 2, 3}),
+	}
+	am = NewMapFromRaw(rawMap)
+	assert.EqualValues(t, Map{orig: &rawOrig}.Sort(), am.Sort())
+}
+
+func TestMap_InitFromMapDeprecated(t *testing.T) {
+	am := NewAttributeMapFromMap(map[string]Value(nil))
 	assert.EqualValues(t, NewMap(), am)
 
 	rawMap := map[string]Value{
 		"k_string": NewValueString("123"),
-		"k_int":    NewValueInt(123),
-		"k_double": NewValueDouble(1.23),
+		"k_int":    NewValueInt(int64(123)),
+		"k_double": NewValueDouble(float64(1.23)),
 		"k_bool":   NewValueBool(true),
 		"k_null":   NewValueEmpty(),
 		"k_bytes":  NewValueBytes([]byte{1, 2, 3}),
@@ -614,7 +638,7 @@ func TestMap_InitFromMap(t *testing.T) {
 		newAttributeKeyValueNull("k_null"),
 		newAttributeKeyValueBytes("k_bytes", []byte{1, 2, 3}),
 	}
-	am = NewMapFromRaw(rawMap)
+	am = NewAttributeMapFromMap(rawMap)
 	assert.EqualValues(t, Map{orig: &rawOrig}.Sort(), am.Sort())
 }
 
@@ -733,13 +757,13 @@ func TestMap_Clear(t *testing.T) {
 }
 
 func TestMap_RemoveIf(t *testing.T) {
-	rawMap := map[string]Value{
-		"k_string": NewValueString("123"),
-		"k_int":    NewValueInt(123),
-		"k_double": NewValueDouble(1.23),
-		"k_bool":   NewValueBool(true),
-		"k_empty":  NewValueEmpty(),
-		"k_bytes":  NewValueBytes([]byte{}),
+	rawMap := map[string]interface{}{
+		"k_string": "123",
+		"k_int":    int64(123),
+		"k_double": float64(1.23),
+		"k_bool":   true,
+		"k_empty":  nil,
+		"k_bytes":  []byte{},
 	}
 	am := NewMapFromRaw(rawMap)
 	assert.Equal(t, 6, am.Len())
@@ -918,37 +942,37 @@ func generateTestMap() Map {
 }
 
 func fillTestMap(dest Map) {
-	NewMapFromRaw(map[string]Value{
-		"k": NewValueString("v"),
+	NewMapFromRaw(map[string]interface{}{
+		"k": "v",
 	}).CopyTo(dest)
 }
 
 func generateTestEmptyMap() Map {
-	return NewMapFromRaw(map[string]Value{
-		"k": NewValueEmpty(),
+	return NewMapFromRaw(map[string]interface{}{
+		"k": nil,
 	})
 }
 func generateTestIntMap() Map {
-	return NewMapFromRaw(map[string]Value{
-		"k": NewValueInt(123),
+	return NewMapFromRaw(map[string]interface{}{
+		"k": 123,
 	})
 }
 
 func generateTestDoubleMap() Map {
-	return NewMapFromRaw(map[string]Value{
-		"k": NewValueDouble(12.3),
+	return NewMapFromRaw(map[string]interface{}{
+		"k": 12.3,
 	})
 }
 
 func generateTestBoolMap() Map {
-	return NewMapFromRaw(map[string]Value{
-		"k": NewValueBool(true),
+	return NewMapFromRaw(map[string]interface{}{
+		"k": true,
 	})
 }
 
 func generateTestBytesMap() Map {
-	return NewMapFromRaw(map[string]Value{
-		"k": NewValueBytes([]byte{1, 2, 3, 4, 5}),
+	return NewMapFromRaw(map[string]interface{}{
+		"k": []byte{1, 2, 3, 4, 5},
 	})
 }
 
@@ -1088,13 +1112,6 @@ func TestAsString(t *testing.T) {
 }
 
 func TestAsRaw(t *testing.T) {
-	arr := NewValueArray()
-	arr.SliceVal().AppendEmpty().SetBoolVal(false)
-	arr.SliceVal().AppendEmpty().SetBytesVal([]byte("test"))
-	arr.SliceVal().AppendEmpty().SetDoubleVal(12.9)
-	arr.SliceVal().AppendEmpty().SetIntVal(91)
-	arr.SliceVal().AppendEmpty().SetStringVal("another string")
-
 	tests := []struct {
 		name     string
 		input    Map
@@ -1103,15 +1120,15 @@ func TestAsRaw(t *testing.T) {
 		{
 			name: "asraw",
 			input: NewMapFromRaw(
-				map[string]Value{
-					"array":  arr,
-					"bool":   NewValueBool(true),
-					"bytes":  NewValueBytes([]byte("bytes value")),
-					"double": NewValueDouble(1.2),
-					"empty":  NewValueEmpty(),
-					"int":    NewValueInt(900),
-					"map":    NewValueMap(),
-					"string": NewValueString("string value"),
+				map[string]interface{}{
+					"array":  []interface{}{false, []byte("test"), 12.9, int64(91), "another string"},
+					"bool":   true,
+					"bytes":  []byte("bytes value"),
+					"double": 1.2,
+					"empty":  nil,
+					"int":    int64(900),
+					"map":    map[string]interface{}{},
+					"string": "string value",
 				},
 			),
 			expected: map[string]interface{}{
@@ -1119,7 +1136,7 @@ func TestAsRaw(t *testing.T) {
 				"bool":   true,
 				"bytes":  []byte("bytes value"),
 				"double": 1.2,
-				"empty":  interface{}(nil),
+				"empty":  nil,
 				"int":    int64(900),
 				"map":    map[string]interface{}{},
 				"string": "string value",
@@ -1130,6 +1147,123 @@ func TestAsRaw(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			actual := test.input.AsRaw()
 			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func TestNewValueFromRaw(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected Value
+	}{
+		{
+			name:     "nil",
+			input:    nil,
+			expected: NewValueEmpty(),
+		},
+		{
+			name:     "string",
+			input:    "text",
+			expected: NewValueString("text"),
+		},
+		{
+			name:     "int",
+			input:    123,
+			expected: NewValueInt(int64(123)),
+		},
+		{
+			name:     "int8",
+			input:    int8(12),
+			expected: NewValueInt(int64(12)),
+		},
+		{
+			name:     "int16",
+			input:    int16(23),
+			expected: NewValueInt(int64(23)),
+		},
+		{
+			name:     "int32",
+			input:    int32(34),
+			expected: NewValueInt(int64(34)),
+		},
+		{
+			name:     "int64",
+			input:    int64(45),
+			expected: NewValueInt(45),
+		},
+		{
+			name:     "uint",
+			input:    uint(56),
+			expected: NewValueInt(int64(56)),
+		},
+		{
+			name:     "uint8",
+			input:    uint8(67),
+			expected: NewValueInt(int64(67)),
+		},
+		{
+			name:     "uint16",
+			input:    uint16(78),
+			expected: NewValueInt(int64(78)),
+		},
+		{
+			name:     "uint32",
+			input:    uint32(89),
+			expected: NewValueInt(int64(89)),
+		},
+		{
+			name:     "uint64",
+			input:    uint64(90),
+			expected: NewValueInt(int64(90)),
+		},
+		{
+			name:     "float32",
+			input:    float32(1.234),
+			expected: NewValueDouble(float64(float32(1.234))),
+		},
+		{
+			name:     "float64",
+			input:    float64(2.345),
+			expected: NewValueDouble(float64(2.345)),
+		},
+		{
+			name:     "bool",
+			input:    true,
+			expected: NewValueBool(true),
+		},
+		{
+			name:     "bytes",
+			input:    []byte{1, 2, 3},
+			expected: NewValueBytes([]byte{1, 2, 3}),
+		},
+		{
+			name: "map",
+			input: map[string]interface{}{
+				"k": "v",
+			},
+			expected: func() Value {
+				m := NewValueMap()
+				NewMapFromRaw(map[string]interface{}{
+					"k": "v",
+				}).CopyTo(m.MapVal())
+				return m
+			}(),
+		},
+		{
+			name:  "slice",
+			input: []interface{}{"v1", "v2"},
+			expected: (func() Value {
+				s := NewValueArray()
+				newSliceFromRaw([]interface{}{"v1", "v2"}).CopyTo(s.SliceVal())
+				return s
+			})(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := newValueFromRaw(tt.input)
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }

@@ -119,7 +119,7 @@ var (
 var NewAttributeMap = pdata.NewMap
 
 // Deprecated: [v0.48.0] Use NewMapFromRaw instead.
-var NewAttributeMapFromMap = pdata.NewMapFromRaw
+var NewAttributeMapFromMap = pdata.NewAttributeMapFromMap
 
 // Deprecated: [v0.48.0] Use Slice instead.
 type AttributeValueSlice = pdata.Slice

@@ -132,6 +132,53 @@ func NewValueBytes(v []byte) Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v}}}
 }
 
+func newValueFromRaw(iv interface{}) Value {
+	switch tv := iv.(type) {
+	case nil:
+		return NewValueEmpty()
+	case string:
+		return NewValueString(tv)
+	case int:
+		return NewValueInt(int64(tv))
+	case int8:
+		return NewValueInt(int64(tv))
+	case int16:
+		return NewValueInt(int64(tv))
+	case int32:
+		return NewValueInt(int64(tv))
+	case int64:
+		return NewValueInt(tv)
+	case uint:
+		return NewValueInt(int64(tv))
+	case uint8:
+		return NewValueInt(int64(tv))
+	case uint16:
+		return NewValueInt(int64(tv))
+	case uint32:
+		return NewValueInt(int64(tv))
+	case uint64:
+		return NewValueInt(int64(tv))
+	case float32:
+		return NewValueDouble(float64(tv))
+	case float64:
+		return NewValueDouble(tv)
+	case bool:
+		return NewValueBool(tv)
+	case []byte:
+		return NewValueBytes(tv)
+	case map[string]interface{}:
+		mv := NewValueMap()
+		NewMapFromRaw(tv).CopyTo(mv.MapVal())
+		return mv
+	case []interface{}:
+		av := NewValueArray()
+		newSliceFromRaw(tv).CopyTo(av.SliceVal())
+		return av
+	default:
+		return NewValueString(fmt.Sprintf("<Invalid value type %T>", tv))
+	}
+}
+
 // Type returns the type of the value for this Value.
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) Type() ValueType {
@@ -432,6 +479,28 @@ func float64AsString(f float64) string {
 	return string(b)
 }
 
+func (v Value) asRaw() interface{} {
+	switch v.Type() {
+	case ValueTypeEmpty:
+		return nil
+	case ValueTypeString:
+		return v.StringVal()
+	case ValueTypeBool:
+		return v.BoolVal()
+	case ValueTypeDouble:
+		return v.DoubleVal()
+	case ValueTypeInt:
+		return v.IntVal()
+	case ValueTypeBytes:
+		return v.BytesVal()
+	case ValueTypeMap:
+		v.MapVal().AsRaw()
+	case ValueTypeArray:
+		v.SliceVal().asRaw()
+	}
+	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
+}
+
 func newAttributeKeyValueString(k string, v string) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := Value{&orig.Value}
@@ -489,9 +558,26 @@ func NewMap() Map {
 	return Map{&orig}
 }
 
+// NewMapFromRaw creates a Map with values from the given map[string]interface{}.
+func NewMapFromRaw(rawMap map[string]interface{}) Map {
+	if len(rawMap) == 0 {
+		kv := []otlpcommon.KeyValue(nil)
+		return Map{&kv}
+	}
+	origs := make([]otlpcommon.KeyValue, len(rawMap))
+	ix := 0
+	for k, iv := range rawMap {
+		origs[ix].Key = k
+		newValueFromRaw(iv).copyTo(&origs[ix].Value)
+		ix++
+	}
+	return Map{&origs}
+}
+
 // NewMapFromRaw creates a Map with values
 // from the given map[string]Value.
-func NewMapFromRaw(rawMap map[string]Value) Map {
+// Deprecated: [v0.48.0] Use NewMapFromRaw instead.
+func NewAttributeMapFromMap(rawMap map[string]Value) Map {
 	if len(rawMap) == 0 {
 		kv := []otlpcommon.KeyValue(nil)
 		return Map{&kv}
@@ -837,6 +923,7 @@ func (m Map) CopyTo(dest Map) {
 func (m Map) AsRaw() map[string]interface{} {
 	rawMap := make(map[string]interface{})
 	m.Range(func(k string, v Value) bool {
+		// TODO: Use v.asRaw() instead
 		switch v.Type() {
 		case ValueTypeString:
 			rawMap[k] = v.StringVal()
@@ -860,11 +947,25 @@ func (m Map) AsRaw() map[string]interface{} {
 	return rawMap
 }
 
+// newSliceFromRaw creates a Slice with values from the given []interface{}.
+func newSliceFromRaw(rawSlice []interface{}) Slice {
+	if len(rawSlice) == 0 {
+		v := []otlpcommon.AnyValue(nil)
+		return Slice{&v}
+	}
+	origs := make([]otlpcommon.AnyValue, len(rawSlice))
+	for ix, iv := range rawSlice {
+		newValueFromRaw(iv).copyTo(&origs[ix])
+	}
+	return Slice{&origs}
+}
+
 // asRaw creates a slice out of a Slice.
 func (es Slice) asRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		v := es.At(i)
+		// TODO: Use v.asRaw() instead
 		switch v.Type() {
 		case ValueTypeString:
 			rawSlice = append(rawSlice, v.StringVal())

@@ -19,12 +19,12 @@ import (
 )
 
 var (
-	resourceAttributes1 = pdata.NewMapFromRaw(map[string]pdata.Value{"resource-attr": pdata.NewValueString("resource-attr-val-1")})
-	resourceAttributes2 = pdata.NewMapFromRaw(map[string]pdata.Value{"resource-attr": pdata.NewValueString("resource-attr-val-2")})
-	spanEventAttributes = pdata.NewMapFromRaw(map[string]pdata.Value{"span-event-attr": pdata.NewValueString("span-event-attr-val")})
-	spanLinkAttributes  = pdata.NewMapFromRaw(map[string]pdata.Value{"span-link-attr": pdata.NewValueString("span-link-attr-val")})
-	spanAttributes      = pdata.NewMapFromRaw(map[string]pdata.Value{"span-attr": pdata.NewValueString("span-attr-val")})
-	metricAttachment    = pdata.NewMapFromRaw(map[string]pdata.Value{"exemplar-attachment": pdata.NewValueString("exemplar-attachment-value")})
+	resourceAttributes1 = pdata.NewMapFromRaw(map[string]interface{}{"resource-attr": "resource-attr-val-1"})
+	resourceAttributes2 = pdata.NewMapFromRaw(map[string]interface{}{"resource-attr": "resource-attr-val-2"})
+	spanEventAttributes = pdata.NewMapFromRaw(map[string]interface{}{"span-event-attr": "span-event-attr-val"})
+	spanLinkAttributes  = pdata.NewMapFromRaw(map[string]interface{}{"span-link-attr": "span-link-attr-val"})
+	spanAttributes      = pdata.NewMapFromRaw(map[string]interface{}{"span-attr": "span-attr-val"})
+	metricAttachment    = pdata.NewMapFromRaw(map[string]interface{}{"exemplar-attachment": "exemplar-attachment-value"})
 )
 
 const (
