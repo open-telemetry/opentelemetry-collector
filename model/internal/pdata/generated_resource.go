@@ -52,8 +52,8 @@ func (ms Resource) MoveTo(dest Resource) {
 }
 
 // Attributes returns the Attributes associated with this Resource.
-func (ms Resource) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms Resource) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Resource.

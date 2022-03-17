@@ -83,7 +83,7 @@ func TestAttributeValueType(t *testing.T) {
 func TestAttributeValueMap(t *testing.T) {
 	m1 := NewValueMap()
 	assert.Equal(t, ValueTypeMap, m1.Type())
-	assert.Equal(t, NewAttributeMap(), m1.MapVal())
+	assert.Equal(t, NewMap(), m1.MapVal())
 	assert.Equal(t, 0, m1.MapVal().Len())
 
 	m1.MapVal().InsertDouble("double_key", 123)
@@ -154,7 +154,7 @@ func TestAttributeValueMap(t *testing.T) {
 	// Test nil KvlistValue case for MapVal() func.
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
 	m1 = Value{orig: orig}
-	assert.EqualValues(t, NewAttributeMap(), m1.MapVal())
+	assert.EqualValues(t, NewMap(), m1.MapVal())
 }
 
 func TestNilOrigSetAttributeValue(t *testing.T) {
@@ -266,98 +266,98 @@ func TestAttributeValueEqual(t *testing.T) {
 	assert.False(t, av1.Equal(av2))
 }
 
-func TestNilAttributeMap(t *testing.T) {
-	assert.EqualValues(t, 0, NewAttributeMap().Len())
+func TestNilMap(t *testing.T) {
+	assert.EqualValues(t, 0, NewMap().Len())
 
-	val, exist := NewAttributeMap().Get("test_key")
+	val, exist := NewMap().Get("test_key")
 	assert.False(t, exist)
 	assert.EqualValues(t, Value{nil}, val)
 
-	insertMap := NewAttributeMap()
+	insertMap := NewMap()
 	insertMap.Insert("k", NewValueString("v"))
-	assert.EqualValues(t, generateTestAttributeMap(), insertMap)
+	assert.EqualValues(t, generateTestMap(), insertMap)
 
-	insertMapString := NewAttributeMap()
+	insertMapString := NewMap()
 	insertMapString.InsertString("k", "v")
-	assert.EqualValues(t, generateTestAttributeMap(), insertMapString)
+	assert.EqualValues(t, generateTestMap(), insertMapString)
 
-	insertMapNull := NewAttributeMap()
+	insertMapNull := NewMap()
 	insertMapNull.InsertNull("k")
-	assert.EqualValues(t, generateTestEmptyAttributeMap(), insertMapNull)
+	assert.EqualValues(t, generateTestEmptyMap(), insertMapNull)
 
-	insertMapInt := NewAttributeMap()
+	insertMapInt := NewMap()
 	insertMapInt.InsertInt("k", 123)
-	assert.EqualValues(t, generateTestIntAttributeMap(), insertMapInt)
+	assert.EqualValues(t, generateTestIntMap(), insertMapInt)
 
-	insertMapDouble := NewAttributeMap()
+	insertMapDouble := NewMap()
 	insertMapDouble.InsertDouble("k", 12.3)
-	assert.EqualValues(t, generateTestDoubleAttributeMap(), insertMapDouble)
+	assert.EqualValues(t, generateTestDoubleMap(), insertMapDouble)
 
-	insertMapBool := NewAttributeMap()
+	insertMapBool := NewMap()
 	insertMapBool.InsertBool("k", true)
-	assert.EqualValues(t, generateTestBoolAttributeMap(), insertMapBool)
+	assert.EqualValues(t, generateTestBoolMap(), insertMapBool)
 
-	insertMapBytes := NewAttributeMap()
+	insertMapBytes := NewMap()
 	insertMapBytes.InsertBytes("k", []byte{1, 2, 3, 4, 5})
-	assert.EqualValues(t, generateTestBytesAttributeMap(), insertMapBytes)
+	assert.EqualValues(t, generateTestBytesMap(), insertMapBytes)
 
-	updateMap := NewAttributeMap()
+	updateMap := NewMap()
 	updateMap.Update("k", NewValueString("v"))
-	assert.EqualValues(t, NewAttributeMap(), updateMap)
+	assert.EqualValues(t, NewMap(), updateMap)
 
-	updateMapString := NewAttributeMap()
+	updateMapString := NewMap()
 	updateMapString.UpdateString("k", "v")
-	assert.EqualValues(t, NewAttributeMap(), updateMapString)
+	assert.EqualValues(t, NewMap(), updateMapString)
 
-	updateMapInt := NewAttributeMap()
+	updateMapInt := NewMap()
 	updateMapInt.UpdateInt("k", 123)
-	assert.EqualValues(t, NewAttributeMap(), updateMapInt)
+	assert.EqualValues(t, NewMap(), updateMapInt)
 
-	updateMapDouble := NewAttributeMap()
+	updateMapDouble := NewMap()
 	updateMapDouble.UpdateDouble("k", 12.3)
-	assert.EqualValues(t, NewAttributeMap(), updateMapDouble)
+	assert.EqualValues(t, NewMap(), updateMapDouble)
 
-	updateMapBool := NewAttributeMap()
+	updateMapBool := NewMap()
 	updateMapBool.UpdateBool("k", true)
-	assert.EqualValues(t, NewAttributeMap(), updateMapBool)
+	assert.EqualValues(t, NewMap(), updateMapBool)
 
-	updateMapBytes := NewAttributeMap()
+	updateMapBytes := NewMap()
 	updateMapBytes.UpdateBytes("k", []byte{1, 2, 3})
-	assert.EqualValues(t, NewAttributeMap(), updateMapBytes)
+	assert.EqualValues(t, NewMap(), updateMapBytes)
 
-	upsertMap := NewAttributeMap()
+	upsertMap := NewMap()
 	upsertMap.Upsert("k", NewValueString("v"))
-	assert.EqualValues(t, generateTestAttributeMap(), upsertMap)
+	assert.EqualValues(t, generateTestMap(), upsertMap)
 
-	upsertMapString := NewAttributeMap()
+	upsertMapString := NewMap()
 	upsertMapString.UpsertString("k", "v")
-	assert.EqualValues(t, generateTestAttributeMap(), upsertMapString)
+	assert.EqualValues(t, generateTestMap(), upsertMapString)
 
-	upsertMapInt := NewAttributeMap()
+	upsertMapInt := NewMap()
 	upsertMapInt.UpsertInt("k", 123)
-	assert.EqualValues(t, generateTestIntAttributeMap(), upsertMapInt)
+	assert.EqualValues(t, generateTestIntMap(), upsertMapInt)
 
-	upsertMapDouble := NewAttributeMap()
+	upsertMapDouble := NewMap()
 	upsertMapDouble.UpsertDouble("k", 12.3)
-	assert.EqualValues(t, generateTestDoubleAttributeMap(), upsertMapDouble)
+	assert.EqualValues(t, generateTestDoubleMap(), upsertMapDouble)
 
-	upsertMapBool := NewAttributeMap()
+	upsertMapBool := NewMap()
 	upsertMapBool.UpsertBool("k", true)
-	assert.EqualValues(t, generateTestBoolAttributeMap(), upsertMapBool)
+	assert.EqualValues(t, generateTestBoolMap(), upsertMapBool)
 
-	upsertMapBytes := NewAttributeMap()
+	upsertMapBytes := NewMap()
 	upsertMapBytes.UpsertBytes("k", []byte{1, 2, 3, 4, 5})
-	assert.EqualValues(t, generateTestBytesAttributeMap(), upsertMapBytes)
+	assert.EqualValues(t, generateTestBytesMap(), upsertMapBytes)
 
-	removeMap := NewAttributeMap()
+	removeMap := NewMap()
 	assert.False(t, removeMap.Remove("k"))
-	assert.EqualValues(t, NewAttributeMap(), removeMap)
+	assert.EqualValues(t, NewMap(), removeMap)
 
 	// Test Sort
-	assert.EqualValues(t, NewAttributeMap(), NewAttributeMap().Sort())
+	assert.EqualValues(t, NewMap(), NewMap().Sort())
 }
 
-func TestAttributeMapWithEmpty(t *testing.T) {
+func TestMapWithEmpty(t *testing.T) {
 	origWithNil := []otlpcommon.KeyValue{
 		{},
 		{
@@ -369,7 +369,7 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
-	sm := AttributeMap{
+	sm := Map{
 		orig: &origWithNil,
 	}
 	val, exist := sm.Get("test_key")
@@ -556,18 +556,18 @@ func TestAttributeMapWithEmpty(t *testing.T) {
 	assert.False(t, exist)
 
 	// Test Sort
-	assert.EqualValues(t, AttributeMap{orig: &origWithNil}, sm.Sort())
+	assert.EqualValues(t, Map{orig: &origWithNil}, sm.Sort())
 }
 
-func TestAttributeMapIterationNil(t *testing.T) {
-	NewAttributeMap().Range(func(k string, v Value) bool {
+func TestMapIterationNil(t *testing.T) {
+	NewMap().Range(func(k string, v Value) bool {
 		// Fail if any element is returned
 		t.Fail()
 		return true
 	})
 }
 
-func TestAttributeMap_Range(t *testing.T) {
+func TestMap_Range(t *testing.T) {
 	rawMap := map[string]Value{
 		"k_string": NewValueString("123"),
 		"k_int":    NewValueInt(123),
@@ -576,7 +576,7 @@ func TestAttributeMap_Range(t *testing.T) {
 		"k_empty":  NewValueEmpty(),
 		"k_bytes":  NewValueBytes([]byte{}),
 	}
-	am := NewAttributeMapFromMap(rawMap)
+	am := NewMapFromRaw(rawMap)
 	assert.Equal(t, 6, am.Len())
 
 	calls := 0
@@ -594,9 +594,9 @@ func TestAttributeMap_Range(t *testing.T) {
 	assert.EqualValues(t, 0, len(rawMap))
 }
 
-func TestAttributeMap_InitFromMap(t *testing.T) {
-	am := NewAttributeMapFromMap(map[string]Value(nil))
-	assert.EqualValues(t, NewAttributeMap(), am)
+func TestMap_InitFromMap(t *testing.T) {
+	am := NewMapFromRaw(map[string]Value(nil))
+	assert.EqualValues(t, NewMap(), am)
 
 	rawMap := map[string]Value{
 		"k_string": NewValueString("123"),
@@ -614,8 +614,8 @@ func TestAttributeMap_InitFromMap(t *testing.T) {
 		newAttributeKeyValueNull("k_null"),
 		newAttributeKeyValueBytes("k_bytes", []byte{1, 2, 3}),
 	}
-	am = NewAttributeMapFromMap(rawMap)
-	assert.EqualValues(t, AttributeMap{orig: &rawOrig}.Sort(), am.Sort())
+	am = NewMapFromRaw(rawMap)
+	assert.EqualValues(t, Map{orig: &rawOrig}.Sort(), am.Sort())
 }
 
 func TestAttributeValue_CopyTo(t *testing.T) {
@@ -636,24 +636,24 @@ func TestAttributeValue_CopyTo(t *testing.T) {
 	assert.Nil(t, dest.orig.Value)
 }
 
-func TestAttributeMap_CopyTo(t *testing.T) {
-	dest := NewAttributeMap()
+func TestMap_CopyTo(t *testing.T) {
+	dest := NewMap()
 	// Test CopyTo to empty
-	NewAttributeMap().CopyTo(dest)
+	NewMap().CopyTo(dest)
 	assert.EqualValues(t, 0, dest.Len())
 
 	// Test CopyTo larger slice
-	generateTestAttributeMap().CopyTo(dest)
-	assert.EqualValues(t, generateTestAttributeMap(), dest)
+	generateTestMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestMap(), dest)
 
 	// Test CopyTo same size slice
-	generateTestAttributeMap().CopyTo(dest)
-	assert.EqualValues(t, generateTestAttributeMap(), dest)
+	generateTestMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestMap(), dest)
 
 	// Test CopyTo with an empty Value in the destination
 	(*dest.orig)[0].Value = otlpcommon.AnyValue{}
-	generateTestAttributeMap().CopyTo(dest)
-	assert.EqualValues(t, generateTestAttributeMap(), dest)
+	generateTestMap().CopyTo(dest)
+	assert.EqualValues(t, generateTestMap(), dest)
 }
 
 func TestAttributeValue_copyTo(t *testing.T) {
@@ -663,7 +663,7 @@ func TestAttributeValue_copyTo(t *testing.T) {
 	assert.EqualValues(t, nil, destVal.Value)
 }
 
-func TestAttributeMap_Update(t *testing.T) {
+func TestMap_Update(t *testing.T) {
 	origWithNil := []otlpcommon.KeyValue{
 		{
 			Key:   "test_key",
@@ -674,7 +674,7 @@ func TestAttributeMap_Update(t *testing.T) {
 			Value: otlpcommon.AnyValue{Value: nil},
 		},
 	}
-	sm := AttributeMap{
+	sm := Map{
 		orig: &origWithNil,
 	}
 
@@ -701,15 +701,15 @@ func TestAttributeMap_Update(t *testing.T) {
 	assert.EqualValues(t, 123, av2.IntVal())
 }
 
-func TestAttributeMap_EnsureCapacity_Zero(t *testing.T) {
-	am := NewAttributeMap()
+func TestMap_EnsureCapacity_Zero(t *testing.T) {
+	am := NewMap()
 	am.EnsureCapacity(0)
 	assert.Equal(t, 0, am.Len())
 	assert.Equal(t, 0, cap(*am.orig))
 }
 
-func TestAttributeMap_EnsureCapacity(t *testing.T) {
-	am := NewAttributeMap()
+func TestMap_EnsureCapacity(t *testing.T) {
+	am := NewMap()
 	am.EnsureCapacity(5)
 	assert.Equal(t, 0, am.Len())
 	assert.Equal(t, 5, cap(*am.orig))
@@ -721,8 +721,8 @@ func TestAttributeMap_EnsureCapacity(t *testing.T) {
 	assert.Equal(t, 8, cap(*am.orig))
 }
 
-func TestAttributeMap_Clear(t *testing.T) {
-	am := NewAttributeMap()
+func TestMap_Clear(t *testing.T) {
+	am := NewMap()
 	assert.Nil(t, *am.orig)
 	am.Clear()
 	assert.Nil(t, *am.orig)
@@ -732,7 +732,7 @@ func TestAttributeMap_Clear(t *testing.T) {
 	assert.Nil(t, *am.orig)
 }
 
-func TestAttributeMap_RemoveIf(t *testing.T) {
+func TestMap_RemoveIf(t *testing.T) {
 	rawMap := map[string]Value{
 		"k_string": NewValueString("123"),
 		"k_int":    NewValueInt(123),
@@ -741,7 +741,7 @@ func TestAttributeMap_RemoveIf(t *testing.T) {
 		"k_empty":  NewValueEmpty(),
 		"k_bytes":  NewValueBytes([]byte{}),
 	}
-	am := NewAttributeMapFromMap(rawMap)
+	am := NewMapFromRaw(rawMap)
 	assert.Equal(t, 6, am.Len())
 
 	am.RemoveIf(func(key string, val Value) bool {
@@ -790,7 +790,7 @@ func BenchmarkAttributeValueFloat_AsString(b *testing.B) {
 	}
 }
 
-func BenchmarkAttributeMap_Range(b *testing.B) {
+func BenchmarkMap_Range(b *testing.B) {
 	const numElements = 20
 	rawOrig := make([]otlpcommon.KeyValue, numElements)
 	for i := 0; i < numElements; i++ {
@@ -799,7 +799,7 @@ func BenchmarkAttributeMap_Range(b *testing.B) {
 			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v" + strconv.Itoa(i)}},
 		}
 	}
-	am := AttributeMap{
+	am := Map{
 		orig: &rawOrig,
 	}
 	b.ResetTimer()
@@ -815,7 +815,7 @@ func BenchmarkAttributeMap_Range(b *testing.B) {
 	}
 }
 
-func BenchmarkAttributeMap_RangeOverMap(b *testing.B) {
+func BenchmarkMap_RangeOverMap(b *testing.B) {
 	const numElements = 20
 	rawOrig := make(map[string]Value, numElements)
 	for i := 0; i < numElements; i++ {
@@ -837,7 +837,7 @@ func BenchmarkAttributeMap_RangeOverMap(b *testing.B) {
 	}
 }
 
-func BenchmarkAttributeMap_Remove(b *testing.B) {
+func BenchmarkMap_Remove(b *testing.B) {
 	b.StopTimer()
 	// Remove all of the even keys
 	keysToRemove := map[string]struct{}{}
@@ -845,7 +845,7 @@ func BenchmarkAttributeMap_Remove(b *testing.B) {
 		keysToRemove[fmt.Sprintf("%d", j*2)] = struct{}{}
 	}
 	for i := 0; i < b.N; i++ {
-		m := NewAttributeMap()
+		m := NewMap()
 		for j := 0; j < 100; j++ {
 			m.InsertString(fmt.Sprintf("%d", j), "string value")
 		}
@@ -857,7 +857,7 @@ func BenchmarkAttributeMap_Remove(b *testing.B) {
 	}
 }
 
-func BenchmarkAttributeMap_RemoveIf(b *testing.B) {
+func BenchmarkMap_RemoveIf(b *testing.B) {
 	b.StopTimer()
 	// Remove all of the even keys
 	keysToRemove := map[string]struct{}{}
@@ -865,7 +865,7 @@ func BenchmarkAttributeMap_RemoveIf(b *testing.B) {
 		keysToRemove[fmt.Sprintf("%d", j*2)] = struct{}{}
 	}
 	for i := 0; i < b.N; i++ {
-		m := NewAttributeMap()
+		m := NewMap()
 		for j := 0; j < 100; j++ {
 			m.InsertString(fmt.Sprintf("%d", j), "string value")
 		}
@@ -911,43 +911,43 @@ func generateTestValue() Value {
 	return av
 }
 
-func generateTestAttributeMap() AttributeMap {
-	am := NewAttributeMap()
-	fillTestAttributeMap(am)
+func generateTestMap() Map {
+	am := NewMap()
+	fillTestMap(am)
 	return am
 }
 
-func fillTestAttributeMap(dest AttributeMap) {
-	NewAttributeMapFromMap(map[string]Value{
+func fillTestMap(dest Map) {
+	NewMapFromRaw(map[string]Value{
 		"k": NewValueString("v"),
 	}).CopyTo(dest)
 }
 
-func generateTestEmptyAttributeMap() AttributeMap {
-	return NewAttributeMapFromMap(map[string]Value{
+func generateTestEmptyMap() Map {
+	return NewMapFromRaw(map[string]Value{
 		"k": NewValueEmpty(),
 	})
 }
-func generateTestIntAttributeMap() AttributeMap {
-	return NewAttributeMapFromMap(map[string]Value{
+func generateTestIntMap() Map {
+	return NewMapFromRaw(map[string]Value{
 		"k": NewValueInt(123),
 	})
 }
 
-func generateTestDoubleAttributeMap() AttributeMap {
-	return NewAttributeMapFromMap(map[string]Value{
+func generateTestDoubleMap() Map {
+	return NewMapFromRaw(map[string]Value{
 		"k": NewValueDouble(12.3),
 	})
 }
 
-func generateTestBoolAttributeMap() AttributeMap {
-	return NewAttributeMapFromMap(map[string]Value{
+func generateTestBoolMap() Map {
+	return NewMapFromRaw(map[string]Value{
 		"k": NewValueBool(true),
 	})
 }
 
-func generateTestBytesAttributeMap() AttributeMap {
-	return NewAttributeMapFromMap(map[string]Value{
+func generateTestBytesMap() Map {
+	return NewMapFromRaw(map[string]Value{
 		"k": NewValueBytes([]byte{1, 2, 3, 4, 5}),
 	})
 }
@@ -955,7 +955,7 @@ func generateTestBytesAttributeMap() AttributeMap {
 func TestAttributeValueArray(t *testing.T) {
 	a1 := NewValueArray()
 	assert.EqualValues(t, ValueTypeArray, a1.Type())
-	assert.EqualValues(t, NewAttributeValueSlice(), a1.SliceVal())
+	assert.EqualValues(t, NewSlice(), a1.SliceVal())
 	assert.EqualValues(t, 0, a1.SliceVal().Len())
 
 	a1.SliceVal().AppendEmpty().SetDoubleVal(123)
@@ -986,7 +986,7 @@ func TestAttributeValueArray(t *testing.T) {
 
 	// Test nil values case for SliceVal() func.
 	a1 = Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}}
-	assert.EqualValues(t, NewAttributeValueSlice(), a1.SliceVal())
+	assert.EqualValues(t, NewSlice(), a1.SliceVal())
 }
 
 func TestAttributeSliceWithNilValues(t *testing.T) {
@@ -994,7 +994,7 @@ func TestAttributeSliceWithNilValues(t *testing.T) {
 		{},
 		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
 	}
-	sm := AttributeValueSlice{
+	sm := Slice{
 		orig: &origWithNil,
 	}
 
@@ -1055,7 +1055,7 @@ func TestAsString(t *testing.T) {
 		},
 		{
 			name:     "simple_map",
-			input:    simpleAttributeValueMap(),
+			input:    simpleValueMap(),
 			expected: "{\"arrKey\":[\"strOne\",\"strTwo\"],\"boolKey\":false,\"floatKey\":18.6,\"intKey\":7,\"mapKey\":{\"keyOne\":\"valOne\",\"keyTwo\":\"valTwo\"},\"nullKey\":null,\"strKey\":\"strVal\"}",
 		},
 		{
@@ -1065,7 +1065,7 @@ func TestAsString(t *testing.T) {
 		},
 		{
 			name:     "simple_array",
-			input:    simpleAttributeValueArray(),
+			input:    simpleValueArray(),
 			expected: "[\"strVal\",7,18.6,false,null]",
 		},
 		{
@@ -1097,12 +1097,12 @@ func TestAsRaw(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		input    AttributeMap
+		input    Map
 		expected map[string]interface{}
 	}{
 		{
 			name: "asraw",
-			input: NewAttributeMapFromMap(
+			input: NewMapFromRaw(
 				map[string]Value{
 					"array":  arr,
 					"bool":   NewValueBool(true),
@@ -1134,7 +1134,7 @@ func TestAsRaw(t *testing.T) {
 	}
 }
 
-func simpleAttributeValueMap() Value {
+func simpleValueMap() Value {
 	ret := NewValueMap()
 	attrMap := ret.MapVal()
 	attrMap.UpsertString("strKey", "strVal")
@@ -1147,7 +1147,7 @@ func simpleAttributeValueMap() Value {
 	return ret
 }
 
-func simpleAttributeValueArray() Value {
+func simpleValueArray() Value {
 	ret := NewValueArray()
 	attrArr := ret.SliceVal()
 	attrArr.AppendEmpty().SetStringVal("strVal")

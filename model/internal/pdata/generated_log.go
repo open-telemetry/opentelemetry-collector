@@ -655,8 +655,8 @@ func (ms LogRecord) Body() Value {
 }
 
 // Attributes returns the Attributes associated with this LogRecord.
-func (ms LogRecord) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms LogRecord) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this LogRecord.

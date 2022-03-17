@@ -660,8 +660,8 @@ func (ms Span) SetEndTimestamp(v Timestamp) {
 }
 
 // Attributes returns the Attributes associated with this Span.
-func (ms Span) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms Span) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Span.
@@ -917,8 +917,8 @@ func (ms SpanEvent) SetName(v string) {
 }
 
 // Attributes returns the Attributes associated with this SpanEvent.
-func (ms SpanEvent) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms SpanEvent) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
@@ -1139,8 +1139,8 @@ func (ms SpanLink) SetTraceState(v TraceState) {
 }
 
 // Attributes returns the Attributes associated with this SpanLink.
-func (ms SpanLink) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms SpanLink) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanLink.

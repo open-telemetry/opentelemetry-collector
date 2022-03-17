@@ -66,7 +66,7 @@ func (avt ValueType) String() string {
 	return ""
 }
 
-// Value is a mutable cell containing the value of an attribute. Typically used in AttributeMap.
+// Value is a mutable cell containing the value of an attribute. Typically used in Map.
 // Must use one of NewValue+ functions below to create new instances.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
@@ -190,12 +190,12 @@ func (v Value) BoolVal() bool {
 // such empty map has no effect on this Value.
 //
 // Calling this function on zero-initialized Value will cause a panic.
-func (v Value) MapVal() AttributeMap {
+func (v Value) MapVal() Map {
 	kvlist := v.orig.GetKvlistValue()
 	if kvlist == nil {
-		return NewAttributeMap()
+		return NewMap()
 	}
-	return newAttributeMap(&kvlist.Values)
+	return newMap(&kvlist.Values)
 }
 
 // SliceVal returns the slice value associated with this Value.
@@ -203,12 +203,12 @@ func (v Value) MapVal() AttributeMap {
 // such empty slice has no effect on this Value.
 //
 // Calling this function on zero-initialized Value will cause a panic.
-func (v Value) SliceVal() AttributeValueSlice {
+func (v Value) SliceVal() Slice {
 	arr := v.orig.GetArrayValue()
 	if arr == nil {
-		return NewAttributeValueSlice()
+		return NewSlice()
 	}
-	return newAttributeValueSlice(&arr.Values)
+	return newSlice(&arr.Values)
 }
 
 // BytesVal returns the []byte value associated with this Value.
@@ -270,7 +270,7 @@ func (v Value) copyTo(dest *otlpcommon.AnyValue) {
 			return
 		}
 		// Deep copy to dest.
-		newAttributeMap(&ov.KvlistValue.Values).CopyTo(newAttributeMap(&kv.KvlistValue.Values))
+		newMap(&ov.KvlistValue.Values).CopyTo(newMap(&kv.KvlistValue.Values))
 	case *otlpcommon.AnyValue_ArrayValue:
 		av, ok := dest.Value.(*otlpcommon.AnyValue_ArrayValue)
 		if !ok {
@@ -282,7 +282,7 @@ func (v Value) copyTo(dest *otlpcommon.AnyValue) {
 			return
 		}
 		// Deep copy to dest.
-		newAttributeValueSlice(&ov.ArrayValue.Values).CopyTo(newAttributeValueSlice(&av.ArrayValue.Values))
+		newSlice(&ov.ArrayValue.Values).CopyTo(newSlice(&av.ArrayValue.Values))
 	default:
 		// Primitive immutable type, no need for deep copy.
 		dest.Value = v.orig.Value
@@ -345,10 +345,10 @@ func (v Value) Equal(av Value) bool {
 			return false
 		}
 
-		am := newAttributeMap(&avv)
+		m := newMap(&avv)
 
 		for _, val := range cc {
-			newAv, ok := am.Get(val.Key)
+			newAv, ok := m.Get(val.Key)
 			if !ok {
 				return false
 			}
@@ -478,52 +478,52 @@ func newAttributeKeyValueBytes(k string, v []byte) otlpcommon.KeyValue {
 	return orig
 }
 
-// AttributeMap stores a map of attribute keys to values.
-type AttributeMap struct {
+// Map stores a map of attribute keys to values.
+type Map struct {
 	orig *[]otlpcommon.KeyValue
 }
 
-// NewAttributeMap creates a AttributeMap with 0 elements.
-func NewAttributeMap() AttributeMap {
+// NewMap creates a Map with 0 elements.
+func NewMap() Map {
 	orig := []otlpcommon.KeyValue(nil)
-	return AttributeMap{&orig}
+	return Map{&orig}
 }
 
-// NewAttributeMapFromMap creates a AttributeMap with values
+// NewMapFromRaw creates a Map with values
 // from the given map[string]Value.
-func NewAttributeMapFromMap(attrMap map[string]Value) AttributeMap {
-	if len(attrMap) == 0 {
+func NewMapFromRaw(rawMap map[string]Value) Map {
+	if len(rawMap) == 0 {
 		kv := []otlpcommon.KeyValue(nil)
-		return AttributeMap{&kv}
+		return Map{&kv}
 	}
-	origs := make([]otlpcommon.KeyValue, len(attrMap))
+	origs := make([]otlpcommon.KeyValue, len(rawMap))
 	ix := 0
-	for k, v := range attrMap {
+	for k, v := range rawMap {
 		origs[ix].Key = k
 		v.copyTo(&origs[ix].Value)
 		ix++
 	}
-	return AttributeMap{&origs}
+	return Map{&origs}
 }
 
-func newAttributeMap(orig *[]otlpcommon.KeyValue) AttributeMap {
-	return AttributeMap{orig}
+func newMap(orig *[]otlpcommon.KeyValue) Map {
+	return Map{orig}
 }
 
-// Clear erases any existing entries in this AttributeMap instance.
-func (am AttributeMap) Clear() {
-	*am.orig = nil
+// Clear erases any existing entries in this Map instance.
+func (m Map) Clear() {
+	*m.orig = nil
 }
 
-// EnsureCapacity increases the capacity of this AttributeMap instance, if necessary,
+// EnsureCapacity increases the capacity of this Map instance, if necessary,
 // to ensure that it can hold at least the number of elements specified by the capacity argument.
-func (am AttributeMap) EnsureCapacity(capacity int) {
-	if capacity <= cap(*am.orig) {
+func (m Map) EnsureCapacity(capacity int) {
+	if capacity <= cap(*m.orig) {
 		return
 	}
-	oldOrig := *am.orig
-	*am.orig = make([]otlpcommon.KeyValue, 0, capacity)
-	copy(*am.orig, oldOrig)
+	oldOrig := *m.orig
+	*m.orig = make([]otlpcommon.KeyValue, 0, capacity)
+	copy(*m.orig, oldOrig)
 }
 
 // Get returns the Value associated with the key and true. Returned
@@ -533,9 +533,9 @@ func (am AttributeMap) EnsureCapacity(capacity int) {
 //
 // If the key does not exist returns an invalid instance of the KeyValue and false.
 // Calling any functions on the returned invalid instance will cause a panic.
-func (am AttributeMap) Get(key string) (Value, bool) {
-	for i := range *am.orig {
-		akv := &(*am.orig)[i]
+func (m Map) Get(key string) (Value, bool) {
+	for i := range *m.orig {
+		akv := &(*m.orig)[i]
 		if akv.Key == key {
 			return Value{&akv.Value}, true
 		}
@@ -544,18 +544,18 @@ func (am AttributeMap) Get(key string) (Value, bool) {
 }
 
 // Deprecated: [v0.47.0] Use Remove instead.
-func (am AttributeMap) Delete(key string) bool {
-	return am.Remove(key)
+func (m Map) Delete(key string) bool {
+	return m.Remove(key)
 }
 
 // Remove removes the entry associated with the key and returns true if the key
 // was present in the map, otherwise returns false.
-func (am AttributeMap) Remove(key string) bool {
-	for i := range *am.orig {
-		akv := &(*am.orig)[i]
+func (m Map) Remove(key string) bool {
+	for i := range *m.orig {
+		akv := &(*m.orig)[i]
 		if akv.Key == key {
-			*akv = (*am.orig)[len(*am.orig)-1]
-			*am.orig = (*am.orig)[:len(*am.orig)-1]
+			*akv = (*m.orig)[len(*m.orig)-1]
+			*m.orig = (*m.orig)[:len(*m.orig)-1]
 			return true
 		}
 	}
@@ -563,10 +563,10 @@ func (am AttributeMap) Remove(key string) bool {
 }
 
 // RemoveIf removes the entries for which the function in question returns true
-func (am AttributeMap) RemoveIf(f func(string, Value) bool) {
+func (m Map) RemoveIf(f func(string, Value) bool) {
 	newLen := 0
-	for i := 0; i < len(*am.orig); i++ {
-		akv := &(*am.orig)[i]
+	for i := 0; i < len(*m.orig); i++ {
+		akv := &(*m.orig)[i]
 		if f(akv.Key, Value{&akv.Value}) {
 			continue
 		}
@@ -575,10 +575,10 @@ func (am AttributeMap) RemoveIf(f func(string, Value) bool) {
 			newLen++
 			continue
 		}
-		(*am.orig)[newLen] = (*am.orig)[i]
+		(*m.orig)[newLen] = (*m.orig)[i]
 		newLen++
 	}
-	*am.orig = (*am.orig)[:newLen]
+	*m.orig = (*m.orig)[:newLen]
 }
 
 // Insert adds the Value to the map when the key does not exist.
@@ -588,49 +588,49 @@ func (am AttributeMap) RemoveIf(f func(string, Value) bool) {
 //
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
-func (am AttributeMap) Insert(k string, v Value) {
-	if _, existing := am.Get(k); !existing {
-		*am.orig = append(*am.orig, newAttributeKeyValue(k, v))
+func (m Map) Insert(k string, v Value) {
+	if _, existing := m.Get(k); !existing {
+		*m.orig = append(*m.orig, newAttributeKeyValue(k, v))
 	}
 }
 
 // InsertNull adds a null Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
-func (am AttributeMap) InsertNull(k string) {
-	if _, existing := am.Get(k); !existing {
-		*am.orig = append(*am.orig, newAttributeKeyValueNull(k))
+func (m Map) InsertNull(k string) {
+	if _, existing := m.Get(k); !existing {
+		*m.orig = append(*m.orig, newAttributeKeyValueNull(k))
 	}
 }
 
 // InsertString adds the string Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
-func (am AttributeMap) InsertString(k string, v string) {
-	if _, existing := am.Get(k); !existing {
-		*am.orig = append(*am.orig, newAttributeKeyValueString(k, v))
+func (m Map) InsertString(k string, v string) {
+	if _, existing := m.Get(k); !existing {
+		*m.orig = append(*m.orig, newAttributeKeyValueString(k, v))
 	}
 }
 
 // InsertInt adds the int Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
-func (am AttributeMap) InsertInt(k string, v int64) {
-	if _, existing := am.Get(k); !existing {
-		*am.orig = append(*am.orig, newAttributeKeyValueInt(k, v))
+func (m Map) InsertInt(k string, v int64) {
+	if _, existing := m.Get(k); !existing {
+		*m.orig = append(*m.orig, newAttributeKeyValueInt(k, v))
 	}
 }
 
 // InsertDouble adds the double Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
-func (am AttributeMap) InsertDouble(k string, v float64) {
-	if _, existing := am.Get(k); !existing {
-		*am.orig = append(*am.orig, newAttributeKeyValueDouble(k, v))
+func (m Map) InsertDouble(k string, v float64) {
+	if _, existing := m.Get(k); !existing {
+		*m.orig = append(*m.orig, newAttributeKeyValueDouble(k, v))
 	}
 }
 
 // InsertBool adds the bool Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
-func (am AttributeMap) InsertBool(k string, v bool) {
-	if _, existing := am.Get(k); !existing {
-		*am.orig = append(*am.orig, newAttributeKeyValueBool(k, v))
+func (m Map) InsertBool(k string, v bool) {
+	if _, existing := m.Get(k); !existing {
+		*m.orig = append(*m.orig, newAttributeKeyValueBool(k, v))
 	}
 }
 
@@ -638,9 +638,9 @@ func (am AttributeMap) InsertBool(k string, v bool) {
 // No action is applied to the map where the key already exists.
 // The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
 // across multiple attributes is forbidden.
-func (am AttributeMap) InsertBytes(k string, v []byte) {
-	if _, existing := am.Get(k); !existing {
-		*am.orig = append(*am.orig, newAttributeKeyValueBytes(k, v))
+func (m Map) InsertBytes(k string, v []byte) {
+	if _, existing := m.Get(k); !existing {
+		*m.orig = append(*m.orig, newAttributeKeyValueBytes(k, v))
 	}
 }
 
@@ -651,40 +651,40 @@ func (am AttributeMap) InsertBytes(k string, v []byte) {
 //
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
-func (am AttributeMap) Update(k string, v Value) {
-	if av, existing := am.Get(k); existing {
+func (m Map) Update(k string, v Value) {
+	if av, existing := m.Get(k); existing {
 		v.copyTo(av.orig)
 	}
 }
 
 // UpdateString updates an existing string Value with a value.
 // No action is applied to the map where the key does not exist.
-func (am AttributeMap) UpdateString(k string, v string) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpdateString(k string, v string) {
+	if av, existing := m.Get(k); existing {
 		av.SetStringVal(v)
 	}
 }
 
 // UpdateInt updates an existing int Value with a value.
 // No action is applied to the map where the key does not exist.
-func (am AttributeMap) UpdateInt(k string, v int64) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpdateInt(k string, v int64) {
+	if av, existing := m.Get(k); existing {
 		av.SetIntVal(v)
 	}
 }
 
 // UpdateDouble updates an existing double Value with a value.
 // No action is applied to the map where the key does not exist.
-func (am AttributeMap) UpdateDouble(k string, v float64) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpdateDouble(k string, v float64) {
+	if av, existing := m.Get(k); existing {
 		av.SetDoubleVal(v)
 	}
 }
 
 // UpdateBool updates an existing bool Value with a value.
 // No action is applied to the map where the key does not exist.
-func (am AttributeMap) UpdateBool(k string, v bool) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpdateBool(k string, v bool) {
+	if av, existing := m.Get(k); existing {
 		av.SetBoolVal(v)
 	}
 }
@@ -693,8 +693,8 @@ func (am AttributeMap) UpdateBool(k string, v bool) {
 // No action is applied to the map where the key does not exist.
 // The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
 // across multiple attributes is forbidden.
-func (am AttributeMap) UpdateBytes(k string, v []byte) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpdateBytes(k string, v []byte) {
+	if av, existing := m.Get(k); existing {
 		av.SetBytesVal(v)
 	}
 }
@@ -707,55 +707,55 @@ func (am AttributeMap) UpdateBytes(k string, v []byte) {
 //
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
-func (am AttributeMap) Upsert(k string, v Value) {
-	if av, existing := am.Get(k); existing {
+func (m Map) Upsert(k string, v Value) {
+	if av, existing := m.Get(k); existing {
 		v.copyTo(av.orig)
 	} else {
-		*am.orig = append(*am.orig, newAttributeKeyValue(k, v))
+		*m.orig = append(*m.orig, newAttributeKeyValue(k, v))
 	}
 }
 
 // UpsertString performs the Insert or Update action. The Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (am AttributeMap) UpsertString(k string, v string) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpsertString(k string, v string) {
+	if av, existing := m.Get(k); existing {
 		av.SetStringVal(v)
 	} else {
-		*am.orig = append(*am.orig, newAttributeKeyValueString(k, v))
+		*m.orig = append(*m.orig, newAttributeKeyValueString(k, v))
 	}
 }
 
 // UpsertInt performs the Insert or Update action. The int Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (am AttributeMap) UpsertInt(k string, v int64) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpsertInt(k string, v int64) {
+	if av, existing := m.Get(k); existing {
 		av.SetIntVal(v)
 	} else {
-		*am.orig = append(*am.orig, newAttributeKeyValueInt(k, v))
+		*m.orig = append(*m.orig, newAttributeKeyValueInt(k, v))
 	}
 }
 
 // UpsertDouble performs the Insert or Update action. The double Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (am AttributeMap) UpsertDouble(k string, v float64) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpsertDouble(k string, v float64) {
+	if av, existing := m.Get(k); existing {
 		av.SetDoubleVal(v)
 	} else {
-		*am.orig = append(*am.orig, newAttributeKeyValueDouble(k, v))
+		*m.orig = append(*m.orig, newAttributeKeyValueDouble(k, v))
 	}
 }
 
 // UpsertBool performs the Insert or Update action. The bool Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (am AttributeMap) UpsertBool(k string, v bool) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpsertBool(k string, v bool) {
+	if av, existing := m.Get(k); existing {
 		av.SetBoolVal(v)
 	} else {
-		*am.orig = append(*am.orig, newAttributeKeyValueBool(k, v))
+		*m.orig = append(*m.orig, newAttributeKeyValueBool(k, v))
 	}
 }
 
@@ -764,31 +764,31 @@ func (am AttributeMap) UpsertBool(k string, v bool) {
 // updated to the map where the key already existed.
 // The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
 // across multiple attributes is forbidden.
-func (am AttributeMap) UpsertBytes(k string, v []byte) {
-	if av, existing := am.Get(k); existing {
+func (m Map) UpsertBytes(k string, v []byte) {
+	if av, existing := m.Get(k); existing {
 		av.SetBytesVal(v)
 	} else {
-		*am.orig = append(*am.orig, newAttributeKeyValueBytes(k, v))
+		*m.orig = append(*m.orig, newAttributeKeyValueBytes(k, v))
 	}
 }
 
-// Sort sorts the entries in the AttributeMap so two instances can be compared.
+// Sort sorts the entries in the Map so two instances can be compared.
 // Returns the same instance to allow nicer code like:
 //   assert.EqualValues(t, expected.Sort(), actual.Sort())
-func (am AttributeMap) Sort() AttributeMap {
+func (m Map) Sort() Map {
 	// Intention is to move the nil values at the end.
-	sort.SliceStable(*am.orig, func(i, j int) bool {
-		return (*am.orig)[i].Key < (*am.orig)[j].Key
+	sort.SliceStable(*m.orig, func(i, j int) bool {
+		return (*m.orig)[i].Key < (*m.orig)[j].Key
 	})
-	return am
+	return m
 }
 
 // Len returns the length of this map.
 //
-// Because the AttributeMap is represented internally by a slice of pointers, and the data are comping from the wire,
+// Because the Map is represented internally by a slice of pointers, and the data are comping from the wire,
 // it is possible that when iterating using "Range" to get access to fewer elements because nil elements are skipped.
-func (am AttributeMap) Len() int {
-	return len(*am.orig)
+func (m Map) Len() int {
+	return len(*m.orig)
 }
 
 // Range calls f sequentially for each key and value present in the map. If f returns false, range stops the iteration.
@@ -798,9 +798,9 @@ func (am AttributeMap) Len() int {
 //   sm.Range(func(k string, v Value) bool {
 //       ...
 //   })
-func (am AttributeMap) Range(f func(k string, v Value) bool) {
-	for i := range *am.orig {
-		kv := &(*am.orig)[i]
+func (m Map) Range(f func(k string, v Value) bool) {
+	for i := range *m.orig {
+		kv := &(*m.orig)[i]
 		if !f(kv.Key, Value{&kv.Value}) {
 			break
 		}
@@ -808,14 +808,14 @@ func (am AttributeMap) Range(f func(k string, v Value) bool) {
 }
 
 // CopyTo copies all elements from the current map to the dest.
-func (am AttributeMap) CopyTo(dest AttributeMap) {
-	newLen := len(*am.orig)
+func (m Map) CopyTo(dest Map) {
+	newLen := len(*m.orig)
 	oldCap := cap(*dest.orig)
 	if newLen <= oldCap {
 		// New slice fits in existing slice, no need to reallocate.
 		*dest.orig = (*dest.orig)[:newLen:oldCap]
-		for i := range *am.orig {
-			akv := &(*am.orig)[i]
+		for i := range *m.orig {
+			akv := &(*m.orig)[i]
 			destAkv := &(*dest.orig)[i]
 			destAkv.Key = akv.Key
 			Value{&akv.Value}.copyTo(&destAkv.Value)
@@ -824,19 +824,19 @@ func (am AttributeMap) CopyTo(dest AttributeMap) {
 	}
 
 	// New slice is bigger than exist slice. Allocate new space.
-	origs := make([]otlpcommon.KeyValue, len(*am.orig))
-	for i := range *am.orig {
-		akv := &(*am.orig)[i]
+	origs := make([]otlpcommon.KeyValue, len(*m.orig))
+	for i := range *m.orig {
+		akv := &(*m.orig)[i]
 		origs[i].Key = akv.Key
 		Value{&akv.Value}.copyTo(&origs[i].Value)
 	}
 	*dest.orig = origs
 }
 
-// AsRaw converts an OTLP AttributeMap to a standard go map
-func (am AttributeMap) AsRaw() map[string]interface{} {
+// AsRaw converts an OTLP Map to a standard go map
+func (m Map) AsRaw() map[string]interface{} {
 	rawMap := make(map[string]interface{})
-	am.Range(func(k string, v Value) bool {
+	m.Range(func(k string, v Value) bool {
 		switch v.Type() {
 		case ValueTypeString:
 			rawMap[k] = v.StringVal()
@@ -860,8 +860,8 @@ func (am AttributeMap) AsRaw() map[string]interface{} {
 	return rawMap
 }
 
-// asRaw creates a slice out of a AttributeValueSlice.
-func (es AttributeValueSlice) asRaw() []interface{} {
+// asRaw creates a slice out of a Slice.
+func (es Slice) asRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		v := es.At(i)

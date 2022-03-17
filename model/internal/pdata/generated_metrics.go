@@ -1100,8 +1100,8 @@ func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
 }
 
 // Attributes returns the Attributes associated with this NumberDataPoint.
-func (ms NumberDataPoint) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms NumberDataPoint) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
@@ -1359,8 +1359,8 @@ func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
 }
 
 // Attributes returns the Attributes associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms HistogramDataPoint) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
@@ -1622,8 +1622,8 @@ func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoin
 }
 
 // Attributes returns the Attributes associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms ExponentialHistogramDataPoint) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this ExponentialHistogramDataPoint.
@@ -1950,8 +1950,8 @@ func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
 }
 
 // Attributes returns the Attributes associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms SummaryDataPoint) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
@@ -2411,8 +2411,8 @@ func (ms Exemplar) SetIntVal(v int64) {
 }
 
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
-func (ms Exemplar) FilteredAttributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).FilteredAttributes)
+func (ms Exemplar) FilteredAttributes() Map {
+	return newMap(&(*ms.orig).FilteredAttributes)
 }
 
 // TraceID returns the traceid associated with this Exemplar.

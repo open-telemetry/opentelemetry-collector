@@ -103,11 +103,26 @@ var (
 	NewAttributeValueBytes = pdata.NewValueBytes
 )
 
-// AttributeMap is an alias for pdata.AttributeMap struct.
-type AttributeMap = pdata.AttributeMap
+// Map is an alias for pdata.Map struct.
+type Map = pdata.Map
 
-// Aliases for functions to create pdata.AttributeMap.
+// Deprecated: [v0.48.0] Use Map instead.
+type AttributeMap = pdata.Map
+
+// Aliases for functions to create pdata.Map.
 var (
-	NewAttributeMap        = pdata.NewAttributeMap
-	NewAttributeMapFromMap = pdata.NewAttributeMapFromMap
+	NewMap        = pdata.NewMap
+	NewMapFromRaw = pdata.NewMapFromRaw
 )
+
+// Deprecated: [v0.48.0] Use NewMap instead.
+var NewAttributeMap = pdata.NewMap
+
+// Deprecated: [v0.48.0] Use NewMapFromRaw instead.
+var NewAttributeMapFromMap = pdata.NewMapFromRaw
+
+// Deprecated: [v0.48.0] Use Slice instead.
+type AttributeValueSlice = pdata.Slice
+
+// Deprecated: [v0.48.0] Use NewSlice instead.
+var NewAttributeValueSlice = pdata.NewSlice

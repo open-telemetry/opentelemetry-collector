@@ -16,6 +16,12 @@
   - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
   - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
   - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
+- Remove "Attribute" part from common pdata collections names (#4999)
+  - Deprecate `pdata.AttributeMap` struct in favor of `pdata.Map`
+  - Deprecate `pdata.NewAttributeMap` func in favor of `pdata.NewMap`
+  - Deprecate `pdata.NewAttributeMapFromMap` func in favor of `pdata.NewMapFromRaw`
+  - Deprecate `pdata.AttributeValueSlice` struct in favor of `pdata.Slice`
+  - Deprecate `pdata.NewAttributeValueSlice` func in favor of `pdata.NewSlice`
 
 ## v0.47.0 Beta
 
