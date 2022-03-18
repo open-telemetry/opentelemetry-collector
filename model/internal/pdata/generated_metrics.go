@@ -628,38 +628,73 @@ func (ms Metric) DataType() MetricDataType {
 }
 
 // Gauge returns the gauge associated with this Metric.
-// Calling this function when DataType() != MetricDataTypeGauge will cause a panic.
+//
+// Calling this function when DataType() != MetricDataTypeGauge returns an invalid
+// zero-initialized instance of Gauge. Note that using such Gauge instance can cause panic.
+//
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Gauge() Gauge {
-	return newGauge((*ms.orig).Data.(*otlpmetrics.Metric_Gauge).Gauge)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Gauge)
+	if !ok {
+		return Gauge{}
+	}
+	return newGauge(v.Gauge)
 }
 
 // Sum returns the sum associated with this Metric.
-// Calling this function when DataType() != MetricDataTypeSum will cause a panic.
+//
+// Calling this function when DataType() != MetricDataTypeSum returns an invalid
+// zero-initialized instance of Sum. Note that using such Sum instance can cause panic.
+//
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Sum() Sum {
-	return newSum((*ms.orig).Data.(*otlpmetrics.Metric_Sum).Sum)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Sum)
+	if !ok {
+		return Sum{}
+	}
+	return newSum(v.Sum)
 }
 
 // Histogram returns the histogram associated with this Metric.
-// Calling this function when DataType() != MetricDataTypeHistogram will cause a panic.
+//
+// Calling this function when DataType() != MetricDataTypeHistogram returns an invalid
+// zero-initialized instance of Histogram. Note that using such Histogram instance can cause panic.
+//
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Histogram() Histogram {
-	return newHistogram((*ms.orig).Data.(*otlpmetrics.Metric_Histogram).Histogram)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Histogram)
+	if !ok {
+		return Histogram{}
+	}
+	return newHistogram(v.Histogram)
 }
 
 // ExponentialHistogram returns the exponentialhistogram associated with this Metric.
-// Calling this function when DataType() != MetricDataTypeExponentialHistogram will cause a panic.
+//
+// Calling this function when DataType() != MetricDataTypeExponentialHistogram returns an invalid
+// zero-initialized instance of ExponentialHistogram. Note that using such ExponentialHistogram instance can cause panic.
+//
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) ExponentialHistogram() ExponentialHistogram {
-	return newExponentialHistogram((*ms.orig).Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_ExponentialHistogram)
+	if !ok {
+		return ExponentialHistogram{}
+	}
+	return newExponentialHistogram(v.ExponentialHistogram)
 }
 
 // Summary returns the summary associated with this Metric.
-// Calling this function when DataType() != MetricDataTypeSummary will cause a panic.
+//
+// Calling this function when DataType() != MetricDataTypeSummary returns an invalid
+// zero-initialized instance of Summary. Note that using such Summary instance can cause panic.
+//
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Summary() Summary {
-	return newSummary((*ms.orig).Data.(*otlpmetrics.Metric_Summary).Summary)
+	v, ok := ms.orig.GetData().(*otlpmetrics.Metric_Summary)
+	if !ok {
+		return Summary{}
+	}
+	return newSummary(v.Summary)
 }
 
 // CopyTo copies all properties from the current struct to the dest.

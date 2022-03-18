@@ -64,10 +64,17 @@ const oneOfTypeAccessorHeaderTestTemplate = `func Test${structName}${originField
 	assert.Equal(t, "", ${typeName}(1000).String())`
 
 const accessorsOneOfMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-// Calling this function when ${originOneOfFieldName}Type() != ${typeName} will cause a panic.
+//
+// Calling this function when ${originOneOfFieldName}Type() != ${typeName} returns an invalid 
+// zero-initialized instance of ${returnType}. Note that using such ${returnType} instance can cause panic.
+//
 // Calling this function on zero-initialized ${structName} will cause a panic.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}((*ms.orig).${originOneOfFieldName}.(*${originStructType}).${originFieldName})
+	v, ok := ms.orig.Get${originOneOfFieldName}().(*${originStructType})
+	if !ok {
+		return ${returnType}{}
+	}
+	return new${returnType}(v.${originFieldName})
 }`
 
 const accessorsOneOfMessageTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
@@ -472,6 +479,11 @@ func (of *oneOfField) generateTypeAccessorsTest(ms baseStruct, sb *strings.Build
 		}
 	}))
 	sb.WriteString("\n")
+	for _, v := range of.values {
+		if mv, ok := v.(*oneOfMessageValue); ok {
+			sb.WriteString("\tassert.Equal(t, " + mv.fieldName + "{}, tv." + mv.fieldName + "())\n")
+		}
+	}
 	for _, v := range of.values {
 		v.generateSetWithTestValue(of, sb)
 		sb.WriteString("\n\tassert.Equal(t, " + of.typeName + v.getFieldType() + ", " +

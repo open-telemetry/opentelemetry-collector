@@ -17,6 +17,12 @@
   - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
   - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
 
+### 💡 Enhancements 💡
+
+- Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
+  In case of type mismatch, they don't panic right away but return an invalid zero-initialized
+  instance for consistency with other OneOf field accessors (#5034)
+
 ## v0.47.0 Beta
 
 ### 🛑 Breaking changes 🛑
