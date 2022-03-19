@@ -124,6 +124,9 @@ jobs:
       - name: Multimod verify
         run: make multimod-verify
   unittest:
+    strategy:
+      matrix:
+        go-version: [1.18, 1.17]
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
@@ -132,7 +135,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: ${{ matrix.go-version }}
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
