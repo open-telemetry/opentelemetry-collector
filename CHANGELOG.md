@@ -16,6 +16,7 @@
   - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
   - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
   - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
+- Deprecate LogRecord.Name(), it was deprecated in the data model (#5054)
 
 ## v0.47.0 Beta
 

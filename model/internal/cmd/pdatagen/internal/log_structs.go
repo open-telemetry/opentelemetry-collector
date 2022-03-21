@@ -122,6 +122,7 @@ var logRecord = &messageValueStruct{
 			testVal:         `SeverityNumberINFO`,
 		},
 		&primitiveField{
+			extraComment:    "Deprecated: [v0.48.0] it was removed from the data model.",
 			fieldName:       "Name",
 			originFieldName: "Name",
 			returnType:      "string",
