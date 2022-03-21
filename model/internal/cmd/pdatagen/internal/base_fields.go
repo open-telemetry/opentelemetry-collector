@@ -44,7 +44,7 @@ const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t
 }`
 
 const accessorsPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${returnType} {
+${extraComment}func (ms ${structName}) ${fieldName}() ${returnType} {
 	return (*ms.orig).${originFieldName}
 }
 
@@ -239,6 +239,7 @@ func (mf *messageValueField) generateCopyToValue(sb *strings.Builder) {
 var _ baseField = (*messageValueField)(nil)
 
 type primitiveField struct {
+	extraComment    string
 	fieldName       string
 	originFieldName string
 	returnType      string
@@ -251,6 +252,11 @@ func (pf *primitiveField) generateAccessors(ms baseStruct, sb *strings.Builder) 
 		switch name {
 		case "structName":
 			return ms.getName()
+		case "extraComment":
+			if pf.extraComment != "" {
+				return "//\n// " + pf.extraComment + "\n"
+			}
+			return ""
 		case "fieldName":
 			return pf.fieldName
 		case "lowerFieldName":
