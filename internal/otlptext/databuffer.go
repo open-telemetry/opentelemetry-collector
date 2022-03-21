@@ -37,13 +37,13 @@ func (b *dataBuffer) logAttr(label string, value string) {
 	b.logEntry("    %-15s: %s", label, value)
 }
 
-func (b *dataBuffer) logAttributeMap(label string, am pdata.AttributeMap) {
-	if am.Len() == 0 {
+func (b *dataBuffer) logAttributes(label string, m pdata.Map) {
+	if m.Len() == 0 {
 		return
 	}
 
 	b.logEntry("%s:", label)
-	am.Range(func(k string, v pdata.Value) bool {
+	m.Range(func(k string, v pdata.Value) bool {
 		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
 		return true
 	})
@@ -200,8 +200,8 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) 
 	}
 }
 
-func (b *dataBuffer) logDataPointAttributes(labels pdata.AttributeMap) {
-	b.logAttributeMap("Data point attributes", labels)
+func (b *dataBuffer) logDataPointAttributes(labels pdata.Map) {
+	b.logAttributes("Data point attributes", labels)
 }
 
 func (b *dataBuffer) logEvents(description string, se pdata.SpanEventSlice) {
@@ -264,22 +264,22 @@ func attributeValueToString(v pdata.Value) string {
 	case pdata.ValueTypeInt:
 		return strconv.FormatInt(v.IntVal(), 10)
 	case pdata.ValueTypeArray:
-		return attributeValueSliceToString(v.SliceVal())
+		return sliceToString(v.SliceVal())
 	case pdata.ValueTypeMap:
-		return attributeMapToString(v.MapVal())
+		return mapToString(v.MapVal())
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", v.Type())
 	}
 }
 
-func attributeValueSliceToString(av pdata.AttributeValueSlice) string {
+func sliceToString(s pdata.Slice) string {
 	var b strings.Builder
 	b.WriteByte('[')
-	for i := 0; i < av.Len(); i++ {
-		if i < av.Len()-1 {
-			fmt.Fprintf(&b, "%s, ", attributeValueToString(av.At(i)))
+	for i := 0; i < s.Len(); i++ {
+		if i < s.Len()-1 {
+			fmt.Fprintf(&b, "%s, ", attributeValueToString(s.At(i)))
 		} else {
-			b.WriteString(attributeValueToString(av.At(i)))
+			b.WriteString(attributeValueToString(s.At(i)))
 		}
 	}
 
@@ -287,11 +287,11 @@ func attributeValueSliceToString(av pdata.AttributeValueSlice) string {
 	return b.String()
 }
 
-func attributeMapToString(av pdata.AttributeMap) string {
+func mapToString(m pdata.Map) string {
 	var b strings.Builder
 	b.WriteString("{\n")
 
-	av.Sort().Range(func(k string, v pdata.Value) bool {
+	m.Sort().Range(func(k string, v pdata.Value) bool {
 		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), v.AsString())
 		return true
 	})
