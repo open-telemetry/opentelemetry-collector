@@ -40,8 +40,15 @@ func main() {
 		check(f.Close())
 		f, err = os.Create("./model/pdata/generated_" + fp.Name + "_alias.go")
 		check(err)
-		_, err = f.WriteString(fp.GenerateAliasFile())
+		_, err = f.WriteString(fp.GenerateAliasFile("pdata"))
 		check(err)
 		check(f.Close())
+		if !fp.IsCommon() {
+			f, err = os.Create("./model/pdata/" + fp.Name + "/generated_" + fp.Name + "_alias.go")
+			check(err)
+			_, err = f.WriteString(fp.GenerateAliasFile(fp.Name))
+			check(err)
+			check(f.Close())
+		}
 	}
 }

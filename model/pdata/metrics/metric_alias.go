@@ -12,28 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata // import "go.opentelemetry.io/collector/model/pdata"
+package metrics // import "go.opentelemetry.io/collector/model/pdata/metrics"
 
 // This file contains aliases for metrics data structures.
 
-import (
-	"go.opentelemetry.io/collector/model/internal/pdata"
-)
+import "go.opentelemetry.io/collector/model/internal/pdata"
 
-// MetricsMarshaler is an alias for pdata.MetricsMarshaler interface.
-type MetricsMarshaler = pdata.MetricsMarshaler
+// Marshaler is an alias for pdata.MetricsMarshaler interface.
+type Marshaler = pdata.MetricsMarshaler
 
-// MetricsUnmarshaler is an alias for pdata.MetricsUnmarshaler interface.
-type MetricsUnmarshaler = pdata.MetricsUnmarshaler
+// Unmarshaler is an alias for pdata.MetricsUnmarshaler interface.
+type Unmarshaler = pdata.MetricsUnmarshaler
 
-// MetricsSizer is an alias for pdata.MetricsSizer interface.
-type MetricsSizer = pdata.MetricsSizer
+// Sizer is an alias for pdata.MetricsSizer interface.
+type Sizer = pdata.MetricsSizer
 
 // Metrics is an alias for pdata.Metrics structure.
 type Metrics = pdata.Metrics
 
-// NewMetrics is an alias for a function to create new Metrics.
-var NewMetrics = pdata.NewMetrics
+// New is an alias for a function to create new Metrics.
+var New = pdata.NewMetrics
 
 // MetricDataType is an alias for pdata.MetricDataType type.
 type MetricDataType = pdata.MetricDataType
