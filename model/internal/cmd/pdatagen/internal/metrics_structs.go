@@ -438,7 +438,7 @@ var exemplar = &messageValueStruct{
 		&sliceField{
 			fieldName:       "FilteredAttributes",
 			originFieldName: "FilteredAttributes",
-			returnSlice:     attributeMap,
+			returnSlice:     mapStruct,
 		},
 		traceIDField,
 		spanIDField,

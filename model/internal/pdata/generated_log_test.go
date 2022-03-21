@@ -505,9 +505,9 @@ func TestLogRecord_Body(t *testing.T) {
 
 func TestLogRecord_Attributes(t *testing.T) {
 	ms := NewLogRecord()
-	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
-	fillTestAttributeMap(ms.Attributes())
-	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, NewMap(), ms.Attributes())
+	fillTestMap(ms.Attributes())
+	testValAttributes := generateTestMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
@@ -600,6 +600,6 @@ func fillTestLogRecord(tv LogRecord) {
 	tv.SetSeverityNumber(SeverityNumberINFO)
 	tv.SetName("test_name")
 	fillTestValue(tv.Body())
-	fillTestAttributeMap(tv.Attributes())
+	fillTestMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 }

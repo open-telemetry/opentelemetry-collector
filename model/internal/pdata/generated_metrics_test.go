@@ -839,9 +839,9 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
-	fillTestAttributeMap(ms.Attributes())
-	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, NewMap(), ms.Attributes())
+	fillTestMap(ms.Attributes())
+	testValAttributes := generateTestMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
@@ -1029,9 +1029,9 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
-	fillTestAttributeMap(ms.Attributes())
-	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, NewMap(), ms.Attributes())
+	fillTestMap(ms.Attributes())
+	testValAttributes := generateTestMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
@@ -1225,9 +1225,9 @@ func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
-	fillTestAttributeMap(ms.Attributes())
-	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, NewMap(), ms.Attributes())
+	fillTestMap(ms.Attributes())
+	testValAttributes := generateTestMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
@@ -1463,9 +1463,9 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 
 func TestSummaryDataPoint_Attributes(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
-	fillTestAttributeMap(ms.Attributes())
-	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, NewMap(), ms.Attributes())
+	fillTestMap(ms.Attributes())
+	testValAttributes := generateTestMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
@@ -1808,9 +1808,9 @@ func TestExemplar_IntVal(t *testing.T) {
 
 func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
-	assert.EqualValues(t, NewAttributeMap(), ms.FilteredAttributes())
-	fillTestAttributeMap(ms.FilteredAttributes())
-	testValFilteredAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, NewMap(), ms.FilteredAttributes())
+	fillTestMap(ms.FilteredAttributes())
+	testValFilteredAttributes := generateTestMap()
 	assert.EqualValues(t, testValFilteredAttributes, ms.FilteredAttributes())
 }
 
@@ -1985,7 +1985,7 @@ func generateTestNumberDataPoint() NumberDataPoint {
 }
 
 func fillTestNumberDataPoint(tv NumberDataPoint) {
-	fillTestAttributeMap(tv.Attributes())
+	fillTestMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetDoubleVal(float64(17.13))
@@ -2014,7 +2014,7 @@ func generateTestHistogramDataPoint() HistogramDataPoint {
 }
 
 func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	fillTestAttributeMap(tv.Attributes())
+	fillTestMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
@@ -2046,7 +2046,7 @@ func generateTestExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
 }
 
 func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
-	fillTestAttributeMap(tv.Attributes())
+	fillTestMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
@@ -2091,7 +2091,7 @@ func generateTestSummaryDataPoint() SummaryDataPoint {
 }
 
 func fillTestSummaryDataPoint(tv SummaryDataPoint) {
-	fillTestAttributeMap(tv.Attributes())
+	fillTestMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
@@ -2148,7 +2148,7 @@ func generateTestExemplar() Exemplar {
 func fillTestExemplar(tv Exemplar) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetIntVal(int64(17))
-	fillTestAttributeMap(tv.FilteredAttributes())
+	fillTestMap(tv.FilteredAttributes())
 	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 }
