@@ -109,3 +109,33 @@ func TestFlagValue_withPlus(t *testing.T) {
 		})
 	}
 }
+
+func TestFlagValue_SetSlice(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		input    []string
+		expected FlagValue
+	}{
+		{
+			name:     "single item",
+			input:    []string{"foo"},
+			expected: FlagValue{"foo": true},
+		},
+		{
+			name:     "multiple items",
+			input:    []string{"foo", "-bar", "+baz"},
+			expected: FlagValue{"foo": true, "bar": false, "baz": true},
+		},
+		{
+			name:     "repeated items",
+			input:    []string{"foo", "-bar", "-foo"},
+			expected: FlagValue{"foo": true, "bar": false},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v := FlagValue{}
+			assert.NoError(t, v.SetSlice(tc.input))
+			assert.Equal(t, tc.expected, v)
+		})
+	}
+}
