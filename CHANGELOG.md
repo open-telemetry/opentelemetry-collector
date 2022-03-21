@@ -16,6 +16,7 @@
   - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
   - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
   - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
+- Deprecate featureflags.FlagValue.SetSlice, unnecessary public (#5053)
 
 ## v0.47.0 Beta
 
