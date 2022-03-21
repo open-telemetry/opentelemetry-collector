@@ -144,6 +144,8 @@ Here is a list of community roles with current and previous members:
    - [Paulo Janotti](https://github.com/pjanotti), Splunk
 
 Learn more about roles in [Community membership](https://github.com/open-telemetry/community/blob/main/community-membership.md).
+In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
+the role of the [release manager](./docs/release.md#release-manager).
 
 Thanks to all the people who already contributed!
 
