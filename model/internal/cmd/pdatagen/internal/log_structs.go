@@ -15,7 +15,7 @@
 package internal // import "go.opentelemetry.io/collector/model/internal/cmd/pdatagen/internal"
 
 var logFile = &File{
-	Name: "log",
+	Name: "logs",
 	imports: []string{
 		`"sort"`,
 		``,

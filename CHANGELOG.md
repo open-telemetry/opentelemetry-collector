@@ -73,6 +73,10 @@
 - The `featuregates` were not configured from the "--feature-gates" flag on windows service (#5060)
 - Fix Semantic Convention Schema URL definition for 1.5.0 and 1.6.1 versions (#5103)
 
+### 💡 Enhancements 💡
+
+- Create additional pdata packages separated by type for further split of pdata (#4918)
+
 ## v0.47.0 Beta
 
 ### 🛑 Breaking changes 🛑
