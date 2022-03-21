@@ -21,49 +21,105 @@ import (
 )
 
 // LogsMarshaler is an alias for pdata.LogsMarshaler interface.
+// Deprecated: [v0.49.0] Use plog.LogsMarshaler instead.
 type LogsMarshaler = pdata.LogsMarshaler
 
 // LogsUnmarshaler is an alias for pdata.LogsUnmarshaler interface.
+// Deprecated: [v0.49.0] Use plog.LogsUnmarshaler instead.
 type LogsUnmarshaler = pdata.LogsUnmarshaler
 
 // LogsSizer is an alias for pdata.LogsSizer interface.
+// Deprecated: [v0.49.0] Use plog.LogsSizer instead.
 type LogsSizer = pdata.LogsSizer
 
 // Logs is an alias for pdata.Logs struct.
+// Deprecated: [v0.49.0] Use plog.Logs instead.
 type Logs = pdata.Logs
 
 // NewLogs is an alias for a function to create new Logs.
+// Deprecated: [v0.49.0] Use plog.NewLogs instead.
 var NewLogs = pdata.NewLogs
 
 // SeverityNumber is an alias for pdata.SeverityNumber type.
+// Deprecated: [v0.49.0] Use plog.SeverityNumber instead.
 type SeverityNumber = pdata.SeverityNumber
 
 const (
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberUNDEFINED instead.
 	SeverityNumberUNDEFINED = pdata.SeverityNumberUNDEFINED
-	SeverityNumberTRACE     = pdata.SeverityNumberTRACE
-	SeverityNumberTRACE2    = pdata.SeverityNumberTRACE2
-	SeverityNumberTRACE3    = pdata.SeverityNumberTRACE3
-	SeverityNumberTRACE4    = pdata.SeverityNumberTRACE4
-	SeverityNumberDEBUG     = pdata.SeverityNumberDEBUG
-	SeverityNumberDEBUG2    = pdata.SeverityNumberDEBUG2
-	SeverityNumberDEBUG3    = pdata.SeverityNumberDEBUG3
-	SeverityNumberDEBUG4    = pdata.SeverityNumberDEBUG4
-	SeverityNumberINFO      = pdata.SeverityNumberINFO
-	SeverityNumberINFO2     = pdata.SeverityNumberINFO2
-	SeverityNumberINFO3     = pdata.SeverityNumberINFO3
-	SeverityNumberINFO4     = pdata.SeverityNumberINFO4
-	SeverityNumberWARN      = pdata.SeverityNumberWARN
-	SeverityNumberWARN2     = pdata.SeverityNumberWARN2
-	SeverityNumberWARN3     = pdata.SeverityNumberWARN3
-	SeverityNumberWARN4     = pdata.SeverityNumberWARN4
-	SeverityNumberERROR     = pdata.SeverityNumberERROR
-	SeverityNumberERROR2    = pdata.SeverityNumberERROR2
-	SeverityNumberERROR3    = pdata.SeverityNumberERROR3
-	SeverityNumberERROR4    = pdata.SeverityNumberERROR4
-	SeverityNumberFATAL     = pdata.SeverityNumberFATAL
-	SeverityNumberFATAL2    = pdata.SeverityNumberFATAL2
-	SeverityNumberFATAL3    = pdata.SeverityNumberFATAL3
-	SeverityNumberFATAL4    = pdata.SeverityNumberFATAL4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberTRACE instead.
+	SeverityNumberTRACE = pdata.SeverityNumberTRACE
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberTRACE2 instead.
+	SeverityNumberTRACE2 = pdata.SeverityNumberTRACE2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberTRACE3 instead.
+	SeverityNumberTRACE3 = pdata.SeverityNumberTRACE3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberTRACE4 instead.
+	SeverityNumberTRACE4 = pdata.SeverityNumberTRACE4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberDEBUG instead.
+	SeverityNumberDEBUG = pdata.SeverityNumberDEBUG
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberDEBUG2 instead.
+	SeverityNumberDEBUG2 = pdata.SeverityNumberDEBUG2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberDEBUG3 instead.
+	SeverityNumberDEBUG3 = pdata.SeverityNumberDEBUG3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberDEBUG4 instead.
+	SeverityNumberDEBUG4 = pdata.SeverityNumberDEBUG4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberINFO instead.
+	SeverityNumberINFO = pdata.SeverityNumberINFO
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberINFO2 instead.
+	SeverityNumberINFO2 = pdata.SeverityNumberINFO2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberINFO3 instead.
+	SeverityNumberINFO3 = pdata.SeverityNumberINFO3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberINFO4 instead.
+	SeverityNumberINFO4 = pdata.SeverityNumberINFO4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberWARN instead.
+	SeverityNumberWARN = pdata.SeverityNumberWARN
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberWARN2 instead.
+	SeverityNumberWARN2 = pdata.SeverityNumberWARN2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberWARN3 instead.
+	SeverityNumberWARN3 = pdata.SeverityNumberWARN3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberWARN4 instead.
+	SeverityNumberWARN4 = pdata.SeverityNumberWARN4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberERROR instead.
+	SeverityNumberERROR = pdata.SeverityNumberERROR
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberERROR2 instead.
+	SeverityNumberERROR2 = pdata.SeverityNumberERROR2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberERROR3 instead.
+	SeverityNumberERROR3 = pdata.SeverityNumberERROR3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberERROR4 instead.
+	SeverityNumberERROR4 = pdata.SeverityNumberERROR4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberFATAL instead.
+	SeverityNumberFATAL = pdata.SeverityNumberFATAL
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberFATAL2 instead.
+	SeverityNumberFATAL2 = pdata.SeverityNumberFATAL2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberFATAL3 instead.
+	SeverityNumberFATAL3 = pdata.SeverityNumberFATAL3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberFATAL4 instead.
+	SeverityNumberFATAL4 = pdata.SeverityNumberFATAL4
 )
 
 // Deprecated: [v0.48.0] Use ScopeLogsSlice instead.

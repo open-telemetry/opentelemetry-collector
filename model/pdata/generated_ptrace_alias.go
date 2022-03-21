@@ -20,67 +20,89 @@ package pdata
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
 // ResourceSpansSlice is an alias for pdata.ResourceSpansSlice struct.
+// Deprecated: [v0.49.0] Use ptrace.ResourceSpansSlice instead.
 type ResourceSpansSlice = pdata.ResourceSpansSlice
 
 // NewResourceSpansSlice is an alias for a function to create ResourceSpansSlice.
+// Deprecated: [v0.49.0] Use ptrace.NewResourceSpansSlice instead.
 var NewResourceSpansSlice = pdata.NewResourceSpansSlice
 
 // ResourceSpans is an alias for pdata.ResourceSpans struct.
+// Deprecated: [v0.49.0] Use ptrace.ResourceSpans instead.
 type ResourceSpans = pdata.ResourceSpans
 
 // NewResourceSpans is an alias for a function to create a new empty ResourceSpans.
+// Deprecated: [v0.49.0] Use ptrace.NewResourceSpans instead.
 var NewResourceSpans = pdata.NewResourceSpans
 
 // ScopeSpansSlice is an alias for pdata.ScopeSpansSlice struct.
+// Deprecated: [v0.49.0] Use ptrace.ScopeSpansSlice instead.
 type ScopeSpansSlice = pdata.ScopeSpansSlice
 
 // NewScopeSpansSlice is an alias for a function to create ScopeSpansSlice.
+// Deprecated: [v0.49.0] Use ptrace.NewScopeSpansSlice instead.
 var NewScopeSpansSlice = pdata.NewScopeSpansSlice
 
 // ScopeSpans is an alias for pdata.ScopeSpans struct.
+// Deprecated: [v0.49.0] Use ptrace.ScopeSpans instead.
 type ScopeSpans = pdata.ScopeSpans
 
 // NewScopeSpans is an alias for a function to create a new empty ScopeSpans.
+// Deprecated: [v0.49.0] Use ptrace.NewScopeSpans instead.
 var NewScopeSpans = pdata.NewScopeSpans
 
 // SpanSlice is an alias for pdata.SpanSlice struct.
+// Deprecated: [v0.49.0] Use ptrace.SpanSlice instead.
 type SpanSlice = pdata.SpanSlice
 
 // NewSpanSlice is an alias for a function to create SpanSlice.
+// Deprecated: [v0.49.0] Use ptrace.NewSpanSlice instead.
 var NewSpanSlice = pdata.NewSpanSlice
 
 // Span is an alias for pdata.Span struct.
+// Deprecated: [v0.49.0] Use ptrace.Span instead.
 type Span = pdata.Span
 
 // NewSpan is an alias for a function to create a new empty Span.
+// Deprecated: [v0.49.0] Use ptrace.NewSpan instead.
 var NewSpan = pdata.NewSpan
 
 // SpanEventSlice is an alias for pdata.SpanEventSlice struct.
+// Deprecated: [v0.49.0] Use ptrace.SpanEventSlice instead.
 type SpanEventSlice = pdata.SpanEventSlice
 
 // NewSpanEventSlice is an alias for a function to create SpanEventSlice.
+// Deprecated: [v0.49.0] Use ptrace.NewSpanEventSlice instead.
 var NewSpanEventSlice = pdata.NewSpanEventSlice
 
 // SpanEvent is an alias for pdata.SpanEvent struct.
+// Deprecated: [v0.49.0] Use ptrace.SpanEvent instead.
 type SpanEvent = pdata.SpanEvent
 
 // NewSpanEvent is an alias for a function to create a new empty SpanEvent.
+// Deprecated: [v0.49.0] Use ptrace.NewSpanEvent instead.
 var NewSpanEvent = pdata.NewSpanEvent
 
 // SpanLinkSlice is an alias for pdata.SpanLinkSlice struct.
+// Deprecated: [v0.49.0] Use ptrace.SpanLinkSlice instead.
 type SpanLinkSlice = pdata.SpanLinkSlice
 
 // NewSpanLinkSlice is an alias for a function to create SpanLinkSlice.
+// Deprecated: [v0.49.0] Use ptrace.NewSpanLinkSlice instead.
 var NewSpanLinkSlice = pdata.NewSpanLinkSlice
 
 // SpanLink is an alias for pdata.SpanLink struct.
+// Deprecated: [v0.49.0] Use ptrace.SpanLink instead.
 type SpanLink = pdata.SpanLink
 
 // NewSpanLink is an alias for a function to create a new empty SpanLink.
+// Deprecated: [v0.49.0] Use ptrace.NewSpanLink instead.
 var NewSpanLink = pdata.NewSpanLink
 
 // SpanStatus is an alias for pdata.SpanStatus struct.
+// Deprecated: [v0.49.0] Use ptrace.SpanStatus instead.
 type SpanStatus = pdata.SpanStatus
 
 // NewSpanStatus is an alias for a function to create a new empty SpanStatus.
+// Deprecated: [v0.49.0] Use ptrace.NewSpanStatus instead.
 var NewSpanStatus = pdata.NewSpanStatus

@@ -20,21 +20,23 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/plog"
+	"go.opentelemetry.io/collector/model/pmetric"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 // NewJSONTracesMarshaler returns a model.TracesMarshaler. Marshals to OTLP json bytes.
-func NewJSONTracesMarshaler() pdata.TracesMarshaler {
+func NewJSONTracesMarshaler() ptrace.TracesMarshaler {
 	return newJSONMarshaler()
 }
 
 // NewJSONMetricsMarshaler returns a model.MetricsMarshaler. Marshals to OTLP json bytes.
-func NewJSONMetricsMarshaler() pdata.MetricsMarshaler {
+func NewJSONMetricsMarshaler() pmetric.MetricsMarshaler {
 	return newJSONMarshaler()
 }
 
 // NewJSONLogsMarshaler returns a model.LogsMarshaler. Marshals to OTLP json bytes.
-func NewJSONLogsMarshaler() pdata.LogsMarshaler {
+func NewJSONLogsMarshaler() plog.LogsMarshaler {
 	return newJSONMarshaler()
 }
 
@@ -46,19 +48,19 @@ func newJSONMarshaler() *jsonMarshaler {
 	return &jsonMarshaler{delegate: jsonpb.Marshaler{}}
 }
 
-func (e *jsonMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
+func (e *jsonMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	buf := bytes.Buffer{}
 	err := e.delegate.Marshal(&buf, ipdata.LogsToOtlp(ld))
 	return buf.Bytes(), err
 }
 
-func (e *jsonMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
+func (e *jsonMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
 	buf := bytes.Buffer{}
 	err := e.delegate.Marshal(&buf, ipdata.MetricsToOtlp(md))
 	return buf.Bytes(), err
 }
 
-func (e *jsonMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
+func (e *jsonMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 	buf := bytes.Buffer{}
 	err := e.delegate.Marshal(&buf, ipdata.TracesToOtlp(td))
 	return buf.Bytes(), err

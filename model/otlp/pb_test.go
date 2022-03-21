@@ -21,7 +21,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pcommon"
+	"go.opentelemetry.io/collector/model/plog"
+	"go.opentelemetry.io/collector/model/pmetric"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 func TestProtobufLogsUnmarshaler_error(t *testing.T) {
@@ -43,9 +46,9 @@ func TestProtobufTracesUnmarshaler_error(t *testing.T) {
 }
 
 func TestProtobufTracesSizer(t *testing.T) {
-	sizer := NewProtobufTracesMarshaler().(pdata.TracesSizer)
+	sizer := NewProtobufTracesMarshaler().(ptrace.TracesSizer)
 	marshaler := NewProtobufTracesMarshaler()
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	rms := td.ResourceSpans()
 	rms.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 
@@ -57,15 +60,15 @@ func TestProtobufTracesSizer(t *testing.T) {
 }
 
 func TestProtobufTracesSizer_withNil(t *testing.T) {
-	sizer := NewProtobufTracesMarshaler().(pdata.TracesSizer)
+	sizer := NewProtobufTracesMarshaler().(ptrace.TracesSizer)
 
-	assert.Equal(t, 0, sizer.TracesSize(pdata.NewTraces()))
+	assert.Equal(t, 0, sizer.TracesSize(ptrace.NewTraces()))
 }
 
 func TestProtobufMetricsSizer(t *testing.T) {
-	sizer := NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
+	sizer := NewProtobufMetricsMarshaler().(pmetric.MetricsSizer)
 	marshaler := NewProtobufMetricsMarshaler()
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 
 	size := sizer.MetricsSize(md)
@@ -76,15 +79,15 @@ func TestProtobufMetricsSizer(t *testing.T) {
 }
 
 func TestProtobufMetricsSizer_withNil(t *testing.T) {
-	sizer := NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
+	sizer := NewProtobufMetricsMarshaler().(pmetric.MetricsSizer)
 
-	assert.Equal(t, 0, sizer.MetricsSize(pdata.NewMetrics()))
+	assert.Equal(t, 0, sizer.MetricsSize(pmetric.NewMetrics()))
 }
 
 func TestProtobufLogsSizer(t *testing.T) {
-	sizer := NewProtobufLogsMarshaler().(pdata.LogsSizer)
+	sizer := NewProtobufLogsMarshaler().(plog.LogsSizer)
 	marshaler := NewProtobufLogsMarshaler()
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("error")
 
 	size := sizer.LogsSize(ld)
@@ -96,9 +99,9 @@ func TestProtobufLogsSizer(t *testing.T) {
 }
 
 func TestProtobufLogsSizer_withNil(t *testing.T) {
-	sizer := NewProtobufLogsMarshaler().(pdata.LogsSizer)
+	sizer := NewProtobufLogsMarshaler().(plog.LogsSizer)
 
-	assert.Equal(t, 0, sizer.LogsSize(pdata.NewLogs()))
+	assert.Equal(t, 0, sizer.LogsSize(plog.NewLogs()))
 }
 
 func BenchmarkLogsToProtobuf(b *testing.B) {
@@ -182,10 +185,10 @@ func BenchmarkTracesFromProtobuf(b *testing.B) {
 	}
 }
 
-func generateBenchmarkLogs(logsCount int) pdata.Logs {
-	endTime := pdata.NewTimestampFromTime(time.Now())
+func generateBenchmarkLogs(logsCount int) plog.Logs {
+	endTime := pcommon.NewTimestampFromTime(time.Now())
 
-	md := pdata.NewLogs()
+	md := plog.NewLogs()
 	ilm := md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	ilm.LogRecords().EnsureCapacity(logsCount)
 	for i := 0; i < logsCount; i++ {
@@ -195,18 +198,18 @@ func generateBenchmarkLogs(logsCount int) pdata.Logs {
 	return md
 }
 
-func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
+func generateBenchmarkMetrics(metricsCount int) pmetric.Metrics {
 	now := time.Now()
-	startTime := pdata.NewTimestampFromTime(now.Add(-10 * time.Second))
-	endTime := pdata.NewTimestampFromTime(now)
+	startTime := pcommon.NewTimestampFromTime(now.Add(-10 * time.Second))
+	endTime := pcommon.NewTimestampFromTime(now)
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
 		im := ilm.Metrics().AppendEmpty()
 		im.SetName("test_name")
-		im.SetDataType(pdata.MetricDataTypeSum)
+		im.SetDataType(pmetric.MetricDataTypeSum)
 		idp := im.Sum().DataPoints().AppendEmpty()
 		idp.SetStartTimestamp(startTime)
 		idp.SetTimestamp(endTime)
@@ -215,12 +218,12 @@ func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
 	return md
 }
 
-func generateBenchmarkTraces(metricsCount int) pdata.Traces {
+func generateBenchmarkTraces(metricsCount int) ptrace.Traces {
 	now := time.Now()
-	startTime := pdata.NewTimestampFromTime(now.Add(-10 * time.Second))
-	endTime := pdata.NewTimestampFromTime(now)
+	startTime := pcommon.NewTimestampFromTime(now.Add(-10 * time.Second))
+	endTime := pcommon.NewTimestampFromTime(now)
 
-	md := pdata.NewTraces()
+	md := ptrace.NewTraces()
 	ilm := md.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 	ilm.Spans().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {

@@ -20,19 +20,19 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pmetric"
 )
 
 func TestMetricsText(t *testing.T) {
 	type args struct {
-		md pdata.Metrics
+		md pmetric.Metrics
 	}
 	tests := []struct {
 		name  string
 		args  args
 		empty bool
 	}{
-		{"empty metrics", args{pdata.NewMetrics()}, true},
+		{"empty metrics", args{pmetric.NewMetrics()}, true},
 		{"metrics with all types and datapoints", args{testdata.GeneratMetricsAllTypesWithSampleDatapoints()}, false},
 		{"metrics with all types without datapoints", args{testdata.GenerateMetricsAllTypesEmptyDataPoint()}, false},
 		{"metrics with invalid metric types", args{testdata.GenerateMetricsMetricTypeInvalid()}, false},

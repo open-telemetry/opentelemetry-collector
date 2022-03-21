@@ -19,15 +19,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pcommon"
 )
 
 func TestNestedArraySerializesCorrectly(t *testing.T) {
-	ava := pdata.NewValueSlice()
+	ava := pcommon.NewValueSlice()
 	ava.SliceVal().AppendEmpty().SetStringVal("foo")
 	ava.SliceVal().AppendEmpty().SetIntVal(42)
 
-	ava2 := pdata.NewValueSlice()
+	ava2 := pcommon.NewValueSlice()
 	ava2.SliceVal().AppendEmpty().SetStringVal("bar")
 	ava2.CopyTo(ava.SliceVal().AppendEmpty())
 
@@ -39,11 +39,11 @@ func TestNestedArraySerializesCorrectly(t *testing.T) {
 }
 
 func TestNestedMapSerializesCorrectly(t *testing.T) {
-	ava := pdata.NewValueMap()
+	ava := pcommon.NewValueMap()
 	av := ava.MapVal()
-	av.Insert("foo", pdata.NewValueString("test"))
+	av.Insert("foo", pcommon.NewValueString("test"))
 
-	ava2 := pdata.NewValueMap()
+	ava2 := pcommon.NewValueMap()
 	av2 := ava2.MapVal()
 	av2.InsertInt("bar", 13)
 	av.Insert("zoo", ava2)

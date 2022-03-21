@@ -17,10 +17,13 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
 // SpanID is an alias for pdata.SpanID struct.
+// Deprecated: [v0.49.0] Use pcommon.SpanID instead.
 type SpanID = pdata.SpanID
 
 // InvalidSpanID is an alias for pdata.InvalidSpanID function.
+// Deprecated: [v0.49.0] Use pcommon.InvalidSpanID instead.
 var InvalidSpanID = pdata.InvalidSpanID
 
 // NewSpanID is an alias for a function to create new SpanID.
+// Deprecated: [v0.49.0] Use pcommon.NewSpanID instead.
 var NewSpanID = pdata.NewSpanID

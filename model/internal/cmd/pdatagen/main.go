@@ -16,6 +16,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 
 	"go.opentelemetry.io/collector/model/internal/cmd/pdatagen/internal"
 )
@@ -40,7 +41,18 @@ func main() {
 		check(f.Close())
 		f, err = os.Create("./model/pdata/generated_" + fp.Name + "_alias.go")
 		check(err)
-		_, err = f.WriteString(fp.GenerateAliasFile())
+		fileName := "generated_alias.go"
+		packageName := fp.Name
+		if fp.IsCommon() {
+			fileName = "generated_" + fp.Name + "_alias.go"
+			packageName = "pcommon"
+		}
+		_, err = f.WriteString(fp.GenerateAliasFile("pdata", packageName))
+		check(err)
+		check(f.Close())
+		f, err = os.Create(filepath.Clean("./model/" + packageName + "/" + fileName))
+		check(err)
+		_, err = f.WriteString(fp.GenerateAliasFile(packageName, ""))
 		check(err)
 		check(f.Close())
 	}

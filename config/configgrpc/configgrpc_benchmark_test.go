@@ -32,7 +32,9 @@ import (
 
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/plog"
+	"go.opentelemetry.io/collector/model/pmetric"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 func BenchmarkCompressors(b *testing.B) {
@@ -106,27 +108,27 @@ type marshaler interface {
 }
 
 type logMarshaler struct {
-	pdata.LogsMarshaler
+	plog.LogsMarshaler
 }
 
 func (m *logMarshaler) marshal(e interface{}) ([]byte, error) {
-	return m.MarshalLogs(e.(pdata.Logs))
+	return m.MarshalLogs(e.(plog.Logs))
 }
 
 type traceMarshaler struct {
-	pdata.TracesMarshaler
+	ptrace.TracesMarshaler
 }
 
 func (m *traceMarshaler) marshal(e interface{}) ([]byte, error) {
-	return m.MarshalTraces(e.(pdata.Traces))
+	return m.MarshalTraces(e.(ptrace.Traces))
 }
 
 type metricsMarshaler struct {
-	pdata.MetricsMarshaler
+	pmetric.MetricsMarshaler
 }
 
 func (m *metricsMarshaler) marshal(e interface{}) ([]byte, error) {
-	return m.MarshalMetrics(e.(pdata.Metrics))
+	return m.MarshalMetrics(e.(pmetric.Metrics))
 }
 
 func setupTestPayloads() []testPayload {

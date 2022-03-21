@@ -18,17 +18,17 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 )
 
-// MetricsMarshaler marshals pdata.Metrics into bytes.
+// MetricsMarshaler marshals pmetric.Metrics into bytes.
 type MetricsMarshaler interface {
-	// MarshalMetrics the given pdata.Metrics into bytes.
+	// MarshalMetrics the given pmetric.Metrics into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
 	MarshalMetrics(md Metrics) ([]byte, error)
 }
 
-// MetricsUnmarshaler unmarshalls bytes into pdata.Metrics.
+// MetricsUnmarshaler unmarshalls bytes into pmetric.Metrics.
 type MetricsUnmarshaler interface {
-	// UnmarshalMetrics the given bytes into pdata.Metrics.
-	// If the error is not nil, the returned pdata.Metrics cannot be used.
+	// UnmarshalMetrics the given bytes into pmetric.Metrics.
+	// If the error is not nil, the returned pmetric.Metrics cannot be used.
 	UnmarshalMetrics(buf []byte) (Metrics, error)
 }
 

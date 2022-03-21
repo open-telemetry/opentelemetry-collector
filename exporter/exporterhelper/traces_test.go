@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/ptrace"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -49,8 +49,8 @@ var (
 func TestTracesRequest(t *testing.T) {
 	mr := newTracesRequest(context.Background(), testdata.GenerateTracesOneSpan(), nil)
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), pdata.NewTraces())
-	assert.EqualValues(t, newTracesRequest(context.Background(), pdata.NewTraces(), nil), mr.onError(traceErr))
+	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
+	assert.EqualValues(t, newTracesRequest(context.Background(), ptrace.NewTraces(), nil), mr.onError(traceErr))
 }
 
 func TestTracesExporter_InvalidName(t *testing.T) {
@@ -72,7 +72,7 @@ func TestTracesExporter_NilPushTraceData(t *testing.T) {
 }
 
 func TestTracesExporter_Default(t *testing.T) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(nil))
 	assert.NotNil(t, te)
 	assert.NoError(t, err)
@@ -93,7 +93,7 @@ func TestTracesExporter_WithCapabilities(t *testing.T) {
 }
 
 func TestTracesExporter_Default_ReturnError(t *testing.T) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	want := errors.New("my_error")
 	te, err := NewTracesExporter(&fakeTracesExporterConfig, componenttest.NewNopExporterCreateSettings(), newTraceDataPusher(want))
 	require.NoError(t, err)
@@ -200,7 +200,7 @@ func TestTracesExporter_WithShutdown_ReturnError(t *testing.T) {
 }
 
 func newTraceDataPusher(retError error) consumer.ConsumeTracesFunc {
-	return func(ctx context.Context, td pdata.Traces) error {
+	return func(ctx context.Context, td ptrace.Traces) error {
 		return retError
 	}
 }
@@ -225,7 +225,7 @@ func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExpo
 }
 
 func generateTraceTraffic(t *testing.T, tracer trace.Tracer, te component.TracesExporter, numRequests int, wantError error) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	ctx, span := tracer.Start(context.Background(), fakeTraceParentSpanName)
 	defer span.End()

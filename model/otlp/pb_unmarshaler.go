@@ -19,23 +19,25 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/plog"
+	"go.opentelemetry.io/collector/model/pmetric"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 type pbUnmarshaler struct{}
 
 // NewProtobufTracesUnmarshaler returns a model.TracesUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
-func NewProtobufTracesUnmarshaler() pdata.TracesUnmarshaler {
+func NewProtobufTracesUnmarshaler() ptrace.TracesUnmarshaler {
 	return newPbUnmarshaler()
 }
 
 // NewProtobufMetricsUnmarshaler returns a model.MetricsUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
-func NewProtobufMetricsUnmarshaler() pdata.MetricsUnmarshaler {
+func NewProtobufMetricsUnmarshaler() pmetric.MetricsUnmarshaler {
 	return newPbUnmarshaler()
 }
 
 // NewProtobufLogsUnmarshaler returns a model.LogsUnmarshaler. Unmarshals from OTLP binary protobuf bytes.
-func NewProtobufLogsUnmarshaler() pdata.LogsUnmarshaler {
+func NewProtobufLogsUnmarshaler() plog.LogsUnmarshaler {
 	return newPbUnmarshaler()
 }
 
@@ -43,19 +45,19 @@ func newPbUnmarshaler() *pbUnmarshaler {
 	return &pbUnmarshaler{}
 }
 
-func (d *pbUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
+func (d *pbUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	ld := &otlplogs.LogsData{}
 	err := ld.Unmarshal(buf)
 	return ipdata.LogsFromOtlp(ld), err
 }
 
-func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
+func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metrics, error) {
 	md := &otlpmetrics.MetricsData{}
 	err := md.Unmarshal(buf)
 	return ipdata.MetricsFromOtlp(md), err
 }
 
-func (d *pbUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
+func (d *pbUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	td := &otlptrace.TracesData{}
 	err := td.Unmarshal(buf)
 	return ipdata.TracesFromOtlp(td), err

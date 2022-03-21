@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/plog"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -154,7 +154,7 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			}
 
 			// Send one custom data.
-			log := pdata.Logs{}
+			log := plog.Logs{}
 			require.NoError(t, processor.firstLC.ConsumeLogs(context.Background(), log))
 
 			// Now verify received data.

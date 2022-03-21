@@ -20,19 +20,19 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/plog"
 )
 
 func TestLogsText(t *testing.T) {
 	type args struct {
-		ld pdata.Logs
+		ld plog.Logs
 	}
 	tests := []struct {
 		name  string
 		args  args
 		empty bool
 	}{
-		{"empty logs", args{pdata.NewLogs()}, true},
+		{"empty logs", args{plog.NewLogs()}, true},
 		{"logs data with empty resource log", args{testdata.GenerateLogsOneEmptyResourceLogs()}, false},
 		{"logs data with no log records", args{testdata.GenerateLogsNoLogRecords()}, false},
 		{"logs with one empty log", args{testdata.GenerateLogsOneEmptyLogRecord()}, false},

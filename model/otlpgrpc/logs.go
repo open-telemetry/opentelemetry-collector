@@ -25,7 +25,7 @@ import (
 	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/plog"
 )
 
 var jsonMarshaler = &jsonpb.Marshaler{}
@@ -107,11 +107,11 @@ func (lr LogsRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (lr LogsRequest) SetLogs(ld pdata.Logs) {
+func (lr LogsRequest) SetLogs(ld plog.Logs) {
 	lr.orig.ResourceLogs = ipdata.LogsToOtlp(ld).ResourceLogs
 }
 
-func (lr LogsRequest) Logs() pdata.Logs {
+func (lr LogsRequest) Logs() plog.Logs {
 	return ipdata.LogsFromOtlp(&otlplogs.LogsData{ResourceLogs: lr.orig.ResourceLogs})
 }
 
@@ -119,7 +119,7 @@ func (lr LogsRequest) Logs() pdata.Logs {
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type LogsClient interface {
-	// Export pdata.Logs to the server.
+	// Export plog.Logs to the server.
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.

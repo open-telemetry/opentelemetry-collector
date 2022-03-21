@@ -20,19 +20,19 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 func TestTracesText(t *testing.T) {
 	type args struct {
-		td pdata.Traces
+		td ptrace.Traces
 	}
 	tests := []struct {
 		name  string
 		args  args
 		empty bool
 	}{
-		{"empty traces", args{pdata.NewTraces()}, true},
+		{"empty traces", args{ptrace.NewTraces()}, true},
 		{"traces with two spans", args{testdata.GenerateTracesTwoSpansSameResource()}, false},
 	}
 	for _, tt := range tests {

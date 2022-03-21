@@ -32,7 +32,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pmetric"
 )
 
 var _ json.Unmarshaler = MetricsResponse{}
@@ -246,7 +246,7 @@ func (f fakeMetricsServer) Export(_ context.Context, request MetricsRequest) (Me
 }
 
 func generateMetricsRequest() MetricsRequest {
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("test_metric")
 
 	mr := NewMetricsRequest()

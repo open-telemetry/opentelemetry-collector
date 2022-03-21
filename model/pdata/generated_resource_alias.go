@@ -20,7 +20,9 @@ package pdata
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
 // Resource is an alias for pdata.Resource struct.
+// Deprecated: [v0.49.0] Use pcommon.Resource instead.
 type Resource = pdata.Resource
 
 // NewResource is an alias for a function to create a new empty Resource.
+// Deprecated: [v0.49.0] Use pcommon.NewResource instead.
 var NewResource = pdata.NewResource

@@ -19,11 +19,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/plog"
+	"go.opentelemetry.io/collector/model/pmetric"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
-var tracesOTLP = func() pdata.Traces {
-	td := pdata.NewTraces()
+var tracesOTLP = func() ptrace.Traces {
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().UpsertString("host.name", "testHost")
 	il := rs.ScopeSpans().AppendEmpty()
@@ -35,8 +37,8 @@ var tracesOTLP = func() pdata.Traces {
 
 var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeSpans":[{"scope":{"name":"name","version":"version"},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan","status":{}}]}]}]}`
 
-var metricsOTLP = func() pdata.Metrics {
-	md := pdata.NewMetrics()
+var metricsOTLP = func() pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().UpsertString("host.name", "testHost")
 	il := rm.ScopeMetrics().AppendEmpty()
@@ -48,8 +50,8 @@ var metricsOTLP = func() pdata.Metrics {
 
 var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeMetrics":[{"scope":{"name":"name","version":"version"},"metrics":[{"name":"testMetric"}]}]}]}`
 
-var logsOTLP = func() pdata.Logs {
-	ld := pdata.NewLogs()
+var logsOTLP = func() plog.Logs {
+	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().UpsertString("host.name", "testHost")
 	il := rl.ScopeLogs().AppendEmpty()
@@ -233,5 +235,5 @@ func TestMetricsNil(t *testing.T) {
 	got, err := decoder.UnmarshalMetrics([]byte(jsonBuf))
 	assert.Error(t, err)
 
-	assert.EqualValues(t, pdata.Metrics{}, got)
+	assert.EqualValues(t, pmetric.Metrics{}, got)
 }

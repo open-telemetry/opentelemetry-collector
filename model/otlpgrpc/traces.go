@@ -24,7 +24,7 @@ import (
 	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 // TracesResponse represents the response for gRPC client/server.
@@ -103,11 +103,11 @@ func (tr TracesRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (tr TracesRequest) SetTraces(td pdata.Traces) {
+func (tr TracesRequest) SetTraces(td ptrace.Traces) {
 	tr.orig.ResourceSpans = ipdata.TracesToOtlp(td).ResourceSpans
 }
 
-func (tr TracesRequest) Traces() pdata.Traces {
+func (tr TracesRequest) Traces() ptrace.Traces {
 	return ipdata.TracesFromOtlp(&otlptrace.TracesData{ResourceSpans: tr.orig.ResourceSpans})
 }
 
@@ -115,7 +115,7 @@ func (tr TracesRequest) Traces() pdata.Traces {
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type TracesClient interface {
-	// Export pdata.Traces to the server.
+	// Export ptrace.Traces to the server.
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.

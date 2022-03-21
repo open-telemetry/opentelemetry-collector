@@ -15,7 +15,7 @@
 package internal // import "go.opentelemetry.io/collector/model/internal/cmd/pdatagen/internal"
 
 var metricsFile = &File{
-	Name: "metrics",
+	Name: "pmetric",
 	imports: []string{
 		`"sort"`,
 		``,

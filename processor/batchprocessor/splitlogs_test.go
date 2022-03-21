@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/plog"
 )
 
 func TestSplitLogs_noop(t *testing.T) {
@@ -30,7 +30,7 @@ func TestSplitLogs_noop(t *testing.T) {
 	assert.Equal(t, td, split)
 
 	i := 0
-	td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(_ pdata.LogRecord) bool {
+	td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(_ plog.LogRecord) bool {
 		i++
 		return i > 5
 	})
@@ -43,7 +43,7 @@ func TestSplitLogs(t *testing.T) {
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(0, i))
 	}
-	cp := pdata.NewLogs()
+	cp := plog.NewLogs()
 	cpLogs := cp.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	cpLogs.EnsureCapacity(5)
 	ld.ResourceLogs().At(0).Resource().CopyTo(
@@ -158,7 +158,7 @@ func TestSplitLogsMultipleILL(t *testing.T) {
 }
 
 func BenchmarkSplitLogs(b *testing.B) {
-	md := pdata.NewLogs()
+	md := plog.NewLogs()
 	rms := md.ResourceLogs()
 	for i := 0; i < 20; i++ {
 		testdata.GenerateLogsManyLogRecordsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
@@ -172,7 +172,7 @@ func BenchmarkSplitLogs(b *testing.B) {
 		b.Skipf("SKIP: b.N too high, set -benchtime=<n>x with n < 100000")
 	}
 
-	clones := make([]pdata.Logs, b.N)
+	clones := make([]plog.Logs, b.N)
 	for n := 0; n < b.N; n++ {
 		clones[n] = md.Clone()
 	}

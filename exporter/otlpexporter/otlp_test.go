@@ -36,7 +36,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/plog"
+	"go.opentelemetry.io/collector/model/pmetric"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 type mockReceiver struct {
@@ -55,7 +57,7 @@ func (r *mockReceiver) GetMetadata() metadata.MD {
 
 type mockTracesReceiver struct {
 	mockReceiver
-	lastRequest pdata.Traces
+	lastRequest ptrace.Traces
 }
 
 func (r *mockTracesReceiver) Export(ctx context.Context, req otlpgrpc.TracesRequest) (otlpgrpc.TracesResponse, error) {
@@ -69,7 +71,7 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req otlpgrpc.TracesRequ
 	return otlpgrpc.NewTracesResponse(), nil
 }
 
-func (r *mockTracesReceiver) GetLastRequest() pdata.Traces {
+func (r *mockTracesReceiver) GetLastRequest() ptrace.Traces {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
@@ -108,7 +110,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 
 type mockLogsReceiver struct {
 	mockReceiver
-	lastRequest pdata.Logs
+	lastRequest plog.Logs
 }
 
 func (r *mockLogsReceiver) Export(ctx context.Context, req otlpgrpc.LogsRequest) (otlpgrpc.LogsResponse, error) {
@@ -122,7 +124,7 @@ func (r *mockLogsReceiver) Export(ctx context.Context, req otlpgrpc.LogsRequest)
 	return otlpgrpc.NewLogsResponse(), nil
 }
 
-func (r *mockLogsReceiver) GetLastRequest() pdata.Logs {
+func (r *mockLogsReceiver) GetLastRequest() plog.Logs {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
@@ -146,7 +148,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 
 type mockMetricsReceiver struct {
 	mockReceiver
-	lastRequest pdata.Metrics
+	lastRequest pmetric.Metrics
 }
 
 func (r *mockMetricsReceiver) Export(ctx context.Context, req otlpgrpc.MetricsRequest) (otlpgrpc.MetricsResponse, error) {
@@ -160,7 +162,7 @@ func (r *mockMetricsReceiver) Export(ctx context.Context, req otlpgrpc.MetricsRe
 	return otlpgrpc.NewMetricsResponse(), nil
 }
 
-func (r *mockMetricsReceiver) GetLastRequest() pdata.Metrics {
+func (r *mockMetricsReceiver) GetLastRequest() pmetric.Metrics {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
@@ -220,7 +222,7 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	// Wait until it is received.
@@ -314,7 +316,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 			// Send empty trace.
-			td := pdata.NewTraces()
+			td := ptrace.NewTraces()
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 			// Wait until it is received.
@@ -366,7 +368,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty metric.
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	// Wait until it is received.
@@ -513,7 +515,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	cancel()
 }
 
-func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pdata.Traces, ln net.Listener) {
+func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td ptrace.Traces, ln net.Listener) {
 	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	defer rcv.srv.GracefulStop()
 	// Ensure that initially there is no data in the receiver.
@@ -572,7 +574,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty request.
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), ld))
 
 	// Wait until it is received.

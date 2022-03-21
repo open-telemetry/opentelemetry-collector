@@ -17,22 +17,22 @@ package consumer // import "go.opentelemetry.io/collector/consumer"
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pmetric"
 )
 
-// Metrics is the new metrics consumer interface that receives pdata.Metrics, processes it
+// Metrics is the new metrics consumer interface that receives pmetric.Metrics, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Metrics interface {
 	baseConsumer
-	// ConsumeMetrics receives pdata.Metrics for consumption.
-	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
+	// ConsumeMetrics receives pmetric.Metrics for consumption.
+	ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error
 }
 
 // ConsumeMetricsFunc is a helper function that is similar to ConsumeMetrics.
-type ConsumeMetricsFunc func(ctx context.Context, ld pdata.Metrics) error
+type ConsumeMetricsFunc func(ctx context.Context, ld pmetric.Metrics) error
 
 // ConsumeMetrics calls f(ctx, ld).
-func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, ld pdata.Metrics) error {
+func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, ld pmetric.Metrics) error {
 	return f(ctx, ld)
 }
 

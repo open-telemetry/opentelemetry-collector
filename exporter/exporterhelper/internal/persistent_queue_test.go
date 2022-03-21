@@ -31,7 +31,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pcommon"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 func createTestQueue(extension storage.Extension, capacity int) *persistentQueue {
@@ -167,20 +168,20 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 	}
 }
 
-func newTraces(numTraces int, numSpans int) pdata.Traces {
-	traces := pdata.NewTraces()
+func newTraces(numTraces int, numSpans int) ptrace.Traces {
+	traces := ptrace.NewTraces()
 	batch := traces.ResourceSpans().AppendEmpty()
 	batch.Resource().Attributes().InsertString("resource-attr", "some-resource")
 	batch.Resource().Attributes().InsertInt("num-traces", int64(numTraces))
 	batch.Resource().Attributes().InsertInt("num-spans", int64(numSpans))
 
 	for i := 0; i < numTraces; i++ {
-		traceID := pdata.NewTraceID([16]byte{1, 2, 3, byte(i)})
+		traceID := pcommon.NewTraceID([16]byte{1, 2, 3, byte(i)})
 		ils := batch.ScopeSpans().AppendEmpty()
 		for j := 0; j < numSpans; j++ {
 			span := ils.Spans().AppendEmpty()
 			span.SetTraceID(traceID)
-			span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, byte(j)}))
+			span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, byte(j)}))
 			span.SetName("should-not-be-changed")
 			span.Attributes().InsertInt("int-attribute", int64(j))
 			span.Attributes().InsertString("str-attribute-1", "foobar")

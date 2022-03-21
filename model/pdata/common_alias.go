@@ -20,6 +20,7 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
 // ValueType is an alias for pdata.ValueType type.
+// Deprecated: [v0.49.0] Use pcommon.ValueType instead.
 type ValueType = pdata.ValueType
 
 // AttributeValueType is an alias for pdata.ValueType type.
@@ -27,14 +28,29 @@ type ValueType = pdata.ValueType
 type AttributeValueType = pdata.ValueType
 
 const (
-	ValueTypeEmpty  = pdata.ValueTypeEmpty
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeEmpty instead.
+	ValueTypeEmpty = pdata.ValueTypeEmpty
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeString instead.
 	ValueTypeString = pdata.ValueTypeString
-	ValueTypeInt    = pdata.ValueTypeInt
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeInt instead.
+	ValueTypeInt = pdata.ValueTypeInt
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeDouble instead.
 	ValueTypeDouble = pdata.ValueTypeDouble
-	ValueTypeBool   = pdata.ValueTypeBool
-	ValueTypeMap    = pdata.ValueTypeMap
-	ValueTypeSlice  = pdata.ValueTypeSlice
-	ValueTypeBytes  = pdata.ValueTypeBytes
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeBool instead.
+	ValueTypeBool = pdata.ValueTypeBool
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeMap instead.
+	ValueTypeMap = pdata.ValueTypeMap
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeSlice instead.
+	ValueTypeSlice = pdata.ValueTypeSlice
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeBytes instead.
+	ValueTypeBytes = pdata.ValueTypeBytes
 
 	// Deprecated: [v0.48.0] Use ValueTypeEmpty instead.
 	AttributeValueTypeEmpty = pdata.ValueTypeEmpty
@@ -62,6 +78,7 @@ const (
 )
 
 // Value is an alias for pdata.Value struct.
+// Deprecated: [v0.49.0] Use pcommon.Value instead.
 type Value = pdata.Value
 
 // Deprecated: [v0.48.0] Use Value instead.
@@ -69,14 +86,30 @@ type AttributeValue = pdata.Value
 
 // Aliases for functions to create pdata.Value.
 var (
-	NewValueEmpty  = pdata.NewValueEmpty
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueEmpty instead.
+	NewValueEmpty = pdata.NewValueEmpty
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueString instead.
 	NewValueString = pdata.NewValueString
-	NewValueInt    = pdata.NewValueInt
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueInt instead.
+	NewValueInt = pdata.NewValueInt
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueDouble instead.
 	NewValueDouble = pdata.NewValueDouble
-	NewValueBool   = pdata.NewValueBool
-	NewValueMap    = pdata.NewValueMap
-	NewValueSlice  = pdata.NewValueSlice
-	NewValueBytes  = pdata.NewValueBytes
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueBool instead.
+	NewValueBool = pdata.NewValueBool
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueMap instead.
+	NewValueMap = pdata.NewValueMap
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueSlice instead.
+	NewValueSlice = pdata.NewValueSlice
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueBytes instead.
+	NewValueBytes = pdata.NewValueBytes
 
 	// Deprecated: [v0.48.0] Use NewValueEmpty instead.
 	NewAttributeValueEmpty = pdata.NewValueEmpty
@@ -104,6 +137,7 @@ var (
 )
 
 // Map is an alias for pdata.Map struct.
+// Deprecated: [v0.49.0] Use pcommon.Map instead.
 type Map = pdata.Map
 
 // Deprecated: [v0.48.0] Use Map instead.
@@ -111,7 +145,11 @@ type AttributeMap = pdata.Map
 
 // Aliases for functions to create pdata.Map.
 var (
-	NewMap        = pdata.NewMap
+
+	// Deprecated: [v0.49.0] Use pcommon.NewMap instead.
+	NewMap = pdata.NewMap
+
+	// Deprecated: [v0.49.0] Use pcommon.NewMapFromRaw instead.
 	NewMapFromRaw = pdata.NewMapFromRaw
 )
 

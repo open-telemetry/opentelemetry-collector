@@ -17,10 +17,13 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
 // TraceID is an alias for pdata.TraceID struct.
+// Deprecated: [v0.49.0] Use pcommon.TraceID instead.
 type TraceID = pdata.TraceID
 
 // InvalidTraceID is an alias for pdata.InvalidTraceID function.
+// Deprecated: [v0.49.0] Use pcommon.InvalidTraceID instead.
 var InvalidTraceID = pdata.InvalidTraceID
 
 // NewTraceID is an alias for a function to create new TraceID.
+// Deprecated: [v0.49.0] Use pcommon.NewTraceID instead.
 var NewTraceID = pdata.NewTraceID

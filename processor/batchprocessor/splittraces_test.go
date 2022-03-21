@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 func TestSplitTraces_noop(t *testing.T) {
@@ -30,7 +30,7 @@ func TestSplitTraces_noop(t *testing.T) {
 	assert.Equal(t, td, split)
 
 	i := 0
-	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(_ pdata.Span) bool {
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(_ ptrace.Span) bool {
 		i++
 		return i > 5
 	})
@@ -43,7 +43,7 @@ func TestSplitTraces(t *testing.T) {
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	}
-	cp := pdata.NewTraces()
+	cp := ptrace.NewTraces()
 	cpSpans := cp.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
 	cpSpans.EnsureCapacity(5)
 	td.ResourceSpans().At(0).Resource().CopyTo(
@@ -128,7 +128,7 @@ func TestSplitTracesMultipleResourceSpans_SplitSizeGreaterThanSpanSize(t *testin
 }
 
 func BenchmarkCloneSpans(b *testing.B) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	rms := td.ResourceSpans()
 	for i := 0; i < 20; i++ {
 		testdata.GenerateTracesManySpansSameResource(20).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
@@ -179,7 +179,7 @@ func TestSplitTracesMultipleILS(t *testing.T) {
 }
 
 func BenchmarkSplitTraces(b *testing.B) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	rms := td.ResourceSpans()
 	for i := 0; i < 20; i++ {
 		testdata.GenerateTracesManySpansSameResource(20).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
@@ -193,7 +193,7 @@ func BenchmarkSplitTraces(b *testing.B) {
 		b.Skipf("SKIP: b.N too high, set -benchtime=<n>x with n < 100000")
 	}
 
-	clones := make([]pdata.Traces, b.N)
+	clones := make([]ptrace.Traces, b.N)
 	for n := 0; n < b.N; n++ {
 		clones[n] = td.Clone()
 	}

@@ -79,10 +79,10 @@ const messageValueFillTestHeaderTemplate = `func fillTest${structName}(tv ${stru
 const messageValueFillTestFooterTemplate = `}`
 
 const messageValueAliasTemplate = `// ${structName} is an alias for pdata.${structName} struct.
-type ${structName} = pdata.${structName} 
+${extraStructComment}type ${structName} = pdata.${structName} 
 
 // New${structName} is an alias for a function to create a new empty ${structName}.
-var New${structName} = pdata.New${structName}`
+${extraNewComment}var New${structName} = pdata.New${structName}`
 
 const newLine = "\n"
 
@@ -97,7 +97,7 @@ type baseStruct interface {
 }
 
 type aliasGenerator interface {
-	generateAlias(sb *strings.Builder)
+	generateAlias(sb *strings.Builder, deprecatedInFavor string)
 }
 
 type messageValueStruct struct {
@@ -196,11 +196,21 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *strings.Builder) {
 	}))
 }
 
-func (ms *messageValueStruct) generateAlias(sb *strings.Builder) {
+func (ms *messageValueStruct) generateAlias(sb *strings.Builder, deprecatedInFavor string) {
 	sb.WriteString(os.Expand(messageValueAliasTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
+		case "extraStructComment":
+			if deprecatedInFavor != "" {
+				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + "." + ms.structName + " instead.\n"
+			}
+			return ""
+		case "extraNewComment":
+			if deprecatedInFavor != "" {
+				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + ".New" + ms.structName + " instead.\n"
+			}
+			return ""
 		default:
 			panic(name)
 		}

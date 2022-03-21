@@ -20,13 +20,17 @@ package pdata
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
 // InstrumentationScope is an alias for pdata.InstrumentationScope struct.
+// Deprecated: [v0.49.0] Use pcommon.InstrumentationScope instead.
 type InstrumentationScope = pdata.InstrumentationScope
 
 // NewInstrumentationScope is an alias for a function to create a new empty InstrumentationScope.
+// Deprecated: [v0.49.0] Use pcommon.NewInstrumentationScope instead.
 var NewInstrumentationScope = pdata.NewInstrumentationScope
 
 // Slice is an alias for pdata.Slice struct.
+// Deprecated: [v0.49.0] Use pcommon.Slice instead.
 type Slice = pdata.Slice
 
 // NewSlice is an alias for a function to create Slice.
+// Deprecated: [v0.49.0] Use pcommon.NewSlice instead.
 var NewSlice = pdata.NewSlice

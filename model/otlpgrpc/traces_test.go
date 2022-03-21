@@ -32,7 +32,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 var _ json.Unmarshaler = TracesResponse{}
@@ -262,7 +262,7 @@ func (f fakeTracesServer) Export(_ context.Context, request TracesRequest) (Trac
 }
 
 func generateTracesRequest() TracesRequest {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("test_span")
 
 	tr := NewTracesRequest()

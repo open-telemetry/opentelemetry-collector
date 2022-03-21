@@ -12,6 +12,9 @@
 
 ### 🚩 Deprecations 🚩
 
+- All public API from model/pdata package is deprecated in favor of packages separated by telemetry
+  signal type: model/pcommon, model/plog, model/pmetric and model/ptrace (#5087)
+
 ### 💡 Enhancements 💡
 
 - OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 

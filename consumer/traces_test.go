@@ -21,13 +21,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/ptrace"
 )
 
 func TestDefaultTraces(t *testing.T) {
-	cp, err := NewTraces(func(context.Context, pdata.Traces) error { return nil })
+	cp, err := NewTraces(func(context.Context, ptrace.Traces) error { return nil })
 	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
 }
 
@@ -38,24 +38,24 @@ func TestNilFuncTraces(t *testing.T) {
 
 func TestWithCapabilitiesTraces(t *testing.T) {
 	cp, err := NewTraces(
-		func(context.Context, pdata.Traces) error { return nil },
+		func(context.Context, ptrace.Traces) error { return nil },
 		WithCapabilities(Capabilities{MutatesData: true}))
 	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
 }
 
 func TestConsumeTraces(t *testing.T) {
 	consumeCalled := false
-	cp, err := NewTraces(func(context.Context, pdata.Traces) error { consumeCalled = true; return nil })
+	cp, err := NewTraces(func(context.Context, ptrace.Traces) error { consumeCalled = true; return nil })
 	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.True(t, consumeCalled)
 }
 
 func TestConsumeTraces_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	cp, err := NewTraces(func(context.Context, pdata.Traces) error { return want })
+	cp, err := NewTraces(func(context.Context, ptrace.Traces) error { return want })
 	assert.NoError(t, err)
-	assert.Equal(t, want, cp.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.Equal(t, want, cp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
