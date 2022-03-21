@@ -22,6 +22,7 @@
   - Deprecate `pdata.NewAttributeMapFromMap` func in favor of `pdata.NewMapFromRaw`
   - Deprecate `pdata.AttributeValueSlice` struct in favor of `pdata.Slice`
   - Deprecate `pdata.NewAttributeValueSlice` func in favor of `pdata.NewSlice`
+- Deprecate LogRecord.Name(), it was deprecated in the data model (#5054)
 
 ## v0.47.0 Beta
 
