@@ -40,27 +40,36 @@ func NewLogsResponse() LogsResponse {
 	return LogsResponse{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
 }
 
-// UnmarshalLogsResponse unmarshalls LogsResponse from proto bytes.
+// Deprecated: [v0.48.0] use LogsResponse.UnmarshalProto.
 func UnmarshalLogsResponse(data []byte) (LogsResponse, error) {
-	var orig otlpcollectorlog.ExportLogsServiceResponse
-	if err := orig.Unmarshal(data); err != nil {
-		return LogsResponse{}, err
-	}
-	return LogsResponse{orig: &orig}, nil
+	lr := NewLogsResponse()
+	err := lr.UnmarshalProto(data)
+	return lr, err
 }
 
-// UnmarshalJSONLogsResponse unmarshalls LogsResponse from JSON bytes.
+// Deprecated: [v0.48.0] use LogsResponse.UnmarshalJSON.
 func UnmarshalJSONLogsResponse(data []byte) (LogsResponse, error) {
-	var orig otlpcollectorlog.ExportLogsServiceResponse
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
-		return LogsResponse{}, err
-	}
-	return LogsResponse{orig: &orig}, nil
+	lr := NewLogsResponse()
+	err := lr.UnmarshalJSON(data)
+	return lr, err
 }
 
-// Marshal marshals LogsResponse into proto bytes.
+// Deprecated: [v0.48.0] use MarshalProto.
 func (lr LogsResponse) Marshal() ([]byte, error) {
+	return lr.MarshalProto()
+}
+
+// MarshalProto marshals LogsResponse into proto bytes.
+func (lr LogsResponse) MarshalProto() ([]byte, error) {
 	return lr.orig.Marshal()
+}
+
+// UnmarshalProto unmarshalls LogsResponse from proto bytes.
+func (lr LogsResponse) UnmarshalProto(data []byte) error {
+	if err := lr.orig.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
 }
 
 // MarshalJSON marshals LogsResponse into JSON bytes.
@@ -70,6 +79,14 @@ func (lr LogsResponse) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshalls LogsResponse from JSON bytes.
+func (lr LogsResponse) UnmarshalJSON(data []byte) error {
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig); err != nil {
+		return err
+	}
+	return nil
 }
 
 // LogsRequest represents the response for gRPC client/server.
@@ -82,27 +99,36 @@ func NewLogsRequest() LogsRequest {
 	return LogsRequest{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
 }
 
-// UnmarshalLogsRequest unmarshalls LogsRequest from proto bytes.
+// Deprecated: [v0.48.0] use LogsRequest.UnmarshalProto.
 func UnmarshalLogsRequest(data []byte) (LogsRequest, error) {
-	var orig otlpcollectorlog.ExportLogsServiceRequest
-	if err := orig.Unmarshal(data); err != nil {
-		return LogsRequest{}, err
-	}
-	return LogsRequest{orig: &orig}, nil
+	lr := NewLogsRequest()
+	err := lr.UnmarshalProto(data)
+	return lr, err
 }
 
-// UnmarshalJSONLogsRequest unmarshalls LogsRequest from JSON bytes.
+// Deprecated: [v0.48.0] use LogsRequest.UnmarshalJSON.
 func UnmarshalJSONLogsRequest(data []byte) (LogsRequest, error) {
-	var orig otlpcollectorlog.ExportLogsServiceRequest
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
-		return LogsRequest{}, err
-	}
-	return LogsRequest{orig: &orig}, nil
+	lr := NewLogsRequest()
+	err := lr.UnmarshalJSON(data)
+	return lr, err
 }
 
-// Marshal marshals LogsRequest into proto bytes.
+// Deprecated: [v0.48.0] use MarshalProto.
 func (lr LogsRequest) Marshal() ([]byte, error) {
+	return lr.MarshalProto()
+}
+
+// MarshalProto marshals LogsRequest into proto bytes.
+func (lr LogsRequest) MarshalProto() ([]byte, error) {
 	return lr.orig.Marshal()
+}
+
+// UnmarshalProto unmarshalls LogsRequest from proto bytes.
+func (lr LogsRequest) UnmarshalProto(data []byte) error {
+	if err := lr.orig.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
 }
 
 // MarshalJSON marshals LogsRequest into JSON bytes.
@@ -112,6 +138,14 @@ func (lr LogsRequest) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshalls LogsRequest from JSON bytes.
+func (lr LogsRequest) UnmarshalJSON(data []byte) error {
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (lr LogsRequest) SetLogs(ld pdata.Logs) {
