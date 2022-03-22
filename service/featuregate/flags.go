@@ -63,11 +63,15 @@ func (f FlagValue) String() string {
 
 // Set applies the FlagValue encoded in the input string
 func (f FlagValue) Set(s string) error {
-	return f.SetSlice(strings.Split(s, ","))
+	return f.setSlice(strings.Split(s, ","))
 }
 
-// SetSlice applies the feature gate statuses in the input slice to the FlagValue
+// Deprecated: [v0.48.0] will be removed soon, use Set with comma separated values.
 func (f FlagValue) SetSlice(s []string) error {
+	return f.setSlice(s)
+}
+
+func (f FlagValue) setSlice(s []string) error {
 	for _, v := range s {
 		var id string
 		var val bool
