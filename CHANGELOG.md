@@ -27,12 +27,17 @@
   - Deprecate `pdata.AttributeValueSlice` struct in favor of `pdata.Slice`
   - Deprecate `pdata.NewAttributeValueSlice` func in favor of `pdata.NewSlice`
 - Deprecate LogRecord.Name(), it was deprecated in the data model (#5054)
+- Deprecate global flag in `featuregates` (#5060)
 
 ### 💡 Enhancements 💡
 
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
+
+### 🧰 Bug fixes 🧰
+
+- The `featuregates` were not configured from the "--feature-gates" flag on windows service (#5060)
 
 ## v0.47.0 Beta
 
