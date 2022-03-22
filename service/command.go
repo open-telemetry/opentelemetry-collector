@@ -20,8 +20,7 @@ import (
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
-// NewCommand constructs a new cobra.Command using the given Collector.
-// TODO: Make this independent of the collector internals.
+// NewCommand constructs a new cobra.Command using the given CollectorSettings.
 func NewCommand(set CollectorSettings) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:          set.BuildInfo.Command,

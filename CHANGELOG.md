@@ -17,6 +17,20 @@
   - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
   - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
   - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
+- Deprecate featureflags.FlagValue.SetSlice, unnecessary public (#5053)
+- Remove "Attribute" part from common pdata collections names (#4999)
+  - Deprecate `pdata.AttributeMap` struct in favor of `pdata.Map`
+  - Deprecate `pdata.NewAttributeMap` func in favor of `pdata.NewMap`
+  - Deprecate `pdata.NewAttributeMapFromMap` func in favor of `pdata.NewMapFromRaw`
+  - Deprecate `pdata.AttributeValueSlice` struct in favor of `pdata.Slice`
+  - Deprecate `pdata.NewAttributeValueSlice` func in favor of `pdata.NewSlice`
+- Deprecate LogRecord.Name(), it was deprecated in the data model (#5054)
+
+### 💡 Enhancements 💡
+
+- Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
+  In case of type mismatch, they don't panic right away but return an invalid zero-initialized
+  instance for consistency with other OneOf field accessors (#5034)
 
 ## v0.47.0 Beta
 
