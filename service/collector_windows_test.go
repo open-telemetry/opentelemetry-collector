@@ -30,13 +30,13 @@ import (
 	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
-func TestWindowsService_Execute(t *testing.T) {
+func TestNewSvcHandler(t *testing.T) {
 	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-config.yaml")}
 
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
-	s := NewWindowsService(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
+	s := NewSvcHandler(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
 
 	colDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)
