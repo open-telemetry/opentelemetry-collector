@@ -154,7 +154,7 @@ func TestAttributeValueMap(t *testing.T) {
 	// Test nil KvlistValue case for MapVal() func.
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
 	m1 = Value{orig: orig}
-	assert.EqualValues(t, NewMap(), m1.MapVal())
+	assert.EqualValues(t, Map{}, m1.MapVal())
 }
 
 func TestNilOrigSetAttributeValue(t *testing.T) {
@@ -1010,7 +1010,7 @@ func TestAttributeValueArray(t *testing.T) {
 
 	// Test nil values case for SliceVal() func.
 	a1 = Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}}
-	assert.EqualValues(t, NewSlice(), a1.SliceVal())
+	assert.EqualValues(t, Slice{}, a1.SliceVal())
 }
 
 func TestAttributeSliceWithNilValues(t *testing.T) {
@@ -1304,4 +1304,22 @@ func constructTestAttributeSubarray() Value {
 	value.SliceVal().AppendEmpty().SetStringVal("strOne")
 	value.SliceVal().AppendEmpty().SetStringVal("strTwo")
 	return value
+}
+
+func BenchmarkAttributeValueMapAccessor(b *testing.B) {
+	val := simpleValueMap()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.MapVal()
+	}
+}
+
+func BenchmarkAttributeValueArrayAccessor(b *testing.B) {
+	val := simpleValueArray()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		val.SliceVal()
+	}
 }

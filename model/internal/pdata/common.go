@@ -233,27 +233,27 @@ func (v Value) BoolVal() bool {
 }
 
 // MapVal returns the map value associated with this Value.
-// If the Type() is not ValueTypeMap then returns an empty map. Note that modifying
-// such empty map has no effect on this Value.
+// If the Type() is not ValueTypeMap then returns an invalid map. Note that using
+// such map can cause panic.
 //
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) MapVal() Map {
 	kvlist := v.orig.GetKvlistValue()
 	if kvlist == nil {
-		return NewMap()
+		return Map{}
 	}
 	return newMap(&kvlist.Values)
 }
 
 // SliceVal returns the slice value associated with this Value.
-// If the Type() is not ValueTypeArray then returns an empty slice. Note that modifying
-// such empty slice has no effect on this Value.
+// If the Type() is not ValueTypeArray then returns an invalid slice. Note that using
+// such slice can cause panic.
 //
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) SliceVal() Slice {
 	arr := v.orig.GetArrayValue()
 	if arr == nil {
-		return NewSlice()
+		return Slice{}
 	}
 	return newSlice(&arr.Values)
 }
