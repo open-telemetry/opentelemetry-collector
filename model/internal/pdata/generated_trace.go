@@ -205,9 +205,9 @@ func (ms ResourceSpans) SetSchemaUrl(v string) {
 	(*ms.orig).SchemaUrl = v
 }
 
-// InstrumentationLibrarySpans returns the InstrumentationLibrarySpans associated with this ResourceSpans.
+// InstrumentationLibrarySpans returns the ScopeSpans associated with this ResourceSpans.
 func (ms ResourceSpans) InstrumentationLibrarySpans() InstrumentationLibrarySpansSlice {
-	return newInstrumentationLibrarySpansSlice(&(*ms.orig).InstrumentationLibrarySpans)
+	return newInstrumentationLibrarySpansSlice(&(*ms.orig).ScopeSpans)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -225,19 +225,19 @@ func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 // Must use NewInstrumentationLibrarySpansSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrarySpansSlice struct {
-	// orig points to the slice otlptrace.InstrumentationLibrarySpans field contained somewhere else.
+	// orig points to the slice otlptrace.ScopeSpans field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
-	orig *[]*otlptrace.InstrumentationLibrarySpans
+	orig *[]*otlptrace.ScopeSpans
 }
 
-func newInstrumentationLibrarySpansSlice(orig *[]*otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpansSlice {
+func newInstrumentationLibrarySpansSlice(orig *[]*otlptrace.ScopeSpans) InstrumentationLibrarySpansSlice {
 	return InstrumentationLibrarySpansSlice{orig}
 }
 
 // NewInstrumentationLibrarySpansSlice creates a InstrumentationLibrarySpansSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewInstrumentationLibrarySpansSlice() InstrumentationLibrarySpansSlice {
-	orig := []*otlptrace.InstrumentationLibrarySpans(nil)
+	orig := []*otlptrace.ScopeSpans(nil)
 	return InstrumentationLibrarySpansSlice{&orig}
 }
 
@@ -270,8 +270,8 @@ func (es InstrumentationLibrarySpansSlice) CopyTo(dest InstrumentationLibrarySpa
 		}
 		return
 	}
-	origs := make([]otlptrace.InstrumentationLibrarySpans, srcLen)
-	wrappers := make([]*otlptrace.InstrumentationLibrarySpans, srcLen)
+	origs := make([]otlptrace.ScopeSpans, srcLen)
+	wrappers := make([]*otlptrace.ScopeSpans, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
 		newInstrumentationLibrarySpans((*es.orig)[i]).CopyTo(newInstrumentationLibrarySpans(wrappers[i]))
@@ -296,7 +296,7 @@ func (es InstrumentationLibrarySpansSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlptrace.InstrumentationLibrarySpans, len(*es.orig), newCap)
+	newOrig := make([]*otlptrace.ScopeSpans, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -304,7 +304,7 @@ func (es InstrumentationLibrarySpansSlice) EnsureCapacity(newCap int) {
 // AppendEmpty will append to the end of the slice an empty InstrumentationLibrarySpans.
 // It returns the newly added InstrumentationLibrarySpans.
 func (es InstrumentationLibrarySpansSlice) AppendEmpty() InstrumentationLibrarySpans {
-	*es.orig = append(*es.orig, &otlptrace.InstrumentationLibrarySpans{})
+	*es.orig = append(*es.orig, &otlptrace.ScopeSpans{})
 	return es.At(es.Len() - 1)
 }
 
@@ -362,10 +362,10 @@ func (es InstrumentationLibrarySpansSlice) RemoveIf(f func(InstrumentationLibrar
 // Must use NewInstrumentationLibrarySpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrarySpans struct {
-	orig *otlptrace.InstrumentationLibrarySpans
+	orig *otlptrace.ScopeSpans
 }
 
-func newInstrumentationLibrarySpans(orig *otlptrace.InstrumentationLibrarySpans) InstrumentationLibrarySpans {
+func newInstrumentationLibrarySpans(orig *otlptrace.ScopeSpans) InstrumentationLibrarySpans {
 	return InstrumentationLibrarySpans{orig: orig}
 }
 
@@ -374,19 +374,19 @@ func newInstrumentationLibrarySpans(orig *otlptrace.InstrumentationLibrarySpans)
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewInstrumentationLibrarySpans() InstrumentationLibrarySpans {
-	return newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
+	return newInstrumentationLibrarySpans(&otlptrace.ScopeSpans{})
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms InstrumentationLibrarySpans) MoveTo(dest InstrumentationLibrarySpans) {
 	*dest.orig = *ms.orig
-	*ms.orig = otlptrace.InstrumentationLibrarySpans{}
+	*ms.orig = otlptrace.ScopeSpans{}
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibrarySpans.
 func (ms InstrumentationLibrarySpans) InstrumentationLibrary() InstrumentationLibrary {
-	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
+	return newInstrumentationLibrary(&(*ms.orig).Scope)
 }
 
 // SchemaUrl returns the schemaurl associated with this InstrumentationLibrarySpans.

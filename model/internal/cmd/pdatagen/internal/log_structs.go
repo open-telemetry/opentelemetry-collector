@@ -52,7 +52,7 @@ var resourceLogs = &messageValueStruct{
 		schemaURLField,
 		&sliceField{
 			fieldName:       "InstrumentationLibraryLogs",
-			originFieldName: "InstrumentationLibraryLogs",
+			originFieldName: "ScopeLogs",
 			returnSlice:     instrumentationLibraryLogsSlice,
 		},
 	},
@@ -66,7 +66,7 @@ var instrumentationLibraryLogsSlice = &sliceOfPtrs{
 var instrumentationLibraryLogs = &messageValueStruct{
 	structName:     "InstrumentationLibraryLogs",
 	description:    "// InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.",
-	originFullName: "otlplogs.InstrumentationLibraryLogs",
+	originFullName: "otlplogs.ScopeLogs",
 	fields: []baseField{
 		instrumentationLibraryField,
 		schemaURLField,

@@ -57,7 +57,7 @@ var resourceSpans = &messageValueStruct{
 		schemaURLField,
 		&sliceField{
 			fieldName:       "InstrumentationLibrarySpans",
-			originFieldName: "InstrumentationLibrarySpans",
+			originFieldName: "ScopeSpans",
 			returnSlice:     instrumentationLibrarySpansSlice,
 		},
 	},
@@ -71,7 +71,7 @@ var instrumentationLibrarySpansSlice = &sliceOfPtrs{
 var instrumentationLibrarySpans = &messageValueStruct{
 	structName:     "InstrumentationLibrarySpans",
 	description:    "// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.",
-	originFullName: "otlptrace.InstrumentationLibrarySpans",
+	originFullName: "otlptrace.ScopeSpans",
 	fields: []baseField{
 		instrumentationLibraryField,
 		schemaURLField,

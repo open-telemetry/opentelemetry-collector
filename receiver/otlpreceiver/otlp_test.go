@@ -69,7 +69,7 @@ var traceJSON = []byte(`
 			  }
 			]
 		  },
-		  "instrumentation_library_spans": [
+		  "scope_spans": [
 			{
 			  "spans": [
 				{
