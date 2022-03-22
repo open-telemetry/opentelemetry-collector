@@ -39,9 +39,9 @@ func TestResource_CopyTo(t *testing.T) {
 
 func TestResource_Attributes(t *testing.T) {
 	ms := NewResource()
-	assert.EqualValues(t, NewAttributeMap(), ms.Attributes())
-	fillTestAttributeMap(ms.Attributes())
-	testValAttributes := generateTestAttributeMap()
+	assert.EqualValues(t, NewMap(), ms.Attributes())
+	fillTestMap(ms.Attributes())
+	testValAttributes := generateTestMap()
 	assert.EqualValues(t, testValAttributes, ms.Attributes())
 }
 
@@ -60,6 +60,6 @@ func generateTestResource() Resource {
 }
 
 func fillTestResource(tv Resource) {
-	fillTestAttributeMap(tv.Attributes())
+	fillTestMap(tv.Attributes())
 	tv.SetDroppedAttributesCount(uint32(17))
 }

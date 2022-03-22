@@ -640,6 +640,8 @@ func (ms LogRecord) SetSeverityNumber(v SeverityNumber) {
 }
 
 // Name returns the name associated with this LogRecord.
+//
+// Deprecated: [v0.48.0] it was removed from the data model.
 func (ms LogRecord) Name() string {
 	return (*ms.orig).Name
 }
@@ -655,8 +657,8 @@ func (ms LogRecord) Body() Value {
 }
 
 // Attributes returns the Attributes associated with this LogRecord.
-func (ms LogRecord) Attributes() AttributeMap {
-	return newAttributeMap(&(*ms.orig).Attributes)
+func (ms LogRecord) Attributes() Map {
+	return newMap(&(*ms.orig).Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this LogRecord.

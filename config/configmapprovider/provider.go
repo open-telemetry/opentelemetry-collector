@@ -27,10 +27,10 @@ import (
 // The typical usage is the following:
 //
 //		r, err := mapProvider.Retrieve("file:/path/to/config")
-//      // Use r.Map; wait for onChange() to be called.
+//		// Use r.Map; wait for watcher to be called.
 //		r.Close()
 //		r, err = mapProvider.Retrieve("file:/path/to/config")
-//      // Use r.Map; wait for onChange() to be called.
+//		// Use r.Map; wait for watcher to be called.
 //		r.Close()
 //		// repeat retrieve/wait/close cycle until it is time to shut down the Collector process.
 //		// ...
