@@ -32,10 +32,10 @@ type mapProvider struct{}
 
 // New returns a new config.MapProvider that reads the configuration from a file.
 //
-// This Provider supports "file" scheme, and can be called with a "location" that follows:
-//   file-location = "file:" local-path
-//   local-path    = [ drive-letter ] file-path
-//   drive-letter  = ALPHA ":"
+// This Provider supports "file" scheme, and can be called with a "uri" that follows:
+//   file-uri		= "file:" local-path
+//   local-path		= [ drive-letter ] file-path
+//   drive-letter	= ALPHA ":"
 // The "file-path" can be relative or absolute, and it can be any OS supported format.
 //
 // Examples:
@@ -47,15 +47,15 @@ func New() config.MapProvider {
 	return &mapProvider{}
 }
 
-func (fmp *mapProvider) Retrieve(_ context.Context, location string, _ config.WatcherFunc) (config.Retrieved, error) {
-	if !strings.HasPrefix(location, schemeName+":") {
-		return config.Retrieved{}, fmt.Errorf("%v location is not supported by %v provider", location, schemeName)
+func (fmp *mapProvider) Retrieve(_ context.Context, uri string, _ config.WatcherFunc) (config.Retrieved, error) {
+	if !strings.HasPrefix(uri, schemeName+":") {
+		return config.Retrieved{}, fmt.Errorf("%v uri is not supported by %v provider", uri, schemeName)
 	}
 
 	// Clean the path before using it.
-	content, err := ioutil.ReadFile(filepath.Clean(location[len(schemeName)+1:]))
+	content, err := ioutil.ReadFile(filepath.Clean(uri[len(schemeName)+1:]))
 	if err != nil {
-		return config.Retrieved{}, fmt.Errorf("unable to read the file %v: %w", location, err)
+		return config.Retrieved{}, fmt.Errorf("unable to read the file %v: %w", uri, err)
 	}
 
 	var data map[string]interface{}
