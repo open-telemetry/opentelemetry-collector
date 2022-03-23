@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
+package filemapprovider // import "go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 
 import (
 	"context"
@@ -26,11 +26,11 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-const fileSchemeName = "file"
+const schemeName = "file"
 
-type fileMapProvider struct{}
+type mapProvider struct{}
 
-// NewFile returns a new Provider that reads the configuration from a file.
+// New returns a new config.MapProvider that reads the configuration from a file.
 //
 // This Provider supports "file" scheme, and can be called with a "location" that follows:
 //   file-location = "file:" local-path
@@ -43,29 +43,29 @@ type fileMapProvider struct{}
 // `file:/path/to/file` - absolute path (unix, windows)
 // `file:c:/path/to/file` - absolute path including drive-letter (windows)
 // `file:c:\path\to\file` - absolute path including drive-letter (windows)
-func NewFile() Provider {
-	return &fileMapProvider{}
+func New() config.MapProvider {
+	return &mapProvider{}
 }
 
-func (fmp *fileMapProvider) Retrieve(_ context.Context, location string, _ WatcherFunc) (Retrieved, error) {
-	if !strings.HasPrefix(location, fileSchemeName+":") {
-		return Retrieved{}, fmt.Errorf("%v location is not supported by %v provider", location, fileSchemeName)
+func (fmp *mapProvider) Retrieve(_ context.Context, location string, _ config.WatcherFunc) (config.Retrieved, error) {
+	if !strings.HasPrefix(location, schemeName+":") {
+		return config.Retrieved{}, fmt.Errorf("%v location is not supported by %v provider", location, schemeName)
 	}
 
 	// Clean the path before using it.
-	content, err := ioutil.ReadFile(filepath.Clean(location[len(fileSchemeName)+1:]))
+	content, err := ioutil.ReadFile(filepath.Clean(location[len(schemeName)+1:]))
 	if err != nil {
-		return Retrieved{}, fmt.Errorf("unable to read the file %v: %w", location, err)
+		return config.Retrieved{}, fmt.Errorf("unable to read the file %v: %w", location, err)
 	}
 
 	var data map[string]interface{}
 	if err = yaml.Unmarshal(content, &data); err != nil {
-		return Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
+		return config.Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 
-	return Retrieved{Map: config.NewMapFromStringMap(data)}, nil
+	return config.Retrieved{Map: config.NewMapFromStringMap(data)}, nil
 }
 
-func (*fileMapProvider) Shutdown(context.Context) error {
+func (*mapProvider) Shutdown(context.Context) error {
 	return nil
 }

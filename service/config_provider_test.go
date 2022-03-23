@@ -27,10 +27,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
+	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 )
 
 type mockProvider struct {
@@ -41,17 +41,17 @@ type mockProvider struct {
 	errC error
 }
 
-func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher configmapprovider.WatcherFunc) (configmapprovider.Retrieved, error) {
+func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher config.WatcherFunc) (config.Retrieved, error) {
 	if m.errR != nil {
-		return configmapprovider.Retrieved{}, m.errR
+		return config.Retrieved{}, m.errR
 	}
 	if m.retM == nil {
-		return configmapprovider.Retrieved{Map: config.NewMap()}, nil
+		return config.Retrieved{Map: config.NewMap()}, nil
 	}
 	if watcher != nil {
-		watcher(&configmapprovider.ChangeEvent{Error: m.errW})
+		watcher(&config.ChangeEvent{Error: m.errW})
 	}
-	return configmapprovider.Retrieved{Map: m.retM, CloseFunc: func(ctx context.Context) error { return m.errC }}, nil
+	return config.Retrieved{Map: m.retM, CloseFunc: func(ctx context.Context) error { return m.errC }}, nil
 }
 
 func (m *mockProvider) Scheme() string {
@@ -77,7 +77,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 	tests := []struct {
 		name              string
 		locations         []string
-		parserProvider    map[string]configmapprovider.Provider
+		parserProvider    map[string]config.MapProvider
 		cfgMapConverters  []config.MapConverterFunc
 		configUnmarshaler configunmarshaler.ConfigUnmarshaler
 		expectNewErr      bool
@@ -87,7 +87,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 		{
 			name:      "retrieve_err",
 			locations: []string{"mock:", "not_supported:"},
-			parserProvider: map[string]configmapprovider.Provider{
+			parserProvider: map[string]config.MapProvider{
 				"mock": &mockProvider{},
 			},
 			configUnmarshaler: configunmarshaler.NewDefault(),
@@ -96,7 +96,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 		{
 			name:      "retrieve_err",
 			locations: []string{"mock:", "err:"},
-			parserProvider: map[string]configmapprovider.Provider{
+			parserProvider: map[string]config.MapProvider{
 				"mock": &mockProvider{},
 				"err":  &mockProvider{errR: errors.New("retrieve_err")},
 			},
@@ -106,9 +106,9 @@ func TestConfigProvider_Errors(t *testing.T) {
 		{
 			name:      "converter_err",
 			locations: []string{"mock:", filepath.Join("testdata", "otelcol-nop.yaml")},
-			parserProvider: map[string]configmapprovider.Provider{
+			parserProvider: map[string]config.MapProvider{
 				"mock": &mockProvider{},
-				"file": configmapprovider.NewFile(),
+				"file": filemapprovider.New(),
 			},
 			cfgMapConverters:  []config.MapConverterFunc{func(context.Context, *config.Map) error { return errors.New("converter_err") }},
 			configUnmarshaler: configunmarshaler.NewDefault(),
@@ -117,9 +117,9 @@ func TestConfigProvider_Errors(t *testing.T) {
 		{
 			name:      "unmarshal_err",
 			locations: []string{"mock:", filepath.Join("testdata", "otelcol-nop.yaml")},
-			parserProvider: map[string]configmapprovider.Provider{
+			parserProvider: map[string]config.MapProvider{
 				"mock": &mockProvider{},
-				"file": configmapprovider.NewFile(),
+				"file": filemapprovider.New(),
 			},
 			configUnmarshaler: &errConfigUnmarshaler{err: errors.New("unmarshal_err")},
 			expectNewErr:      true,
@@ -127,9 +127,9 @@ func TestConfigProvider_Errors(t *testing.T) {
 		{
 			name:      "validation_err",
 			locations: []string{"mock:", filepath.Join("testdata", "otelcol-invalid.yaml")},
-			parserProvider: map[string]configmapprovider.Provider{
+			parserProvider: map[string]config.MapProvider{
 				"mock": &mockProvider{},
-				"file": configmapprovider.NewFile(),
+				"file": filemapprovider.New(),
 			},
 			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectNewErr:      true,
@@ -137,10 +137,10 @@ func TestConfigProvider_Errors(t *testing.T) {
 		{
 			name:      "watch_err",
 			locations: []string{"mock:", "err:"},
-			parserProvider: func() map[string]configmapprovider.Provider {
+			parserProvider: func() map[string]config.MapProvider {
 				cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
 				require.NoError(t, err)
-				return map[string]configmapprovider.Provider{
+				return map[string]config.MapProvider{
 					"mock": &mockProvider{},
 					"err":  &mockProvider{retM: cfgMap, errW: errors.New("watch_err")},
 				}
@@ -151,10 +151,10 @@ func TestConfigProvider_Errors(t *testing.T) {
 		{
 			name:      "close_err",
 			locations: []string{"mock:", "err:"},
-			parserProvider: func() map[string]configmapprovider.Provider {
+			parserProvider: func() map[string]config.MapProvider {
 				cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
 				require.NoError(t, err)
-				return map[string]configmapprovider.Provider{
+				return map[string]config.MapProvider{
 					"mock": &mockProvider{},
 					"err":  &mockProvider{retM: cfgMap, errC: errors.New("close_err")},
 				}
@@ -193,7 +193,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 func TestConfigProvider(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
-	configMapProvider := func() configmapprovider.Provider {
+	configMapProvider := func() config.MapProvider {
 		// Use fakeRetrieved with nil errors to have Watchable interface implemented.
 		cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
@@ -202,7 +202,7 @@ func TestConfigProvider(t *testing.T) {
 
 	cfgW := MustNewConfigProvider(
 		[]string{"watcher:"},
-		map[string]configmapprovider.Provider{"watcher": configMapProvider},
+		map[string]config.MapProvider{"watcher": configMapProvider},
 		nil,
 		configunmarshaler.NewDefault())
 	_, errN := cfgW.Get(context.Background(), factories)
@@ -230,7 +230,7 @@ func TestConfigProviderNoWatcher(t *testing.T) {
 	watcherWG := sync.WaitGroup{}
 	cfgW := MustNewConfigProvider(
 		[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
-		map[string]configmapprovider.Provider{"file": configmapprovider.NewFile()},
+		map[string]config.MapProvider{"file": filemapprovider.New()},
 		nil,
 		configunmarshaler.NewDefault())
 	_, errN := cfgW.Get(context.Background(), factories)
@@ -252,7 +252,7 @@ func TestConfigProviderNoWatcher(t *testing.T) {
 func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
-	configMapProvider := func() configmapprovider.Provider {
+	configMapProvider := func() config.MapProvider {
 		// Use fakeRetrieved with nil errors to have Watchable interface implemented.
 		cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
@@ -262,7 +262,7 @@ func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 	watcherWG := sync.WaitGroup{}
 	cfgW := MustNewConfigProvider(
 		[]string{"watcher:"},
-		map[string]configmapprovider.Provider{"watcher": configMapProvider},
+		map[string]config.MapProvider{"watcher": configMapProvider},
 		nil,
 		configunmarshaler.NewDefault())
 	_, errN := cfgW.Get(context.Background(), factories)
