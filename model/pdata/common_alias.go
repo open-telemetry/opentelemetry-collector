@@ -33,7 +33,7 @@ const (
 	ValueTypeDouble = pdata.ValueTypeDouble
 	ValueTypeBool   = pdata.ValueTypeBool
 	ValueTypeMap    = pdata.ValueTypeMap
-	ValueTypeArray  = pdata.ValueTypeArray
+	ValueTypeSlice  = pdata.ValueTypeSlice
 	ValueTypeBytes  = pdata.ValueTypeBytes
 
 	// Deprecated: [v0.48.0] Use ValueTypeEmpty instead.
@@ -54,8 +54,8 @@ const (
 	// Deprecated: [v0.48.0] Use ValueTypeMap instead.
 	AttributeValueTypeMap = pdata.ValueTypeMap
 
-	// Deprecated: [v0.48.0] Use ValueTypeArray instead.
-	AttributeValueTypeArray = pdata.ValueTypeArray
+	// Deprecated: [v0.48.0] Use ValueTypeSlice instead.
+	AttributeValueTypeArray = pdata.ValueTypeSlice
 
 	// Deprecated: [v0.48.0] Use ValueTypeBytes instead.
 	AttributeValueTypeBytes = pdata.ValueTypeBytes
@@ -75,7 +75,7 @@ var (
 	NewValueDouble = pdata.NewValueDouble
 	NewValueBool   = pdata.NewValueBool
 	NewValueMap    = pdata.NewValueMap
-	NewValueArray  = pdata.NewValueArray
+	NewValueSlice  = pdata.NewValueSlice
 	NewValueBytes  = pdata.NewValueBytes
 
 	// Deprecated: [v0.48.0] Use NewValueEmpty instead.
@@ -96,8 +96,8 @@ var (
 	// Deprecated: [v0.48.0] Use NewValueMap instead.
 	NewAttributeValueMap = pdata.NewValueMap
 
-	// Deprecated: [v0.48.0] Use NewValueArray instead.
-	NewAttributeValueArray = pdata.NewValueArray
+	// Deprecated: [v0.48.0] Use NewValueSlice instead.
+	NewAttributeValueArray = pdata.NewValueSlice
 
 	// Deprecated: [v0.48.0] Use NewValueBytes instead.
 	NewAttributeValueBytes = pdata.NewValueBytes

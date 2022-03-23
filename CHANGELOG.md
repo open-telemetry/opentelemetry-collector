@@ -28,6 +28,9 @@
   - Deprecate `pdata.AttributeValueSlice` struct in favor of `pdata.Slice`
   - Deprecate `pdata.NewAttributeValueSlice` func in favor of `pdata.NewSlice`
 - Deprecate LogRecord.Name(), it was deprecated in the data model (#5054)
+- Rename `Array` type of `pdata.Value` to `Slice` (#5067)
+  - Deprecate `pdata.AttributeValueTypeArray` type in favor of `pdata.ValueTypeSlice`
+  - Deprecate `pdata.NewAttributeValueArray` func in favor of `pdata.NewValueSlice`
 - Deprecate global flag in `featuregates` (#5060)
 
 ### 💡 Enhancements 💡

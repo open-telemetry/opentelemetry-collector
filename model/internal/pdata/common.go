@@ -39,7 +39,7 @@ const (
 	ValueTypeDouble
 	ValueTypeBool
 	ValueTypeMap
-	ValueTypeArray
+	ValueTypeSlice
 	ValueTypeBytes
 )
 
@@ -58,8 +58,8 @@ func (avt ValueType) String() string {
 		return "DOUBLE"
 	case ValueTypeMap:
 		return "MAP"
-	case ValueTypeArray:
-		return "ARRAY"
+	case ValueTypeSlice:
+		return "SLICE"
 	case ValueTypeBytes:
 		return "BYTES"
 	}
@@ -120,8 +120,8 @@ func NewValueMap() Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}}}
 }
 
-// NewValueArray creates a new Value of array type.
-func NewValueArray() Value {
+// NewValueSlice creates a new Value of array type.
+func NewValueSlice() Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}}
 }
 
@@ -171,7 +171,7 @@ func newValueFromRaw(iv interface{}) Value {
 		NewMapFromRaw(tv).CopyTo(mv.MapVal())
 		return mv
 	case []interface{}:
-		av := NewValueArray()
+		av := NewValueSlice()
 		newSliceFromRaw(tv).CopyTo(av.SliceVal())
 		return av
 	default:
@@ -197,7 +197,7 @@ func (v Value) Type() ValueType {
 	case *otlpcommon.AnyValue_KvlistValue:
 		return ValueTypeMap
 	case *otlpcommon.AnyValue_ArrayValue:
-		return ValueTypeArray
+		return ValueTypeSlice
 	case *otlpcommon.AnyValue_BytesValue:
 		return ValueTypeBytes
 	}
@@ -246,7 +246,7 @@ func (v Value) MapVal() Map {
 }
 
 // SliceVal returns the slice value associated with this Value.
-// If the Type() is not ValueTypeArray then returns an invalid slice. Note that using
+// If the Type() is not ValueTypeSlice then returns an invalid slice. Note that using
 // such slice can cause panic.
 //
 // Calling this function on zero-initialized Value will cause a panic.
@@ -376,7 +376,7 @@ func (v Value) Equal(av Value) bool {
 			newAv := newValue(&vv[i])
 
 			// According to the specification, array values must be scalar.
-			if avType := newAv.Type(); avType == ValueTypeArray || avType == ValueTypeMap {
+			if avType := newAv.Type(); avType == ValueTypeSlice || avType == ValueTypeMap {
 				return false
 			}
 
@@ -439,7 +439,7 @@ func (v Value) AsString() string {
 	case ValueTypeBytes:
 		return base64.StdEncoding.EncodeToString(v.BytesVal())
 
-	case ValueTypeArray:
+	case ValueTypeSlice:
 		jsonStr, _ := json.Marshal(v.SliceVal().asRaw())
 		return string(jsonStr)
 
@@ -495,7 +495,7 @@ func (v Value) asRaw() interface{} {
 		return v.BytesVal()
 	case ValueTypeMap:
 		v.MapVal().AsRaw()
-	case ValueTypeArray:
+	case ValueTypeSlice:
 		v.SliceVal().asRaw()
 	}
 	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
@@ -939,7 +939,7 @@ func (m Map) AsRaw() map[string]interface{} {
 			rawMap[k] = nil
 		case ValueTypeMap:
 			rawMap[k] = v.MapVal().AsRaw()
-		case ValueTypeArray:
+		case ValueTypeSlice:
 			rawMap[k] = v.SliceVal().asRaw()
 		}
 		return true

@@ -28,7 +28,7 @@ var commonFile = &File{
 	},
 	structs: []baseStruct{
 		instrumentationLibrary,
-		attributeValueArray,
+		attributeValueSlice,
 	},
 }
 
@@ -109,7 +109,7 @@ var anyValue = &messageValueStruct{
 	originFullName: "otlpcommon.AnyValue",
 }
 
-var attributeValueArray = &sliceOfValues{
+var attributeValueSlice = &sliceOfValues{
 	structName: "Slice",
 	element:    anyValue,
 }
