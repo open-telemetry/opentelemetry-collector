@@ -14,6 +14,7 @@
 
 ### 🚩 Deprecations 🚩
 
+- Move MapProvider to config, split providers in their own package (#5030)
 - API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4975)
   - `pdata.AttributeValue` struct is deprecated in favor of `pdata.Value`
   - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
@@ -30,12 +31,17 @@
 - Rename `Array` type of `pdata.Value` to `Slice` (#5067)
   - Deprecate `pdata.AttributeValueTypeArray` type in favor of `pdata.ValueTypeSlice`
   - Deprecate `pdata.NewAttributeValueArray` func in favor of `pdata.NewValueSlice`
+- Deprecate global flag in `featuregates` (#5060)
 
 ### 💡 Enhancements 💡
 
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
+
+### 🧰 Bug fixes 🧰
+
+- The `featuregates` were not configured from the "--feature-gates" flag on windows service (#5060)
 
 ## v0.47.0 Beta
 

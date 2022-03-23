@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider
+package envmapprovider
 
 import (
 	"context"
@@ -26,28 +26,28 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-const envSchemePrefix = envSchemeName + ":"
+const envSchemePrefix = schemeName + ":"
 
-func TestEnv_EmptyName(t *testing.T) {
-	env := NewEnv()
+func TestEmptyName(t *testing.T) {
+	env := New()
 	_, err := env.Retrieve(context.Background(), "", nil)
 	require.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
-func TestEnv_UnsupportedScheme(t *testing.T) {
-	env := NewEnv()
+func TestUnsupportedScheme(t *testing.T) {
+	env := New()
 	_, err := env.Retrieve(context.Background(), "http://", nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
-func TestEnv_InvalidYaml(t *testing.T) {
+func TestInvalidYAML(t *testing.T) {
 	bytes, err := os.ReadFile(filepath.Join("testdata", "invalid-yaml.yaml"))
 	require.NoError(t, err)
 	const envName = "invalid-yaml"
 	t.Setenv(envName, string(bytes))
-	env := NewEnv()
+	env := New()
 	_, err = env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
@@ -59,7 +59,7 @@ func TestEnv(t *testing.T) {
 	const envName = "default-config"
 	t.Setenv(envName, string(bytes))
 
-	env := NewEnv()
+	env := New()
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
