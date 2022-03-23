@@ -19,11 +19,11 @@ package pdata
 
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
-// InstrumentationLibrary is an alias for pdata.InstrumentationLibrary struct.
-type InstrumentationLibrary = pdata.InstrumentationLibrary
+// InstrumentationScope is an alias for pdata.InstrumentationScope struct.
+type InstrumentationScope = pdata.InstrumentationScope
 
-// NewInstrumentationLibrary is an alias for a function to create a new empty InstrumentationLibrary.
-var NewInstrumentationLibrary = pdata.NewInstrumentationLibrary
+// NewInstrumentationScope is an alias for a function to create a new empty InstrumentationScope.
+var NewInstrumentationScope = pdata.NewInstrumentationScope
 
 // Slice is an alias for pdata.Slice struct.
 type Slice = pdata.Slice

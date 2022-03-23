@@ -75,7 +75,7 @@ func (md Metrics) MetricCount() int {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		ilms := rm.InstrumentationLibraryMetrics()
+		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			metricCount += ilm.Metrics().Len()
@@ -89,7 +89,7 @@ func (md Metrics) DataPointCount() (dataPointCount int) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		ilms := rm.InstrumentationLibraryMetrics()
+		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			ms := ilm.Metrics()

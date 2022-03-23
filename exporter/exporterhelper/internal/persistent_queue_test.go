@@ -176,7 +176,7 @@ func newTraces(numTraces int, numSpans int) pdata.Traces {
 
 	for i := 0; i < numTraces; i++ {
 		traceID := pdata.NewTraceID([16]byte{1, 2, 3, byte(i)})
-		ils := batch.InstrumentationLibrarySpans().AppendEmpty()
+		ils := batch.ScopeSpans().AppendEmpty()
 		for j := 0; j < numSpans; j++ {
 			span := ils.Spans().AppendEmpty()
 			span.SetTraceID(traceID)

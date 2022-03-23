@@ -66,7 +66,7 @@ var tracesRequestJSON = []byte(`
 func TestTracesRequestJSON(t *testing.T) {
 	tr := NewTracesRequest()
 	assert.NoError(t, tr.UnmarshalJSON(tracesRequestJSON))
-	assert.Equal(t, "test_span", tr.Traces().ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
+	assert.Equal(t, "test_span", tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 
 	got, err := tr.MarshalJSON()
 	assert.NoError(t, err)
@@ -76,7 +76,7 @@ func TestTracesRequestJSON(t *testing.T) {
 func TestTracesRequestJSON_Deprecated(t *testing.T) {
 	tr, err := UnmarshalJSONTracesRequest(tracesRequestJSON)
 	assert.NoError(t, err)
-	assert.Equal(t, "test_span", tr.Traces().ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
+	assert.Equal(t, "test_span", tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 
 	got, err := tr.MarshalJSON()
 	assert.NoError(t, err)

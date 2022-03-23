@@ -62,7 +62,7 @@ var metricsRequestJSON = []byte(`
 func TestMetricsRequestJSON(t *testing.T) {
 	mr := NewMetricsRequest()
 	assert.NoError(t, mr.UnmarshalJSON(metricsRequestJSON))
-	assert.Equal(t, "test_metric", mr.Metrics().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, "test_metric", mr.Metrics().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 
 	got, err := mr.MarshalJSON()
 	assert.NoError(t, err)

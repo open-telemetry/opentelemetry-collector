@@ -205,46 +205,46 @@ func (ms ResourceLogs) SetSchemaUrl(v string) {
 	(*ms.orig).SchemaUrl = v
 }
 
-// InstrumentationLibraryLogs returns the ScopeLogs associated with this ResourceLogs.
-func (ms ResourceLogs) InstrumentationLibraryLogs() InstrumentationLibraryLogsSlice {
-	return newInstrumentationLibraryLogsSlice(&(*ms.orig).ScopeLogs)
+// ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
+func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
+	return newScopeLogsSlice(&(*ms.orig).ScopeLogs)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
-	ms.InstrumentationLibraryLogs().CopyTo(dest.InstrumentationLibraryLogs())
+	ms.ScopeLogs().CopyTo(dest.ScopeLogs())
 }
 
-// InstrumentationLibraryLogsSlice logically represents a slice of InstrumentationLibraryLogs.
+// ScopeLogsSlice logically represents a slice of ScopeLogs.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewInstrumentationLibraryLogsSlice function to create new instances.
+// Must use NewScopeLogsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type InstrumentationLibraryLogsSlice struct {
+type ScopeLogsSlice struct {
 	// orig points to the slice otlplogs.ScopeLogs field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
 	orig *[]*otlplogs.ScopeLogs
 }
 
-func newInstrumentationLibraryLogsSlice(orig *[]*otlplogs.ScopeLogs) InstrumentationLibraryLogsSlice {
-	return InstrumentationLibraryLogsSlice{orig}
+func newScopeLogsSlice(orig *[]*otlplogs.ScopeLogs) ScopeLogsSlice {
+	return ScopeLogsSlice{orig}
 }
 
-// NewInstrumentationLibraryLogsSlice creates a InstrumentationLibraryLogsSlice with 0 elements.
+// NewScopeLogsSlice creates a ScopeLogsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewInstrumentationLibraryLogsSlice() InstrumentationLibraryLogsSlice {
+func NewScopeLogsSlice() ScopeLogsSlice {
 	orig := []*otlplogs.ScopeLogs(nil)
-	return InstrumentationLibraryLogsSlice{&orig}
+	return ScopeLogsSlice{&orig}
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewInstrumentationLibraryLogsSlice()".
-func (es InstrumentationLibraryLogsSlice) Len() int {
+// Returns "0" for a newly instance created with "NewScopeLogsSlice()".
+func (es ScopeLogsSlice) Len() int {
 	return len(*es.orig)
 }
 
@@ -255,18 +255,18 @@ func (es InstrumentationLibraryLogsSlice) Len() int {
 //       e := es.At(i)
 //       ... // Do something with the element
 //   }
-func (es InstrumentationLibraryLogsSlice) At(ix int) InstrumentationLibraryLogs {
-	return newInstrumentationLibraryLogs((*es.orig)[ix])
+func (es ScopeLogsSlice) At(ix int) ScopeLogs {
+	return newScopeLogs((*es.orig)[ix])
 }
 
 // CopyTo copies all elements from the current slice to the dest.
-func (es InstrumentationLibraryLogsSlice) CopyTo(dest InstrumentationLibraryLogsSlice) {
+func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
 		for i := range *es.orig {
-			newInstrumentationLibraryLogs((*es.orig)[i]).CopyTo(newInstrumentationLibraryLogs((*dest.orig)[i]))
+			newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs((*dest.orig)[i]))
 		}
 		return
 	}
@@ -274,7 +274,7 @@ func (es InstrumentationLibraryLogsSlice) CopyTo(dest InstrumentationLibraryLogs
 	wrappers := make([]*otlplogs.ScopeLogs, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
-		newInstrumentationLibraryLogs((*es.orig)[i]).CopyTo(newInstrumentationLibraryLogs(wrappers[i]))
+		newScopeLogs((*es.orig)[i]).CopyTo(newScopeLogs(wrappers[i]))
 	}
 	*dest.orig = wrappers
 }
@@ -283,14 +283,14 @@ func (es InstrumentationLibraryLogsSlice) CopyTo(dest InstrumentationLibraryLogs
 // 1. If the newCap <= cap then no change in capacity.
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
-// Here is how a new InstrumentationLibraryLogsSlice can be initialized:
-//   es := NewInstrumentationLibraryLogsSlice()
+// Here is how a new ScopeLogsSlice can be initialized:
+//   es := NewScopeLogsSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
 //       e := es.AppendEmpty()
 //       // Here should set all the values for e.
 //   }
-func (es InstrumentationLibraryLogsSlice) EnsureCapacity(newCap int) {
+func (es ScopeLogsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
 		return
@@ -301,30 +301,30 @@ func (es InstrumentationLibraryLogsSlice) EnsureCapacity(newCap int) {
 	*es.orig = newOrig
 }
 
-// AppendEmpty will append to the end of the slice an empty InstrumentationLibraryLogs.
-// It returns the newly added InstrumentationLibraryLogs.
-func (es InstrumentationLibraryLogsSlice) AppendEmpty() InstrumentationLibraryLogs {
+// AppendEmpty will append to the end of the slice an empty ScopeLogs.
+// It returns the newly added ScopeLogs.
+func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 	*es.orig = append(*es.orig, &otlplogs.ScopeLogs{})
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the InstrumentationLibraryLogs elements within InstrumentationLibraryLogsSlice given the
-// provided less function so that two instances of InstrumentationLibraryLogsSlice
+// Sort sorts the ScopeLogs elements within ScopeLogsSlice given the
+// provided less function so that two instances of ScopeLogsSlice
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b InstrumentationLibraryLogs) bool {
+//   lessFunc := func(a, b ScopeLogs) bool {
 //     return a.Name() < b.Name() // choose any comparison here
 //   }
 //   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es InstrumentationLibraryLogsSlice) Sort(less func(a, b InstrumentationLibraryLogs) bool) InstrumentationLibraryLogsSlice {
+func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) ScopeLogsSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es InstrumentationLibraryLogsSlice) MoveAndAppendTo(dest InstrumentationLibraryLogsSlice) {
+func (es ScopeLogsSlice) MoveAndAppendTo(dest ScopeLogsSlice) {
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -336,7 +336,7 @@ func (es InstrumentationLibraryLogsSlice) MoveAndAppendTo(dest InstrumentationLi
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es InstrumentationLibraryLogsSlice) RemoveIf(f func(InstrumentationLibraryLogs) bool) {
+func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
@@ -354,59 +354,59 @@ func (es InstrumentationLibraryLogsSlice) RemoveIf(f func(InstrumentationLibrary
 	*es.orig = (*es.orig)[:newLen]
 }
 
-// InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.
+// ScopeLogs is a collection of logs from a LibraryInstrumentation.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewInstrumentationLibraryLogs function to create new instances.
+// Must use NewScopeLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type InstrumentationLibraryLogs struct {
+type ScopeLogs struct {
 	orig *otlplogs.ScopeLogs
 }
 
-func newInstrumentationLibraryLogs(orig *otlplogs.ScopeLogs) InstrumentationLibraryLogs {
-	return InstrumentationLibraryLogs{orig: orig}
+func newScopeLogs(orig *otlplogs.ScopeLogs) ScopeLogs {
+	return ScopeLogs{orig: orig}
 }
 
-// NewInstrumentationLibraryLogs creates a new empty InstrumentationLibraryLogs.
+// NewScopeLogs creates a new empty ScopeLogs.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewInstrumentationLibraryLogs() InstrumentationLibraryLogs {
-	return newInstrumentationLibraryLogs(&otlplogs.ScopeLogs{})
+func NewScopeLogs() ScopeLogs {
+	return newScopeLogs(&otlplogs.ScopeLogs{})
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
-func (ms InstrumentationLibraryLogs) MoveTo(dest InstrumentationLibraryLogs) {
+func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlplogs.ScopeLogs{}
 }
 
-// InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryLogs.
-func (ms InstrumentationLibraryLogs) InstrumentationLibrary() InstrumentationLibrary {
-	return newInstrumentationLibrary(&(*ms.orig).Scope)
+// Scope returns the scope associated with this ScopeLogs.
+func (ms ScopeLogs) Scope() InstrumentationScope {
+	return newInstrumentationScope(&(*ms.orig).Scope)
 }
 
-// SchemaUrl returns the schemaurl associated with this InstrumentationLibraryLogs.
-func (ms InstrumentationLibraryLogs) SchemaUrl() string {
+// SchemaUrl returns the schemaurl associated with this ScopeLogs.
+func (ms ScopeLogs) SchemaUrl() string {
 	return (*ms.orig).SchemaUrl
 }
 
-// SetSchemaUrl replaces the schemaurl associated with this InstrumentationLibraryLogs.
-func (ms InstrumentationLibraryLogs) SetSchemaUrl(v string) {
+// SetSchemaUrl replaces the schemaurl associated with this ScopeLogs.
+func (ms ScopeLogs) SetSchemaUrl(v string) {
 	(*ms.orig).SchemaUrl = v
 }
 
-// LogRecords returns the LogRecords associated with this InstrumentationLibraryLogs.
-func (ms InstrumentationLibraryLogs) LogRecords() LogRecordSlice {
+// LogRecords returns the LogRecords associated with this ScopeLogs.
+func (ms ScopeLogs) LogRecords() LogRecordSlice {
 	return newLogRecordSlice(&(*ms.orig).LogRecords)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms InstrumentationLibraryLogs) CopyTo(dest InstrumentationLibraryLogs) {
-	ms.InstrumentationLibrary().CopyTo(dest.InstrumentationLibrary())
+func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
+	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.LogRecords().CopyTo(dest.LogRecords())
 }

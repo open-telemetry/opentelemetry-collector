@@ -70,7 +70,7 @@ func (td Traces) SpanCount() int {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			spanCount += ilss.At(j).Spans().Len()
 		}

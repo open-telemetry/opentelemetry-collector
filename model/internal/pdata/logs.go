@@ -70,7 +70,7 @@ func (ld Logs) LogRecordCount() int {
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		ill := rs.InstrumentationLibraryLogs()
+		ill := rs.ScopeLogs()
 		for i := 0; i < ill.Len(); i++ {
 			logs := ill.At(i)
 			logCount += logs.LogRecords().Len()

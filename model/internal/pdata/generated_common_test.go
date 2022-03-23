@@ -25,30 +25,30 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 )
 
-func TestInstrumentationLibrary_MoveTo(t *testing.T) {
-	ms := generateTestInstrumentationLibrary()
-	dest := NewInstrumentationLibrary()
+func TestInstrumentationScope_MoveTo(t *testing.T) {
+	ms := generateTestInstrumentationScope()
+	dest := NewInstrumentationScope()
 	ms.MoveTo(dest)
-	assert.EqualValues(t, NewInstrumentationLibrary(), ms)
-	assert.EqualValues(t, generateTestInstrumentationLibrary(), dest)
+	assert.EqualValues(t, NewInstrumentationScope(), ms)
+	assert.EqualValues(t, generateTestInstrumentationScope(), dest)
 }
 
-func TestInstrumentationLibrary_CopyTo(t *testing.T) {
-	ms := NewInstrumentationLibrary()
-	generateTestInstrumentationLibrary().CopyTo(ms)
-	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms)
+func TestInstrumentationScope_CopyTo(t *testing.T) {
+	ms := NewInstrumentationScope()
+	generateTestInstrumentationScope().CopyTo(ms)
+	assert.EqualValues(t, generateTestInstrumentationScope(), ms)
 }
 
-func TestInstrumentationLibrary_Name(t *testing.T) {
-	ms := NewInstrumentationLibrary()
+func TestInstrumentationScope_Name(t *testing.T) {
+	ms := NewInstrumentationScope()
 	assert.EqualValues(t, "", ms.Name())
 	testValName := "test_name"
 	ms.SetName(testValName)
 	assert.EqualValues(t, testValName, ms.Name())
 }
 
-func TestInstrumentationLibrary_Version(t *testing.T) {
-	ms := NewInstrumentationLibrary()
+func TestInstrumentationScope_Version(t *testing.T) {
+	ms := NewInstrumentationScope()
 	assert.EqualValues(t, "", ms.Version())
 	testValVersion := "test_version"
 	ms.SetVersion(testValVersion)
@@ -156,13 +156,13 @@ func TestSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
-func generateTestInstrumentationLibrary() InstrumentationLibrary {
-	tv := NewInstrumentationLibrary()
-	fillTestInstrumentationLibrary(tv)
+func generateTestInstrumentationScope() InstrumentationScope {
+	tv := NewInstrumentationScope()
+	fillTestInstrumentationScope(tv)
 	return tv
 }
 
-func fillTestInstrumentationLibrary(tv InstrumentationLibrary) {
+func fillTestInstrumentationScope(tv InstrumentationScope) {
 	tv.SetName("test_name")
 	tv.SetVersion("test_version")
 }

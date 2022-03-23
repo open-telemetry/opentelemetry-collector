@@ -176,7 +176,7 @@ With the modified configuration if you re-run the test above the log output shou
 2020-11-11T04:08:17.344Z	DEBUG	loggingexporter/logging_exporter.go:353	ResourceSpans #0
 Resource labels:
      -> service.name: STRING(api)
-InstrumentationLibrarySpans #0
+ScopeSpans #0
 Span #0
     Trace ID       : 5982fe77008310cc80f1da5e10147519
     Parent ID      : 90394f6bcffb5d13

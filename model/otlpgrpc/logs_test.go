@@ -66,7 +66,7 @@ var logsRequestJSON = []byte(`
 func TestLogsRequestJSON(t *testing.T) {
 	lr := NewLogsRequest()
 	assert.NoError(t, lr.UnmarshalJSON(logsRequestJSON))
-	assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Body().AsString())
+	assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 
 	got, err := lr.MarshalJSON()
 	assert.NoError(t, err)

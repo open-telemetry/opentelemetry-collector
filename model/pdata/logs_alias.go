@@ -65,3 +65,15 @@ const (
 	SeverityNumberFATAL3    = pdata.SeverityNumberFATAL3
 	SeverityNumberFATAL4    = pdata.SeverityNumberFATAL4
 )
+
+// Deprecated: [v0.48.0] Use ScopeLogsSlice instead.
+type InstrumentationLibraryLogsSlice = pdata.ScopeLogsSlice
+
+// Deprecated: [v0.48.0] Use NewScopeLogsSlice instead.
+var NewInstrumentationLibraryLogsSlice = pdata.NewScopeLogsSlice
+
+// Deprecated: [v0.48.0] Use ScopeLogs instead.
+type InstrumentationLibraryLogs = pdata.ScopeLogs
+
+// Deprecated: [v0.48.0] Use NewScopeLogs instead.
+var NewInstrumentationLibraryLogs = pdata.NewScopeLogs

@@ -49,7 +49,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	traceDataSlice := make([]pdata.Traces, 0, requestCount)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
-		spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
@@ -67,7 +67,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	receivedTraces := sink.AllTraces()
 	spansReceivedByName := spansReceivedByName(receivedTraces)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		spans := traceDataSlice[requestNum].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+		spans := traceDataSlice[requestNum].ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			require.EqualValues(t,
 				spans.At(spanIndex),
@@ -90,7 +90,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	spansPerRequest := 150
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
-		spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
@@ -161,7 +161,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		rss := td.ResourceSpans()
 		require.Equal(t, expectedBatchingFactor, rss.Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
-			require.Equal(t, spansPerRequest, rss.At(i).InstrumentationLibrarySpans().At(0).Spans().Len())
+			require.Equal(t, spansPerRequest, rss.At(i).ScopeSpans().At(0).Spans().Len())
 		}
 	}
 
@@ -227,7 +227,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 		rss := td.ResourceSpans()
 		require.Equal(t, expectedBatchingFactor, rss.Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
-			require.Equal(t, spansPerRequest, rss.At(i).InstrumentationLibrarySpans().At(0).Spans().Len())
+			require.Equal(t, spansPerRequest, rss.At(i).ScopeSpans().At(0).Spans().Len())
 		}
 	}
 }
@@ -280,7 +280,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
-		metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+		metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
 			metrics.At(metricIndex).SetName(getTestMetricName(requestNum, metricIndex))
 		}
@@ -298,7 +298,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	receivedMds := sink.AllMetrics()
 	metricsReceivedByName := metricsReceivedByName(receivedMds)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		metrics := metricDataSlice[requestNum].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+		metrics := metricDataSlice[requestNum].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
 			require.EqualValues(t,
 				metrics.At(metricIndex),
@@ -353,7 +353,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	for _, md := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
-			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics().Len())
 		}
 	}
 
@@ -435,7 +435,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	for _, md := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, md.ResourceMetrics().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
-			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+			require.Equal(t, metricsPerRequest, md.ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics().Len())
 		}
 	}
 }
@@ -475,7 +475,7 @@ func spansReceivedByName(tds []pdata.Traces) map[string]pdata.Span {
 	for i := range tds {
 		rss := tds[i].ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
-			ilss := rss.At(i).InstrumentationLibrarySpans()
+			ilss := rss.At(i).ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				spans := ilss.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
@@ -493,7 +493,7 @@ func metricsReceivedByName(mds []pdata.Metrics) map[string]pdata.Metric {
 	for _, md := range mds {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
-			ilms := rms.At(i).InstrumentationLibraryMetrics()
+			ilms := rms.At(i).ScopeMetrics()
 			for j := 0; j < ilms.Len(); j++ {
 				metrics := ilms.At(j).Metrics()
 				for k := 0; k < metrics.Len(); k++ {
@@ -596,7 +596,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
-		logs := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+		logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			logs.At(logIndex).SetSeverityText(getTestLogSeverityText(requestNum, logIndex))
 		}
@@ -614,7 +614,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	receivedMds := sink.AllLogs()
 	logsReceivedBySeverityText := logsReceivedBySeverityText(receivedMds)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		logs := logDataSlice[requestNum].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+		logs := logDataSlice[requestNum].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			require.EqualValues(t,
 				logs.At(logIndex),
@@ -667,7 +667,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	for _, ld := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
-			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).LogRecords().Len())
+			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).ScopeLogs().At(0).LogRecords().Len())
 		}
 	}
 
@@ -732,7 +732,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	for _, ld := range receivedMds {
 		require.Equal(t, expectedBatchingFactor, ld.ResourceLogs().Len())
 		for i := 0; i < expectedBatchingFactor; i++ {
-			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).InstrumentationLibraryLogs().At(0).LogRecords().Len())
+			require.Equal(t, logsPerRequest, ld.ResourceLogs().At(i).ScopeLogs().At(0).LogRecords().Len())
 		}
 	}
 }
@@ -773,7 +773,7 @@ func logsReceivedBySeverityText(lds []pdata.Logs) map[string]pdata.LogRecord {
 		ld := lds[i]
 		rms := ld.ResourceLogs()
 		for i := 0; i < rms.Len(); i++ {
-			ilms := rms.At(i).InstrumentationLibraryLogs()
+			ilms := rms.At(i).ScopeLogs()
 			for j := 0; j < ilms.Len(); j++ {
 				logs := ilms.At(j).LogRecords()
 				for k := 0; k < logs.Len(); k++ {
