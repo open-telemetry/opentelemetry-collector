@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider
+package yamlmapprovider
 
 import (
 	"context"
@@ -21,22 +21,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestYamlProvider_Empty(t *testing.T) {
-	sp := NewYAML()
+func TestEmpty(t *testing.T) {
+	sp := New()
 	_, err := sp.Retrieve(context.Background(), "", nil)
 	assert.Error(t, err)
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 
-func TestYamlProvider_InvalidValue(t *testing.T) {
-	sp := NewYAML()
+func TestInvalidYAML(t *testing.T) {
+	sp := New()
 	_, err := sp.Retrieve(context.Background(), "yaml::2s", nil)
 	assert.Error(t, err)
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 
-func TestYamlProvider(t *testing.T) {
-	sp := NewYAML()
+func TestOneValue(t *testing.T) {
+	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch::timeout: 2s", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
@@ -49,8 +49,8 @@ func TestYamlProvider(t *testing.T) {
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 
-func TestYamlProvider_NamedComponent(t *testing.T) {
-	sp := NewYAML()
+func TestNamedComponent(t *testing.T) {
+	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
@@ -63,8 +63,8 @@ func TestYamlProvider_NamedComponent(t *testing.T) {
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 
-func TestYamlProvider_MapEntry(t *testing.T) {
-	sp := NewYAML()
+func TestMapEntry(t *testing.T) {
+	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors: {batch/foo::timeout: 3s, batch::timeout: 2s}", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
@@ -80,8 +80,8 @@ func TestYamlProvider_MapEntry(t *testing.T) {
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 
-func TestYamlProvider_NewLine(t *testing.T) {
-	sp := NewYAML()
+func TestNewLine(t *testing.T) {
+	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s\nprocessors::batch::timeout: 2s", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
@@ -97,8 +97,8 @@ func TestYamlProvider_NewLine(t *testing.T) {
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 
-func TestYamlProvider_DotSeparator(t *testing.T) {
-	sp := NewYAML()
+func TestDotSeparator(t *testing.T) {
+	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors.batch.timeout: 4s", nil)
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"processors.batch.timeout": "4s"}, ret.Map.ToStringMap())
