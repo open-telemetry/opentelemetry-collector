@@ -53,6 +53,10 @@ func (s *mapProvider) Retrieve(_ context.Context, location string, _ config.Watc
 	return config.Retrieved{Map: config.NewMapFromStringMap(data)}, nil
 }
 
+func (*mapProvider) Scheme() string {
+	return schemeName
+}
+
 func (s *mapProvider) Shutdown(context.Context) error {
 	return nil
 }

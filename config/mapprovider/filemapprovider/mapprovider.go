@@ -66,6 +66,10 @@ func (fmp *mapProvider) Retrieve(_ context.Context, location string, _ config.Wa
 	return config.Retrieved{Map: config.NewMapFromStringMap(data)}, nil
 }
 
+func (*mapProvider) Scheme() string {
+	return schemeName
+}
+
 func (*mapProvider) Shutdown(context.Context) error {
 	return nil
 }
