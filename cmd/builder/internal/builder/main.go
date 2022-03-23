@@ -99,7 +99,7 @@ func Compile(cfg Config) error {
 // GetModules retrieves the go modules, updating go.mod and go.sum in the process
 func GetModules(cfg Config) error {
 	// #nosec G204
-	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.17")
+	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.18")
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w. Output: %q", err, out)

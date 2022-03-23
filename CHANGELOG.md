@@ -38,6 +38,7 @@
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
+- Upgrade to Go 1.18 (#5071)
 
 ### 🧰 Bug fixes 🧰
 

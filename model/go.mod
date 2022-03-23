@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/model
 
-go 1.17
+go 1.18
 
 require (
 	github.com/gogo/protobuf v1.3.2
