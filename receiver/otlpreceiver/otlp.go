@@ -15,10 +15,16 @@
 package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 import (
+	"compress/gzip"
 	"context"
+	"encoding/binary"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -185,8 +191,55 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
 			handleUnmatchedRequests(resp, req)
 		})
+
+		r.httpMux.HandleFunc(
+			"/opentelemetry.proto.collector.trace.v1.TraceService/Export",
+			func(resp http.ResponseWriter, req *http.Request) {
+				prepareGrpcResponse(resp)
+				body, err := deframeGrpc(req)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				otlpReq, err := pbEncoder.unmarshalTracesRequest(body)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				otlpResp, err := r.traceReceiver.Export(req.Context(), otlpReq)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				msg, err := pbEncoder.marshalTracesResponse(otlpResp)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				writeGrpcMessage(resp, msg)
+			}).Methods(http.MethodPost)
 	}
 	return nil
+}
+
+func writeGrpcMessage(resp http.ResponseWriter, msg []byte) {
+	_, err := resp.Write([]byte{0})
+	if err != nil {
+		writeGrpcError(resp, err)
+	}
+	length := make([]byte, 4)
+	binary.BigEndian.PutUint32(length, uint32(len(msg)))
+	_, err = resp.Write(length)
+	if err != nil {
+		writeGrpcError(resp, err)
+		return
+	}
+	_, err = resp.Write(msg)
+	if err != nil {
+		writeGrpcError(resp, err)
+		return
+	}
+	writeGrpcStatus(resp, status.New(codes.OK, ""))
 }
 
 func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
@@ -204,6 +257,33 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
 			handleUnmatchedRequests(resp, req)
 		})
+
+		r.httpMux.HandleFunc(
+			"/opentelemetry.proto.collector.metrics.v1.MetricsService/Export",
+			func(resp http.ResponseWriter, req *http.Request) {
+				prepareGrpcResponse(resp)
+				body, err := deframeGrpc(req)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				otlpReq, err := pbEncoder.unmarshalMetricsRequest(body)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				otlpResp, err := r.metricsReceiver.Export(req.Context(), otlpReq)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				msg, err := pbEncoder.marshalMetricsResponse(otlpResp)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				writeGrpcMessage(resp, msg)
+			}).Methods(http.MethodPost)
 	}
 	return nil
 }
@@ -223,8 +303,41 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 		r.httpMux.HandleFunc("/v1/logs", func(resp http.ResponseWriter, req *http.Request) {
 			handleUnmatchedRequests(resp, req)
 		})
+
+		r.httpMux.HandleFunc(
+			"/opentelemetry.proto.collector.logs.v1.LogsService/Export",
+			func(resp http.ResponseWriter, req *http.Request) {
+				prepareGrpcResponse(resp)
+				body, err := deframeGrpc(req)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				otlpReq, err := pbEncoder.unmarshalLogsRequest(body)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				otlpResp, err := r.logReceiver.Export(req.Context(), otlpReq)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				msg, err := pbEncoder.marshalLogsResponse(otlpResp)
+				if err != nil {
+					writeGrpcError(resp, err)
+					return
+				}
+				writeGrpcMessage(resp, msg)
+			}).Methods(http.MethodPost)
 	}
 	return nil
+}
+
+func prepareGrpcResponse(resp http.ResponseWriter) {
+	resp.Header().Set("Trailer", "grpc-status, grpc-message")
+	resp.Header().Set("Content-Type", "application/grpc")
+	resp.WriteHeader(http.StatusOK)
 }
 
 func handleUnmatchedRequests(resp http.ResponseWriter, req *http.Request) {
@@ -237,5 +350,64 @@ func handleUnmatchedRequests(resp http.ResponseWriter, req *http.Request) {
 		status := http.StatusUnsupportedMediaType
 		writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, jsonContentType, pbContentType)))
 		return
+	}
+}
+
+func deframeGrpc(req *http.Request) ([]byte, error) {
+	defer func() {
+		_ = req.Body.Close()
+	}()
+	header := make([]byte, 5)
+	_, err := io.ReadFull(req.Body, header)
+	if err != nil {
+		return nil, err
+	}
+	flag := header[0]
+	length := binary.BigEndian.Uint32(header[1:])
+	if flag == 0 {
+		payload, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		if uint32(len(payload)) != length {
+			return nil, fmt.Errorf("unexpected payload length, expected %v got %v", length, len(payload))
+		}
+		return payload, nil
+	}
+
+	// Compressed body
+	encoding := req.Header.Get("grpc-encoding")
+	if encoding != "gzip" {
+		return nil, fmt.Errorf("unsupported compression format %v", encoding)
+	}
+
+	lr := io.LimitReader(req.Body, int64(length))
+	gz, err := gzip.NewReader(lr)
+	if err != nil {
+		return nil, err
+	}
+	payload, err := io.ReadAll(gz)
+	if err != nil {
+		return nil, err
+	}
+	rem, err := io.ReadAll(req.Body)
+	if len(rem) != 0 {
+		return nil, fmt.Errorf("unexpected payload length, expected %v got %v", length, int(length)+len(rem))
+	}
+	return payload, nil
+}
+
+func writeGrpcError(resp http.ResponseWriter, err error) {
+	s, ok := status.FromError(err)
+	if !ok {
+		s = errorMsgToStatus(err.Error(), http.StatusBadRequest)
+	}
+	writeGrpcStatus(resp, s)
+}
+
+func writeGrpcStatus(resp http.ResponseWriter, s *status.Status) {
+	resp.Header().Set("grpc-status", strconv.Itoa(int(s.Code())))
+	if len(s.Message()) != 0 {
+		resp.Header().Set("grpc-message", s.Message())
 	}
 }

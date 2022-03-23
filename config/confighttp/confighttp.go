@@ -17,6 +17,8 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"crypto/tls"
 	"fmt"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"net"
 	"net/http"
 	"time"
@@ -309,6 +311,9 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 		next:            handler,
 		includeMetadata: hss.IncludeMetadata,
 	}
+
+	// support H2C
+	handler = h2c.NewHandler(handler, &http2.Server{})
 
 	return &http.Server{
 		Handler: handler,
