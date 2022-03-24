@@ -934,7 +934,7 @@ func TestGetParamsFromRequest(t *testing.T) {
 		want map[string][]string
 	}{
 		{
-			name: "default behaviour(all headers and query)",
+			name: "default behavior(all headers and query)",
 			args: args{
 				r: &http.Request{
 					Header: map[string][]string{

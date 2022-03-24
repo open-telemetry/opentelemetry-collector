@@ -42,6 +42,7 @@
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
+- Ability to configure the propagate policy for server authentication by specifying the source of auth data. This now includes query string in addition to the existing header. (#5080) 
 
 ### 🧰 Bug fixes 🧰
 
