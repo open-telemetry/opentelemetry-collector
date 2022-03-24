@@ -62,10 +62,7 @@ func (tr TracesResponse) MarshalProto() ([]byte, error) {
 
 // UnmarshalProto unmarshalls TracesResponse from proto bytes.
 func (tr TracesResponse) UnmarshalProto(data []byte) error {
-	if err := tr.orig.Unmarshal(data); err != nil {
-		return err
-	}
-	return nil
+	return tr.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals TracesResponse into JSON bytes.
@@ -118,10 +115,7 @@ func (tr TracesRequest) MarshalProto() ([]byte, error) {
 
 // UnmarshalProto unmarshalls TracesRequest from proto bytes.
 func (tr TracesRequest) UnmarshalProto(data []byte) error {
-	if err := tr.orig.Unmarshal(data); err != nil {
-		return err
-	}
-	return nil
+	return tr.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals TracesRequest into JSON bytes.

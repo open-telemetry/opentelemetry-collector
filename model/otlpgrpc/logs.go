@@ -66,10 +66,7 @@ func (lr LogsResponse) MarshalProto() ([]byte, error) {
 
 // UnmarshalProto unmarshalls LogsResponse from proto bytes.
 func (lr LogsResponse) UnmarshalProto(data []byte) error {
-	if err := lr.orig.Unmarshal(data); err != nil {
-		return err
-	}
-	return nil
+	return lr.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals LogsResponse into JSON bytes.
@@ -122,10 +119,7 @@ func (lr LogsRequest) MarshalProto() ([]byte, error) {
 
 // UnmarshalProto unmarshalls LogsRequest from proto bytes.
 func (lr LogsRequest) UnmarshalProto(data []byte) error {
-	if err := lr.orig.Unmarshal(data); err != nil {
-		return err
-	}
-	return nil
+	return lr.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals LogsRequest into JSON bytes.
