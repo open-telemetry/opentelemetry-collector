@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package consumerhelper // import "go.opentelemetry.io/collector/consumer/consumerhelper"
+package consumer // import "go.opentelemetry.io/collector/consumer"
 
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 )
+
+// Metrics is the new metrics consumer interface that receives pdata.Metrics, processes it
+// as needed, and sends it to the next processing node if any or to the destination.
+type Metrics interface {
+	baseConsumer
+	// ConsumeMetrics receives pdata.Metrics for consumption.
+	ConsumeMetrics(ctx context.Context, md pdata.Metrics) error
+}
 
 // ConsumeMetricsFunc is a helper function that is similar to ConsumeMetrics.
 type ConsumeMetricsFunc func(ctx context.Context, ld pdata.Metrics) error
@@ -30,17 +37,17 @@ func (f ConsumeMetricsFunc) ConsumeMetrics(ctx context.Context, ld pdata.Metrics
 }
 
 type baseMetrics struct {
-	*baseConsumer
+	*baseImpl
 	ConsumeMetricsFunc
 }
 
-// NewMetrics returns a consumer.Metrics configured with the provided options.
-func NewMetrics(consume ConsumeMetricsFunc, options ...Option) (consumer.Metrics, error) {
+// NewMetrics returns a Metrics configured with the provided options.
+func NewMetrics(consume ConsumeMetricsFunc, options ...Option) (Metrics, error) {
 	if consume == nil {
 		return nil, errNilFunc
 	}
 	return &baseMetrics{
-		baseConsumer:       newBaseConsumer(options...),
+		baseImpl:           newBaseImpl(options...),
 		ConsumeMetricsFunc: consume,
 	}, nil
 }

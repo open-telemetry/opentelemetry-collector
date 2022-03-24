@@ -20,15 +20,14 @@ import (
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
-// NewCommand constructs a new cobra.Command using the given Collector.
-// TODO: Make this independent of the collector internals.
+// NewCommand constructs a new cobra.Command using the given CollectorSettings.
 func NewCommand(set CollectorSettings) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:          set.BuildInfo.Command,
 		Version:      set.BuildInfo.Version,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			featuregate.Apply(featuregate.GetFlags())
+			featuregate.Apply(gatesList)
 			if set.ConfigProvider == nil {
 				set.ConfigProvider = MustNewDefaultConfigProvider(getConfigFlag(), getSetFlag())
 			}

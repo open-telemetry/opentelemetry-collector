@@ -19,12 +19,12 @@ import (
 )
 
 var (
-	resourceAttributes1 = pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{"resource-attr": pdata.NewAttributeValueString("resource-attr-val-1")})
-	resourceAttributes2 = pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{"resource-attr": pdata.NewAttributeValueString("resource-attr-val-2")})
-	spanEventAttributes = pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{"span-event-attr": pdata.NewAttributeValueString("span-event-attr-val")})
-	spanLinkAttributes  = pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{"span-link-attr": pdata.NewAttributeValueString("span-link-attr-val")})
-	spanAttributes      = pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{"span-attr": pdata.NewAttributeValueString("span-attr-val")})
-	metricAttachment    = pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{"exemplar-attachment": pdata.NewAttributeValueString("exemplar-attachment-value")})
+	resourceAttributes1 = pdata.NewMapFromRaw(map[string]interface{}{"resource-attr": "resource-attr-val-1"})
+	resourceAttributes2 = pdata.NewMapFromRaw(map[string]interface{}{"resource-attr": "resource-attr-val-2"})
+	spanEventAttributes = pdata.NewMapFromRaw(map[string]interface{}{"span-event-attr": "span-event-attr-val"})
+	spanLinkAttributes  = pdata.NewMapFromRaw(map[string]interface{}{"span-link-attr": "span-link-attr-val"})
+	spanAttributes      = pdata.NewMapFromRaw(map[string]interface{}{"span-attr": "span-attr-val"})
+	metricAttachment    = pdata.NewMapFromRaw(map[string]interface{}{"exemplar-attachment": "exemplar-attachment-value"})
 )
 
 const (
@@ -36,52 +36,52 @@ const (
 	TestLabelValue3 = "label-value-3"
 )
 
-func initResourceAttributes1(dest pdata.AttributeMap) {
+func initResourceAttributes1(dest pdata.Map) {
 	dest.Clear()
 	resourceAttributes1.CopyTo(dest)
 }
 
-func initResourceAttributes2(dest pdata.AttributeMap) {
+func initResourceAttributes2(dest pdata.Map) {
 	dest.Clear()
 	resourceAttributes2.CopyTo(dest)
 }
 
-func initSpanAttributes(dest pdata.AttributeMap) {
+func initSpanAttributes(dest pdata.Map) {
 	dest.Clear()
 	spanAttributes.CopyTo(dest)
 }
 
-func initSpanEventAttributes(dest pdata.AttributeMap) {
+func initSpanEventAttributes(dest pdata.Map) {
 	dest.Clear()
 	spanEventAttributes.CopyTo(dest)
 }
 
-func initSpanLinkAttributes(dest pdata.AttributeMap) {
+func initSpanLinkAttributes(dest pdata.Map) {
 	dest.Clear()
 	spanLinkAttributes.CopyTo(dest)
 }
 
-func initMetricAttachment(dest pdata.AttributeMap) {
+func initMetricAttachment(dest pdata.Map) {
 	dest.Clear()
 	metricAttachment.CopyTo(dest)
 }
 
-func initMetricAttributes1(dest pdata.AttributeMap) {
+func initMetricAttributes1(dest pdata.Map) {
 	dest.Clear()
 	dest.InsertString(TestLabelKey1, TestLabelValue1)
 }
 
-func initMetricAttributes12(dest pdata.AttributeMap) {
+func initMetricAttributes12(dest pdata.Map) {
 	initMetricAttributes1(dest)
 	dest.InsertString(TestLabelKey2, TestLabelValue2)
 }
 
-func initMetricAttributes13(dest pdata.AttributeMap) {
+func initMetricAttributes13(dest pdata.Map) {
 	initMetricAttributes1(dest)
 	dest.InsertString(TestLabelKey3, TestLabelValue3)
 }
 
-func initMetricAttributes2(dest pdata.AttributeMap) {
+func initMetricAttributes2(dest pdata.Map) {
 	dest.Clear()
 	dest.InsertString(TestLabelKey2, TestLabelValue2)
 }

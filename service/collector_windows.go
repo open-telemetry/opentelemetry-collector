@@ -28,14 +28,23 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
+
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
+// Deprecated: [v0.48.0] will be made private soon.
 type WindowsService struct {
 	settings CollectorSettings
 	col      *Collector
 }
 
+// Deprecated: [v0.48.0] use NewSvcHandler.
 func NewWindowsService(set CollectorSettings) *WindowsService {
+	return &WindowsService{settings: set}
+}
+
+// NewSvcHandler constructs a new svc.Handler using the given CollectorSettings.
+func NewSvcHandler(set CollectorSettings) svc.Handler {
 	return &WindowsService{settings: set}
 }
 
@@ -88,6 +97,7 @@ func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 	if err := flags().Parse(os.Args[1:]); err != nil {
 		return err
 	}
+	featuregate.Apply(gatesList)
 	var err error
 	s.col, err = newWithWindowsEventLogCore(s.settings, elog)
 	if err != nil {

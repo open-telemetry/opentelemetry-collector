@@ -24,7 +24,7 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 )
 
 // The regular expression for valid config field tag.
@@ -32,7 +32,7 @@ var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 
 // LoadConfigMap loads a config.Map from file, and does NOT validate the configuration.
 func LoadConfigMap(fileName string) (*config.Map, error) {
-	ret, err := configmapprovider.NewFile().Retrieve(context.Background(), "file:"+fileName, nil)
+	ret, err := filemapprovider.New().Retrieve(context.Background(), "file:"+fileName, nil)
 	return ret.Map, err
 }
 

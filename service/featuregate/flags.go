@@ -24,9 +24,7 @@ const gatesListCfg = "feature-gates"
 
 var gatesList = FlagValue{}
 
-// Flags adds CLI flags for managing feature gates to the provided FlagSet
-// Feature gates can be configured with `--feature-gates=foo,-bar`.  This would
-// enable the `foo` feature gate and disable the `bar` feature gate.
+// Deprecated: [v0.48.0] declare distribution flag if needed.
 func Flags(flags *flag.FlagSet) {
 	flags.Var(
 		gatesList,
@@ -34,7 +32,7 @@ func Flags(flags *flag.FlagSet) {
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature.  '+' or no prefix will enable the feature.")
 }
 
-// GetFlags returns the FlagValue used with Flags()
+// Deprecated: [v0.48.0] declare distribution flag if needed.
 func GetFlags() FlagValue {
 	return gatesList
 }
@@ -63,11 +61,15 @@ func (f FlagValue) String() string {
 
 // Set applies the FlagValue encoded in the input string
 func (f FlagValue) Set(s string) error {
-	return f.SetSlice(strings.Split(s, ","))
+	return f.setSlice(strings.Split(s, ","))
 }
 
-// SetSlice applies the feature gate statuses in the input slice to the FlagValue
+// Deprecated: [v0.48.0] will be removed soon, use Set with comma separated values.
 func (f FlagValue) SetSlice(s []string) error {
+	return f.setSlice(s)
+}
+
+func (f FlagValue) setSlice(s []string) error {
 	for _, v := range s {
 		var id string
 		var val bool

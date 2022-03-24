@@ -6,7 +6,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="CONTRIBUTING.md">Getting Involved</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://gitter.im/open-telemetry/opentelemetry-service">Getting In Touch</a>
+    <a href="https://cloud-native.slack.com/archives/C01N6P7KR6W">Getting In Touch</a>
   </strong>
 </p>
 
@@ -48,7 +48,7 @@
 The OpenTelemetry Collector offers a vendor-agnostic implementation on how to
 receive, process and export telemetry data. In addition, it removes the need
 to run, operate and maintain multiple agents/collectors in order to support
-open-source telemetry data formats (e.g. Jaeger, Prometheus, etc.) sending to
+open-source telemetry data formats (e.g. Jaeger, Prometheus, etc.) to
 multiple open-source or commercial back-ends.
 
 Objectives:
@@ -81,13 +81,13 @@ functionality and configuration:
 || OTLP receiver configuration | Beta |
 || OTLP exporter functionality | Beta |
 || OTLP exporter configuration | Beta |
-|Common| Logging exporter | unstable |
+|Common| Logging exporter | Unstable |
 || Batch processor functionality | Beta |
 || Batch processor configuration | Beta |
 || MemoryLimiter processor functionality | Beta |
 || MemoryLimiter processor configuration | Beta |
 
-We follow the production maturity level defined [here](https://github.com/open-telemetry/community/blob/47813530864b9fe5a5146f466a58bd2bb94edc72/maturity-matrix.yaml#L31)
+We follow the production maturity level defined [here](https://github.com/open-telemetry/community/blob/47813530864b9fe5a5146f466a58bd2bb94edc72/maturity-matrix.yaml#L31).
 
 ### Compatibility
 
@@ -103,46 +103,49 @@ Official OpenTelemetry Collector distro binaries may be built with any supported
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See the [Contributing Guide](CONTRIBUTING.md) for details.
 
-Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
+Here is a list of community roles with current and previous members:
 
-- [Alolita Sharma](https://github.com/alolita), AWS
-- [Punya Biswal](https://github.com/punya), Google
-- [Steve Flanders](https://github.com/flands), Splunk
+- Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
+   - [Alolita Sharma](https://github.com/alolita), AWS
+   - [Punya Biswal](https://github.com/punya), Google
+   - [Steve Flanders](https://github.com/flands), Splunk
 
-Emeritus Triagers:
+- Emeritus Triagers:
 
-- [Andrew Hsu](https://github.com/andrewhsu), Lightstep
+   - [Andrew Hsu](https://github.com/andrewhsu), Lightstep
 
-Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
+- Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
-- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
-- [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
-- [Pablo Baeyens](https://github.com/mx-psi), DataDog
+   - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
+   - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
+   - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
-Emeritus Approvers:
+- Emeritus Approvers:
 
-- [James Bebbington](https://github.com/james-bebbington), Google
-- [Jay Camp](https://github.com/jrcamp), Splunk
-- [Nail Islamov](https://github.com/nilebox), Google
-- [Owais Lone](https://github.com/owais), Splunk
-- [Rahul Patel](https://github.com/rghetia), Google
-- [Steven Karis](https://github.com/sjkaris), Splunk
-- [Yang Song](https://github.com/songy23), Google
+   - [James Bebbington](https://github.com/james-bebbington), Google
+   - [Jay Camp](https://github.com/jrcamp), Splunk
+   - [Nail Islamov](https://github.com/nilebox), Google
+   - [Owais Lone](https://github.com/owais), Splunk
+   - [Rahul Patel](https://github.com/rghetia), Google
+   - [Steven Karis](https://github.com/sjkaris), Splunk
+   - [Yang Song](https://github.com/songy23), Google
 
-Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
+- Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 
-- [Alex Boten](https://github.com/codeboten), Lightstep
-- [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
-- [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
+   - [Alex Boten](https://github.com/codeboten), Lightstep
+   - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
+   - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
-Emeritus Maintainers:
+- Emeritus Maintainers:
 
-- [Paulo Janotti](https://github.com/pjanotti), Splunk
+   - [Paulo Janotti](https://github.com/pjanotti), Splunk
 
-Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
+Learn more about roles in [Community membership](https://github.com/open-telemetry/community/blob/main/community-membership.md).
+In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
+the role of the [release manager](./docs/release.md#release-manager).
 
 Thanks to all the people who already contributed!
 

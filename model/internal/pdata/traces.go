@@ -15,7 +15,6 @@
 package pdata // import "go.opentelemetry.io/collector/model/internal/pdata"
 
 import (
-	"go.opentelemetry.io/collector/model/internal"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
@@ -49,11 +48,6 @@ type Traces struct {
 // NewTraces creates a new Traces.
 func NewTraces() Traces {
 	return Traces{orig: &otlptrace.TracesData{}}
-}
-
-// Deprecated: [v0.47.0] will be removed soon, only used internally.
-func (td Traces) InternalRep() internal.TracesWrapper {
-	return internal.TracesWrapper{}
 }
 
 // MoveTo moves all properties from the current struct to dest

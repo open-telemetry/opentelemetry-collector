@@ -36,27 +36,36 @@ func NewMetricsResponse() MetricsResponse {
 	return MetricsResponse{orig: &otlpcollectormetrics.ExportMetricsServiceResponse{}}
 }
 
-// UnmarshalMetricsResponse unmarshalls MetricsResponse from proto bytes.
+// Deprecated: [v0.48.0] use MetricsResponse.UnmarshalProto.
 func UnmarshalMetricsResponse(data []byte) (MetricsResponse, error) {
-	var orig otlpcollectormetrics.ExportMetricsServiceResponse
-	if err := orig.Unmarshal(data); err != nil {
-		return MetricsResponse{}, err
-	}
-	return MetricsResponse{orig: &orig}, nil
+	mr := NewMetricsResponse()
+	err := mr.UnmarshalProto(data)
+	return mr, err
 }
 
-// UnmarshalJSONMetricsResponse unmarshalls MetricsResponse from JSON bytes.
+// Deprecated: [v0.48.0] use MetricsResponse.UnmarshalJSON.
 func UnmarshalJSONMetricsResponse(data []byte) (MetricsResponse, error) {
-	var orig otlpcollectormetrics.ExportMetricsServiceResponse
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
-		return MetricsResponse{}, err
-	}
-	return MetricsResponse{orig: &orig}, nil
+	mr := NewMetricsResponse()
+	err := mr.UnmarshalJSON(data)
+	return mr, err
 }
 
-// Marshal marshals MetricsResponse into proto bytes.
+// Deprecated: [v0.48.0] use MarshalProto.
 func (mr MetricsResponse) Marshal() ([]byte, error) {
+	return mr.MarshalProto()
+}
+
+// MarshalProto marshals MetricsResponse into proto bytes.
+func (mr MetricsResponse) MarshalProto() ([]byte, error) {
 	return mr.orig.Marshal()
+}
+
+// UnmarshalProto unmarshalls MetricsResponse from proto bytes.
+func (mr MetricsResponse) UnmarshalProto(data []byte) error {
+	if err := mr.orig.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
 }
 
 // MarshalJSON marshals MetricsResponse into JSON bytes.
@@ -66,6 +75,11 @@ func (mr MetricsResponse) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshalls MetricsResponse from JSON bytes.
+func (mr MetricsResponse) UnmarshalJSON(data []byte) error {
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig)
 }
 
 // MetricsRequest represents the response for gRPC client/server.
@@ -78,36 +92,50 @@ func NewMetricsRequest() MetricsRequest {
 	return MetricsRequest{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
 }
 
-// UnmarshalMetricsRequest unmarshalls MetricsRequest from proto bytes.
+// Deprecated: [v0.48.0] use MetricsRequest.UnmarshalProto.
 func UnmarshalMetricsRequest(data []byte) (MetricsRequest, error) {
-	var orig otlpcollectormetrics.ExportMetricsServiceRequest
-	if err := orig.Unmarshal(data); err != nil {
-		return MetricsRequest{}, err
-	}
-	return MetricsRequest{orig: &orig}, nil
+	mr := NewMetricsRequest()
+	err := mr.UnmarshalProto(data)
+	return mr, err
 }
 
-// UnmarshalJSONMetricsRequest unmarshalls MetricsRequest from JSON bytes.
+// Deprecated: [v0.48.0] use MetricsRequest.UnmarshalJSON.
 func UnmarshalJSONMetricsRequest(data []byte) (MetricsRequest, error) {
-	var orig otlpcollectormetrics.ExportMetricsServiceRequest
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
-		return MetricsRequest{}, err
-	}
-	return MetricsRequest{orig: &orig}, nil
+	mr := NewMetricsRequest()
+	err := mr.UnmarshalJSON(data)
+	return mr, err
 }
 
-// Marshal marshals MetricsRequest into proto bytes.
+// Deprecated: [v0.48.0] use MarshalProto.
 func (mr MetricsRequest) Marshal() ([]byte, error) {
+	return mr.MarshalProto()
+}
+
+// MarshalProto marshals MetricsRequest into proto bytes.
+func (mr MetricsRequest) MarshalProto() ([]byte, error) {
 	return mr.orig.Marshal()
 }
 
-// MarshalJSON marshals LogsRequest into JSON bytes.
+// UnmarshalProto unmarshalls MetricsRequest from proto bytes.
+func (mr MetricsRequest) UnmarshalProto(data []byte) error {
+	if err := mr.orig.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON marshals MetricsRequest into JSON bytes.
 func (mr MetricsRequest) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	if err := jsonMarshaler.Marshal(&buf, mr.orig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshalls MetricsRequest from JSON bytes.
+func (mr MetricsRequest) UnmarshalJSON(data []byte) error {
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig)
 }
 
 func (mr MetricsRequest) SetMetrics(ld pdata.Metrics) {

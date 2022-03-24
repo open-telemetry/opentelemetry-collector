@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -34,10 +33,10 @@ var tracesUnmarshaler = otlp.NewProtobufTracesUnmarshaler()
 type tracesRequest struct {
 	baseRequest
 	td     pdata.Traces
-	pusher consumerhelper.ConsumeTracesFunc
+	pusher consumer.ConsumeTracesFunc
 }
 
-func newTracesRequest(ctx context.Context, td pdata.Traces, pusher consumerhelper.ConsumeTracesFunc) request {
+func newTracesRequest(ctx context.Context, td pdata.Traces, pusher consumer.ConsumeTracesFunc) request {
 	return &tracesRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		td:          td,
@@ -45,7 +44,7 @@ func newTracesRequest(ctx context.Context, td pdata.Traces, pusher consumerhelpe
 	}
 }
 
-func newTraceRequestUnmarshalerFunc(pusher consumerhelper.ConsumeTracesFunc) internal.RequestUnmarshaler {
+func newTraceRequestUnmarshalerFunc(pusher consumer.ConsumeTracesFunc) internal.RequestUnmarshaler {
 	return func(bytes []byte) (internal.PersistentRequest, error) {
 		traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
 		if err != nil {
@@ -85,7 +84,7 @@ type traceExporter struct {
 func NewTracesExporter(
 	cfg config.Exporter,
 	set component.ExporterCreateSettings,
-	pusher consumerhelper.ConsumeTracesFunc,
+	pusher consumer.ConsumeTracesFunc,
 	options ...Option,
 ) (component.TracesExporter, error) {
 
@@ -110,7 +109,7 @@ func NewTracesExporter(
 		}
 	})
 
-	tc, err := consumerhelper.NewTraces(func(ctx context.Context, td pdata.Traces) error {
+	tc, err := consumer.NewTraces(func(ctx context.Context, td pdata.Traces) error {
 		req := newTracesRequest(ctx, td, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {

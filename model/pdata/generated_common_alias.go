@@ -25,8 +25,8 @@ type InstrumentationLibrary = pdata.InstrumentationLibrary
 // NewInstrumentationLibrary is an alias for a function to create a new empty InstrumentationLibrary.
 var NewInstrumentationLibrary = pdata.NewInstrumentationLibrary
 
-// AttributeValueSlice is an alias for pdata.AttributeValueSlice struct.
-type AttributeValueSlice = pdata.AttributeValueSlice
+// Slice is an alias for pdata.Slice struct.
+type Slice = pdata.Slice
 
-// NewAttributeValueSlice is an alias for a function to create AttributeValueSlice.
-var NewAttributeValueSlice = pdata.NewAttributeValueSlice
+// NewSlice is an alias for a function to create Slice.
+var NewSlice = pdata.NewSlice

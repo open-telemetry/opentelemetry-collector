@@ -26,7 +26,7 @@ BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
-COMP_REL_PATH=service/defaultcomponents/defaults.go
+COMP_REL_PATH=cmd/otelcorecol/components.go
 MOD_NAME=go.opentelemetry.io/collector
 
 ADDLICENSE=addlicense
@@ -230,7 +230,7 @@ gendependabot: $(eval SHELL:=/bin/bash)
 OPENTELEMETRY_PROTO_SRC_DIR=model/internal/opentelemetry-proto
 
 # The SHA matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v0.12.0
+OPENTELEMETRY_PROTO_VERSION=v0.14.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
@@ -244,7 +244,7 @@ PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
 # Intermediate directory used during generation.
 PROTO_INTERMEDIATE_DIR=model/internal/.patched-otlp-proto
 
-DOCKER_PROTOBUF ?= otel/build-protobuf:0.4.1
+DOCKER_PROTOBUF ?= otel/build-protobuf:0.9.0
 PROTOC := docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
 PROTO_INCLUDES := -I/usr/include/github.com/gogo/protobuf -I./
 

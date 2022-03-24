@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package consumerhelper // import "go.opentelemetry.io/collector/consumer/consumerhelper"
+package consumer // import "go.opentelemetry.io/collector/consumer"
 
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 )
+
+// Logs is an interface that receives pdata.Logs, processes it
+// as needed, and sends it to the next processing node if any or to the destination.
+type Logs interface {
+	baseConsumer
+	// ConsumeLogs receives pdata.Logs for consumption.
+	ConsumeLogs(ctx context.Context, ld pdata.Logs) error
+}
 
 // ConsumeLogsFunc is a helper function that is similar to ConsumeLogs.
 type ConsumeLogsFunc func(ctx context.Context, ld pdata.Logs) error
@@ -30,17 +37,17 @@ func (f ConsumeLogsFunc) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 }
 
 type baseLogs struct {
-	*baseConsumer
+	*baseImpl
 	ConsumeLogsFunc
 }
 
-// NewLogs returns a consumer.Logs configured with the provided options.
-func NewLogs(consume ConsumeLogsFunc, options ...Option) (consumer.Logs, error) {
+// NewLogs returns a Logs configured with the provided options.
+func NewLogs(consume ConsumeLogsFunc, options ...Option) (Logs, error) {
 	if consume == nil {
 		return nil, errNilFunc
 	}
 	return &baseLogs{
-		baseConsumer:    newBaseConsumer(options...),
+		baseImpl:        newBaseImpl(options...),
 		ConsumeLogsFunc: consume,
 	}, nil
 }

@@ -1,4 +1,4 @@
-s+github.com/open-telemetry/opentelemetry-proto/gen/go/+go.opentelemetry.io/collector/model/internal/data/protogen/+g
+s+go.opentelemetry.io/proto/otlp/+go.opentelemetry.io/collector/model/internal/data/protogen/+g
 
 s+package opentelemetry.proto.\(.*\).v1;+package opentelemetry.proto.\1.v1;\
 \

@@ -33,7 +33,7 @@ func (textLogsMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 		buf.logEntry("ResourceLog #%d", i)
 		rl := rls.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
-		buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
+		buf.logAttributes("Resource labels", rl.Resource().Attributes())
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			buf.logEntry("InstrumentationLibraryLogs #%d", j)
@@ -49,7 +49,7 @@ func (textLogsMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 				buf.logEntry("Severity: %s", lr.SeverityText())
 				buf.logEntry("ShortName: %s", lr.Name())
 				buf.logEntry("Body: %s", attributeValueToString(lr.Body()))
-				buf.logAttributeMap("Attributes", lr.Attributes())
+				buf.logAttributes("Attributes", lr.Attributes())
 				buf.logEntry("Trace ID: %s", lr.TraceID().HexString())
 				buf.logEntry("Span ID: %s", lr.SpanID().HexString())
 				buf.logEntry("Flags: %d", lr.Flags())

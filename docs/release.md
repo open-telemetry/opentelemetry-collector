@@ -15,6 +15,14 @@ We release both core and contrib collectors with the same versions where the con
 * [open-telemetry/opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
 * [open-telemetry/opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases)
 
+## Release manager
+
+A release manager is the person responsible for a specific release. While the manager might request help from other folks, they are ultimately responsible for the success of a release.
+
+In order to have more people comfortable with the release process, and in order to decrease the burden on a small number of volunteers, all core approvers are release managers from time to time, listed under the [Release Schedule](#release-schedule) section. That table is updated at every release, with the current manager adding themselves to the bottom of the table, removing themselves from the top of the table.
+
+It is possible that a core approver isn't a contrib approver. In that case, the release manager should coordinate with a contrib approver for the steps requiring such role, like the publishing of tags.
+
 ## Releasing opentelemetry-collector
 
 1. Make sure the current `main` branch build successfully passes (Core and Contrib).
@@ -36,6 +44,8 @@ We release both core and contrib collectors with the same versions where the con
     * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
 
     * Update the collector version in the manifest used by `make run` to the new release in `./cmd/otelcorecol/builder-config.yaml`.
+    
+    * Update the collector version in the `examples/k8s/otel-config.yaml` 
 
     * Submit a PR with the changes and get the PR approved and merged.
 
@@ -99,10 +109,10 @@ The last step of the release process creates artifacts for the new version of th
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-03-16 | v0.47.0 | @mx-psi         |
 | 2022-03-30 | v0.48.0 | @tigrannajaryan |
 | 2022-04-13 | v0.49.0 | @dmitryax       |
 | 2022-04-27 | v0.50.0 | @codeboten      |
 | 2022-05-11 | v0.51.0 | @bogdandrutu    |
 | 2022-05-25 | v0.52.0 | @jpkrohling     |
 | 2022-06-01 | v0.53.0 | @Aneurysm9      |
+| 2022-06-15 | v0.54.0 | @mx-psi         |
