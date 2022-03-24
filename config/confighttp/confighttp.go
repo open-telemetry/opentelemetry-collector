@@ -98,7 +98,7 @@ func NewDefaultHTTPClientSettings() HTTPClientSettings {
 }
 
 // ToClient creates an HTTP client.
-func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension, settings component.TelemetrySettings) (*http.Client, error) {
+func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -154,11 +154,11 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	}
 
 	if hcs.Auth != nil {
-		if ext == nil {
-			return nil, fmt.Errorf("extensions configuration not found")
+		if host.GetExtensions() == nil {
+			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ext)
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetServerAuthenticator(host.GetExtensions())
 		if aerr != nil {
 			return nil, aerr
 		}
