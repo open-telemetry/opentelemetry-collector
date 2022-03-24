@@ -41,7 +41,22 @@
   - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalJSON`.
   - Deprecate [Traces|Metrics|Logs][Reques|Response].Marshal in favor of `MarshalProto`.
   - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalProto`.
-
+- Deprecating following pdata methods/types following OTLP v0.15.0 upgrade (#5076):
+      - InstrumentationLibrary is now InstrumentationScope
+      - NewInstrumentationLibrary is now NewInstrumentationScope
+      - InstrumentationLibraryLogsSlice is now ScopeLogsSlice
+      - NewInstrumentationLibraryLogsSlice is now NewScopeLogsSlice
+      - InstrumentationLibraryLogs is now ScopeLogs
+      - NewInstrumentationLibraryLogs is now NewScopeLogs
+      - InstrumentationLibraryMetricsSlice is now ScopeMetricsSlice
+      - NewInstrumentationLibraryMetricsSlice is now NewScopeMetricsSlice
+      - InstrumentationLibraryMetrics is now ScopeMetrics
+      - NewInstrumentationLibraryMetrics is now NewScopeMetrics
+      - InstrumentationLibrarySpansSlice is now ScopeSpansSlice
+      - NewInstrumentationLibrarySpansSlice is now NewScopeSpansSlice
+      - InstrumentationLibrarySpans is now ScopeSpans
+      - NewInstrumentationLibrarySpans is now NewScopeSpans
+      
 ### 💡 Enhancements 💡
 
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
