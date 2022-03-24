@@ -79,10 +79,7 @@ func (tr TracesResponse) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls TracesResponse from JSON bytes.
 func (tr TracesResponse) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig); err != nil {
-		return err
-	}
-	return nil
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig)
 }
 
 // TracesRequest represents the response for gRPC client/server.
@@ -138,10 +135,7 @@ func (tr TracesRequest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls TracesRequest from JSON bytes.
 func (tr TracesRequest) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig); err != nil {
-		return err
-	}
-	return nil
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig)
 }
 
 func (tr TracesRequest) SetTraces(td pdata.Traces) {
