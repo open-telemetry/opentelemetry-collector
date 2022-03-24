@@ -117,3 +117,8 @@ const (
 
 // String returns the string representation of the SeverityNumber.
 func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }
+
+// Deprecated: [v0.48.0] Use ScopeLogs instead.
+func (ms ResourceLogs) InstrumentationLibraryLogs() ScopeLogsSlice {
+	return ms.ScopeLogs()
+}

@@ -72,7 +72,7 @@ func TestMetricsRequestJSON(t *testing.T) {
 func TestMetricsRequestJSON_Deprecated(t *testing.T) {
 	mr, err := UnmarshalJSONMetricsRequest(metricsRequestJSON)
 	assert.NoError(t, err)
-	assert.Equal(t, "test_metric", mr.Metrics().ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Name())
+	assert.Equal(t, "test_metric", mr.Metrics().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 
 	got, err := mr.MarshalJSON()
 	assert.NoError(t, err)
@@ -160,7 +160,7 @@ func (f fakeMetricsServer) Export(_ context.Context, request MetricsRequest) (Me
 
 func generateMetricsRequest() MetricsRequest {
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("test_metric")
+	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("test_metric")
 
 	mr := NewMetricsRequest()
 	mr.SetMetrics(md)
