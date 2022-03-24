@@ -83,10 +83,7 @@ func (lr LogsResponse) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls LogsResponse from JSON bytes.
 func (lr LogsResponse) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig); err != nil {
-		return err
-	}
-	return nil
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig)
 }
 
 // LogsRequest represents the response for gRPC client/server.
@@ -142,10 +139,7 @@ func (lr LogsRequest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls LogsRequest from JSON bytes.
 func (lr LogsRequest) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig); err != nil {
-		return err
-	}
-	return nil
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig)
 }
 
 func (lr LogsRequest) SetLogs(ld pdata.Logs) {

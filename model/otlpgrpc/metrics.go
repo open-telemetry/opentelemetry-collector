@@ -79,10 +79,7 @@ func (mr MetricsResponse) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls MetricsResponse from JSON bytes.
 func (mr MetricsResponse) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig); err != nil {
-		return err
-	}
-	return nil
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig)
 }
 
 // MetricsRequest represents the response for gRPC client/server.
@@ -138,10 +135,7 @@ func (mr MetricsRequest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls MetricsRequest from JSON bytes.
 func (mr MetricsRequest) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig); err != nil {
-		return err
-	}
-	return nil
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig)
 }
 
 func (mr MetricsRequest) SetMetrics(ld pdata.Metrics) {
