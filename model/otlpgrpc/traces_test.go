@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
+	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -63,6 +64,67 @@ var tracesRequestJSON = []byte(`
 	  ]
 	}`)
 
+var tracesTransitionData = [][]byte{
+	[]byte(`
+	{
+	  "resourceSpans": [
+		{
+          "resource": {},
+		  "instrumentationLibrarySpans": [
+			{
+              "instrumentationLibrary": {},
+			  "spans": [
+				{
+                  "traceId": "",
+                  "spanId":"",
+                  "parentSpanId":"",
+				  "name": "test_span",
+                  "status": {}
+				}
+			  ]
+			}
+		  ]
+		}
+	  ]
+	}`),
+	[]byte(`
+	{
+		"resourceSpans": [
+		{
+			"resource": {},
+			"instrumentationLibrarySpans": [
+			{
+				"instrumentationLibrary": {},
+				"spans": [
+				{
+					"traceId": "",
+					"spanId":"",
+					"parentSpanId":"",
+					"name": "test_span",
+					"status": {}
+				}
+				]
+			}
+			],
+			"scopeSpans": [
+			{
+              "scope": {},
+			  "spans": [
+				{
+                  "traceId": "",
+                  "spanId":"",
+                  "parentSpanId":"",
+				  "name": "test_span",
+                  "status": {}
+				}
+			  ]
+			}
+		  ]
+		}
+		]
+	}`),
+}
+
 func TestTracesRequestJSON(t *testing.T) {
 	tr := NewTracesRequest()
 	assert.NoError(t, tr.UnmarshalJSON(tracesRequestJSON))
@@ -71,6 +133,18 @@ func TestTracesRequestJSON(t *testing.T) {
 	got, err := tr.MarshalJSON()
 	assert.NoError(t, err)
 	assert.Equal(t, strings.Join(strings.Fields(string(tracesRequestJSON)), ""), string(got))
+}
+
+func TestTracesRequestJSONTransition(t *testing.T) {
+	for _, data := range tracesTransitionData {
+		tr := NewTracesRequest()
+		assert.NoError(t, tr.UnmarshalJSON(data))
+		assert.Equal(t, "test_span", tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+
+		got, err := tr.MarshalJSON()
+		assert.NoError(t, err)
+		assert.Equal(t, strings.Join(strings.Fields(string(tracesRequestJSON)), ""), string(got))
+	}
 }
 
 func TestTracesRequestJSON_Deprecated(t *testing.T) {
@@ -112,6 +186,39 @@ func TestTracesGrpc(t *testing.T) {
 	logClient := NewTracesClient(cc)
 
 	resp, err := logClient.Export(context.Background(), generateTracesRequest())
+	assert.NoError(t, err)
+	assert.Equal(t, NewTracesResponse(), resp)
+}
+
+func TestTracesGrpcTransition(t *testing.T) {
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+	RegisterTracesServer(s, &fakeTracesServer{t: t})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, s.Serve(lis))
+	}()
+	t.Cleanup(func() {
+		s.Stop()
+		wg.Wait()
+	})
+
+	cc, err := grpc.Dial("bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock())
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, cc.Close())
+	})
+
+	logClient := NewTracesClient(cc)
+
+	resp, err := logClient.Export(context.Background(), generateTracesRequestWithInstrumentationLibrary())
 	assert.NoError(t, err)
 	assert.Equal(t, NewTracesResponse(), resp)
 }
@@ -168,5 +275,15 @@ func generateTracesRequest() TracesRequest {
 
 	tr := NewTracesRequest()
 	tr.SetTraces(td)
+	return tr
+}
+
+func generateTracesRequestWithInstrumentationLibrary() TracesRequest {
+	tr := generateTracesRequest()
+	tr.orig.ResourceSpans[0].InstrumentationLibrarySpans = []*v1.InstrumentationLibrarySpans{
+		{
+			Spans: tr.orig.ResourceSpans[0].ScopeSpans[0].Spans,
+		},
+	}
 	return tr
 }

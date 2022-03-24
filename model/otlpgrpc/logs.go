@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc"
 
 	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
+	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -133,7 +134,36 @@ func (lr LogsRequest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls LogsRequest from JSON bytes.
 func (lr LogsRequest) UnmarshalJSON(data []byte) error {
-	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig)
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig); err != nil {
+		return err
+	}
+	lr.instrumentationLibraryLogsToScope()
+	return nil
+}
+
+// instrumentationLibraryLogsToScope implements the translation of resource logs data
+// following the v0.15.0 upgrade:
+//    	receivers SHOULD check if instrumentation_library_logs is set
+// 		and scope_logs is not set then the value in instrumentation_library_logs
+// 		SHOULD be used instead by converting InstrumentationLibraryLogs into ScopeLogs.
+// 		If scope_logs is set then instrumentation_library_logs SHOULD be ignored.
+func (lr LogsRequest) instrumentationLibraryLogsToScope() {
+	for _, rl := range lr.orig.ResourceLogs {
+		if len(rl.ScopeLogs) == 0 {
+			for _, ill := range rl.InstrumentationLibraryLogs {
+				scopeMetrics := otlplogs.ScopeLogs{
+					Scope: v1.InstrumentationScope{
+						Name:    ill.InstrumentationLibrary.Name,
+						Version: ill.InstrumentationLibrary.Version,
+					},
+					LogRecords: ill.LogRecords,
+					SchemaUrl:  ill.SchemaUrl,
+				}
+				rl.ScopeLogs = append(rl.ScopeLogs, &scopeMetrics)
+			}
+		}
+		rl.InstrumentationLibraryLogs = nil
+	}
 }
 
 func (lr LogsRequest) SetLogs(ld pdata.Logs) {

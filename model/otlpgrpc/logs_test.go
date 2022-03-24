@@ -63,6 +63,67 @@ var logsRequestJSON = []byte(`
 	  ]
 	}`)
 
+var logsTransitionData = [][]byte{
+	[]byte(`
+	{
+	  "resourceLogs": [
+		{
+          "resource": {},
+		  "instrumentationLibraryLogs": [
+			{
+              "instrumentationLibrary": {},
+			  "logRecords": [
+				{
+				  "body": {
+	                "stringValue": "test_log_record"
+                  },
+				  "traceId": "",
+				  "spanId": ""
+				}
+			  ]
+			}
+		  ]
+		}
+	  ]
+	}`),
+	[]byte(`
+	{
+	  "resourceLogs": [
+		{
+          "resource": {},
+		  "instrumentationLibraryLogs": [
+			{
+              "instrumentationLibrary": {},
+			  "logRecords": [
+				{
+				  "body": {
+	                "stringValue": "test_log_record"
+                  },
+				  "traceId": "",
+				  "spanId": ""
+				}
+			  ]
+			}
+		  ],
+		  "scopeLogs": [
+			{
+              "scope": {},
+			  "logRecords": [
+				{
+				  "body": {
+	                "stringValue": "test_log_record"
+                  },
+				  "traceId": "",
+				  "spanId": ""
+				}
+			  ]
+			}
+		  ]
+		}
+	  ]
+	}`),
+}
+
 func TestLogsRequestJSON(t *testing.T) {
 	lr := NewLogsRequest()
 	assert.NoError(t, lr.UnmarshalJSON(logsRequestJSON))
@@ -71,6 +132,18 @@ func TestLogsRequestJSON(t *testing.T) {
 	got, err := lr.MarshalJSON()
 	assert.NoError(t, err)
 	assert.Equal(t, strings.Join(strings.Fields(string(logsRequestJSON)), ""), string(got))
+}
+
+func TestLogsRequestJSONTransition(t *testing.T) {
+	for _, data := range logsTransitionData {
+		lr := NewLogsRequest()
+		assert.NoError(t, lr.UnmarshalJSON(data))
+		assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
+
+		got, err := lr.MarshalJSON()
+		assert.NoError(t, err)
+		assert.Equal(t, strings.Join(strings.Fields(string(logsRequestJSON)), ""), string(got))
+	}
 }
 
 func TestLogsRequestJSON_Deprecated(t *testing.T) {

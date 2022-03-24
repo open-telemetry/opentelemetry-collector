@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
+	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -129,7 +130,37 @@ func (tr TracesRequest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls TracesRequest from JSON bytes.
 func (tr TracesRequest) UnmarshalJSON(data []byte) error {
-	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig)
+	err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig)
+	if err != nil {
+		return err
+	}
+	tr.instrumentationLibraryToScope()
+	return nil
+}
+
+// instrumentationLibraryToScope implements the translation of resource span data
+// following the v0.15.0 upgrade:
+//    	receivers SHOULD check if instrumentation_library_spans is set
+// 		and scope_spans is not set then the value in instrumentation_library_spans
+// 		SHOULD be used instead by converting InstrumentationLibrarySpans into ScopeSpans.
+// 		If scope_spans is set then instrumentation_library_spans SHOULD be ignored.
+func (tr TracesRequest) instrumentationLibraryToScope() {
+	for _, rs := range tr.orig.ResourceSpans {
+		if len(rs.ScopeSpans) == 0 {
+			for _, ils := range rs.InstrumentationLibrarySpans {
+				scopeSpans := otlptrace.ScopeSpans{
+					Scope: v1.InstrumentationScope{
+						Name:    ils.InstrumentationLibrary.Name,
+						Version: ils.InstrumentationLibrary.Version,
+					},
+					Spans:     ils.Spans,
+					SchemaUrl: ils.SchemaUrl,
+				}
+				rs.ScopeSpans = append(rs.ScopeSpans, &scopeSpans)
+			}
+		}
+		rs.InstrumentationLibrarySpans = nil
+	}
 }
 
 func (tr TracesRequest) SetTraces(td pdata.Traces) {

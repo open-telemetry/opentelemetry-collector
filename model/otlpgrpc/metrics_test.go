@@ -59,6 +59,55 @@ var metricsRequestJSON = []byte(`
 	  ]
 	}`)
 
+var metricsTransitionData = [][]byte{
+	[]byte(`
+		{
+		"resourceMetrics": [
+			{
+			"resource": {},
+			"instrumentationLibraryMetrics": [
+				{
+				"instrumentationLibrary": {},
+				"metrics": [
+					{
+					"name": "test_metric"
+					}
+				]
+				}
+			]
+			}
+		]
+		}`),
+	[]byte(`
+		{
+		"resourceMetrics": [
+			{
+			"resource": {},
+			"instrumentationLibraryMetrics": [
+				{
+				"instrumentationLibrary": {},
+				"metrics": [
+					{
+					"name": "test_metric"
+					}
+				]
+				}
+			],
+			"scopeMetrics": [
+				{
+				"scope": {},
+				"metrics": [
+					{
+					"name": "test_metric"
+					}
+				]
+				}
+			]
+			}
+		]
+		}`),
+}
+
 func TestMetricsRequestJSON(t *testing.T) {
 	mr := NewMetricsRequest()
 	assert.NoError(t, mr.UnmarshalJSON(metricsRequestJSON))
@@ -67,6 +116,18 @@ func TestMetricsRequestJSON(t *testing.T) {
 	got, err := mr.MarshalJSON()
 	assert.NoError(t, err)
 	assert.Equal(t, strings.Join(strings.Fields(string(metricsRequestJSON)), ""), string(got))
+}
+
+func TestMetricsRequestJSONTransition(t *testing.T) {
+	for _, data := range metricsTransitionData {
+		mr := NewMetricsRequest()
+		assert.NoError(t, mr.UnmarshalJSON(data))
+		assert.Equal(t, "test_metric", mr.Metrics().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+
+		got, err := mr.MarshalJSON()
+		assert.NoError(t, err)
+		assert.Equal(t, strings.Join(strings.Fields(string(metricsRequestJSON)), ""), string(got))
+	}
 }
 
 func TestMetricsRequestJSON_Deprecated(t *testing.T) {
