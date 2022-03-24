@@ -122,3 +122,8 @@ func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).St
 func (ms ResourceLogs) InstrumentationLibraryLogs() ScopeLogsSlice {
 	return ms.ScopeLogs()
 }
+
+// Deprecated: [v0.48.0] Use Scope instead.
+func (ms ScopeLogs) InstrumentationLibrary() InstrumentationScope {
+	return ms.Scope()
+}

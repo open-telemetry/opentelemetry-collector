@@ -138,3 +138,8 @@ func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).St
 func (ms ResourceSpans) InstrumentationLibrarySpans() ScopeSpansSlice {
 	return ms.ScopeSpans()
 }
+
+// Deprecated: [v0.48.0] Use Scope instead.
+func (ms ScopeSpans) InstrumentationLibrary() InstrumentationScope {
+	return ms.Scope()
+}
