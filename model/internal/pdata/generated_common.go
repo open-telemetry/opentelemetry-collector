@@ -29,10 +29,10 @@ import (
 // Must use NewInstrumentationLibrary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibrary struct {
-	orig *otlpcommon.InstrumentationLibrary
+	orig *otlpcommon.InstrumentationScope
 }
 
-func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) InstrumentationLibrary {
+func newInstrumentationLibrary(orig *otlpcommon.InstrumentationScope) InstrumentationLibrary {
 	return InstrumentationLibrary{orig: orig}
 }
 
@@ -41,14 +41,14 @@ func newInstrumentationLibrary(orig *otlpcommon.InstrumentationLibrary) Instrume
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewInstrumentationLibrary() InstrumentationLibrary {
-	return newInstrumentationLibrary(&otlpcommon.InstrumentationLibrary{})
+	return newInstrumentationLibrary(&otlpcommon.InstrumentationScope{})
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms InstrumentationLibrary) MoveTo(dest InstrumentationLibrary) {
 	*dest.orig = *ms.orig
-	*ms.orig = otlpcommon.InstrumentationLibrary{}
+	*ms.orig = otlpcommon.InstrumentationScope{}
 }
 
 // Name returns the name associated with this InstrumentationLibrary.

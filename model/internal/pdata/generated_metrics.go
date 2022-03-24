@@ -205,9 +205,9 @@ func (ms ResourceMetrics) SetSchemaUrl(v string) {
 	(*ms.orig).SchemaUrl = v
 }
 
-// InstrumentationLibraryMetrics returns the InstrumentationLibraryMetrics associated with this ResourceMetrics.
+// InstrumentationLibraryMetrics returns the ScopeMetrics associated with this ResourceMetrics.
 func (ms ResourceMetrics) InstrumentationLibraryMetrics() InstrumentationLibraryMetricsSlice {
-	return newInstrumentationLibraryMetricsSlice(&(*ms.orig).InstrumentationLibraryMetrics)
+	return newInstrumentationLibraryMetricsSlice(&(*ms.orig).ScopeMetrics)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -225,19 +225,19 @@ func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 // Must use NewInstrumentationLibraryMetricsSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryMetricsSlice struct {
-	// orig points to the slice otlpmetrics.InstrumentationLibraryMetrics field contained somewhere else.
+	// orig points to the slice otlpmetrics.ScopeMetrics field contained somewhere else.
 	// We use pointer-to-slice to be able to modify it in functions like EnsureCapacity.
-	orig *[]*otlpmetrics.InstrumentationLibraryMetrics
+	orig *[]*otlpmetrics.ScopeMetrics
 }
 
-func newInstrumentationLibraryMetricsSlice(orig *[]*otlpmetrics.InstrumentationLibraryMetrics) InstrumentationLibraryMetricsSlice {
+func newInstrumentationLibraryMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics) InstrumentationLibraryMetricsSlice {
 	return InstrumentationLibraryMetricsSlice{orig}
 }
 
 // NewInstrumentationLibraryMetricsSlice creates a InstrumentationLibraryMetricsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewInstrumentationLibraryMetricsSlice() InstrumentationLibraryMetricsSlice {
-	orig := []*otlpmetrics.InstrumentationLibraryMetrics(nil)
+	orig := []*otlpmetrics.ScopeMetrics(nil)
 	return InstrumentationLibraryMetricsSlice{&orig}
 }
 
@@ -270,8 +270,8 @@ func (es InstrumentationLibraryMetricsSlice) CopyTo(dest InstrumentationLibraryM
 		}
 		return
 	}
-	origs := make([]otlpmetrics.InstrumentationLibraryMetrics, srcLen)
-	wrappers := make([]*otlpmetrics.InstrumentationLibraryMetrics, srcLen)
+	origs := make([]otlpmetrics.ScopeMetrics, srcLen)
+	wrappers := make([]*otlpmetrics.ScopeMetrics, srcLen)
 	for i := range *es.orig {
 		wrappers[i] = &origs[i]
 		newInstrumentationLibraryMetrics((*es.orig)[i]).CopyTo(newInstrumentationLibraryMetrics(wrappers[i]))
@@ -296,7 +296,7 @@ func (es InstrumentationLibraryMetricsSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*otlpmetrics.InstrumentationLibraryMetrics, len(*es.orig), newCap)
+	newOrig := make([]*otlpmetrics.ScopeMetrics, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -304,7 +304,7 @@ func (es InstrumentationLibraryMetricsSlice) EnsureCapacity(newCap int) {
 // AppendEmpty will append to the end of the slice an empty InstrumentationLibraryMetrics.
 // It returns the newly added InstrumentationLibraryMetrics.
 func (es InstrumentationLibraryMetricsSlice) AppendEmpty() InstrumentationLibraryMetrics {
-	*es.orig = append(*es.orig, &otlpmetrics.InstrumentationLibraryMetrics{})
+	*es.orig = append(*es.orig, &otlpmetrics.ScopeMetrics{})
 	return es.At(es.Len() - 1)
 }
 
@@ -362,10 +362,10 @@ func (es InstrumentationLibraryMetricsSlice) RemoveIf(f func(InstrumentationLibr
 // Must use NewInstrumentationLibraryMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type InstrumentationLibraryMetrics struct {
-	orig *otlpmetrics.InstrumentationLibraryMetrics
+	orig *otlpmetrics.ScopeMetrics
 }
 
-func newInstrumentationLibraryMetrics(orig *otlpmetrics.InstrumentationLibraryMetrics) InstrumentationLibraryMetrics {
+func newInstrumentationLibraryMetrics(orig *otlpmetrics.ScopeMetrics) InstrumentationLibraryMetrics {
 	return InstrumentationLibraryMetrics{orig: orig}
 }
 
@@ -374,19 +374,19 @@ func newInstrumentationLibraryMetrics(orig *otlpmetrics.InstrumentationLibraryMe
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
-	return newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
+	return newInstrumentationLibraryMetrics(&otlpmetrics.ScopeMetrics{})
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms InstrumentationLibraryMetrics) MoveTo(dest InstrumentationLibraryMetrics) {
 	*dest.orig = *ms.orig
-	*ms.orig = otlpmetrics.InstrumentationLibraryMetrics{}
+	*ms.orig = otlpmetrics.ScopeMetrics{}
 }
 
 // InstrumentationLibrary returns the instrumentationlibrary associated with this InstrumentationLibraryMetrics.
 func (ms InstrumentationLibraryMetrics) InstrumentationLibrary() InstrumentationLibrary {
-	return newInstrumentationLibrary(&(*ms.orig).InstrumentationLibrary)
+	return newInstrumentationLibrary(&(*ms.orig).Scope)
 }
 
 // SchemaUrl returns the schemaurl associated with this InstrumentationLibraryMetrics.
@@ -1430,12 +1430,18 @@ func (ms HistogramDataPoint) SetCount(v uint64) {
 
 // Sum returns the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Sum() float64 {
-	return (*ms.orig).Sum
+	return (*ms.orig).GetSum()
+}
+
+// HasSum returns true if the HistogramDataPoint contains a
+// Sum value, false otherwise.
+func (ms HistogramDataPoint) HasSum() bool {
+	return ms.orig.Sum_ != nil
 }
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetSum(v float64) {
-	(*ms.orig).Sum = v
+	(*ms.orig).Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
 
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
@@ -1480,6 +1486,7 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
+
 	dest.SetBucketCounts(ms.BucketCounts())
 	dest.SetExplicitBounds(ms.ExplicitBounds())
 	ms.Exemplars().CopyTo(dest.Exemplars())

@@ -174,11 +174,11 @@ func TestResourceSpans_InstrumentationLibrarySpans(t *testing.T) {
 func TestInstrumentationLibrarySpansSlice(t *testing.T) {
 	es := NewInstrumentationLibrarySpansSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newInstrumentationLibrarySpansSlice(&[]*otlptrace.InstrumentationLibrarySpans{})
+	es = newInstrumentationLibrarySpansSlice(&[]*otlptrace.ScopeSpans{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newInstrumentationLibrarySpans(&otlptrace.InstrumentationLibrarySpans{})
+	emptyVal := newInstrumentationLibrarySpans(&otlptrace.ScopeSpans{})
 	testVal := generateTestInstrumentationLibrarySpans()
 	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
@@ -208,14 +208,14 @@ func TestInstrumentationLibrarySpansSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestInstrumentationLibrarySpansSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlptrace.InstrumentationLibrarySpans]bool)
+	expectedEs := make(map[*otlptrace.ScopeSpans]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlptrace.InstrumentationLibrarySpans]bool, es.Len())
+	foundEs := make(map[*otlptrace.ScopeSpans]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -224,14 +224,14 @@ func TestInstrumentationLibrarySpansSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlptrace.InstrumentationLibrarySpans]bool, oldLen)
+	expectedEs = make(map[*otlptrace.ScopeSpans]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlptrace.InstrumentationLibrarySpans]bool, oldLen)
+	foundEs = make(map[*otlptrace.ScopeSpans]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
