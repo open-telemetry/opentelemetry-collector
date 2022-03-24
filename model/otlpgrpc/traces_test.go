@@ -33,9 +33,9 @@ var tracesRequestJSON = []byte(`
 	  "resourceSpans": [
 		{
           "resource": {},
-		  "instrumentationLibrarySpans": [
+		  "scopeSpans": [
 			{
-              "instrumentationLibrary": {},
+              "scope": {},
 			  "spans": [
 				{
                   "traceId": "",

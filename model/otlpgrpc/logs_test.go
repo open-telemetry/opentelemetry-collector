@@ -33,9 +33,9 @@ var logsRequestJSON = []byte(`
 	  "resourceLogs": [
 		{
           "resource": {},
-		  "instrumentationLibraryLogs": [
+		  "scopeLogs": [
 			{
-              "instrumentationLibrary": {},
+              "scope": {},
 			  "logRecords": [
 				{
 				  "body": {
