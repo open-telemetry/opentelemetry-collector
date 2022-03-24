@@ -11,6 +11,11 @@
 - Change outcome of `pdata.Value.MapVal()` and `pdata.Value.SliceVal()` functions misuse. In case of
   type mismatch, they now return an invalid zero-initialized instance instead of a detached
   collection (#5034)
+- OTLP JSON field changes following upgrade to OTLP v0.15.0:
+  - "instrumentationLibraryLogs" is now "scopeLogs"
+  - "instrumentationLibraryMetrics" is now "scopeMetrics"
+  - "instrumentationLibrarySpans" is now "scopeSpans"
+  - "instrumentationLibrary" is now "scope"
 
 ### 🚩 Deprecations 🚩
 
@@ -28,14 +33,22 @@
   - Deprecate `pdata.AttributeValueSlice` struct in favor of `pdata.Slice`
   - Deprecate `pdata.NewAttributeValueSlice` func in favor of `pdata.NewSlice`
 - Deprecate LogRecord.Name(), it was deprecated in the data model (#5054)
+- Rename `Array` type of `pdata.Value` to `Slice` (#5067)
+  - Deprecate `pdata.AttributeValueTypeArray` type in favor of `pdata.ValueTypeSlice`
+  - Deprecate `pdata.NewAttributeValueArray` func in favor of `pdata.NewValueSlice`
 - Deprecate global flag in `featuregates` (#5060)
 - Deprecate last funcs/structs in componenthelper (#5069)
+- Change structs in otlpgrpc to follow standard go encoding interfaces (#5062)
+  - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalJSON`.
+  - Deprecate [Traces|Metrics|Logs][Reques|Response].Marshal in favor of `MarshalProto`.
+  - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalProto`.
 
 ### 💡 Enhancements 💡
 
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
+- Update OTLP to v0.15.0 (#5064)
 
 ### 🧰 Bug fixes 🧰
 

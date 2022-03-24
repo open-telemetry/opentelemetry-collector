@@ -36,27 +36,36 @@ func NewTracesResponse() TracesResponse {
 	return TracesResponse{orig: &otlpcollectortrace.ExportTraceServiceResponse{}}
 }
 
-// UnmarshalTracesResponse unmarshalls TracesResponse from proto bytes.
+// Deprecated: [v0.48.0] use TracesResponse.UnmarshalProto.
 func UnmarshalTracesResponse(data []byte) (TracesResponse, error) {
-	var orig otlpcollectortrace.ExportTraceServiceResponse
-	if err := orig.Unmarshal(data); err != nil {
-		return TracesResponse{}, err
-	}
-	return TracesResponse{orig: &orig}, nil
+	tr := NewTracesResponse()
+	err := tr.UnmarshalProto(data)
+	return tr, err
 }
 
-// UnmarshalJSONTracesResponse unmarshalls TracesResponse from JSON bytes.
+// Deprecated: [v0.48.0] use TracesResponse.UnmarshalJSON.
 func UnmarshalJSONTracesResponse(data []byte) (TracesResponse, error) {
-	var orig otlpcollectortrace.ExportTraceServiceResponse
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
-		return TracesResponse{}, err
-	}
-	return TracesResponse{orig: &orig}, nil
+	tr := NewTracesResponse()
+	err := tr.UnmarshalJSON(data)
+	return tr, err
 }
 
-// Marshal marshals TracesResponse into proto bytes.
+// Deprecated: [v0.48.0] use MarshalProto.
 func (tr TracesResponse) Marshal() ([]byte, error) {
+	return tr.MarshalProto()
+}
+
+// MarshalProto marshals TracesResponse into proto bytes.
+func (tr TracesResponse) MarshalProto() ([]byte, error) {
 	return tr.orig.Marshal()
+}
+
+// UnmarshalProto unmarshalls TracesResponse from proto bytes.
+func (tr TracesResponse) UnmarshalProto(data []byte) error {
+	if err := tr.orig.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
 }
 
 // MarshalJSON marshals TracesResponse into JSON bytes.
@@ -66,6 +75,11 @@ func (tr TracesResponse) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshalls TracesResponse from JSON bytes.
+func (tr TracesResponse) UnmarshalJSON(data []byte) error {
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig)
 }
 
 // TracesRequest represents the response for gRPC client/server.
@@ -78,27 +92,36 @@ func NewTracesRequest() TracesRequest {
 	return TracesRequest{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
 }
 
-// UnmarshalTracesRequest unmarshalls TracesRequest from proto bytes.
+// Deprecated: [v0.48.0] use TracesRequest.UnmarshalProto.
 func UnmarshalTracesRequest(data []byte) (TracesRequest, error) {
-	var orig otlpcollectortrace.ExportTraceServiceRequest
-	if err := orig.Unmarshal(data); err != nil {
-		return TracesRequest{}, err
-	}
-	return TracesRequest{orig: &orig}, nil
+	tr := NewTracesRequest()
+	err := tr.UnmarshalProto(data)
+	return tr, err
 }
 
-// UnmarshalJSONTracesRequest unmarshalls TracesRequest from JSON bytes.
+// Deprecated: [v0.48.0] use TracesRequest.UnmarshalJSON.
 func UnmarshalJSONTracesRequest(data []byte) (TracesRequest, error) {
-	var orig otlpcollectortrace.ExportTraceServiceRequest
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
-		return TracesRequest{}, err
-	}
-	return TracesRequest{orig: &orig}, nil
+	tr := NewTracesRequest()
+	err := tr.UnmarshalJSON(data)
+	return tr, err
 }
 
-// Marshal marshals TracesRequest into proto bytes.
+// Deprecated: [v0.48.0] use MarshalProto.
 func (tr TracesRequest) Marshal() ([]byte, error) {
+	return tr.MarshalProto()
+}
+
+// MarshalProto marshals TracesRequest into proto bytes.
+func (tr TracesRequest) MarshalProto() ([]byte, error) {
 	return tr.orig.Marshal()
+}
+
+// UnmarshalProto unmarshalls TracesRequest from proto bytes.
+func (tr TracesRequest) UnmarshalProto(data []byte) error {
+	if err := tr.orig.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
 }
 
 // MarshalJSON marshals TracesRequest into JSON bytes.
@@ -108,6 +131,11 @@ func (tr TracesRequest) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshalls TracesRequest from JSON bytes.
+func (tr TracesRequest) UnmarshalJSON(data []byte) error {
+	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig)
 }
 
 func (tr TracesRequest) SetTraces(td pdata.Traces) {

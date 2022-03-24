@@ -23,11 +23,11 @@ import (
 )
 
 func TestNestedArraySerializesCorrectly(t *testing.T) {
-	ava := pdata.NewValueArray()
+	ava := pdata.NewValueSlice()
 	ava.SliceVal().AppendEmpty().SetStringVal("foo")
 	ava.SliceVal().AppendEmpty().SetIntVal(42)
 
-	ava2 := pdata.NewValueArray()
+	ava2 := pdata.NewValueSlice()
 	ava2.SliceVal().AppendEmpty().SetStringVal("bar")
 	ava2.CopyTo(ava.SliceVal().AppendEmpty())
 

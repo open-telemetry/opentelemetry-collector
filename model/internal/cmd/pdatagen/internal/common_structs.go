@@ -28,14 +28,14 @@ var commonFile = &File{
 	},
 	structs: []baseStruct{
 		instrumentationLibrary,
-		attributeValueArray,
+		attributeValueSlice,
 	},
 }
 
 var instrumentationLibrary = &messageValueStruct{
 	structName:     "InstrumentationLibrary",
 	description:    "// InstrumentationLibrary is a message representing the instrumentation library information.",
-	originFullName: "otlpcommon.InstrumentationLibrary",
+	originFullName: "otlpcommon.InstrumentationScope",
 	fields: []baseField{
 		nameField,
 		&primitiveField{
@@ -59,7 +59,7 @@ var attributeKeyValue = &messageValueStruct{}
 
 var instrumentationLibraryField = &messageValueField{
 	fieldName:       "InstrumentationLibrary",
-	originFieldName: "InstrumentationLibrary",
+	originFieldName: "Scope",
 	returnMessage:   instrumentationLibrary,
 }
 
@@ -109,7 +109,7 @@ var anyValue = &messageValueStruct{
 	originFullName: "otlpcommon.AnyValue",
 }
 
-var attributeValueArray = &sliceOfValues{
+var attributeValueSlice = &sliceOfValues{
 	structName: "Slice",
 	element:    anyValue,
 }
