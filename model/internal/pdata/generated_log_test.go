@@ -174,11 +174,11 @@ func TestResourceLogs_InstrumentationLibraryLogs(t *testing.T) {
 func TestInstrumentationLibraryLogsSlice(t *testing.T) {
 	es := NewInstrumentationLibraryLogsSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newInstrumentationLibraryLogsSlice(&[]*otlplogs.InstrumentationLibraryLogs{})
+	es = newInstrumentationLibraryLogsSlice(&[]*otlplogs.ScopeLogs{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
+	emptyVal := newInstrumentationLibraryLogs(&otlplogs.ScopeLogs{})
 	testVal := generateTestInstrumentationLibraryLogs()
 	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
@@ -208,14 +208,14 @@ func TestInstrumentationLibraryLogsSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestInstrumentationLibraryLogsSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool)
+	expectedEs := make(map[*otlplogs.ScopeLogs]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool, es.Len())
+	foundEs := make(map[*otlplogs.ScopeLogs]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -224,14 +224,14 @@ func TestInstrumentationLibraryLogsSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlplogs.InstrumentationLibraryLogs]bool, oldLen)
+	expectedEs = make(map[*otlplogs.ScopeLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlplogs.InstrumentationLibraryLogs]bool, oldLen)
+	foundEs = make(map[*otlplogs.ScopeLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}

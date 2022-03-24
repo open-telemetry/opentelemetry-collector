@@ -35,7 +35,7 @@ var commonFile = &File{
 var instrumentationLibrary = &messageValueStruct{
 	structName:     "InstrumentationLibrary",
 	description:    "// InstrumentationLibrary is a message representing the instrumentation library information.",
-	originFullName: "otlpcommon.InstrumentationLibrary",
+	originFullName: "otlpcommon.InstrumentationScope",
 	fields: []baseField{
 		nameField,
 		&primitiveField{
@@ -59,7 +59,7 @@ var attributeKeyValue = &messageValueStruct{}
 
 var instrumentationLibraryField = &messageValueField{
 	fieldName:       "InstrumentationLibrary",
-	originFieldName: "InstrumentationLibrary",
+	originFieldName: "Scope",
 	returnMessage:   instrumentationLibrary,
 }
 

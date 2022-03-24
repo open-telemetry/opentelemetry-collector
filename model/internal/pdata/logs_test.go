@@ -57,14 +57,14 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, Logs{orig: &otlplogs.LogsData{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{{}},
+				ScopeLogs: []*otlplogs.ScopeLogs{{}},
 			},
 		},
 	}}.LogRecordCount())
 	assert.Equal(t, 1, Logs{orig: &otlplogs.LogsData{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+				ScopeLogs: []*otlplogs.ScopeLogs{
 					{
 						LogRecords: []*otlplogs.LogRecord{{}},
 					},

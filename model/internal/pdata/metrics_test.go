@@ -205,10 +205,10 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -293,10 +293,10 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -307,10 +307,10 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -325,10 +325,10 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoGaugeMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric()},
 					},
 				},
 			},
@@ -365,9 +365,9 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Scope: generateTestProtoInstrumentationScope(),
 						Metrics: []*otlpmetrics.Metric{
 							{
 								Name:        "new_my_metric_int",
@@ -408,10 +408,10 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoSumMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoSumMetric()},
 					},
 				},
 			},
@@ -449,9 +449,9 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Scope: generateTestProtoInstrumentationScope(),
 						Metrics: []*otlpmetrics.Metric{
 							{
 								Name:        "new_my_metric_double",
@@ -493,10 +493,10 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -534,9 +534,9 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Scope: generateTestProtoInstrumentationScope(),
 						Metrics: []*otlpmetrics.Metric{
 							{
 								Name:        "new_my_metric_histogram",
@@ -577,10 +577,10 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -615,9 +615,9 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
+						Scope: generateTestProtoInstrumentationScope(),
 						Metrics: []*otlpmetrics.Metric{
 							{
 								Name:        "new_my_metric_exponential_histogram",
@@ -686,10 +686,10 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -711,10 +711,10 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoGaugeMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric()},
 					},
 				},
 			},
@@ -737,10 +737,10 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoSumMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoSumMetric()},
 					},
 				},
 			},
@@ -763,10 +763,10 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
-						InstrumentationLibrary: generateTestProtoInstrumentationLibrary(),
-						Metrics:                []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+						Scope:   generateTestProtoInstrumentationScope(),
+						Metrics: []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
 					},
 				},
 			},
@@ -795,8 +795,8 @@ func generateTestProtoResource() otlpresource.Resource {
 	}
 }
 
-func generateTestProtoInstrumentationLibrary() otlpcommon.InstrumentationLibrary {
-	return otlpcommon.InstrumentationLibrary{
+func generateTestProtoInstrumentationScope() otlpcommon.InstrumentationScope {
+	return otlpcommon.InstrumentationScope{
 		Name:    "test",
 		Version: "",
 	}
@@ -931,7 +931,7 @@ func generateMetricsEmptyInstrumentation() Metrics {
 	return Metrics{orig: &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{{}},
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{{}},
 			},
 		},
 	}}
@@ -941,7 +941,7 @@ func generateMetricsEmptyMetrics() Metrics {
 	return Metrics{orig: &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
 						Metrics: []*otlpmetrics.Metric{{}},
 					},
@@ -955,7 +955,7 @@ func generateMetricsEmptyDataPoints() Metrics {
 	return Metrics{orig: &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
-				InstrumentationLibraryMetrics: []*otlpmetrics.InstrumentationLibraryMetrics{
+				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
 						Metrics: []*otlpmetrics.Metric{
 							{
