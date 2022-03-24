@@ -277,7 +277,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, authenticator.Authenticate)
+		handler = authInterceptor(handler, authenticator.Authenticate, &hss.Auth.Propagate)
 	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
@@ -337,9 +337,10 @@ type CORSSettings struct {
 	MaxAge int `mapstructure:"max_age,omitempty"`
 }
 
-func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc) http.Handler {
+func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc, propagate *configauth.PropagatePolicy) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := authenticate(r.Context(), r.Header)
+		params := getParamsFromRequest(r, propagate)
+		ctx, err := authenticate(r.Context(), params)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -354,4 +355,31 @@ func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Ha
 		r.Body = http.MaxBytesReader(w, r.Body, maxRecvSize)
 		next.ServeHTTP(w, r)
 	})
+}
+
+func getParamsFromRequest(r *http.Request, propagate *configauth.PropagatePolicy) map[string][]string {
+	params := make(map[string][]string)
+	if propagate == nil {
+		propagate = &configauth.PropagatePolicy{}
+	}
+
+	if propagate.Headers == nil {
+		for k, v := range r.Header {
+			params[k] = v
+		}
+	}
+	for _, v := range propagate.Headers {
+		params[v] = r.Header[v]
+	}
+	query := r.URL.Query()
+	if propagate.Query == nil {
+		for k, v := range query {
+			params[k] = v
+		}
+	}
+
+	for _, v := range propagate.Query {
+		params[v] = query[v]
+	}
+	return params
 }

@@ -28,10 +28,24 @@ var (
 	errNotServerAuthenticator = errors.New("requested authenticator is not a server authenticator")
 )
 
+type PropagatePolicy struct {
+	// Headers specifies a list of headers to propagate.
+	// If empty, all headers are propagated.
+	Headers []string `mapstructure:"headers"`
+
+	// Query specifies a list of query parameters to propagate.
+	// If empty, all query parameters are propagated.
+	Query []string `mapstructure:"query"`
+}
+
 // Authentication defines the auth settings for the receiver.
 type Authentication struct {
 	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
 	AuthenticatorID config.ComponentID `mapstructure:"authenticator"`
+
+	// Propagate specifies the headers and query parameters to propagate to the corresponding auth extension. Optional.
+	// If not specified, all headers and query params are propagated.
+	Propagate PropagatePolicy `mapstructure:"propagate,omitempty"`
 }
 
 // GetServerAuthenticator attempts to select the appropriate ServerAuthenticator from the list of extensions,

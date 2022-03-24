@@ -652,7 +652,7 @@ func TestHttpCorsWithAuthentication(t *testing.T) {
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
-				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				configauth.WithAuthenticate(func(ctx context.Context, requestMap map[string][]string) (context.Context, error) {
 					return ctx, fmt.Errorf("authentication failed")
 				}),
 			),
@@ -840,13 +840,18 @@ func TestServerAuth(t *testing.T) {
 	hss := HTTPServerSettings{
 		Auth: &configauth.Authentication{
 			AuthenticatorID: config.NewComponentID("mock"),
+			Propagate: configauth.PropagatePolicy{
+				Headers: []string{"x-test-header"},
+				Query:   []string{"query-test"},
+			},
 		},
 	}
 
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
-				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				configauth.WithAuthenticate(func(ctx context.Context, requestMap map[string][]string) (context.Context, error) {
+					assert.Equal(t, map[string][]string{"x-test-header": {"test-value"}, "query-test": {"query-value1", "query-value2"}}, requestMap)
 					authCalled = true
 					return ctx, nil
 				}),
@@ -863,7 +868,14 @@ func TestServerAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest("GET", "/", nil))
+	x := httptest.NewRequest("GET", "/", nil)
+	x.Header["x-test-header"] = []string{"test-value"}
+	q := x.URL.Query()
+	q.Add("query-test", "query-value1")
+	q.Add("query-test", "query-value2")
+	x.URL.RawQuery = q.Encode()
+
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, x)
 
 	// verify
 	assert.True(t, handlerCalled)
@@ -892,7 +904,7 @@ func TestFailedServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
-				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				configauth.WithAuthenticate(func(ctx context.Context, requestMap map[string][]string) (context.Context, error) {
 					return ctx, fmt.Errorf("authentication failed")
 				}),
 			),
@@ -909,6 +921,145 @@ func TestFailedServerAuth(t *testing.T) {
 	// verify
 	assert.Equal(t, response.Result().StatusCode, http.StatusUnauthorized)
 	assert.Equal(t, response.Result().Status, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)))
+}
+
+func TestGetParamsFromRequest(t *testing.T) {
+	type args struct {
+		r         *http.Request
+		propagate *configauth.PropagatePolicy
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string][]string
+	}{
+		{
+			name: "default behaviour(all headers and query)",
+			args: args{
+				r: &http.Request{
+					Header: map[string][]string{
+						"x-test-header-1": {"test-value-01", "test-value-02"},
+						"x-test-header-2": {"test-value-1"},
+					},
+					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
+				},
+				propagate: nil,
+			},
+			want: map[string][]string{
+				"x-test-header-1": {"test-value-01", "test-value-02"},
+				"x-test-header-2": {"test-value-1"},
+				"query-test-1":    {"query-value-1"},
+				"query-test-2":    {"query-value-2"},
+				"query-test-3":    {"query-value-3"},
+			},
+		},
+		{
+			name: "propagate headers from policy and all query",
+			args: args{
+				r: &http.Request{
+					Header: map[string][]string{
+						"x-test-header-1": {"test-value-1"},
+						"x-test-header-2": {"test-value-1"},
+					},
+					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
+				},
+				propagate: &configauth.PropagatePolicy{
+					Headers: []string{"x-test-header-1"},
+				},
+			},
+			want: map[string][]string{
+				"x-test-header-1": {"test-value-1"},
+				"query-test-1":    {"query-value-1"},
+				"query-test-2":    {"query-value-2"},
+				"query-test-3":    {"query-value-3"},
+			},
+		},
+		{
+			name: "propagate headers and query from policy",
+			args: args{
+				r: &http.Request{
+					Header: map[string][]string{
+						"x-test-header-1": {"test-value-1"},
+						"x-test-header-2": {"test-value-1"},
+						"x-test-header-3": {"test-value-1"},
+					},
+					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
+				},
+				propagate: &configauth.PropagatePolicy{
+					Headers: []string{"x-test-header-1", "x-test-header-2"},
+					Query:   []string{"query-test-1", "query-test-2"},
+				},
+			},
+			want: map[string][]string{
+				"x-test-header-1": {"test-value-1"},
+				"x-test-header-2": {"test-value-1"},
+				"query-test-1":    {"query-value-1"},
+				"query-test-2":    {"query-value-2"},
+			},
+		},
+		{
+			name: "propagate all headers and specified query",
+			args: args{
+				r: &http.Request{
+					Header: map[string][]string{
+						"x-test-header-1": {"test-value-1"},
+						"x-test-header-2": {"test-value-1"},
+						"x-test-header-3": {"test-value-1"},
+					},
+					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
+				},
+				propagate: &configauth.PropagatePolicy{
+					Query: []string{"query-test-1"},
+				},
+			},
+			want: map[string][]string{
+				"x-test-header-1": {"test-value-1"},
+				"x-test-header-2": {"test-value-1"},
+				"x-test-header-3": {"test-value-1"},
+				"query-test-1":    {"query-value-1"},
+			},
+		},
+		{
+			name: "missing headers and query",
+			args: args{
+				r: &http.Request{
+					Header: map[string][]string{
+						"x-test-header-1": {"test-value-1"},
+						"x-test-header-2": {"test-value-1"},
+					},
+					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
+				},
+				propagate: &configauth.PropagatePolicy{
+					Headers: []string{"x-test-header-3"},
+					Query:   []string{"query-test-4"},
+				},
+			},
+			want: map[string][]string{
+				"x-test-header-3": nil,
+				"query-test-4":    nil,
+			},
+		},
+		{
+			name: "No request headers",
+			args: args{
+				r: &http.Request{
+					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
+				},
+				propagate: &configauth.PropagatePolicy{
+					Query: []string{"query-test-1"},
+				},
+			},
+			want: map[string][]string{
+				"query-test-1": {"query-value-1"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			params := getParamsFromRequest(tt.args.r, tt.args.propagate)
+			assert.Equal(t, tt.want, params, "got: %v, want: %v", params, tt.want)
+		})
+	}
 }
 
 type mockHost struct {
