@@ -32,6 +32,10 @@
   - Deprecate `pdata.AttributeValueTypeArray` type in favor of `pdata.ValueTypeSlice`
   - Deprecate `pdata.NewAttributeValueArray` func in favor of `pdata.NewValueSlice`
 - Deprecate global flag in `featuregates` (#5060)
+- Change structs in otlpgrpc to follow standard go encoding interfaces (#5062)
+  - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalJSON`.
+  - Deprecate [Traces|Metrics|Logs][Reques|Response].Marshal in favor of `MarshalProto`.
+  - Deprecate UnmarshalJSON[Traces|Metrics|Logs][Reques|Response] in favor of `UnmarshalProto`.
 
 ### 💡 Enhancements 💡
 
