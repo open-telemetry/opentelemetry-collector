@@ -33,9 +33,9 @@ var metricsRequestJSON = []byte(`
 	  "resourceMetrics": [
 		{
           "resource": {},
-		  "instrumentationLibraryMetrics": [
+		  "scopeMetrics": [
 			{
-              "instrumentationLibrary": {},
+              "scope": {},
 			  "metrics": [
 				{
 				  "name": "test_metric"
