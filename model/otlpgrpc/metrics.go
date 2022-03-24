@@ -62,10 +62,7 @@ func (mr MetricsResponse) MarshalProto() ([]byte, error) {
 
 // UnmarshalProto unmarshalls MetricsResponse from proto bytes.
 func (mr MetricsResponse) UnmarshalProto(data []byte) error {
-	if err := mr.orig.Unmarshal(data); err != nil {
-		return err
-	}
-	return nil
+	return mr.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals MetricsResponse into JSON bytes.
@@ -118,10 +115,7 @@ func (mr MetricsRequest) MarshalProto() ([]byte, error) {
 
 // UnmarshalProto unmarshalls MetricsRequest from proto bytes.
 func (mr MetricsRequest) UnmarshalProto(data []byte) error {
-	if err := mr.orig.Unmarshal(data); err != nil {
-		return err
-	}
-	return nil
+	return mr.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals MetricsRequest into JSON bytes.
