@@ -137,6 +137,20 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = v.orig
 }`
 
+const accessorsOptionalPrimitiveValueTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) ${fieldName}() ${returnType} {
+	return (*ms.orig).Get${fieldName}()
+}
+// Has${fieldName} returns true if the ${structName} contains a
+// ${fieldName} value, false otherwise.
+func (ms ${structName}) Has${fieldName}() bool {
+	return ms.orig.${fieldName}_ != nil
+}
+// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+	(*ms.orig).${fieldName}_ = &${originStructType}{${fieldName}: v}
+}`
+
 type baseField interface {
 	generateAccessors(ms baseStruct, sb *strings.Builder)
 
@@ -675,3 +689,63 @@ func (omv *oneOfMessageValue) generateTypeSwitchCase(of *oneOfField, sb *strings
 }
 
 var _ oneOfValue = (*oneOfMessageValue)(nil)
+
+type optionalPrimitiveValue struct {
+	fieldName        string
+	fieldType        string
+	defaultVal       string
+	testVal          string
+	returnType       string
+	originFieldName  string
+	originTypePrefix string
+}
+
+func (opv *optionalPrimitiveValue) generateAccessors(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsOptionalPrimitiveValueTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "fieldName":
+			return opv.fieldName
+		case "lowerFieldName":
+			return strings.ToLower(opv.fieldName)
+		case "returnType":
+			return opv.returnType
+		case "originFieldName":
+			return opv.originFieldName
+		case "originStructType":
+			return opv.originTypePrefix + opv.originFieldName
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString("\n")
+}
+
+func (opv *optionalPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.getName()
+		case "defaultVal":
+			return opv.defaultVal
+		case "fieldName":
+			return opv.fieldName
+		case "testValue":
+			return opv.testVal
+		default:
+			panic(name)
+		}
+	}))
+	sb.WriteString("\n")
+}
+
+func (opv *optionalPrimitiveValue) generateSetWithTestValue(sb *strings.Builder) {
+	sb.WriteString("\t tv.Set" + opv.fieldName + "(" + opv.testVal + ")")
+}
+
+func (opv *optionalPrimitiveValue) generateCopyToValue(sb *strings.Builder) {
+	sb.WriteString("dest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
+}
+
+var _ baseField = (*optionalPrimitiveValue)(nil)

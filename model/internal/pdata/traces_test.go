@@ -56,14 +56,14 @@ func TestSpanCountWithEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, Traces{orig: &otlptrace.TracesData{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
-				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{{}},
+				ScopeSpans: []*otlptrace.ScopeSpans{{}},
 			},
 		},
 	}}.SpanCount())
 	assert.EqualValues(t, 1, Traces{orig: &otlptrace.TracesData{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
-				InstrumentationLibrarySpans: []*otlptrace.InstrumentationLibrarySpans{
+				ScopeSpans: []*otlptrace.ScopeSpans{
 					{
 						Spans: []*otlptrace.Span{{}},
 					},

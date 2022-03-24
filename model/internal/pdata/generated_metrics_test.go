@@ -174,11 +174,11 @@ func TestResourceMetrics_InstrumentationLibraryMetrics(t *testing.T) {
 func TestInstrumentationLibraryMetricsSlice(t *testing.T) {
 	es := NewInstrumentationLibraryMetricsSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newInstrumentationLibraryMetricsSlice(&[]*otlpmetrics.InstrumentationLibraryMetrics{})
+	es = newInstrumentationLibraryMetricsSlice(&[]*otlpmetrics.ScopeMetrics{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
+	emptyVal := newInstrumentationLibraryMetrics(&otlpmetrics.ScopeMetrics{})
 	testVal := generateTestInstrumentationLibraryMetrics()
 	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
@@ -208,14 +208,14 @@ func TestInstrumentationLibraryMetricsSlice_EnsureCapacity(t *testing.T) {
 	es := generateTestInstrumentationLibraryMetricsSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool)
+	expectedEs := make(map[*otlpmetrics.ScopeMetrics]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, es.Len())
+	foundEs := make(map[*otlpmetrics.ScopeMetrics]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -224,14 +224,14 @@ func TestInstrumentationLibraryMetricsSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, oldLen)
+	expectedEs = make(map[*otlpmetrics.ScopeMetrics]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, oldLen)
+	foundEs = make(map[*otlpmetrics.ScopeMetrics]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}

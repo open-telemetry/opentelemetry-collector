@@ -33,7 +33,7 @@ var tracesOTLP = func() pdata.Traces {
 	return td
 }()
 
-var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibrarySpans":[{"instrumentationLibrary":{"name":"name","version":"version"},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan","status":{}}]}]}]}`
+var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeSpans":[{"scope":{"name":"name","version":"version"},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan","status":{}}]}]}]}`
 
 var metricsOTLP = func() pdata.Metrics {
 	md := pdata.NewMetrics()
@@ -46,7 +46,7 @@ var metricsOTLP = func() pdata.Metrics {
 	return md
 }()
 
-var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibraryMetrics":[{"instrumentationLibrary":{"name":"name","version":"version"},"metrics":[{"name":"testMetric"}]}]}]}`
+var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeMetrics":[{"scope":{"name":"name","version":"version"},"metrics":[{"name":"testMetric"}]}]}]}`
 
 var logsOTLP = func() pdata.Logs {
 	ld := pdata.NewLogs()
@@ -59,7 +59,7 @@ var logsOTLP = func() pdata.Logs {
 	return ld
 }()
 
-var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibraryLogs":[{"instrumentationLibrary":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":""}]}]}]}`
+var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":""}]}]}]}`
 
 func TestTracesJSON(t *testing.T) {
 	encoder := NewJSONTracesMarshaler()

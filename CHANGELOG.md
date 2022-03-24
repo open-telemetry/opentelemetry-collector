@@ -11,6 +11,11 @@
 - Change outcome of `pdata.Value.MapVal()` and `pdata.Value.SliceVal()` functions misuse. In case of
   type mismatch, they now return an invalid zero-initialized instance instead of a detached
   collection (#5034)
+- OTLP JSON field changes following upgrade to OTLP v0.15.0:
+  - "instrumentationLibraryLogs" is now "scopeLogs"
+  - "instrumentationLibraryMetrics" is now "scopeMetrics"
+  - "instrumentationLibrarySpans" is now "scopeSpans"
+  - "instrumentationLibrary" is now "scope"
 
 ### 🚩 Deprecations 🚩
 
@@ -42,6 +47,7 @@
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
+- Update OTLP to v0.15.0 (#5064)
 
 ### 🧰 Bug fixes 🧰
 
