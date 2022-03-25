@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -158,7 +157,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 			return nil, fmt.Errorf("no extensions configuration available")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetServerAuthenticator(host.GetExtensions())
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(host.GetExtensions())
 		if aerr != nil {
 			return nil, aerr
 		}
