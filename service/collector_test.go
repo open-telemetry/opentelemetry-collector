@@ -65,6 +65,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 		Factories: factories,
 		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")},
 			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(testutil.GetAvailablePort(t)), 10)}),
+		TelemetryProvider: NewDefaultTelemetryProvider(),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -104,7 +105,7 @@ func testCollectorStartHelper(t *testing.T) {
 		ConfigProvider: MustNewDefaultConfigProvider(
 			[]string{filepath.Join("testdata", "otelcol-config.yaml")},
 			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(metricsPort), 10)}),
-		LoggingOptions: []zap.Option{zap.Hooks(hook)},
+		TelemetryProvider: NewDefaultTelemetryProvider(zap.Hooks(hook)),
 	})
 	require.NoError(t, err)
 
@@ -170,9 +171,10 @@ func TestCollector_ShutdownNoop(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
-		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigProvider:    MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		TelemetryProvider: NewDefaultTelemetryProvider(),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -191,9 +193,10 @@ func TestCollector_ShutdownBeforeRun(t *testing.T) {
 	require.NoError(t, err)
 
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
-		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigProvider:    MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		TelemetryProvider: NewDefaultTelemetryProvider(),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -223,9 +226,10 @@ func TestCollector_ClosedStateOnStartUpError(t *testing.T) {
 
 	// Load a bad config causing startup to fail
 	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
-		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}, nil),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigProvider:    MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}, nil),
+		TelemetryProvider: NewDefaultTelemetryProvider(),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -257,9 +261,10 @@ func TestCollector_ReportError(t *testing.T) {
 	require.NoError(t, err)
 
 	col, err := New(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
-		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigProvider:    MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		TelemetryProvider: NewDefaultTelemetryProvider(),
 	})
 	require.NoError(t, err)
 
@@ -293,6 +298,7 @@ func TestCollector_ContextCancel(t *testing.T) {
 		Factories: factories,
 		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")},
 			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(testutil.GetAvailablePort(t)), 10)}),
+		TelemetryProvider: NewDefaultTelemetryProvider(),
 	}
 	col, err := New(set)
 	require.NoError(t, err)

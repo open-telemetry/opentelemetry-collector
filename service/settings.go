@@ -16,7 +16,6 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"go.opentelemetry.io/contrib/zpages"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -61,6 +60,6 @@ type CollectorSettings struct {
 	// If the provider watches for configuration change, collector may reload the new configuration upon changes.
 	ConfigProvider ConfigProvider
 
-	// LoggingOptions provides a way to change behavior of zap logging.
-	LoggingOptions []zap.Option
+	// TelemetryProvider setups and provides the Collector's own telemetry.
+	TelemetryProvider TelemetryProvider
 }
