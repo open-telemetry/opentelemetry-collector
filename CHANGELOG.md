@@ -48,14 +48,12 @@
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
 - Update OTLP to v0.15.0 (#5064)
+- Create additional pdata packages separated by type for further split of pdata (#4918)
+- Create additional consumer packages split by telemetry type (#5086)
 
 ### 🧰 Bug fixes 🧰
 
 - The `featuregates` were not configured from the "--feature-gates" flag on windows service (#5060)
-
-### 💡 Enhancements 💡
-
-- Create additional pdata packages separated by type for further split of pdata (#4918)
 
 ## v0.47.0 Beta
 
