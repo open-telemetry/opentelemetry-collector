@@ -146,10 +146,9 @@ func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Col
 	if set.ConfigProvider == nil {
 		set.ConfigProvider = MustNewDefaultConfigProvider(getConfigFlag(), getSetFlag())
 	}
-	set.LoggingOptions = append(
-		set.LoggingOptions,
-		zap.WrapCore(withWindowsCore(elog)),
-	)
+	if set.TelemetryProvider == nil {
+		set.TelemetryProvider = NewDefaultTelemetryProvider(zap.WrapCore(withWindowsCore(elog)))
+	}
 	return New(set)
 }
 

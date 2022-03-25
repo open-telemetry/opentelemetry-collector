@@ -26,18 +26,14 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/nonrecording"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/service/internal"
-	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
 // State defines Collector's state.
@@ -80,9 +76,8 @@ type Collector struct {
 	set    CollectorSettings
 	logger *zap.Logger
 
-	tracerProvider      trace.TracerProvider
-	meterProvider       metric.MeterProvider
-	zPagesSpanProcessor *zpages.SpanProcessor
+	tracerProvider trace.TracerProvider
+	meterProvider  metric.MeterProvider
 
 	service *service
 	state   int32
@@ -101,6 +96,10 @@ type Collector struct {
 func New(set CollectorSettings) (*Collector, error) {
 	if set.ConfigProvider == nil {
 		return nil, errors.New("invalid nil config provider")
+	}
+
+	if set.TelemetryProvider == nil {
+		return nil, errors.New("invalid nil telemetry provider")
 	}
 
 	return &Collector{
@@ -196,23 +195,22 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
-	if col.logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
-		return fmt.Errorf("failed to get logger: %w", err)
+
+	telemetrySettings, err := col.set.TelemetryProvider.SetupTelemetry(cfg.Service.Telemetry)
+	if err != nil {
+		return fmt.Errorf("failed to setup telemetry: %w", err)
 	}
 
-	telemetrylogs.SetColGRPCLogger(col.logger, cfg.Service.Telemetry.Logs.Level)
+	col.logger = telemetrySettings.Logger
+	col.meterProvider = telemetrySettings.MeterProvider
+	col.tracerProvider = telemetrySettings.TracerProvider
 
 	col.service, err = newService(&svcSettings{
-		BuildInfo: col.set.BuildInfo,
-		Factories: col.set.Factories,
-		Config:    cfg,
-		Telemetry: component.TelemetrySettings{
-			Logger:         col.logger,
-			TracerProvider: col.tracerProvider,
-			MeterProvider:  col.meterProvider,
-			MetricsLevel:   cfg.Telemetry.Metrics.Level,
-		},
-		ZPagesSpanProcessor: col.zPagesSpanProcessor,
+		BuildInfo:           col.set.BuildInfo,
+		Factories:           col.set.Factories,
+		Config:              cfg,
+		Telemetry:           telemetrySettings,
+		ZPagesSpanProcessor: col.set.TelemetryProvider.ZPages(),
 		AsyncErrorChannel:   col.asyncErrorChannel,
 	})
 	if err != nil {
@@ -236,10 +234,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 // Run starts the collector according to the given configuration given, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
-	col.zPagesSpanProcessor = zpages.NewSpanProcessor()
-	col.tracerProvider = sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(internal.AlwaysRecord()),
-		sdktrace.WithSpanProcessor(col.zPagesSpanProcessor))
+	col.asyncErrorChannel = make(chan error)
 
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(Closed)
