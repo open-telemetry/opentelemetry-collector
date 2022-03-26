@@ -45,6 +45,7 @@
 
 ### 💡 Enhancements 💡
 
+- Add semconv definitions for v1.9.0 (#5090)
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
