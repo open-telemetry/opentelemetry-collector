@@ -652,7 +652,7 @@ func TestHttpCorsWithAuthentication(t *testing.T) {
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
-				configauth.WithAuthenticate(func(ctx context.Context, requestMap map[string][]string) (context.Context, error) {
+				configauth.WithAuthenticate(func(ctx context.Context, metadata map[string][]string) (context.Context, error) {
 					return ctx, fmt.Errorf("authentication failed")
 				}),
 			),
@@ -904,7 +904,7 @@ func TestFailedServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
-				configauth.WithAuthenticate(func(ctx context.Context, requestMap map[string][]string) (context.Context, error) {
+				configauth.WithAuthenticate(func(ctx context.Context, metadata map[string][]string) (context.Context, error) {
 					return ctx, fmt.Errorf("authentication failed")
 				}),
 			),

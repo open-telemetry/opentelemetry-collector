@@ -28,8 +28,8 @@ import (
 type ServerAuthenticator interface {
 	component.Extension
 
-	// Authenticate checks whether the given requestMap contains valid auth data. requestMap consists of request headers and query parameters as specified in the PropagatePolicy.
-	// For gRPC requests, request map includes headers from the metadata. Successfully authenticated calls will always return a nil error.
+	// Authenticate checks whether the given "metadata" contains valid auth data. For HTTP requests, the parameter "metadata" consists of request headers and query parameters as specified in the PropagatePolicy.
+	// For gRPC requests, "metadata" includes headers from the RPC's metadata. Successfully authenticated calls will always return a nil error.
 	// When the authentication fails, an error must be returned and the caller must not retry. This function is typically called from interceptors,
 	// on behalf of receivers, but receivers can still call this directly if the usage of interceptors isn't suitable.
 	// The deadline and cancellation given to this function must be respected, but note that authentication data has to be part of the map, not context.
@@ -37,9 +37,9 @@ type ServerAuthenticator interface {
 	// authentication data (if possible). This will allow other components in the pipeline to make decisions based on that data, such as routing based
 	// on tenancy as determined by the group membership, or passing through the authentication data to the next collector/backend.
 	// The context keys to be used are not defined yet.
-	Authenticate(ctx context.Context, requestMap map[string][]string) (context.Context, error)
+	Authenticate(ctx context.Context, metadata map[string][]string) (context.Context, error)
 }
 
-// AuthenticateFunc defines the signature for the function responsible for performing the authentication based on the given requestMap.
+// AuthenticateFunc defines the signature for the function responsible for performing the authentication based on the given metadata.
 // See ServerAuthenticator.Authenticate.
-type AuthenticateFunc func(ctx context.Context, requestMap map[string][]string) (context.Context, error)
+type AuthenticateFunc func(ctx context.Context, metadata map[string][]string) (context.Context, error)
