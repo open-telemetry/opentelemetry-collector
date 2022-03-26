@@ -841,8 +841,8 @@ func TestServerAuth(t *testing.T) {
 		Auth: &configauth.Authentication{
 			AuthenticatorID: config.NewComponentID("mock"),
 			Propagate: configauth.PropagatePolicy{
-				Headers: []string{"x-test-header"},
-				Query:   []string{"query-test"},
+				Headers: []string{"x-test-header-1"},
+				Query:   []string{"query-test-1"},
 			},
 		},
 	}
@@ -850,8 +850,9 @@ func TestServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[config.ComponentID]component.Extension{
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
-				configauth.WithAuthenticate(func(ctx context.Context, requestMap map[string][]string) (context.Context, error) {
-					assert.Equal(t, map[string][]string{"x-test-header": {"test-value"}, "query-test": {"query-value1", "query-value2"}}, requestMap)
+				configauth.WithAuthenticate(func(ctx context.Context, metadata map[string][]string) (context.Context, error) {
+					assert.Equal(t, map[string][]string{"x-test-header-1": {"test-value-1"}, "query-test-1": {"query-value1", "query-value2"}}, metadata)
+					assert.NotContains(t, map[string][]string{"x-test-header-1": {"test-value-2"}, "query-test-3": {"query-value3"}}, metadata)
 					authCalled = true
 					return ctx, nil
 				}),
@@ -860,7 +861,7 @@ func TestServerAuth(t *testing.T) {
 	}
 
 	handlerCalled := false
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		handlerCalled = true
 	})
 
@@ -869,10 +870,14 @@ func TestServerAuth(t *testing.T) {
 
 	// test
 	x := httptest.NewRequest("GET", "/", nil)
-	x.Header["x-test-header"] = []string{"test-value"}
+	x.Header["x-test-header-1"] = []string{"test-value-1"}
+	// header not in propagate
+	x.Header["x-test-header-2"] = []string{"test-value-2"}
 	q := x.URL.Query()
-	q.Add("query-test", "query-value1")
-	q.Add("query-test", "query-value2")
+	q.Add("query-test-1", "query-value1")
+	q.Add("query-test-1", "query-value2")
+	// query not in propogate
+	q.Add("query-test-3", "query-value3")
 	x.URL.RawQuery = q.Encode()
 
 	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, x)
@@ -923,7 +928,7 @@ func TestFailedServerAuth(t *testing.T) {
 	assert.Equal(t, response.Result().Status, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)))
 }
 
-func TestGetParamsFromRequest(t *testing.T) {
+func TestGetMetadataFromRequest(t *testing.T) {
 	type args struct {
 		r         *http.Request
 		propagate *configauth.PropagatePolicy
@@ -939,7 +944,7 @@ func TestGetParamsFromRequest(t *testing.T) {
 				r: &http.Request{
 					Header: map[string][]string{
 						"x-test-header-1": {"test-value-01", "test-value-02"},
-						"x-test-header-2": {"test-value-1"},
+						"x-test-header-2": {"test-value-2"},
 					},
 					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
 				},
@@ -947,7 +952,7 @@ func TestGetParamsFromRequest(t *testing.T) {
 			},
 			want: map[string][]string{
 				"x-test-header-1": {"test-value-01", "test-value-02"},
-				"x-test-header-2": {"test-value-1"},
+				"x-test-header-2": {"test-value-2"},
 				"query-test-1":    {"query-value-1"},
 				"query-test-2":    {"query-value-2"},
 				"query-test-3":    {"query-value-3"},
@@ -959,7 +964,7 @@ func TestGetParamsFromRequest(t *testing.T) {
 				r: &http.Request{
 					Header: map[string][]string{
 						"x-test-header-1": {"test-value-1"},
-						"x-test-header-2": {"test-value-1"},
+						"x-test-header-2": {"test-value-2"},
 					},
 					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
 				},
@@ -980,8 +985,8 @@ func TestGetParamsFromRequest(t *testing.T) {
 				r: &http.Request{
 					Header: map[string][]string{
 						"x-test-header-1": {"test-value-1"},
-						"x-test-header-2": {"test-value-1"},
-						"x-test-header-3": {"test-value-1"},
+						"x-test-header-2": {"test-value-2"},
+						"x-test-header-3": {"test-value-3"},
 					},
 					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
 				},
@@ -992,7 +997,7 @@ func TestGetParamsFromRequest(t *testing.T) {
 			},
 			want: map[string][]string{
 				"x-test-header-1": {"test-value-1"},
-				"x-test-header-2": {"test-value-1"},
+				"x-test-header-2": {"test-value-2"},
 				"query-test-1":    {"query-value-1"},
 				"query-test-2":    {"query-value-2"},
 			},
@@ -1003,8 +1008,8 @@ func TestGetParamsFromRequest(t *testing.T) {
 				r: &http.Request{
 					Header: map[string][]string{
 						"x-test-header-1": {"test-value-1"},
-						"x-test-header-2": {"test-value-1"},
-						"x-test-header-3": {"test-value-1"},
+						"x-test-header-2": {"test-value-2"},
+						"x-test-header-3": {"test-value-3"},
 					},
 					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
 				},
@@ -1014,8 +1019,8 @@ func TestGetParamsFromRequest(t *testing.T) {
 			},
 			want: map[string][]string{
 				"x-test-header-1": {"test-value-1"},
-				"x-test-header-2": {"test-value-1"},
-				"x-test-header-3": {"test-value-1"},
+				"x-test-header-2": {"test-value-2"},
+				"x-test-header-3": {"test-value-3"},
 				"query-test-1":    {"query-value-1"},
 			},
 		},
@@ -1025,7 +1030,7 @@ func TestGetParamsFromRequest(t *testing.T) {
 				r: &http.Request{
 					Header: map[string][]string{
 						"x-test-header-1": {"test-value-1"},
-						"x-test-header-2": {"test-value-1"},
+						"x-test-header-2": {"test-value-2"},
 					},
 					URL: &url.URL{RawQuery: "query-test-1=query-value-1&query-test-2=query-value-2&query-test-3=query-value-3"},
 				},
@@ -1056,7 +1061,7 @@ func TestGetParamsFromRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params := getParamsFromRequest(tt.args.r, tt.args.propagate)
+			params := getMetadataFromRequest(tt.args.r, tt.args.propagate)
 			assert.Equal(t, tt.want, params, "got: %v, want: %v", params, tt.want)
 		})
 	}
