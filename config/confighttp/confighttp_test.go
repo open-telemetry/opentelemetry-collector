@@ -876,7 +876,7 @@ func TestServerAuth(t *testing.T) {
 	q := x.URL.Query()
 	q.Add("query-test-1", "query-value1")
 	q.Add("query-test-1", "query-value2")
-	// query not in propogate
+	// query not in propagate
 	q.Add("query-test-3", "query-value3")
 	x.URL.RawQuery = q.Encode()
 
