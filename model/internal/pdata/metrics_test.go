@@ -42,11 +42,11 @@ func TestMetricDataTypeString(t *testing.T) {
 	assert.Equal(t, "", (MetricDataTypeSummary + 1).String())
 }
 
-func TestPointMetricValueTypeString(t *testing.T) {
-	assert.Equal(t, "None", MetricValueTypeNone.String())
-	assert.Equal(t, "Int", MetricValueTypeInt.String())
-	assert.Equal(t, "Double", MetricValueTypeDouble.String())
-	assert.Equal(t, "", (MetricValueTypeDouble + 1).String())
+func TestPointNumberTypeString(t *testing.T) {
+	assert.Equal(t, "None", NumberTypeNone.String())
+	assert.Equal(t, "Int", NumberTypeInt.String())
+	assert.Equal(t, "Double", NumberTypeDouble.String())
+	assert.Equal(t, "", (NumberTypeDouble + 1).String())
 }
 
 func TestResourceMetricsWireCompatibility(t *testing.T) {

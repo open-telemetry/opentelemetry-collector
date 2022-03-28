@@ -36,6 +36,11 @@
 - Rename `Array` type of `pdata.Value` to `Slice` (#5067)
   - Deprecate `pdata.AttributeValueTypeArray` type in favor of `pdata.ValueTypeSlice`
   - Deprecate `pdata.NewAttributeValueArray` func in favor of `pdata.NewValueSlice`
+- Rename `pdata.MetricValueType` to `pdata.NumberType` (#5004)
+  - Deprecate `pdata.MetricValueType` type in favor of `pdata.NumberType`
+  - Deprecate `pdata.MetricValueTypeNone` const in favor of `pdata.NumberTypeNone`
+  - Deprecate `pdata.MetricValueTypeInt` const in favor of `pdata.NumberTypeInt`
+  - Deprecate `pdata.MetricValueTypeDouble` const in favor of `pdata.NumberTypeDouble`
 - Deprecate global flag in `featuregates` (#5060)
 - Deprecate last funcs/structs in componenthelper (#5069)
 - Change structs in otlpgrpc to follow standard go encoding interfaces (#5062)

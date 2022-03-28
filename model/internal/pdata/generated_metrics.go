@@ -1161,14 +1161,14 @@ func (ms NumberDataPoint) SetTimestamp(v Timestamp) {
 
 // ValueType returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
-func (ms NumberDataPoint) ValueType() MetricValueType {
+func (ms NumberDataPoint) ValueType() NumberType {
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
-		return MetricValueTypeDouble
+		return NumberTypeDouble
 	case *otlpmetrics.NumberDataPoint_AsInt:
-		return MetricValueTypeInt
+		return NumberTypeInt
 	}
-	return MetricValueTypeNone
+	return NumberTypeNone
 }
 
 // DoubleVal returns the doubleval associated with this NumberDataPoint.
@@ -1216,9 +1216,9 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
-	case MetricValueTypeDouble:
+	case NumberTypeDouble:
 		dest.SetDoubleVal(ms.DoubleVal())
-	case MetricValueTypeInt:
+	case NumberTypeInt:
 		dest.SetIntVal(ms.IntVal())
 	}
 
@@ -2418,14 +2418,14 @@ func (ms Exemplar) SetTimestamp(v Timestamp) {
 
 // ValueType returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
-func (ms Exemplar) ValueType() MetricValueType {
+func (ms Exemplar) ValueType() NumberType {
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
-		return MetricValueTypeDouble
+		return NumberTypeDouble
 	case *otlpmetrics.Exemplar_AsInt:
-		return MetricValueTypeInt
+		return NumberTypeInt
 	}
-	return MetricValueTypeNone
+	return NumberTypeNone
 }
 
 // DoubleVal returns the doubleval associated with this Exemplar.
@@ -2481,9 +2481,9 @@ func (ms Exemplar) SetSpanID(v SpanID) {
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
-	case MetricValueTypeDouble:
+	case NumberTypeDouble:
 		dest.SetDoubleVal(ms.DoubleVal())
-	case MetricValueTypeInt:
+	case NumberTypeInt:
 		dest.SetIntVal(ms.IntVal())
 	}
 

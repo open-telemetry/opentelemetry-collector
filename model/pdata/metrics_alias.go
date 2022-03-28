@@ -73,11 +73,23 @@ const (
 	MetricDataPointFlagNoRecordedValue = pdata.MetricDataPointFlagNoRecordedValue
 )
 
-// MetricValueType is an alias for pdata.MetricValueType type.
-type MetricValueType = pdata.MetricValueType
+// NumberType is an alias for pdata.NumberType type.
+type NumberType = pdata.NumberType
 
 const (
-	MetricValueTypeNone   = pdata.MetricValueTypeNone
-	MetricValueTypeInt    = pdata.MetricValueTypeInt
-	MetricValueTypeDouble = pdata.MetricValueTypeDouble
+	NumberTypeNone   = pdata.NumberTypeNone
+	NumberTypeInt    = pdata.NumberTypeInt
+	NumberTypeDouble = pdata.NumberTypeDouble
 )
+
+// Deprecated: [v0.48.0] Use NumberType instead.
+type MetricValueType = pdata.NumberType
+
+// Deprecated: [v0.48.0] Use NumberTypeNone instead.
+const MetricValueTypeNone = pdata.NumberTypeNone
+
+// Deprecated: [v0.48.0] Use NumberTypeInt instead.
+const MetricValueTypeInt = pdata.NumberTypeInt
+
+// Deprecated: [v0.48.0] Use NumberTypeDouble instead.
+const MetricValueTypeDouble = pdata.NumberTypeDouble

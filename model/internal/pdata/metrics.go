@@ -218,23 +218,23 @@ const (
 	MetricDataPointFlagNoRecordedValue = MetricDataPointFlag(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 )
 
-// MetricValueType specifies the type of NumberDataPoint.
-type MetricValueType int32
+// NumberType specifies the type of NumberDataPoint.
+type NumberType int32
 
 const (
-	MetricValueTypeNone MetricValueType = iota
-	MetricValueTypeInt
-	MetricValueTypeDouble
+	NumberTypeNone NumberType = iota
+	NumberTypeInt
+	NumberTypeDouble
 )
 
-// String returns the string representation of the MetricValueType.
-func (mdt MetricValueType) String() string {
-	switch mdt {
-	case MetricValueTypeNone:
+// String returns the string representation of the NumberType.
+func (nt NumberType) String() string {
+	switch nt {
+	case NumberTypeNone:
 		return "None"
-	case MetricValueTypeInt:
+	case NumberTypeInt:
 		return "Int"
-	case MetricValueTypeDouble:
+	case NumberTypeDouble:
 		return "Double"
 	}
 	return ""
