@@ -234,6 +234,7 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 		if err != nil {
 			return nil, err
 		}
+		tlsCfg.NextProtos = []string{http2.NextProtoTLS}
 		listener = tls.NewListener(listener, tlsCfg)
 	}
 	return listener, nil
