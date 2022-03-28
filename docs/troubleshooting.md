@@ -14,7 +14,7 @@ The verbosity level defaults to `INFO` and can be adjusted.
 #### Version 0.35 and below:
 Pass `--log-level` flag to the `otelcol` process. See `--help` for more details.
 
-```bash
+```console
 $ otelcol --log-level DEBUG
 ```
 
@@ -39,7 +39,7 @@ public interface instead of just locally.
 Pass `--metrics-addr <ADDR>` flag to the `otelcol` process. See `--help` for
 more details.
 
-```bash
+```console
 $ otelcol --metrics-addr 0.0.0.0:8888
 ```
 
@@ -152,13 +152,13 @@ that contains:
 
 With the Collector running, send this payload to the Collector. For example:
 
-```bash
+```console
 $ curl -X POST localhost:9411/api/v2/spans -H'Content-Type: application/json' -d @trace.json
 ```
 
 You should see a log entry like the following from the Collector:
 
-```json
+```
 2020-11-11T04:12:33.089Z	INFO	loggingexporter/logging_exporter.go:296	TraceExporter	{"#spans": 1}
 ```
 
@@ -172,7 +172,7 @@ exporters:
 
 With the modified configuration if you re-run the test above the log output should look like:
 
-```json
+```
 2020-11-11T04:08:17.344Z	DEBUG	loggingexporter/logging_exporter.go:353	ResourceSpans #0
 Resource labels:
      -> service.name: STRING(api)
