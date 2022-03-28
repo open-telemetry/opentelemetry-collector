@@ -64,6 +64,7 @@
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
 - Update OTLP to v0.15.0 (#5064)
+- Adding support for transition from older versions of OTLP to OTLP v0.15.0 (#5085)
 
 ### 🧰 Bug fixes 🧰
 
