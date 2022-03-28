@@ -67,6 +67,7 @@ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kB
 github.com/cenkalti/backoff/v4 v4.1.2 h1:6Yo7N8UP2K6LWZnW94DLVSSrbobcWdVzAYOisuDPIFo=
 github.com/cenkalti/backoff/v4 v4.1.2/go.mod h1:scbssz8iZGpm3xbr14ovlUdkxfGXNInqkPWOWmG2CLw=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
+github.com/cespare/xxhash v1.1.0 h1:a6HrQnmkObjyL+Gs60czilIUGqrzKutQD6XZog3p+ko=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/cespare/xxhash/v2 v2.1.2 h1:YRXhKfTDauu4ajMg1TPgFO5jnlC2HCbmLXMcTG5cbYE=
@@ -116,8 +117,9 @@ github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logfmt/logfmt v0.5.0 h1:TrB8swr/68K7m9CcGut2g3UOihhbcbiMAYiuTXdEih4=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
-github.com/go-logr/logr v1.2.2 h1:ahHml/yUpnlb96Rp8HCvtYVPY8ZYpxq3g7UYchIYwbs=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
+github.com/go-logr/logr v1.2.3 h1:2DntVwHkVopvECVRSlL5PSo9eG+cAkDCuckLubN+rq0=
+github.com/go-logr/logr v1.2.3/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/stdr v1.2.2 h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=
 github.com/go-logr/stdr v1.2.2/go.mod h1:mMo/vtBO5dYbehREoey6XUKy/eSumjCCveDpRre4VKE=
 github.com/go-ole/go-ole v1.2.6 h1:/Fpf6oFPoeFik9ty7siob0G6Ke8QvQEuVcuChpwXzpY=
@@ -387,8 +389,9 @@ go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0/go.mod h1:
 go.opentelemetry.io/contrib/zpages v0.29.0 h1:rUnBzAxPP58lP7BApL21Ac2Fx8/5OflQa3sirlX0nQQ=
 go.opentelemetry.io/contrib/zpages v0.29.0/go.mod h1:iHy2K1Cjz1Ss0Sv6cQPEExP0nD+gj7gAF024foxzFFE=
 go.opentelemetry.io/otel v1.4.0/go.mod h1:jeAqMFKy2uLIxCtKxoFj0FAL5zAPKQagc3+GtBWakzk=
-go.opentelemetry.io/otel v1.5.0 h1:DhCU8oR2sJH9rfnwPdoV/+BJ7UIN5kXHL8DuSGrPU8E=
 go.opentelemetry.io/otel v1.5.0/go.mod h1:Jm/m+rNp/z0eqJc74H7LPwQ3G87qkU/AnnAydAjSAHk=
+go.opentelemetry.io/otel v1.6.0 h1:YV6GkGe/Ag2PKsm4rjlqdSNs0w0A5ZzxeGkxhx1T+t4=
+go.opentelemetry.io/otel v1.6.0/go.mod h1:bfJD2DZVw0LBxghOTlgnlI0CV3hLDu9XF/QKOUXMTQQ=
 go.opentelemetry.io/otel/exporters/prometheus v0.27.0 h1:HcGi6HmYRuszR3stcvN2GctJjQtvp44nw/VdfJCo/Ec=
 go.opentelemetry.io/otel/exporters/prometheus v0.27.0/go.mod h1:u0vTzijx2B6gGDa8FuIVoESW6z0HdKkXZWZMSTsoJKs=
 go.opentelemetry.io/otel/internal/metric v0.27.0 h1:9dAVGAfFiiEq5NVB9FUJ5et+btbDQAUIJehJ+ikyryk=
@@ -396,13 +399,14 @@ go.opentelemetry.io/otel/internal/metric v0.27.0/go.mod h1:n1CVxRqKqYZtqyTh9U/on
 go.opentelemetry.io/otel/metric v0.27.0 h1:HhJPsGhJoKRSegPQILFbODU56NS/L1UE4fS1sC5kIwQ=
 go.opentelemetry.io/otel/metric v0.27.0/go.mod h1:raXDJ7uP2/Jc0nVZWQjJtzoyssOYWu/+pjZqRzfvZ7g=
 go.opentelemetry.io/otel/sdk v1.4.0/go.mod h1:71GJPNJh4Qju6zJuYl1CrYtXbrgfau/M9UAggqiy1UE=
-go.opentelemetry.io/otel/sdk v1.5.0 h1:QKhWBbcOC9fDCZKCfPFjWTWpfIlJR+i9xiUDYrLVmZs=
-go.opentelemetry.io/otel/sdk v1.5.0/go.mod h1:CU4J1v+7iEljnm1G14QjdFWOXUyYLHVh0Lh+/BTYyFg=
+go.opentelemetry.io/otel/sdk v1.6.0 h1:JoriAoiNENuxxIQApR1O0k2h1Md5QegZhbentcRJpWk=
+go.opentelemetry.io/otel/sdk v1.6.0/go.mod h1:PjLRUfDsoPy0zl7yrDGSUqjj43tL7rEtFdCEiGlxXRM=
 go.opentelemetry.io/otel/sdk/metric v0.27.0 h1:CDEu96Js5IP7f4bJ8eimxF09V5hKYmE7CeyKSjmAL1s=
 go.opentelemetry.io/otel/sdk/metric v0.27.0/go.mod h1:lOgrT5C3ORdbqp2LsDrx+pBj6gbZtQ5Omk27vH3EaW0=
 go.opentelemetry.io/otel/trace v1.4.0/go.mod h1:uc3eRsqDfWs9R7b92xbQbU42/eTNz4N+gLP8qJCi4aE=
-go.opentelemetry.io/otel/trace v1.5.0 h1:AKQZ9zJsBRFAp7zLdyGNkqG2rToCDIt3i5tcLzQlbmU=
 go.opentelemetry.io/otel/trace v1.5.0/go.mod h1:sq55kfhjXYr1zVSyexg0w1mpa03AYXR5eyTkB9NPPdE=
+go.opentelemetry.io/otel/trace v1.6.0 h1:NDzPermp9ISkhxIaJXjBTi2O60xOSHDHP/EezjOL2wo=
+go.opentelemetry.io/otel/trace v1.6.0/go.mod h1:qs7BrU5cZ8dXQHBGxHMOxwME/27YH2qEp4/+tZLLwJE=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.9.0 h1:ECmE8Bn/WFTYwEW/bpKD3M8VtR/zQVbavAoalC1PYyE=
