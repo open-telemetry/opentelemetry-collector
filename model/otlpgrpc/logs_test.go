@@ -218,7 +218,9 @@ func TestLogsGrpcTransition(t *testing.T) {
 
 	logClient := NewLogsClient(cc)
 
-	resp, err := logClient.Export(context.Background(), generateLogsRequestWithInstrumentationLibrary())
+	req := generateLogsRequestWithInstrumentationLibrary()
+	InstrumentationLibraryLogsToScope(req.orig.ResourceLogs)
+	resp, err := logClient.Export(context.Background(), req)
 	assert.NoError(t, err)
 	assert.Equal(t, NewLogsResponse(), resp)
 }

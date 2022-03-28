@@ -218,7 +218,9 @@ func TestTracesGrpcTransition(t *testing.T) {
 
 	logClient := NewTracesClient(cc)
 
-	resp, err := logClient.Export(context.Background(), generateTracesRequestWithInstrumentationLibrary())
+	req := generateTracesRequestWithInstrumentationLibrary()
+	InstrumentationLibrarySpansToScope(req.orig.ResourceSpans)
+	resp, err := logClient.Export(context.Background(), req)
 	assert.NoError(t, err)
 	assert.Equal(t, NewTracesResponse(), resp)
 }

@@ -202,7 +202,9 @@ func TestMetricsGrpcTransition(t *testing.T) {
 
 	logClient := NewMetricsClient(cc)
 
-	resp, err := logClient.Export(context.Background(), generateMetricsRequestWithInstrumentationLibrary())
+	req := generateMetricsRequestWithInstrumentationLibrary()
+	InstrumentationLibraryMetricsToScope(req.orig.ResourceMetrics)
+	resp, err := logClient.Export(context.Background(), req)
 	assert.NoError(t, err)
 	assert.Equal(t, NewMetricsResponse(), resp)
 }
