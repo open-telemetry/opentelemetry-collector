@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
+	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -173,6 +174,39 @@ func TestMetricsGrpc(t *testing.T) {
 	assert.Equal(t, NewMetricsResponse(), resp)
 }
 
+func TestMetricsGrpcTransition(t *testing.T) {
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+	RegisterMetricsServer(s, &fakeMetricsServer{t: t})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, s.Serve(lis))
+	}()
+	t.Cleanup(func() {
+		s.Stop()
+		wg.Wait()
+	})
+
+	cc, err := grpc.Dial("bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock())
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, cc.Close())
+	})
+
+	logClient := NewMetricsClient(cc)
+
+	resp, err := logClient.Export(context.Background(), generateMetricsRequestWithInstrumentationLibrary())
+	assert.NoError(t, err)
+	assert.Equal(t, NewMetricsResponse(), resp)
+}
+
 func TestMetricsGrpcError(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
@@ -225,5 +259,15 @@ func generateMetricsRequest() MetricsRequest {
 
 	mr := NewMetricsRequest()
 	mr.SetMetrics(md)
+	return mr
+}
+
+func generateMetricsRequestWithInstrumentationLibrary() MetricsRequest {
+	mr := generateMetricsRequest()
+	mr.orig.ResourceMetrics[0].InstrumentationLibraryMetrics = []*v1.InstrumentationLibraryMetrics{ //nolint:staticcheck // SA1019 ignore this!
+		{
+			Metrics: mr.orig.ResourceMetrics[0].ScopeMetrics[0].Metrics,
+		},
+	}
 	return mr
 }

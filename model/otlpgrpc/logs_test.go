@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
+	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/model/internal/pdata"
 )
 
@@ -189,6 +190,39 @@ func TestLogsGrpc(t *testing.T) {
 	assert.Equal(t, NewLogsResponse(), resp)
 }
 
+func TestLogsGrpcTransition(t *testing.T) {
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+	RegisterLogsServer(s, &fakeLogsServer{t: t})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, s.Serve(lis))
+	}()
+	t.Cleanup(func() {
+		s.Stop()
+		wg.Wait()
+	})
+
+	cc, err := grpc.Dial("bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock())
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, cc.Close())
+	})
+
+	logClient := NewLogsClient(cc)
+
+	resp, err := logClient.Export(context.Background(), generateLogsRequestWithInstrumentationLibrary())
+	assert.NoError(t, err)
+	assert.Equal(t, NewLogsResponse(), resp)
+}
+
 func TestLogsGrpcError(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
@@ -241,5 +275,15 @@ func generateLogsRequest() LogsRequest {
 
 	lr := NewLogsRequest()
 	lr.SetLogs(ld)
+	return lr
+}
+
+func generateLogsRequestWithInstrumentationLibrary() LogsRequest {
+	lr := generateLogsRequest()
+	lr.orig.ResourceLogs[0].InstrumentationLibraryLogs = []*v1.InstrumentationLibraryLogs{ //nolint:staticcheck // SA1019 ignore this!
+		{
+			LogRecords: lr.orig.ResourceLogs[0].ScopeLogs[0].LogRecords,
+		},
+	}
 	return lr
 }

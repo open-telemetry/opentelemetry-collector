@@ -280,7 +280,7 @@ func generateTracesRequest() TracesRequest {
 
 func generateTracesRequestWithInstrumentationLibrary() TracesRequest {
 	tr := generateTracesRequest()
-	tr.orig.ResourceSpans[0].InstrumentationLibrarySpans = []*v1.InstrumentationLibrarySpans{
+	tr.orig.ResourceSpans[0].InstrumentationLibrarySpans = []*v1.InstrumentationLibrarySpans{ //nolint:staticcheck // SA1019 ignore this!
 		{
 			Spans: tr.orig.ResourceSpans[0].ScopeSpans[0].Spans,
 		},
