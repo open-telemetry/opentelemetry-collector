@@ -42,7 +42,7 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 
 		destRl := dest.ResourceLogs().AppendEmpty()
 		srcRl.Resource().CopyTo(destRl.Resource())
-		srcRl.InstrumentationLibraryLogs().RemoveIf(func(srcIll pdata.InstrumentationLibraryLogs) bool {
+		srcRl.ScopeLogs().RemoveIf(func(srcIll pdata.ScopeLogs) bool {
 			// If we are done skip everything else.
 			if totalCopiedLogRecords == size {
 				return false
@@ -52,12 +52,12 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 			srcIllLRC := srcIll.LogRecords().Len()
 			if size >= srcIllLRC+totalCopiedLogRecords {
 				totalCopiedLogRecords += srcIllLRC
-				srcIll.MoveTo(destRl.InstrumentationLibraryLogs().AppendEmpty())
+				srcIll.MoveTo(destRl.ScopeLogs().AppendEmpty())
 				return true
 			}
 
-			destIll := destRl.InstrumentationLibraryLogs().AppendEmpty()
-			srcIll.InstrumentationLibrary().CopyTo(destIll.InstrumentationLibrary())
+			destIll := destRl.ScopeLogs().AppendEmpty()
+			srcIll.Scope().CopyTo(destIll.Scope())
 			srcIll.LogRecords().RemoveIf(func(srcMetric pdata.LogRecord) bool {
 				// If we are done skip everything else.
 				if totalCopiedLogRecords == size {
@@ -69,7 +69,7 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 			})
 			return false
 		})
-		return srcRl.InstrumentationLibraryLogs().Len() == 0
+		return srcRl.ScopeLogs().Len() == 0
 	})
 
 	return dest
@@ -77,8 +77,8 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 
 // resourceLRC calculates the total number of log records in the pdata.ResourceLogs.
 func resourceLRC(rs pdata.ResourceLogs) (count int) {
-	for k := 0; k < rs.InstrumentationLibraryLogs().Len(); k++ {
-		count += rs.InstrumentationLibraryLogs().At(k).LogRecords().Len()
+	for k := 0; k < rs.ScopeLogs().Len(); k++ {
+		count += rs.ScopeLogs().At(k).LogRecords().Len()
 	}
 	return
 }

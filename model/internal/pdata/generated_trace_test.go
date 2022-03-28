@@ -163,49 +163,49 @@ func TestResourceSpans_SchemaUrl(t *testing.T) {
 	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
-func TestResourceSpans_InstrumentationLibrarySpans(t *testing.T) {
+func TestResourceSpans_ScopeSpans(t *testing.T) {
 	ms := NewResourceSpans()
-	assert.EqualValues(t, NewInstrumentationLibrarySpansSlice(), ms.InstrumentationLibrarySpans())
-	fillTestInstrumentationLibrarySpansSlice(ms.InstrumentationLibrarySpans())
-	testValInstrumentationLibrarySpans := generateTestInstrumentationLibrarySpansSlice()
-	assert.EqualValues(t, testValInstrumentationLibrarySpans, ms.InstrumentationLibrarySpans())
+	assert.EqualValues(t, NewScopeSpansSlice(), ms.ScopeSpans())
+	fillTestScopeSpansSlice(ms.ScopeSpans())
+	testValScopeSpans := generateTestScopeSpansSlice()
+	assert.EqualValues(t, testValScopeSpans, ms.ScopeSpans())
 }
 
-func TestInstrumentationLibrarySpansSlice(t *testing.T) {
-	es := NewInstrumentationLibrarySpansSlice()
+func TestScopeSpansSlice(t *testing.T) {
+	es := NewScopeSpansSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newInstrumentationLibrarySpansSlice(&[]*otlptrace.ScopeSpans{})
+	es = newScopeSpansSlice(&[]*otlptrace.ScopeSpans{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newInstrumentationLibrarySpans(&otlptrace.ScopeSpans{})
-	testVal := generateTestInstrumentationLibrarySpans()
+	emptyVal := newScopeSpans(&otlptrace.ScopeSpans{})
+	testVal := generateTestScopeSpans()
 	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.EqualValues(t, emptyVal, el)
-		fillTestInstrumentationLibrarySpans(el)
+		fillTestScopeSpans(el)
 		assert.EqualValues(t, testVal, el)
 	}
 }
 
-func TestInstrumentationLibrarySpansSlice_CopyTo(t *testing.T) {
-	dest := NewInstrumentationLibrarySpansSlice()
+func TestScopeSpansSlice_CopyTo(t *testing.T) {
+	dest := NewScopeSpansSlice()
 	// Test CopyTo to empty
-	NewInstrumentationLibrarySpansSlice().CopyTo(dest)
-	assert.EqualValues(t, NewInstrumentationLibrarySpansSlice(), dest)
+	NewScopeSpansSlice().CopyTo(dest)
+	assert.EqualValues(t, NewScopeSpansSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestInstrumentationLibrarySpansSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibrarySpansSlice(), dest)
+	generateTestScopeSpansSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestScopeSpansSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestInstrumentationLibrarySpansSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibrarySpansSlice(), dest)
+	generateTestScopeSpansSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestScopeSpansSlice(), dest)
 }
 
-func TestInstrumentationLibrarySpansSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestInstrumentationLibrarySpansSlice()
+func TestScopeSpansSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestScopeSpansSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
 	expectedEs := make(map[*otlptrace.ScopeSpans]bool)
@@ -238,24 +238,24 @@ func TestInstrumentationLibrarySpansSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
-func TestInstrumentationLibrarySpansSlice_MoveAndAppendTo(t *testing.T) {
+func TestScopeSpansSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestInstrumentationLibrarySpansSlice()
-	dest := NewInstrumentationLibrarySpansSlice()
-	src := generateTestInstrumentationLibrarySpansSlice()
+	expectedSlice := generateTestScopeSpansSlice()
+	dest := NewScopeSpansSlice()
+	src := generateTestScopeSpansSlice()
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibrarySpansSlice(), dest)
+	assert.EqualValues(t, generateTestScopeSpansSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibrarySpansSlice(), dest)
+	assert.EqualValues(t, generateTestScopeSpansSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	generateTestInstrumentationLibrarySpansSlice().MoveAndAppendTo(dest)
+	generateTestScopeSpansSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -263,54 +263,54 @@ func TestInstrumentationLibrarySpansSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestInstrumentationLibrarySpansSlice_RemoveIf(t *testing.T) {
+func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewInstrumentationLibrarySpansSlice()
-	emptySlice.RemoveIf(func(el InstrumentationLibrarySpans) bool {
+	emptySlice := NewScopeSpansSlice()
+	emptySlice.RemoveIf(func(el ScopeSpans) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := generateTestInstrumentationLibrarySpansSlice()
+	filtered := generateTestScopeSpansSlice()
 	pos := 0
-	filtered.RemoveIf(func(el InstrumentationLibrarySpans) bool {
+	filtered.RemoveIf(func(el ScopeSpans) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
 
-func TestInstrumentationLibrarySpans_MoveTo(t *testing.T) {
-	ms := generateTestInstrumentationLibrarySpans()
-	dest := NewInstrumentationLibrarySpans()
+func TestScopeSpans_MoveTo(t *testing.T) {
+	ms := generateTestScopeSpans()
+	dest := NewScopeSpans()
 	ms.MoveTo(dest)
-	assert.EqualValues(t, NewInstrumentationLibrarySpans(), ms)
-	assert.EqualValues(t, generateTestInstrumentationLibrarySpans(), dest)
+	assert.EqualValues(t, NewScopeSpans(), ms)
+	assert.EqualValues(t, generateTestScopeSpans(), dest)
 }
 
-func TestInstrumentationLibrarySpans_CopyTo(t *testing.T) {
-	ms := NewInstrumentationLibrarySpans()
-	generateTestInstrumentationLibrarySpans().CopyTo(ms)
-	assert.EqualValues(t, generateTestInstrumentationLibrarySpans(), ms)
+func TestScopeSpans_CopyTo(t *testing.T) {
+	ms := NewScopeSpans()
+	generateTestScopeSpans().CopyTo(ms)
+	assert.EqualValues(t, generateTestScopeSpans(), ms)
 }
 
-func TestInstrumentationLibrarySpans_InstrumentationLibrary(t *testing.T) {
-	ms := NewInstrumentationLibrarySpans()
-	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
-	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
+func TestScopeSpans_Scope(t *testing.T) {
+	ms := NewScopeSpans()
+	fillTestInstrumentationScope(ms.Scope())
+	assert.EqualValues(t, generateTestInstrumentationScope(), ms.Scope())
 }
 
-func TestInstrumentationLibrarySpans_SchemaUrl(t *testing.T) {
-	ms := NewInstrumentationLibrarySpans()
+func TestScopeSpans_SchemaUrl(t *testing.T) {
+	ms := NewScopeSpans()
 	assert.EqualValues(t, "", ms.SchemaUrl())
 	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
 	ms.SetSchemaUrl(testValSchemaUrl)
 	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
-func TestInstrumentationLibrarySpans_Spans(t *testing.T) {
-	ms := NewInstrumentationLibrarySpans()
+func TestScopeSpans_Spans(t *testing.T) {
+	ms := NewScopeSpans()
 	assert.EqualValues(t, NewSpanSlice(), ms.Spans())
 	fillTestSpanSlice(ms.Spans())
 	testValSpans := generateTestSpanSlice()
@@ -932,31 +932,31 @@ func generateTestResourceSpans() ResourceSpans {
 func fillTestResourceSpans(tv ResourceSpans) {
 	fillTestResource(tv.Resource())
 	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	fillTestInstrumentationLibrarySpansSlice(tv.InstrumentationLibrarySpans())
+	fillTestScopeSpansSlice(tv.ScopeSpans())
 }
 
-func generateTestInstrumentationLibrarySpansSlice() InstrumentationLibrarySpansSlice {
-	tv := NewInstrumentationLibrarySpansSlice()
-	fillTestInstrumentationLibrarySpansSlice(tv)
+func generateTestScopeSpansSlice() ScopeSpansSlice {
+	tv := NewScopeSpansSlice()
+	fillTestScopeSpansSlice(tv)
 	return tv
 }
 
-func fillTestInstrumentationLibrarySpansSlice(tv InstrumentationLibrarySpansSlice) {
+func fillTestScopeSpansSlice(tv ScopeSpansSlice) {
 	l := 7
 	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
-		fillTestInstrumentationLibrarySpans(tv.AppendEmpty())
+		fillTestScopeSpans(tv.AppendEmpty())
 	}
 }
 
-func generateTestInstrumentationLibrarySpans() InstrumentationLibrarySpans {
-	tv := NewInstrumentationLibrarySpans()
-	fillTestInstrumentationLibrarySpans(tv)
+func generateTestScopeSpans() ScopeSpans {
+	tv := NewScopeSpans()
+	fillTestScopeSpans(tv)
 	return tv
 }
 
-func fillTestInstrumentationLibrarySpans(tv InstrumentationLibrarySpans) {
-	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
+func fillTestScopeSpans(tv ScopeSpans) {
+	fillTestInstrumentationScope(tv.Scope())
 	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestSpanSlice(tv.Spans())
 }

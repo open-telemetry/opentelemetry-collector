@@ -81,3 +81,15 @@ const (
 	MetricValueTypeInt    = pdata.MetricValueTypeInt
 	MetricValueTypeDouble = pdata.MetricValueTypeDouble
 )
+
+// Deprecated: [v0.48.0] Use ScopeMetricsSlice instead.
+type InstrumentationLibraryMetricsSlice = pdata.ScopeMetricsSlice
+
+// Deprecated: [v0.48.0] Use NewScopeMetricsSlice instead.
+var NewInstrumentationLibraryMetricsSlice = pdata.NewScopeMetricsSlice
+
+// Deprecated: [v0.48.0] Use ScopeMetrics instead.
+type InstrumentationLibraryMetrics = pdata.ScopeMetrics
+
+// Deprecated: [v0.48.0] Use NewScopeMetrics instead.
+var NewInstrumentationLibraryMetrics = pdata.NewScopeMetrics

@@ -112,7 +112,7 @@ var traceOtlp = func() pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().UpsertString(semconv.AttributeHostName, "testHost")
-	spans := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
+	spans := rs.ScopeSpans().AppendEmpty().Spans()
 	span1 := spans.AppendEmpty()
 	span1.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
 	span1.SetSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x74}))
