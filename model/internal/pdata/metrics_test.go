@@ -91,14 +91,14 @@ func TestMetricCount(t *testing.T) {
 	rm := rms.AppendEmpty()
 	assert.EqualValues(t, 0, md.MetricCount())
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
 	assert.EqualValues(t, 0, md.MetricCount())
 
 	ilm.Metrics().AppendEmpty()
 	assert.EqualValues(t, 1, md.MetricCount())
 
-	rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilmm := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	rms.AppendEmpty().ScopeMetrics().AppendEmpty()
+	ilmm := rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	ilmm.EnsureCapacity(5)
 	for i := 0; i < 5; i++ {
 		ilmm.AppendEmpty()
@@ -123,7 +123,7 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
 
-	ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+	ilms := md.ResourceMetrics().At(0).ScopeMetrics()
 	ilms.AppendEmpty()
 	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
@@ -141,10 +141,10 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	md = NewMetrics()
 	rms = md.ResourceMetrics()
 	rms.EnsureCapacity(3)
-	rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
-	rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilms = rms.At(2).InstrumentationLibraryMetrics()
+	rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	rms.AppendEmpty().ScopeMetrics().AppendEmpty()
+	rms.AppendEmpty().ScopeMetrics().AppendEmpty()
+	ilms = rms.At(2).ScopeMetrics()
 	ilm := ilms.At(0).Metrics()
 	for i := 0; i < 5; i++ {
 		ilm.AppendEmpty()
@@ -181,7 +181,7 @@ func TestDataPointCountWithEmpty(t *testing.T) {
 
 func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	metrics := NewMetrics()
-	ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	doubleGauge := ilm.Metrics().AppendEmpty()
 	doubleGauge.SetDataType(MetricDataTypeGauge)
 	doubleHistogram := ilm.Metrics().AppendEmpty()
@@ -221,7 +221,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
 		"string": "string-resource",
 	}), resourceMetric.Resource().Attributes())
-	metrics := resourceMetric.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics := resourceMetric.ScopeMetrics().At(0).Metrics()
 	assert.EqualValues(t, 3, metrics.Len())
 
 	// Check int64 metric
@@ -335,7 +335,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 		},
 	})
 	resourceMetrics := md.ResourceMetrics()
-	metric := resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_int")
 	assert.EqualValues(t, "new_my_metric_int", metric.Name())
@@ -418,7 +418,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 		},
 	})
 	resourceMetrics := md.ResourceMetrics()
-	metric := resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_double")
 	assert.EqualValues(t, "new_my_metric_double", metric.Name())
@@ -503,7 +503,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 		},
 	})
 	resourceMetrics := md.ResourceMetrics()
-	metric := resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_histogram")
 	assert.EqualValues(t, "new_my_metric_histogram", metric.Name())
@@ -587,7 +587,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 		},
 	})
 	resourceMetrics := md.ResourceMetrics()
-	metric := resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
 	metric.SetName("new_my_metric_exponential_histogram")
 	assert.EqualValues(t, "new_my_metric_exponential_histogram", metric.Name())
@@ -724,7 +724,7 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := MetricsFromOtlp(req)
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
+		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
 		newReq := MetricsToOtlp(md)
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -750,7 +750,7 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := MetricsFromOtlp(req)
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
+		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
 		newReq := MetricsToOtlp(md)
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -776,7 +776,7 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := MetricsFromOtlp(req)
-		md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
+		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
 		newReq := MetricsToOtlp(md)
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()

@@ -31,17 +31,17 @@ type ResourceMetrics = pdata.ResourceMetrics
 // NewResourceMetrics is an alias for a function to create a new empty ResourceMetrics.
 var NewResourceMetrics = pdata.NewResourceMetrics
 
-// InstrumentationLibraryMetricsSlice is an alias for pdata.InstrumentationLibraryMetricsSlice struct.
-type InstrumentationLibraryMetricsSlice = pdata.InstrumentationLibraryMetricsSlice
+// ScopeMetricsSlice is an alias for pdata.ScopeMetricsSlice struct.
+type ScopeMetricsSlice = pdata.ScopeMetricsSlice
 
-// NewInstrumentationLibraryMetricsSlice is an alias for a function to create InstrumentationLibraryMetricsSlice.
-var NewInstrumentationLibraryMetricsSlice = pdata.NewInstrumentationLibraryMetricsSlice
+// NewScopeMetricsSlice is an alias for a function to create ScopeMetricsSlice.
+var NewScopeMetricsSlice = pdata.NewScopeMetricsSlice
 
-// InstrumentationLibraryMetrics is an alias for pdata.InstrumentationLibraryMetrics struct.
-type InstrumentationLibraryMetrics = pdata.InstrumentationLibraryMetrics
+// ScopeMetrics is an alias for pdata.ScopeMetrics struct.
+type ScopeMetrics = pdata.ScopeMetrics
 
-// NewInstrumentationLibraryMetrics is an alias for a function to create a new empty InstrumentationLibraryMetrics.
-var NewInstrumentationLibraryMetrics = pdata.NewInstrumentationLibraryMetrics
+// NewScopeMetrics is an alias for a function to create a new empty ScopeMetrics.
+var NewScopeMetrics = pdata.NewScopeMetrics
 
 // MetricSlice is an alias for pdata.MetricSlice struct.
 type MetricSlice = pdata.MetricSlice

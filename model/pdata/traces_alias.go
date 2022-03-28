@@ -62,3 +62,15 @@ const (
 	StatusCodeOk    = pdata.StatusCodeOk
 	StatusCodeError = pdata.StatusCodeError
 )
+
+// Deprecated: [v0.48.0] Use ScopeSpansSlice instead.
+type InstrumentationLibrarySpansSlice = pdata.ScopeSpansSlice
+
+// Deprecated: [v0.48.0] Use NewScopeSpansSlice instead.
+var NewInstrumentationLibrarySpansSlice = pdata.NewScopeSpansSlice
+
+// Deprecated: [v0.48.0] Use ScopeSpans instead.
+type InstrumentationLibrarySpans = pdata.ScopeSpans
+
+// Deprecated: [v0.48.0] Use NewScopeSpans instead.
+var NewInstrumentationLibrarySpans = pdata.NewScopeSpans

@@ -66,7 +66,7 @@ var logsRequestJSON = []byte(`
 func TestLogsRequestJSON(t *testing.T) {
 	lr := NewLogsRequest()
 	assert.NoError(t, lr.UnmarshalJSON(logsRequestJSON))
-	assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Body().AsString())
+	assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 
 	got, err := lr.MarshalJSON()
 	assert.NoError(t, err)
@@ -76,7 +76,7 @@ func TestLogsRequestJSON(t *testing.T) {
 func TestLogsRequestJSON_Deprecated(t *testing.T) {
 	lr, err := UnmarshalJSONLogsRequest(logsRequestJSON)
 	assert.NoError(t, err)
-	assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Body().AsString())
+	assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 
 	got, err := lr.MarshalJSON()
 	assert.NoError(t, err)
@@ -164,7 +164,7 @@ func (f fakeLogsServer) Export(_ context.Context, request LogsRequest) (LogsResp
 
 func generateLogsRequest() LogsRequest {
 	ld := pdata.NewLogs()
-	ld.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStringVal("test_log_record")
+	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStringVal("test_log_record")
 
 	lr := NewLogsRequest()
 	lr.SetLogs(ld)
