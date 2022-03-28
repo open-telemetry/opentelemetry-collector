@@ -67,6 +67,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- Add missing files for semconv definitions v1.7.0 and v1.8.0 (#5091)
 - The `featuregates` were not configured from the "--feature-gates" flag on windows service (#5060)
 - Fix Semantic Convention Schema URL definition for 1.5.0 and 1.6.1 versions (#5103)
 
