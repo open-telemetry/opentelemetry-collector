@@ -100,19 +100,3 @@ const (
 	// Deprecated: [v0.49.0] Use pmetric.MetricDataPointFlagNoRecordedValue instead.
 	MetricDataPointFlagNoRecordedValue = pmetric.MetricDataPointFlagNoRecordedValue
 )
-
-// MetricValueType is an alias for pmetric.MetricValueType type.
-// Deprecated: [v0.49.0] Use pmetric.MetricValueType instead.
-type MetricValueType = pmetric.MetricValueType
-
-const (
-
-	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeNone instead.
-	MetricValueTypeNone = pmetric.MetricValueTypeNone
-
-	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeInt instead.
-	MetricValueTypeInt = pmetric.MetricValueTypeInt
-
-	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeDouble instead.
-	MetricValueTypeDouble = pmetric.MetricValueTypeDouble
-)

@@ -6,6 +6,7 @@
 
 - Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
 - Remove non pdata deprecated funcs/structs (#5220)
+- Split `pmetric.MetricValueType` into `NumberDataPointValueType` and `ExemplarValueType` (#5004)
 
 ### 🚩 Deprecations 🚩
 
