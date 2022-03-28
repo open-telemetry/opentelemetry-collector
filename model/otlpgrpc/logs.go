@@ -212,7 +212,7 @@ func InstrumentationLibraryLogsToScope(rls []*otlplogs.ResourceLogs) {
 	for _, rl := range rls {
 		if len(rl.ScopeLogs) == 0 {
 			for _, ill := range rl.InstrumentationLibraryLogs {
-				scopeMetrics := otlplogs.ScopeLogs{
+				scopeLogs := otlplogs.ScopeLogs{
 					Scope: v1.InstrumentationScope{
 						Name:    ill.InstrumentationLibrary.Name,
 						Version: ill.InstrumentationLibrary.Version,
@@ -220,7 +220,7 @@ func InstrumentationLibraryLogsToScope(rls []*otlplogs.ResourceLogs) {
 					LogRecords: ill.LogRecords,
 					SchemaUrl:  ill.SchemaUrl,
 				}
-				rl.ScopeLogs = append(rl.ScopeLogs, &scopeMetrics)
+				rl.ScopeLogs = append(rl.ScopeLogs, &scopeLogs)
 			}
 		}
 		rl.InstrumentationLibraryLogs = nil
