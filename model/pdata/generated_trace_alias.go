@@ -31,17 +31,17 @@ type ResourceSpans = pdata.ResourceSpans
 // NewResourceSpans is an alias for a function to create a new empty ResourceSpans.
 var NewResourceSpans = pdata.NewResourceSpans
 
-// InstrumentationLibrarySpansSlice is an alias for pdata.InstrumentationLibrarySpansSlice struct.
-type InstrumentationLibrarySpansSlice = pdata.InstrumentationLibrarySpansSlice
+// ScopeSpansSlice is an alias for pdata.ScopeSpansSlice struct.
+type ScopeSpansSlice = pdata.ScopeSpansSlice
 
-// NewInstrumentationLibrarySpansSlice is an alias for a function to create InstrumentationLibrarySpansSlice.
-var NewInstrumentationLibrarySpansSlice = pdata.NewInstrumentationLibrarySpansSlice
+// NewScopeSpansSlice is an alias for a function to create ScopeSpansSlice.
+var NewScopeSpansSlice = pdata.NewScopeSpansSlice
 
-// InstrumentationLibrarySpans is an alias for pdata.InstrumentationLibrarySpans struct.
-type InstrumentationLibrarySpans = pdata.InstrumentationLibrarySpans
+// ScopeSpans is an alias for pdata.ScopeSpans struct.
+type ScopeSpans = pdata.ScopeSpans
 
-// NewInstrumentationLibrarySpans is an alias for a function to create a new empty InstrumentationLibrarySpans.
-var NewInstrumentationLibrarySpans = pdata.NewInstrumentationLibrarySpans
+// NewScopeSpans is an alias for a function to create a new empty ScopeSpans.
+var NewScopeSpans = pdata.NewScopeSpans
 
 // SpanSlice is an alias for pdata.SpanSlice struct.
 type SpanSlice = pdata.SpanSlice

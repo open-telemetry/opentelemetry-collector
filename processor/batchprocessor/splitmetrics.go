@@ -43,22 +43,22 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 
 		destRs := dest.ResourceMetrics().AppendEmpty()
 		srcRs.Resource().CopyTo(destRs.Resource())
-		srcRs.InstrumentationLibraryMetrics().RemoveIf(func(srcIlm pdata.InstrumentationLibraryMetrics) bool {
+		srcRs.ScopeMetrics().RemoveIf(func(srcIlm pdata.ScopeMetrics) bool {
 			// If we are done skip everything else.
 			if totalCopiedDataPoints == size {
 				return false
 			}
 
 			// If possible to move all metrics do that.
-			srcIlmDataPointCount := instrumentationLibraryMetricsDPC(srcIlm)
+			srcIlmDataPointCount := scopeMetricsDPC(srcIlm)
 			if srcIlmDataPointCount+totalCopiedDataPoints <= size {
 				totalCopiedDataPoints += srcIlmDataPointCount
-				srcIlm.MoveTo(destRs.InstrumentationLibraryMetrics().AppendEmpty())
+				srcIlm.MoveTo(destRs.ScopeMetrics().AppendEmpty())
 				return true
 			}
 
-			destIlm := destRs.InstrumentationLibraryMetrics().AppendEmpty()
-			srcIlm.InstrumentationLibrary().CopyTo(destIlm.InstrumentationLibrary())
+			destIlm := destRs.ScopeMetrics().AppendEmpty()
+			srcIlm.Scope().CopyTo(destIlm.Scope())
 			srcIlm.Metrics().RemoveIf(func(srcMetric pdata.Metric) bool {
 				// If we are done skip everything else.
 				if totalCopiedDataPoints == size {
@@ -80,7 +80,7 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 			})
 			return false
 		})
-		return srcRs.InstrumentationLibraryMetrics().Len() == 0
+		return srcRs.ScopeMetrics().Len() == 0
 	})
 
 	return dest
@@ -89,15 +89,15 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 // resourceMetricsDPC calculates the total number of data points in the pdata.ResourceMetrics.
 func resourceMetricsDPC(rs pdata.ResourceMetrics) int {
 	dataPointCount := 0
-	ilms := rs.InstrumentationLibraryMetrics()
+	ilms := rs.ScopeMetrics()
 	for k := 0; k < ilms.Len(); k++ {
-		dataPointCount += instrumentationLibraryMetricsDPC(ilms.At(k))
+		dataPointCount += scopeMetricsDPC(ilms.At(k))
 	}
 	return dataPointCount
 }
 
-// instrumentationLibraryMetricsDPC calculates the total number of data points in the pdata.InstrumentationLibraryMetrics.
-func instrumentationLibraryMetricsDPC(ilm pdata.InstrumentationLibraryMetrics) int {
+// scopeMetricsDPC calculates the total number of data points in the pdata.ScopeMetrics.
+func scopeMetricsDPC(ilm pdata.ScopeMetrics) int {
 	dataPointCount := 0
 	ms := ilm.Metrics()
 	for k := 0; k < ms.Len(); k++ {

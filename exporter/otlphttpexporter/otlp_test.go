@@ -258,7 +258,7 @@ func TestIssue_4221(t *testing.T) {
 		require.NoError(t, err)
 		tr := otlpgrpc.NewTracesRequest()
 		require.NoError(t, tr.UnmarshalProto(unbase64Data))
-		span := tr.Traces().ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+		span := tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
 		assert.Equal(t, "e5513c32795c41b9", span.SpanID().HexString())
 	}))
@@ -269,9 +269,9 @@ func TestIssue_4221(t *testing.T) {
 	rms := md.ResourceSpans().AppendEmpty()
 	rms.Resource().Attributes().UpsertString("service.name", "uop.stage-eu-1")
 	rms.Resource().Attributes().UpsertString("outsystems.module.version", "903386")
-	ils := rms.InstrumentationLibrarySpans().AppendEmpty()
-	ils.InstrumentationLibrary().SetName("uop_canaries")
-	ils.InstrumentationLibrary().SetVersion("1")
+	ils := rms.ScopeSpans().AppendEmpty()
+	ils.Scope().SetName("uop_canaries")
+	ils.Scope().SetVersion("1")
 	span := ils.Spans().AppendEmpty()
 
 	var traceIDBytes [16]byte

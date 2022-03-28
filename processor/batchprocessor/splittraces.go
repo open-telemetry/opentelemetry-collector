@@ -42,7 +42,7 @@ func splitTraces(size int, src pdata.Traces) pdata.Traces {
 
 		destRs := dest.ResourceSpans().AppendEmpty()
 		srcRs.Resource().CopyTo(destRs.Resource())
-		srcRs.InstrumentationLibrarySpans().RemoveIf(func(srcIls pdata.InstrumentationLibrarySpans) bool {
+		srcRs.ScopeSpans().RemoveIf(func(srcIls pdata.ScopeSpans) bool {
 			// If we are done skip everything else.
 			if totalCopiedSpans == size {
 				return false
@@ -52,12 +52,12 @@ func splitTraces(size int, src pdata.Traces) pdata.Traces {
 			srcIlsSC := srcIls.Spans().Len()
 			if size-totalCopiedSpans >= srcIlsSC {
 				totalCopiedSpans += srcIlsSC
-				srcIls.MoveTo(destRs.InstrumentationLibrarySpans().AppendEmpty())
+				srcIls.MoveTo(destRs.ScopeSpans().AppendEmpty())
 				return true
 			}
 
-			destIls := destRs.InstrumentationLibrarySpans().AppendEmpty()
-			srcIls.InstrumentationLibrary().CopyTo(destIls.InstrumentationLibrary())
+			destIls := destRs.ScopeSpans().AppendEmpty()
+			srcIls.Scope().CopyTo(destIls.Scope())
 			srcIls.Spans().RemoveIf(func(srcSpan pdata.Span) bool {
 				// If we are done skip everything else.
 				if totalCopiedSpans == size {
@@ -69,7 +69,7 @@ func splitTraces(size int, src pdata.Traces) pdata.Traces {
 			})
 			return false
 		})
-		return srcRs.InstrumentationLibrarySpans().Len() == 0
+		return srcRs.ScopeSpans().Len() == 0
 	})
 
 	return dest
@@ -77,8 +77,8 @@ func splitTraces(size int, src pdata.Traces) pdata.Traces {
 
 // resourceSC calculates the total number of spans in the pdata.ResourceSpans.
 func resourceSC(rs pdata.ResourceSpans) (count int) {
-	for k := 0; k < rs.InstrumentationLibrarySpans().Len(); k++ {
-		count += rs.InstrumentationLibrarySpans().At(k).Spans().Len()
+	for k := 0; k < rs.ScopeSpans().Len(); k++ {
+		count += rs.ScopeSpans().At(k).Spans().Len()
 	}
 	return
 }

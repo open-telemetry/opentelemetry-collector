@@ -49,9 +49,9 @@ func (b *dataBuffer) logAttributes(label string, m pdata.Map) {
 	})
 }
 
-func (b *dataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrary) {
+func (b *dataBuffer) logInstrumentationScope(il pdata.InstrumentationScope) {
 	b.logEntry(
-		"InstrumentationLibrary %s %s",
+		"InstrumentationScope %s %s",
 		il.Name(),
 		il.Version())
 }
