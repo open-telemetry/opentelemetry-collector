@@ -139,10 +139,11 @@ func (mr MetricsRequest) UnmarshalJSON(data []byte) error {
 
 // instrumentationLibraryMetricsToScope implements the translation of resource metrics data
 // following the v0.15.0 upgrade:
-//    	receivers SHOULD check if instrumentation_library_metrics is set
-// 		and scope_metrics is not set then the value in instrumentation_library_metrics
-// 		SHOULD be used instead by converting InstrumentationLibraryMetrics into ScopeMetrics.
-// 		If scope_metrics is set then instrumentation_library_metrics SHOULD be ignored.
+//      receivers SHOULD check if instrumentation_library_metrics is set
+//      and scope_metrics is not set then the value in instrumentation_library_metrics
+//      SHOULD be used instead by converting InstrumentationLibraryMetrics into ScopeMetrics.
+//      If scope_metrics is set then instrumentation_library_metrics SHOULD be ignored.
+// https://github.com/open-telemetry/opentelemetry-proto/blob/3c2915c01a9fb37abfc0415ec71247c4978386b0/opentelemetry/proto/metrics/v1/metrics.proto#L58
 func (mr MetricsRequest) instrumentationLibraryMetricsToScope() {
 	for _, rm := range mr.orig.ResourceMetrics {
 		if len(rm.ScopeMetrics) == 0 {

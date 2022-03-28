@@ -42,85 +42,85 @@ var _ json.Marshaler = LogsRequest{}
 
 var logsRequestJSON = []byte(`
 	{
-	  "resourceLogs": [
+		"resourceLogs": [
 		{
-          "resource": {},
-		  "scopeLogs": [
-			{
-              "scope": {},
-			  "logRecords": [
+			"resource": {},
+			"scopeLogs": [
 				{
-				  "body": {
-	                "stringValue": "test_log_record"
-                  },
-				  "traceId": "",
-				  "spanId": ""
+					"scope": {},
+					"logRecords": [
+						{
+							"body": {
+								"stringValue": "test_log_record"
+							},
+							"traceId": "",
+							"spanId": ""
+						}
+					]
 				}
-			  ]
-			}
-		  ]
+			]
 		}
-	  ]
+		]
 	}`)
 
 var logsTransitionData = [][]byte{
 	[]byte(`
 	{
-	  "resourceLogs": [
+		"resourceLogs": [
 		{
-          "resource": {},
-		  "instrumentationLibraryLogs": [
-			{
-              "instrumentationLibrary": {},
-			  "logRecords": [
+			"resource": {},
+			"instrumentationLibraryLogs": [
 				{
-				  "body": {
-	                "stringValue": "test_log_record"
-                  },
-				  "traceId": "",
-				  "spanId": ""
+					"instrumentationLibrary": {},
+					"logRecords": [
+						{
+							"body": {
+								"stringValue": "test_log_record"
+							},
+							"traceId": "",
+							"spanId": ""
+						}
+					]
 				}
-			  ]
-			}
-		  ]
+			]
 		}
-	  ]
+		]
 	}`),
 	[]byte(`
 	{
-	  "resourceLogs": [
+		"resourceLogs": [
 		{
-          "resource": {},
-		  "instrumentationLibraryLogs": [
-			{
-              "instrumentationLibrary": {},
-			  "logRecords": [
+			"resource": {},
+			"instrumentationLibraryLogs": [
 				{
-				  "body": {
-	                "stringValue": "test_log_record"
-                  },
-				  "traceId": "",
-				  "spanId": ""
+					"instrumentationLibrary": {},
+					"logRecords": [
+						{
+							"body": {
+								"stringValue": "test_log_record"
+							},
+							"traceId": "",
+							"spanId": ""
+						}
+					]
 				}
-			  ]
-			}
-		  ],
-		  "scopeLogs": [
-			{
-              "scope": {},
-			  "logRecords": [
+			],
+			"scopeLogs": [
 				{
-				  "body": {
-	                "stringValue": "test_log_record"
-                  },
-				  "traceId": "",
-				  "spanId": ""
+					"scope": {},
+					"logRecords": [
+						{
+							"body": {
+								"stringValue": "test_log_record"
+							},
+							"traceId": "",
+							"spanId": ""
+						}
+					]
 				}
-			  ]
-			}
-		  ]
+			]
 		}
-	  ]
+		]
 	}`),
 }
 

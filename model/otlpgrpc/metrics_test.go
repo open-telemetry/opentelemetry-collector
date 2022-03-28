@@ -42,21 +42,21 @@ var _ json.Marshaler = MetricsRequest{}
 
 var metricsRequestJSON = []byte(`
 	{
-	  "resourceMetrics": [
-		{
-          "resource": {},
-		  "scopeMetrics": [
+		"resourceMetrics": [
 			{
-              "scope": {},
-			  "metrics": [
-				{
-				  "name": "test_metric"
-				}
-			  ]
+				"resource": {},
+				"scopeMetrics": [
+					{
+						"scope": {},
+						"metrics": [
+							{
+								"name": "test_metric"
+							}
+						]
+					}
+				]
 			}
-		  ]
-		}
-	  ]
+		]
 	}`)
 
 var metricsTransitionData = [][]byte{
@@ -64,17 +64,17 @@ var metricsTransitionData = [][]byte{
 		{
 		"resourceMetrics": [
 			{
-			"resource": {},
-			"instrumentationLibraryMetrics": [
-				{
-				"instrumentationLibrary": {},
-				"metrics": [
+				"resource": {},
+				"instrumentationLibraryMetrics": [
 					{
-					"name": "test_metric"
+						"instrumentationLibrary": {},
+						"metrics": [
+							{
+								"name": "test_metric"
+							}
+						]
 					}
 				]
-				}
-			]
 			}
 		]
 		}`),
@@ -82,27 +82,27 @@ var metricsTransitionData = [][]byte{
 		{
 		"resourceMetrics": [
 			{
-			"resource": {},
-			"instrumentationLibraryMetrics": [
-				{
-				"instrumentationLibrary": {},
-				"metrics": [
+				"resource": {},
+				"instrumentationLibraryMetrics": [
 					{
-					"name": "test_metric"
+						"instrumentationLibrary": {},
+						"metrics": [
+							{
+								"name": "test_metric"
+							}
+						]
+					}
+				],
+				"scopeMetrics": [
+					{
+						"scope": {},
+						"metrics": [
+							{
+								"name": "test_metric"
+							}
+						]
 					}
 				]
-				}
-			],
-			"scopeMetrics": [
-				{
-				"scope": {},
-				"metrics": [
-					{
-					"name": "test_metric"
-					}
-				]
-				}
-			]
 			}
 		]
 		}`),

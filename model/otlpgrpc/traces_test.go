@@ -43,84 +43,84 @@ var _ json.Marshaler = TracesRequest{}
 
 var tracesRequestJSON = []byte(`
 	{
-	  "resourceSpans": [
-		{
-          "resource": {},
-		  "scopeSpans": [
+		"resourceSpans": [
 			{
-              "scope": {},
-			  "spans": [
-				{
-                  "traceId": "",
-                  "spanId":"",
-                  "parentSpanId":"",
-				  "name": "test_span",
-                  "status": {}
-				}
-			  ]
+				"resource": {},
+				"scopeSpans": [
+					{
+						"scope": {},
+						"spans": [
+							{
+								"traceId": "",
+								"spanId":"",
+								"parentSpanId":"",
+								"name": "test_span",
+								"status": {}
+							}
+						]
+					}
+				]
 			}
-		  ]
-		}
-	  ]
+		]
 	}`)
 
 var tracesTransitionData = [][]byte{
 	[]byte(`
 	{
-	  "resourceSpans": [
-		{
-          "resource": {},
-		  "instrumentationLibrarySpans": [
+		"resourceSpans": [
 			{
-              "instrumentationLibrary": {},
-			  "spans": [
-				{
-                  "traceId": "",
-                  "spanId":"",
-                  "parentSpanId":"",
-				  "name": "test_span",
-                  "status": {}
-				}
-			  ]
+				"resource": {},
+				"instrumentationLibrarySpans": [
+					{
+						"instrumentationLibrary": {},
+						"spans": [
+							{
+								"traceId": "",
+								"spanId":"",
+								"parentSpanId":"",
+								"name": "test_span",
+								"status": {}
+							}
+						]
+					}
+				]
 			}
-		  ]
-		}
-	  ]
+		]
 	}`),
 	[]byte(`
 	{
 		"resourceSpans": [
-		{
-			"resource": {},
-			"instrumentationLibrarySpans": [
 			{
-				"instrumentationLibrary": {},
-				"spans": [
-				{
-					"traceId": "",
-					"spanId":"",
-					"parentSpanId":"",
-					"name": "test_span",
-					"status": {}
-				}
+				"resource": {},
+				"instrumentationLibrarySpans": [
+					{
+						"instrumentationLibrary": {},
+						"spans": [
+							{
+								"traceId": "",
+								"spanId":"",
+								"parentSpanId":"",
+								"name": "test_span",
+								"status": {}
+							}
+						]
+					}
+				],
+				"scopeSpans": [
+					{
+						"scope": {},
+						"spans": [
+							{
+								"traceId": "",
+								"spanId":"",
+								"parentSpanId":"",
+								"name": "test_span",
+								"status": {}
+							}
+						]
+					}
 				]
 			}
-			],
-			"scopeSpans": [
-			{
-              "scope": {},
-			  "spans": [
-				{
-                  "traceId": "",
-                  "spanId":"",
-                  "parentSpanId":"",
-				  "name": "test_span",
-                  "status": {}
-				}
-			  ]
-			}
-		  ]
-		}
 		]
 	}`),
 }

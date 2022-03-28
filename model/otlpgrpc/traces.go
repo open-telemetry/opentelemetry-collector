@@ -140,10 +140,11 @@ func (tr TracesRequest) UnmarshalJSON(data []byte) error {
 
 // instrumentationLibraryToScope implements the translation of resource span data
 // following the v0.15.0 upgrade:
-//    	receivers SHOULD check if instrumentation_library_spans is set
-// 		and scope_spans is not set then the value in instrumentation_library_spans
-// 		SHOULD be used instead by converting InstrumentationLibrarySpans into ScopeSpans.
-// 		If scope_spans is set then instrumentation_library_spans SHOULD be ignored.
+//      receivers SHOULD check if instrumentation_library_spans is set
+//      and scope_spans is not set then the value in instrumentation_library_spans
+//      SHOULD be used instead by converting InstrumentationLibrarySpans into ScopeSpans.
+//      If scope_spans is set then instrumentation_library_spans SHOULD be ignored.
+// https://github.com/open-telemetry/opentelemetry-proto/blob/3c2915c01a9fb37abfc0415ec71247c4978386b0/opentelemetry/proto/trace/v1/trace.proto#L58
 func (tr TracesRequest) instrumentationLibraryToScope() {
 	for _, rs := range tr.orig.ResourceSpans {
 		if len(rs.ScopeSpans) == 0 {
