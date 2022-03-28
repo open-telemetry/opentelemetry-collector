@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/nonrecording"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -234,7 +235,7 @@ func (col *Collector) Run(ctx context.Context) error {
 	// global TracerProvider.
 	otel.SetTracerProvider(col.tracerProvider)
 
-	col.meterProvider = metric.NewNoopMeterProvider()
+	col.meterProvider = nonrecording.NewNoopMeterProvider()
 
 	col.asyncErrorChannel = make(chan error)
 
