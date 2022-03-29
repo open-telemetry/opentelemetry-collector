@@ -11,9 +11,9 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.14.0
 	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad
-	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210826185254-a20c5b1e2d7c
-	go.opentelemetry.io/build-tools/multimod v0.0.0-20210920164323-2ceabab23375
-	go.opentelemetry.io/build-tools/semconvgen v0.0.0-20210813222030-0139980e9794
+	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220327151007-0b1d24fa04f4
+	go.opentelemetry.io/build-tools/multimod v0.0.0-20220327151007-0b1d24fa04f4
+	go.opentelemetry.io/build-tools/semconvgen v0.0.0-20220327151007-0b1d24fa04f4
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5
 	golang.org/x/tools v0.1.10
 )
@@ -178,7 +178,7 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.1.1-0.20210918184747-d757024714a1 // indirect
 	gitlab.com/bosi/decorder v0.2.1 // indirect
-	go.opentelemetry.io/build-tools v0.0.0-20210719163622-92017e64f35b // indirect
+	go.opentelemetry.io/build-tools v0.0.0-20220321164008-b8e03aff061a // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
