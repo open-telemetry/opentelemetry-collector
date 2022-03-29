@@ -64,6 +64,7 @@
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
 - Update OTLP to v0.15.0 (#5064)
+- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
 
 ### 🧰 Bug fixes 🧰
 
