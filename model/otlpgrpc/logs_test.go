@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
+	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/model/internal/pdata"
 )
 
@@ -42,26 +43,87 @@ var _ json.Marshaler = LogsRequest{}
 
 var logsRequestJSON = []byte(`
 	{
-	  "resourceLogs": [
+		"resourceLogs": [
 		{
-          "resource": {},
-		  "scopeLogs": [
-			{
-              "scope": {},
-			  "logRecords": [
+			"resource": {},
+			"scopeLogs": [
 				{
-				  "body": {
-	                "stringValue": "test_log_record"
-                  },
-				  "traceId": "",
-				  "spanId": ""
+					"scope": {},
+					"logRecords": [
+						{
+							"body": {
+								"stringValue": "test_log_record"
+							},
+							"traceId": "",
+							"spanId": ""
+						}
+					]
 				}
-			  ]
-			}
-		  ]
+			]
 		}
-	  ]
+		]
 	}`)
+
+var logsTransitionData = [][]byte{
+	[]byte(`
+	{
+		"resourceLogs": [
+		{
+			"resource": {},
+			"instrumentationLibraryLogs": [
+				{
+					"instrumentationLibrary": {},
+					"logRecords": [
+						{
+							"body": {
+								"stringValue": "test_log_record"
+							},
+							"traceId": "",
+							"spanId": ""
+						}
+					]
+				}
+			]
+		}
+		]
+	}`),
+	[]byte(`
+	{
+		"resourceLogs": [
+		{
+			"resource": {},
+			"instrumentationLibraryLogs": [
+				{
+					"instrumentationLibrary": {},
+					"logRecords": [
+						{
+							"body": {
+								"stringValue": "test_log_record"
+							},
+							"traceId": "",
+							"spanId": ""
+						}
+					]
+				}
+			],
+			"scopeLogs": [
+				{
+					"scope": {},
+					"logRecords": [
+						{
+							"body": {
+								"stringValue": "test_log_record"
+							},
+							"traceId": "",
+							"spanId": ""
+						}
+					]
+				}
+			]
+		}
+		]
+	}`),
+}
 
 func TestLogsRequestJSON(t *testing.T) {
 	lr := NewLogsRequest()
@@ -71,6 +133,18 @@ func TestLogsRequestJSON(t *testing.T) {
 	got, err := lr.MarshalJSON()
 	assert.NoError(t, err)
 	assert.Equal(t, strings.Join(strings.Fields(string(logsRequestJSON)), ""), string(got))
+}
+
+func TestLogsRequestJSONTransition(t *testing.T) {
+	for _, data := range logsTransitionData {
+		lr := NewLogsRequest()
+		assert.NoError(t, lr.UnmarshalJSON(data))
+		assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
+
+		got, err := lr.MarshalJSON()
+		assert.NoError(t, err)
+		assert.Equal(t, strings.Join(strings.Fields(string(logsRequestJSON)), ""), string(got))
+	}
 }
 
 func TestLogsRequestJSON_Deprecated(t *testing.T) {
@@ -112,6 +186,41 @@ func TestLogsGrpc(t *testing.T) {
 	logClient := NewLogsClient(cc)
 
 	resp, err := logClient.Export(context.Background(), generateLogsRequest())
+	assert.NoError(t, err)
+	assert.Equal(t, NewLogsResponse(), resp)
+}
+
+func TestLogsGrpcTransition(t *testing.T) {
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+	RegisterLogsServer(s, &fakeLogsServer{t: t})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, s.Serve(lis))
+	}()
+	t.Cleanup(func() {
+		s.Stop()
+		wg.Wait()
+	})
+
+	cc, err := grpc.Dial("bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock())
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, cc.Close())
+	})
+
+	logClient := NewLogsClient(cc)
+
+	req := generateLogsRequestWithInstrumentationLibrary()
+	InstrumentationLibraryLogsToScope(req.orig.ResourceLogs)
+	resp, err := logClient.Export(context.Background(), req)
 	assert.NoError(t, err)
 	assert.Equal(t, NewLogsResponse(), resp)
 }
@@ -168,5 +277,15 @@ func generateLogsRequest() LogsRequest {
 
 	lr := NewLogsRequest()
 	lr.SetLogs(ld)
+	return lr
+}
+
+func generateLogsRequestWithInstrumentationLibrary() LogsRequest {
+	lr := generateLogsRequest()
+	lr.orig.ResourceLogs[0].InstrumentationLibraryLogs = []*v1.InstrumentationLibraryLogs{ //nolint:staticcheck // SA1019 ignore this!
+		{
+			LogRecords: lr.orig.ResourceLogs[0].ScopeLogs[0].LogRecords,
+		},
+	}
 	return lr
 }

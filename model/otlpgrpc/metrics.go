@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
+	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -129,7 +130,11 @@ func (mr MetricsRequest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls MetricsRequest from JSON bytes.
 func (mr MetricsRequest) UnmarshalJSON(data []byte) error {
-	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig)
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig); err != nil {
+		return err
+	}
+	InstrumentationLibraryMetricsToScope(mr.orig.ResourceMetrics)
+	return nil
 }
 
 func (mr MetricsRequest) SetMetrics(ld pdata.Metrics) {
@@ -186,4 +191,30 @@ type rawMetricsServer struct {
 func (s rawMetricsServer) Export(ctx context.Context, request *otlpcollectormetrics.ExportMetricsServiceRequest) (*otlpcollectormetrics.ExportMetricsServiceResponse, error) {
 	rsp, err := s.srv.Export(ctx, MetricsRequest{orig: request})
 	return rsp.orig, err
+}
+
+// InstrumentationLibraryMetricsToScope implements the translation of resource metrics data
+// following the v0.15.0 upgrade:
+//      receivers SHOULD check if instrumentation_library_metrics is set
+//      and scope_metrics is not set then the value in instrumentation_library_metrics
+//      SHOULD be used instead by converting InstrumentationLibraryMetrics into ScopeMetrics.
+//      If scope_metrics is set then instrumentation_library_metrics SHOULD be ignored.
+// https://github.com/open-telemetry/opentelemetry-proto/blob/3c2915c01a9fb37abfc0415ec71247c4978386b0/opentelemetry/proto/metrics/v1/metrics.proto#L58
+func InstrumentationLibraryMetricsToScope(rms []*otlpmetrics.ResourceMetrics) {
+	for _, rm := range rms {
+		if len(rm.ScopeMetrics) == 0 {
+			for _, ilm := range rm.InstrumentationLibraryMetrics {
+				scopeMetrics := otlpmetrics.ScopeMetrics{
+					Scope: v1.InstrumentationScope{
+						Name:    ilm.InstrumentationLibrary.Name,
+						Version: ilm.InstrumentationLibrary.Version,
+					},
+					Metrics:   ilm.Metrics,
+					SchemaUrl: ilm.SchemaUrl,
+				}
+				rm.ScopeMetrics = append(rm.ScopeMetrics, &scopeMetrics)
+			}
+		}
+		rm.InstrumentationLibraryMetrics = nil
+	}
 }
