@@ -24,7 +24,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 func TestNewNopProcessorFactory(t *testing.T) {
@@ -34,24 +36,24 @@ func TestNewNopProcessorFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &nopProcessorConfig{ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop"))}, cfg)
 
-	traces, err := factory.CreateTracesProcessor(context.Background(), NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	assert.Equal(t, consumer.Capabilities{MutatesData: false}, traces.Capabilities())
-	assert.NoError(t, traces.Start(context.Background(), NewNopHost()))
-	assert.NoError(t, traces.ConsumeTraces(context.Background(), pdata.NewTraces()))
-	assert.NoError(t, traces.Shutdown(context.Background()))
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, tp.Capabilities())
+	assert.NoError(t, tp.Start(context.Background(), NewNopHost()))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), traces.New()))
+	assert.NoError(t, tp.Shutdown(context.Background()))
 
-	metrics, err := factory.CreateMetricsProcessor(context.Background(), NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	assert.Equal(t, consumer.Capabilities{MutatesData: false}, metrics.Capabilities())
-	assert.NoError(t, metrics.Start(context.Background(), NewNopHost()))
-	assert.NoError(t, metrics.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
-	assert.NoError(t, metrics.Shutdown(context.Background()))
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, mp.Capabilities())
+	assert.NoError(t, mp.Start(context.Background(), NewNopHost()))
+	assert.NoError(t, mp.ConsumeMetrics(context.Background(), metrics.New()))
+	assert.NoError(t, mp.Shutdown(context.Background()))
 
-	logs, err := factory.CreateLogsProcessor(context.Background(), NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	lp, err := factory.CreateLogsProcessor(context.Background(), NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	assert.Equal(t, consumer.Capabilities{MutatesData: false}, logs.Capabilities())
-	assert.NoError(t, logs.Start(context.Background(), NewNopHost()))
-	assert.NoError(t, logs.ConsumeLogs(context.Background(), pdata.NewLogs()))
-	assert.NoError(t, logs.Shutdown(context.Background()))
+	assert.Equal(t, consumer.Capabilities{MutatesData: false}, lp.Capabilities())
+	assert.NoError(t, lp.Start(context.Background(), NewNopHost()))
+	assert.NoError(t, lp.ConsumeLogs(context.Background(), logs.New()))
+	assert.NoError(t, lp.Shutdown(context.Background()))
 }

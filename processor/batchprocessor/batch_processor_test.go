@@ -32,7 +32,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 func TestBatchProcessorSpansDelivered(t *testing.T) {
@@ -46,7 +48,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 
 	requestCount := 1000
 	spansPerRequest := 100
-	traceDataSlice := make([]pdata.Traces, 0, requestCount)
+	traceDataSlice := make([]traces.Traces, 0, requestCount)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
@@ -58,7 +60,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	}
 
 	// Added to test logic that check for empty resources.
-	td := pdata.NewTraces()
+	td := traces.New()
 	assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -98,7 +100,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	}
 
 	// Added to test logic that check for empty resources.
-	td := pdata.NewTraces()
+	td := traces.New()
 	require.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 
 	// wait for all spans to be reported
@@ -120,7 +122,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
-	sizer := otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)
+	sizer := otlp.NewProtobufTracesMarshaler().(traces.Sizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -276,7 +278,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-	metricDataSlice := make([]pdata.Metrics, 0, requestCount)
+	metricDataSlice := make([]metrics.Metrics, 0, requestCount)
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
@@ -289,7 +291,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	}
 
 	// Added to test case with empty resources sent.
-	md := pdata.NewMetrics()
+	md := metrics.New()
 	assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -308,7 +310,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessor_BatchSize(t *testing.T) {
-	sizer := otlp.NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
+	sizer := otlp.NewProtobufMetricsMarshaler().(metrics.Sizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -470,8 +472,8 @@ func getTestSpanName(requestNum, index int) string {
 	return fmt.Sprintf("test-span-%d-%d", requestNum, index)
 }
 
-func spansReceivedByName(tds []pdata.Traces) map[string]pdata.Span {
-	spansReceivedByName := map[string]pdata.Span{}
+func spansReceivedByName(tds []traces.Traces) map[string]traces.Span {
+	spansReceivedByName := map[string]traces.Span{}
 	for i := range tds {
 		rss := tds[i].ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
@@ -488,8 +490,8 @@ func spansReceivedByName(tds []pdata.Traces) map[string]pdata.Span {
 	return spansReceivedByName
 }
 
-func metricsReceivedByName(mds []pdata.Metrics) map[string]pdata.Metric {
-	metricsReceivedByName := map[string]pdata.Metric{}
+func metricsReceivedByName(mds []metrics.Metrics) map[string]metrics.Metric {
+	metricsReceivedByName := map[string]metrics.Metric{}
 	for _, md := range mds {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
@@ -511,7 +513,7 @@ func getTestMetricName(requestNum, index int) string {
 }
 
 func BenchmarkTraceSizeBytes(b *testing.B) {
-	sizer := otlp.NewProtobufTracesMarshaler().(pdata.TracesSizer)
+	sizer := otlp.NewProtobufTracesMarshaler().(traces.Sizer)
 	td := testdata.GenerateTracesManySpansSameResource(8192)
 	for n := 0; n < b.N; n++ {
 		fmt.Println(sizer.TracesSize(td))
@@ -541,7 +543,7 @@ func BenchmarkBatchMetricProcessor(b *testing.B) {
 	require.NoError(b, err)
 	require.NoError(b, batcher.Start(ctx, componenttest.NewNopHost()))
 
-	mds := make([]pdata.Metrics, 0, b.N)
+	mds := make([]metrics.Metrics, 0, b.N)
 	for n := 0; n < b.N; n++ {
 		mds = append(mds,
 			testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest),
@@ -567,7 +569,7 @@ func (sme *metricsSink) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (sme *metricsSink) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (sme *metricsSink) ConsumeMetrics(_ context.Context, md metrics.Metrics) error {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 	sme.metricsCount += md.MetricCount()
@@ -592,7 +594,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-	logDataSlice := make([]pdata.Logs, 0, requestCount)
+	logDataSlice := make([]logs.Logs, 0, requestCount)
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
@@ -605,7 +607,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	}
 
 	// Added to test case with empty resources sent.
-	ld := pdata.NewLogs()
+	ld := logs.New()
 	assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 
 	require.NoError(t, batcher.Shutdown(context.Background()))
@@ -624,7 +626,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
-	sizer := otlp.NewProtobufLogsMarshaler().(pdata.LogsSizer)
+	sizer := otlp.NewProtobufLogsMarshaler().(logs.Sizer)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -767,8 +769,8 @@ func getTestLogSeverityText(requestNum, index int) string {
 	return fmt.Sprintf("test-log-int-%d-%d", requestNum, index)
 }
 
-func logsReceivedBySeverityText(lds []pdata.Logs) map[string]pdata.LogRecord {
-	logsReceivedBySeverityText := map[string]pdata.LogRecord{}
+func logsReceivedBySeverityText(lds []logs.Logs) map[string]logs.LogRecord {
+	logsReceivedBySeverityText := map[string]logs.LogRecord{}
 	for i := range lds {
 		ld := lds[i]
 		rms := ld.ResourceLogs()

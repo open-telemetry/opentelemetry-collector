@@ -21,13 +21,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
 )
 
 func TestDefaultMetrics(t *testing.T) {
-	cp, err := NewMetrics(func(context.Context, pdata.Metrics) error { return nil })
+	cp, err := NewMetrics(func(context.Context, metrics.Metrics) error { return nil })
 	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, cp.ConsumeMetrics(context.Background(), metrics.New()))
 	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
 }
 
@@ -38,24 +38,24 @@ func TestNilFuncMetrics(t *testing.T) {
 
 func TestWithCapabilitiesMetrics(t *testing.T) {
 	cp, err := NewMetrics(
-		func(context.Context, pdata.Metrics) error { return nil },
+		func(context.Context, metrics.Metrics) error { return nil },
 		WithCapabilities(Capabilities{MutatesData: true}))
 	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, cp.ConsumeMetrics(context.Background(), metrics.New()))
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
 }
 
 func TestConsumeMetrics(t *testing.T) {
 	consumeCalled := false
-	cp, err := NewMetrics(func(context.Context, pdata.Metrics) error { consumeCalled = true; return nil })
+	cp, err := NewMetrics(func(context.Context, metrics.Metrics) error { consumeCalled = true; return nil })
 	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, cp.ConsumeMetrics(context.Background(), metrics.New()))
 	assert.True(t, consumeCalled)
 }
 
 func TestConsumeMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	cp, err := NewMetrics(func(context.Context, pdata.Metrics) error { return want })
+	cp, err := NewMetrics(func(context.Context, metrics.Metrics) error { return want })
 	assert.NoError(t, err)
-	assert.Equal(t, want, cp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.Equal(t, want, cp.ConsumeMetrics(context.Background(), metrics.New()))
 }

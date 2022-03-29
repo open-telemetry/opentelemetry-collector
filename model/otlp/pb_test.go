@@ -22,6 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 func TestProtobufLogsUnmarshaler_error(t *testing.T) {
@@ -182,7 +185,7 @@ func BenchmarkTracesFromProtobuf(b *testing.B) {
 	}
 }
 
-func generateBenchmarkLogs(logsCount int) pdata.Logs {
+func generateBenchmarkLogs(logsCount int) logs.Logs {
 	endTime := pdata.NewTimestampFromTime(time.Now())
 
 	md := pdata.NewLogs()
@@ -195,7 +198,7 @@ func generateBenchmarkLogs(logsCount int) pdata.Logs {
 	return md
 }
 
-func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
+func generateBenchmarkMetrics(metricsCount int) metrics.Metrics {
 	now := time.Now()
 	startTime := pdata.NewTimestampFromTime(now.Add(-10 * time.Second))
 	endTime := pdata.NewTimestampFromTime(now)
@@ -215,7 +218,7 @@ func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
 	return md
 }
 
-func generateBenchmarkTraces(metricsCount int) pdata.Traces {
+func generateBenchmarkTraces(metricsCount int) traces.Traces {
 	now := time.Now()
 	startTime := pdata.NewTimestampFromTime(now.Add(-10 * time.Second))
 	endTime := pdata.NewTimestampFromTime(now)

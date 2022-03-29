@@ -32,7 +32,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 type exporter struct {
@@ -96,21 +98,21 @@ func (e *exporter) shutdown(context.Context) error {
 	return e.clientConn.Close()
 }
 
-func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
+func (e *exporter) pushTraces(ctx context.Context, td traces.Traces) error {
 	req := otlpgrpc.NewTracesRequest()
 	req.SetTraces(td)
 	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (e *exporter) pushMetrics(ctx context.Context, md metrics.Metrics) error {
 	req := otlpgrpc.NewMetricsRequest()
 	req.SetMetrics(md)
 	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
-func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+func (e *exporter) pushLogs(ctx context.Context, ld logs.Logs) error {
 	req := otlpgrpc.NewLogsRequest()
 	req.SetLogs(ld)
 	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)

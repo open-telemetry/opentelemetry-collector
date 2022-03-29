@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
 )
 
 var testMetricsCfg = config.NewProcessorSettings(config.NewComponentID("test"))
@@ -39,7 +39,7 @@ func TestNewMetricsProcessor(t *testing.T) {
 
 	assert.True(t, mp.Capabilities().MutatesData)
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, mp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, mp.ConsumeMetrics(context.Background(), metrics.New()))
 	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
@@ -68,17 +68,17 @@ func TestNewMetricsProcessor_ProcessMetricsError(t *testing.T) {
 	want := errors.New("my_error")
 	mp, err := NewMetricsProcessor(&testMetricsCfg, consumertest.NewNop(), newTestMProcessor(want))
 	require.NoError(t, err)
-	assert.Equal(t, want, mp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.Equal(t, want, mp.ConsumeMetrics(context.Background(), metrics.New()))
 }
 
 func TestNewMetricsProcessor_ProcessMetricsErrSkipProcessingData(t *testing.T) {
 	mp, err := NewMetricsProcessor(&testMetricsCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, mp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.Equal(t, nil, mp.ConsumeMetrics(context.Background(), metrics.New()))
 }
 
 func newTestMProcessor(retError error) ProcessMetricsFunc {
-	return func(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+	return func(_ context.Context, md metrics.Metrics) (metrics.Metrics, error) {
 		return md, retError
 	}
 }

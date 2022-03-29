@@ -20,7 +20,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 var _ config.Unmarshallable = (*ExampleExporter)(nil)
@@ -74,9 +76,9 @@ func createLogsExporter(context.Context, component.ExporterCreateSettings, confi
 
 // ExampleExporterConsumer stores consumed traces and metrics for testing purposes.
 type ExampleExporterConsumer struct {
-	Traces           []pdata.Traces
-	Metrics          []pdata.Metrics
-	Logs             []pdata.Logs
+	Traces           []traces.Traces
+	Metrics          []metrics.Metrics
+	Logs             []logs.Logs
 	ExporterStarted  bool
 	ExporterShutdown bool
 }
@@ -89,8 +91,8 @@ func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) e
 	return nil
 }
 
-// ConsumeTraces receives pdata.Traces for processing by the consumer.Traces.
-func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+// ConsumeTraces receives traces.Traces for processing by the consumer.Traces.
+func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td traces.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
 }
@@ -99,13 +101,13 @@ func (exp *ExampleExporterConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-// ConsumeMetrics receives pdata.Metrics for processing by the Metrics.
-func (exp *ExampleExporterConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+// ConsumeMetrics receives metrics.Metrics for processing by the Metrics.
+func (exp *ExampleExporterConsumer) ConsumeMetrics(_ context.Context, md metrics.Metrics) error {
 	exp.Metrics = append(exp.Metrics, md)
 	return nil
 }
 
-func (exp *ExampleExporterConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+func (exp *ExampleExporterConsumer) ConsumeLogs(_ context.Context, ld logs.Logs) error {
 	exp.Logs = append(exp.Logs, ld)
 	return nil
 }

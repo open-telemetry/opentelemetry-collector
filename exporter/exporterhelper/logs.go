@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
 )
 
 var logsMarshaler = otlp.NewProtobufLogsMarshaler()
@@ -32,11 +32,11 @@ var logsUnmarshaler = otlp.NewProtobufLogsUnmarshaler()
 
 type logsRequest struct {
 	baseRequest
-	ld     pdata.Logs
+	ld     logs.Logs
 	pusher consumer.ConsumeLogsFunc
 }
 
-func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher consumer.ConsumeLogsFunc) request {
+func newLogsRequest(ctx context.Context, ld logs.Logs, pusher consumer.ConsumeLogsFunc) request {
 	return &logsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		ld:          ld,
@@ -107,7 +107,7 @@ func NewLogsExporter(
 		}
 	})
 
-	lc, err := consumer.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
+	lc, err := consumer.NewLogs(func(ctx context.Context, ld logs.Logs) error {
 		req := newLogsRequest(ctx, ld, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {

@@ -51,6 +51,7 @@ import (
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -108,8 +109,8 @@ var traceJSON = []byte(`
 	  ]
 	}`)
 
-var traceOtlp = func() pdata.Traces {
-	td := pdata.NewTraces()
+var traceOtlp = func() traces.Traces {
+	td := traces.New()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().UpsertString(semconv.AttributeHostName, "testHost")
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
@@ -120,7 +121,7 @@ var traceOtlp = func() pdata.Traces {
 	span1.SetName("testSpan")
 	span1.SetStartTimestamp(1544712660300000000)
 	span1.SetEndTimestamp(1544712660600000000)
-	span1.SetKind(pdata.SpanKindServer)
+	span1.SetKind(traces.SpanKindServer)
 	span1.Attributes().UpsertInt("attr1", 55)
 	span2 := spans.AppendEmpty()
 	span2.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
@@ -128,7 +129,7 @@ var traceOtlp = func() pdata.Traces {
 	span2.SetName("testSpan")
 	span2.SetStartTimestamp(1544712660000000000)
 	span2.SetEndTimestamp(1544712661000000000)
-	span2.SetKind(pdata.SpanKindClient)
+	span2.SetKind(traces.SpanKindClient)
 	span2.Attributes().UpsertInt("attr1", 55)
 	return td
 }()
@@ -466,7 +467,7 @@ func testHTTPProtobufRequest(
 	encoding string,
 	traceBytes []byte,
 	expectedErr error,
-	wantData pdata.Traces,
+	wantData traces.Traces,
 ) {
 	tSink.SetConsumeError(expectedErr)
 
@@ -651,7 +652,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		receiverTag string
 		exportFn    func(
 			cc *grpc.ClientConn,
-			td pdata.Traces) error
+			td traces.Traces) error
 	}{
 		{
 			receiverTag: "trace",
@@ -885,7 +886,7 @@ func compressGzip(body []byte) (*bytes.Buffer, error) {
 	return &buf, nil
 }
 
-type senderFunc func(td pdata.Traces)
+type senderFunc func(td traces.Traces)
 
 func TestShutdown(t *testing.T) {
 	endpointGrpc := testutil.GetAvailableLocalAddress(t)
@@ -915,11 +916,11 @@ func TestShutdown(t *testing.T) {
 	doneSignalGrpc := make(chan bool)
 	doneSignalHTTP := make(chan bool)
 
-	senderGrpc := func(td pdata.Traces) {
+	senderGrpc := func(td traces.Traces) {
 		// Ignore error, may be executed after the receiver shutdown.
 		_ = exportTraces(conn, td)
 	}
-	senderHTTP := func(td pdata.Traces) {
+	senderHTTP := func(td traces.Traces) {
 		// Send request via OTLP/HTTP.
 		traceBytes, err2 := otlp.NewProtobufTracesMarshaler().MarshalTraces(td)
 		if err2 != nil {
@@ -989,7 +990,7 @@ loop:
 	close(doneSignal)
 }
 
-func exportTraces(cc *grpc.ClientConn, td pdata.Traces) error {
+func exportTraces(cc *grpc.ClientConn, td traces.Traces) error {
 	acc := otlpgrpc.NewTracesClient(cc)
 	req := otlpgrpc.NewTracesRequest()
 	req.SetTraces(td)

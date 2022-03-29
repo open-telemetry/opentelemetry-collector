@@ -18,17 +18,17 @@ import (
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 )
 
-// TracesMarshaler marshals pdata.Traces into bytes.
+// TracesMarshaler marshals traces.Traces into bytes.
 type TracesMarshaler interface {
-	// MarshalTraces the given pdata.Traces into bytes.
+	// MarshalTraces the given traces.Traces into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
 	MarshalTraces(td Traces) ([]byte, error)
 }
 
-// TracesUnmarshaler unmarshalls bytes into pdata.Traces.
+// TracesUnmarshaler unmarshalls bytes into traces.Traces.
 type TracesUnmarshaler interface {
-	// UnmarshalTraces the given bytes into pdata.Traces.
-	// If the error is not nil, the returned pdata.Traces cannot be used.
+	// UnmarshalTraces the given bytes into traces.Traces.
+	// If the error is not nil, the returned traces.Traces cannot be used.
 	UnmarshalTraces(buf []byte) (Traces, error)
 }
 

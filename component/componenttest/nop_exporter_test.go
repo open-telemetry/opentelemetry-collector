@@ -22,7 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 func TestNewNopExporterFactory(t *testing.T) {
@@ -32,21 +34,21 @@ func TestNewNopExporterFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &nopExporterConfig{ExporterSettings: config.NewExporterSettings(config.NewComponentID("nop"))}, cfg)
 
-	traces, err := factory.CreateTracesExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
-	assert.NoError(t, traces.Start(context.Background(), NewNopHost()))
-	assert.NoError(t, traces.ConsumeTraces(context.Background(), pdata.NewTraces()))
-	assert.NoError(t, traces.Shutdown(context.Background()))
+	assert.NoError(t, te.Start(context.Background(), NewNopHost()))
+	assert.NoError(t, te.ConsumeTraces(context.Background(), traces.New()))
+	assert.NoError(t, te.Shutdown(context.Background()))
 
-	metrics, err := factory.CreateMetricsExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
+	me, err := factory.CreateMetricsExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
-	assert.NoError(t, metrics.Start(context.Background(), NewNopHost()))
-	assert.NoError(t, metrics.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
-	assert.NoError(t, metrics.Shutdown(context.Background()))
+	assert.NoError(t, me.Start(context.Background(), NewNopHost()))
+	assert.NoError(t, me.ConsumeMetrics(context.Background(), metrics.New()))
+	assert.NoError(t, me.Shutdown(context.Background()))
 
-	logs, err := factory.CreateLogsExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
+	le, err := factory.CreateLogsExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
-	assert.NoError(t, logs.Start(context.Background(), NewNopHost()))
-	assert.NoError(t, logs.ConsumeLogs(context.Background(), pdata.NewLogs()))
-	assert.NoError(t, logs.Shutdown(context.Background()))
+	assert.NoError(t, le.Start(context.Background(), NewNopHost()))
+	assert.NoError(t, le.ConsumeLogs(context.Background(), logs.New()))
+	assert.NoError(t, le.Shutdown(context.Background()))
 }

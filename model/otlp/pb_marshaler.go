@@ -17,20 +17,23 @@ package otlp // import "go.opentelemetry.io/collector/model/otlp"
 import (
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
-// NewProtobufTracesMarshaler returns a pdata.TracesMarshaler. Marshals to OTLP binary protobuf bytes.
-func NewProtobufTracesMarshaler() pdata.TracesMarshaler {
+// NewProtobufTracesMarshaler returns a traces.Marshaler. Marshals to OTLP binary protobuf bytes.
+func NewProtobufTracesMarshaler() traces.Marshaler {
 	return newPbMarshaler()
 }
 
-// NewProtobufMetricsMarshaler returns a pdata.MetricsMarshaler. Marshals to OTLP binary protobuf bytes.
-func NewProtobufMetricsMarshaler() pdata.MetricsMarshaler {
+// NewProtobufMetricsMarshaler returns a metrics.Marshaler. Marshals to OTLP binary protobuf bytes.
+func NewProtobufMetricsMarshaler() metrics.Marshaler {
 	return newPbMarshaler()
 }
 
-// NewProtobufLogsMarshaler returns a pdata.LogsMarshaler. Marshals to OTLP binary protobuf bytes.
-func NewProtobufLogsMarshaler() pdata.LogsMarshaler {
+// NewProtobufLogsMarshaler returns a logs.Marshaler. Marshals to OTLP binary protobuf bytes.
+func NewProtobufLogsMarshaler() logs.Marshaler {
 	return newPbMarshaler()
 }
 
@@ -45,26 +48,26 @@ var _ pdata.TracesSizer = (*pbMarshaler)(nil)
 var _ pdata.MetricsSizer = (*pbMarshaler)(nil)
 var _ pdata.LogsSizer = (*pbMarshaler)(nil)
 
-func (e *pbMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
+func (e *pbMarshaler) MarshalLogs(ld logs.Logs) ([]byte, error) {
 	return ipdata.LogsToOtlp(ld).Marshal()
 }
 
-func (e *pbMarshaler) MarshalMetrics(md pdata.Metrics) ([]byte, error) {
+func (e *pbMarshaler) MarshalMetrics(md metrics.Metrics) ([]byte, error) {
 	return ipdata.MetricsToOtlp(md).Marshal()
 }
 
-func (e *pbMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
+func (e *pbMarshaler) MarshalTraces(td traces.Traces) ([]byte, error) {
 	return ipdata.TracesToOtlp(td).Marshal()
 }
 
-func (e *pbMarshaler) TracesSize(td pdata.Traces) int {
+func (e *pbMarshaler) TracesSize(td traces.Traces) int {
 	return ipdata.TracesToOtlp(td).Size()
 }
 
-func (e *pbMarshaler) MetricsSize(md pdata.Metrics) int {
+func (e *pbMarshaler) MetricsSize(md metrics.Metrics) int {
 	return ipdata.MetricsToOtlp(md).Size()
 }
 
-func (e *pbMarshaler) LogsSize(ld pdata.Logs) int {
+func (e *pbMarshaler) LogsSize(ld logs.Logs) int {
 	return ipdata.LogsToOtlp(ld).Size()
 }

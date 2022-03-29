@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
 )
 
 type dataBuffer struct {
@@ -56,7 +57,7 @@ func (b *dataBuffer) logInstrumentationScope(il pdata.InstrumentationScope) {
 		il.Version())
 }
 
-func (b *dataBuffer) logMetricDescriptor(md pdata.Metric) {
+func (b *dataBuffer) logMetricDescriptor(md metrics.Metric) {
 	b.logEntry("Descriptor:")
 	b.logEntry("     -> Name: %s", md.Name())
 	b.logEntry("     -> Description: %s", md.Description())
@@ -64,32 +65,32 @@ func (b *dataBuffer) logMetricDescriptor(md pdata.Metric) {
 	b.logEntry("     -> DataType: %s", md.DataType().String())
 }
 
-func (b *dataBuffer) logMetricDataPoints(m pdata.Metric) {
+func (b *dataBuffer) logMetricDataPoints(m metrics.Metric) {
 	switch m.DataType() {
-	case pdata.MetricDataTypeNone:
+	case metrics.MetricDataTypeNone:
 		return
-	case pdata.MetricDataTypeGauge:
+	case metrics.MetricDataTypeGauge:
 		b.logNumberDataPoints(m.Gauge().DataPoints())
-	case pdata.MetricDataTypeSum:
+	case metrics.MetricDataTypeSum:
 		data := m.Sum()
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logNumberDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeHistogram:
+	case metrics.MetricDataTypeHistogram:
 		data := m.Histogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logDoubleHistogramDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeExponentialHistogram:
+	case metrics.MetricDataTypeExponentialHistogram:
 		data := m.ExponentialHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
 		b.logExponentialHistogramDataPoints(data.DataPoints())
-	case pdata.MetricDataTypeSummary:
+	case metrics.MetricDataTypeSummary:
 		data := m.Summary()
 		b.logDoubleSummaryDataPoints(data.DataPoints())
 	}
 }
 
-func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
+func (b *dataBuffer) logNumberDataPoints(ps metrics.NumberDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("NumberDataPoints #%d", i)
@@ -98,15 +99,15 @@ func (b *dataBuffer) logNumberDataPoints(ps pdata.NumberDataPointSlice) {
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
 		switch p.ValueType() {
-		case pdata.MetricValueTypeInt:
+		case metrics.MetricValueTypeInt:
 			b.logEntry("Value: %d", p.IntVal())
-		case pdata.MetricValueTypeDouble:
+		case metrics.MetricValueTypeDouble:
 			b.logEntry("Value: %f", p.DoubleVal())
 		}
 	}
 }
 
-func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSlice) {
+func (b *dataBuffer) logDoubleHistogramDataPoints(ps metrics.HistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)
@@ -133,7 +134,7 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pdata.HistogramDataPointSli
 	}
 }
 
-func (b *dataBuffer) logExponentialHistogramDataPoints(ps pdata.ExponentialHistogramDataPointSlice) {
+func (b *dataBuffer) logExponentialHistogramDataPoints(ps metrics.ExponentialHistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("ExponentialHistogramDataPoints #%d", i)
@@ -181,7 +182,7 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pdata.ExponentialHisto
 	}
 }
 
-func (b *dataBuffer) logDoubleSummaryDataPoints(ps pdata.SummaryDataPointSlice) {
+func (b *dataBuffer) logDoubleSummaryDataPoints(ps metrics.SummaryDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("SummaryDataPoints #%d", i)

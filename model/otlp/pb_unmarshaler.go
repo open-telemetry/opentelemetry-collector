@@ -20,6 +20,9 @@ import (
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 type pbUnmarshaler struct{}
@@ -43,19 +46,19 @@ func newPbUnmarshaler() *pbUnmarshaler {
 	return &pbUnmarshaler{}
 }
 
-func (d *pbUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
+func (d *pbUnmarshaler) UnmarshalLogs(buf []byte) (logs.Logs, error) {
 	ld := &otlplogs.LogsData{}
 	err := ld.Unmarshal(buf)
 	return ipdata.LogsFromOtlp(ld), err
 }
 
-func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
+func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (metrics.Metrics, error) {
 	md := &otlpmetrics.MetricsData{}
 	err := md.Unmarshal(buf)
 	return ipdata.MetricsFromOtlp(md), err
 }
 
-func (d *pbUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
+func (d *pbUnmarshaler) UnmarshalTraces(buf []byte) (traces.Traces, error) {
 	td := &otlptrace.TracesData{}
 	err := td.Unmarshal(buf)
 	return ipdata.TracesFromOtlp(td), err

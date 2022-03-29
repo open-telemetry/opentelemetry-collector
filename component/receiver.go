@@ -67,7 +67,7 @@ type Receiver interface {
 // Its purpose is to translate data from any format to the collector's internal trace format.
 // TracesReceiver feeds a consumer.Traces with data.
 //
-// For example it could be Zipkin data source which translates Zipkin spans into pdata.Traces.
+// For example it could be Zipkin data source which translates Zipkin spans into traces.Traces.
 type TracesReceiver interface {
 	Receiver
 }
@@ -76,7 +76,7 @@ type TracesReceiver interface {
 // Its purpose is to translate data from any format to the collector's internal metrics format.
 // MetricsReceiver feeds a consumer.Metrics with data.
 //
-// For example it could be Prometheus data source which translates Prometheus metrics into pdata.Metrics.
+// For example it could be Prometheus data source which translates Prometheus metrics into metrics.Metrics.
 type MetricsReceiver interface {
 	Receiver
 }
@@ -85,7 +85,7 @@ type MetricsReceiver interface {
 // Its purpose is to translate data from any format to the collector's internal logs data format.
 // LogsReceiver feeds a consumer.Logs with data.
 //
-// For example a LogsReceiver can read syslogs and convert them into pdata.Logs.
+// For example a LogsReceiver can read syslogs and convert them into logs.Logs.
 type LogsReceiver interface {
 	Receiver
 }

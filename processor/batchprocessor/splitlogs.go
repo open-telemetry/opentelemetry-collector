@@ -15,18 +15,18 @@
 package batchprocessor // import "go.opentelemetry.io/collector/processor/batchprocessor"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
 )
 
 // splitLogs removes logrecords from the input data and returns a new data of the specified size.
-func splitLogs(size int, src pdata.Logs) pdata.Logs {
+func splitLogs(size int, src logs.Logs) logs.Logs {
 	if src.LogRecordCount() <= size {
 		return src
 	}
 	totalCopiedLogRecords := 0
-	dest := pdata.NewLogs()
+	dest := logs.New()
 
-	src.ResourceLogs().RemoveIf(func(srcRl pdata.ResourceLogs) bool {
+	src.ResourceLogs().RemoveIf(func(srcRl logs.ResourceLogs) bool {
 		// If we are done skip everything else.
 		if totalCopiedLogRecords == size {
 			return false
@@ -42,7 +42,7 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 
 		destRl := dest.ResourceLogs().AppendEmpty()
 		srcRl.Resource().CopyTo(destRl.Resource())
-		srcRl.ScopeLogs().RemoveIf(func(srcIll pdata.ScopeLogs) bool {
+		srcRl.ScopeLogs().RemoveIf(func(srcIll logs.ScopeLogs) bool {
 			// If we are done skip everything else.
 			if totalCopiedLogRecords == size {
 				return false
@@ -58,7 +58,7 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 
 			destIll := destRl.ScopeLogs().AppendEmpty()
 			srcIll.Scope().CopyTo(destIll.Scope())
-			srcIll.LogRecords().RemoveIf(func(srcMetric pdata.LogRecord) bool {
+			srcIll.LogRecords().RemoveIf(func(srcMetric logs.LogRecord) bool {
 				// If we are done skip everything else.
 				if totalCopiedLogRecords == size {
 					return false
@@ -75,8 +75,8 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 	return dest
 }
 
-// resourceLRC calculates the total number of log records in the pdata.ResourceLogs.
-func resourceLRC(rs pdata.ResourceLogs) (count int) {
+// resourceLRC calculates the total number of log records in the logs.ResourceLogs.
+func resourceLRC(rs logs.ResourceLogs) (count int) {
 	for k := 0; k < rs.ScopeLogs().Len(); k++ {
 		count += rs.ScopeLogs().At(k).LogRecords().Len()
 	}

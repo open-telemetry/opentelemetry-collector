@@ -24,7 +24,7 @@ import (
 	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
 )
 
 // MetricsResponse represents the response for gRPC client/server.
@@ -137,11 +137,11 @@ func (mr MetricsRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (mr MetricsRequest) SetMetrics(ld pdata.Metrics) {
+func (mr MetricsRequest) SetMetrics(ld metrics.Metrics) {
 	mr.orig.ResourceMetrics = ipdata.MetricsToOtlp(ld).ResourceMetrics
 }
 
-func (mr MetricsRequest) Metrics() pdata.Metrics {
+func (mr MetricsRequest) Metrics() metrics.Metrics {
 	return ipdata.MetricsFromOtlp(&otlpmetrics.MetricsData{ResourceMetrics: mr.orig.ResourceMetrics})
 }
 
@@ -149,7 +149,7 @@ func (mr MetricsRequest) Metrics() pdata.Metrics {
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MetricsClient interface {
-	// Export pdata.Metrics to the server.
+	// Export metrics.Metrics to the server.
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.

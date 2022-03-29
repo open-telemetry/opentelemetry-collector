@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 func createStorageExtension(_ string) storage.Extension {
@@ -69,12 +69,12 @@ func createTemporaryDirectory() string {
 }
 
 type fakeTracesRequest struct {
-	td                         pdata.Traces
+	td                         traces.Traces
 	processingFinishedCallback func()
 	PersistentRequest
 }
 
-func newFakeTracesRequest(td pdata.Traces) *fakeTracesRequest {
+func newFakeTracesRequest(td traces.Traces) *fakeTracesRequest {
 	return &fakeTracesRequest{
 		td: td,
 	}

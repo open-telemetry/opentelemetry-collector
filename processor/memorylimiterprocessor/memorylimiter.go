@@ -28,7 +28,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -169,7 +171,7 @@ func (ml *memoryLimiter) shutdown(context.Context) error {
 	return nil
 }
 
-func (ml *memoryLimiter) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (ml *memoryLimiter) processTraces(ctx context.Context, td traces.Traces) (traces.Traces, error) {
 	numSpans := td.SpanCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
@@ -188,7 +190,7 @@ func (ml *memoryLimiter) processTraces(ctx context.Context, td pdata.Traces) (pd
 	return td, nil
 }
 
-func (ml *memoryLimiter) processMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (ml *memoryLimiter) processMetrics(ctx context.Context, md metrics.Metrics) (metrics.Metrics, error) {
 	numDataPoints := md.DataPointCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
@@ -206,7 +208,7 @@ func (ml *memoryLimiter) processMetrics(ctx context.Context, md pdata.Metrics) (
 	return md, nil
 }
 
-func (ml *memoryLimiter) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (ml *memoryLimiter) processLogs(ctx context.Context, ld logs.Logs) (logs.Logs, error) {
 	numRecords := ld.LogRecordCount()
 	if ml.forcingDrop() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"

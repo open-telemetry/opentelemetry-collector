@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 func createTestQueue(extension storage.Extension, capacity int) *persistentQueue {
@@ -167,8 +168,8 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 	}
 }
 
-func newTraces(numTraces int, numSpans int) pdata.Traces {
-	traces := pdata.NewTraces()
+func newTraces(numTraces int, numSpans int) traces.Traces {
+	traces := traces.New()
 	batch := traces.ResourceSpans().AppendEmpty()
 	batch.Resource().Attributes().InsertString("resource-attr", "some-resource")
 	batch.Resource().Attributes().InsertInt("num-traces", int64(numTraces))

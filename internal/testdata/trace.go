@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 var (
@@ -31,33 +32,33 @@ var (
 	TestSpanEndTimestamp = pdata.NewTimestampFromTime(TestSpanEndTime)
 )
 
-func GenerateTracesOneEmptyResourceSpans() pdata.Traces {
-	td := pdata.NewTraces()
+func GenerateTracesOneEmptyResourceSpans() traces.Traces {
+	td := traces.New()
 	td.ResourceSpans().AppendEmpty()
 	return td
 }
 
-func GenerateTracesNoLibraries() pdata.Traces {
+func GenerateTracesNoLibraries() traces.Traces {
 	td := GenerateTracesOneEmptyResourceSpans()
 	rs0 := td.ResourceSpans().At(0)
 	initResource1(rs0.Resource())
 	return td
 }
 
-func GenerateTracesOneEmptyInstrumentationScope() pdata.Traces {
+func GenerateTracesOneEmptyInstrumentationScope() traces.Traces {
 	td := GenerateTracesNoLibraries()
 	td.ResourceSpans().At(0).ScopeSpans().AppendEmpty()
 	return td
 }
 
-func GenerateTracesOneSpan() pdata.Traces {
+func GenerateTracesOneSpan() traces.Traces {
 	td := GenerateTracesOneEmptyInstrumentationScope()
 	rs0ils0 := td.ResourceSpans().At(0).ScopeSpans().At(0)
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	return td
 }
 
-func GenerateTracesTwoSpansSameResource() pdata.Traces {
+func GenerateTracesTwoSpansSameResource() traces.Traces {
 	td := GenerateTracesOneEmptyInstrumentationScope()
 	rs0ils0 := td.ResourceSpans().At(0).ScopeSpans().At(0)
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
@@ -65,8 +66,8 @@ func GenerateTracesTwoSpansSameResource() pdata.Traces {
 	return td
 }
 
-func GenerateTracesTwoSpansSameResourceOneDifferent() pdata.Traces {
-	td := pdata.NewTraces()
+func GenerateTracesTwoSpansSameResourceOneDifferent() traces.Traces {
+	td := traces.New()
 	rs0 := td.ResourceSpans().AppendEmpty()
 	initResource1(rs0.Resource())
 	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
@@ -79,7 +80,7 @@ func GenerateTracesTwoSpansSameResourceOneDifferent() pdata.Traces {
 	return td
 }
 
-func GenerateTracesManySpansSameResource(spanCount int) pdata.Traces {
+func GenerateTracesManySpansSameResource(spanCount int) traces.Traces {
 	td := GenerateTracesOneEmptyInstrumentationScope()
 	rs0ils0 := td.ResourceSpans().At(0).ScopeSpans().At(0)
 	rs0ils0.Spans().EnsureCapacity(spanCount)
@@ -89,7 +90,7 @@ func GenerateTracesManySpansSameResource(spanCount int) pdata.Traces {
 	return td
 }
 
-func fillSpanOne(span pdata.Span) {
+func fillSpanOne(span traces.Span) {
 	span.SetName("operationA")
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
@@ -112,7 +113,7 @@ func fillSpanOne(span pdata.Span) {
 	status.SetMessage("status-cancelled")
 }
 
-func fillSpanTwo(span pdata.Span) {
+func fillSpanTwo(span traces.Span) {
 	span.SetName("operationB")
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
@@ -124,7 +125,7 @@ func fillSpanTwo(span pdata.Span) {
 	span.SetDroppedLinksCount(3)
 }
 
-func fillSpanThree(span pdata.Span) {
+func fillSpanThree(span traces.Span) {
 	span.SetName("operationC")
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)

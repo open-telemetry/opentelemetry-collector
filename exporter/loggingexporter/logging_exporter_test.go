@@ -26,7 +26,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
@@ -34,7 +36,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), traces.New()))
 	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTracesTwoSpansSameResourceOneDifferent()))
 
 	assert.NoError(t, lte.Shutdown(context.Background()))
@@ -45,7 +47,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), metrics.New()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GeneratMetricsAllTypesWithSampleDatapoints()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmptyDataPoint()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
@@ -58,7 +60,7 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), pdata.NewLogs()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), logs.New()))
 	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyResourceLogs()))
 	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsNoLogRecords()))
 	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyLogRecord()))
@@ -74,23 +76,23 @@ func TestLoggingExporterErrors(t *testing.T) {
 	le.tracesMarshaler = &errMarshaler{err: errWant}
 	le.metricsMarshaler = &errMarshaler{err: errWant}
 	le.logsMarshaler = &errMarshaler{err: errWant}
-	assert.Equal(t, errWant, le.pushTraces(context.Background(), pdata.NewTraces()))
-	assert.Equal(t, errWant, le.pushMetrics(context.Background(), pdata.NewMetrics()))
-	assert.Equal(t, errWant, le.pushLogs(context.Background(), pdata.NewLogs()))
+	assert.Equal(t, errWant, le.pushTraces(context.Background(), traces.New()))
+	assert.Equal(t, errWant, le.pushMetrics(context.Background(), metrics.New()))
+	assert.Equal(t, errWant, le.pushLogs(context.Background(), logs.New()))
 }
 
 type errMarshaler struct {
 	err error
 }
 
-func (e errMarshaler) MarshalLogs(pdata.Logs) ([]byte, error) {
+func (e errMarshaler) MarshalLogs(logs.Logs) ([]byte, error) {
 	return nil, e.err
 }
 
-func (e errMarshaler) MarshalMetrics(pdata.Metrics) ([]byte, error) {
+func (e errMarshaler) MarshalMetrics(metrics.Metrics) ([]byte, error) {
 	return nil, e.err
 }
 
-func (e errMarshaler) MarshalTraces(pdata.Traces) ([]byte, error) {
+func (e errMarshaler) MarshalTraces(traces.Traces) ([]byte, error) {
 	return nil, e.err
 }

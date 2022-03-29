@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
 )
 
 var metricsMarshaler = otlp.NewProtobufMetricsMarshaler()
@@ -32,11 +32,11 @@ var metricsUnmarshaler = otlp.NewProtobufMetricsUnmarshaler()
 
 type metricsRequest struct {
 	baseRequest
-	md     pdata.Metrics
+	md     metrics.Metrics
 	pusher consumer.ConsumeMetricsFunc
 }
 
-func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher consumer.ConsumeMetricsFunc) request {
+func newMetricsRequest(ctx context.Context, md metrics.Metrics, pusher consumer.ConsumeMetricsFunc) request {
 	return &metricsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		md:          md,
@@ -108,7 +108,7 @@ func NewMetricsExporter(
 		}
 	})
 
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
+	mc, err := consumer.NewMetrics(func(ctx context.Context, md metrics.Metrics) error {
 		req := newMetricsRequest(ctx, md, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {

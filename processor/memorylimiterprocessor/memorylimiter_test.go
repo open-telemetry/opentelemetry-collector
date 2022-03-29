@@ -31,7 +31,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -131,7 +133,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	md := pdata.NewMetrics()
+	md := metrics.New()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800
@@ -202,7 +204,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	td := pdata.NewTraces()
+	td := traces.New()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800
@@ -273,7 +275,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	ld := pdata.NewLogs()
+	ld := logs.New()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800

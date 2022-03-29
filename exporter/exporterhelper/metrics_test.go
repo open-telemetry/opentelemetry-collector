@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
 
@@ -49,10 +49,10 @@ var (
 func TestMetricsRequest(t *testing.T) {
 	mr := newMetricsRequest(context.Background(), testdata.GenerateMetricsOneMetric(), nil)
 
-	metricsErr := consumererror.NewMetrics(errors.New("some error"), pdata.NewMetrics())
+	metricsErr := consumererror.NewMetrics(errors.New("some error"), metrics.New())
 	assert.EqualValues(
 		t,
-		newMetricsRequest(context.Background(), pdata.NewMetrics(), nil),
+		newMetricsRequest(context.Background(), metrics.New(), nil),
 		mr.onError(metricsErr),
 	)
 }
@@ -76,7 +76,7 @@ func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
 }
 
 func TestMetricsExporter_Default(t *testing.T) {
-	md := pdata.NewMetrics()
+	md := metrics.New()
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, me)
@@ -97,7 +97,7 @@ func TestMetricsExporter_WithCapabilities(t *testing.T) {
 }
 
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
-	md := pdata.NewMetrics()
+	md := metrics.New()
 	want := errors.New("my_error")
 	me, err := NewMetricsExporter(&fakeMetricsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushMetricsData(want))
 	require.NoError(t, err)
@@ -200,7 +200,7 @@ func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 }
 
 func newPushMetricsData(retError error) consumer.ConsumeMetricsFunc {
-	return func(ctx context.Context, td pdata.Metrics) error {
+	return func(ctx context.Context, td metrics.Metrics) error {
 		return retError
 	}
 }

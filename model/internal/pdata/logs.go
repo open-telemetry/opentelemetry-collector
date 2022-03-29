@@ -18,17 +18,17 @@ import (
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 )
 
-// LogsMarshaler marshals pdata.Logs into bytes.
+// LogsMarshaler marshals logs.Logs into bytes.
 type LogsMarshaler interface {
-	// MarshalLogs the given pdata.Logs into bytes.
+	// MarshalLogs the given logs.Logs into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
 	MarshalLogs(ld Logs) ([]byte, error)
 }
 
-// LogsUnmarshaler unmarshalls bytes into pdata.Logs.
+// LogsUnmarshaler unmarshalls bytes into logs.Logs.
 type LogsUnmarshaler interface {
-	// UnmarshalLogs the given bytes into pdata.Logs.
-	// If the error is not nil, the returned pdata.Logs cannot be used.
+	// UnmarshalLogs the given bytes into logs.Logs.
+	// If the error is not nil, the returned logs.Logs cannot be used.
 	UnmarshalLogs(buf []byte) (Logs, error)
 }
 

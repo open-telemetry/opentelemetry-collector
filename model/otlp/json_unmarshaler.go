@@ -25,6 +25,9 @@ import (
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 )
 
 type jsonUnmarshaler struct {
@@ -50,28 +53,28 @@ func newJSONUnmarshaler() *jsonUnmarshaler {
 	return &jsonUnmarshaler{delegate: jsonpb.Unmarshaler{}}
 }
 
-func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
+func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (logs.Logs, error) {
 	ld := &otlplogs.LogsData{}
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), ld); err != nil {
-		return pdata.Logs{}, err
+		return logs.Logs{}, err
 	}
 	otlpgrpc.InstrumentationLibraryLogsToScope(ld.ResourceLogs)
 	return ipdata.LogsFromOtlp(ld), nil
 }
 
-func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
+func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (metrics.Metrics, error) {
 	md := &otlpmetrics.MetricsData{}
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), md); err != nil {
-		return pdata.Metrics{}, err
+		return metrics.Metrics{}, err
 	}
 	otlpgrpc.InstrumentationLibraryMetricsToScope(md.ResourceMetrics)
 	return ipdata.MetricsFromOtlp(md), nil
 }
 
-func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
+func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (traces.Traces, error) {
 	td := &otlptrace.TracesData{}
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), td); err != nil {
-		return pdata.Traces{}, err
+		return traces.Traces{}, err
 	}
 	otlpgrpc.InstrumentationLibrarySpansToScope(td.ResourceSpans)
 	return ipdata.TracesFromOtlp(td), nil

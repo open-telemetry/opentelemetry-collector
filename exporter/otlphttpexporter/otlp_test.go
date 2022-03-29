@@ -47,6 +47,9 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/model/pdata/logs"
+	"go.opentelemetry.io/collector/model/pdata/metrics"
+	"go.opentelemetry.io/collector/model/pdata/traces"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -265,7 +268,7 @@ func TestIssue_4221(t *testing.T) {
 
 	exp := startTracesExporter(t, "", svr.URL)
 
-	md := pdata.NewTraces()
+	md := traces.New()
 	rms := md.ResourceSpans().AppendEmpty()
 	rms.Resource().Attributes().UpsertString("service.name", "uop.stage-eu-1")
 	rms.Resource().Attributes().UpsertString("outsystems.module.version", "903386")
@@ -464,7 +467,7 @@ func TestErrorResponses(t *testing.T) {
 			})
 
 			// generate traces
-			traces := pdata.NewTraces()
+			traces := traces.New()
 			err = exp.ConsumeTraces(context.Background(), traces)
 			assert.Error(t, err)
 
@@ -542,7 +545,7 @@ func TestUserAgent(t *testing.T) {
 				})
 
 				// generate data
-				traces := pdata.NewTraces()
+				traces := traces.New()
 				err = exp.ConsumeTraces(context.Background(), traces)
 				require.NoError(t, err)
 
@@ -587,7 +590,7 @@ func TestUserAgent(t *testing.T) {
 				})
 
 				// generate data
-				metrics := pdata.NewMetrics()
+				metrics := metrics.New()
 				err = exp.ConsumeMetrics(context.Background(), metrics)
 				require.NoError(t, err)
 
@@ -632,7 +635,7 @@ func TestUserAgent(t *testing.T) {
 				})
 
 				// generate data
-				logs := pdata.NewLogs()
+				logs := logs.New()
 				err = exp.ConsumeLogs(context.Background(), logs)
 				require.NoError(t, err)
 
