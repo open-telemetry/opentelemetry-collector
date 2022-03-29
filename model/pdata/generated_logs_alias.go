@@ -20,37 +20,49 @@ package pdata
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
 // ResourceLogsSlice is an alias for pdata.ResourceLogsSlice struct.
+// Deprecated: [v0.49.0] Use logs.ResourceLogsSlice instead.
 type ResourceLogsSlice = pdata.ResourceLogsSlice
 
 // NewResourceLogsSlice is an alias for a function to create ResourceLogsSlice.
+// Deprecated: [v0.49.0] Use logs.NewResourceLogsSlice instead.
 var NewResourceLogsSlice = pdata.NewResourceLogsSlice
 
 // ResourceLogs is an alias for pdata.ResourceLogs struct.
+// Deprecated: [v0.49.0] Use logs.ResourceLogs instead.
 type ResourceLogs = pdata.ResourceLogs
 
 // NewResourceLogs is an alias for a function to create a new empty ResourceLogs.
+// Deprecated: [v0.49.0] Use logs.NewResourceLogs instead.
 var NewResourceLogs = pdata.NewResourceLogs
 
 // ScopeLogsSlice is an alias for pdata.ScopeLogsSlice struct.
+// Deprecated: [v0.49.0] Use logs.ScopeLogsSlice instead.
 type ScopeLogsSlice = pdata.ScopeLogsSlice
 
 // NewScopeLogsSlice is an alias for a function to create ScopeLogsSlice.
+// Deprecated: [v0.49.0] Use logs.NewScopeLogsSlice instead.
 var NewScopeLogsSlice = pdata.NewScopeLogsSlice
 
 // ScopeLogs is an alias for pdata.ScopeLogs struct.
+// Deprecated: [v0.49.0] Use logs.ScopeLogs instead.
 type ScopeLogs = pdata.ScopeLogs
 
 // NewScopeLogs is an alias for a function to create a new empty ScopeLogs.
+// Deprecated: [v0.49.0] Use logs.NewScopeLogs instead.
 var NewScopeLogs = pdata.NewScopeLogs
 
 // LogRecordSlice is an alias for pdata.LogRecordSlice struct.
+// Deprecated: [v0.49.0] Use logs.LogRecordSlice instead.
 type LogRecordSlice = pdata.LogRecordSlice
 
 // NewLogRecordSlice is an alias for a function to create LogRecordSlice.
+// Deprecated: [v0.49.0] Use logs.NewLogRecordSlice instead.
 var NewLogRecordSlice = pdata.NewLogRecordSlice
 
 // LogRecord is an alias for pdata.LogRecord struct.
+// Deprecated: [v0.49.0] Use logs.LogRecord instead.
 type LogRecord = pdata.LogRecord
 
 // NewLogRecord is an alias for a function to create a new empty LogRecord.
+// Deprecated: [v0.49.0] Use logs.NewLogRecord instead.
 var NewLogRecord = pdata.NewLogRecord

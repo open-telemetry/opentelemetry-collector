@@ -21,45 +21,72 @@ import (
 )
 
 // TracesMarshaler is an alias for pdata.TracesMarshaler interface.
+// Deprecated: [v0.49.0] Use traces.Marshaler instead.
 type TracesMarshaler = pdata.TracesMarshaler
 
 // TracesUnmarshaler is an alias for pdata.TracesUnmarshaler interface.
+// Deprecated: [v0.49.0] Use traces.Unmarshaler instead.
 type TracesUnmarshaler = pdata.TracesUnmarshaler
 
 // TracesSizer is an alias for pdata.TracesSizer interface.
+// Deprecated: [v0.49.0] Use traces.Sizer instead.
 type TracesSizer = pdata.TracesSizer
 
 // Traces is an alias for pdata.Traces struct.
+// Deprecated: [v0.49.0] Use traces.Traces instead.
 type Traces = pdata.Traces
 
 // NewTraces is an alias for a function to create new Traces.
+// Deprecated: [v0.49.0] Use traces.New instead.
 var NewTraces = pdata.NewTraces
 
 // TraceState is an alias for pdata.TraceState type.
+// Deprecated: [v0.49.0] Use traces.TraceState instead.
 type TraceState = pdata.TraceState
 
 const (
+	// Deprecated: [v0.49.0] Use traces.TraceStateEmpty instead.
 	TraceStateEmpty = pdata.TraceStateEmpty
 )
 
 // SpanKind is an alias for pdata.SpanKind type.
+// Deprecated: [v0.49.0] Use traces.SpanKind instead.
 type SpanKind = pdata.SpanKind
 
 const (
+
+	// Deprecated: [v0.49.0] Use traces.SpanKindUnspecified instead.
 	SpanKindUnspecified = pdata.SpanKindUnspecified
-	SpanKindInternal    = pdata.SpanKindInternal
-	SpanKindServer      = pdata.SpanKindServer
-	SpanKindClient      = pdata.SpanKindClient
-	SpanKindProducer    = pdata.SpanKindProducer
-	SpanKindConsumer    = pdata.SpanKindConsumer
+
+	// Deprecated: [v0.49.0] Use traces.SpanKindInternal instead.
+	SpanKindInternal = pdata.SpanKindInternal
+
+	// Deprecated: [v0.49.0] Use traces.SpanKindServer instead.
+	SpanKindServer = pdata.SpanKindServer
+
+	// Deprecated: [v0.49.0] Use traces.SpanKindClient instead.
+	SpanKindClient = pdata.SpanKindClient
+
+	// Deprecated: [v0.49.0] Use traces.SpanKindProducer instead.
+	SpanKindProducer = pdata.SpanKindProducer
+
+	// Deprecated: [v0.49.0] Use traces.SpanKindConsumer instead.
+	SpanKindConsumer = pdata.SpanKindConsumer
 )
 
 // StatusCode is an alias for pdata.StatusCode type.
+// Deprecated: [v0.49.0] Use traces.StatusCode instead.
 type StatusCode = pdata.StatusCode
 
 const (
+
+	// Deprecated: [v0.49.0] Use traces.StatusCodeUnset instead.
 	StatusCodeUnset = pdata.StatusCodeUnset
-	StatusCodeOk    = pdata.StatusCodeOk
+
+	// Deprecated: [v0.49.0] Use traces.StatusCodeOk instead.
+	StatusCodeOk = pdata.StatusCodeOk
+
+	// Deprecated: [v0.49.0] Use traces.StatusCodeError instead.
 	StatusCodeError = pdata.StatusCodeError
 )
 

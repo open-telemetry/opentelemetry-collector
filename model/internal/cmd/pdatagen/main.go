@@ -40,13 +40,17 @@ func main() {
 		check(f.Close())
 		f, err = os.Create("./model/pdata/generated_" + fp.Name + "_alias.go")
 		check(err)
-		_, err = f.WriteString(fp.GenerateAliasFile("pdata"))
+		deprecatedInFavor := ""
+		if !fp.IsCommon() {
+			deprecatedInFavor = fp.Name
+		}
+		_, err = f.WriteString(fp.GenerateAliasFile("pdata", deprecatedInFavor))
 		check(err)
 		check(f.Close())
 		if !fp.IsCommon() {
 			f, err = os.Create("./model/pdata/" + fp.Name + "/generated_alias.go")
 			check(err)
-			_, err = f.WriteString(fp.GenerateAliasFile(fp.Name))
+			_, err = f.WriteString(fp.GenerateAliasFile(fp.Name, ""))
 			check(err)
 			check(f.Close())
 		}

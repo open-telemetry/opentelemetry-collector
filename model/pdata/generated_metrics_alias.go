@@ -20,145 +20,193 @@ package pdata
 import "go.opentelemetry.io/collector/model/internal/pdata"
 
 // ResourceMetricsSlice is an alias for pdata.ResourceMetricsSlice struct.
+// Deprecated: [v0.49.0] Use metrics.ResourceMetricsSlice instead.
 type ResourceMetricsSlice = pdata.ResourceMetricsSlice
 
 // NewResourceMetricsSlice is an alias for a function to create ResourceMetricsSlice.
+// Deprecated: [v0.49.0] Use metrics.NewResourceMetricsSlice instead.
 var NewResourceMetricsSlice = pdata.NewResourceMetricsSlice
 
 // ResourceMetrics is an alias for pdata.ResourceMetrics struct.
+// Deprecated: [v0.49.0] Use metrics.ResourceMetrics instead.
 type ResourceMetrics = pdata.ResourceMetrics
 
 // NewResourceMetrics is an alias for a function to create a new empty ResourceMetrics.
+// Deprecated: [v0.49.0] Use metrics.NewResourceMetrics instead.
 var NewResourceMetrics = pdata.NewResourceMetrics
 
 // ScopeMetricsSlice is an alias for pdata.ScopeMetricsSlice struct.
+// Deprecated: [v0.49.0] Use metrics.ScopeMetricsSlice instead.
 type ScopeMetricsSlice = pdata.ScopeMetricsSlice
 
 // NewScopeMetricsSlice is an alias for a function to create ScopeMetricsSlice.
+// Deprecated: [v0.49.0] Use metrics.NewScopeMetricsSlice instead.
 var NewScopeMetricsSlice = pdata.NewScopeMetricsSlice
 
 // ScopeMetrics is an alias for pdata.ScopeMetrics struct.
+// Deprecated: [v0.49.0] Use metrics.ScopeMetrics instead.
 type ScopeMetrics = pdata.ScopeMetrics
 
 // NewScopeMetrics is an alias for a function to create a new empty ScopeMetrics.
+// Deprecated: [v0.49.0] Use metrics.NewScopeMetrics instead.
 var NewScopeMetrics = pdata.NewScopeMetrics
 
 // MetricSlice is an alias for pdata.MetricSlice struct.
+// Deprecated: [v0.49.0] Use metrics.MetricSlice instead.
 type MetricSlice = pdata.MetricSlice
 
 // NewMetricSlice is an alias for a function to create MetricSlice.
+// Deprecated: [v0.49.0] Use metrics.NewMetricSlice instead.
 var NewMetricSlice = pdata.NewMetricSlice
 
 // Metric is an alias for pdata.Metric struct.
+// Deprecated: [v0.49.0] Use metrics.Metric instead.
 type Metric = pdata.Metric
 
 // NewMetric is an alias for a function to create a new empty Metric.
+// Deprecated: [v0.49.0] Use metrics.NewMetric instead.
 var NewMetric = pdata.NewMetric
 
 // Gauge is an alias for pdata.Gauge struct.
+// Deprecated: [v0.49.0] Use metrics.Gauge instead.
 type Gauge = pdata.Gauge
 
 // NewGauge is an alias for a function to create a new empty Gauge.
+// Deprecated: [v0.49.0] Use metrics.NewGauge instead.
 var NewGauge = pdata.NewGauge
 
 // Sum is an alias for pdata.Sum struct.
+// Deprecated: [v0.49.0] Use metrics.Sum instead.
 type Sum = pdata.Sum
 
 // NewSum is an alias for a function to create a new empty Sum.
+// Deprecated: [v0.49.0] Use metrics.NewSum instead.
 var NewSum = pdata.NewSum
 
 // Histogram is an alias for pdata.Histogram struct.
+// Deprecated: [v0.49.0] Use metrics.Histogram instead.
 type Histogram = pdata.Histogram
 
 // NewHistogram is an alias for a function to create a new empty Histogram.
+// Deprecated: [v0.49.0] Use metrics.NewHistogram instead.
 var NewHistogram = pdata.NewHistogram
 
 // ExponentialHistogram is an alias for pdata.ExponentialHistogram struct.
+// Deprecated: [v0.49.0] Use metrics.ExponentialHistogram instead.
 type ExponentialHistogram = pdata.ExponentialHistogram
 
 // NewExponentialHistogram is an alias for a function to create a new empty ExponentialHistogram.
+// Deprecated: [v0.49.0] Use metrics.NewExponentialHistogram instead.
 var NewExponentialHistogram = pdata.NewExponentialHistogram
 
 // Summary is an alias for pdata.Summary struct.
+// Deprecated: [v0.49.0] Use metrics.Summary instead.
 type Summary = pdata.Summary
 
 // NewSummary is an alias for a function to create a new empty Summary.
+// Deprecated: [v0.49.0] Use metrics.NewSummary instead.
 var NewSummary = pdata.NewSummary
 
 // NumberDataPointSlice is an alias for pdata.NumberDataPointSlice struct.
+// Deprecated: [v0.49.0] Use metrics.NumberDataPointSlice instead.
 type NumberDataPointSlice = pdata.NumberDataPointSlice
 
 // NewNumberDataPointSlice is an alias for a function to create NumberDataPointSlice.
+// Deprecated: [v0.49.0] Use metrics.NewNumberDataPointSlice instead.
 var NewNumberDataPointSlice = pdata.NewNumberDataPointSlice
 
 // NumberDataPoint is an alias for pdata.NumberDataPoint struct.
+// Deprecated: [v0.49.0] Use metrics.NumberDataPoint instead.
 type NumberDataPoint = pdata.NumberDataPoint
 
 // NewNumberDataPoint is an alias for a function to create a new empty NumberDataPoint.
+// Deprecated: [v0.49.0] Use metrics.NewNumberDataPoint instead.
 var NewNumberDataPoint = pdata.NewNumberDataPoint
 
 // HistogramDataPointSlice is an alias for pdata.HistogramDataPointSlice struct.
+// Deprecated: [v0.49.0] Use metrics.HistogramDataPointSlice instead.
 type HistogramDataPointSlice = pdata.HistogramDataPointSlice
 
 // NewHistogramDataPointSlice is an alias for a function to create HistogramDataPointSlice.
+// Deprecated: [v0.49.0] Use metrics.NewHistogramDataPointSlice instead.
 var NewHistogramDataPointSlice = pdata.NewHistogramDataPointSlice
 
 // HistogramDataPoint is an alias for pdata.HistogramDataPoint struct.
+// Deprecated: [v0.49.0] Use metrics.HistogramDataPoint instead.
 type HistogramDataPoint = pdata.HistogramDataPoint
 
 // NewHistogramDataPoint is an alias for a function to create a new empty HistogramDataPoint.
+// Deprecated: [v0.49.0] Use metrics.NewHistogramDataPoint instead.
 var NewHistogramDataPoint = pdata.NewHistogramDataPoint
 
 // ExponentialHistogramDataPointSlice is an alias for pdata.ExponentialHistogramDataPointSlice struct.
+// Deprecated: [v0.49.0] Use metrics.ExponentialHistogramDataPointSlice instead.
 type ExponentialHistogramDataPointSlice = pdata.ExponentialHistogramDataPointSlice
 
 // NewExponentialHistogramDataPointSlice is an alias for a function to create ExponentialHistogramDataPointSlice.
+// Deprecated: [v0.49.0] Use metrics.NewExponentialHistogramDataPointSlice instead.
 var NewExponentialHistogramDataPointSlice = pdata.NewExponentialHistogramDataPointSlice
 
 // ExponentialHistogramDataPoint is an alias for pdata.ExponentialHistogramDataPoint struct.
+// Deprecated: [v0.49.0] Use metrics.ExponentialHistogramDataPoint instead.
 type ExponentialHistogramDataPoint = pdata.ExponentialHistogramDataPoint
 
 // NewExponentialHistogramDataPoint is an alias for a function to create a new empty ExponentialHistogramDataPoint.
+// Deprecated: [v0.49.0] Use metrics.NewExponentialHistogramDataPoint instead.
 var NewExponentialHistogramDataPoint = pdata.NewExponentialHistogramDataPoint
 
 // Buckets is an alias for pdata.Buckets struct.
+// Deprecated: [v0.49.0] Use metrics.Buckets instead.
 type Buckets = pdata.Buckets
 
 // NewBuckets is an alias for a function to create a new empty Buckets.
+// Deprecated: [v0.49.0] Use metrics.NewBuckets instead.
 var NewBuckets = pdata.NewBuckets
 
 // SummaryDataPointSlice is an alias for pdata.SummaryDataPointSlice struct.
+// Deprecated: [v0.49.0] Use metrics.SummaryDataPointSlice instead.
 type SummaryDataPointSlice = pdata.SummaryDataPointSlice
 
 // NewSummaryDataPointSlice is an alias for a function to create SummaryDataPointSlice.
+// Deprecated: [v0.49.0] Use metrics.NewSummaryDataPointSlice instead.
 var NewSummaryDataPointSlice = pdata.NewSummaryDataPointSlice
 
 // SummaryDataPoint is an alias for pdata.SummaryDataPoint struct.
+// Deprecated: [v0.49.0] Use metrics.SummaryDataPoint instead.
 type SummaryDataPoint = pdata.SummaryDataPoint
 
 // NewSummaryDataPoint is an alias for a function to create a new empty SummaryDataPoint.
+// Deprecated: [v0.49.0] Use metrics.NewSummaryDataPoint instead.
 var NewSummaryDataPoint = pdata.NewSummaryDataPoint
 
 // ValueAtQuantileSlice is an alias for pdata.ValueAtQuantileSlice struct.
+// Deprecated: [v0.49.0] Use metrics.ValueAtQuantileSlice instead.
 type ValueAtQuantileSlice = pdata.ValueAtQuantileSlice
 
 // NewValueAtQuantileSlice is an alias for a function to create ValueAtQuantileSlice.
+// Deprecated: [v0.49.0] Use metrics.NewValueAtQuantileSlice instead.
 var NewValueAtQuantileSlice = pdata.NewValueAtQuantileSlice
 
 // ValueAtQuantile is an alias for pdata.ValueAtQuantile struct.
+// Deprecated: [v0.49.0] Use metrics.ValueAtQuantile instead.
 type ValueAtQuantile = pdata.ValueAtQuantile
 
 // NewValueAtQuantile is an alias for a function to create a new empty ValueAtQuantile.
+// Deprecated: [v0.49.0] Use metrics.NewValueAtQuantile instead.
 var NewValueAtQuantile = pdata.NewValueAtQuantile
 
 // ExemplarSlice is an alias for pdata.ExemplarSlice struct.
+// Deprecated: [v0.49.0] Use metrics.ExemplarSlice instead.
 type ExemplarSlice = pdata.ExemplarSlice
 
 // NewExemplarSlice is an alias for a function to create ExemplarSlice.
+// Deprecated: [v0.49.0] Use metrics.NewExemplarSlice instead.
 var NewExemplarSlice = pdata.NewExemplarSlice
 
 // Exemplar is an alias for pdata.Exemplar struct.
+// Deprecated: [v0.49.0] Use metrics.Exemplar instead.
 type Exemplar = pdata.Exemplar
 
 // NewExemplar is an alias for a function to create a new empty Exemplar.
+// Deprecated: [v0.49.0] Use metrics.NewExemplar instead.
 var NewExemplar = pdata.NewExemplar

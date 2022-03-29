@@ -107,7 +107,7 @@ func (f *File) GenerateTestFile() string {
 }
 
 // GenerateFile generates the aliases for data structures for this File.
-func (f *File) GenerateAliasFile(packageName string) string {
+func (f *File) GenerateAliasFile(packageName string, deprecatedInFavor string) string {
 	var sb strings.Builder
 
 	generateHeader(&sb, packageName)
@@ -118,7 +118,7 @@ func (f *File) GenerateAliasFile(packageName string) string {
 	// Write all types and funcs
 	for _, s := range f.structs {
 		if ag, ok := s.(aliasGenerator); ok {
-			ag.generateAlias(&sb)
+			ag.generateAlias(&sb, deprecatedInFavor)
 		}
 	}
 	sb.WriteString(newLine)

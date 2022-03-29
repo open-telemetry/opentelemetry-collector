@@ -21,42 +21,66 @@ import (
 )
 
 // MetricsMarshaler is an alias for pdata.MetricsMarshaler interface.
+// Deprecated: [v0.49.0] Use metrics.Marshaler instead.
 type MetricsMarshaler = pdata.MetricsMarshaler
 
 // MetricsUnmarshaler is an alias for pdata.MetricsUnmarshaler interface.
+// Deprecated: [v0.49.0] Use metrics.Unmarshaler instead.
 type MetricsUnmarshaler = pdata.MetricsUnmarshaler
 
 // MetricsSizer is an alias for pdata.MetricsSizer interface.
+// Deprecated: [v0.49.0] Use metrics.Sizer instead.
 type MetricsSizer = pdata.MetricsSizer
 
 // Metrics is an alias for pdata.Metrics structure.
+// Deprecated: [v0.49.0] Use metrics.Metrics instead.
 type Metrics = pdata.Metrics
 
 // NewMetrics is an alias for a function to create new Metrics.
+// Deprecated: [v0.49.0] Use metrics.New instead.
 var NewMetrics = pdata.NewMetrics
 
 // MetricDataType is an alias for pdata.MetricDataType type.
+// Deprecated: [v0.49.0] Use metrics.MetricDataType instead.
 type MetricDataType = pdata.MetricDataType
 
 const (
-	MetricDataTypeNone                 = pdata.MetricDataTypeNone
-	MetricDataTypeGauge                = pdata.MetricDataTypeGauge
-	MetricDataTypeSum                  = pdata.MetricDataTypeSum
-	MetricDataTypeHistogram            = pdata.MetricDataTypeHistogram
+	// Deprecated: [v0.49.0] Use metrics.MetricDataTypeNone instead.
+	MetricDataTypeNone = pdata.MetricDataTypeNone
+
+	// Deprecated: [v0.49.0] Use metrics.MetricDataTypeGauge instead.
+	MetricDataTypeGauge = pdata.MetricDataTypeGauge
+
+	// Deprecated: [v0.49.0] Use metrics.MetricDataTypeSum instead.
+	MetricDataTypeSum = pdata.MetricDataTypeSum
+
+	// Deprecated: [v0.49.0] Use metrics.MetricDataTypeHistogram instead.
+	MetricDataTypeHistogram = pdata.MetricDataTypeHistogram
+
+	// Deprecated: [v0.49.0] Use metrics.MetricDataTypeExponentialHistogram instead.
 	MetricDataTypeExponentialHistogram = pdata.MetricDataTypeExponentialHistogram
-	MetricDataTypeSummary              = pdata.MetricDataTypeSummary
+
+	// Deprecated: [v0.49.0] Use metrics.MetricDataTypeSummary instead.
+	MetricDataTypeSummary = pdata.MetricDataTypeSummary
 )
 
 // MetricAggregationTemporality is an alias for pdata.MetricAggregationTemporality type.
+// Deprecated: [v0.49.0] Use metrics.MetricAggregationTemporality instead.
 type MetricAggregationTemporality = pdata.MetricAggregationTemporality
 
 const (
+	// Deprecated: [v0.49.0] Use metrics.MetricAggregationTemporalityUnspecified instead.
 	MetricAggregationTemporalityUnspecified = pdata.MetricAggregationTemporalityUnspecified
-	MetricAggregationTemporalityDelta       = pdata.MetricAggregationTemporalityDelta
-	MetricAggregationTemporalityCumulative  = pdata.MetricAggregationTemporalityCumulative
+
+	// Deprecated: [v0.49.0] Use metrics.MetricAggregationTemporalityDelta instead.
+	MetricAggregationTemporalityDelta = pdata.MetricAggregationTemporalityDelta
+
+	// Deprecated: [v0.49.0] Use metrics.MetricAggregationTemporalityCumulative instead.
+	MetricAggregationTemporalityCumulative = pdata.MetricAggregationTemporalityCumulative
 )
 
 // MetricDataPointFlags is an alias for pdata.MetricDataPointFlags type.
+// Deprecated: [v0.49.0] Use metrics.MetricDataPointFlags instead.
 type MetricDataPointFlags = pdata.MetricDataPointFlags
 
 const (
@@ -64,21 +88,31 @@ const (
 )
 
 // NewMetricDataPointFlags is an alias for a function to create new MetricDataPointFlags.
+// Deprecated: [v0.49.0] Use metrics.NewMetricDataPointFlags instead.
 var NewMetricDataPointFlags = pdata.NewMetricDataPointFlags
 
 // MetricDataPointFlag is an alias for pdata.MetricDataPointFlag type.
+// Deprecated: [v0.49.0] Use metrics.MetricDataPointFlag instead.
 type MetricDataPointFlag = pdata.MetricDataPointFlag
 
 const (
+	// Deprecated: [v0.49.0] Use metrics.MetricDataPointFlagNoRecordedValue instead.
 	MetricDataPointFlagNoRecordedValue = pdata.MetricDataPointFlagNoRecordedValue
 )
 
 // MetricValueType is an alias for pdata.MetricValueType type.
+// Deprecated: [v0.49.0] Use metrics.MetricValueType instead.
 type MetricValueType = pdata.MetricValueType
 
 const (
-	MetricValueTypeNone   = pdata.MetricValueTypeNone
-	MetricValueTypeInt    = pdata.MetricValueTypeInt
+
+	// Deprecated: [v0.49.0] Use metrics.MetricValueTypeNone instead.
+	MetricValueTypeNone = pdata.MetricValueTypeNone
+
+	// Deprecated: [v0.49.0] Use metrics.MetricValueTypeInt instead.
+	MetricValueTypeInt = pdata.MetricValueTypeInt
+
+	// Deprecated: [v0.49.0] Use metrics.MetricValueTypeDouble instead.
 	MetricValueTypeDouble = pdata.MetricValueTypeDouble
 )
 

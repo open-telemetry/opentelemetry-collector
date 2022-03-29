@@ -112,10 +112,10 @@ func fillTest${structName}(tv ${structName}) {
 }`
 
 const commonSliceAliasTemplate = `// ${structName} is an alias for pdata.${structName} struct.
-type ${structName} = pdata.${structName}
+${extraStructComment}type ${structName} = pdata.${structName}
 
 // New${structName} is an alias for a function to create ${structName}.
-var New${structName} = pdata.New${structName}`
+${extraNewComment}var New${structName} = pdata.New${structName}`
 
 const slicePtrTemplate = `// ${structName} logically represents a slice of ${elementName}.
 //
@@ -477,11 +477,21 @@ func (ss *sliceOfPtrs) templateFields() func(name string) string {
 	}
 }
 
-func (ss *sliceOfPtrs) generateAlias(sb *strings.Builder) {
+func (ss *sliceOfPtrs) generateAlias(sb *strings.Builder, deprecatedInFavor string) {
 	sb.WriteString(os.Expand(commonSliceAliasTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ss.structName
+		case "extraStructComment":
+			if deprecatedInFavor != "" {
+				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + "." + ss.structName + " instead.\n"
+			}
+			return ""
+		case "extraNewComment":
+			if deprecatedInFavor != "" {
+				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + ".New" + ss.structName + " instead.\n"
+			}
+			return ""
 		default:
 			panic(name)
 		}
@@ -530,11 +540,21 @@ func (ss *sliceOfValues) templateFields() func(name string) string {
 	}
 }
 
-func (ss *sliceOfValues) generateAlias(sb *strings.Builder) {
+func (ss *sliceOfValues) generateAlias(sb *strings.Builder, deprecatedInFavor string) {
 	sb.WriteString(os.Expand(commonSliceAliasTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ss.structName
+		case "extraStructComment":
+			if deprecatedInFavor != "" {
+				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + "." + ss.structName + " instead.\n"
+			}
+			return ""
+		case "extraNewComment":
+			if deprecatedInFavor != "" {
+				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + ".New" + ss.structName + " instead.\n"
+			}
+			return ""
 		default:
 			panic(name)
 		}
