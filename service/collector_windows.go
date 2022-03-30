@@ -93,11 +93,6 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 }
 
 func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
-	// Parse all the flags manually.
-	if err := flags().Parse(os.Args[1:]); err != nil {
-		return err
-	}
-	featuregate.Apply(gatesList)
 	var err error
 	s.col, err = newWithWindowsEventLogCore(s.settings, elog)
 	if err != nil {
@@ -144,7 +139,7 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 
 func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Collector, error) {
 	if set.ConfigProvider == nil {
-		set.ConfigProvider = MustNewDefaultConfigProvider(getConfigFlag(), getSetFlag())
+		set.ConfigProvider = MustNewDefaultConfigProvider(GetConfigFlag(), GetSetFlag())
 	}
 	set.LoggingOptions = append(
 		set.LoggingOptions,

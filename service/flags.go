@@ -41,7 +41,7 @@ func (s *stringArrayValue) String() string {
 	return "[" + strings.Join(s.values, ", ") + "]"
 }
 
-func flags() *flag.FlagSet {
+func Flags() *flag.FlagSet {
 	flagSet := new(flag.FlagSet)
 
 	flagSet.Var(configFlag, "config", "Locations to the config file(s), note that only a"+
@@ -60,10 +60,16 @@ func flags() *flag.FlagSet {
 	return flagSet
 }
 
-func getConfigFlag() []string {
+// ApplyFeatureGateFlags applies feature gates based on the content of the
+// --feature-gate flag.
+func ApplyFeatureGateFlags() {
+	featuregate.Apply(gatesList)
+}
+
+func GetConfigFlag() []string {
 	return configFlag.values
 }
 
-func getSetFlag() []string {
+func GetSetFlag() []string {
 	return setFlag.values
 }
