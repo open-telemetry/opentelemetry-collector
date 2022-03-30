@@ -8,6 +8,8 @@
 
 ### 💡 Enhancements 💡
 
+- Make flag functions public so they can be used by collector builders (#5130)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.48.0 Beta
