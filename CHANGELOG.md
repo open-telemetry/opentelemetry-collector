@@ -26,7 +26,7 @@
   - "instrumentationLibraryMetrics" is now "scopeMetrics"
   - "instrumentationLibrarySpans" is now "scopeSpans"
   - "instrumentationLibrary" is now "scope"
-- AsString for pdata.AttributeValue now returns the JSON-encoded string of floats. (#4934)
+- AsString for pdata.Value now returns the JSON-encoded string of floats. (#4934)
 
 ### 🚩 Deprecations 🚩
 
