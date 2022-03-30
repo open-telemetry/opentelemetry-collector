@@ -191,6 +191,31 @@ func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	assert.EqualValues(t, 0, metrics.DataPointCount())
 }
 
+func TestHistogramWithNilSum(t *testing.T) {
+	metrics := NewMetrics()
+	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	histo := ilm.Metrics().AppendEmpty()
+	histo.SetDataType(MetricDataTypeHistogram)
+	histogramDataPoints := histo.Histogram().DataPoints()
+	histogramDataPoints.AppendEmpty()
+	dest := ilm.Metrics().AppendEmpty()
+	histo.CopyTo(dest)
+	assert.EqualValues(t, histo, dest)
+}
+
+func TestHistogramWithValidSum(t *testing.T) {
+	metrics := NewMetrics()
+	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	histo := ilm.Metrics().AppendEmpty()
+	histo.SetDataType(MetricDataTypeHistogram)
+	histogramDataPoints := histo.Histogram().DataPoints()
+	histogramDataPoints.AppendEmpty()
+	histogramDataPoints.At(0).SetSum(10)
+	dest := ilm.Metrics().AppendEmpty()
+	histo.CopyTo(dest)
+	assert.EqualValues(t, histo, dest)
+}
+
 func TestMetricsMoveTo(t *testing.T) {
 	metrics := NewMetrics()
 	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
