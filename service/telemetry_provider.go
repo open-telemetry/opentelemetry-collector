@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric/nonrecording"
+	"go.opentelemetry.io/otel/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 
@@ -67,7 +67,7 @@ func (t *defaultTelemetryFactory) SetupTelemetry(cfg config.ServiceTelemetry) (s
 
 	otel.SetTracerProvider(set.TracerProvider)
 
-	set.MeterProvider = nonrecording.NewNoopMeterProvider()
+	set.MeterProvider = metric.NewNoopMeterProvider()
 	set.MetricsLevel = cfg.Metrics.Level
 
 	return set, nil
