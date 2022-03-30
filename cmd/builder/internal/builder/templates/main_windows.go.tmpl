@@ -41,6 +41,11 @@ func checkUseInteractiveMode() (bool, error) {
 }
 
 func runService(params service.CollectorSettings) error {
+	// Parse all the flags manually.
+	if err := service.Flags().Parse(os.Args[1:]); err != nil {
+		return err
+	}
+	service.ApplyFeatureGateFlags()
 	// do not need to supply service name when startup is invoked through Service Control Manager directly
 	if err := svc.Run("", service.NewSvcHandler(params)); err != nil {
 		return fmt.Errorf("failed to start collector server: %w", err)

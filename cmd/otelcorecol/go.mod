@@ -5,6 +5,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 go 1.17
 
 require (
+	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.48.0
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
@@ -48,7 +49,6 @@ require (
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/shirou/gopsutil/v3 v3.22.2 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	github.com/spf13/cobra v1.4.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect

@@ -8,32 +8,51 @@ package main
 import (
 	"log"
 
+	"github.com/spf13/cobra"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 func main() {
-	factories, err := components()
-	if err != nil {
-		log.Fatalf("failed to build components: %v", err)
-	}
-
 	info := component.BuildInfo{
 		Command:     "otelcorecol",
 		Description: "Local OpenTelemetry Collector binary, testing only.",
 		Version:     "0.48.0-dev",
 	}
 
-	if err := run(service.CollectorSettings{BuildInfo: info, Factories: factories}); err != nil {
-		log.Fatal(err)
+	if err := run(service.CollectorSettings{BuildInfo: info}); err != nil {
+		log.Fatalf("collector server run finished with error: %v", err)
 	}
 }
 
 func runInteractive(params service.CollectorSettings) error {
-	cmd := service.NewCommand(params)
-	if err := cmd.Execute(); err != nil {
-		log.Fatalf("collector server run finished with error: %v", err)
-	}
+	return newCommand(params).Execute()
+}
 
-	return nil
+func newCommand(params service.CollectorSettings) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          params.BuildInfo.Command,
+		Version:      params.BuildInfo.Version,
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			featuregate.Apply(featuregate.GetFlags())
+			if params.ConfigProvider == nil {
+				params.ConfigProvider = service.MustNewDefaultConfigProvider(service.GetConfigFlag(), service.GetSetFlag())
+			}
+			var err error
+			params.Factories, err = components()
+			if err != nil {
+				return err
+			}
+			col, err := service.New(params)
+			if err != nil {
+				return err
+			}
+			return col.Run(cmd.Context())
+		},
+	}
+	cmd.Flags().AddGoFlagSet(service.Flags())
+	return cmd
 }
