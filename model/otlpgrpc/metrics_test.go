@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
+	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -42,22 +43,71 @@ var _ json.Marshaler = MetricsRequest{}
 
 var metricsRequestJSON = []byte(`
 	{
-	  "resourceMetrics": [
-		{
-          "resource": {},
-		  "scopeMetrics": [
+		"resourceMetrics": [
 			{
-              "scope": {},
-			  "metrics": [
-				{
-				  "name": "test_metric"
-				}
-			  ]
+				"resource": {},
+				"scopeMetrics": [
+					{
+						"scope": {},
+						"metrics": [
+							{
+								"name": "test_metric"
+							}
+						]
+					}
+				]
 			}
-		  ]
-		}
-	  ]
+		]
 	}`)
+
+var metricsTransitionData = [][]byte{
+	[]byte(`
+		{
+		"resourceMetrics": [
+			{
+				"resource": {},
+				"instrumentationLibraryMetrics": [
+					{
+						"instrumentationLibrary": {},
+						"metrics": [
+							{
+								"name": "test_metric"
+							}
+						]
+					}
+				]
+			}
+		]
+		}`),
+	[]byte(`
+		{
+		"resourceMetrics": [
+			{
+				"resource": {},
+				"instrumentationLibraryMetrics": [
+					{
+						"instrumentationLibrary": {},
+						"metrics": [
+							{
+								"name": "test_metric"
+							}
+						]
+					}
+				],
+				"scopeMetrics": [
+					{
+						"scope": {},
+						"metrics": [
+							{
+								"name": "test_metric"
+							}
+						]
+					}
+				]
+			}
+		]
+		}`),
+}
 
 func TestMetricsRequestJSON(t *testing.T) {
 	mr := NewMetricsRequest()
@@ -67,6 +117,18 @@ func TestMetricsRequestJSON(t *testing.T) {
 	got, err := mr.MarshalJSON()
 	assert.NoError(t, err)
 	assert.Equal(t, strings.Join(strings.Fields(string(metricsRequestJSON)), ""), string(got))
+}
+
+func TestMetricsRequestJSONTransition(t *testing.T) {
+	for _, data := range metricsTransitionData {
+		mr := NewMetricsRequest()
+		assert.NoError(t, mr.UnmarshalJSON(data))
+		assert.Equal(t, "test_metric", mr.Metrics().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+
+		got, err := mr.MarshalJSON()
+		assert.NoError(t, err)
+		assert.Equal(t, strings.Join(strings.Fields(string(metricsRequestJSON)), ""), string(got))
+	}
 }
 
 func TestMetricsRequestJSON_Deprecated(t *testing.T) {
@@ -108,6 +170,41 @@ func TestMetricsGrpc(t *testing.T) {
 	logClient := NewMetricsClient(cc)
 
 	resp, err := logClient.Export(context.Background(), generateMetricsRequest())
+	assert.NoError(t, err)
+	assert.Equal(t, NewMetricsResponse(), resp)
+}
+
+func TestMetricsGrpcTransition(t *testing.T) {
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+	RegisterMetricsServer(s, &fakeMetricsServer{t: t})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, s.Serve(lis))
+	}()
+	t.Cleanup(func() {
+		s.Stop()
+		wg.Wait()
+	})
+
+	cc, err := grpc.Dial("bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock())
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, cc.Close())
+	})
+
+	logClient := NewMetricsClient(cc)
+
+	req := generateMetricsRequestWithInstrumentationLibrary()
+	InstrumentationLibraryMetricsToScope(req.orig.ResourceMetrics)
+	resp, err := logClient.Export(context.Background(), req)
 	assert.NoError(t, err)
 	assert.Equal(t, NewMetricsResponse(), resp)
 }
@@ -164,5 +261,15 @@ func generateMetricsRequest() MetricsRequest {
 
 	mr := NewMetricsRequest()
 	mr.SetMetrics(md)
+	return mr
+}
+
+func generateMetricsRequestWithInstrumentationLibrary() MetricsRequest {
+	mr := generateMetricsRequest()
+	mr.orig.ResourceMetrics[0].InstrumentationLibraryMetrics = []*v1.InstrumentationLibraryMetrics{ //nolint:staticcheck // SA1019 ignore this!
+		{
+			Metrics: mr.orig.ResourceMetrics[0].ScopeMetrics[0].Metrics,
+		},
+	}
 	return mr
 }

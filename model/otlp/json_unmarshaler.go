@@ -23,6 +23,7 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
+	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -54,6 +55,7 @@ func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (pdata.Logs, error) {
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), ld); err != nil {
 		return pdata.Logs{}, err
 	}
+	otlpgrpc.InstrumentationLibraryLogsToScope(ld.ResourceLogs)
 	return ipdata.LogsFromOtlp(ld), nil
 }
 
@@ -62,6 +64,7 @@ func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (pdata.Metrics, error) {
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), md); err != nil {
 		return pdata.Metrics{}, err
 	}
+	otlpgrpc.InstrumentationLibraryMetricsToScope(md.ResourceMetrics)
 	return ipdata.MetricsFromOtlp(md), nil
 }
 
@@ -70,5 +73,6 @@ func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (pdata.Traces, error) {
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), td); err != nil {
 		return pdata.Traces{}, err
 	}
+	otlpgrpc.InstrumentationLibrarySpansToScope(td.ResourceSpans)
 	return ipdata.TracesFromOtlp(td), nil
 }

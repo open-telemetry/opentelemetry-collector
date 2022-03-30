@@ -60,10 +60,12 @@
       
 ### 💡 Enhancements 💡
 
+- Add semconv definitions for v1.9.0 (#5090)
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
   instance for consistency with other OneOf field accessors (#5034)
 - Update OTLP to v0.15.0 (#5064)
+- Adding support for transition from older versions of OTLP to OTLP v0.15.0 (#5085)
 - OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
 
 ### 🧰 Bug fixes 🧰
