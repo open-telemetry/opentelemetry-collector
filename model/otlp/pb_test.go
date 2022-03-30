@@ -209,7 +209,7 @@ func generateBenchmarkMetrics(metricsCount int) metrics.Metrics {
 	for i := 0; i < metricsCount; i++ {
 		im := ilm.Metrics().AppendEmpty()
 		im.SetName("test_name")
-		im.SetDataType(pdata.MetricDataTypeSum)
+		im.SetDataType(metrics.MetricDataTypeSum)
 		idp := im.Sum().DataPoints().AppendEmpty()
 		idp.SetStartTimestamp(startTime)
 		idp.SetTimestamp(endTime)
