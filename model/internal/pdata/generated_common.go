@@ -21,58 +21,58 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 )
 
-// InstrumentationLibrary is a message representing the instrumentation library information.
+// Scope is a message representing the instrumentation library information.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewInstrumentationLibrary function to create new instances.
+// Must use NewInstrumentationScope function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type InstrumentationLibrary struct {
+type InstrumentationScope struct {
 	orig *otlpcommon.InstrumentationScope
 }
 
-func newInstrumentationLibrary(orig *otlpcommon.InstrumentationScope) InstrumentationLibrary {
-	return InstrumentationLibrary{orig: orig}
+func newInstrumentationScope(orig *otlpcommon.InstrumentationScope) InstrumentationScope {
+	return InstrumentationScope{orig: orig}
 }
 
-// NewInstrumentationLibrary creates a new empty InstrumentationLibrary.
+// NewInstrumentationScope creates a new empty InstrumentationScope.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewInstrumentationLibrary() InstrumentationLibrary {
-	return newInstrumentationLibrary(&otlpcommon.InstrumentationScope{})
+func NewInstrumentationScope() InstrumentationScope {
+	return newInstrumentationScope(&otlpcommon.InstrumentationScope{})
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
-func (ms InstrumentationLibrary) MoveTo(dest InstrumentationLibrary) {
+func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
 	*dest.orig = *ms.orig
 	*ms.orig = otlpcommon.InstrumentationScope{}
 }
 
-// Name returns the name associated with this InstrumentationLibrary.
-func (ms InstrumentationLibrary) Name() string {
+// Name returns the name associated with this InstrumentationScope.
+func (ms InstrumentationScope) Name() string {
 	return (*ms.orig).Name
 }
 
-// SetName replaces the name associated with this InstrumentationLibrary.
-func (ms InstrumentationLibrary) SetName(v string) {
+// SetName replaces the name associated with this InstrumentationScope.
+func (ms InstrumentationScope) SetName(v string) {
 	(*ms.orig).Name = v
 }
 
-// Version returns the version associated with this InstrumentationLibrary.
-func (ms InstrumentationLibrary) Version() string {
+// Version returns the version associated with this InstrumentationScope.
+func (ms InstrumentationScope) Version() string {
 	return (*ms.orig).Version
 }
 
-// SetVersion replaces the version associated with this InstrumentationLibrary.
-func (ms InstrumentationLibrary) SetVersion(v string) {
+// SetVersion replaces the version associated with this InstrumentationScope.
+func (ms InstrumentationScope) SetVersion(v string) {
 	(*ms.orig).Version = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms InstrumentationLibrary) CopyTo(dest InstrumentationLibrary) {
+func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
 	dest.SetName(ms.Name())
 	dest.SetVersion(ms.Version())
 }

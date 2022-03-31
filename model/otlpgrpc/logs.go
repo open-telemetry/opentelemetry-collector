@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc"
 
 	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
+	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -66,10 +67,7 @@ func (lr LogsResponse) MarshalProto() ([]byte, error) {
 
 // UnmarshalProto unmarshalls LogsResponse from proto bytes.
 func (lr LogsResponse) UnmarshalProto(data []byte) error {
-	if err := lr.orig.Unmarshal(data); err != nil {
-		return err
-	}
-	return nil
+	return lr.orig.Unmarshal(data)
 }
 
 // MarshalJSON marshals LogsResponse into JSON bytes.
@@ -125,6 +123,7 @@ func (lr LogsRequest) UnmarshalProto(data []byte) error {
 	if err := lr.orig.Unmarshal(data); err != nil {
 		return err
 	}
+	InstrumentationLibraryLogsToScope(lr.orig.ResourceLogs)
 	return nil
 }
 
@@ -139,7 +138,11 @@ func (lr LogsRequest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls LogsRequest from JSON bytes.
 func (lr LogsRequest) UnmarshalJSON(data []byte) error {
-	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig)
+	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig); err != nil {
+		return err
+	}
+	InstrumentationLibraryLogsToScope(lr.orig.ResourceLogs)
+	return nil
 }
 
 func (lr LogsRequest) SetLogs(ld pdata.Logs) {
@@ -196,4 +199,30 @@ type rawLogsServer struct {
 func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlog.ExportLogsServiceRequest) (*otlpcollectorlog.ExportLogsServiceResponse, error) {
 	rsp, err := s.srv.Export(ctx, LogsRequest{orig: request})
 	return rsp.orig, err
+}
+
+// InstrumentationLibraryLogsToScope implements the translation of resource logs data
+// following the v0.15.0 upgrade:
+//      receivers SHOULD check if instrumentation_library_logs is set
+//      and scope_logs is not set then the value in instrumentation_library_logs
+//      SHOULD be used instead by converting InstrumentationLibraryLogs into ScopeLogs.
+//      If scope_logs is set then instrumentation_library_logs SHOULD be ignored.
+// https://github.com/open-telemetry/opentelemetry-proto/blob/3c2915c01a9fb37abfc0415ec71247c4978386b0/opentelemetry/proto/logs/v1/logs.proto#L58
+func InstrumentationLibraryLogsToScope(rls []*otlplogs.ResourceLogs) {
+	for _, rl := range rls {
+		if len(rl.ScopeLogs) == 0 {
+			for _, ill := range rl.InstrumentationLibraryLogs {
+				scopeLogs := otlplogs.ScopeLogs{
+					Scope: v1.InstrumentationScope{
+						Name:    ill.InstrumentationLibrary.Name,
+						Version: ill.InstrumentationLibrary.Version,
+					},
+					LogRecords: ill.LogRecords,
+					SchemaUrl:  ill.SchemaUrl,
+				}
+				rl.ScopeLogs = append(rl.ScopeLogs, &scopeLogs)
+			}
+		}
+		rl.InstrumentationLibraryLogs = nil
+	}
 }

@@ -126,3 +126,9 @@ type AttributeValueSlice = pdata.Slice
 
 // Deprecated: [v0.48.0] Use NewSlice instead.
 var NewAttributeValueSlice = pdata.NewSlice
+
+// Deprecated: [v0.48.0] Use InstrumentationScope instead.
+type InstrumentationLibrary = pdata.InstrumentationScope
+
+// Deprecated: [v0.48.0] Use NewInstrumentationScope instead.
+var NewInstrumentationLibrary = pdata.NewInstrumentationScope

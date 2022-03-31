@@ -44,22 +44,22 @@ func GenerateTracesNoLibraries() pdata.Traces {
 	return td
 }
 
-func GenerateTracesOneEmptyInstrumentationLibrary() pdata.Traces {
+func GenerateTracesOneEmptyInstrumentationScope() pdata.Traces {
 	td := GenerateTracesNoLibraries()
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty()
+	td.ResourceSpans().At(0).ScopeSpans().AppendEmpty()
 	return td
 }
 
 func GenerateTracesOneSpan() pdata.Traces {
-	td := GenerateTracesOneEmptyInstrumentationLibrary()
-	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	td := GenerateTracesOneEmptyInstrumentationScope()
+	rs0ils0 := td.ResourceSpans().At(0).ScopeSpans().At(0)
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	return td
 }
 
 func GenerateTracesTwoSpansSameResource() pdata.Traces {
-	td := GenerateTracesOneEmptyInstrumentationLibrary()
-	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	td := GenerateTracesOneEmptyInstrumentationScope()
+	rs0ils0 := td.ResourceSpans().At(0).ScopeSpans().At(0)
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
 	return td
@@ -69,19 +69,19 @@ func GenerateTracesTwoSpansSameResourceOneDifferent() pdata.Traces {
 	td := pdata.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
 	initResource1(rs0.Resource())
-	rs0ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
+	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
 	rs1 := td.ResourceSpans().AppendEmpty()
 	initResource2(rs1.Resource())
-	rs1ils0 := rs1.InstrumentationLibrarySpans().AppendEmpty()
+	rs1ils0 := rs1.ScopeSpans().AppendEmpty()
 	fillSpanThree(rs1ils0.Spans().AppendEmpty())
 	return td
 }
 
 func GenerateTracesManySpansSameResource(spanCount int) pdata.Traces {
-	td := GenerateTracesOneEmptyInstrumentationLibrary()
-	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	td := GenerateTracesOneEmptyInstrumentationScope()
+	rs0ils0 := td.ResourceSpans().At(0).ScopeSpans().At(0)
 	rs0ils0.Spans().EnsureCapacity(spanCount)
 	for i := 0; i < spanCount; i++ {
 		fillSpanOne(rs0ils0.Spans().AppendEmpty())

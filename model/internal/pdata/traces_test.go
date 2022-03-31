@@ -32,7 +32,7 @@ func TestSpanCount(t *testing.T) {
 	rs := traces.ResourceSpans().AppendEmpty()
 	assert.EqualValues(t, 0, traces.SpanCount())
 
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	assert.EqualValues(t, 0, traces.SpanCount())
 
 	ils.Spans().AppendEmpty()
@@ -40,8 +40,8 @@ func TestSpanCount(t *testing.T) {
 
 	rms := traces.ResourceSpans()
 	rms.EnsureCapacity(3)
-	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
-	ilss := rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
+	rms.AppendEmpty().ScopeSpans().AppendEmpty()
+	ilss := rms.AppendEmpty().ScopeSpans().AppendEmpty().Spans()
 	for i := 0; i < 5; i++ {
 		ilss.AppendEmpty()
 	}
