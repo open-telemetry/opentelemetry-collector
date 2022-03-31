@@ -30,8 +30,8 @@ type mapProvider struct{}
 
 // New returns a new config.MapProvider that allows to provide yaml bytes.
 //
-// This Provider supports "yaml" scheme, and can be called with a "location" that follows:
-//   bytes-location   = "yaml:" yaml-bytes
+// This Provider supports "yaml" scheme, and can be called with a "uri" that follows:
+//   bytes-uri = "yaml:" yaml-bytes
 //
 // Examples:
 // `yaml:processors::batch::timeout: 2s`
@@ -40,13 +40,13 @@ func New() config.MapProvider {
 	return &mapProvider{}
 }
 
-func (s *mapProvider) Retrieve(_ context.Context, location string, _ config.WatcherFunc) (config.Retrieved, error) {
-	if !strings.HasPrefix(location, schemeName+":") {
-		return config.Retrieved{}, fmt.Errorf("%v location is not supported by %v provider", location, schemeName)
+func (s *mapProvider) Retrieve(_ context.Context, uri string, _ config.WatcherFunc) (config.Retrieved, error) {
+	if !strings.HasPrefix(uri, schemeName+":") {
+		return config.Retrieved{}, fmt.Errorf("%v uri is not supported by %v provider", uri, schemeName)
 	}
 
 	var data map[string]interface{}
-	if err := yaml.Unmarshal([]byte(location[len(schemeName)+1:]), &data); err != nil {
+	if err := yaml.Unmarshal([]byte(uri[len(schemeName)+1:]), &data); err != nil {
 		return config.Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 

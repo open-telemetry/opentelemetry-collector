@@ -34,12 +34,12 @@ func (textLogsMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 		rl := rls.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
 		buf.logAttributes("Resource labels", rl.Resource().Attributes())
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			buf.logEntry("InstrumentationLibraryLogs #%d", j)
+			buf.logEntry("ScopeLogs #%d", j)
 			ils := ills.At(j)
-			buf.logEntry("InstrumentationLibraryLogs SchemaURL: %s", ils.SchemaUrl())
-			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
+			buf.logEntry("ScopeLogs SchemaURL: %s", ils.SchemaUrl())
+			buf.logInstrumentationScope(ils.Scope())
 
 			logs := ils.LogRecords()
 			for k := 0; k < logs.Len(); k++ {

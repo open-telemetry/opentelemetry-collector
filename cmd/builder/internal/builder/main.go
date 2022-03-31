@@ -112,7 +112,7 @@ func GetModules(cfg Config) error {
 	failReason := "unknown"
 	for i := 1; i <= retries; i++ {
 		// #nosec G204
-		cmd := exec.Command(cfg.Distribution.Go, "mod", "download", "all")
+		cmd := exec.Command(cfg.Distribution.Go, "mod", "download")
 		cmd.Dir = cfg.Distribution.OutputPath
 		if out, err := cmd.CombinedOutput(); err != nil {
 			failReason = fmt.Sprintf("%s. Output: %q", err, out)

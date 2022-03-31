@@ -69,7 +69,7 @@ var traceJSON = []byte(`
 			  }
 			]
 		  },
-		  "instrumentation_library_spans": [
+		  "scope_spans": [
 			{
 			  "spans": [
 				{
@@ -112,7 +112,7 @@ var traceOtlp = func() pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().UpsertString(semconv.AttributeHostName, "testHost")
-	spans := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
+	spans := rs.ScopeSpans().AppendEmpty().Spans()
 	span1 := spans.AppendEmpty()
 	span1.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
 	span1.SetSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x74}))
@@ -365,8 +365,8 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.Er
 	allTraces := sink.AllTraces()
 	if expectedErr == nil {
 		assert.Equal(t, 200, resp.StatusCode)
-		_, err = otlpgrpc.UnmarshalJSONTracesResponse(respBytes)
-		assert.NoError(t, err, "Unable to unmarshal response to TracesResponse")
+		tr := otlpgrpc.NewTracesResponse()
+		assert.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to TracesResponse")
 
 		require.Len(t, allTraces, 1)
 		assert.EqualValues(t, allTraces[0], traceOtlp)
@@ -486,8 +486,9 @@ func testHTTPProtobufRequest(
 
 	if expectedErr == nil {
 		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
-		_, err = otlpgrpc.UnmarshalTracesResponse(respBytes)
-		require.NoError(t, err, "Unable to unmarshal response to TracesResponse")
+
+		tr := otlpgrpc.NewTracesResponse()
+		assert.NoError(t, tr.UnmarshalProto(respBytes), "Unable to unmarshal response to TracesResponse")
 
 		require.Len(t, allTraces, 1)
 		assert.EqualValues(t, allTraces[0], wantData)

@@ -22,7 +22,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
       - name: Cache Go
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-go-modules
         with:

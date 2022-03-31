@@ -70,7 +70,7 @@ func (ld Logs) LogRecordCount() int {
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		ill := rs.InstrumentationLibraryLogs()
+		ill := rs.ScopeLogs()
 		for i := 0; i < ill.Len(); i++ {
 			logs := ill.At(i)
 			logCount += logs.LogRecords().Len()
@@ -117,3 +117,13 @@ const (
 
 // String returns the string representation of the SeverityNumber.
 func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }
+
+// Deprecated: [v0.48.0] Use ScopeLogs instead.
+func (ms ResourceLogs) InstrumentationLibraryLogs() ScopeLogsSlice {
+	return ms.ScopeLogs()
+}
+
+// Deprecated: [v0.48.0] Use Scope instead.
+func (ms ScopeLogs) InstrumentationLibrary() InstrumentationScope {
+	return ms.Scope()
+}

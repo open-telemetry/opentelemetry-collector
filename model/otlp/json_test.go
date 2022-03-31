@@ -26,40 +26,40 @@ var tracesOTLP = func() pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().UpsertString("host.name", "testHost")
-	il := rs.InstrumentationLibrarySpans().AppendEmpty()
-	il.InstrumentationLibrary().SetName("name")
-	il.InstrumentationLibrary().SetVersion("version")
+	il := rs.ScopeSpans().AppendEmpty()
+	il.Scope().SetName("name")
+	il.Scope().SetVersion("version")
 	il.Spans().AppendEmpty().SetName("testSpan")
 	return td
 }()
 
-var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibrarySpans":[{"instrumentationLibrary":{"name":"name","version":"version"},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan","status":{}}]}]}]}`
+var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeSpans":[{"scope":{"name":"name","version":"version"},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan","status":{}}]}]}]}`
 
 var metricsOTLP = func() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().UpsertString("host.name", "testHost")
-	il := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	il.InstrumentationLibrary().SetName("name")
-	il.InstrumentationLibrary().SetVersion("version")
+	il := rm.ScopeMetrics().AppendEmpty()
+	il.Scope().SetName("name")
+	il.Scope().SetVersion("version")
 	il.Metrics().AppendEmpty().SetName("testMetric")
 	return md
 }()
 
-var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibraryMetrics":[{"instrumentationLibrary":{"name":"name","version":"version"},"metrics":[{"name":"testMetric"}]}]}]}`
+var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeMetrics":[{"scope":{"name":"name","version":"version"},"metrics":[{"name":"testMetric"}]}]}]}`
 
 var logsOTLP = func() pdata.Logs {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().UpsertString("host.name", "testHost")
-	il := rl.InstrumentationLibraryLogs().AppendEmpty()
-	il.InstrumentationLibrary().SetName("name")
-	il.InstrumentationLibrary().SetVersion("version")
+	il := rl.ScopeLogs().AppendEmpty()
+	il.Scope().SetName("name")
+	il.Scope().SetVersion("version")
 	il.LogRecords().AppendEmpty().SetSeverityText("Error")
 	return ld
 }()
 
-var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"instrumentationLibraryLogs":[{"instrumentationLibrary":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":""}]}]}]}`
+var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":""}]}]}]}`
 
 func TestTracesJSON(t *testing.T) {
 	encoder := NewJSONTracesMarshaler()

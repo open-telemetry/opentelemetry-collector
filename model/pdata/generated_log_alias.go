@@ -31,17 +31,17 @@ type ResourceLogs = pdata.ResourceLogs
 // NewResourceLogs is an alias for a function to create a new empty ResourceLogs.
 var NewResourceLogs = pdata.NewResourceLogs
 
-// InstrumentationLibraryLogsSlice is an alias for pdata.InstrumentationLibraryLogsSlice struct.
-type InstrumentationLibraryLogsSlice = pdata.InstrumentationLibraryLogsSlice
+// ScopeLogsSlice is an alias for pdata.ScopeLogsSlice struct.
+type ScopeLogsSlice = pdata.ScopeLogsSlice
 
-// NewInstrumentationLibraryLogsSlice is an alias for a function to create InstrumentationLibraryLogsSlice.
-var NewInstrumentationLibraryLogsSlice = pdata.NewInstrumentationLibraryLogsSlice
+// NewScopeLogsSlice is an alias for a function to create ScopeLogsSlice.
+var NewScopeLogsSlice = pdata.NewScopeLogsSlice
 
-// InstrumentationLibraryLogs is an alias for pdata.InstrumentationLibraryLogs struct.
-type InstrumentationLibraryLogs = pdata.InstrumentationLibraryLogs
+// ScopeLogs is an alias for pdata.ScopeLogs struct.
+type ScopeLogs = pdata.ScopeLogs
 
-// NewInstrumentationLibraryLogs is an alias for a function to create a new empty InstrumentationLibraryLogs.
-var NewInstrumentationLibraryLogs = pdata.NewInstrumentationLibraryLogs
+// NewScopeLogs is an alias for a function to create a new empty ScopeLogs.
+var NewScopeLogs = pdata.NewScopeLogs
 
 // LogRecordSlice is an alias for pdata.LogRecordSlice struct.
 type LogRecordSlice = pdata.LogRecordSlice

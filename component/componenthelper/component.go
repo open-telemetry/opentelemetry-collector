@@ -18,19 +18,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Option represents the possible options for New.
+// Deprecated: [v0.48.0] will be removed.
 type Option func(*baseComponent)
 
-// WithStart overrides the default `Start` function for a component.Component.
-// The default always returns nil.
+// Deprecated: [v0.48.0] embed component.StartFunc directly.
 func WithStart(startFunc component.StartFunc) Option {
 	return func(o *baseComponent) {
 		o.StartFunc = startFunc
 	}
 }
 
-// WithShutdown overrides the default `Shutdown` function for a component.Component.
-// The default always returns nil.
+// Deprecated: [v0.48.0] embed component.ShutdownFunc directly.
 func WithShutdown(shutdownFunc component.ShutdownFunc) Option {
 	return func(o *baseComponent) {
 		o.ShutdownFunc = shutdownFunc
@@ -42,7 +40,7 @@ type baseComponent struct {
 	component.ShutdownFunc
 }
 
-// New returns a component.Component configured with the provided options.
+// Deprecated: [v0.48.0] embed component.StartFunc and component.ShutdownFunc directly.
 func New(options ...Option) component.Component {
 	bc := &baseComponent{}
 

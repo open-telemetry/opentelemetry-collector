@@ -31,8 +31,8 @@ var logFile = &File{
 	structs: []baseStruct{
 		resourceLogsSlice,
 		resourceLogs,
-		instrumentationLibraryLogsSlice,
-		instrumentationLibraryLogs,
+		scopeLogsSlice,
+		scopeLogs,
 		logSlice,
 		logRecord,
 	},
@@ -51,24 +51,24 @@ var resourceLogs = &messageValueStruct{
 		resourceField,
 		schemaURLField,
 		&sliceField{
-			fieldName:       "InstrumentationLibraryLogs",
-			originFieldName: "InstrumentationLibraryLogs",
-			returnSlice:     instrumentationLibraryLogsSlice,
+			fieldName:       "ScopeLogs",
+			originFieldName: "ScopeLogs",
+			returnSlice:     scopeLogsSlice,
 		},
 	},
 }
 
-var instrumentationLibraryLogsSlice = &sliceOfPtrs{
-	structName: "InstrumentationLibraryLogsSlice",
-	element:    instrumentationLibraryLogs,
+var scopeLogsSlice = &sliceOfPtrs{
+	structName: "ScopeLogsSlice",
+	element:    scopeLogs,
 }
 
-var instrumentationLibraryLogs = &messageValueStruct{
-	structName:     "InstrumentationLibraryLogs",
-	description:    "// InstrumentationLibraryLogs is a collection of logs from a LibraryInstrumentation.",
-	originFullName: "otlplogs.InstrumentationLibraryLogs",
+var scopeLogs = &messageValueStruct{
+	structName:     "ScopeLogs",
+	description:    "// ScopeLogs is a collection of logs from a LibraryInstrumentation.",
+	originFullName: "otlplogs.ScopeLogs",
 	fields: []baseField{
-		instrumentationLibraryField,
+		scopeField,
 		schemaURLField,
 		&sliceField{
 			fieldName:       "LogRecords",
