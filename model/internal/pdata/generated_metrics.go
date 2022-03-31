@@ -1485,7 +1485,9 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
-	dest.SetSum(ms.Sum())
+	if ms.HasSum() {
+		dest.SetSum(ms.Sum())
+	}
 
 	dest.SetBucketCounts(ms.BucketCounts())
 	dest.SetExplicitBounds(ms.ExplicitBounds())

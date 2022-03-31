@@ -4,6 +4,16 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.48.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated `consumerhelper` package (#5028)
 - Remove pdata `InternalRep` deprecated funcs (#5018)
 - Remove service/defaultcomponents deprecated package (#5019)
@@ -16,24 +26,25 @@
   - "instrumentationLibraryMetrics" is now "scopeMetrics"
   - "instrumentationLibrarySpans" is now "scopeSpans"
   - "instrumentationLibrary" is now "scope"
+- AsString for pdata.Value now returns the JSON-encoded string of floats. (#4934)
 
 ### 🚩 Deprecations 🚩
 
 - Move MapProvider to config, split providers in their own package (#5030)
-- API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4975)
+- API related to `pdata.AttributeValue` is deprecated in favor of `pdata.Value` (#4978)
   - `pdata.AttributeValue` struct is deprecated in favor of `pdata.Value`
   - `pdata.AttributeValueType` type is deprecated in favor of `pdata.ValueType`
   - `pdata.AttributeValueType...` constants are deprecated in favor of `pdata.ValueType...`
   - `pdata.NewAttributeValue...` funcs are deprecated in favor of `pdata.NewValue...`
 - Deprecate featureflags.FlagValue.SetSlice, unnecessary public (#5053)
-- Remove "Attribute" part from common pdata collections names (#4999)
+- Remove "Attribute" part from common pdata collections names (#5001)
   - Deprecate `pdata.AttributeMap` struct in favor of `pdata.Map`
   - Deprecate `pdata.NewAttributeMap` func in favor of `pdata.NewMap`
   - Deprecate `pdata.NewAttributeMapFromMap` func in favor of `pdata.NewMapFromRaw`
   - Deprecate `pdata.AttributeValueSlice` struct in favor of `pdata.Slice`
   - Deprecate `pdata.NewAttributeValueSlice` func in favor of `pdata.NewSlice`
 - Deprecate LogRecord.Name(), it was deprecated in the data model (#5054)
-- Rename `Array` type of `pdata.Value` to `Slice` (#5067)
+- Rename `Array` type of `pdata.Value` to `Slice` (#5066)
   - Deprecate `pdata.AttributeValueTypeArray` type in favor of `pdata.ValueTypeSlice`
   - Deprecate `pdata.NewAttributeValueArray` func in favor of `pdata.NewValueSlice`
 - Deprecate global flag in `featuregates` (#5060)
@@ -63,7 +74,7 @@
 - Add semconv definitions for v1.9.0 (#5090)
 - Change outcome of `pdata.Metric.<Gauge|Sum|Histogram|ExponentialHistogram>()` functions misuse.
   In case of type mismatch, they don't panic right away but return an invalid zero-initialized
-  instance for consistency with other OneOf field accessors (#5034)
+  instance for consistency with other OneOf field accessors (#5035)
 - Update OTLP to v0.15.0 (#5064)
 - Adding support for transition from older versions of OTLP to OTLP v0.15.0 (#5085)
 - OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
@@ -80,7 +91,6 @@
 
 - Remove `Type` funcs in pdata (#4933)
 - Remove all deprecated funcs/structs from v0.46.0 (#4995)
-- AsString for pdata.AttributeValue now returns the JSON-encoded string of floats. (#4934)
 
 ### 🚩 Deprecations 🚩
 
