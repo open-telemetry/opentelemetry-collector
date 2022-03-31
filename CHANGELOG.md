@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated structs/funcs from previous versions (#5131)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
