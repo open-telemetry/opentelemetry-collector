@@ -10,6 +10,8 @@
 
 ### 💡 Enhancements 💡
 
+- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.48.0 Beta
