@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated structs/funcs from previous versions (#5131)
+- Do not set TraceProvider to global otel (#5138)
 
 ### 🚩 Deprecations 🚩
 
