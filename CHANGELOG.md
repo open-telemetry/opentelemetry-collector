@@ -8,6 +8,8 @@
 
 ### 💡 Enhancements 💡
 
+- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.48.0 Beta
@@ -77,7 +79,6 @@
   instance for consistency with other OneOf field accessors (#5035)
 - Update OTLP to v0.15.0 (#5064)
 - Adding support for transition from older versions of OTLP to OTLP v0.15.0 (#5085)
-- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
 
 ### 🧰 Bug fixes 🧰
 
