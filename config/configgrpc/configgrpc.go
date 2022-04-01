@@ -244,9 +244,16 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host, settings compo
 		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
 	}
 
+	otelOpts := []otelgrpc.Option{
+		otelgrpc.WithTracerProvider(settings.TracerProvider),
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
+		// otelgrpc.WithMeterProvider(settings.MeterProvider),
+		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+	}
+
 	// Enable OpenTelemetry observability plugin.
-	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor(otelgrpc.WithTracerProvider(settings.TracerProvider))))
-	opts = append(opts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor(otelgrpc.WithTracerProvider(settings.TracerProvider))))
+	opts = append(opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor(otelOpts...)))
+	opts = append(opts, grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor(otelOpts...)))
 
 	return opts, nil
 }
@@ -338,20 +345,17 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 		})
 	}
 
+	otelOpts := []otelgrpc.Option{
+		otelgrpc.WithTracerProvider(settings.TracerProvider),
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
+		// otelgrpc.WithMeterProvider(settings.MeterProvider),
+		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
+	}
+
 	// Enable OpenTelemetry observability plugin.
 	// TODO: Pass construct settings to have access to Tracer.
-	uInterceptors = append(uInterceptors, otelgrpc.UnaryServerInterceptor(
-		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
-		// otelgrpc.WithMeterProvider(settings.MeterProvider),
-		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-	))
-	sInterceptors = append(sInterceptors, otelgrpc.StreamServerInterceptor(
-		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
-		// otelgrpc.WithMeterProvider(settings.MeterProvider),
-		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-	))
+	uInterceptors = append(uInterceptors, otelgrpc.UnaryServerInterceptor(otelOpts...))
+	sInterceptors = append(sInterceptors, otelgrpc.StreamServerInterceptor(otelOpts...))
 
 	uInterceptors = append(uInterceptors, enhanceWithClientInformation(gss.IncludeMetadata))
 	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
