@@ -15,7 +15,10 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/internal/extensions"
@@ -24,8 +27,10 @@ import (
 var _ component.Host = (*serviceHost)(nil)
 
 type serviceHost struct {
-	asyncErrorChannel chan error
-	factories         component.Factories
+	asyncErrorChannel   chan error
+	factories           component.Factories
+	telemetry           component.TelemetrySettings
+	statusNotifications *status.Notifications
 
 	builtExporters  builder.Exporters
 	builtReceivers  builder.Receivers
@@ -60,4 +65,14 @@ func (host *serviceHost) GetExtensions() map[config.ComponentID]component.Extens
 
 func (host *serviceHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return host.builtExporters.ToMapByDataType()
+}
+
+func (host *serviceHost) RegisterStatusListener(options ...status.ListenerOption) status.UnregisterFunc {
+	return host.statusNotifications.RegisterListener(options...)
+}
+
+func (host *serviceHost) ReportStatus(eventType status.EventType, componentID config.ComponentID, options ...status.StatusEventOption) {
+	if err := host.statusNotifications.ReportStatus(eventType, componentID, options...); err != nil {
+		host.telemetry.Logger.Warn("Service failed to report status", zap.Error(err))
+	}
 }

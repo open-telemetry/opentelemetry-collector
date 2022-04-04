@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -24,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
@@ -88,6 +90,61 @@ func TestService_GetExporters(t *testing.T) {
 	assert.Contains(t, expMap[config.MetricsDataType], config.NewComponentID("nop"))
 	assert.Len(t, expMap[config.LogsDataType], 1)
 	assert.Contains(t, expMap[config.LogsDataType], config.NewComponentID("nop"))
+}
+
+func TestService_ReportStatus(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	srv := createExampleService(t, factories)
+	host := srv.host
+
+	var readyHandlerCalled, notReadyHandlerCalled, statusEventHandlerCalled bool
+
+	var errorEvent status.StatusEvent
+
+	statusEventHandler := func(ev status.StatusEvent) error {
+		errorEvent = ev
+		statusEventHandlerCalled = true
+		return nil
+	}
+
+	readyHandler := func() error {
+		readyHandlerCalled = true
+		return nil
+	}
+
+	notReadyHandler := func() error {
+		notReadyHandlerCalled = true
+		return nil
+	}
+
+	unregister := host.RegisterStatusListener(
+		status.WithStatusEventHandler(statusEventHandler),
+		status.WithPipelineReadyHandler(readyHandler),
+		status.WithPipelineNotReadyHandler(notReadyHandler),
+	)
+
+	assert.False(t, statusEventHandlerCalled)
+	assert.False(t, readyHandlerCalled)
+	assert.False(t, notReadyHandlerCalled)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	assert.True(t, readyHandlerCalled)
+
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	expectedComponentID := config.NewComponentID("nop")
+	expectedError := errors.New("an error")
+
+	host.ReportStatus(status.EventOK, expectedComponentID, status.WithError(expectedError))
+
+	assert.True(t, statusEventHandlerCalled)
+	assert.Equal(t, expectedComponentID, errorEvent.ComponentID)
+	assert.Equal(t, expectedError, errorEvent.Error)
+	assert.NotNil(t, errorEvent.Timestamp)
+	assert.NoError(t, unregister())
 }
 
 func createExampleService(t *testing.T, factories component.Factories) *service {

@@ -15,6 +15,7 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
+	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -63,4 +64,8 @@ type Host interface {
 	// GetExporters can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends.
 	GetExporters() map[config.DataType]map[config.ComponentID]Exporter
+
+	ReportStatus(eventType status.EventType, componentID config.ComponentID, options ...status.StatusEventOption)
+
+	RegisterStatusListener(options ...status.ListenerOption) status.UnregisterFunc
 }

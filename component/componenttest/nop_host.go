@@ -16,6 +16,7 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -38,5 +39,12 @@ func (nh *nopHost) GetExtensions() map[config.ComponentID]component.Extension {
 }
 
 func (nh *nopHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
+	return nil
+}
+
+func (nh *nopHost) ReportStatus(eventType status.EventType, componentID config.ComponentID, options ...status.StatusEventOption) {
+}
+
+func (nh *nopHost) RegisterStatusListener(options ...status.ListenerOption) status.UnregisterFunc {
 	return nil
 }
