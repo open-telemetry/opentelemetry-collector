@@ -7,6 +7,7 @@
 - Remove deprecated structs/funcs from previous versions (#5131)
 - Do not set TraceProvider to global otel (#5138)
 - Remove deprecated funcs from otlpgrpc (#5144)
+- Add Scheme to MapProvider interface (#5068)
 
 ### 🚩 Deprecations 🚩
 
