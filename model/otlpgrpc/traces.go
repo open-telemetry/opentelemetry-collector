@@ -37,25 +37,6 @@ func NewTracesResponse() TracesResponse {
 	return TracesResponse{orig: &otlpcollectortrace.ExportTraceServiceResponse{}}
 }
 
-// Deprecated: [v0.48.0] use TracesResponse.UnmarshalProto.
-func UnmarshalTracesResponse(data []byte) (TracesResponse, error) {
-	tr := NewTracesResponse()
-	err := tr.UnmarshalProto(data)
-	return tr, err
-}
-
-// Deprecated: [v0.48.0] use TracesResponse.UnmarshalJSON.
-func UnmarshalJSONTracesResponse(data []byte) (TracesResponse, error) {
-	tr := NewTracesResponse()
-	err := tr.UnmarshalJSON(data)
-	return tr, err
-}
-
-// Deprecated: [v0.48.0] use MarshalProto.
-func (tr TracesResponse) Marshal() ([]byte, error) {
-	return tr.MarshalProto()
-}
-
 // MarshalProto marshals TracesResponse into proto bytes.
 func (tr TracesResponse) MarshalProto() ([]byte, error) {
 	return tr.orig.Marshal()
@@ -88,25 +69,6 @@ type TracesRequest struct {
 // NewTracesRequest returns an empty TracesRequest.
 func NewTracesRequest() TracesRequest {
 	return TracesRequest{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
-}
-
-// Deprecated: [v0.48.0] use TracesRequest.UnmarshalProto.
-func UnmarshalTracesRequest(data []byte) (TracesRequest, error) {
-	tr := NewTracesRequest()
-	err := tr.UnmarshalProto(data)
-	return tr, err
-}
-
-// Deprecated: [v0.48.0] use TracesRequest.UnmarshalJSON.
-func UnmarshalJSONTracesRequest(data []byte) (TracesRequest, error) {
-	tr := NewTracesRequest()
-	err := tr.UnmarshalJSON(data)
-	return tr, err
-}
-
-// Deprecated: [v0.48.0] use MarshalProto.
-func (tr TracesRequest) Marshal() ([]byte, error) {
-	return tr.MarshalProto()
 }
 
 // MarshalProto marshals TracesRequest into proto bytes.
