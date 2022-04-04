@@ -49,9 +49,9 @@ func (b *dataBuffer) logAttributes(label string, m pdata.Map) {
 	})
 }
 
-func (b *dataBuffer) logInstrumentationLibrary(il pdata.InstrumentationLibrary) {
+func (b *dataBuffer) logInstrumentationScope(il pdata.InstrumentationScope) {
 	b.logEntry(
-		"InstrumentationLibrary %s %s",
+		"InstrumentationScope %s %s",
 		il.Name(),
 		il.Version())
 }
@@ -263,7 +263,7 @@ func attributeValueToString(v pdata.Value) string {
 		return strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
 	case pdata.ValueTypeInt:
 		return strconv.FormatInt(v.IntVal(), 10)
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		return sliceToString(v.SliceVal())
 	case pdata.ValueTypeMap:
 		return mapToString(v.MapVal())

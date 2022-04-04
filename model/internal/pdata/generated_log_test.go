@@ -163,59 +163,59 @@ func TestResourceLogs_SchemaUrl(t *testing.T) {
 	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
-func TestResourceLogs_InstrumentationLibraryLogs(t *testing.T) {
+func TestResourceLogs_ScopeLogs(t *testing.T) {
 	ms := NewResourceLogs()
-	assert.EqualValues(t, NewInstrumentationLibraryLogsSlice(), ms.InstrumentationLibraryLogs())
-	fillTestInstrumentationLibraryLogsSlice(ms.InstrumentationLibraryLogs())
-	testValInstrumentationLibraryLogs := generateTestInstrumentationLibraryLogsSlice()
-	assert.EqualValues(t, testValInstrumentationLibraryLogs, ms.InstrumentationLibraryLogs())
+	assert.EqualValues(t, NewScopeLogsSlice(), ms.ScopeLogs())
+	fillTestScopeLogsSlice(ms.ScopeLogs())
+	testValScopeLogs := generateTestScopeLogsSlice()
+	assert.EqualValues(t, testValScopeLogs, ms.ScopeLogs())
 }
 
-func TestInstrumentationLibraryLogsSlice(t *testing.T) {
-	es := NewInstrumentationLibraryLogsSlice()
+func TestScopeLogsSlice(t *testing.T) {
+	es := NewScopeLogsSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newInstrumentationLibraryLogsSlice(&[]*otlplogs.InstrumentationLibraryLogs{})
+	es = newScopeLogsSlice(&[]*otlplogs.ScopeLogs{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newInstrumentationLibraryLogs(&otlplogs.InstrumentationLibraryLogs{})
-	testVal := generateTestInstrumentationLibraryLogs()
+	emptyVal := newScopeLogs(&otlplogs.ScopeLogs{})
+	testVal := generateTestScopeLogs()
 	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.EqualValues(t, emptyVal, el)
-		fillTestInstrumentationLibraryLogs(el)
+		fillTestScopeLogs(el)
 		assert.EqualValues(t, testVal, el)
 	}
 }
 
-func TestInstrumentationLibraryLogsSlice_CopyTo(t *testing.T) {
-	dest := NewInstrumentationLibraryLogsSlice()
+func TestScopeLogsSlice_CopyTo(t *testing.T) {
+	dest := NewScopeLogsSlice()
 	// Test CopyTo to empty
-	NewInstrumentationLibraryLogsSlice().CopyTo(dest)
-	assert.EqualValues(t, NewInstrumentationLibraryLogsSlice(), dest)
+	NewScopeLogsSlice().CopyTo(dest)
+	assert.EqualValues(t, NewScopeLogsSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestInstrumentationLibraryLogsSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+	generateTestScopeLogsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestScopeLogsSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestInstrumentationLibraryLogsSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+	generateTestScopeLogsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestScopeLogsSlice(), dest)
 }
 
-func TestInstrumentationLibraryLogsSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestInstrumentationLibraryLogsSlice()
+func TestScopeLogsSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestScopeLogsSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool)
+	expectedEs := make(map[*otlplogs.ScopeLogs]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlplogs.InstrumentationLibraryLogs]bool, es.Len())
+	foundEs := make(map[*otlplogs.ScopeLogs]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -224,38 +224,38 @@ func TestInstrumentationLibraryLogsSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlplogs.InstrumentationLibraryLogs]bool, oldLen)
+	expectedEs = make(map[*otlplogs.ScopeLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlplogs.InstrumentationLibraryLogs]bool, oldLen)
+	foundEs = make(map[*otlplogs.ScopeLogs]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
-func TestInstrumentationLibraryLogsSlice_MoveAndAppendTo(t *testing.T) {
+func TestScopeLogsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestInstrumentationLibraryLogsSlice()
-	dest := NewInstrumentationLibraryLogsSlice()
-	src := generateTestInstrumentationLibraryLogsSlice()
+	expectedSlice := generateTestScopeLogsSlice()
+	dest := NewScopeLogsSlice()
+	src := generateTestScopeLogsSlice()
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+	assert.EqualValues(t, generateTestScopeLogsSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryLogsSlice(), dest)
+	assert.EqualValues(t, generateTestScopeLogsSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	generateTestInstrumentationLibraryLogsSlice().MoveAndAppendTo(dest)
+	generateTestScopeLogsSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -263,54 +263,54 @@ func TestInstrumentationLibraryLogsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestInstrumentationLibraryLogsSlice_RemoveIf(t *testing.T) {
+func TestScopeLogsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewInstrumentationLibraryLogsSlice()
-	emptySlice.RemoveIf(func(el InstrumentationLibraryLogs) bool {
+	emptySlice := NewScopeLogsSlice()
+	emptySlice.RemoveIf(func(el ScopeLogs) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := generateTestInstrumentationLibraryLogsSlice()
+	filtered := generateTestScopeLogsSlice()
 	pos := 0
-	filtered.RemoveIf(func(el InstrumentationLibraryLogs) bool {
+	filtered.RemoveIf(func(el ScopeLogs) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
 
-func TestInstrumentationLibraryLogs_MoveTo(t *testing.T) {
-	ms := generateTestInstrumentationLibraryLogs()
-	dest := NewInstrumentationLibraryLogs()
+func TestScopeLogs_MoveTo(t *testing.T) {
+	ms := generateTestScopeLogs()
+	dest := NewScopeLogs()
 	ms.MoveTo(dest)
-	assert.EqualValues(t, NewInstrumentationLibraryLogs(), ms)
-	assert.EqualValues(t, generateTestInstrumentationLibraryLogs(), dest)
+	assert.EqualValues(t, NewScopeLogs(), ms)
+	assert.EqualValues(t, generateTestScopeLogs(), dest)
 }
 
-func TestInstrumentationLibraryLogs_CopyTo(t *testing.T) {
-	ms := NewInstrumentationLibraryLogs()
-	generateTestInstrumentationLibraryLogs().CopyTo(ms)
-	assert.EqualValues(t, generateTestInstrumentationLibraryLogs(), ms)
+func TestScopeLogs_CopyTo(t *testing.T) {
+	ms := NewScopeLogs()
+	generateTestScopeLogs().CopyTo(ms)
+	assert.EqualValues(t, generateTestScopeLogs(), ms)
 }
 
-func TestInstrumentationLibraryLogs_InstrumentationLibrary(t *testing.T) {
-	ms := NewInstrumentationLibraryLogs()
-	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
-	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
+func TestScopeLogs_Scope(t *testing.T) {
+	ms := NewScopeLogs()
+	fillTestInstrumentationScope(ms.Scope())
+	assert.EqualValues(t, generateTestInstrumentationScope(), ms.Scope())
 }
 
-func TestInstrumentationLibraryLogs_SchemaUrl(t *testing.T) {
-	ms := NewInstrumentationLibraryLogs()
+func TestScopeLogs_SchemaUrl(t *testing.T) {
+	ms := NewScopeLogs()
 	assert.EqualValues(t, "", ms.SchemaUrl())
 	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
 	ms.SetSchemaUrl(testValSchemaUrl)
 	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
-func TestInstrumentationLibraryLogs_LogRecords(t *testing.T) {
-	ms := NewInstrumentationLibraryLogs()
+func TestScopeLogs_LogRecords(t *testing.T) {
+	ms := NewScopeLogs()
 	assert.EqualValues(t, NewLogRecordSlice(), ms.LogRecords())
 	fillTestLogRecordSlice(ms.LogRecords())
 	testValLogRecords := generateTestLogRecordSlice()
@@ -542,31 +542,31 @@ func generateTestResourceLogs() ResourceLogs {
 func fillTestResourceLogs(tv ResourceLogs) {
 	fillTestResource(tv.Resource())
 	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	fillTestInstrumentationLibraryLogsSlice(tv.InstrumentationLibraryLogs())
+	fillTestScopeLogsSlice(tv.ScopeLogs())
 }
 
-func generateTestInstrumentationLibraryLogsSlice() InstrumentationLibraryLogsSlice {
-	tv := NewInstrumentationLibraryLogsSlice()
-	fillTestInstrumentationLibraryLogsSlice(tv)
+func generateTestScopeLogsSlice() ScopeLogsSlice {
+	tv := NewScopeLogsSlice()
+	fillTestScopeLogsSlice(tv)
 	return tv
 }
 
-func fillTestInstrumentationLibraryLogsSlice(tv InstrumentationLibraryLogsSlice) {
+func fillTestScopeLogsSlice(tv ScopeLogsSlice) {
 	l := 7
 	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
-		fillTestInstrumentationLibraryLogs(tv.AppendEmpty())
+		fillTestScopeLogs(tv.AppendEmpty())
 	}
 }
 
-func generateTestInstrumentationLibraryLogs() InstrumentationLibraryLogs {
-	tv := NewInstrumentationLibraryLogs()
-	fillTestInstrumentationLibraryLogs(tv)
+func generateTestScopeLogs() ScopeLogs {
+	tv := NewScopeLogs()
+	fillTestScopeLogs(tv)
 	return tv
 }
 
-func fillTestInstrumentationLibraryLogs(tv InstrumentationLibraryLogs) {
-	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
+func fillTestScopeLogs(tv ScopeLogs) {
+	fillTestInstrumentationScope(tv.Scope())
 	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestLogRecordSlice(tv.LogRecords())
 }

@@ -76,7 +76,7 @@ func TestAttributeValueType(t *testing.T) {
 	assert.EqualValues(t, "INT", ValueTypeInt.String())
 	assert.EqualValues(t, "DOUBLE", ValueTypeDouble.String())
 	assert.EqualValues(t, "MAP", ValueTypeMap.String())
-	assert.EqualValues(t, "ARRAY", ValueTypeArray.String())
+	assert.EqualValues(t, "SLICE", ValueTypeSlice.String())
 	assert.EqualValues(t, "BYTES", ValueTypeBytes.String())
 }
 
@@ -234,12 +234,12 @@ func TestAttributeValueEqual(t *testing.T) {
 	av1 = NewValueBytes([]byte{1, 2, 3})
 	assert.True(t, av1.Equal(av2))
 
-	av1 = NewValueArray()
+	av1 = NewValueSlice()
 	av1.SliceVal().AppendEmpty().SetIntVal(123)
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
-	av2 = NewValueArray()
+	av2 = NewValueSlice()
 	av2.SliceVal().AppendEmpty().SetDoubleVal(123)
 	assert.False(t, av1.Equal(av2))
 
@@ -976,9 +976,9 @@ func generateTestBytesMap() Map {
 	})
 }
 
-func TestAttributeValueArray(t *testing.T) {
-	a1 := NewValueArray()
-	assert.EqualValues(t, ValueTypeArray, a1.Type())
+func TestAttributeValueSlice(t *testing.T) {
+	a1 := NewValueSlice()
+	assert.EqualValues(t, ValueTypeSlice, a1.Type())
 	assert.EqualValues(t, NewSlice(), a1.SliceVal())
 	assert.EqualValues(t, 0, a1.SliceVal().Len())
 
@@ -986,7 +986,7 @@ func TestAttributeValueArray(t *testing.T) {
 	assert.EqualValues(t, 1, a1.SliceVal().Len())
 	assert.EqualValues(t, NewValueDouble(123), a1.SliceVal().At(0))
 	// Create a second array.
-	a2 := NewValueArray()
+	a2 := NewValueSlice()
 	assert.EqualValues(t, 0, a2.SliceVal().Len())
 
 	a2.SliceVal().AppendEmpty().SetStringVal("somestr")
@@ -1001,7 +1001,7 @@ func TestAttributeValueArray(t *testing.T) {
 
 	// Check that the array was correctly inserted.
 	childArray := a1.SliceVal().At(1)
-	assert.EqualValues(t, ValueTypeArray, childArray.Type())
+	assert.EqualValues(t, ValueTypeSlice, childArray.Type())
 	assert.EqualValues(t, 1, childArray.SliceVal().Len())
 
 	v := childArray.SliceVal().At(0)
@@ -1084,12 +1084,12 @@ func TestAsString(t *testing.T) {
 		},
 		{
 			name:     "empty_array",
-			input:    NewValueArray(),
+			input:    NewValueSlice(),
 			expected: "[]",
 		},
 		{
 			name:     "simple_array",
-			input:    simpleValueArray(),
+			input:    simpleValueSlice(),
 			expected: "[\"strVal\",7,18.6,false,null]",
 		},
 		{
@@ -1254,7 +1254,7 @@ func TestNewValueFromRaw(t *testing.T) {
 			name:  "slice",
 			input: []interface{}{"v1", "v2"},
 			expected: (func() Value {
-				s := NewValueArray()
+				s := NewValueSlice()
 				newSliceFromRaw([]interface{}{"v1", "v2"}).CopyTo(s.SliceVal())
 				return s
 			})(),
@@ -1281,8 +1281,8 @@ func simpleValueMap() Value {
 	return ret
 }
 
-func simpleValueArray() Value {
-	ret := NewValueArray()
+func simpleValueSlice() Value {
+	ret := NewValueSlice()
 	attrArr := ret.SliceVal()
 	attrArr.AppendEmpty().SetStringVal("strVal")
 	attrArr.AppendEmpty().SetIntVal(7)
@@ -1300,7 +1300,7 @@ func constructTestAttributeSubmap() Value {
 }
 
 func constructTestAttributeSubarray() Value {
-	value := NewValueArray()
+	value := NewValueSlice()
 	value.SliceVal().AppendEmpty().SetStringVal("strOne")
 	value.SliceVal().AppendEmpty().SetStringVal("strTwo")
 	return value
@@ -1315,8 +1315,8 @@ func BenchmarkAttributeValueMapAccessor(b *testing.B) {
 	}
 }
 
-func BenchmarkAttributeValueArrayAccessor(b *testing.B) {
-	val := simpleValueArray()
+func BenchmarkAttributeValueSliceAccessor(b *testing.B) {
+	val := simpleValueSlice()
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

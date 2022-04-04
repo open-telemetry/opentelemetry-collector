@@ -27,8 +27,8 @@ import (
 	"syscall"
 
 	"go.opentelemetry.io/contrib/zpages"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/nonrecording"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
@@ -230,11 +230,7 @@ func (col *Collector) Run(ctx context.Context) error {
 		sdktrace.WithSampler(internal.AlwaysRecord()),
 		sdktrace.WithSpanProcessor(col.zPagesSpanProcessor))
 
-	// Set the constructed tracer provider as Global, in case any component uses the
-	// global TracerProvider.
-	otel.SetTracerProvider(col.tracerProvider)
-
-	col.meterProvider = metric.NewNoopMeterProvider()
+	col.meterProvider = nonrecording.NewNoopMeterProvider()
 
 	col.asyncErrorChannel = make(chan error)
 

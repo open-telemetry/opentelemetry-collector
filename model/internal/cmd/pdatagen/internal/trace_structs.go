@@ -31,8 +31,8 @@ var traceFile = &File{
 	structs: []baseStruct{
 		resourceSpansSlice,
 		resourceSpans,
-		instrumentationLibrarySpansSlice,
-		instrumentationLibrarySpans,
+		scopeSpansSlice,
+		scopeSpans,
 		spanSlice,
 		span,
 		spanEventSlice,
@@ -56,24 +56,24 @@ var resourceSpans = &messageValueStruct{
 		resourceField,
 		schemaURLField,
 		&sliceField{
-			fieldName:       "InstrumentationLibrarySpans",
-			originFieldName: "InstrumentationLibrarySpans",
-			returnSlice:     instrumentationLibrarySpansSlice,
+			fieldName:       "ScopeSpans",
+			originFieldName: "ScopeSpans",
+			returnSlice:     scopeSpansSlice,
 		},
 	},
 }
 
-var instrumentationLibrarySpansSlice = &sliceOfPtrs{
-	structName: "InstrumentationLibrarySpansSlice",
-	element:    instrumentationLibrarySpans,
+var scopeSpansSlice = &sliceOfPtrs{
+	structName: "ScopeSpansSlice",
+	element:    scopeSpans,
 }
 
-var instrumentationLibrarySpans = &messageValueStruct{
-	structName:     "InstrumentationLibrarySpans",
-	description:    "// InstrumentationLibrarySpans is a collection of spans from a LibraryInstrumentation.",
-	originFullName: "otlptrace.InstrumentationLibrarySpans",
+var scopeSpans = &messageValueStruct{
+	structName:     "ScopeSpans",
+	description:    "// ScopeSpans is a collection of spans from a LibraryInstrumentation.",
+	originFullName: "otlptrace.ScopeSpans",
 	fields: []baseField{
-		instrumentationLibraryField,
+		scopeField,
 		schemaURLField,
 		&sliceField{
 			fieldName:       "Spans",

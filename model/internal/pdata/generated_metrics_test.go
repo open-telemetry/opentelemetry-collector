@@ -163,59 +163,59 @@ func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
-func TestResourceMetrics_InstrumentationLibraryMetrics(t *testing.T) {
+func TestResourceMetrics_ScopeMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
-	assert.EqualValues(t, NewInstrumentationLibraryMetricsSlice(), ms.InstrumentationLibraryMetrics())
-	fillTestInstrumentationLibraryMetricsSlice(ms.InstrumentationLibraryMetrics())
-	testValInstrumentationLibraryMetrics := generateTestInstrumentationLibraryMetricsSlice()
-	assert.EqualValues(t, testValInstrumentationLibraryMetrics, ms.InstrumentationLibraryMetrics())
+	assert.EqualValues(t, NewScopeMetricsSlice(), ms.ScopeMetrics())
+	fillTestScopeMetricsSlice(ms.ScopeMetrics())
+	testValScopeMetrics := generateTestScopeMetricsSlice()
+	assert.EqualValues(t, testValScopeMetrics, ms.ScopeMetrics())
 }
 
-func TestInstrumentationLibraryMetricsSlice(t *testing.T) {
-	es := NewInstrumentationLibraryMetricsSlice()
+func TestScopeMetricsSlice(t *testing.T) {
+	es := NewScopeMetricsSlice()
 	assert.EqualValues(t, 0, es.Len())
-	es = newInstrumentationLibraryMetricsSlice(&[]*otlpmetrics.InstrumentationLibraryMetrics{})
+	es = newScopeMetricsSlice(&[]*otlpmetrics.ScopeMetrics{})
 	assert.EqualValues(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newInstrumentationLibraryMetrics(&otlpmetrics.InstrumentationLibraryMetrics{})
-	testVal := generateTestInstrumentationLibraryMetrics()
+	emptyVal := newScopeMetrics(&otlpmetrics.ScopeMetrics{})
+	testVal := generateTestScopeMetrics()
 	assert.EqualValues(t, 7, cap(*es.orig))
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.EqualValues(t, emptyVal, el)
-		fillTestInstrumentationLibraryMetrics(el)
+		fillTestScopeMetrics(el)
 		assert.EqualValues(t, testVal, el)
 	}
 }
 
-func TestInstrumentationLibraryMetricsSlice_CopyTo(t *testing.T) {
-	dest := NewInstrumentationLibraryMetricsSlice()
+func TestScopeMetricsSlice_CopyTo(t *testing.T) {
+	dest := NewScopeMetricsSlice()
 	// Test CopyTo to empty
-	NewInstrumentationLibraryMetricsSlice().CopyTo(dest)
-	assert.EqualValues(t, NewInstrumentationLibraryMetricsSlice(), dest)
+	NewScopeMetricsSlice().CopyTo(dest)
+	assert.EqualValues(t, NewScopeMetricsSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestInstrumentationLibraryMetricsSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryMetricsSlice(), dest)
+	generateTestScopeMetricsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestScopeMetricsSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestInstrumentationLibraryMetricsSlice().CopyTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryMetricsSlice(), dest)
+	generateTestScopeMetricsSlice().CopyTo(dest)
+	assert.EqualValues(t, generateTestScopeMetricsSlice(), dest)
 }
 
-func TestInstrumentationLibraryMetricsSlice_EnsureCapacity(t *testing.T) {
-	es := generateTestInstrumentationLibraryMetricsSlice()
+func TestScopeMetricsSlice_EnsureCapacity(t *testing.T) {
+	es := generateTestScopeMetricsSlice()
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
-	expectedEs := make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool)
+	expectedEs := make(map[*otlpmetrics.ScopeMetrics]bool)
 	for i := 0; i < es.Len(); i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, es.Len(), len(expectedEs))
 	es.EnsureCapacity(ensureSmallLen)
 	assert.Less(t, ensureSmallLen, es.Len())
-	foundEs := make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, es.Len())
+	foundEs := make(map[*otlpmetrics.ScopeMetrics]bool, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		foundEs[es.At(i).orig] = true
 	}
@@ -224,38 +224,38 @@ func TestInstrumentationLibraryMetricsSlice_EnsureCapacity(t *testing.T) {
 	// Test ensure larger capacity
 	const ensureLargeLen = 9
 	oldLen := es.Len()
-	expectedEs = make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, oldLen)
+	expectedEs = make(map[*otlpmetrics.ScopeMetrics]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		expectedEs[es.At(i).orig] = true
 	}
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
-	foundEs = make(map[*otlpmetrics.InstrumentationLibraryMetrics]bool, oldLen)
+	foundEs = make(map[*otlpmetrics.ScopeMetrics]bool, oldLen)
 	for i := 0; i < oldLen; i++ {
 		foundEs[es.At(i).orig] = true
 	}
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
-func TestInstrumentationLibraryMetricsSlice_MoveAndAppendTo(t *testing.T) {
+func TestScopeMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := generateTestInstrumentationLibraryMetricsSlice()
-	dest := NewInstrumentationLibraryMetricsSlice()
-	src := generateTestInstrumentationLibraryMetricsSlice()
+	expectedSlice := generateTestScopeMetricsSlice()
+	dest := NewScopeMetricsSlice()
+	src := generateTestScopeMetricsSlice()
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryMetricsSlice(), dest)
+	assert.EqualValues(t, generateTestScopeMetricsSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.EqualValues(t, generateTestInstrumentationLibraryMetricsSlice(), dest)
+	assert.EqualValues(t, generateTestScopeMetricsSlice(), dest)
 	assert.EqualValues(t, 0, src.Len())
 	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	generateTestInstrumentationLibraryMetricsSlice().MoveAndAppendTo(dest)
+	generateTestScopeMetricsSlice().MoveAndAppendTo(dest)
 	assert.EqualValues(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
@@ -263,54 +263,54 @@ func TestInstrumentationLibraryMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestInstrumentationLibraryMetricsSlice_RemoveIf(t *testing.T) {
+func TestScopeMetricsSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewInstrumentationLibraryMetricsSlice()
-	emptySlice.RemoveIf(func(el InstrumentationLibraryMetrics) bool {
+	emptySlice := NewScopeMetricsSlice()
+	emptySlice.RemoveIf(func(el ScopeMetrics) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := generateTestInstrumentationLibraryMetricsSlice()
+	filtered := generateTestScopeMetricsSlice()
 	pos := 0
-	filtered.RemoveIf(func(el InstrumentationLibraryMetrics) bool {
+	filtered.RemoveIf(func(el ScopeMetrics) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
 
-func TestInstrumentationLibraryMetrics_MoveTo(t *testing.T) {
-	ms := generateTestInstrumentationLibraryMetrics()
-	dest := NewInstrumentationLibraryMetrics()
+func TestScopeMetrics_MoveTo(t *testing.T) {
+	ms := generateTestScopeMetrics()
+	dest := NewScopeMetrics()
 	ms.MoveTo(dest)
-	assert.EqualValues(t, NewInstrumentationLibraryMetrics(), ms)
-	assert.EqualValues(t, generateTestInstrumentationLibraryMetrics(), dest)
+	assert.EqualValues(t, NewScopeMetrics(), ms)
+	assert.EqualValues(t, generateTestScopeMetrics(), dest)
 }
 
-func TestInstrumentationLibraryMetrics_CopyTo(t *testing.T) {
-	ms := NewInstrumentationLibraryMetrics()
-	generateTestInstrumentationLibraryMetrics().CopyTo(ms)
-	assert.EqualValues(t, generateTestInstrumentationLibraryMetrics(), ms)
+func TestScopeMetrics_CopyTo(t *testing.T) {
+	ms := NewScopeMetrics()
+	generateTestScopeMetrics().CopyTo(ms)
+	assert.EqualValues(t, generateTestScopeMetrics(), ms)
 }
 
-func TestInstrumentationLibraryMetrics_InstrumentationLibrary(t *testing.T) {
-	ms := NewInstrumentationLibraryMetrics()
-	fillTestInstrumentationLibrary(ms.InstrumentationLibrary())
-	assert.EqualValues(t, generateTestInstrumentationLibrary(), ms.InstrumentationLibrary())
+func TestScopeMetrics_Scope(t *testing.T) {
+	ms := NewScopeMetrics()
+	fillTestInstrumentationScope(ms.Scope())
+	assert.EqualValues(t, generateTestInstrumentationScope(), ms.Scope())
 }
 
-func TestInstrumentationLibraryMetrics_SchemaUrl(t *testing.T) {
-	ms := NewInstrumentationLibraryMetrics()
+func TestScopeMetrics_SchemaUrl(t *testing.T) {
+	ms := NewScopeMetrics()
 	assert.EqualValues(t, "", ms.SchemaUrl())
 	testValSchemaUrl := "https://opentelemetry.io/schemas/1.5.0"
 	ms.SetSchemaUrl(testValSchemaUrl)
 	assert.EqualValues(t, testValSchemaUrl, ms.SchemaUrl())
 }
 
-func TestInstrumentationLibraryMetrics_Metrics(t *testing.T) {
-	ms := NewInstrumentationLibraryMetrics()
+func TestScopeMetrics_Metrics(t *testing.T) {
+	ms := NewScopeMetrics()
 	assert.EqualValues(t, NewMetricSlice(), ms.Metrics())
 	fillTestMetricSlice(ms.Metrics())
 	testValMetrics := generateTestMetricSlice()
@@ -1853,31 +1853,31 @@ func generateTestResourceMetrics() ResourceMetrics {
 func fillTestResourceMetrics(tv ResourceMetrics) {
 	fillTestResource(tv.Resource())
 	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	fillTestInstrumentationLibraryMetricsSlice(tv.InstrumentationLibraryMetrics())
+	fillTestScopeMetricsSlice(tv.ScopeMetrics())
 }
 
-func generateTestInstrumentationLibraryMetricsSlice() InstrumentationLibraryMetricsSlice {
-	tv := NewInstrumentationLibraryMetricsSlice()
-	fillTestInstrumentationLibraryMetricsSlice(tv)
+func generateTestScopeMetricsSlice() ScopeMetricsSlice {
+	tv := NewScopeMetricsSlice()
+	fillTestScopeMetricsSlice(tv)
 	return tv
 }
 
-func fillTestInstrumentationLibraryMetricsSlice(tv InstrumentationLibraryMetricsSlice) {
+func fillTestScopeMetricsSlice(tv ScopeMetricsSlice) {
 	l := 7
 	tv.EnsureCapacity(l)
 	for i := 0; i < l; i++ {
-		fillTestInstrumentationLibraryMetrics(tv.AppendEmpty())
+		fillTestScopeMetrics(tv.AppendEmpty())
 	}
 }
 
-func generateTestInstrumentationLibraryMetrics() InstrumentationLibraryMetrics {
-	tv := NewInstrumentationLibraryMetrics()
-	fillTestInstrumentationLibraryMetrics(tv)
+func generateTestScopeMetrics() ScopeMetrics {
+	tv := NewScopeMetrics()
+	fillTestScopeMetrics(tv)
 	return tv
 }
 
-func fillTestInstrumentationLibraryMetrics(tv InstrumentationLibraryMetrics) {
-	fillTestInstrumentationLibrary(tv.InstrumentationLibrary())
+func fillTestScopeMetrics(tv ScopeMetrics) {
+	fillTestInstrumentationScope(tv.Scope())
 	tv.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	fillTestMetricSlice(tv.Metrics())
 }

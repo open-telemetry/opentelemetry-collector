@@ -32,7 +32,7 @@ func TestLogRecordCount(t *testing.T) {
 	rl := logs.ResourceLogs().AppendEmpty()
 	assert.EqualValues(t, 0, logs.LogRecordCount())
 
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	ill := rl.ScopeLogs().AppendEmpty()
 	assert.EqualValues(t, 0, logs.LogRecordCount())
 
 	ill.LogRecords().AppendEmpty()
@@ -40,8 +40,8 @@ func TestLogRecordCount(t *testing.T) {
 
 	rms := logs.ResourceLogs()
 	rms.EnsureCapacity(3)
-	rms.AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
-	illl := rms.AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+	rms.AppendEmpty().ScopeLogs().AppendEmpty()
+	illl := rms.AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for i := 0; i < 5; i++ {
 		illl.AppendEmpty()
 	}
@@ -57,14 +57,14 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, Logs{orig: &otlplogs.LogsData{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{{}},
+				ScopeLogs: []*otlplogs.ScopeLogs{{}},
 			},
 		},
 	}}.LogRecordCount())
 	assert.Equal(t, 1, Logs{orig: &otlplogs.LogsData{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
-				InstrumentationLibraryLogs: []*otlplogs.InstrumentationLibraryLogs{
+				ScopeLogs: []*otlplogs.ScopeLogs{
 					{
 						LogRecords: []*otlplogs.LogRecord{{}},
 					},

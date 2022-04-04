@@ -31,8 +31,8 @@ var metricsFile = &File{
 	structs: []baseStruct{
 		resourceMetricsSlice,
 		resourceMetrics,
-		instrumentationLibraryMetricsSlice,
-		instrumentationLibraryMetrics,
+		scopeMetricsSlice,
+		scopeMetrics,
 		metricSlice,
 		metric,
 		gauge,
@@ -69,24 +69,24 @@ var resourceMetrics = &messageValueStruct{
 		resourceField,
 		schemaURLField,
 		&sliceField{
-			fieldName:       "InstrumentationLibraryMetrics",
-			originFieldName: "InstrumentationLibraryMetrics",
-			returnSlice:     instrumentationLibraryMetricsSlice,
+			fieldName:       "ScopeMetrics",
+			originFieldName: "ScopeMetrics",
+			returnSlice:     scopeMetricsSlice,
 		},
 	},
 }
 
-var instrumentationLibraryMetricsSlice = &sliceOfPtrs{
-	structName: "InstrumentationLibraryMetricsSlice",
-	element:    instrumentationLibraryMetrics,
+var scopeMetricsSlice = &sliceOfPtrs{
+	structName: "ScopeMetricsSlice",
+	element:    scopeMetrics,
 }
 
-var instrumentationLibraryMetrics = &messageValueStruct{
-	structName:     "InstrumentationLibraryMetrics",
-	description:    "// InstrumentationLibraryMetrics is a collection of metrics from a LibraryInstrumentation.",
-	originFullName: "otlpmetrics.InstrumentationLibraryMetrics",
+var scopeMetrics = &messageValueStruct{
+	structName:     "ScopeMetrics",
+	description:    "// ScopeMetrics is a collection of metrics from a LibraryInstrumentation.",
+	originFullName: "otlpmetrics.ScopeMetrics",
 	fields: []baseField{
-		instrumentationLibraryField,
+		scopeField,
 		schemaURLField,
 		&sliceField{
 			fieldName:       "Metrics",
@@ -284,7 +284,7 @@ var histogramDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		countField,
-		doubleSumField,
+		optionalDoubleSumField,
 		bucketCountsField,
 		explicitBoundsField,
 		exemplarsField,
@@ -523,4 +523,14 @@ var dataPointFlagsField = &primitiveTypedField{
 	rawType:         "uint32",
 	defaultVal:      "MetricDataPointFlagsNone",
 	testVal:         "MetricDataPointFlagsNone",
+}
+
+var optionalDoubleSumField = &optionalPrimitiveValue{
+	fieldName:        "Sum",
+	fieldType:        "Double",
+	originFieldName:  "Sum",
+	originTypePrefix: "otlpmetrics.HistogramDataPoint_",
+	returnType:       "float64",
+	defaultVal:       "float64(0.0)",
+	testVal:          "float64(17.13)",
 }

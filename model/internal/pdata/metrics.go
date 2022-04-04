@@ -75,7 +75,7 @@ func (md Metrics) MetricCount() int {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		ilms := rm.InstrumentationLibraryMetrics()
+		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			metricCount += ilm.Metrics().Len()
@@ -89,7 +89,7 @@ func (md Metrics) DataPointCount() (dataPointCount int) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		ilms := rm.InstrumentationLibraryMetrics()
+		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			ms := ilm.Metrics()
@@ -238,4 +238,33 @@ func (mdt MetricValueType) String() string {
 		return "Double"
 	}
 	return ""
+}
+
+// OptionalType wraps optional fields into oneof fields
+type OptionalType int32
+
+const (
+	OptionalTypeNone OptionalType = iota
+	OptionalTypeDouble
+)
+
+// String returns the string representation of the OptionalType.
+func (ot OptionalType) String() string {
+	switch ot {
+	case OptionalTypeNone:
+		return "None"
+	case OptionalTypeDouble:
+		return "Double"
+	}
+	return ""
+}
+
+// Deprecated: [v0.48.0] Use ScopeMetrics instead.
+func (ms ResourceMetrics) InstrumentationLibraryMetrics() ScopeMetricsSlice {
+	return ms.ScopeMetrics()
+}
+
+// Deprecated: [v0.48.0] Use Scope instead.
+func (ms ScopeMetrics) InstrumentationLibrary() InstrumentationScope {
+	return ms.Scope()
 }

@@ -27,15 +27,15 @@ var commonFile = &File{
 		`otlpcommon "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"`,
 	},
 	structs: []baseStruct{
-		instrumentationLibrary,
-		attributeValueArray,
+		scope,
+		attributeValueSlice,
 	},
 }
 
-var instrumentationLibrary = &messageValueStruct{
-	structName:     "InstrumentationLibrary",
-	description:    "// InstrumentationLibrary is a message representing the instrumentation library information.",
-	originFullName: "otlpcommon.InstrumentationLibrary",
+var scope = &messageValueStruct{
+	structName:     "InstrumentationScope",
+	description:    "// Scope is a message representing the instrumentation library information.",
+	originFullName: "otlpcommon.InstrumentationScope",
 	fields: []baseField{
 		nameField,
 		&primitiveField{
@@ -57,10 +57,10 @@ var mapStruct = &sliceOfPtrs{
 
 var attributeKeyValue = &messageValueStruct{}
 
-var instrumentationLibraryField = &messageValueField{
-	fieldName:       "InstrumentationLibrary",
-	originFieldName: "InstrumentationLibrary",
-	returnMessage:   instrumentationLibrary,
+var scopeField = &messageValueField{
+	fieldName:       "Scope",
+	originFieldName: "Scope",
+	returnMessage:   scope,
 }
 
 var startTimeField = &primitiveTypedField{
@@ -109,7 +109,7 @@ var anyValue = &messageValueStruct{
 	originFullName: "otlpcommon.AnyValue",
 }
 
-var attributeValueArray = &sliceOfValues{
+var attributeValueSlice = &sliceOfValues{
 	structName: "Slice",
 	element:    anyValue,
 }

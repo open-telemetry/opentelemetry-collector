@@ -38,9 +38,9 @@ type MapProvider interface {
 	// contains the value to be injected in the configuration and the corresponding watcher that
 	// will be used to monitor for updates of the retrieved value.
 	//
-	// `location` must follow the "<scheme>:<opaque_data>" format. This format is compatible
+	// `uri` must follow the "<scheme>:<opaque_data>" format. This format is compatible
 	// with the URI definition (see https://datatracker.ietf.org/doc/html/rfc3986). The "<scheme>"
-	// must be always included in the `location`. The scheme supported by any provider MUST be at
+	// must be always included in the `uri`. The scheme supported by any provider MUST be at
 	// least 2 characters long to avoid conflicting with a driver-letter identifier as specified
 	// in https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax.
 	//
@@ -52,7 +52,7 @@ type MapProvider interface {
 	//
 	// If ctx is cancelled should return immediately with an error.
 	// Should never be called concurrently with itself or with Shutdown.
-	Retrieve(ctx context.Context, location string, watcher WatcherFunc) (Retrieved, error)
+	Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (Retrieved, error)
 
 	// Scheme returns the location scheme used by Retrieve.
 	Scheme() string
