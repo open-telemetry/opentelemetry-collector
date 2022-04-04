@@ -54,6 +54,9 @@ type MapProvider interface {
 	// Should never be called concurrently with itself or with Shutdown.
 	Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (Retrieved, error)
 
+	// Scheme returns the location scheme used by Retrieve.
+	Scheme() string
+
 	// Shutdown signals that the configuration for which this Provider was used to
 	// retrieve values is no longer in use and the Provider should close and release
 	// any resources that it may have created.

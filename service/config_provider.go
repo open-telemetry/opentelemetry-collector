@@ -106,11 +106,7 @@ func MustNewConfigProvider(
 func MustNewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
 	return MustNewConfigProvider(
 		configLocations,
-		map[string]config.MapProvider{
-			"file": filemapprovider.New(),
-			"env":  envmapprovider.New(),
-			"yaml": yamlmapprovider.New(),
-		},
+		makeConfigMapProviderMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
 		[]config.MapConverterFunc{
 			configmapprovider.NewOverwritePropertiesConverter(properties),
 			configmapprovider.NewExpandConverter(),
@@ -221,4 +217,12 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Retrieved,
 			return err
 		},
 	}, nil
+}
+
+func makeConfigMapProviderMap(providers ...config.MapProvider) map[string]config.MapProvider {
+	ret := make(map[string]config.MapProvider, len(providers))
+	for _, provider := range providers {
+		ret[provider.Scheme()] = provider
+	}
+	return ret
 }
