@@ -147,16 +147,6 @@ func TestLogsRequestJSONTransition(t *testing.T) {
 	}
 }
 
-func TestLogsRequestJSON_Deprecated(t *testing.T) {
-	lr, err := UnmarshalJSONLogsRequest(logsRequestJSON)
-	assert.NoError(t, err)
-	assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
-
-	got, err := lr.MarshalJSON()
-	assert.NoError(t, err)
-	assert.Equal(t, strings.Join(strings.Fields(string(logsRequestJSON)), ""), string(got))
-}
-
 func TestLogsGrpc(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
