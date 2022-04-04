@@ -40,3 +40,7 @@ func (nh *nopHost) GetExtensions() map[config.ComponentID]component.Extension {
 func (nh *nopHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return nil
 }
+
+func (nh *nopHost) RegisterStatusReporter(reporter component.StatusReportFunc) {}
+
+func (nh *nopHost) ReportStatus(status component.StatusReport) {}

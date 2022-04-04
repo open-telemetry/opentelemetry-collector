@@ -16,8 +16,10 @@ package service
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -88,6 +90,35 @@ func TestService_GetExporters(t *testing.T) {
 	assert.Contains(t, expMap[config.MetricsDataType], config.NewComponentID("nop"))
 	assert.Len(t, expMap[config.LogsDataType], 1)
 	assert.Contains(t, expMap[config.LogsDataType], config.NewComponentID("nop"))
+}
+
+func TestService_ReportStatus(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	srv := createExampleService(t, factories)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	expectedStatus := component.StatusReport{
+		ComponentID: config.NewComponentID("nop"),
+		Error:       errors.New("an error"),
+	}
+
+	var reporterCalled bool
+	reporter := func(status component.StatusReport) {
+		require.Equal(t, expectedStatus, status)
+		reporterCalled = true
+	}
+
+	srv.RegisterStatusReporter(reporter)
+	srv.ReportStatus(expectedStatus)
+
+	require.Eventually(t, func() bool {
+		return reporterCalled
+	}, time.Second, time.Millisecond)
 }
 
 func createExampleService(t *testing.T, factories component.Factories) *service {

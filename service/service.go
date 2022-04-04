@@ -34,6 +34,7 @@ type service struct {
 	config              *config.Config
 	telemetry           component.TelemetrySettings
 	zPagesSpanProcessor *zpages.SpanProcessor
+	statusReporters     component.StatusReporters
 	asyncErrorChannel   chan error
 
 	builtExporters  builder.Exporters
@@ -50,6 +51,7 @@ func newService(set *svcSettings) (*service, error) {
 		telemetry:           set.Telemetry,
 		zPagesSpanProcessor: set.ZPagesSpanProcessor,
 		asyncErrorChannel:   set.AsyncErrorChannel,
+		statusReporters:     *component.NewStatusReporters(),
 	}
 
 	var err error
@@ -79,6 +81,14 @@ func newService(set *svcSettings) (*service, error) {
 }
 
 func (srv *service) Start(ctx context.Context) error {
+	srv.telemetry.Logger.Info("Starting status reporters...")
+	// For testing, IRL components will register status reporters
+	srv.statusReporters.Start()
+
+	srv.RegisterStatusReporter(func(status component.StatusReport) {
+		srv.telemetry.Logger.Info(fmt.Sprintf("The status is %v", status))
+	})
+
 	srv.telemetry.Logger.Info("Starting extensions...")
 	if err := srv.builtExtensions.StartAll(ctx, srv); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
@@ -134,6 +144,9 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
+	srv.telemetry.Logger.Info("Stopping status reporters...")
+	srv.statusReporters.Stop()
+
 	return errs
 }
 
@@ -164,4 +177,12 @@ func (srv *service) GetExtensions() map[config.ComponentID]component.Extension {
 
 func (srv *service) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return srv.builtExporters.ToMapByDataType()
+}
+
+func (srv *service) RegisterStatusReporter(reporter component.StatusReportFunc) {
+	srv.statusReporters.Register(reporter)
+}
+
+func (srv *service) ReportStatus(status component.StatusReport) {
+	srv.statusReporters.Report(status)
 }
