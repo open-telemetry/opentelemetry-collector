@@ -6,6 +6,8 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate `configunmarshaler` package, move it to internal (#5151)
+
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰

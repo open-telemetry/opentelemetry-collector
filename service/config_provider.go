@@ -25,13 +25,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
 	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
+	"go.opentelemetry.io/collector/internal/configunmarshaler"
 )
 
 // ConfigProvider provides the service configuration.
@@ -92,8 +92,9 @@ type ConfigProviderSettings struct {
 	// MapConverters is a slice of config.MapConverterFunc.
 	MapConverters []config.MapConverterFunc
 
-	// The configunmarshaler.ConfigUnmarshaler to be used to unmarshal the config.Map into config.Config.
-	// It is required to not be nil, use configunmarshaler.NewDefault() by default.
+	// Deprecated: [v0.50.0] because providing custom ConfigUnmarshaler is not necessary since users can wrap/implement
+	// ConfigProvider if needed to change the resulted config. This functionality will be kept for at least 2 minor versions,
+	// and if nobody express a need for it will be removed.
 	Unmarshaler configunmarshaler.ConfigUnmarshaler
 }
 

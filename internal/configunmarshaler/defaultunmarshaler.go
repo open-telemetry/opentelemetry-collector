@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configunmarshaler // import "go.opentelemetry.io/collector/config/configunmarshaler"
+package configunmarshaler // import "go.opentelemetry.io/collector/internal/configunmarshaler"
 
 import (
 	"fmt"
@@ -24,6 +24,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
+
+// ConfigUnmarshaler is the interface that unmarshalls the collector configuration from the config.Map.
+type ConfigUnmarshaler interface {
+	// Unmarshal the configuration from the given parser and factories.
+	Unmarshal(v *config.Map, factories component.Factories) (*config.Config, error)
+}
 
 // These are errors that can be returned by Unmarshal(). Note that error codes are not part
 // of Unmarshal()'s public API, they are for internal unit testing only.
@@ -154,7 +160,7 @@ func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, fac
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := unmarshal(config.NewMapFromStringMap(value), extensionCfg); err != nil {
+		if err := config.UnmarshalExtension(config.NewMapFromStringMap(value), extensionCfg); err != nil {
 			return nil, errorUnmarshalError(extensionsKeyName, id, err)
 		}
 
@@ -183,7 +189,7 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 		},
 	}
 
-	if err := unmarshal(config.NewMapFromStringMap(srvRaw), &srv); err != nil {
+	if err := config.NewMapFromStringMap(srvRaw).UnmarshalExact(&srv); err != nil {
 		return srv, fmt.Errorf("error reading service configuration: %w", err)
 	}
 
@@ -210,7 +216,7 @@ func LoadReceiver(componentConfig *config.Map, id config.ComponentID, factory co
 
 	// Now that the default config struct is created we can Unmarshal into it,
 	// and it will apply user-defined config on top of the default.
-	if err := unmarshal(componentConfig, receiverCfg); err != nil {
+	if err := config.UnmarshalReceiver(componentConfig, receiverCfg); err != nil {
 		return nil, errorUnmarshalError(receiversKeyName, id, err)
 	}
 
@@ -259,7 +265,7 @@ func unmarshalExporters(exps map[config.ComponentID]map[string]interface{}, fact
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := unmarshal(config.NewMapFromStringMap(value), exporterCfg); err != nil {
+		if err := config.UnmarshalExporter(config.NewMapFromStringMap(value), exporterCfg); err != nil {
 			return nil, errorUnmarshalError(exportersKeyName, id, err)
 		}
 
@@ -287,7 +293,7 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := unmarshal(config.NewMapFromStringMap(value), processorCfg); err != nil {
+		if err := config.UnmarshalProcessor(config.NewMapFromStringMap(value), processorCfg); err != nil {
 			return nil, errorUnmarshalError(processorsKeyName, id, err)
 		}
 
@@ -295,14 +301,6 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 	}
 
 	return processors, nil
-}
-
-func unmarshal(componentSection *config.Map, intoCfg interface{}) error {
-	if cu, ok := intoCfg.(config.Unmarshallable); ok {
-		return cu.Unmarshal(componentSection)
-	}
-
-	return componentSection.UnmarshalExact(intoCfg)
 }
 
 func errorUnknownType(component string, id config.ComponentID, factories []reflect.Value) error {
