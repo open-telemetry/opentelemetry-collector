@@ -206,8 +206,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - goos: darwin
-            goarch: 386
+          # Go 1.15 dropped support for 32-bit binaries
+          # on macOS: https://go.dev/doc/go1.15
+          #- goos: darwin
+          #  goarch: 386
           - goos: darwin
             goarch: amd64
           - goos: darwin
