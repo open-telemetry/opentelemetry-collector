@@ -198,3 +198,59 @@ jobs:
           file: ./coverage.txt
           fail_ci_if_error: true
           verbose: true
+  cross-build-collector:
+    needs: [setup-environment]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Go 1.15 dropped support for 32-bit binaries
+          # on macOS: https://go.dev/doc/go1.15
+          #- goos: darwin
+          #  goarch: 386
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: linux
+            goarch: 386
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: 386
+          - goos: windows
+            goarch: amd64
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.17
+      - name: Setup Go Environment
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Cache Go
+        id: module-cache
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/go/pkg/mod
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
+      - name: Build
+        env:
+          GOOS: ${{matrix.goos}}
+          GOARCH: ${{matrix.goarch}}
+        run: |
+          make otelcorecol
