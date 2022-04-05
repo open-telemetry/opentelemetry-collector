@@ -494,9 +494,9 @@ func (v Value) asRaw() interface{} {
 	case ValueTypeBytes:
 		return v.BytesVal()
 	case ValueTypeMap:
-		v.MapVal().AsRaw()
+		return v.MapVal().AsRaw()
 	case ValueTypeSlice:
-		v.SliceVal().asRaw()
+		return v.SliceVal().asRaw()
 	}
 	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
 }
