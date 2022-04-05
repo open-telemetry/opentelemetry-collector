@@ -117,7 +117,7 @@ func (p *Pipeline) Run(ctx context.Context) error {
 // shutdown the pipeline components.
 func (p *Pipeline) shutdown(ctx context.Context) (err error) {
 	for _, component := range p.components {
-		multierr.Append(err, component.Shutdown(ctx))
+		err = multierr.Append(err, component.Shutdown(ctx))
 	}
 	return
 }
@@ -196,8 +196,8 @@ func (b *Builder) BuildMetricsPipeline(
 
 	for i := len(processors) - 1; i >= 0; i-- {
 		processor := processors[i]
-		pFactory, ok := b.factories.Processors[processor.ID().Type()]
-		if !ok {
+		pFactory, procOk := b.factories.Processors[processor.ID().Type()]
+		if !procOk {
 			return nil, fmt.Errorf("factory not found for %q processor", processor.ID())
 		}
 		c, err = pFactory.CreateMetricsProcessor(
@@ -224,10 +224,10 @@ func (b *Builder) BuildMetricsPipeline(
 		},
 		receiver, c,
 	)
-	pipeline.components = append(pipeline.components, r)
 	if err != nil {
 		return nil, err
 	}
+	pipeline.components = append(pipeline.components, r)
 
 	return pipeline, nil
 }
