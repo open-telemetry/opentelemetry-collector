@@ -18,7 +18,6 @@ import "go.opentelemetry.io/collector/config"
 
 type StatusReport struct {
 	ComponentID config.ComponentID
-	Message     string
 	Error       error
 }
 
