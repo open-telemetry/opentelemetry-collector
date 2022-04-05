@@ -24,7 +24,7 @@ import (
 
 func TestAllSemConvFilesAreCrated(t *testing.T) {
 	// Files that have to be present in each semconv package
-	var expectedFiles = []string{"nonstandard.go", "resource.go", "schema.go", "trace.go"}
+	var expectedFiles = []string{"generated_resource.go", "generated_trace.go", "nonstandard.go", "schema.go"}
 
 	files, err := os.ReadDir(".")
 	assert.NoError(t, err)
