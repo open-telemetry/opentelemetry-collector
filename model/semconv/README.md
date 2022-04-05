@@ -16,6 +16,7 @@ semconvgen -o model/semconv/v1.5.0 -t model/internal/semconv/template.j2 -s v1.5
 semconvgen -o model/semconv/v1.5.0 -t model/internal/semconv/template.j2 -s v1.5.0 -i ~/dev/opentelemetry-specification/semantic_conventions/trace -p conventionType=trace
 ```
 
-When generating the constants for a new version ot the specification it is important to note that only `trace.go` and
-`resource.go` are generated automatically.  The `schema.go` and `nonstandard.go` files should be copied from a prior
-version's package and updated as appropriate.  Most important will be to update the `SchemaURL` constant in `schema.go`.
+When generating the constants for a new version ot the specification it is important to note that only
+`generated_trace.go` and `generated_resource.go` are generated automatically. The `schema.go` and `nonstandard.go`
+files should be copied from a prior version's package and updated as appropriate. Most important will be to update
+the `SchemaURL` constant in `schema.go`.
