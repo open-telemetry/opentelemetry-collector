@@ -206,14 +206,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - goos: darwin
+            goarch: 386
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
           - goos: linux
             goarch: 386
           - goos: linux
-            goarch: arm64
-          - goos: darwin
+            goarch: amd64
+          - goos: linux
             goarch: arm64
           - goos: windows
             goarch: 386
+          - goos: windows
+            goarch: amd64
 
     steps:
       - name: Checkout Repo
