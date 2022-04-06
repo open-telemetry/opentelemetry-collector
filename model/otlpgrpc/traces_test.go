@@ -31,7 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
+	v1 "go.opentelemetry.io/collector/internal/model/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

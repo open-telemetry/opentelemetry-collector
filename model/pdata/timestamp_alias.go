@@ -14,7 +14,7 @@
 
 package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/internal/model/pdata"
 
 // Timestamp is a an alias for pdata.Timestamp.
 type Timestamp = pdata.Timestamp

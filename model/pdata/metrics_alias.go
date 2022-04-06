@@ -17,7 +17,7 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 // This file contains aliases for metric data structures.
 
 import (
-	"go.opentelemetry.io/collector/model/internal/pdata"
+	"go.opentelemetry.io/collector/internal/model/pdata"
 )
 
 // MetricsMarshaler is an alias for pdata.MetricsMarshaler interface.

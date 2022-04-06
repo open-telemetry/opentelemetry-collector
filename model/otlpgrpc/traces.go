@@ -20,10 +20,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
-	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
-	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
-	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
+	otlpcollectortrace "go.opentelemetry.io/collector/internal/model/data/protogen/collector/trace/v1"
+	v1 "go.opentelemetry.io/collector/internal/model/data/protogen/common/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/model/data/protogen/trace/v1"
+	ipdata "go.opentelemetry.io/collector/internal/model/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

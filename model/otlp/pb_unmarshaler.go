@@ -15,10 +15,10 @@
 package otlp // import "go.opentelemetry.io/collector/model/otlp"
 
 import (
-	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
-	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
-	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
-	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
+	otlplogs "go.opentelemetry.io/collector/internal/model/data/protogen/logs/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/model/data/protogen/metrics/v1"
+	otlptrace "go.opentelemetry.io/collector/internal/model/data/protogen/trace/v1"
+	ipdata "go.opentelemetry.io/collector/internal/model/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

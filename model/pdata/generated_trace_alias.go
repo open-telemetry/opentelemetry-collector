@@ -17,7 +17,7 @@
 
 package pdata
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/internal/model/pdata"
 
 // ResourceSpansSlice is an alias for pdata.ResourceSpansSlice struct.
 type ResourceSpansSlice = pdata.ResourceSpansSlice

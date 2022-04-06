@@ -17,7 +17,7 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 // This file contains aliases to data structures that are common for all
 // signal types, such as timestamps, attributes, etc.
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/internal/model/pdata"
 
 // ValueType is an alias for pdata.ValueType type.
 type ValueType = pdata.ValueType

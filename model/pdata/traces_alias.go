@@ -17,7 +17,7 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 // This file contains aliases for trace data structures.
 
 import (
-	"go.opentelemetry.io/collector/model/internal/pdata"
+	"go.opentelemetry.io/collector/internal/model/pdata"
 )
 
 // TracesMarshaler is an alias for pdata.TracesMarshaler interface.

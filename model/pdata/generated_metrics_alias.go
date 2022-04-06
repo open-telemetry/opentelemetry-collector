@@ -17,7 +17,7 @@
 
 package pdata
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/internal/model/pdata"
 
 // ResourceMetricsSlice is an alias for pdata.ResourceMetricsSlice struct.
 type ResourceMetricsSlice = pdata.ResourceMetricsSlice

@@ -31,8 +31,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/model/internal/pdata"
+	v1 "go.opentelemetry.io/collector/internal/model/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/internal/model/pdata"
 )
 
 var _ json.Unmarshaler = LogsResponse{}

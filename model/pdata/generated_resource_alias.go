@@ -17,7 +17,7 @@
 
 package pdata
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/internal/model/pdata"
 
 // Resource is an alias for pdata.Resource struct.
 type Resource = pdata.Resource

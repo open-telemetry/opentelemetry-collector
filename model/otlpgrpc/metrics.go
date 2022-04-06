@@ -20,10 +20,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
-	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
-	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
-	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
+	otlpcollectormetrics "go.opentelemetry.io/collector/internal/model/data/protogen/collector/metrics/v1"
+	v1 "go.opentelemetry.io/collector/internal/model/data/protogen/common/v1"
+	otlpmetrics "go.opentelemetry.io/collector/internal/model/data/protogen/metrics/v1"
+	ipdata "go.opentelemetry.io/collector/internal/model/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
