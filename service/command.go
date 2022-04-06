@@ -16,10 +16,10 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"github.com/spf13/cobra"
-	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
+	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 

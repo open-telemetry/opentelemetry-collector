@@ -34,7 +34,7 @@ import (
 )
 
 type mockProvider struct {
-	shceme string
+	scheme string
 	retM   *config.Map
 	errR   error
 	errS   error
@@ -56,10 +56,10 @@ func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher config.Watc
 }
 
 func (m *mockProvider) Scheme() string {
-	if m.shceme == "" {
+	if m.scheme == "" {
 		return "mock"
 	}
-	return m.shceme
+	return m.scheme
 }
 
 func (m *mockProvider) Shutdown(context.Context) error {
@@ -100,7 +100,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 			locations: []string{"mock:", "err:"},
 			parserProvider: []config.MapProvider{
 				&mockProvider{},
-				&mockProvider{shceme: "err", errR: errors.New("retrieve_err")},
+				&mockProvider{scheme: "err", errR: errors.New("retrieve_err")},
 			},
 			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectNewErr:      true,
@@ -133,7 +133,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 			parserProvider: func() []config.MapProvider {
 				cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
 				require.NoError(t, err)
-				return []config.MapProvider{&mockProvider{}, &mockProvider{shceme: "err", retM: cfgMap, errW: errors.New("watch_err")}}
+				return []config.MapProvider{&mockProvider{}, &mockProvider{scheme: "err", retM: cfgMap, errW: errors.New("watch_err")}}
 			}(),
 			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectWatchErr:    true,
@@ -146,7 +146,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 				require.NoError(t, err)
 				return []config.MapProvider{
 					&mockProvider{},
-					&mockProvider{shceme: "err", retM: cfgMap, errC: errors.New("close_err")},
+					&mockProvider{scheme: "err", retM: cfgMap, errC: errors.New("close_err")},
 				}
 			}(),
 			configUnmarshaler: configunmarshaler.NewDefault(),
