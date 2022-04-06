@@ -1111,7 +1111,70 @@ func TestAsString(t *testing.T) {
 	}
 }
 
-func TestAsRaw(t *testing.T) {
+func TestValueAsRaw(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    Value
+		expected interface{}
+	}{
+		{
+			name:     "string",
+			input:    NewValueString("value"),
+			expected: "value",
+		},
+		{
+			name:     "int",
+			input:    NewValueInt(11),
+			expected: int64(11),
+		},
+		{
+			name:     "double",
+			input:    NewValueDouble(1.2),
+			expected: 1.2,
+		},
+		{
+			name:     "bytes",
+			input:    NewValueBytes([]byte("bytes")),
+			expected: []byte("bytes"),
+		},
+		{
+			name:     "bytes",
+			input:    NewValueBytes([]byte("bytes")),
+			expected: []byte("bytes"),
+		},
+		{
+			name:     "empty",
+			input:    NewValueEmpty(),
+			expected: nil,
+		},
+		{
+			name:     "slice",
+			input:    simpleValueSlice(),
+			expected: []interface{}{"strVal", int64(7), 18.6, false, nil},
+		},
+		{
+			name:  "map",
+			input: simpleValueMap(),
+			expected: map[string]interface{}{
+				"mapKey":   map[string]interface{}{"keyOne": "valOne", "keyTwo": "valTwo"},
+				"nullKey":  nil,
+				"strKey":   "strVal",
+				"arrKey":   []interface{}{"strOne", "strTwo"},
+				"boolKey":  false,
+				"floatKey": 18.6,
+				"intKey":   int64(7),
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actual := test.input.asRaw()
+			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func TestMapAsRaw(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    Map
