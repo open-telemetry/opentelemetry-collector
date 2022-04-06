@@ -29,32 +29,38 @@ type Gate struct {
 
 var reg = NewRegistry()
 
+// GetRegistry returns the global Registry.
 func GetRegistry() *Registry {
 	return reg
 }
 
+// Deprecated: [v0.50.0] Use GetRegistry().Apply.
+var Apply = GetRegistry().Apply
+
+// Deprecated: [v0.50.0] Use GetRegistry().IsEnabled.
+var IsEnabled = GetRegistry().IsEnabled
+
+// Deprecated: [v0.50.0] Use GetRegistry().List.
+var List = GetRegistry().List
+
+// Deprecated: [v0.50.0] Use GetRegistry().MustRegister.
+var Register = GetRegistry().MustRegister
+
+// NewRegistry returns a new empty Registry.
 func NewRegistry() *Registry {
 	return &Registry{gates: make(map[string]Gate)}
 }
 
-// Register a Gate. May only be called in an init() function.
-// Will panic() if a Gate with the same ID is already registered.
-func (r *Registry) Register(g Gate) {
-	if err := r.add(g); err != nil {
-		panic(err)
-	}
-}
-
 type Registry struct {
-	sync.RWMutex
+	mu    sync.RWMutex
 	gates map[string]Gate
 }
 
 // Apply a configuration in the form of a map of Gate identifiers to boolean values.
 // Sets only those values provided in the map, other gate values are not changed.
 func (r *Registry) Apply(cfg map[string]bool) {
-	r.Lock()
-	defer r.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	for id, val := range cfg {
 		if g, ok := r.gates[id]; ok {
 			g.Enabled = val
@@ -63,29 +69,36 @@ func (r *Registry) Apply(cfg map[string]bool) {
 	}
 }
 
-func (r *Registry) add(g Gate) error {
-	r.Lock()
-	defer r.Unlock()
-	if _, ok := r.gates[g.ID]; ok {
-		return fmt.Errorf("attempted to add pre-existing gate %q", g.ID)
-	}
-
-	r.gates[g.ID] = g
-	return nil
-}
-
 // IsEnabled returns true if a registered feature gate is enabled and false otherwise.
 func (r *Registry) IsEnabled(id string) bool {
-	r.RLock()
-	defer r.RUnlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	g, ok := r.gates[id]
 	return ok && g.Enabled
 }
 
+// MustRegister like Register but panics if a Gate with the same ID is already registered.
+func (r *Registry) MustRegister(g Gate) {
+	if err := r.Register(g); err != nil {
+		panic(err)
+	}
+}
+
+// Register registers a Gate. May only be called in an init() function.
+func (r *Registry) Register(g Gate) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.gates[g.ID]; ok {
+		return fmt.Errorf("attempted to add pre-existing gate %q", g.ID)
+	}
+	r.gates[g.ID] = g
+	return nil
+}
+
 // List returns a slice of copies of all registered Gates.
 func (r *Registry) List() []Gate {
-	r.RLock()
-	defer r.RUnlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	ret := make([]Gate, len(r.gates))
 	i := 0
 	for _, gate := range r.gates {

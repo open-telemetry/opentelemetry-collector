@@ -32,37 +32,15 @@ func TestRegistry(t *testing.T) {
 	assert.Empty(t, r.List())
 	assert.False(t, r.IsEnabled(gate.ID))
 
-	assert.NoError(t, r.add(gate))
+	assert.NoError(t, r.Register(gate))
 	assert.Len(t, r.List(), 1)
 	assert.True(t, r.IsEnabled(gate.ID))
 
 	r.Apply(map[string]bool{gate.ID: false})
 	assert.False(t, r.IsEnabled(gate.ID))
 
-	assert.Error(t, r.add(gate))
-}
-
-func TestGlobalRegistry(t *testing.T) {
-	gate := Gate{
-		ID:          "feature_gate_test.foo",
-		Description: "Test Gate",
-		Enabled:     true,
-	}
-
-	registry := NewRegistry()
-
-	assert.NotContains(t, registry.List(), gate)
-	assert.False(t, registry.IsEnabled(gate.ID))
-
-	assert.NotPanics(t, func() { registry.Register(gate) })
-	assert.Contains(t, registry.List(), gate)
-	assert.True(t, registry.IsEnabled(gate.ID))
-
-	registry.Apply(map[string]bool{gate.ID: false})
-	assert.False(t, registry.IsEnabled(gate.ID))
-
-	assert.Panics(t, func() { registry.Register(gate) })
-	reg.Lock()
-	delete(reg.gates, gate.ID)
-	reg.Unlock()
+	assert.Error(t, r.Register(gate))
+	assert.Panics(t, func() {
+		r.MustRegister(gate)
+	})
 }

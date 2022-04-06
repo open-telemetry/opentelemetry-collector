@@ -6,6 +6,8 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate global `featuregate` funcs in favor of `GetRegistry` and a public `Registry` type (#5160)
+
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
@@ -24,6 +26,7 @@
 
 ### 🚩 Deprecations 🚩
 
+<<<<<<< HEAD
 - All pdata related APIs from model (model/pdata, model/otlp and model/otlpgrpc) are deprecated in
   favor of packages in the new pdata module separated by telemetry signal type (#5168)
   - `model/pdata`, `model/otlp` -> `pdata/pcommon`, `pdata/plog`, `pdata/pmetric`, `pdata/ptrace`

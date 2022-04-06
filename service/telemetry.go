@@ -69,10 +69,7 @@ type colTelemetry struct {
 }
 
 func newColTelemetry(registry *featuregate.Registry) *colTelemetry {
-	if registry == nil {
-		registry = featuregate.GetRegistry()
-	}
-	registry.Register(featuregate.Gate{
+	registry.MustRegister(featuregate.Gate{
 		ID:          useOtelForInternalMetricsfeatureGateID,
 		Description: "controls whether the collector to uses open telemetry for internal metrics",
 		Enabled:     false,
