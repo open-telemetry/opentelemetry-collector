@@ -19,6 +19,7 @@
 ### 🧰 Bug fixes 🧰
 
 - Setup the correct meter provider if telemetry.useOtelForInternalMetrics featuregate enabled (#5146)
+- Fix pdata.Value.asRaw() to correctly return elements of Slice and Map type (#5153)
 
 ## v0.48.0 Beta
 
