@@ -78,11 +78,11 @@ const messageValueGenerateTestTemplate = `func generateTest${structName}() ${str
 const messageValueFillTestHeaderTemplate = `func fillTest${structName}(tv ${structName}) {`
 const messageValueFillTestFooterTemplate = `}`
 
-const messageValueAliasTemplate = `// ${structName} is an alias for pdata.${structName} struct.
-type ${structName} = pdata.${structName} 
+const messageValueAliasTemplate = `// ${structName} is an alias for internal.${structName} struct.
+type ${structName} = internal.${structName} 
 
 // New${structName} is an alias for a function to create a new empty ${structName}.
-var New${structName} = pdata.New${structName}`
+var New${structName} = internal.New${structName}`
 
 const newLine = "\n"
 

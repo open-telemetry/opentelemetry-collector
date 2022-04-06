@@ -19,7 +19,7 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 
-	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
+	ipdata "go.opentelemetry.io/collector/model/internal"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

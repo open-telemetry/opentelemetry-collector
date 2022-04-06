@@ -16,64 +16,62 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for log data structures.
 
-import (
-	"go.opentelemetry.io/collector/model/internal/pdata"
-)
+import "go.opentelemetry.io/collector/model/internal"
 
-// LogsMarshaler is an alias for pdata.LogsMarshaler interface.
-type LogsMarshaler = pdata.LogsMarshaler
+// LogsMarshaler is an alias for internal.LogsMarshaler interface.
+type LogsMarshaler = internal.LogsMarshaler
 
-// LogsUnmarshaler is an alias for pdata.LogsUnmarshaler interface.
-type LogsUnmarshaler = pdata.LogsUnmarshaler
+// LogsUnmarshaler is an alias for internal.LogsUnmarshaler interface.
+type LogsUnmarshaler = internal.LogsUnmarshaler
 
-// LogsSizer is an alias for pdata.LogsSizer interface.
-type LogsSizer = pdata.LogsSizer
+// LogsSizer is an alias for internal.LogsSizer interface.
+type LogsSizer = internal.LogsSizer
 
-// Logs is an alias for pdata.Logs struct.
-type Logs = pdata.Logs
+// Logs is an alias for internal.Logs struct.
+type Logs = internal.Logs
 
 // NewLogs is an alias for a function to create new Logs.
-var NewLogs = pdata.NewLogs
+var NewLogs = internal.NewLogs
 
-// SeverityNumber is an alias for pdata.SeverityNumber type.
-type SeverityNumber = pdata.SeverityNumber
+// SeverityNumber is an alias for internal.SeverityNumber type.
+type SeverityNumber = internal.SeverityNumber
 
 const (
-	SeverityNumberUNDEFINED = pdata.SeverityNumberUNDEFINED
-	SeverityNumberTRACE     = pdata.SeverityNumberTRACE
-	SeverityNumberTRACE2    = pdata.SeverityNumberTRACE2
-	SeverityNumberTRACE3    = pdata.SeverityNumberTRACE3
-	SeverityNumberTRACE4    = pdata.SeverityNumberTRACE4
-	SeverityNumberDEBUG     = pdata.SeverityNumberDEBUG
-	SeverityNumberDEBUG2    = pdata.SeverityNumberDEBUG2
-	SeverityNumberDEBUG3    = pdata.SeverityNumberDEBUG3
-	SeverityNumberDEBUG4    = pdata.SeverityNumberDEBUG4
-	SeverityNumberINFO      = pdata.SeverityNumberINFO
-	SeverityNumberINFO2     = pdata.SeverityNumberINFO2
-	SeverityNumberINFO3     = pdata.SeverityNumberINFO3
-	SeverityNumberINFO4     = pdata.SeverityNumberINFO4
-	SeverityNumberWARN      = pdata.SeverityNumberWARN
-	SeverityNumberWARN2     = pdata.SeverityNumberWARN2
-	SeverityNumberWARN3     = pdata.SeverityNumberWARN3
-	SeverityNumberWARN4     = pdata.SeverityNumberWARN4
-	SeverityNumberERROR     = pdata.SeverityNumberERROR
-	SeverityNumberERROR2    = pdata.SeverityNumberERROR2
-	SeverityNumberERROR3    = pdata.SeverityNumberERROR3
-	SeverityNumberERROR4    = pdata.SeverityNumberERROR4
-	SeverityNumberFATAL     = pdata.SeverityNumberFATAL
-	SeverityNumberFATAL2    = pdata.SeverityNumberFATAL2
-	SeverityNumberFATAL3    = pdata.SeverityNumberFATAL3
-	SeverityNumberFATAL4    = pdata.SeverityNumberFATAL4
+	SeverityNumberUNDEFINED = internal.SeverityNumberUNDEFINED
+	SeverityNumberTRACE     = internal.SeverityNumberTRACE
+	SeverityNumberTRACE2    = internal.SeverityNumberTRACE2
+	SeverityNumberTRACE3    = internal.SeverityNumberTRACE3
+	SeverityNumberTRACE4    = internal.SeverityNumberTRACE4
+	SeverityNumberDEBUG     = internal.SeverityNumberDEBUG
+	SeverityNumberDEBUG2    = internal.SeverityNumberDEBUG2
+	SeverityNumberDEBUG3    = internal.SeverityNumberDEBUG3
+	SeverityNumberDEBUG4    = internal.SeverityNumberDEBUG4
+	SeverityNumberINFO      = internal.SeverityNumberINFO
+	SeverityNumberINFO2     = internal.SeverityNumberINFO2
+	SeverityNumberINFO3     = internal.SeverityNumberINFO3
+	SeverityNumberINFO4     = internal.SeverityNumberINFO4
+	SeverityNumberWARN      = internal.SeverityNumberWARN
+	SeverityNumberWARN2     = internal.SeverityNumberWARN2
+	SeverityNumberWARN3     = internal.SeverityNumberWARN3
+	SeverityNumberWARN4     = internal.SeverityNumberWARN4
+	SeverityNumberERROR     = internal.SeverityNumberERROR
+	SeverityNumberERROR2    = internal.SeverityNumberERROR2
+	SeverityNumberERROR3    = internal.SeverityNumberERROR3
+	SeverityNumberERROR4    = internal.SeverityNumberERROR4
+	SeverityNumberFATAL     = internal.SeverityNumberFATAL
+	SeverityNumberFATAL2    = internal.SeverityNumberFATAL2
+	SeverityNumberFATAL3    = internal.SeverityNumberFATAL3
+	SeverityNumberFATAL4    = internal.SeverityNumberFATAL4
 )
 
 // Deprecated: [v0.48.0] Use ScopeLogsSlice instead.
-type InstrumentationLibraryLogsSlice = pdata.ScopeLogsSlice
+type InstrumentationLibraryLogsSlice = internal.ScopeLogsSlice
 
 // Deprecated: [v0.48.0] Use NewScopeLogsSlice instead.
-var NewInstrumentationLibraryLogsSlice = pdata.NewScopeLogsSlice
+var NewInstrumentationLibraryLogsSlice = internal.NewScopeLogsSlice
 
 // Deprecated: [v0.48.0] Use ScopeLogs instead.
-type InstrumentationLibraryLogs = pdata.ScopeLogs
+type InstrumentationLibraryLogs = internal.ScopeLogs
 
 // Deprecated: [v0.48.0] Use NewScopeLogs instead.
-var NewInstrumentationLibraryLogs = pdata.NewScopeLogs
+var NewInstrumentationLibraryLogs = internal.NewScopeLogs

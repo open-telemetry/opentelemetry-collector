@@ -32,7 +32,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/model/internal/pdata"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var _ json.Unmarshaler = LogsResponse{}
