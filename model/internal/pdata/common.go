@@ -923,25 +923,7 @@ func (m Map) CopyTo(dest Map) {
 func (m Map) AsRaw() map[string]interface{} {
 	rawMap := make(map[string]interface{})
 	m.Range(func(k string, v Value) bool {
-		// TODO: Use v.asRaw() instead
-		switch v.Type() {
-		case ValueTypeString:
-			rawMap[k] = v.StringVal()
-		case ValueTypeInt:
-			rawMap[k] = v.IntVal()
-		case ValueTypeDouble:
-			rawMap[k] = v.DoubleVal()
-		case ValueTypeBool:
-			rawMap[k] = v.BoolVal()
-		case ValueTypeBytes:
-			rawMap[k] = v.BytesVal()
-		case ValueTypeEmpty:
-			rawMap[k] = nil
-		case ValueTypeMap:
-			rawMap[k] = v.MapVal().AsRaw()
-		case ValueTypeSlice:
-			rawMap[k] = v.SliceVal().asRaw()
-		}
+		rawMap[k] = v.asRaw()
 		return true
 	})
 	return rawMap
@@ -964,24 +946,7 @@ func newSliceFromRaw(rawSlice []interface{}) Slice {
 func (es Slice) asRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		v := es.At(i)
-		// TODO: Use v.asRaw() instead
-		switch v.Type() {
-		case ValueTypeString:
-			rawSlice = append(rawSlice, v.StringVal())
-		case ValueTypeInt:
-			rawSlice = append(rawSlice, v.IntVal())
-		case ValueTypeDouble:
-			rawSlice = append(rawSlice, v.DoubleVal())
-		case ValueTypeBool:
-			rawSlice = append(rawSlice, v.BoolVal())
-		case ValueTypeBytes:
-			rawSlice = append(rawSlice, v.BytesVal())
-		case ValueTypeEmpty:
-			rawSlice = append(rawSlice, nil)
-		default:
-			rawSlice = append(rawSlice, "<Invalid array value>")
-		}
+		rawSlice = append(rawSlice, es.At(i).asRaw())
 	}
 	return rawSlice
 }
