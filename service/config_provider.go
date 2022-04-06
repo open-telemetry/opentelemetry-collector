@@ -98,6 +98,9 @@ func WithConfigMapConverters(c []config.MapConverterFunc) ConfigProviderOption {
 }
 
 // WithConfigUnmarshaler overwrites the default unmarshaler.
+// Deprecated: [v0.49.0] because providing custom ConfigUnmarshaler is not necessary since users can wrap/implement
+// ConfigProvider if needed to change the resulted config. This functionality will be kept for at least 2 minor versions,
+// and if nobody express a need for it will be removed.
 func WithConfigUnmarshaler(c configunmarshaler.ConfigUnmarshaler) ConfigProviderOption {
 	return func(opts *configProvider) {
 		opts.configUnmarshaler = c

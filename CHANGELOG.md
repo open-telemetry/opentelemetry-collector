@@ -13,6 +13,7 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` (#4762)
+  - There is no equivalent to provide custom ConfigUnmarshaler, if you need to apply changes to the parsed config wrap the default ConfigProvider.
 
 ### 💡 Enhancements 💡
 
