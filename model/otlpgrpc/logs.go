@@ -41,25 +41,6 @@ func NewLogsResponse() LogsResponse {
 	return LogsResponse{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
 }
 
-// Deprecated: [v0.48.0] use LogsResponse.UnmarshalProto.
-func UnmarshalLogsResponse(data []byte) (LogsResponse, error) {
-	lr := NewLogsResponse()
-	err := lr.UnmarshalProto(data)
-	return lr, err
-}
-
-// Deprecated: [v0.48.0] use LogsResponse.UnmarshalJSON.
-func UnmarshalJSONLogsResponse(data []byte) (LogsResponse, error) {
-	lr := NewLogsResponse()
-	err := lr.UnmarshalJSON(data)
-	return lr, err
-}
-
-// Deprecated: [v0.48.0] use MarshalProto.
-func (lr LogsResponse) Marshal() ([]byte, error) {
-	return lr.MarshalProto()
-}
-
 // MarshalProto marshals LogsResponse into proto bytes.
 func (lr LogsResponse) MarshalProto() ([]byte, error) {
 	return lr.orig.Marshal()
@@ -92,25 +73,6 @@ type LogsRequest struct {
 // NewLogsRequest returns an empty LogsRequest.
 func NewLogsRequest() LogsRequest {
 	return LogsRequest{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
-}
-
-// Deprecated: [v0.48.0] use LogsRequest.UnmarshalProto.
-func UnmarshalLogsRequest(data []byte) (LogsRequest, error) {
-	lr := NewLogsRequest()
-	err := lr.UnmarshalProto(data)
-	return lr, err
-}
-
-// Deprecated: [v0.48.0] use LogsRequest.UnmarshalJSON.
-func UnmarshalJSONLogsRequest(data []byte) (LogsRequest, error) {
-	lr := NewLogsRequest()
-	err := lr.UnmarshalJSON(data)
-	return lr, err
-}
-
-// Deprecated: [v0.48.0] use MarshalProto.
-func (lr LogsRequest) Marshal() ([]byte, error) {
-	return lr.MarshalProto()
 }
 
 // MarshalProto marshals LogsRequest into proto bytes.

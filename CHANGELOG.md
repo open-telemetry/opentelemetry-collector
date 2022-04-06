@@ -4,11 +4,22 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated structs/funcs from previous versions (#5131)
+- Do not set TraceProvider to global otel (#5138)
+- Remove deprecated funcs from otlpgrpc (#5144)
+- Add Scheme to MapProvider interface (#5068)
+- Do not set MeterProvider to global otel (#5146)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
 
+- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
+
 ### 🧰 Bug fixes 🧰
+
+- Setup the correct meter provider if telemetry.useOtelForInternalMetrics featuregate enabled (#5146)
+- Fix pdata.Value.asRaw() to correctly return elements of Slice and Map type (#5153)
 
 ## v0.48.0 Beta
 

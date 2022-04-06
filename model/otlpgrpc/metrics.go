@@ -37,25 +37,6 @@ func NewMetricsResponse() MetricsResponse {
 	return MetricsResponse{orig: &otlpcollectormetrics.ExportMetricsServiceResponse{}}
 }
 
-// Deprecated: [v0.48.0] use MetricsResponse.UnmarshalProto.
-func UnmarshalMetricsResponse(data []byte) (MetricsResponse, error) {
-	mr := NewMetricsResponse()
-	err := mr.UnmarshalProto(data)
-	return mr, err
-}
-
-// Deprecated: [v0.48.0] use MetricsResponse.UnmarshalJSON.
-func UnmarshalJSONMetricsResponse(data []byte) (MetricsResponse, error) {
-	mr := NewMetricsResponse()
-	err := mr.UnmarshalJSON(data)
-	return mr, err
-}
-
-// Deprecated: [v0.48.0] use MarshalProto.
-func (mr MetricsResponse) Marshal() ([]byte, error) {
-	return mr.MarshalProto()
-}
-
 // MarshalProto marshals MetricsResponse into proto bytes.
 func (mr MetricsResponse) MarshalProto() ([]byte, error) {
 	return mr.orig.Marshal()
@@ -88,25 +69,6 @@ type MetricsRequest struct {
 // NewMetricsRequest returns an empty MetricsRequest.
 func NewMetricsRequest() MetricsRequest {
 	return MetricsRequest{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
-}
-
-// Deprecated: [v0.48.0] use MetricsRequest.UnmarshalProto.
-func UnmarshalMetricsRequest(data []byte) (MetricsRequest, error) {
-	mr := NewMetricsRequest()
-	err := mr.UnmarshalProto(data)
-	return mr, err
-}
-
-// Deprecated: [v0.48.0] use MetricsRequest.UnmarshalJSON.
-func UnmarshalJSONMetricsRequest(data []byte) (MetricsRequest, error) {
-	mr := NewMetricsRequest()
-	err := mr.UnmarshalJSON(data)
-	return mr, err
-}
-
-// Deprecated: [v0.48.0] use MarshalProto.
-func (mr MetricsRequest) Marshal() ([]byte, error) {
-	return mr.MarshalProto()
 }
 
 // MarshalProto marshals MetricsRequest into proto bytes.

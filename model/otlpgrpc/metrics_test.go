@@ -131,16 +131,6 @@ func TestMetricsRequestJSONTransition(t *testing.T) {
 	}
 }
 
-func TestMetricsRequestJSON_Deprecated(t *testing.T) {
-	mr, err := UnmarshalJSONMetricsRequest(metricsRequestJSON)
-	assert.NoError(t, err)
-	assert.Equal(t, "test_metric", mr.Metrics().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
-
-	got, err := mr.MarshalJSON()
-	assert.NoError(t, err)
-	assert.Equal(t, strings.Join(strings.Fields(string(metricsRequestJSON)), ""), string(got))
-}
-
 func TestMetricsGrpc(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()

@@ -147,16 +147,6 @@ func TestTracesRequestJSONTransition(t *testing.T) {
 	}
 }
 
-func TestTracesRequestJSON_Deprecated(t *testing.T) {
-	tr, err := UnmarshalJSONTracesRequest(tracesRequestJSON)
-	assert.NoError(t, err)
-	assert.Equal(t, "test_span", tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
-
-	got, err := tr.MarshalJSON()
-	assert.NoError(t, err)
-	assert.Equal(t, strings.Join(strings.Fields(string(tracesRequestJSON)), ""), string(got))
-}
-
 func TestTracesGrpc(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()

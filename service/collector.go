@@ -27,7 +27,6 @@ import (
 	"syscall"
 
 	"go.opentelemetry.io/contrib/zpages"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/nonrecording"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -106,6 +105,10 @@ func New(set CollectorSettings) (*Collector, error) {
 
 	return &Collector{
 		logger: zap.NewNop(), // Set a Nop logger as a place holder until a logger is created based on configuration
+
+		tracerProvider:    trace.NewNoopTracerProvider(),
+		meterProvider:     nonrecording.NewNoopMeterProvider(),
+		asyncErrorChannel: make(chan error),
 
 		set:          set,
 		state:        int32(Starting),
@@ -216,6 +219,13 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return err
 	}
 
+	// TODO: This should be part of the service initialization, which should be responsible to create TelemetrySettings.
+	// For the moment happens here, since it needs service.Config and Logger.
+	// It is called once because that is how it is implemented using sync.Once.
+	if err = collectorTelemetry.init(col); err != nil {
+		return err
+	}
+
 	if err = col.service.Start(ctx); err != nil {
 		return err
 	}
@@ -231,20 +241,7 @@ func (col *Collector) Run(ctx context.Context) error {
 		sdktrace.WithSampler(internal.AlwaysRecord()),
 		sdktrace.WithSpanProcessor(col.zPagesSpanProcessor))
 
-	// Set the constructed tracer provider as Global, in case any component uses the
-	// global TracerProvider.
-	otel.SetTracerProvider(col.tracerProvider)
-
-	col.meterProvider = nonrecording.NewNoopMeterProvider()
-
-	col.asyncErrorChannel = make(chan error)
-
 	if err := col.setupConfigurationComponents(ctx); err != nil {
-		col.setCollectorState(Closed)
-		return err
-	}
-
-	if err := collectorTelemetry.init(col); err != nil {
 		col.setCollectorState(Closed)
 		return err
 	}
