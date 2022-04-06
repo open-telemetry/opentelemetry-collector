@@ -27,14 +27,14 @@ type Gate struct {
 	Enabled     bool
 }
 
-var reg = &Registry{gates: make(map[string]Gate)}
+var reg = NewRegistry()
 
 func GetRegistry() *Registry {
 	return reg
 }
 
-func NewRegistry() Registry {
-	return Registry{gates: make(map[string]Gate)}
+func NewRegistry() *Registry {
+	return &Registry{gates: make(map[string]Gate)}
 }
 
 // Register a Gate. May only be called in an init() function.
