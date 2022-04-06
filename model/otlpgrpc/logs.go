@@ -21,10 +21,10 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"google.golang.org/grpc"
 
+	ipdata "go.opentelemetry.io/collector/model/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
 	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
-	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

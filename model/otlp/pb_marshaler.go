@@ -15,7 +15,7 @@
 package otlp // import "go.opentelemetry.io/collector/model/otlp"
 
 import (
-	ipdata "go.opentelemetry.io/collector/model/internal/pdata"
+	ipdata "go.opentelemetry.io/collector/model/internal"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 

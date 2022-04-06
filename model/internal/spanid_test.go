@@ -12,27 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata
+package internal
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUnixNanosConverters(t *testing.T) {
-	t1 := time.Date(2020, 03, 24, 1, 13, 23, 789, time.UTC)
-	tun := Timestamp(t1.UnixNano())
+func TestSpanID(t *testing.T) {
+	sid := InvalidSpanID()
+	assert.EqualValues(t, [8]byte{}, sid.Bytes())
+	assert.True(t, sid.IsEmpty())
+	assert.Equal(t, "", sid.HexString())
 
-	assert.EqualValues(t, uint64(1585012403000000789), tun)
-	assert.EqualValues(t, tun, NewTimestampFromTime(t1))
-	assert.EqualValues(t, t1, NewTimestampFromTime(t1).AsTime())
-	assert.Equal(t, "2020-03-24 01:13:23.000000789 +0000 UTC", t1.String())
-}
-
-func TestZeroTimestamp(t *testing.T) {
-	assert.Equal(t, time.Unix(0, 0).UTC(), Timestamp(0).AsTime())
-	assert.Zero(t, NewTimestampFromTime(time.Unix(0, 0).UTC()))
-	assert.Equal(t, "1970-01-01 00:00:00 +0000 UTC", Timestamp(0).String())
+	sid = NewSpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
+	assert.EqualValues(t, [8]byte{1, 2, 3, 4, 4, 3, 2, 1}, sid.Bytes())
+	assert.False(t, sid.IsEmpty())
+	assert.Equal(t, "0102030404030201", sid.HexString())
 }

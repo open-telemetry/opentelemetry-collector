@@ -12,22 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata
+package internal
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTraceID(t *testing.T) {
-	tid := InvalidTraceID()
-	assert.Equal(t, [16]byte{}, tid.Bytes())
-	assert.True(t, tid.IsEmpty())
-	assert.Equal(t, "", tid.HexString())
+func TestUnixNanosConverters(t *testing.T) {
+	t1 := time.Date(2020, 03, 24, 1, 13, 23, 789, time.UTC)
+	tun := Timestamp(t1.UnixNano())
 
-	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
-	assert.False(t, tid.IsEmpty())
-	assert.Equal(t, "01020304050607080807060504030201", tid.HexString())
+	assert.EqualValues(t, uint64(1585012403000000789), tun)
+	assert.EqualValues(t, tun, NewTimestampFromTime(t1))
+	assert.EqualValues(t, t1, NewTimestampFromTime(t1).AsTime())
+	assert.Equal(t, "2020-03-24 01:13:23.000000789 +0000 UTC", t1.String())
+}
+
+func TestZeroTimestamp(t *testing.T) {
+	assert.Equal(t, time.Unix(0, 0).UTC(), Timestamp(0).AsTime())
+	assert.Zero(t, NewTimestampFromTime(time.Unix(0, 0).UTC()))
+	assert.Equal(t, "1970-01-01 00:00:00 +0000 UTC", Timestamp(0).String())
 }
