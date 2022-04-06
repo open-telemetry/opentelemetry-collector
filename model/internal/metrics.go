@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata // import "go.opentelemetry.io/collector/model/internal/pdata"
+package internal // import "go.opentelemetry.io/collector/model/internal"
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pdata
+package internal
 
 import (
 	"testing"
@@ -20,14 +20,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSpanID(t *testing.T) {
-	sid := InvalidSpanID()
-	assert.EqualValues(t, [8]byte{}, sid.Bytes())
-	assert.True(t, sid.IsEmpty())
-	assert.Equal(t, "", sid.HexString())
+func TestTraceID(t *testing.T) {
+	tid := InvalidTraceID()
+	assert.Equal(t, [16]byte{}, tid.Bytes())
+	assert.True(t, tid.IsEmpty())
+	assert.Equal(t, "", tid.HexString())
 
-	sid = NewSpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
-	assert.EqualValues(t, [8]byte{1, 2, 3, 4, 4, 3, 2, 1}, sid.Bytes())
-	assert.False(t, sid.IsEmpty())
-	assert.Equal(t, "0102030404030201", sid.HexString())
+	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
+	assert.False(t, tid.IsEmpty())
+	assert.Equal(t, "01020304050607080807060504030201", tid.HexString())
 }
