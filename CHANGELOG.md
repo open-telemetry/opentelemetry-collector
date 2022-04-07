@@ -9,6 +9,7 @@
 - Remove deprecated funcs from otlpgrpc (#5144)
 - Add Scheme to MapProvider interface (#5068)
 - Do not set MeterProvider to global otel (#5146)
+- Make `InstrumentationLibrary<signal>ToScope` helper functions unexported (#5164)
 
 ### 🚩 Deprecations 🚩
 

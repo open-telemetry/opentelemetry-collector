@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/model/internal/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -209,7 +210,7 @@ func TestTracesGrpcTransition(t *testing.T) {
 	logClient := NewTracesClient(cc)
 
 	req := generateTracesRequestWithInstrumentationLibrary()
-	InstrumentationLibrarySpansToScope(req.orig.ResourceSpans)
+	otlp.InstrumentationLibrarySpansToScope(req.orig.ResourceSpans)
 	resp, err := logClient.Export(context.Background(), req)
 	assert.NoError(t, err)
 	assert.Equal(t, NewTracesResponse(), resp)
