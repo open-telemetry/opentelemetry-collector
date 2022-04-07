@@ -25,9 +25,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
+	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
+	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
@@ -108,8 +109,8 @@ func MustNewDefaultConfigProvider(configLocations []string, properties []string)
 		configLocations,
 		makeConfigMapProviderMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
 		[]config.MapConverterFunc{
-			configmapprovider.NewOverwritePropertiesConverter(properties),
-			configmapprovider.NewExpandConverter(),
+			overwritepropertiesmapconverter.New(properties),
+			expandmapconverter.New(),
 		},
 		configunmarshaler.NewDefault())
 }

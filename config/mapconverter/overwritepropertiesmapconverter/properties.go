@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
+package overwritepropertiesmapconverter // import "go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 
 import (
 	"bytes"
@@ -25,13 +25,13 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// NewOverwritePropertiesConverter returns a config.MapConverterFunc, that overrides all the given properties into the
+// New returns a config.MapConverterFunc, that overrides all the given properties into the
 // input map.
 //
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
-func NewOverwritePropertiesConverter(properties []string) config.MapConverterFunc {
+func New(properties []string) config.MapConverterFunc {
 	return func(_ context.Context, cfgMap *config.Map) error {
 		return convert(properties, cfgMap)
 	}
