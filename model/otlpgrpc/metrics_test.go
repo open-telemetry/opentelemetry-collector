@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/model/internal/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -193,7 +194,7 @@ func TestMetricsGrpcTransition(t *testing.T) {
 	logClient := NewMetricsClient(cc)
 
 	req := generateMetricsRequestWithInstrumentationLibrary()
-	InstrumentationLibraryMetricsToScope(req.orig.ResourceMetrics)
+	otlp.InstrumentationLibraryMetricsToScope(req.orig.ResourceMetrics)
 	resp, err := logClient.Export(context.Background(), req)
 	assert.NoError(t, err)
 	assert.Equal(t, NewMetricsResponse(), resp)

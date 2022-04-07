@@ -22,8 +22,8 @@ import (
 
 	ipdata "go.opentelemetry.io/collector/model/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/model/internal/data/protogen/collector/trace/v1"
-	v1 "go.opentelemetry.io/collector/model/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/model/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/model/internal/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -81,7 +81,7 @@ func (tr TracesRequest) UnmarshalProto(data []byte) error {
 	if err := tr.orig.Unmarshal(data); err != nil {
 		return err
 	}
-	InstrumentationLibrarySpansToScope(tr.orig.ResourceSpans)
+	otlp.InstrumentationLibrarySpansToScope(tr.orig.ResourceSpans)
 	return nil
 }
 
@@ -99,7 +99,7 @@ func (tr TracesRequest) UnmarshalJSON(data []byte) error {
 	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig); err != nil {
 		return err
 	}
-	InstrumentationLibrarySpansToScope(tr.orig.ResourceSpans)
+	otlp.InstrumentationLibrarySpansToScope(tr.orig.ResourceSpans)
 	return nil
 }
 
@@ -158,30 +158,4 @@ type rawTracesServer struct {
 func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortrace.ExportTraceServiceRequest) (*otlpcollectortrace.ExportTraceServiceResponse, error) {
 	rsp, err := s.srv.Export(ctx, TracesRequest{orig: request})
 	return rsp.orig, err
-}
-
-// InstrumentationLibraryToScope implements the translation of resource span data
-// following the v0.15.0 upgrade:
-//      receivers SHOULD check if instrumentation_library_spans is set
-//      and scope_spans is not set then the value in instrumentation_library_spans
-//      SHOULD be used instead by converting InstrumentationLibrarySpans into ScopeSpans.
-//      If scope_spans is set then instrumentation_library_spans SHOULD be ignored.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/3c2915c01a9fb37abfc0415ec71247c4978386b0/opentelemetry/proto/trace/v1/trace.proto#L58
-func InstrumentationLibrarySpansToScope(rss []*otlptrace.ResourceSpans) {
-	for _, rs := range rss {
-		if len(rs.ScopeSpans) == 0 {
-			for _, ils := range rs.InstrumentationLibrarySpans {
-				scopeSpans := otlptrace.ScopeSpans{
-					Scope: v1.InstrumentationScope{
-						Name:    ils.InstrumentationLibrary.Name,
-						Version: ils.InstrumentationLibrary.Version,
-					},
-					Spans:     ils.Spans,
-					SchemaUrl: ils.SchemaUrl,
-				}
-				rs.ScopeSpans = append(rs.ScopeSpans, &scopeSpans)
-			}
-		}
-		rs.InstrumentationLibrarySpans = nil
-	}
 }
