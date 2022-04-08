@@ -54,6 +54,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/collector/model v0.48.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.31.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.31.0 // indirect
@@ -78,3 +79,5 @@ require (
 replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/model => ../../model
+
+replace go.opentelemetry.io/collector/pdata => ../../pdata

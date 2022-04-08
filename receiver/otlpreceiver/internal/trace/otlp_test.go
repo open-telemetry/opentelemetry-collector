@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 func TestExport(t *testing.T) {
@@ -48,7 +48,7 @@ func TestExport(t *testing.T) {
 	// Keep trace data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
 	traceData := td.Clone()
-	req := otlpgrpc.NewTracesRequest()
+	req := ptraceotlp.NewRequest()
 	req.SetTraces(td)
 
 	resp, err := traceClient.Export(context.Background(), req)
@@ -69,7 +69,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer traceClientDoneFn()
 
-	resp, err := traceClient.Export(context.Background(), otlpgrpc.NewTracesRequest())
+	resp, err := traceClient.Export(context.Background(), ptraceotlp.NewRequest())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
@@ -83,20 +83,20 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	defer traceClientDoneFn()
 
 	td := testdata.GenerateTracesOneSpan()
-	req := otlpgrpc.NewTracesRequest()
+	req := ptraceotlp.NewRequest()
 	req.SetTraces(td)
 	resp, err := traceClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Equal(t, otlpgrpc.TracesResponse{}, resp)
+	assert.Equal(t, ptraceotlp.Response{}, resp)
 }
 
-func makeTraceServiceClient(addr net.Addr) (otlpgrpc.TracesClient, func(), error) {
+func makeTraceServiceClient(addr net.Addr) (ptraceotlp.Client, func(), error) {
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
 
-	metricsClient := otlpgrpc.NewTracesClient(cc)
+	metricsClient := ptraceotlp.NewClient(cc)
 
 	doneFn := func() { _ = cc.Close() }
 	return metricsClient, doneFn, nil
@@ -118,7 +118,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (net.Addr, func(
 
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
-	otlpgrpc.RegisterTracesServer(srv, r)
+	ptraceotlp.RegisterServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()

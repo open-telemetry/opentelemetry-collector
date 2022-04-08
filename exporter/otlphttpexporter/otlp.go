@@ -35,8 +35,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 type exporter struct {
@@ -91,8 +95,8 @@ func (e *exporter) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	tr := otlpgrpc.NewTracesRequest()
+func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	tr := ptraceotlp.NewRequest()
 	tr.SetTraces(td)
 	request, err := tr.MarshalProto()
 	if err != nil {
@@ -102,8 +106,8 @@ func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	return e.export(ctx, e.tracesURL, request)
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
-	tr := otlpgrpc.NewMetricsRequest()
+func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	tr := pmetricotlp.NewRequest()
 	tr.SetMetrics(md)
 	request, err := tr.MarshalProto()
 	if err != nil {
@@ -112,8 +116,8 @@ func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
 	return e.export(ctx, e.metricsURL, request)
 }
 
-func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
-	tr := otlpgrpc.NewLogsRequest()
+func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	tr := plogotlp.NewRequest()
 	tr.SetLogs(ld)
 	request, err := tr.MarshalProto()
 	if err != nil {

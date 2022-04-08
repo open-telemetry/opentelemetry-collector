@@ -22,7 +22,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestErr(t *testing.T) {
@@ -30,7 +32,7 @@ func TestErr(t *testing.T) {
 	ec := NewErr(err)
 	require.NotNil(t, ec)
 	assert.NotPanics(t, ec.unexported)
-	assert.Equal(t, err, ec.ConsumeLogs(context.Background(), pdata.NewLogs()))
-	assert.Equal(t, err, ec.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
-	assert.Equal(t, err, ec.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.Equal(t, err, ec.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.Equal(t, err, ec.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+	assert.Equal(t, err, ec.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
