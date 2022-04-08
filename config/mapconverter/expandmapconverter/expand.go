@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
+package expandmapconverter // import "go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
 
 import (
 	"context"
@@ -21,10 +21,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// NewExpandConverter returns a service.ConfigMapConverterFunc, that expands all environment variables for a given config.Map.
+// New returns a config.MapConverterFunc, that expands all environment variables for a given config.Map.
 //
 // Notice: This API is experimental.
-func NewExpandConverter() config.MapConverterFunc {
+func New() config.MapConverterFunc {
 	return func(_ context.Context, cfgMap *config.Map) error {
 		for _, k := range cfgMap.AllKeys() {
 			cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider
+package overwritepropertiesmapconverter
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 )
 
 func TestOverwritePropertiesConverter_Empty(t *testing.T) {
-	pmp := NewOverwritePropertiesConverter(nil)
+	pmp := New(nil)
 	cfgMap := config.NewMapFromStringMap(map[string]interface{}{"foo": "bar"})
 	assert.NoError(t, pmp(context.Background(), cfgMap))
 	assert.Equal(t, map[string]interface{}{"foo": "bar"}, cfgMap.ToStringMap())
@@ -39,7 +39,7 @@ func TestOverwritePropertiesConverter(t *testing.T) {
 		"exporters.kafka.brokers=foo:9200,foo2:9200",
 	}
 
-	pmp := NewOverwritePropertiesConverter(props)
+	pmp := New(props)
 	cfgMap := config.NewMap()
 	require.NoError(t, pmp(context.Background(), cfgMap))
 	keys := cfgMap.AllKeys()
@@ -51,7 +51,7 @@ func TestOverwritePropertiesConverter(t *testing.T) {
 }
 
 func TestOverwritePropertiesConverter_InvalidProperty(t *testing.T) {
-	pmp := NewOverwritePropertiesConverter([]string{"=2s"})
+	pmp := New([]string{"=2s"})
 	cfgMap := config.NewMap()
 	assert.Error(t, pmp(context.Background(), cfgMap))
 }
