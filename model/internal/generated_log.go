@@ -579,6 +579,16 @@ func (ms LogRecord) MoveTo(dest LogRecord) {
 	*ms.orig = otlplogs.LogRecord{}
 }
 
+// ObservedTimestamp returns the observedtimestamp associated with this LogRecord.
+func (ms LogRecord) ObservedTimestamp() Timestamp {
+	return Timestamp((*ms.orig).ObservedTimeUnixNano)
+}
+
+// SetObservedTimestamp replaces the observedtimestamp associated with this LogRecord.
+func (ms LogRecord) SetObservedTimestamp(v Timestamp) {
+	(*ms.orig).ObservedTimeUnixNano = uint64(v)
+}
+
 // Timestamp returns the timestamp associated with this LogRecord.
 func (ms LogRecord) Timestamp() Timestamp {
 	return Timestamp((*ms.orig).TimeUnixNano)
@@ -673,6 +683,7 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms LogRecord) CopyTo(dest LogRecord) {
+	dest.SetObservedTimestamp(ms.ObservedTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())

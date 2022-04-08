@@ -89,6 +89,14 @@ var logRecord = &messageValueStruct{
 	originFullName: "otlplogs.LogRecord",
 	fields: []baseField{
 		&primitiveTypedField{
+			fieldName:       "ObservedTimestamp",
+			originFieldName: "ObservedTimeUnixNano",
+			returnType:      "Timestamp",
+			rawType:         "uint64",
+			defaultVal:      "Timestamp(0)",
+			testVal:         "Timestamp(1234567890)",
+		},
+		&primitiveTypedField{
 			fieldName:       "Timestamp",
 			originFieldName: "TimeUnixNano",
 			returnType:      "Timestamp",
