@@ -41,6 +41,6 @@ func (nh *nopHost) GetExporters() map[config.DataType]map[config.ComponentID]com
 	return nil
 }
 
-func (nh *nopHost) RegisterStatusReporter(reporter component.StatusReportFunc) {}
-
-func (nh *nopHost) ReportStatus(status component.StatusReport) {}
+func (nh *nopHost) HealthNotifications() *component.HealthNotifications {
+	return nil
+}

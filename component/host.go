@@ -29,9 +29,7 @@ type Host interface {
 	// before Component.Shutdown() begins.
 	ReportFatalError(err error)
 
-	ReportStatus(report StatusReport)
-
-	RegisterStatusReporter(reporter StatusReportFunc)
+	HealthNotifications() *HealthNotifications
 
 	// GetFactory of the specified kind. Returns the factory for a component type.
 	// This allows components to create other components. For example:

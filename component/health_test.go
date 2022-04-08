@@ -24,33 +24,33 @@ import (
 )
 
 func TestStatus_StatusReporters(t *testing.T) {
-	reporters := NewStatusReporters()
+	notifications := NewHealthNotifications()
 
-	expectedStatus := StatusReport{
+	expectedEvent := HealthEvent{
 		ComponentID: config.NewComponentID("nop"),
 		Error:       errors.New("an error"),
 	}
 
 	var f1Called, f2Called bool
 
-	f1 := func(status StatusReport) {
-		require.Equal(t, expectedStatus, status)
+	f1 := func(event HealthEvent) {
+		require.Equal(t, expectedEvent, event)
 		f1Called = true
 	}
 
-	f2 := func(status StatusReport) {
-		require.Equal(t, expectedStatus, status)
+	f2 := func(event HealthEvent) {
+		require.Equal(t, expectedEvent, event)
 		f2Called = true
 	}
 
-	reporters.Start()
-	reporters.Register(f1)
-	reporters.Register(f2)
-	reporters.Report(expectedStatus)
+	notifications.Start()
+	notifications.Register(f1)
+	notifications.Register(f2)
+	notifications.Report(expectedEvent)
 
 	require.Eventually(t, func() bool {
 		return f1Called && f2Called
 	}, time.Second, time.Microsecond)
 
-	reporters.Stop()
+	notifications.Stop()
 }

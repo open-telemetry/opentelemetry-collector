@@ -102,22 +102,22 @@ func TestService_ReportStatus(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	expectedStatus := component.StatusReport{
+	expectedEvent := component.HealthEvent{
 		ComponentID: config.NewComponentID("nop"),
 		Error:       errors.New("an error"),
 	}
 
-	var reporterCalled bool
-	reporter := func(status component.StatusReport) {
-		require.Equal(t, expectedStatus, status)
-		reporterCalled = true
+	var fnCalled bool
+	fn := func(event component.HealthEvent) {
+		require.Equal(t, expectedEvent, event)
+		fnCalled = true
 	}
 
-	srv.RegisterStatusReporter(reporter)
-	srv.ReportStatus(expectedStatus)
+	srv.HealthNotifications().Register(fn)
+	srv.HealthNotifications().Report(expectedEvent)
 
 	require.Eventually(t, func() bool {
-		return reporterCalled
+		return fnCalled
 	}, time.Second, time.Millisecond)
 }
 
