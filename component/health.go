@@ -14,33 +14,39 @@
 
 package component // import "go.opentelemetry.io/collector/component"
 
-import "go.opentelemetry.io/collector/config"
+import (
+	"sync"
+
+	"go.opentelemetry.io/collector/config"
+)
 
 type HealthEvent struct {
 	ComponentID config.ComponentID
 	Error       error
 }
 
-type HealthEventFunc func(event HealthEvent)
-
 type HealthNotifications struct {
-	reporters    []HealthEventFunc
-	registerChan chan (HealthEventFunc)
-	eventChan    chan (HealthEvent)
-	stopChan     chan (struct{})
+	mu            sync.RWMutex
+	subscriptions []chan (HealthEvent)
+	eventChan     chan (HealthEvent)
+	stopChan      chan (struct{})
 }
 
 func NewHealthNotifications() *HealthNotifications {
 	return &HealthNotifications{
-		reporters:    []HealthEventFunc{},
-		registerChan: make(chan HealthEventFunc),
-		eventChan:    make(chan HealthEvent),
-		stopChan:     make(chan struct{}),
+		subscriptions: []chan (HealthEvent){},
+		eventChan:     make(chan HealthEvent),
+		stopChan:      make(chan struct{}),
 	}
 }
 
-func (hn *HealthNotifications) Register(reporter HealthEventFunc) {
-	hn.registerChan <- reporter
+func (hn *HealthNotifications) Subscribe() <-chan (HealthEvent) {
+	hn.mu.Lock()
+	defer hn.mu.Unlock()
+
+	sub := make(chan (HealthEvent))
+	hn.subscriptions = append(hn.subscriptions, sub)
+	return sub
 }
 
 func (hn *HealthNotifications) Report(event HealthEvent) {
@@ -51,11 +57,10 @@ func (hn *HealthNotifications) Start() {
 	go func() {
 		for {
 			select {
-			case reporter := <-hn.registerChan:
-				hn.reporters = append(hn.reporters, reporter)
 			case event := <-hn.eventChan:
 				hn.notify(event)
 			case <-hn.stopChan:
+				hn.unsubscribeAll()
 				return
 			}
 		}
@@ -67,7 +72,18 @@ func (hn *HealthNotifications) Stop() {
 }
 
 func (hn *HealthNotifications) notify(event HealthEvent) {
-	for _, fn := range hn.reporters {
-		fn(event)
+	hn.mu.RLock()
+	defer hn.mu.RUnlock()
+
+	for _, sub := range hn.subscriptions {
+		sub <- event
 	}
+}
+
+func (hn *HealthNotifications) unsubscribeAll() {
+	for i := 0; i < len(hn.subscriptions); i++ {
+		close(hn.subscriptions[i])
+		hn.subscriptions[i] = nil
+	}
+	hn.subscriptions = hn.subscriptions[:0]
 }

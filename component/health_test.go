@@ -19,11 +19,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 )
 
-func TestStatus_StatusReporters(t *testing.T) {
+func TestHealth_NotificationsSubscribe(t *testing.T) {
 	notifications := NewHealthNotifications()
 
 	expectedEvent := HealthEvent{
@@ -31,25 +32,31 @@ func TestStatus_StatusReporters(t *testing.T) {
 		Error:       errors.New("an error"),
 	}
 
-	var f1Called, f2Called bool
-
-	f1 := func(event HealthEvent) {
-		require.Equal(t, expectedEvent, event)
-		f1Called = true
-	}
-
-	f2 := func(event HealthEvent) {
-		require.Equal(t, expectedEvent, event)
-		f2Called = true
-	}
-
 	notifications.Start()
-	notifications.Register(f1)
-	notifications.Register(f2)
+	sub1 := notifications.Subscribe()
+	sub2 := notifications.Subscribe()
+
+	sub1Events := []HealthEvent{}
+	sub2Events := []HealthEvent{}
+
+	go func() {
+		for event := range sub1 {
+			sub1Events = append(sub1Events, event)
+		}
+	}()
+
+	go func() {
+		for event := range sub2 {
+			sub2Events = append(sub2Events, event)
+		}
+	}()
+
 	notifications.Report(expectedEvent)
 
+	expectedEvents := []HealthEvent{expectedEvent}
+
 	require.Eventually(t, func() bool {
-		return f1Called && f2Called
+		return assert.Equal(t, expectedEvents, sub1Events) && assert.Equal(t, expectedEvents, sub2Events)
 	}, time.Second, time.Microsecond)
 
 	notifications.Stop()
