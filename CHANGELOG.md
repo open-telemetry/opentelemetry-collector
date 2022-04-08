@@ -13,6 +13,8 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate configmapprovider package, replace with mapconverter (#5167)
+
 ### 💡 Enhancements 💡
 
 - OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
