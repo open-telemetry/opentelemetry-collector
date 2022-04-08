@@ -155,14 +155,14 @@ func TestConfigProvider_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts := []ConfigProviderOption{
-				WithConfigMapConverters(tt.cfgMapConverters),
-				WithConfigUnmarshaler(tt.configUnmarshaler),
+			set := ConfigProviderSettings{
+				Locations:     tt.locations,
+				MapProviders:  makeConfigMapProviderMap(tt.parserProvider...),
+				MapConverters: tt.cfgMapConverters,
+				Unmarshaler:   tt.configUnmarshaler,
 			}
-			for _, c := range tt.parserProvider {
-				opts = append(opts, WithConfigMapProvider(c))
-			}
-			cfgW, err := NewConfigProvider(tt.locations, opts...)
+
+			cfgW, err := NewConfigProvider(set)
 			assert.NoError(t, err)
 
 			_, errN := cfgW.Get(context.Background(), factories)
@@ -192,13 +192,16 @@ func TestConfigProvider_Errors(t *testing.T) {
 func TestConfigProvider(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
-	configMapProvider := func() config.MapProvider {
+	mapProvider := func() config.MapProvider {
 		cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
 		return &mockProvider{retM: cfgMap}
 	}()
 
-	cfgW, err := NewConfigProvider([]string{"mock:"}, WithConfigMapProvider(configMapProvider))
+	set := newDefaultConfigProviderSettings()
+	set.Locations = []string{"mock:"}
+	set.MapProviders[mapProvider.Scheme()] = mapProvider
+	cfgW, err := NewConfigProvider(set)
 	require.NoError(t, err)
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
@@ -257,10 +260,11 @@ func TestConfigProviderNoWatcher(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
 
+	set := newDefaultConfigProviderSettings()
+	set.Locations = []string{filepath.Join("testdata", "otelcol-nop.yaml")}
+
 	watcherWG := sync.WaitGroup{}
-	cfgW, err := NewConfigProvider(
-		[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
-		WithConfigMapProvider(filemapprovider.New()))
+	cfgW, err := NewConfigProvider(set)
 	require.NoError(t, err)
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
@@ -304,17 +308,19 @@ func TestMustNewDefaultConfigProvider(t *testing.T) {
 func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
-	configMapProvider := func() config.MapProvider {
+	mapProvider := func() config.MapProvider {
 		// Use fakeRetrieved with nil errors to have Watchable interface implemented.
 		cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
 		return &mockProvider{retM: cfgMap, errW: configsource.ErrSessionClosed}
 	}()
 
+	set := newDefaultConfigProviderSettings()
+	set.Locations = []string{"mock:"}
+	set.MapProviders[mapProvider.Scheme()] = mapProvider
+
 	watcherWG := sync.WaitGroup{}
-	cfgW, err := NewConfigProvider(
-		[]string{"mock:"},
-		WithConfigMapProvider(configMapProvider))
+	cfgW, err := NewConfigProvider(set)
 	_, errN := cfgW.Get(context.Background(), factories)
 	require.NoError(t, err)
 
@@ -374,7 +380,9 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		provider, err := NewConfigProvider([]string{tt.location})
+		set := newDefaultConfigProviderSettings()
+		set.Locations = []string{tt.location}
+		provider, err := NewConfigProvider(set)
 		assert.NoError(t, err)
 		_, err = provider.Get(context.Background(), factories)
 		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
