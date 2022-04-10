@@ -16,7 +16,6 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -154,13 +153,10 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}
 
 	if hcs.Auth != nil {
-
-		if hcs.Auth != nil {
 		httpCustomAuthRoundTripper, err := hcs.Auth.GetClientAuthenticator(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
-	}
 
 		clientTransport, err = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
 		if err != nil {
@@ -174,6 +170,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 			return nil, err
 		}
 	}
+
 
 	return &http.Client{
 		Transport: clientTransport,
