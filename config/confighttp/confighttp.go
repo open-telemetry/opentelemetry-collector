@@ -153,14 +153,14 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}
 
 	if hcs.Auth != nil {
-		httpCustomAuthRoundTripper, err := hcs.Auth.GetClientAuthenticator(host.GetExtensions())
-		if err != nil {
-			return nil, err
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(host.GetExtensions())
+		if aerr != nil {
+			return nil, aerr
 		}
 
-		clientTransport, err = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
+		clientTransport, aerr = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
+		if aerr != nil {
+			return nil, aerr
 		}
 	}
 
