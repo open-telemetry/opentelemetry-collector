@@ -25,9 +25,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
+	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
+	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
@@ -106,14 +107,10 @@ func MustNewConfigProvider(
 func MustNewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
 	return MustNewConfigProvider(
 		configLocations,
-		map[string]config.MapProvider{
-			"file": filemapprovider.New(),
-			"env":  envmapprovider.New(),
-			"yaml": yamlmapprovider.New(),
-		},
+		makeConfigMapProviderMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
 		[]config.MapConverterFunc{
-			configmapprovider.NewOverwritePropertiesConverter(properties),
-			configmapprovider.NewExpandConverter(),
+			overwritepropertiesmapconverter.New(properties),
+			expandmapconverter.New(),
 		},
 		configunmarshaler.NewDefault())
 }
@@ -221,4 +218,12 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Retrieved,
 			return err
 		},
 	}, nil
+}
+
+func makeConfigMapProviderMap(providers ...config.MapProvider) map[string]config.MapProvider {
+	ret := make(map[string]config.MapProvider, len(providers))
+	for _, provider := range providers {
+		ret[provider.Scheme()] = provider
+	}
+	return ret
 }

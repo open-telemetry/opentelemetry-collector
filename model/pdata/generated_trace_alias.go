@@ -17,70 +17,70 @@
 
 package pdata
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/model/internal"
 
-// ResourceSpansSlice is an alias for pdata.ResourceSpansSlice struct.
-type ResourceSpansSlice = pdata.ResourceSpansSlice
+// ResourceSpansSlice is an alias for internal.ResourceSpansSlice struct.
+type ResourceSpansSlice = internal.ResourceSpansSlice
 
 // NewResourceSpansSlice is an alias for a function to create ResourceSpansSlice.
-var NewResourceSpansSlice = pdata.NewResourceSpansSlice
+var NewResourceSpansSlice = internal.NewResourceSpansSlice
 
-// ResourceSpans is an alias for pdata.ResourceSpans struct.
-type ResourceSpans = pdata.ResourceSpans
+// ResourceSpans is an alias for internal.ResourceSpans struct.
+type ResourceSpans = internal.ResourceSpans
 
 // NewResourceSpans is an alias for a function to create a new empty ResourceSpans.
-var NewResourceSpans = pdata.NewResourceSpans
+var NewResourceSpans = internal.NewResourceSpans
 
-// InstrumentationLibrarySpansSlice is an alias for pdata.InstrumentationLibrarySpansSlice struct.
-type InstrumentationLibrarySpansSlice = pdata.InstrumentationLibrarySpansSlice
+// ScopeSpansSlice is an alias for internal.ScopeSpansSlice struct.
+type ScopeSpansSlice = internal.ScopeSpansSlice
 
-// NewInstrumentationLibrarySpansSlice is an alias for a function to create InstrumentationLibrarySpansSlice.
-var NewInstrumentationLibrarySpansSlice = pdata.NewInstrumentationLibrarySpansSlice
+// NewScopeSpansSlice is an alias for a function to create ScopeSpansSlice.
+var NewScopeSpansSlice = internal.NewScopeSpansSlice
 
-// InstrumentationLibrarySpans is an alias for pdata.InstrumentationLibrarySpans struct.
-type InstrumentationLibrarySpans = pdata.InstrumentationLibrarySpans
+// ScopeSpans is an alias for internal.ScopeSpans struct.
+type ScopeSpans = internal.ScopeSpans
 
-// NewInstrumentationLibrarySpans is an alias for a function to create a new empty InstrumentationLibrarySpans.
-var NewInstrumentationLibrarySpans = pdata.NewInstrumentationLibrarySpans
+// NewScopeSpans is an alias for a function to create a new empty ScopeSpans.
+var NewScopeSpans = internal.NewScopeSpans
 
-// SpanSlice is an alias for pdata.SpanSlice struct.
-type SpanSlice = pdata.SpanSlice
+// SpanSlice is an alias for internal.SpanSlice struct.
+type SpanSlice = internal.SpanSlice
 
 // NewSpanSlice is an alias for a function to create SpanSlice.
-var NewSpanSlice = pdata.NewSpanSlice
+var NewSpanSlice = internal.NewSpanSlice
 
-// Span is an alias for pdata.Span struct.
-type Span = pdata.Span
+// Span is an alias for internal.Span struct.
+type Span = internal.Span
 
 // NewSpan is an alias for a function to create a new empty Span.
-var NewSpan = pdata.NewSpan
+var NewSpan = internal.NewSpan
 
-// SpanEventSlice is an alias for pdata.SpanEventSlice struct.
-type SpanEventSlice = pdata.SpanEventSlice
+// SpanEventSlice is an alias for internal.SpanEventSlice struct.
+type SpanEventSlice = internal.SpanEventSlice
 
 // NewSpanEventSlice is an alias for a function to create SpanEventSlice.
-var NewSpanEventSlice = pdata.NewSpanEventSlice
+var NewSpanEventSlice = internal.NewSpanEventSlice
 
-// SpanEvent is an alias for pdata.SpanEvent struct.
-type SpanEvent = pdata.SpanEvent
+// SpanEvent is an alias for internal.SpanEvent struct.
+type SpanEvent = internal.SpanEvent
 
 // NewSpanEvent is an alias for a function to create a new empty SpanEvent.
-var NewSpanEvent = pdata.NewSpanEvent
+var NewSpanEvent = internal.NewSpanEvent
 
-// SpanLinkSlice is an alias for pdata.SpanLinkSlice struct.
-type SpanLinkSlice = pdata.SpanLinkSlice
+// SpanLinkSlice is an alias for internal.SpanLinkSlice struct.
+type SpanLinkSlice = internal.SpanLinkSlice
 
 // NewSpanLinkSlice is an alias for a function to create SpanLinkSlice.
-var NewSpanLinkSlice = pdata.NewSpanLinkSlice
+var NewSpanLinkSlice = internal.NewSpanLinkSlice
 
-// SpanLink is an alias for pdata.SpanLink struct.
-type SpanLink = pdata.SpanLink
+// SpanLink is an alias for internal.SpanLink struct.
+type SpanLink = internal.SpanLink
 
 // NewSpanLink is an alias for a function to create a new empty SpanLink.
-var NewSpanLink = pdata.NewSpanLink
+var NewSpanLink = internal.NewSpanLink
 
-// SpanStatus is an alias for pdata.SpanStatus struct.
-type SpanStatus = pdata.SpanStatus
+// SpanStatus is an alias for internal.SpanStatus struct.
+type SpanStatus = internal.SpanStatus
 
 // NewSpanStatus is an alias for a function to create a new empty SpanStatus.
-var NewSpanStatus = pdata.NewSpanStatus
+var NewSpanStatus = internal.NewSpanStatus

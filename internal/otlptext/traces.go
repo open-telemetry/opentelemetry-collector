@@ -34,12 +34,12 @@ func (textTracesMarshaler) MarshalTraces(td pdata.Traces) ([]byte, error) {
 		rs := rss.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rs.SchemaUrl())
 		buf.logAttributes("Resource labels", rs.Resource().Attributes())
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
-			buf.logEntry("InstrumentationLibrarySpans #%d", j)
+			buf.logEntry("ScopeSpans #%d", j)
 			ils := ilss.At(j)
-			buf.logEntry("InstrumentationLibrarySpans SchemaURL: %s", ils.SchemaUrl())
-			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
+			buf.logEntry("ScopeSpans SchemaURL: %s", ils.SchemaUrl())
+			buf.logInstrumentationScope(ils.Scope())
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {

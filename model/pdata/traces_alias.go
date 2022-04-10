@@ -16,49 +16,59 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for trace data structures.
 
-import (
-	"go.opentelemetry.io/collector/model/internal/pdata"
-)
+import "go.opentelemetry.io/collector/model/internal"
 
-// TracesMarshaler is an alias for pdata.TracesMarshaler interface.
-type TracesMarshaler = pdata.TracesMarshaler
+// TracesMarshaler is an alias for internal.TracesMarshaler interface.
+type TracesMarshaler = internal.TracesMarshaler
 
-// TracesUnmarshaler is an alias for pdata.TracesUnmarshaler interface.
-type TracesUnmarshaler = pdata.TracesUnmarshaler
+// TracesUnmarshaler is an alias for internal.TracesUnmarshaler interface.
+type TracesUnmarshaler = internal.TracesUnmarshaler
 
-// TracesSizer is an alias for pdata.TracesSizer interface.
-type TracesSizer = pdata.TracesSizer
+// TracesSizer is an alias for internal.TracesSizer interface.
+type TracesSizer = internal.TracesSizer
 
-// Traces is an alias for pdata.Traces struct.
-type Traces = pdata.Traces
+// Traces is an alias for internal.Traces struct.
+type Traces = internal.Traces
 
 // NewTraces is an alias for a function to create new Traces.
-var NewTraces = pdata.NewTraces
+var NewTraces = internal.NewTraces
 
-// TraceState is an alias for pdata.TraceState type.
-type TraceState = pdata.TraceState
-
-const (
-	TraceStateEmpty = pdata.TraceStateEmpty
-)
-
-// SpanKind is an alias for pdata.SpanKind type.
-type SpanKind = pdata.SpanKind
+// TraceState is an alias for internal.TraceState type.
+type TraceState = internal.TraceState
 
 const (
-	SpanKindUnspecified = pdata.SpanKindUnspecified
-	SpanKindInternal    = pdata.SpanKindInternal
-	SpanKindServer      = pdata.SpanKindServer
-	SpanKindClient      = pdata.SpanKindClient
-	SpanKindProducer    = pdata.SpanKindProducer
-	SpanKindConsumer    = pdata.SpanKindConsumer
+	TraceStateEmpty = internal.TraceStateEmpty
 )
 
-// StatusCode is an alias for pdata.StatusCode type.
-type StatusCode = pdata.StatusCode
+// SpanKind is an alias for internal.SpanKind type.
+type SpanKind = internal.SpanKind
 
 const (
-	StatusCodeUnset = pdata.StatusCodeUnset
-	StatusCodeOk    = pdata.StatusCodeOk
-	StatusCodeError = pdata.StatusCodeError
+	SpanKindUnspecified = internal.SpanKindUnspecified
+	SpanKindInternal    = internal.SpanKindInternal
+	SpanKindServer      = internal.SpanKindServer
+	SpanKindClient      = internal.SpanKindClient
+	SpanKindProducer    = internal.SpanKindProducer
+	SpanKindConsumer    = internal.SpanKindConsumer
 )
+
+// StatusCode is an alias for internal.StatusCode type.
+type StatusCode = internal.StatusCode
+
+const (
+	StatusCodeUnset = internal.StatusCodeUnset
+	StatusCodeOk    = internal.StatusCodeOk
+	StatusCodeError = internal.StatusCodeError
+)
+
+// Deprecated: [v0.48.0] Use ScopeSpansSlice instead.
+type InstrumentationLibrarySpansSlice = internal.ScopeSpansSlice
+
+// Deprecated: [v0.48.0] Use NewScopeSpansSlice instead.
+var NewInstrumentationLibrarySpansSlice = internal.NewScopeSpansSlice
+
+// Deprecated: [v0.48.0] Use ScopeSpans instead.
+type InstrumentationLibrarySpans = internal.ScopeSpans
+
+// Deprecated: [v0.48.0] Use NewScopeSpans instead.
+var NewInstrumentationLibrarySpans = internal.NewScopeSpans

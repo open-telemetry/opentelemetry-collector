@@ -20,23 +20,6 @@ import (
 	"strings"
 )
 
-const gatesListCfg = "feature-gates"
-
-var gatesList = FlagValue{}
-
-// Deprecated: [v0.48.0] declare distribution flag if needed.
-func Flags(flags *flag.FlagSet) {
-	flags.Var(
-		gatesList,
-		gatesListCfg,
-		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature.  '+' or no prefix will enable the feature.")
-}
-
-// Deprecated: [v0.48.0] declare distribution flag if needed.
-func GetFlags() FlagValue {
-	return gatesList
-}
-
 var _ flag.Value = (*FlagValue)(nil)
 
 // FlagValue implements the flag.Value interface and provides a mechanism for applying feature
@@ -62,11 +45,6 @@ func (f FlagValue) String() string {
 // Set applies the FlagValue encoded in the input string
 func (f FlagValue) Set(s string) error {
 	return f.setSlice(strings.Split(s, ","))
-}
-
-// Deprecated: [v0.48.0] will be removed soon, use Set with comma separated values.
-func (f FlagValue) SetSlice(s []string) error {
-	return f.setSlice(s)
 }
 
 func (f FlagValue) setSlice(s []string) error {

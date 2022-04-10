@@ -47,7 +47,7 @@ func TestProtobufTracesSizer(t *testing.T) {
 	marshaler := NewProtobufTracesMarshaler()
 	td := pdata.NewTraces()
 	rms := td.ResourceSpans()
-	rms.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
+	rms.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 
 	size := sizer.TracesSize(td)
 
@@ -66,7 +66,7 @@ func TestProtobufMetricsSizer(t *testing.T) {
 	sizer := NewProtobufMetricsMarshaler().(pdata.MetricsSizer)
 	marshaler := NewProtobufMetricsMarshaler()
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
+	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 
 	size := sizer.MetricsSize(md)
 
@@ -85,7 +85,7 @@ func TestProtobufLogsSizer(t *testing.T) {
 	sizer := NewProtobufLogsMarshaler().(pdata.LogsSizer)
 	marshaler := NewProtobufLogsMarshaler()
 	ld := pdata.NewLogs()
-	ld.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("error")
+	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("error")
 
 	size := sizer.LogsSize(ld)
 
@@ -186,7 +186,7 @@ func generateBenchmarkLogs(logsCount int) pdata.Logs {
 	endTime := pdata.NewTimestampFromTime(time.Now())
 
 	md := pdata.NewLogs()
-	ilm := md.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+	ilm := md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	ilm.LogRecords().EnsureCapacity(logsCount)
 	for i := 0; i < logsCount; i++ {
 		im := ilm.LogRecords().AppendEmpty()
@@ -201,7 +201,7 @@ func generateBenchmarkMetrics(metricsCount int) pdata.Metrics {
 	endTime := pdata.NewTimestampFromTime(now)
 
 	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
 		im := ilm.Metrics().AppendEmpty()
@@ -221,7 +221,7 @@ func generateBenchmarkTraces(metricsCount int) pdata.Traces {
 	endTime := pdata.NewTimestampFromTime(now)
 
 	md := pdata.NewTraces()
-	ilm := md.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+	ilm := md.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 	ilm.Spans().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
 		im := ilm.Spans().AppendEmpty()

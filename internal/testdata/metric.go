@@ -54,30 +54,30 @@ func GenerateMetricsNoLibraries() pdata.Metrics {
 	return md
 }
 
-func GenerateMetricsOneEmptyInstrumentationLibrary() pdata.Metrics {
+func GenerateMetricsOneEmptyInstrumentationScope() pdata.Metrics {
 	md := GenerateMetricsNoLibraries()
-	md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().AppendEmpty()
+	md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
 	return md
 }
 
 func GenerateMetricsOneMetric() pdata.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	md := GenerateMetricsOneEmptyInstrumentationScope()
+	rm0ils0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
 func GenerateMetricsTwoMetrics() pdata.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rm0ils0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	md := GenerateMetricsOneEmptyInstrumentationScope()
+	rm0ils0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
 	return md
 }
 
 func GenerateMetricsAllTypesEmptyDataPoint() pdata.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	md := GenerateMetricsOneEmptyInstrumentationScope()
+	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	ms := ilm0.Metrics()
 
 	doubleGauge := ms.AppendEmpty()
@@ -102,16 +102,16 @@ func GenerateMetricsAllTypesEmptyDataPoint() pdata.Metrics {
 }
 
 func GenerateMetricsMetricTypeInvalid() pdata.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	md := GenerateMetricsOneEmptyInstrumentationScope()
+	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	initMetric(ilm0.Metrics().AppendEmpty(), TestSumIntMetricName, pdata.MetricDataTypeNone)
 	return md
 }
 
 func GeneratMetricsAllTypesWithSampleDatapoints() pdata.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
+	md := GenerateMetricsOneEmptyInstrumentationScope()
 
-	ilm := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	ilm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	ms := ilm.Metrics()
 	initGaugeIntMetric(ms.AppendEmpty())
 	initGaugeDoubleMetric(ms.AppendEmpty())
@@ -307,8 +307,8 @@ func initMetric(m pdata.Metric, name string, ty pdata.MetricDataType) {
 }
 
 func GenerateMetricsManyMetricsSameResource(metricsCount int) pdata.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rs0ilm0 := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+	md := GenerateMetricsOneEmptyInstrumentationScope()
+	rs0ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	rs0ilm0.Metrics().EnsureCapacity(metricsCount)
 	for i := 0; i < metricsCount; i++ {
 		initSumIntMetric(rs0ilm0.Metrics().AppendEmpty())

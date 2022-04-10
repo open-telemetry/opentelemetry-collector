@@ -745,7 +745,9 @@ func (opv *optionalPrimitiveValue) generateSetWithTestValue(sb *strings.Builder)
 }
 
 func (opv *optionalPrimitiveValue) generateCopyToValue(sb *strings.Builder) {
-	sb.WriteString("dest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
+	sb.WriteString("if ms.Has" + opv.fieldName + "(){\n")
+	sb.WriteString("\tdest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
+	sb.WriteString("}\n")
 }
 
 var _ baseField = (*optionalPrimitiveValue)(nil)

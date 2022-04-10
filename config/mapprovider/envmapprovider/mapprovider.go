@@ -51,6 +51,10 @@ func (emp *mapProvider) Retrieve(_ context.Context, uri string, _ config.Watcher
 	return config.Retrieved{Map: config.NewMapFromStringMap(data)}, nil
 }
 
+func (*mapProvider) Scheme() string {
+	return schemeName
+}
+
 func (*mapProvider) Shutdown(context.Context) error {
 	return nil
 }

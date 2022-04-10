@@ -380,6 +380,7 @@ func TestHttpReception(t *testing.T) {
 		tlsServerCreds *configtls.TLSServerSetting
 		tlsClientCreds *configtls.TLSClientSetting
 		hasError       bool
+		forceHTTP1     bool
 	}{
 		{
 			name:           "noTLS",
@@ -403,6 +404,23 @@ func TestHttpReception(t *testing.T) {
 				},
 				ServerName: "localhost",
 			},
+		},
+		{
+			name: "TLS (HTTP/1.1)",
+			tlsServerCreds: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   filepath.Join("testdata", "ca.crt"),
+					CertFile: filepath.Join("testdata", "server.crt"),
+					KeyFile:  filepath.Join("testdata", "server.key"),
+				},
+			},
+			tlsClientCreds: &configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: filepath.Join("testdata", "ca.crt"),
+				},
+				ServerName: "localhost",
+			},
+			forceHTTP1: true,
 		},
 		{
 			name: "NoServerCertificates",
@@ -505,15 +523,24 @@ func TestHttpReception(t *testing.T) {
 			<-time.After(10 * time.Millisecond)
 
 			prefix := "https://"
+			expectedProto := "HTTP/2.0"
 			if tt.tlsClientCreds.Insecure {
 				prefix = "http://"
+				expectedProto = "HTTP/1.1"
 			}
 
 			hcs := &HTTPClientSettings{
 				Endpoint:   prefix + ln.Addr().String(),
 				TLSSetting: *tt.tlsClientCreds,
 			}
-			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
+			if tt.forceHTTP1 {
+				expectedProto = "HTTP/1.1"
+				hcs.CustomRoundTripper = func(rt http.RoundTripper) (http.RoundTripper, error) {
+					rt.(*http.Transport).ForceAttemptHTTP2 = false
+					return rt, nil
+				}
+			}
+			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{}, component.TelemetrySettings{})
 			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)
@@ -524,6 +551,7 @@ func TestHttpReception(t *testing.T) {
 				body, errRead := ioutil.ReadAll(resp.Body)
 				assert.NoError(t, errRead)
 				assert.Equal(t, "test", string(body))
+				assert.Equal(t, expectedProto, resp.Proto)
 			}
 			require.NoError(t, s.Close())
 		})
@@ -918,4 +946,110 @@ type mockHost struct {
 
 func (nh *mockHost) GetExtensions() map[config.ComponentID]component.Extension {
 	return nh.ext
+}
+
+func BenchmarkHttpRequest(b *testing.B) {
+	tests := []struct {
+		name            string
+		forceHTTP1      bool
+		clientPerThread bool
+	}{
+		{
+			name:            "HTTP/2.0, shared client (like load balancer)",
+			forceHTTP1:      false,
+			clientPerThread: false,
+		},
+		{
+			name:            "HTTP/1.1, shared client (like load balancer)",
+			forceHTTP1:      true,
+			clientPerThread: false,
+		},
+		{
+			name:            "HTTP/2.0, client per thread (like single app)",
+			forceHTTP1:      false,
+			clientPerThread: true,
+		},
+		{
+			name:            "HTTP/1.1, client per thread (like single app)",
+			forceHTTP1:      true,
+			clientPerThread: true,
+		},
+	}
+
+	tlsServerCreds := &configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   filepath.Join("testdata", "ca.crt"),
+			CertFile: filepath.Join("testdata", "server.crt"),
+			KeyFile:  filepath.Join("testdata", "server.key"),
+		},
+	}
+	tlsClientCreds := &configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile: filepath.Join("testdata", "ca.crt"),
+		},
+		ServerName: "localhost",
+	}
+
+	hss := &HTTPServerSettings{
+		Endpoint:   "localhost:0",
+		TLSSetting: tlsServerCreds,
+	}
+
+	s, err := hss.ToServer(
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings(),
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, errWrite := fmt.Fprint(w, "test")
+			require.NoError(b, errWrite)
+		}))
+	require.NoError(b, err)
+	ln, err := hss.ToListener()
+	require.NoError(b, err)
+
+	go func() {
+		_ = s.Serve(ln)
+	}()
+	defer func() {
+		_ = s.Close()
+	}()
+
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
+
+	for _, bb := range tests {
+		hcs := &HTTPClientSettings{
+			Endpoint:   "https://" + ln.Addr().String(),
+			TLSSetting: *tlsClientCreds,
+		}
+		if bb.forceHTTP1 {
+			hcs.CustomRoundTripper = func(rt http.RoundTripper) (http.RoundTripper, error) {
+				rt.(*http.Transport).ForceAttemptHTTP2 = false
+				return rt, nil
+			}
+		}
+		b.Run(bb.name, func(b *testing.B) {
+			var c *http.Client
+			if !bb.clientPerThread {
+				c, err = hcs.ToClient(map[config.ComponentID]component.Extension{}, component.TelemetrySettings{})
+				require.NoError(b, err)
+			}
+			b.RunParallel(func(pb *testing.PB) {
+				if c == nil {
+					c, err = hcs.ToClient(map[config.ComponentID]component.Extension{}, component.TelemetrySettings{})
+					require.NoError(b, err)
+				}
+				for pb.Next() {
+					resp, errResp := c.Get(hcs.Endpoint)
+					require.NoError(b, errResp)
+					body, errRead := ioutil.ReadAll(resp.Body)
+					_ = resp.Body.Close()
+					require.NoError(b, errRead)
+					require.Equal(b, "test", string(body))
+				}
+				c.CloseIdleConnections()
+			})
+			// Wait for connections to close before closing server to prevent log spam
+			<-time.After(10 * time.Millisecond)
+		})
+	}
 }

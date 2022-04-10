@@ -111,11 +111,11 @@ func fillTest${structName}(tv ${structName}) {
 	}
 }`
 
-const commonSliceAliasTemplate = `// ${structName} is an alias for pdata.${structName} struct.
-type ${structName} = pdata.${structName}
+const commonSliceAliasTemplate = `// ${structName} is an alias for internal.${structName} struct.
+type ${structName} = internal.${structName}
 
 // New${structName} is an alias for a function to create ${structName}.
-var New${structName} = pdata.New${structName}`
+var New${structName} = internal.New${structName}`
 
 const slicePtrTemplate = `// ${structName} logically represents a slice of ${elementName}.
 //

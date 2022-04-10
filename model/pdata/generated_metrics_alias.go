@@ -17,148 +17,148 @@
 
 package pdata
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/model/internal"
 
-// ResourceMetricsSlice is an alias for pdata.ResourceMetricsSlice struct.
-type ResourceMetricsSlice = pdata.ResourceMetricsSlice
+// ResourceMetricsSlice is an alias for internal.ResourceMetricsSlice struct.
+type ResourceMetricsSlice = internal.ResourceMetricsSlice
 
 // NewResourceMetricsSlice is an alias for a function to create ResourceMetricsSlice.
-var NewResourceMetricsSlice = pdata.NewResourceMetricsSlice
+var NewResourceMetricsSlice = internal.NewResourceMetricsSlice
 
-// ResourceMetrics is an alias for pdata.ResourceMetrics struct.
-type ResourceMetrics = pdata.ResourceMetrics
+// ResourceMetrics is an alias for internal.ResourceMetrics struct.
+type ResourceMetrics = internal.ResourceMetrics
 
 // NewResourceMetrics is an alias for a function to create a new empty ResourceMetrics.
-var NewResourceMetrics = pdata.NewResourceMetrics
+var NewResourceMetrics = internal.NewResourceMetrics
 
-// InstrumentationLibraryMetricsSlice is an alias for pdata.InstrumentationLibraryMetricsSlice struct.
-type InstrumentationLibraryMetricsSlice = pdata.InstrumentationLibraryMetricsSlice
+// ScopeMetricsSlice is an alias for internal.ScopeMetricsSlice struct.
+type ScopeMetricsSlice = internal.ScopeMetricsSlice
 
-// NewInstrumentationLibraryMetricsSlice is an alias for a function to create InstrumentationLibraryMetricsSlice.
-var NewInstrumentationLibraryMetricsSlice = pdata.NewInstrumentationLibraryMetricsSlice
+// NewScopeMetricsSlice is an alias for a function to create ScopeMetricsSlice.
+var NewScopeMetricsSlice = internal.NewScopeMetricsSlice
 
-// InstrumentationLibraryMetrics is an alias for pdata.InstrumentationLibraryMetrics struct.
-type InstrumentationLibraryMetrics = pdata.InstrumentationLibraryMetrics
+// ScopeMetrics is an alias for internal.ScopeMetrics struct.
+type ScopeMetrics = internal.ScopeMetrics
 
-// NewInstrumentationLibraryMetrics is an alias for a function to create a new empty InstrumentationLibraryMetrics.
-var NewInstrumentationLibraryMetrics = pdata.NewInstrumentationLibraryMetrics
+// NewScopeMetrics is an alias for a function to create a new empty ScopeMetrics.
+var NewScopeMetrics = internal.NewScopeMetrics
 
-// MetricSlice is an alias for pdata.MetricSlice struct.
-type MetricSlice = pdata.MetricSlice
+// MetricSlice is an alias for internal.MetricSlice struct.
+type MetricSlice = internal.MetricSlice
 
 // NewMetricSlice is an alias for a function to create MetricSlice.
-var NewMetricSlice = pdata.NewMetricSlice
+var NewMetricSlice = internal.NewMetricSlice
 
-// Metric is an alias for pdata.Metric struct.
-type Metric = pdata.Metric
+// Metric is an alias for internal.Metric struct.
+type Metric = internal.Metric
 
 // NewMetric is an alias for a function to create a new empty Metric.
-var NewMetric = pdata.NewMetric
+var NewMetric = internal.NewMetric
 
-// Gauge is an alias for pdata.Gauge struct.
-type Gauge = pdata.Gauge
+// Gauge is an alias for internal.Gauge struct.
+type Gauge = internal.Gauge
 
 // NewGauge is an alias for a function to create a new empty Gauge.
-var NewGauge = pdata.NewGauge
+var NewGauge = internal.NewGauge
 
-// Sum is an alias for pdata.Sum struct.
-type Sum = pdata.Sum
+// Sum is an alias for internal.Sum struct.
+type Sum = internal.Sum
 
 // NewSum is an alias for a function to create a new empty Sum.
-var NewSum = pdata.NewSum
+var NewSum = internal.NewSum
 
-// Histogram is an alias for pdata.Histogram struct.
-type Histogram = pdata.Histogram
+// Histogram is an alias for internal.Histogram struct.
+type Histogram = internal.Histogram
 
 // NewHistogram is an alias for a function to create a new empty Histogram.
-var NewHistogram = pdata.NewHistogram
+var NewHistogram = internal.NewHistogram
 
-// ExponentialHistogram is an alias for pdata.ExponentialHistogram struct.
-type ExponentialHistogram = pdata.ExponentialHistogram
+// ExponentialHistogram is an alias for internal.ExponentialHistogram struct.
+type ExponentialHistogram = internal.ExponentialHistogram
 
 // NewExponentialHistogram is an alias for a function to create a new empty ExponentialHistogram.
-var NewExponentialHistogram = pdata.NewExponentialHistogram
+var NewExponentialHistogram = internal.NewExponentialHistogram
 
-// Summary is an alias for pdata.Summary struct.
-type Summary = pdata.Summary
+// Summary is an alias for internal.Summary struct.
+type Summary = internal.Summary
 
 // NewSummary is an alias for a function to create a new empty Summary.
-var NewSummary = pdata.NewSummary
+var NewSummary = internal.NewSummary
 
-// NumberDataPointSlice is an alias for pdata.NumberDataPointSlice struct.
-type NumberDataPointSlice = pdata.NumberDataPointSlice
+// NumberDataPointSlice is an alias for internal.NumberDataPointSlice struct.
+type NumberDataPointSlice = internal.NumberDataPointSlice
 
 // NewNumberDataPointSlice is an alias for a function to create NumberDataPointSlice.
-var NewNumberDataPointSlice = pdata.NewNumberDataPointSlice
+var NewNumberDataPointSlice = internal.NewNumberDataPointSlice
 
-// NumberDataPoint is an alias for pdata.NumberDataPoint struct.
-type NumberDataPoint = pdata.NumberDataPoint
+// NumberDataPoint is an alias for internal.NumberDataPoint struct.
+type NumberDataPoint = internal.NumberDataPoint
 
 // NewNumberDataPoint is an alias for a function to create a new empty NumberDataPoint.
-var NewNumberDataPoint = pdata.NewNumberDataPoint
+var NewNumberDataPoint = internal.NewNumberDataPoint
 
-// HistogramDataPointSlice is an alias for pdata.HistogramDataPointSlice struct.
-type HistogramDataPointSlice = pdata.HistogramDataPointSlice
+// HistogramDataPointSlice is an alias for internal.HistogramDataPointSlice struct.
+type HistogramDataPointSlice = internal.HistogramDataPointSlice
 
 // NewHistogramDataPointSlice is an alias for a function to create HistogramDataPointSlice.
-var NewHistogramDataPointSlice = pdata.NewHistogramDataPointSlice
+var NewHistogramDataPointSlice = internal.NewHistogramDataPointSlice
 
-// HistogramDataPoint is an alias for pdata.HistogramDataPoint struct.
-type HistogramDataPoint = pdata.HistogramDataPoint
+// HistogramDataPoint is an alias for internal.HistogramDataPoint struct.
+type HistogramDataPoint = internal.HistogramDataPoint
 
 // NewHistogramDataPoint is an alias for a function to create a new empty HistogramDataPoint.
-var NewHistogramDataPoint = pdata.NewHistogramDataPoint
+var NewHistogramDataPoint = internal.NewHistogramDataPoint
 
-// ExponentialHistogramDataPointSlice is an alias for pdata.ExponentialHistogramDataPointSlice struct.
-type ExponentialHistogramDataPointSlice = pdata.ExponentialHistogramDataPointSlice
+// ExponentialHistogramDataPointSlice is an alias for internal.ExponentialHistogramDataPointSlice struct.
+type ExponentialHistogramDataPointSlice = internal.ExponentialHistogramDataPointSlice
 
 // NewExponentialHistogramDataPointSlice is an alias for a function to create ExponentialHistogramDataPointSlice.
-var NewExponentialHistogramDataPointSlice = pdata.NewExponentialHistogramDataPointSlice
+var NewExponentialHistogramDataPointSlice = internal.NewExponentialHistogramDataPointSlice
 
-// ExponentialHistogramDataPoint is an alias for pdata.ExponentialHistogramDataPoint struct.
-type ExponentialHistogramDataPoint = pdata.ExponentialHistogramDataPoint
+// ExponentialHistogramDataPoint is an alias for internal.ExponentialHistogramDataPoint struct.
+type ExponentialHistogramDataPoint = internal.ExponentialHistogramDataPoint
 
 // NewExponentialHistogramDataPoint is an alias for a function to create a new empty ExponentialHistogramDataPoint.
-var NewExponentialHistogramDataPoint = pdata.NewExponentialHistogramDataPoint
+var NewExponentialHistogramDataPoint = internal.NewExponentialHistogramDataPoint
 
-// Buckets is an alias for pdata.Buckets struct.
-type Buckets = pdata.Buckets
+// Buckets is an alias for internal.Buckets struct.
+type Buckets = internal.Buckets
 
 // NewBuckets is an alias for a function to create a new empty Buckets.
-var NewBuckets = pdata.NewBuckets
+var NewBuckets = internal.NewBuckets
 
-// SummaryDataPointSlice is an alias for pdata.SummaryDataPointSlice struct.
-type SummaryDataPointSlice = pdata.SummaryDataPointSlice
+// SummaryDataPointSlice is an alias for internal.SummaryDataPointSlice struct.
+type SummaryDataPointSlice = internal.SummaryDataPointSlice
 
 // NewSummaryDataPointSlice is an alias for a function to create SummaryDataPointSlice.
-var NewSummaryDataPointSlice = pdata.NewSummaryDataPointSlice
+var NewSummaryDataPointSlice = internal.NewSummaryDataPointSlice
 
-// SummaryDataPoint is an alias for pdata.SummaryDataPoint struct.
-type SummaryDataPoint = pdata.SummaryDataPoint
+// SummaryDataPoint is an alias for internal.SummaryDataPoint struct.
+type SummaryDataPoint = internal.SummaryDataPoint
 
 // NewSummaryDataPoint is an alias for a function to create a new empty SummaryDataPoint.
-var NewSummaryDataPoint = pdata.NewSummaryDataPoint
+var NewSummaryDataPoint = internal.NewSummaryDataPoint
 
-// ValueAtQuantileSlice is an alias for pdata.ValueAtQuantileSlice struct.
-type ValueAtQuantileSlice = pdata.ValueAtQuantileSlice
+// ValueAtQuantileSlice is an alias for internal.ValueAtQuantileSlice struct.
+type ValueAtQuantileSlice = internal.ValueAtQuantileSlice
 
 // NewValueAtQuantileSlice is an alias for a function to create ValueAtQuantileSlice.
-var NewValueAtQuantileSlice = pdata.NewValueAtQuantileSlice
+var NewValueAtQuantileSlice = internal.NewValueAtQuantileSlice
 
-// ValueAtQuantile is an alias for pdata.ValueAtQuantile struct.
-type ValueAtQuantile = pdata.ValueAtQuantile
+// ValueAtQuantile is an alias for internal.ValueAtQuantile struct.
+type ValueAtQuantile = internal.ValueAtQuantile
 
 // NewValueAtQuantile is an alias for a function to create a new empty ValueAtQuantile.
-var NewValueAtQuantile = pdata.NewValueAtQuantile
+var NewValueAtQuantile = internal.NewValueAtQuantile
 
-// ExemplarSlice is an alias for pdata.ExemplarSlice struct.
-type ExemplarSlice = pdata.ExemplarSlice
+// ExemplarSlice is an alias for internal.ExemplarSlice struct.
+type ExemplarSlice = internal.ExemplarSlice
 
 // NewExemplarSlice is an alias for a function to create ExemplarSlice.
-var NewExemplarSlice = pdata.NewExemplarSlice
+var NewExemplarSlice = internal.NewExemplarSlice
 
-// Exemplar is an alias for pdata.Exemplar struct.
-type Exemplar = pdata.Exemplar
+// Exemplar is an alias for internal.Exemplar struct.
+type Exemplar = internal.Exemplar
 
 // NewExemplar is an alias for a function to create a new empty Exemplar.
-var NewExemplar = pdata.NewExemplar
+var NewExemplar = internal.NewExemplar

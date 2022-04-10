@@ -17,40 +17,40 @@
 
 package pdata
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/model/internal"
 
-// ResourceLogsSlice is an alias for pdata.ResourceLogsSlice struct.
-type ResourceLogsSlice = pdata.ResourceLogsSlice
+// ResourceLogsSlice is an alias for internal.ResourceLogsSlice struct.
+type ResourceLogsSlice = internal.ResourceLogsSlice
 
 // NewResourceLogsSlice is an alias for a function to create ResourceLogsSlice.
-var NewResourceLogsSlice = pdata.NewResourceLogsSlice
+var NewResourceLogsSlice = internal.NewResourceLogsSlice
 
-// ResourceLogs is an alias for pdata.ResourceLogs struct.
-type ResourceLogs = pdata.ResourceLogs
+// ResourceLogs is an alias for internal.ResourceLogs struct.
+type ResourceLogs = internal.ResourceLogs
 
 // NewResourceLogs is an alias for a function to create a new empty ResourceLogs.
-var NewResourceLogs = pdata.NewResourceLogs
+var NewResourceLogs = internal.NewResourceLogs
 
-// InstrumentationLibraryLogsSlice is an alias for pdata.InstrumentationLibraryLogsSlice struct.
-type InstrumentationLibraryLogsSlice = pdata.InstrumentationLibraryLogsSlice
+// ScopeLogsSlice is an alias for internal.ScopeLogsSlice struct.
+type ScopeLogsSlice = internal.ScopeLogsSlice
 
-// NewInstrumentationLibraryLogsSlice is an alias for a function to create InstrumentationLibraryLogsSlice.
-var NewInstrumentationLibraryLogsSlice = pdata.NewInstrumentationLibraryLogsSlice
+// NewScopeLogsSlice is an alias for a function to create ScopeLogsSlice.
+var NewScopeLogsSlice = internal.NewScopeLogsSlice
 
-// InstrumentationLibraryLogs is an alias for pdata.InstrumentationLibraryLogs struct.
-type InstrumentationLibraryLogs = pdata.InstrumentationLibraryLogs
+// ScopeLogs is an alias for internal.ScopeLogs struct.
+type ScopeLogs = internal.ScopeLogs
 
-// NewInstrumentationLibraryLogs is an alias for a function to create a new empty InstrumentationLibraryLogs.
-var NewInstrumentationLibraryLogs = pdata.NewInstrumentationLibraryLogs
+// NewScopeLogs is an alias for a function to create a new empty ScopeLogs.
+var NewScopeLogs = internal.NewScopeLogs
 
-// LogRecordSlice is an alias for pdata.LogRecordSlice struct.
-type LogRecordSlice = pdata.LogRecordSlice
+// LogRecordSlice is an alias for internal.LogRecordSlice struct.
+type LogRecordSlice = internal.LogRecordSlice
 
 // NewLogRecordSlice is an alias for a function to create LogRecordSlice.
-var NewLogRecordSlice = pdata.NewLogRecordSlice
+var NewLogRecordSlice = internal.NewLogRecordSlice
 
-// LogRecord is an alias for pdata.LogRecord struct.
-type LogRecord = pdata.LogRecord
+// LogRecord is an alias for internal.LogRecord struct.
+type LogRecord = internal.LogRecord
 
 // NewLogRecord is an alias for a function to create a new empty LogRecord.
-var NewLogRecord = pdata.NewLogRecord
+var NewLogRecord = internal.NewLogRecord

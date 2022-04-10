@@ -16,68 +16,78 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for metric data structures.
 
-import (
-	"go.opentelemetry.io/collector/model/internal/pdata"
-)
+import "go.opentelemetry.io/collector/model/internal"
 
-// MetricsMarshaler is an alias for pdata.MetricsMarshaler interface.
-type MetricsMarshaler = pdata.MetricsMarshaler
+// MetricsMarshaler is an alias for internal.MetricsMarshaler interface.
+type MetricsMarshaler = internal.MetricsMarshaler
 
-// MetricsUnmarshaler is an alias for pdata.MetricsUnmarshaler interface.
-type MetricsUnmarshaler = pdata.MetricsUnmarshaler
+// MetricsUnmarshaler is an alias for internal.MetricsUnmarshaler interface.
+type MetricsUnmarshaler = internal.MetricsUnmarshaler
 
-// MetricsSizer is an alias for pdata.MetricsSizer interface.
-type MetricsSizer = pdata.MetricsSizer
+// MetricsSizer is an alias for internal.MetricsSizer interface.
+type MetricsSizer = internal.MetricsSizer
 
-// Metrics is an alias for pdata.Metrics structure.
-type Metrics = pdata.Metrics
+// Metrics is an alias for internal.Metrics structure.
+type Metrics = internal.Metrics
 
 // NewMetrics is an alias for a function to create new Metrics.
-var NewMetrics = pdata.NewMetrics
+var NewMetrics = internal.NewMetrics
 
-// MetricDataType is an alias for pdata.MetricDataType type.
-type MetricDataType = pdata.MetricDataType
+// MetricDataType is an alias for internal.MetricDataType type.
+type MetricDataType = internal.MetricDataType
 
 const (
-	MetricDataTypeNone                 = pdata.MetricDataTypeNone
-	MetricDataTypeGauge                = pdata.MetricDataTypeGauge
-	MetricDataTypeSum                  = pdata.MetricDataTypeSum
-	MetricDataTypeHistogram            = pdata.MetricDataTypeHistogram
-	MetricDataTypeExponentialHistogram = pdata.MetricDataTypeExponentialHistogram
-	MetricDataTypeSummary              = pdata.MetricDataTypeSummary
+	MetricDataTypeNone                 = internal.MetricDataTypeNone
+	MetricDataTypeGauge                = internal.MetricDataTypeGauge
+	MetricDataTypeSum                  = internal.MetricDataTypeSum
+	MetricDataTypeHistogram            = internal.MetricDataTypeHistogram
+	MetricDataTypeExponentialHistogram = internal.MetricDataTypeExponentialHistogram
+	MetricDataTypeSummary              = internal.MetricDataTypeSummary
 )
 
-// MetricAggregationTemporality is an alias for pdata.MetricAggregationTemporality type.
-type MetricAggregationTemporality = pdata.MetricAggregationTemporality
+// MetricAggregationTemporality is an alias for internal.MetricAggregationTemporality type.
+type MetricAggregationTemporality = internal.MetricAggregationTemporality
 
 const (
-	MetricAggregationTemporalityUnspecified = pdata.MetricAggregationTemporalityUnspecified
-	MetricAggregationTemporalityDelta       = pdata.MetricAggregationTemporalityDelta
-	MetricAggregationTemporalityCumulative  = pdata.MetricAggregationTemporalityCumulative
+	MetricAggregationTemporalityUnspecified = internal.MetricAggregationTemporalityUnspecified
+	MetricAggregationTemporalityDelta       = internal.MetricAggregationTemporalityDelta
+	MetricAggregationTemporalityCumulative  = internal.MetricAggregationTemporalityCumulative
 )
 
-// MetricDataPointFlags is an alias for pdata.MetricDataPointFlags type.
-type MetricDataPointFlags = pdata.MetricDataPointFlags
+// MetricDataPointFlags is an alias for internal.MetricDataPointFlags type.
+type MetricDataPointFlags = internal.MetricDataPointFlags
 
 const (
-	MetricDataPointFlagsNone = pdata.MetricDataPointFlagsNone
+	MetricDataPointFlagsNone = internal.MetricDataPointFlagsNone
 )
 
 // NewMetricDataPointFlags is an alias for a function to create new MetricDataPointFlags.
-var NewMetricDataPointFlags = pdata.NewMetricDataPointFlags
+var NewMetricDataPointFlags = internal.NewMetricDataPointFlags
 
-// MetricDataPointFlag is an alias for pdata.MetricDataPointFlag type.
-type MetricDataPointFlag = pdata.MetricDataPointFlag
-
-const (
-	MetricDataPointFlagNoRecordedValue = pdata.MetricDataPointFlagNoRecordedValue
-)
-
-// MetricValueType is an alias for pdata.MetricValueType type.
-type MetricValueType = pdata.MetricValueType
+// MetricDataPointFlag is an alias for internal.MetricDataPointFlag type.
+type MetricDataPointFlag = internal.MetricDataPointFlag
 
 const (
-	MetricValueTypeNone   = pdata.MetricValueTypeNone
-	MetricValueTypeInt    = pdata.MetricValueTypeInt
-	MetricValueTypeDouble = pdata.MetricValueTypeDouble
+	MetricDataPointFlagNoRecordedValue = internal.MetricDataPointFlagNoRecordedValue
 )
+
+// MetricValueType is an alias for internal.MetricValueType type.
+type MetricValueType = internal.MetricValueType
+
+const (
+	MetricValueTypeNone   = internal.MetricValueTypeNone
+	MetricValueTypeInt    = internal.MetricValueTypeInt
+	MetricValueTypeDouble = internal.MetricValueTypeDouble
+)
+
+// Deprecated: [v0.48.0] Use ScopeMetricsSlice instead.
+type InstrumentationLibraryMetricsSlice = internal.ScopeMetricsSlice
+
+// Deprecated: [v0.48.0] Use NewScopeMetricsSlice instead.
+var NewInstrumentationLibraryMetricsSlice = internal.NewScopeMetricsSlice
+
+// Deprecated: [v0.48.0] Use ScopeMetrics instead.
+type InstrumentationLibraryMetrics = internal.ScopeMetrics
+
+// Deprecated: [v0.48.0] Use NewScopeMetrics instead.
+var NewInstrumentationLibraryMetrics = internal.NewScopeMetrics
