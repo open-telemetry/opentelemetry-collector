@@ -153,7 +153,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}
 
 	if hcs.Auth != nil {
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(host.GetExtensions())
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetServerAuthenticator(host.GetExtensions())
 		if aerr != nil {
 			return nil, aerr
 		}
