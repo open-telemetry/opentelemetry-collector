@@ -62,11 +62,10 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
-	cfgSet := newDefaultConfigProviderSettings()
-	cfgSet.Locations = []string{
+	cfgSet := newDefaultConfigProviderSettings([]string{
 		filepath.Join("testdata", "otelcol-config.yaml"),
 		"yaml:service::telemetry::metrics::address: localhost:" + portAsString(testutil.GetAvailablePort(t)),
-	}
+	})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
@@ -107,10 +106,9 @@ func testCollectorStartHelper(t *testing.T) {
 	}
 
 	metricsPort := testutil.GetAvailablePort(t)
-	cfgSet := newDefaultConfigProviderSettings()
-	cfgSet.Locations = []string{
+	cfgSet := newDefaultConfigProviderSettings([]string{
 		filepath.Join("testdata", "otelcol-config.yaml"),
-	}
+	})
 	cfgSet.MapConverters = append([]config.MapConverterFunc{
 		overwritepropertiesmapconverter.New(
 			[]string{"service.telemetry.metrics.address=localhost:" + portAsString(metricsPort)},
@@ -189,10 +187,9 @@ func TestCollector_ShutdownNoop(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
-	cfgSet := newDefaultConfigProviderSettings()
-	cfgSet.Locations = []string{
+	cfgSet := newDefaultConfigProviderSettings([]string{
 		filepath.Join("testdata", "otelcol-config.yaml"),
-	}
+	})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
@@ -217,10 +214,9 @@ func TestCollector_ShutdownBeforeRun(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
-	cfgSet := newDefaultConfigProviderSettings()
-	cfgSet.Locations = []string{
+	cfgSet := newDefaultConfigProviderSettings([]string{
 		filepath.Join("testdata", "otelcol-config.yaml"),
-	}
+	})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
@@ -255,10 +251,9 @@ func TestCollector_ClosedStateOnStartUpError(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
-	cfgSet := newDefaultConfigProviderSettings()
-	cfgSet.Locations = []string{
+	cfgSet := newDefaultConfigProviderSettings([]string{
 		filepath.Join("testdata", "otelcol-invalid.yaml"),
-	}
+	})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
@@ -297,10 +292,9 @@ func TestCollector_ReportError(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
-	cfgSet := newDefaultConfigProviderSettings()
-	cfgSet.Locations = []string{
+	cfgSet := newDefaultConfigProviderSettings([]string{
 		filepath.Join("testdata", "otelcol-config.yaml"),
-	}
+	})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
@@ -336,11 +330,10 @@ func TestCollector_ContextCancel(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
-	cfgSet := newDefaultConfigProviderSettings()
-	cfgSet.Locations = []string{
+	cfgSet := newDefaultConfigProviderSettings([]string{
 		filepath.Join("testdata", "otelcol-config.yaml"),
 		"yaml:service::telemetry::metrics::address: localhost:" + portAsString(testutil.GetAvailablePort(t)),
-	}
+	})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
