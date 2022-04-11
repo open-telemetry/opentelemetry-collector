@@ -48,11 +48,11 @@ import (
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
 	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 const otlpReceiverName = "receiver_test"
@@ -108,27 +108,27 @@ var traceJSON = []byte(`
 	  ]
 	}`)
 
-var traceOtlp = func() pdata.Traces {
-	td := pdata.NewTraces()
+var traceOtlp = func() ptrace.Traces {
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().UpsertString(semconv.AttributeHostName, "testHost")
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
 	span1 := spans.AppendEmpty()
-	span1.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
-	span1.SetSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x74}))
-	span1.SetParentSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
+	span1.SetTraceID(pcommon.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
+	span1.SetSpanID(pcommon.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x74}))
+	span1.SetParentSpanID(pcommon.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
 	span1.SetName("testSpan")
 	span1.SetStartTimestamp(1544712660300000000)
 	span1.SetEndTimestamp(1544712660600000000)
-	span1.SetKind(pdata.SpanKindServer)
+	span1.SetKind(ptrace.SpanKindServer)
 	span1.Attributes().UpsertInt("attr1", 55)
 	span2 := spans.AppendEmpty()
-	span2.SetTraceID(pdata.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
-	span2.SetSpanID(pdata.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
+	span2.SetTraceID(pcommon.NewTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
+	span2.SetSpanID(pcommon.NewSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
 	span2.SetName("testSpan")
 	span2.SetStartTimestamp(1544712660000000000)
 	span2.SetEndTimestamp(1544712661000000000)
-	span2.SetKind(pdata.SpanKindClient)
+	span2.SetKind(ptrace.SpanKindClient)
 	span2.Attributes().UpsertInt("attr1", 55)
 	return td
 }()
@@ -365,8 +365,8 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *internalconsumertest.Er
 	allTraces := sink.AllTraces()
 	if expectedErr == nil {
 		assert.Equal(t, 200, resp.StatusCode)
-		tr := otlpgrpc.NewTracesResponse()
-		assert.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to TracesResponse")
+		tr := ptraceotlp.NewResponse()
+		assert.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
 
 		require.Len(t, allTraces, 1)
 		assert.EqualValues(t, allTraces[0], traceOtlp)
@@ -423,7 +423,7 @@ func TestProtoHttp(t *testing.T) {
 	<-time.After(10 * time.Millisecond)
 
 	td := testdata.GenerateTracesOneSpan()
-	traceBytes, err := otlp.NewProtobufTracesMarshaler().MarshalTraces(td)
+	traceBytes, err := ptrace.NewProtoMarshaler().MarshalTraces(td)
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
@@ -466,7 +466,7 @@ func testHTTPProtobufRequest(
 	encoding string,
 	traceBytes []byte,
 	expectedErr error,
-	wantData pdata.Traces,
+	wantData ptrace.Traces,
 ) {
 	tSink.SetConsumeError(expectedErr)
 
@@ -487,8 +487,8 @@ func testHTTPProtobufRequest(
 	if expectedErr == nil {
 		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
 
-		tr := otlpgrpc.NewTracesResponse()
-		assert.NoError(t, tr.UnmarshalProto(respBytes), "Unable to unmarshal response to TracesResponse")
+		tr := ptraceotlp.NewResponse()
+		assert.NoError(t, tr.UnmarshalProto(respBytes), "Unable to unmarshal response to Response")
 
 		require.Len(t, allTraces, 1)
 		assert.EqualValues(t, allTraces[0], wantData)
@@ -651,7 +651,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		receiverTag string
 		exportFn    func(
 			cc *grpc.ClientConn,
-			td pdata.Traces) error
+			td ptrace.Traces) error
 	}{
 		{
 			receiverTag: "trace",
@@ -885,7 +885,7 @@ func compressGzip(body []byte) (*bytes.Buffer, error) {
 	return &buf, nil
 }
 
-type senderFunc func(td pdata.Traces)
+type senderFunc func(td ptrace.Traces)
 
 func TestShutdown(t *testing.T) {
 	endpointGrpc := testutil.GetAvailableLocalAddress(t)
@@ -915,13 +915,13 @@ func TestShutdown(t *testing.T) {
 	doneSignalGrpc := make(chan bool)
 	doneSignalHTTP := make(chan bool)
 
-	senderGrpc := func(td pdata.Traces) {
+	senderGrpc := func(td ptrace.Traces) {
 		// Ignore error, may be executed after the receiver shutdown.
 		_ = exportTraces(conn, td)
 	}
-	senderHTTP := func(td pdata.Traces) {
+	senderHTTP := func(td ptrace.Traces) {
 		// Send request via OTLP/HTTP.
-		traceBytes, err2 := otlp.NewProtobufTracesMarshaler().MarshalTraces(td)
+		traceBytes, err2 := ptrace.NewProtoMarshaler().MarshalTraces(td)
 		if err2 != nil {
 			t.Errorf("Error marshaling protobuf: %v", err2)
 		}
@@ -989,9 +989,9 @@ loop:
 	close(doneSignal)
 }
 
-func exportTraces(cc *grpc.ClientConn, td pdata.Traces) error {
-	acc := otlpgrpc.NewTracesClient(cc)
-	req := otlpgrpc.NewTracesRequest()
+func exportTraces(cc *grpc.ClientConn, td ptrace.Traces) error {
+	acc := ptraceotlp.NewClient(cc)
+	req := ptraceotlp.NewRequest()
 	req.SetTraces(td)
 	_, err := acc.Export(context.Background(), req)
 

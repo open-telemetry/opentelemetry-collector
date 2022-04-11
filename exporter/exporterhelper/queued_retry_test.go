@@ -33,9 +33,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
@@ -428,7 +427,7 @@ func (m *mockRequest) export(ctx context.Context) error {
 }
 
 func (m *mockRequest) Marshal() ([]byte, error) {
-	return otlp.NewProtobufTracesMarshaler().MarshalTraces(pdata.NewTraces())
+	return ptrace.NewProtoMarshaler().MarshalTraces(ptrace.NewTraces())
 }
 
 func (m *mockRequest) onError(error) request {

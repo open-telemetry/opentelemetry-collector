@@ -45,8 +45,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -256,7 +259,7 @@ func TestIssue_4221(t *testing.T) {
 		assert.Equal(t, "CscBCkkKIAoMc2VydmljZS5uYW1lEhAKDnVvcC5zdGFnZS1ldS0xCiUKGW91dHN5c3RlbXMubW9kdWxlLnZlcnNpb24SCAoGOTAzMzg2EnoKEQoMdW9wX2NhbmFyaWVzEgExEmUKEEMDhT8Ib0+Mhs8Zi2VR34QSCOVRPDJ5XEG5IgA5QE41aASRrxZBQE41aASRrxZKEAoKc3Bhbl9pbmRleBICGANKHwoNY29kZS5mdW5jdGlvbhIOCgxteUZ1bmN0aW9uMzZ6AA==", base64Data)
 		unbase64Data, err := base64.StdEncoding.DecodeString(base64Data)
 		require.NoError(t, err)
-		tr := otlpgrpc.NewTracesRequest()
+		tr := ptraceotlp.NewRequest()
 		require.NoError(t, tr.UnmarshalProto(unbase64Data))
 		span := tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
@@ -265,7 +268,7 @@ func TestIssue_4221(t *testing.T) {
 
 	exp := startTracesExporter(t, "", svr.URL)
 
-	md := pdata.NewTraces()
+	md := ptrace.NewTraces()
 	rms := md.ResourceSpans().AppendEmpty()
 	rms.Resource().Attributes().UpsertString("service.name", "uop.stage-eu-1")
 	rms.Resource().Attributes().UpsertString("outsystems.module.version", "903386")
@@ -278,14 +281,14 @@ func TestIssue_4221(t *testing.T) {
 	traceIDBytesSlice, err := hex.DecodeString("4303853f086f4f8c86cf198b6551df84")
 	require.NoError(t, err)
 	copy(traceIDBytes[:], traceIDBytesSlice)
-	span.SetTraceID(pdata.NewTraceID(traceIDBytes))
+	span.SetTraceID(pcommon.NewTraceID(traceIDBytes))
 	assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
 
 	var spanIDBytes [8]byte
 	spanIDBytesSlice, err := hex.DecodeString("e5513c32795c41b9")
 	require.NoError(t, err)
 	copy(spanIDBytes[:], spanIDBytesSlice)
-	span.SetSpanID(pdata.NewSpanID(spanIDBytes))
+	span.SetSpanID(pcommon.NewSpanID(spanIDBytes))
 	assert.Equal(t, "e5513c32795c41b9", span.SpanID().HexString())
 
 	span.SetEndTimestamp(1634684637873000000)
@@ -464,7 +467,7 @@ func TestErrorResponses(t *testing.T) {
 			})
 
 			// generate traces
-			traces := pdata.NewTraces()
+			traces := ptrace.NewTraces()
 			err = exp.ConsumeTraces(context.Background(), traces)
 			assert.Error(t, err)
 
@@ -542,7 +545,7 @@ func TestUserAgent(t *testing.T) {
 				})
 
 				// generate data
-				traces := pdata.NewTraces()
+				traces := ptrace.NewTraces()
 				err = exp.ConsumeTraces(context.Background(), traces)
 				require.NoError(t, err)
 
@@ -587,7 +590,7 @@ func TestUserAgent(t *testing.T) {
 				})
 
 				// generate data
-				metrics := pdata.NewMetrics()
+				metrics := pmetric.NewMetrics()
 				err = exp.ConsumeMetrics(context.Background(), metrics)
 				require.NoError(t, err)
 
@@ -632,7 +635,7 @@ func TestUserAgent(t *testing.T) {
 				})
 
 				// generate data
-				logs := pdata.NewLogs()
+				logs := plog.NewLogs()
 				err = exp.ConsumeLogs(context.Background(), logs)
 				require.NoError(t, err)
 

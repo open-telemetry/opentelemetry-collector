@@ -15,150 +15,39 @@
 package otlpgrpc // import "go.opentelemetry.io/collector/model/otlpgrpc"
 
 import (
-	"bytes"
-	"context"
-
-	"github.com/gogo/protobuf/jsonpb"
-	"google.golang.org/grpc"
-
-	ipdata "go.opentelemetry.io/collector/model/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/model/internal/data/protogen/collector/logs/v1"
-	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/model/internal/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 )
 
-var jsonMarshaler = &jsonpb.Marshaler{}
-var jsonUnmarshaler = &jsonpb.Unmarshaler{}
-
 // LogsResponse represents the response for gRPC client/server.
-type LogsResponse struct {
-	orig *otlpcollectorlog.ExportLogsServiceResponse
-}
+// Deprecated: [v0.49.0] Use plogotlp.Response instead.
+type LogsResponse = plogotlp.Response
 
 // NewLogsResponse returns an empty LogsResponse.
-func NewLogsResponse() LogsResponse {
-	return LogsResponse{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
-}
-
-// MarshalProto marshals LogsResponse into proto bytes.
-func (lr LogsResponse) MarshalProto() ([]byte, error) {
-	return lr.orig.Marshal()
-}
-
-// UnmarshalProto unmarshalls LogsResponse from proto bytes.
-func (lr LogsResponse) UnmarshalProto(data []byte) error {
-	return lr.orig.Unmarshal(data)
-}
-
-// MarshalJSON marshals LogsResponse into JSON bytes.
-func (lr LogsResponse) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	if err := jsonMarshaler.Marshal(&buf, lr.orig); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// UnmarshalJSON unmarshalls LogsResponse from JSON bytes.
-func (lr LogsResponse) UnmarshalJSON(data []byte) error {
-	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig)
-}
+// Deprecated: [v0.49.0] Use plogotlp.NewResponse instead.
+var NewLogsResponse = plogotlp.NewResponse
 
 // LogsRequest represents the response for gRPC client/server.
-type LogsRequest struct {
-	orig *otlpcollectorlog.ExportLogsServiceRequest
-}
+// Deprecated: [v0.49.0] Use plogotlp.Request instead.
+type LogsRequest = plogotlp.Request
 
 // NewLogsRequest returns an empty LogsRequest.
-func NewLogsRequest() LogsRequest {
-	return LogsRequest{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
-}
-
-// MarshalProto marshals LogsRequest into proto bytes.
-func (lr LogsRequest) MarshalProto() ([]byte, error) {
-	return lr.orig.Marshal()
-}
-
-// UnmarshalProto unmarshalls LogsRequest from proto bytes.
-func (lr LogsRequest) UnmarshalProto(data []byte) error {
-	if err := lr.orig.Unmarshal(data); err != nil {
-		return err
-	}
-	otlp.InstrumentationLibraryLogsToScope(lr.orig.ResourceLogs)
-	return nil
-}
-
-// MarshalJSON marshals LogsRequest into JSON bytes.
-func (lr LogsRequest) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	if err := jsonMarshaler.Marshal(&buf, lr.orig); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// UnmarshalJSON unmarshalls LogsRequest from JSON bytes.
-func (lr LogsRequest) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig); err != nil {
-		return err
-	}
-	otlp.InstrumentationLibraryLogsToScope(lr.orig.ResourceLogs)
-	return nil
-}
-
-func (lr LogsRequest) SetLogs(ld pdata.Logs) {
-	lr.orig.ResourceLogs = ipdata.LogsToOtlp(ld).ResourceLogs
-}
-
-func (lr LogsRequest) Logs() pdata.Logs {
-	return ipdata.LogsFromOtlp(&otlplogs.LogsData{ResourceLogs: lr.orig.ResourceLogs})
-}
+// Deprecated: [v0.49.0] Use plogotlp.NewRequest instead.
+var NewLogsRequest = plogotlp.NewRequest
 
 // LogsClient is the client API for OTLP-GRPC Logs service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type LogsClient interface {
-	// Export pdata.Logs to the server.
-	//
-	// For performance reasons, it is recommended to keep this RPC
-	// alive for the entire life of the application.
-	Export(ctx context.Context, request LogsRequest, opts ...grpc.CallOption) (LogsResponse, error)
-}
-
-type logsClient struct {
-	rawClient otlpcollectorlog.LogsServiceClient
-}
+// Deprecated: [v0.49.0] Use plogotlp.Client instead.
+type LogsClient = plogotlp.Client
 
 // NewLogsClient returns a new LogsClient connected using the given connection.
-func NewLogsClient(cc *grpc.ClientConn) LogsClient {
-	return &logsClient{rawClient: otlpcollectorlog.NewLogsServiceClient(cc)}
-}
-
-func (c *logsClient) Export(ctx context.Context, request LogsRequest, opts ...grpc.CallOption) (LogsResponse, error) {
-	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
-	return LogsResponse{orig: rsp}, err
-}
+// Deprecated: [v0.49.0] Use plogotlp.NewClient instead.
+var NewLogsClient = plogotlp.NewClient
 
 // LogsServer is the server API for OTLP gRPC LogsService service.
-type LogsServer interface {
-	// Export is called every time a new request is received.
-	//
-	// For performance reasons, it is recommended to keep this RPC
-	// alive for the entire life of the application.
-	Export(context.Context, LogsRequest) (LogsResponse, error)
-}
+// Deprecated: [v0.49.0] Use plogotlp.Server instead.
+type LogsServer = plogotlp.Server
 
 // RegisterLogsServer registers the LogsServer to the grpc.Server.
-func RegisterLogsServer(s *grpc.Server, srv LogsServer) {
-	otlpcollectorlog.RegisterLogsServiceServer(s, &rawLogsServer{srv: srv})
-}
-
-type rawLogsServer struct {
-	srv LogsServer
-}
-
-func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlog.ExportLogsServiceRequest) (*otlpcollectorlog.ExportLogsServiceResponse, error) {
-	rsp, err := s.srv.Export(ctx, LogsRequest{orig: request})
-	return rsp.orig, err
-}
+// Deprecated: [v0.49.0] Use plogotlp.RegisterServer instead.
+var RegisterLogsServer = plogotlp.RegisterServer
