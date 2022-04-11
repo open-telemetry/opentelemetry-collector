@@ -216,6 +216,48 @@ func TestGrpcTransition(t *testing.T) {
 	assert.Equal(t, NewResponse(), resp)
 }
 
+type fakeRawLogsServer struct {
+	t *testing.T
+}
+
+func (s fakeRawLogsServer) Export(_ context.Context, req Request) (Response, error) {
+	assert.Equal(s.t, 1, req.Logs().LogRecordCount())
+	return NewResponse(), nil
+}
+
+func TestGrpcExport(t *testing.T) {
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+	RegisterServer(s, &fakeRawLogsServer{t: t})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, s.Serve(lis))
+	}()
+	t.Cleanup(func() {
+		s.Stop()
+		wg.Wait()
+	})
+
+	cc, err := grpc.Dial("bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock())
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, cc.Close())
+	})
+
+	logClient := NewClient(cc)
+
+	resp, err := logClient.Export(context.Background(), generateLogsRequestWithInstrumentationLibrary())
+	assert.NoError(t, err)
+	assert.Equal(t, NewResponse(), resp)
+}
+
 func TestGrpcError(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
@@ -278,5 +320,6 @@ func generateLogsRequestWithInstrumentationLibrary() Request {
 			LogRecords: lr.orig.ResourceLogs[0].ScopeLogs[0].LogRecords,
 		},
 	}
+	lr.orig.ResourceLogs[0].ScopeLogs = []*v1.ScopeLogs{}
 	return lr
 }

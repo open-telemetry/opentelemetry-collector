@@ -200,6 +200,48 @@ func TestGrpcTransition(t *testing.T) {
 	assert.Equal(t, NewResponse(), resp)
 }
 
+type fakeRawMetricsServer struct {
+	t *testing.T
+}
+
+func (s fakeRawMetricsServer) Export(_ context.Context, req Request) (Response, error) {
+	assert.Equal(s.t, 1, req.Metrics().DataPointCount())
+	return NewResponse(), nil
+}
+
+func TestGrpcExport(t *testing.T) {
+	lis := bufconn.Listen(1024 * 1024)
+	s := grpc.NewServer()
+	RegisterServer(s, &fakeRawMetricsServer{t: t})
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.NoError(t, s.Serve(lis))
+	}()
+	t.Cleanup(func() {
+		s.Stop()
+		wg.Wait()
+	})
+
+	cc, err := grpc.Dial("bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock())
+	assert.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, cc.Close())
+	})
+
+	metricClient := NewClient(cc)
+
+	resp, err := metricClient.Export(context.Background(), generateMetricsRequestWithInstrumentationLibrary())
+	assert.NoError(t, err)
+	assert.Equal(t, NewResponse(), resp)
+}
+
 func TestGrpcError(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
@@ -248,7 +290,10 @@ func (f fakeMetricsServer) Export(_ context.Context, request Request) (Response,
 
 func generateMetricsRequest() Request {
 	md := pmetric.NewMetrics()
-	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("test_metric")
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetDataType(pmetric.MetricDataTypeGauge)
+	m.Gauge().DataPoints().AppendEmpty()
 
 	mr := NewRequest()
 	mr.SetMetrics(md)
@@ -262,5 +307,6 @@ func generateMetricsRequestWithInstrumentationLibrary() Request {
 			Metrics: mr.orig.ResourceMetrics[0].ScopeMetrics[0].Metrics,
 		},
 	}
+	mr.orig.ResourceMetrics[0].ScopeMetrics = []*v1.ScopeMetrics{}
 	return mr
 }
