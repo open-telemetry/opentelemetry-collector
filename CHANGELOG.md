@@ -15,6 +15,7 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate configmapprovider package, replace with mapconverter (#5167)
+- Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` (#4762)
 
 ### 💡 Enhancements 💡
 
