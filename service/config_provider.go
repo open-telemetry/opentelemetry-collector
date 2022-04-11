@@ -93,7 +93,7 @@ type ConfigProviderSettings struct {
 	MapConverters []config.MapConverterFunc
 
 	// The configunmarshaler.ConfigUnmarshaler to be used to unmarshal the config.Map into config.Config.
-	// It is required to not be nit, use configunmarshaler.NewDefault() by default.
+	// It is required to not be nil, use configunmarshaler.NewDefault() by default.
 	Unmarshaler configunmarshaler.ConfigUnmarshaler
 }
 
