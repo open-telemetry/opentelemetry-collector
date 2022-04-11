@@ -97,8 +97,9 @@ type ConfigProviderSettings struct {
 	Unmarshaler configunmarshaler.ConfigUnmarshaler
 }
 
-func newDefaultConfigProviderSettings() ConfigProviderSettings {
+func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings {
 	return ConfigProviderSettings{
+		Locations:     locations,
 		MapProviders:  makeConfigMapProviderMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
 		MapConverters: []config.MapConverterFunc{expandmapconverter.New()},
 		Unmarshaler:   configunmarshaler.NewDefault(),
@@ -157,8 +158,7 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 
 // Deprecated: [v0.49.0] use NewConfigProvider instead.
 func MustNewDefaultConfigProvider(locations []string, properties []string) ConfigProvider {
-	set := newDefaultConfigProviderSettings()
-	set.Locations = locations
+	set := newDefaultConfigProviderSettings(locations)
 	set.MapConverters = append([]config.MapConverterFunc{overwritepropertiesmapconverter.New(properties)}, set.MapConverters...)
 	cfgProvider, err := NewConfigProvider(set)
 	if err != nil {

@@ -198,8 +198,7 @@ func TestConfigProvider(t *testing.T) {
 		return &mockProvider{retM: cfgMap}
 	}()
 
-	set := newDefaultConfigProviderSettings()
-	set.Locations = []string{"mock:"}
+	set := newDefaultConfigProviderSettings([]string{"mock:"})
 	set.MapProviders[mapProvider.Scheme()] = mapProvider
 	cfgW, err := NewConfigProvider(set)
 	require.NoError(t, err)
@@ -260,11 +259,8 @@ func TestConfigProviderNoWatcher(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
 
-	set := newDefaultConfigProviderSettings()
-	set.Locations = []string{filepath.Join("testdata", "otelcol-nop.yaml")}
-
 	watcherWG := sync.WaitGroup{}
-	cfgW, err := NewConfigProvider(set)
+	cfgW, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
@@ -315,8 +311,7 @@ func TestConfigProvider_ShutdownClosesWatch(t *testing.T) {
 		return &mockProvider{retM: cfgMap, errW: configsource.ErrSessionClosed}
 	}()
 
-	set := newDefaultConfigProviderSettings()
-	set.Locations = []string{"mock:"}
+	set := newDefaultConfigProviderSettings([]string{"mock:"})
 	set.MapProviders[mapProvider.Scheme()] = mapProvider
 
 	watcherWG := sync.WaitGroup{}
@@ -380,8 +375,7 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		set := newDefaultConfigProviderSettings()
-		set.Locations = []string{tt.location}
+		set := newDefaultConfigProviderSettings([]string{tt.location})
 		provider, err := NewConfigProvider(set)
 		assert.NoError(t, err)
 		_, err = provider.Get(context.Background(), factories)

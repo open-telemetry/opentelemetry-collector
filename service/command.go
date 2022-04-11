@@ -32,8 +32,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 			featuregate.Apply(gatesList)
 			if set.ConfigProvider == nil {
 				var err error
-				cfgSet := newDefaultConfigProviderSettings()
-				cfgSet.Locations = getConfigFlag()
+				cfgSet := newDefaultConfigProviderSettings(getConfigFlag())
 				// Append the "overwrite properties converter" as the first converter.
 				cfgSet.MapConverters = append(
 					[]config.MapConverterFunc{overwritepropertiesmapconverter.New(getSetFlag())},
