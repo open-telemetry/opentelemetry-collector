@@ -17,118 +17,152 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 // This file contains aliases to data structures that are common for all
 // signal types, such as timestamps, attributes, etc.
 
-import "go.opentelemetry.io/collector/model/internal"
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-// ValueType is an alias for internal.ValueType type.
-type ValueType = internal.ValueType
+// ValueType is an alias for pcommon.ValueType type.
+// Deprecated: [v0.49.0] Use pcommon.ValueType instead.
+type ValueType = pcommon.ValueType
 
-// AttributeValueType is an alias for internal.ValueType type.
+// AttributeValueType is an alias for pcommon.ValueType type.
 // Deprecated: [v0.48.0] Use ValueType instead.
-type AttributeValueType = internal.ValueType
+type AttributeValueType = pcommon.ValueType
 
 const (
-	ValueTypeEmpty  = internal.ValueTypeEmpty
-	ValueTypeString = internal.ValueTypeString
-	ValueTypeInt    = internal.ValueTypeInt
-	ValueTypeDouble = internal.ValueTypeDouble
-	ValueTypeBool   = internal.ValueTypeBool
-	ValueTypeMap    = internal.ValueTypeMap
-	ValueTypeSlice  = internal.ValueTypeSlice
-	ValueTypeBytes  = internal.ValueTypeBytes
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeEmpty instead.
+	ValueTypeEmpty = pcommon.ValueTypeEmpty
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeString instead.
+	ValueTypeString = pcommon.ValueTypeString
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeInt instead.
+	ValueTypeInt = pcommon.ValueTypeInt
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeDouble instead.
+	ValueTypeDouble = pcommon.ValueTypeDouble
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeBool instead.
+	ValueTypeBool = pcommon.ValueTypeBool
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeMap instead.
+	ValueTypeMap = pcommon.ValueTypeMap
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeSlice instead.
+	ValueTypeSlice = pcommon.ValueTypeSlice
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeBytes instead.
+	ValueTypeBytes = pcommon.ValueTypeBytes
 
 	// Deprecated: [v0.48.0] Use ValueTypeEmpty instead.
-	AttributeValueTypeEmpty = internal.ValueTypeEmpty
+	AttributeValueTypeEmpty = pcommon.ValueTypeEmpty
 
 	// Deprecated: [v0.48.0] Use ValueTypeString instead.
-	AttributeValueTypeString = internal.ValueTypeString
+	AttributeValueTypeString = pcommon.ValueTypeString
 
 	// Deprecated: [v0.48.0] Use ValueTypeInt instead.
-	AttributeValueTypeInt = internal.ValueTypeInt
+	AttributeValueTypeInt = pcommon.ValueTypeInt
 
 	// Deprecated: [v0.48.0] Use ValueTypeDouble instead.
-	AttributeValueTypeDouble = internal.ValueTypeDouble
+	AttributeValueTypeDouble = pcommon.ValueTypeDouble
 
 	// Deprecated: [v0.48.0] Use ValueTypeBool instead.
-	AttributeValueTypeBool = internal.ValueTypeBool
+	AttributeValueTypeBool = pcommon.ValueTypeBool
 
 	// Deprecated: [v0.48.0] Use ValueTypeMap instead.
-	AttributeValueTypeMap = internal.ValueTypeMap
+	AttributeValueTypeMap = pcommon.ValueTypeMap
 
 	// Deprecated: [v0.48.0] Use ValueTypeSlice instead.
-	AttributeValueTypeArray = internal.ValueTypeSlice
+	AttributeValueTypeArray = pcommon.ValueTypeSlice
 
 	// Deprecated: [v0.48.0] Use ValueTypeBytes instead.
-	AttributeValueTypeBytes = internal.ValueTypeBytes
+	AttributeValueTypeBytes = pcommon.ValueTypeBytes
 )
 
-// Value is an alias for internal.Value struct.
-type Value = internal.Value
+// Value is an alias for pcommon.Value struct.
+// Deprecated: [v0.49.0] Use pcommon.Value instead.
+type Value = pcommon.Value
 
 // Deprecated: [v0.48.0] Use Value instead.
-type AttributeValue = internal.Value
+type AttributeValue = pcommon.Value
 
-// Aliases for functions to create internal.Value.
+// Aliases for functions to create pcommon.Value.
 var (
-	NewValueEmpty  = internal.NewValueEmpty
-	NewValueString = internal.NewValueString
-	NewValueInt    = internal.NewValueInt
-	NewValueDouble = internal.NewValueDouble
-	NewValueBool   = internal.NewValueBool
-	NewValueMap    = internal.NewValueMap
-	NewValueSlice  = internal.NewValueSlice
-	NewValueBytes  = internal.NewValueBytes
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueEmpty instead.
+	NewValueEmpty = pcommon.NewValueEmpty
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueString instead.
+	NewValueString = pcommon.NewValueString
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueInt instead.
+	NewValueInt = pcommon.NewValueInt
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueDouble instead.
+	NewValueDouble = pcommon.NewValueDouble
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueBool instead.
+	NewValueBool = pcommon.NewValueBool
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueMap instead.
+	NewValueMap = pcommon.NewValueMap
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueSlice instead.
+	NewValueSlice = pcommon.NewValueSlice
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueBytes instead.
+	NewValueBytes = pcommon.NewValueBytes
 
 	// Deprecated: [v0.48.0] Use NewValueEmpty instead.
-	NewAttributeValueEmpty = internal.NewValueEmpty
+	NewAttributeValueEmpty = pcommon.NewValueEmpty
 
 	// Deprecated: [v0.48.0] Use NewValueString instead.
-	NewAttributeValueString = internal.NewValueString
+	NewAttributeValueString = pcommon.NewValueString
 
 	// Deprecated: [v0.48.0] Use NewValueInt instead.
-	NewAttributeValueInt = internal.NewValueInt
+	NewAttributeValueInt = pcommon.NewValueInt
 
 	// Deprecated: [v0.48.0] Use NewValueDouble instead.
-	NewAttributeValueDouble = internal.NewValueDouble
+	NewAttributeValueDouble = pcommon.NewValueDouble
 
 	// Deprecated: [v0.48.0] Use NewValueBool instead.
-	NewAttributeValueBool = internal.NewValueBool
+	NewAttributeValueBool = pcommon.NewValueBool
 
 	// Deprecated: [v0.48.0] Use NewValueMap instead.
-	NewAttributeValueMap = internal.NewValueMap
+	NewAttributeValueMap = pcommon.NewValueMap
 
 	// Deprecated: [v0.48.0] Use NewValueSlice instead.
-	NewAttributeValueArray = internal.NewValueSlice
+	NewAttributeValueArray = pcommon.NewValueSlice
 
 	// Deprecated: [v0.48.0] Use NewValueBytes instead.
-	NewAttributeValueBytes = internal.NewValueBytes
+	NewAttributeValueBytes = pcommon.NewValueBytes
 )
 
-// Map is an alias for internal.Map struct.
-type Map = internal.Map
+// Map is an alias for pcommon.Map struct.
+// Deprecated: [v0.49.0] Use pcommon.Map instead.
+type Map = pcommon.Map
 
 // Deprecated: [v0.48.0] Use Map instead.
-type AttributeMap = internal.Map
+type AttributeMap = pcommon.Map
 
-// Aliases for functions to create internal.Map.
+// Aliases for functions to create pcommon.Map.
 var (
-	NewMap        = internal.NewMap
-	NewMapFromRaw = internal.NewMapFromRaw
+	// Deprecated: [v0.49.0] Use pcommon.NewMap instead.
+	NewMap = pcommon.NewMap
+
+	// Deprecated: [v0.49.0] Use pcommon.NewMapFromRaw instead.
+	NewMapFromRaw = pcommon.NewMapFromRaw
 )
 
 // Deprecated: [v0.48.0] Use NewMap instead.
-var NewAttributeMap = internal.NewMap
-
-// Deprecated: [v0.48.0] Use NewMapFromRaw instead.
-var NewAttributeMapFromMap = internal.NewAttributeMapFromMap
+var NewAttributeMap = pcommon.NewMap
 
 // Deprecated: [v0.48.0] Use Slice instead.
-type AttributeValueSlice = internal.Slice
+type AttributeValueSlice = pcommon.Slice
 
 // Deprecated: [v0.48.0] Use NewSlice instead.
-var NewAttributeValueSlice = internal.NewSlice
+var NewAttributeValueSlice = pcommon.NewSlice
 
 // Deprecated: [v0.48.0] Use InstrumentationScope instead.
-type InstrumentationLibrary = internal.InstrumentationScope
+type InstrumentationLibrary = pcommon.InstrumentationScope
 
 // Deprecated: [v0.48.0] Use NewInstrumentationScope instead.
-var NewInstrumentationLibrary = internal.NewInstrumentationScope
+var NewInstrumentationLibrary = pcommon.NewInstrumentationScope

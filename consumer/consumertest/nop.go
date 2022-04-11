@@ -17,7 +17,9 @@ package consumertest // import "go.opentelemetry.io/collector/consumer/consumert
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var (
@@ -30,15 +32,15 @@ type nopConsumer struct {
 
 func (nc *nopConsumer) unexported() {}
 
-func (nc *nopConsumer) ConsumeTraces(context.Context, pdata.Traces) error {
+func (nc *nopConsumer) ConsumeTraces(context.Context, ptrace.Traces) error {
 	return nil
 }
 
-func (nc *nopConsumer) ConsumeMetrics(context.Context, pdata.Metrics) error {
+func (nc *nopConsumer) ConsumeMetrics(context.Context, pmetric.Metrics) error {
 	return nil
 }
 
-func (nc *nopConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
+func (nc *nopConsumer) ConsumeLogs(context.Context, plog.Logs) error {
 	return nil
 }
 

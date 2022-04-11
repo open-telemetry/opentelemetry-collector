@@ -21,6 +21,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector/model v0.48.0
+	go.opentelemetry.io/collector/pdata v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.31.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0
 	go.opentelemetry.io/contrib/zpages v0.31.0
@@ -74,5 +75,7 @@ require (
 )
 
 replace go.opentelemetry.io/collector/model => ./model
+
+replace go.opentelemetry.io/collector/pdata => ./pdata
 
 retract v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.

@@ -18,7 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // Consumer is a convenience interface that implements all consumer interfaces.
@@ -29,11 +31,11 @@ type Consumer interface {
 	// Capabilities to implement the base consumer functionality.
 	Capabilities() consumer.Capabilities
 	// ConsumeTraces to implement the consumer.Traces.
-	ConsumeTraces(context.Context, pdata.Traces) error
+	ConsumeTraces(context.Context, ptrace.Traces) error
 	// ConsumeMetrics to implement the consumer.Metrics.
-	ConsumeMetrics(context.Context, pdata.Metrics) error
+	ConsumeMetrics(context.Context, pmetric.Metrics) error
 	// ConsumeLogs to implement the consumer.Logs.
-	ConsumeLogs(context.Context, pdata.Logs) error
+	ConsumeLogs(context.Context, plog.Logs) error
 	unexported()
 }
 

@@ -31,8 +31,9 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func BenchmarkCompressors(b *testing.B) {
@@ -106,34 +107,34 @@ type marshaler interface {
 }
 
 type logMarshaler struct {
-	pdata.LogsMarshaler
+	plog.Marshaler
 }
 
 func (m *logMarshaler) marshal(e interface{}) ([]byte, error) {
-	return m.MarshalLogs(e.(pdata.Logs))
+	return m.MarshalLogs(e.(plog.Logs))
 }
 
 type traceMarshaler struct {
-	pdata.TracesMarshaler
+	ptrace.Marshaler
 }
 
 func (m *traceMarshaler) marshal(e interface{}) ([]byte, error) {
-	return m.MarshalTraces(e.(pdata.Traces))
+	return m.MarshalTraces(e.(ptrace.Traces))
 }
 
 type metricsMarshaler struct {
-	pdata.MetricsMarshaler
+	pmetric.Marshaler
 }
 
 func (m *metricsMarshaler) marshal(e interface{}) ([]byte, error) {
-	return m.MarshalMetrics(e.(pdata.Metrics))
+	return m.MarshalMetrics(e.(pmetric.Metrics))
 }
 
 func setupTestPayloads() []testPayload {
 	payloads := make([]testPayload, 0)
 
 	// log payloads
-	logMarshaler := &logMarshaler{otlp.NewProtobufLogsMarshaler()}
+	logMarshaler := &logMarshaler{plog.NewProtoMarshaler()}
 	payloads = append(payloads, testPayload{
 		name:      "sm_log_request",
 		message:   testdata.GenerateLogsOneLogRecord(),
@@ -148,7 +149,7 @@ func setupTestPayloads() []testPayload {
 		marshaler: logMarshaler})
 
 	// trace payloads
-	tracesMarshaler := &traceMarshaler{otlp.NewProtobufTracesMarshaler()}
+	tracesMarshaler := &traceMarshaler{ptrace.NewProtoMarshaler()}
 	payloads = append(payloads, testPayload{
 		name:      "sm_trace_request",
 		message:   testdata.GenerateTracesOneSpan(),
@@ -163,7 +164,7 @@ func setupTestPayloads() []testPayload {
 		marshaler: tracesMarshaler})
 
 	// metric payloads
-	metricsMarshaler := &metricsMarshaler{otlp.NewProtobufMetricsMarshaler()}
+	metricsMarshaler := &metricsMarshaler{pmetric.NewProtoMarshaler()}
 	payloads = append(payloads, testPayload{
 		name:      "sm_metric_request",
 		message:   testdata.GenerateMetricsOneMetric(),

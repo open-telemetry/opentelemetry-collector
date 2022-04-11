@@ -17,16 +17,20 @@
 
 package pdata
 
-import "go.opentelemetry.io/collector/model/internal"
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-// InstrumentationScope is an alias for internal.InstrumentationScope struct.
-type InstrumentationScope = internal.InstrumentationScope
+// InstrumentationScope is an alias for pcommon.InstrumentationScope struct.
+// Deprecated: [v0.49.0] Use pcommon.InstrumentationScope instead.
+type InstrumentationScope = pcommon.InstrumentationScope
 
 // NewInstrumentationScope is an alias for a function to create a new empty InstrumentationScope.
-var NewInstrumentationScope = internal.NewInstrumentationScope
+// Deprecated: [v0.49.0] Use pcommon.InstrumentationScope instead.
+var NewInstrumentationScope = pcommon.NewInstrumentationScope
 
-// Slice is an alias for internal.Slice struct.
-type Slice = internal.Slice
+// Slice is an alias for pcommon.Slice struct.
+// Deprecated: [v0.49.0] Use pcommon.Slice instead.
+type Slice = pcommon.Slice
 
 // NewSlice is an alias for a function to create Slice.
-var NewSlice = internal.NewSlice
+// Deprecated: [v0.49.0] Use pcommon.NewSlice instead.
+var NewSlice = pcommon.NewSlice

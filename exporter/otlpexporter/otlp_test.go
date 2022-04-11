@@ -35,8 +35,12 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 type mockReceiver struct {
@@ -55,10 +59,10 @@ func (r *mockReceiver) GetMetadata() metadata.MD {
 
 type mockTracesReceiver struct {
 	mockReceiver
-	lastRequest pdata.Traces
+	lastRequest ptrace.Traces
 }
 
-func (r *mockTracesReceiver) Export(ctx context.Context, req otlpgrpc.TracesRequest) (otlpgrpc.TracesResponse, error) {
+func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	td := req.Traces()
 	atomic.AddInt32(&r.totalItems, int32(td.SpanCount()))
@@ -66,10 +70,10 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req otlpgrpc.TracesRequ
 	defer r.mux.Unlock()
 	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return otlpgrpc.NewTracesResponse(), nil
+	return ptraceotlp.NewResponse(), nil
 }
 
-func (r *mockTracesReceiver) GetLastRequest() pdata.Traces {
+func (r *mockTracesReceiver) GetLastRequest() ptrace.Traces {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
@@ -98,7 +102,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 	}
 
 	// Now run it as a gRPC server
-	otlpgrpc.RegisterTracesServer(rcv.srv, rcv)
+	ptraceotlp.RegisterServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -108,10 +112,10 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 
 type mockLogsReceiver struct {
 	mockReceiver
-	lastRequest pdata.Logs
+	lastRequest plog.Logs
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, req otlpgrpc.LogsRequest) (otlpgrpc.LogsResponse, error) {
+func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.Request) (plogotlp.Response, error) {
 	atomic.AddInt32(&r.requestCount, 1)
 	ld := req.Logs()
 	atomic.AddInt32(&r.totalItems, int32(ld.LogRecordCount()))
@@ -119,10 +123,10 @@ func (r *mockLogsReceiver) Export(ctx context.Context, req otlpgrpc.LogsRequest)
 	defer r.mux.Unlock()
 	r.lastRequest = ld
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return otlpgrpc.NewLogsResponse(), nil
+	return plogotlp.NewResponse(), nil
 }
 
-func (r *mockLogsReceiver) GetLastRequest() pdata.Logs {
+func (r *mockLogsReceiver) GetLastRequest() plog.Logs {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
@@ -136,7 +140,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	otlpgrpc.RegisterLogsServer(rcv.srv, rcv)
+	plogotlp.RegisterServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -146,10 +150,10 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 
 type mockMetricsReceiver struct {
 	mockReceiver
-	lastRequest pdata.Metrics
+	lastRequest pmetric.Metrics
 }
 
-func (r *mockMetricsReceiver) Export(ctx context.Context, req otlpgrpc.MetricsRequest) (otlpgrpc.MetricsResponse, error) {
+func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.Request) (pmetricotlp.Response, error) {
 	md := req.Metrics()
 	atomic.AddInt32(&r.requestCount, 1)
 	atomic.AddInt32(&r.totalItems, int32(md.DataPointCount()))
@@ -157,10 +161,10 @@ func (r *mockMetricsReceiver) Export(ctx context.Context, req otlpgrpc.MetricsRe
 	defer r.mux.Unlock()
 	r.lastRequest = md
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return otlpgrpc.NewMetricsResponse(), nil
+	return pmetricotlp.NewResponse(), nil
 }
 
-func (r *mockMetricsReceiver) GetLastRequest() pdata.Metrics {
+func (r *mockMetricsReceiver) GetLastRequest() pmetric.Metrics {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	return r.lastRequest
@@ -174,7 +178,7 @@ func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	otlpgrpc.RegisterMetricsServer(rcv.srv, rcv)
+	pmetricotlp.RegisterServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -220,7 +224,7 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty trace.
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	// Wait until it is received.
@@ -314,7 +318,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 			// Send empty trace.
-			td := pdata.NewTraces()
+			td := ptrace.NewTraces()
 			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 			// Wait until it is received.
@@ -366,7 +370,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty metric.
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
 	// Wait until it is received.
@@ -513,7 +517,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	cancel()
 }
 
-func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pdata.Traces, ln net.Listener) {
+func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td ptrace.Traces, ln net.Listener) {
 	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	defer rcv.srv.GracefulStop()
 	// Ensure that initially there is no data in the receiver.
@@ -572,7 +576,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
 
 	// Send empty request.
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), ld))
 
 	// Wait until it is received.

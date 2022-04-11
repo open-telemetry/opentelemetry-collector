@@ -14,6 +14,10 @@
 
 ### 🚩 Deprecations 🚩
 
+- All pdata related APIs from model (model/pdata, model/otlp and model/otlpgrpc) are deprecated in
+  favor of packages in the new pdata module separated by telemetry signal type (#5168)
+  - `model/pdata`, `model/otlp` -> `pdata/pcommon`, `pdata/plog`, `pdata/pmetric`, `pdata/ptrace`
+  - `model/otlpgrpc` -> `pdata/plog/plogotlp`, `pdata/pmetric/pmetricotlp`, `pdata/ptrace/ptraceotlp`
 - Deprecate configmapprovider package, replace with mapconverter (#5167)
 - Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` (#4762)
 

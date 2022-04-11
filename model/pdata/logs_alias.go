@@ -16,62 +16,118 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for log data structures.
 
-import "go.opentelemetry.io/collector/model/internal"
+import "go.opentelemetry.io/collector/pdata/plog"
 
-// LogsMarshaler is an alias for internal.LogsMarshaler interface.
-type LogsMarshaler = internal.LogsMarshaler
+// LogsMarshaler is an alias for plog.Marshaler interface.
+// Deprecated: [v0.49.0] Use plog.Marshaler instead.
+type LogsMarshaler = plog.Marshaler
 
-// LogsUnmarshaler is an alias for internal.LogsUnmarshaler interface.
-type LogsUnmarshaler = internal.LogsUnmarshaler
+// LogsUnmarshaler is an alias for plog.Unmarshaler interface.
+// Deprecated: [v0.49.0] Use plog.Unmarshaler instead.
+type LogsUnmarshaler = plog.Unmarshaler
 
-// LogsSizer is an alias for internal.LogsSizer interface.
-type LogsSizer = internal.LogsSizer
+// LogsSizer is an alias for plog.Sizer interface.
+// Deprecated: [v0.49.0] Use plog.Sizer instead.
+type LogsSizer = plog.Sizer
 
-// Logs is an alias for internal.Logs struct.
-type Logs = internal.Logs
+// Logs is an alias for plog.Logs struct.
+// Deprecated: [v0.49.0] Use plog.Logs instead.
+type Logs = plog.Logs
 
 // NewLogs is an alias for a function to create new Logs.
-var NewLogs = internal.NewLogs
+// Deprecated: [v0.49.0] Use plog.NewLogs instead.
+var NewLogs = plog.NewLogs
 
-// SeverityNumber is an alias for internal.SeverityNumber type.
-type SeverityNumber = internal.SeverityNumber
+// SeverityNumber is an alias for plog.SeverityNumber type.
+// Deprecated: [v0.49.0] Use plog.SeverityNumber instead.
+type SeverityNumber = plog.SeverityNumber
 
 const (
-	SeverityNumberUNDEFINED = internal.SeverityNumberUNDEFINED
-	SeverityNumberTRACE     = internal.SeverityNumberTRACE
-	SeverityNumberTRACE2    = internal.SeverityNumberTRACE2
-	SeverityNumberTRACE3    = internal.SeverityNumberTRACE3
-	SeverityNumberTRACE4    = internal.SeverityNumberTRACE4
-	SeverityNumberDEBUG     = internal.SeverityNumberDEBUG
-	SeverityNumberDEBUG2    = internal.SeverityNumberDEBUG2
-	SeverityNumberDEBUG3    = internal.SeverityNumberDEBUG3
-	SeverityNumberDEBUG4    = internal.SeverityNumberDEBUG4
-	SeverityNumberINFO      = internal.SeverityNumberINFO
-	SeverityNumberINFO2     = internal.SeverityNumberINFO2
-	SeverityNumberINFO3     = internal.SeverityNumberINFO3
-	SeverityNumberINFO4     = internal.SeverityNumberINFO4
-	SeverityNumberWARN      = internal.SeverityNumberWARN
-	SeverityNumberWARN2     = internal.SeverityNumberWARN2
-	SeverityNumberWARN3     = internal.SeverityNumberWARN3
-	SeverityNumberWARN4     = internal.SeverityNumberWARN4
-	SeverityNumberERROR     = internal.SeverityNumberERROR
-	SeverityNumberERROR2    = internal.SeverityNumberERROR2
-	SeverityNumberERROR3    = internal.SeverityNumberERROR3
-	SeverityNumberERROR4    = internal.SeverityNumberERROR4
-	SeverityNumberFATAL     = internal.SeverityNumberFATAL
-	SeverityNumberFATAL2    = internal.SeverityNumberFATAL2
-	SeverityNumberFATAL3    = internal.SeverityNumberFATAL3
-	SeverityNumberFATAL4    = internal.SeverityNumberFATAL4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberUNDEFINED instead.
+	SeverityNumberUNDEFINED = plog.SeverityNumberUNDEFINED
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberTRACE instead.
+	SeverityNumberTRACE = plog.SeverityNumberTRACE
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberTRACE2 instead.
+	SeverityNumberTRACE2 = plog.SeverityNumberTRACE2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberTRACE3 instead.
+	SeverityNumberTRACE3 = plog.SeverityNumberTRACE3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberTRACE4 instead.
+	SeverityNumberTRACE4 = plog.SeverityNumberTRACE4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberDEBUG instead.
+	SeverityNumberDEBUG = plog.SeverityNumberDEBUG
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberDEBUG2 instead.
+	SeverityNumberDEBUG2 = plog.SeverityNumberDEBUG2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberDEBUG3 instead.
+	SeverityNumberDEBUG3 = plog.SeverityNumberDEBUG3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberDEBUG4 instead.
+	SeverityNumberDEBUG4 = plog.SeverityNumberDEBUG4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberINFO instead.
+	SeverityNumberINFO = plog.SeverityNumberINFO
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberINFO2 instead.
+	SeverityNumberINFO2 = plog.SeverityNumberINFO2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberINFO3 instead.
+	SeverityNumberINFO3 = plog.SeverityNumberINFO3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberINFO4 instead.
+	SeverityNumberINFO4 = plog.SeverityNumberINFO4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberWARN instead.
+	SeverityNumberWARN = plog.SeverityNumberWARN
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberWARN2 instead.
+	SeverityNumberWARN2 = plog.SeverityNumberWARN2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberWARN3 instead.
+	SeverityNumberWARN3 = plog.SeverityNumberWARN3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberWARN4 instead.
+	SeverityNumberWARN4 = plog.SeverityNumberWARN4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberERROR instead.
+	SeverityNumberERROR = plog.SeverityNumberERROR
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberERROR2 instead.
+	SeverityNumberERROR2 = plog.SeverityNumberERROR2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberERROR3 instead.
+	SeverityNumberERROR3 = plog.SeverityNumberERROR3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberERROR4 instead.
+	SeverityNumberERROR4 = plog.SeverityNumberERROR4
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberFATAL instead.
+	SeverityNumberFATAL = plog.SeverityNumberFATAL
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberFATAL2 instead.
+	SeverityNumberFATAL2 = plog.SeverityNumberFATAL2
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberFATAL3 instead.
+	SeverityNumberFATAL3 = plog.SeverityNumberFATAL3
+
+	// Deprecated: [v0.49.0] Use plog.SeverityNumberFATAL4 instead.
+	SeverityNumberFATAL4 = plog.SeverityNumberFATAL4
 )
 
 // Deprecated: [v0.48.0] Use ScopeLogsSlice instead.
-type InstrumentationLibraryLogsSlice = internal.ScopeLogsSlice
+type InstrumentationLibraryLogsSlice = plog.ScopeLogsSlice
 
 // Deprecated: [v0.48.0] Use NewScopeLogsSlice instead.
-var NewInstrumentationLibraryLogsSlice = internal.NewScopeLogsSlice
+var NewInstrumentationLibraryLogsSlice = plog.NewScopeLogsSlice
 
 // Deprecated: [v0.48.0] Use ScopeLogs instead.
-type InstrumentationLibraryLogs = internal.ScopeLogs
+type InstrumentationLibraryLogs = plog.ScopeLogs
 
 // Deprecated: [v0.48.0] Use NewScopeLogs instead.
-var NewInstrumentationLibraryLogs = internal.NewScopeLogs
+var NewInstrumentationLibraryLogs = plog.NewScopeLogs
