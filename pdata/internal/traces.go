@@ -18,27 +18,6 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-// TracesMarshaler marshals pdata.Traces into bytes.
-type TracesMarshaler interface {
-	// MarshalTraces the given pdata.Traces into bytes.
-	// If the error is not nil, the returned bytes slice cannot be used.
-	MarshalTraces(td Traces) ([]byte, error)
-}
-
-// TracesUnmarshaler unmarshalls bytes into pdata.Traces.
-type TracesUnmarshaler interface {
-	// UnmarshalTraces the given bytes into pdata.Traces.
-	// If the error is not nil, the returned pdata.Traces cannot be used.
-	UnmarshalTraces(buf []byte) (Traces, error)
-}
-
-// TracesSizer is an optional interface implemented by the TracesMarshaler,
-// that calculates the size of a marshaled Traces.
-type TracesSizer interface {
-	// TracesSize returns the size in bytes of a marshaled Traces.
-	TracesSize(td Traces) int
-}
-
 // Traces is the top-level struct that is propagated through the traces pipeline.
 // Use NewTraces to create new instance, zero-initialized instance is not valid for use.
 type Traces struct {

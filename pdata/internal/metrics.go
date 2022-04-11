@@ -18,27 +18,6 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-// MetricsMarshaler marshals pmetric.Metrics into bytes.
-type MetricsMarshaler interface {
-	// MarshalMetrics the given pmetric.Metrics into bytes.
-	// If the error is not nil, the returned bytes slice cannot be used.
-	MarshalMetrics(md Metrics) ([]byte, error)
-}
-
-// MetricsUnmarshaler unmarshalls bytes into pmetric.Metrics.
-type MetricsUnmarshaler interface {
-	// UnmarshalMetrics the given bytes into pmetric.Metrics.
-	// If the error is not nil, the returned pmetric.Metrics cannot be used.
-	UnmarshalMetrics(buf []byte) (Metrics, error)
-}
-
-// MetricsSizer is an optional interface implemented by the MetricsMarshaler,
-// that calculates the size of a marshaled Metrics.
-type MetricsSizer interface {
-	// MetricsSize returns the size in bytes of a marshaled Metrics.
-	MetricsSize(md Metrics) int
-}
-
 // Metrics is the top-level struct that is propagated through the metrics pipeline.
 // Use NewMetrics to create new instance, zero-initialized instance is not valid for use.
 type Metrics struct {

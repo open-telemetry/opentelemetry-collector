@@ -16,15 +16,6 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
 import "go.opentelemetry.io/collector/pdata/internal" // This file contains aliases for metric data structures.
 
-// Marshaler is an alias for internal.MetricsMarshaler interface.
-type Marshaler = internal.MetricsMarshaler
-
-// Unmarshaler is an alias for internal.MetricsUnmarshaler interface.
-type Unmarshaler = internal.MetricsUnmarshaler
-
-// Sizer is an alias for internal.MetricsSizer interface.
-type Sizer = internal.MetricsSizer
-
 // Metrics is an alias for internal.Metrics structure.
 type Metrics = internal.Metrics
 
