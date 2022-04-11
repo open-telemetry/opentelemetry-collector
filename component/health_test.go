@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-func TestHealth_NotificationsSubscribe(t *testing.T) {
+func TestHealthNotifications_MultipleSubscribers(t *testing.T) {
 	notifications := NewHealthNotifications()
 
 	expectedEvent := HealthEvent{
@@ -64,7 +64,7 @@ func TestHealth_NotificationsSubscribe(t *testing.T) {
 		}
 	}()
 
-	notifications.Report(expectedEvent)
+	notifications.Send(expectedEvent)
 	notifications.Stop()
 
 	// wait for events to be consumed
@@ -77,7 +77,7 @@ func TestHealth_NotificationsSubscribe(t *testing.T) {
 	require.Equal(t, expectedEvent, <-sub2Events)
 }
 
-func TestHealth_NotificationsUnsubscribe(t *testing.T) {
+func TestHealthNotifications_Unsubscribe(t *testing.T) {
 	notifications := NewHealthNotifications()
 
 	event1 := HealthEvent{
@@ -124,9 +124,9 @@ func TestHealth_NotificationsUnsubscribe(t *testing.T) {
 		}
 	}()
 
-	notifications.Report(event1)
+	notifications.Send(event1)
 	notifications.Unsubscribe(sub2)
-	notifications.Report(event2)
+	notifications.Send(event2)
 	notifications.Stop()
 
 	// wait for events to be consumed

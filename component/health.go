@@ -70,18 +70,7 @@ func (hn *HealthNotifications) Unsubscribe(subscription <-chan (HealthEvent)) {
 	hn.subscriptions = hn.subscriptions[0:i]
 }
 
-func (hn *HealthNotifications) Report(event HealthEvent) {
-	hn.notify(event)
-}
-
-func (hn *HealthNotifications) Start() {
-}
-
-func (hn *HealthNotifications) Stop() {
-	hn.unsubscribeAll()
-}
-
-func (hn *HealthNotifications) notify(event HealthEvent) {
+func (hn *HealthNotifications) Send(event HealthEvent) {
 	hn.mu.RLock()
 	defer hn.mu.RUnlock()
 
@@ -90,7 +79,7 @@ func (hn *HealthNotifications) notify(event HealthEvent) {
 	}
 }
 
-func (hn *HealthNotifications) unsubscribeAll() {
+func (hn *HealthNotifications) Stop() {
 	hn.mu.Lock()
 	defer hn.mu.Unlock()
 
