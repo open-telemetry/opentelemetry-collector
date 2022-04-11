@@ -10,14 +10,17 @@
 - Add Scheme to MapProvider interface (#5068)
 - Do not set MeterProvider to global otel (#5146)
 - Make `InstrumentationLibrary<signal>ToScope` helper functions unexported (#5164)
+- Remove Log's "ShortName" from logging exporter output (#5172)
 
 ### 🚩 Deprecations 🚩
 
 - Deprecate configmapprovider package, replace with mapconverter (#5167)
+- Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` (#4762)
 
 ### 💡 Enhancements 💡
 
 - OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
+- Add `ObservedTimestamp` field to `pdata.LogRecord` (#5171)
 
 ### 🧰 Bug fixes 🧰
 

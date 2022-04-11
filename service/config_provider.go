@@ -69,50 +69,102 @@ type ConfigProvider interface {
 }
 
 type configProvider struct {
-	locations          []string
-	configMapProviders map[string]config.MapProvider
-	cfgMapConverters   []config.MapConverterFunc
-	configUnmarshaler  configunmarshaler.ConfigUnmarshaler
+	locations           []string
+	configMapProviders  map[string]config.MapProvider
+	configMapConverters []config.MapConverterFunc
+	configUnmarshaler   configunmarshaler.ConfigUnmarshaler
 
 	sync.Mutex
 	closer  config.CloseFunc
 	watcher chan error
 }
 
-// MustNewConfigProvider returns a new ConfigProvider that provides the configuration:
-// * Retrieve the config.Map by merging all retrieved maps from all the config.MapProvider in order.
-// * Then applies all the ConfigMapConverterFunc in the given order.
-// * Then unmarshalls the final config.Config using the given configunmarshaler.ConfigUnmarshaler.
-//
-// The `configMapProviders` is a map of pairs <scheme,Provider>.
-func MustNewConfigProvider(
-	locations []string,
-	configMapProviders map[string]config.MapProvider,
-	cfgMapConverters []config.MapConverterFunc,
-	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
-	// Safe copy, ensures the slice cannot be changed from the caller.
-	locationsCopy := make([]string, len(locations))
-	copy(locationsCopy, locations)
-	return &configProvider{
-		locations:          locationsCopy,
-		configMapProviders: configMapProviders,
-		cfgMapConverters:   cfgMapConverters,
-		configUnmarshaler:  configUnmarshaler,
-		watcher:            make(chan error, 1),
+// ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
+type ConfigProviderSettings struct {
+	// Locations from where the config.Map is retrieved, and merged in the given order.
+	// It is required to have at least one location.
+	Locations []string
+
+	// MapProviders is a map of pairs <scheme, config.MapProvider>.
+	// It is required to have at least one config.MapProvider.
+	MapProviders map[string]config.MapProvider
+
+	// MapConverters is a slice of config.MapConverterFunc.
+	MapConverters []config.MapConverterFunc
+
+	// The configunmarshaler.ConfigUnmarshaler to be used to unmarshal the config.Map into config.Config.
+	// It is required to not be nil, use configunmarshaler.NewDefault() by default.
+	Unmarshaler configunmarshaler.ConfigUnmarshaler
+}
+
+func newDefaultConfigProviderSettings() ConfigProviderSettings {
+	return ConfigProviderSettings{
+		MapProviders:  makeConfigMapProviderMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
+		MapConverters: []config.MapConverterFunc{expandmapconverter.New()},
+		Unmarshaler:   configunmarshaler.NewDefault(),
 	}
 }
 
-// MustNewDefaultConfigProvider returns the default ConfigProvider from slice of location strings
-// (e.g. file:/path/to/config.yaml) and property overrides (e.g. service.telemetry.metrics.address=localhost:8888).
-func MustNewDefaultConfigProvider(configLocations []string, properties []string) ConfigProvider {
-	return MustNewConfigProvider(
-		configLocations,
-		makeConfigMapProviderMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
-		[]config.MapConverterFunc{
-			overwritepropertiesmapconverter.New(properties),
-			expandmapconverter.New(),
-		},
-		configunmarshaler.NewDefault())
+// Deprecated: [v0.49.0] use NewConfigProvider instead.
+func MustNewConfigProvider(
+	locations []string,
+	configMapProviders map[string]config.MapProvider,
+	configMapConverters []config.MapConverterFunc,
+	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
+	cfgProvider, err := NewConfigProvider(ConfigProviderSettings{
+		Locations:     locations,
+		MapProviders:  configMapProviders,
+		MapConverters: configMapConverters,
+		Unmarshaler:   configUnmarshaler,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return cfgProvider
+}
+
+// NewConfigProvider returns a new ConfigProvider that provides the configuration:
+// * Retrieve the config.Map by merging all retrieved maps from the given `locations` in order.
+// * Then applies all the config.MapConverterFunc in the given order.
+// * Then unmarshals the config.Map into the service Config.
+func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
+	if len(set.Locations) == 0 {
+		return nil, fmt.Errorf("cannot create ConfigProvider: no Locations")
+	}
+
+	if len(set.MapProviders) == 0 {
+		return nil, fmt.Errorf("cannot create ConfigProvider: no MapProviders")
+	}
+
+	// Safe copy, ensures the slices and maps cannot be changed from the caller.
+	locationsCopy := make([]string, len(set.Locations))
+	copy(locationsCopy, set.Locations)
+	mapProvidersCopy := make(map[string]config.MapProvider, len(set.MapProviders))
+	for k, v := range set.MapProviders {
+		mapProvidersCopy[k] = v
+	}
+	mapConvertersCopy := make([]config.MapConverterFunc, len(set.MapConverters))
+	copy(mapConvertersCopy, set.MapConverters)
+
+	return &configProvider{
+		locations:           locationsCopy,
+		configMapProviders:  mapProvidersCopy,
+		configMapConverters: mapConvertersCopy,
+		configUnmarshaler:   set.Unmarshaler,
+		watcher:             make(chan error, 1),
+	}, nil
+}
+
+// Deprecated: [v0.49.0] use NewConfigProvider instead.
+func MustNewDefaultConfigProvider(locations []string, properties []string) ConfigProvider {
+	set := newDefaultConfigProviderSettings()
+	set.Locations = locations
+	set.MapConverters = append([]config.MapConverterFunc{overwritepropertiesmapconverter.New(properties)}, set.MapConverters...)
+	cfgProvider, err := NewConfigProvider(set)
+	if err != nil {
+		panic(err)
+	}
+	return cfgProvider
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
@@ -128,7 +180,7 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 	cm.closer = ret.CloseFunc
 
 	// Apply all converters.
-	for _, cfgMapConv := range cm.cfgMapConverters {
+	for _, cfgMapConv := range cm.configMapConverters {
 		if err = cfgMapConv(ctx, ret.Map); err != nil {
 			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
 		}
