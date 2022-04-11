@@ -18,27 +18,6 @@ import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
-// LogsMarshaler marshals pdata.Logs into bytes.
-type LogsMarshaler interface {
-	// MarshalLogs the given pdata.Logs into bytes.
-	// If the error is not nil, the returned bytes slice cannot be used.
-	MarshalLogs(ld Logs) ([]byte, error)
-}
-
-// LogsUnmarshaler unmarshalls bytes into pdata.Logs.
-type LogsUnmarshaler interface {
-	// UnmarshalLogs the given bytes into pdata.Logs.
-	// If the error is not nil, the returned pdata.Logs cannot be used.
-	UnmarshalLogs(buf []byte) (Logs, error)
-}
-
-// LogsSizer is an optional interface implemented by the LogsMarshaler,
-// that calculates the size of a marshaled Logs.
-type LogsSizer interface {
-	// LogsSize returns the size in bytes of a marshaled Logs.
-	LogsSize(ld Logs) int
-}
-
 // Logs is the top-level struct that is propagated through the logs pipeline.
 // Use NewLogs to create new instance, zero-initialized instance is not valid for use.
 type Logs struct {

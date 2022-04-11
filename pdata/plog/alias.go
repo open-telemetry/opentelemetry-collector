@@ -18,19 +18,10 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// Marshaler is an alias for internal.LogsMarshaler interface.
-type Marshaler = internal.LogsMarshaler
-
-// Unmarshaler is an alias for internal.LogsUnmarshaler interface.
-type Unmarshaler = internal.LogsUnmarshaler
-
-// Sizer is an alias for internal.LogsSizer interface.
-type Sizer = internal.LogsSizer
-
 // Logs is an alias for internal.Logs struct.
 type Logs = internal.Logs
 
-// New is an alias for a function to create new Logs.
+// NewLogs is an alias for a function to create new Logs.
 var NewLogs = internal.NewLogs
 
 // SeverityNumber is an alias for internal.SeverityNumber type.
