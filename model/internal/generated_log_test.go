@@ -441,6 +441,14 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	assert.EqualValues(t, generateTestLogRecord(), ms)
 }
 
+func TestLogRecord_ObservedTimestamp(t *testing.T) {
+	ms := NewLogRecord()
+	assert.EqualValues(t, Timestamp(0), ms.ObservedTimestamp())
+	testValObservedTimestamp := Timestamp(1234567890)
+	ms.SetObservedTimestamp(testValObservedTimestamp)
+	assert.EqualValues(t, testValObservedTimestamp, ms.ObservedTimestamp())
+}
+
 func TestLogRecord_Timestamp(t *testing.T) {
 	ms := NewLogRecord()
 	assert.EqualValues(t, Timestamp(0), ms.Timestamp())
@@ -592,6 +600,7 @@ func generateTestLogRecord() LogRecord {
 }
 
 func fillTestLogRecord(tv LogRecord) {
+	tv.SetObservedTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
