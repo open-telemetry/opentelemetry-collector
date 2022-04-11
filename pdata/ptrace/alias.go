@@ -18,15 +18,6 @@ import "go.opentelemetry.io/collector/pdata/internal"
 
 // This file contains aliases for trace data structures.
 
-// Marshaler is an alias for internal.TracesMarshaler interface.
-type Marshaler = internal.TracesMarshaler
-
-// Unmarshaler is an alias for internal.TracesUnmarshaler interface.
-type Unmarshaler = internal.TracesUnmarshaler
-
-// Sizer is an alias for internal.TracesSizer interface.
-type Sizer = internal.TracesSizer
-
 // Traces is an alias for internal.Traces struct.
 type Traces = internal.Traces
 
