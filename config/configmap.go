@@ -23,7 +23,6 @@ import (
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/mitchellh/mapstructure"
-	"github.com/spf13/cast"
 )
 
 const (
@@ -107,17 +106,17 @@ func (l *Map) Merge(in *Map) error {
 	return l.k.Merge(in.k)
 }
 
-// Sub returns new Parser instance representing a sub-config of this instance.
-// It returns an error is the sub-config is not a map (use Get()) and an empty Parser if
-// none exists.
+// Sub returns new Map instance representing a sub-config of this instance.
+// It returns an error is the sub-config is not a map[string]interface{} (use Get()), and an empty Map if none exists.
 func (l *Map) Sub(key string) (*Map, error) {
+	// Code inspired by the koanf "Cut" func, but returns an error instead of empty map for unsupported sub-config type.
 	data := l.Get(key)
 	if data == nil {
 		return NewMap(), nil
 	}
 
-	if reflect.TypeOf(data).Kind() == reflect.Map {
-		return NewMapFromStringMap(cast.ToStringMap(data)), nil
+	if v, ok := data.(map[string]interface{}); ok {
+		return NewMapFromStringMap(v), nil
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
