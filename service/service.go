@@ -81,9 +81,6 @@ func newService(set *svcSettings) (*service, error) {
 }
 
 func (srv *service) Start(ctx context.Context) error {
-	srv.telemetry.Logger.Info("Starting health notifications...")
-	srv.healthNotifications.Start()
-
 	srv.telemetry.Logger.Info("Starting extensions...")
 	if err := srv.builtExtensions.StartAll(ctx, srv); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)

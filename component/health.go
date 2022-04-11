@@ -44,31 +44,41 @@ func (hn *HealthNotifications) Subscribe() <-chan (HealthEvent) {
 	hn.mu.Lock()
 	defer hn.mu.Unlock()
 
-	sub := make(chan (HealthEvent))
+	sub := make(chan (HealthEvent), 1)
 	hn.subscriptions = append(hn.subscriptions, sub)
 	return sub
 }
 
+func (hn *HealthNotifications) Unsubscribe(subscription <-chan (HealthEvent)) {
+	hn.mu.Lock()
+	defer hn.mu.Unlock()
+
+	i := 0
+	for _, sub := range hn.subscriptions {
+		if sub != subscription {
+			hn.subscriptions[i] = sub
+			i++
+		} else {
+			close(sub)
+		}
+	}
+
+	for j := i; j < len(hn.subscriptions); j++ {
+		hn.subscriptions[j] = nil
+	}
+
+	hn.subscriptions = hn.subscriptions[0:i]
+}
+
 func (hn *HealthNotifications) Report(event HealthEvent) {
-	hn.eventChan <- event
+	hn.notify(event)
 }
 
 func (hn *HealthNotifications) Start() {
-	go func() {
-		for {
-			select {
-			case event := <-hn.eventChan:
-				hn.notify(event)
-			case <-hn.stopChan:
-				hn.unsubscribeAll()
-				return
-			}
-		}
-	}()
 }
 
 func (hn *HealthNotifications) Stop() {
-	hn.stopChan <- struct{}{}
+	hn.unsubscribeAll()
 }
 
 func (hn *HealthNotifications) notify(event HealthEvent) {
@@ -81,6 +91,9 @@ func (hn *HealthNotifications) notify(event HealthEvent) {
 }
 
 func (hn *HealthNotifications) unsubscribeAll() {
+	hn.mu.Lock()
+	defer hn.mu.Unlock()
+
 	for i := 0; i < len(hn.subscriptions); i++ {
 		close(hn.subscriptions[i])
 		hn.subscriptions[i] = nil

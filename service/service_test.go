@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -91,32 +92,42 @@ func TestService_GetExporters(t *testing.T) {
 }
 
 func TestService_ReportStatus(t *testing.T) {
-	// factories, err := componenttest.NopFactories()
-	// require.NoError(t, err)
-	// srv := createExampleService(t, factories)
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	srv := createExampleService(t, factories)
 
-	// assert.NoError(t, srv.Start(context.Background()))
-	// t.Cleanup(func() {
-	// 	assert.NoError(t, srv.Shutdown(context.Background()))
-	// })
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
 
-	// expectedEvent := component.HealthEvent{
-	// 	ComponentID: config.NewComponentID("nop"),
-	// 	Error:       errors.New("an error"),
-	// }
+	expectedEvent := component.HealthEvent{
+		ComponentID: config.NewComponentID("nop"),
+		Error:       errors.New("an error"),
+	}
 
-	// var fnCalled bool
-	// fn := func(event component.HealthEvent) {
-	// 	require.Equal(t, expectedEvent, event)
-	// 	fnCalled = true
-	// }
+	sub := srv.HealthNotifications().Subscribe()
+	events := make(chan component.HealthEvent, 1)
+	subDone := make(chan struct{})
 
-	// srv.HealthNotifications().Register(fn)
-	// srv.HealthNotifications().Report(expectedEvent)
+	go func() {
+		for {
+			event, ok := <-sub
+			if !ok {
+				subDone <- struct{}{}
+				return
+			}
+			events <- event
+		}
+	}()
 
-	// require.Eventually(t, func() bool {
-	// 	return fnCalled
-	// }, time.Second, time.Millisecond)
+	srv.HealthNotifications().Report(expectedEvent)
+	srv.HealthNotifications().Stop()
+
+	<-subDone
+
+	require.Equal(t, 1, len(events))
+	require.Equal(t, expectedEvent, <-events)
 }
 
 func createExampleService(t *testing.T, factories component.Factories) *service {

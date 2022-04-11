@@ -17,9 +17,7 @@ package component
 import (
 	"errors"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 )
@@ -32,32 +30,112 @@ func TestHealth_NotificationsSubscribe(t *testing.T) {
 		Error:       errors.New("an error"),
 	}
 
-	notifications.Start()
 	sub1 := notifications.Subscribe()
 	sub2 := notifications.Subscribe()
 
-	sub1Events := []HealthEvent{}
-	sub2Events := []HealthEvent{}
+	sub1Events := make(chan HealthEvent, 2)
+	sub2Events := make(chan HealthEvent, 2)
 
+	sub1Done := make(chan struct{})
+	sub2Done := make(chan struct{})
+
+	// consume events on sub1
 	go func() {
-		for event := range sub1 {
-			sub1Events = append(sub1Events, event)
+		for {
+			event, ok := <-sub1
+			if !ok {
+				close(sub1Done)
+				return
+			}
+			sub1Events <- event
 		}
 	}()
 
+	// consume events on sub2
 	go func() {
-		for event := range sub2 {
-			sub2Events = append(sub2Events, event)
+		for {
+			event, ok := <-sub2
+			if !ok {
+				close(sub2Done)
+				return
+			}
+			sub2Events <- event
+
 		}
 	}()
 
 	notifications.Report(expectedEvent)
-
-	expectedEvents := []HealthEvent{expectedEvent}
-
-	require.Eventually(t, func() bool {
-		return assert.Equal(t, expectedEvents, sub1Events) && assert.Equal(t, expectedEvents, sub2Events)
-	}, time.Second, time.Microsecond)
-
 	notifications.Stop()
+
+	// wait for events to be consumed
+	<-sub1Done
+	<-sub2Done
+
+	require.Equal(t, 1, len(sub1Events))
+	require.Equal(t, 1, len(sub2Events))
+	require.Equal(t, expectedEvent, <-sub1Events)
+	require.Equal(t, expectedEvent, <-sub2Events)
+}
+
+func TestHealth_NotificationsUnsubscribe(t *testing.T) {
+	notifications := NewHealthNotifications()
+
+	event1 := HealthEvent{
+		ComponentID: config.NewComponentID("nop"),
+		Error:       errors.New("an error"),
+	}
+
+	event2 := HealthEvent{
+		ComponentID: config.NewComponentID("nop"),
+		Error:       errors.New("a different error"),
+	}
+
+	sub1 := notifications.Subscribe()
+	sub2 := notifications.Subscribe()
+
+	sub1Events := make(chan HealthEvent, 2)
+	sub2Events := make(chan HealthEvent, 2)
+
+	sub1Done := make(chan struct{})
+	sub2Done := make(chan struct{})
+
+	// consume events on sub1
+	go func() {
+		for {
+			event, ok := <-sub1
+			if !ok {
+				close(sub1Done)
+				return
+			}
+			sub1Events <- event
+		}
+	}()
+
+	// consume events on sub2
+	go func() {
+		for {
+			event, ok := <-sub2
+			if !ok {
+				close(sub2Done)
+				return
+			}
+			sub2Events <- event
+
+		}
+	}()
+
+	notifications.Report(event1)
+	notifications.Unsubscribe(sub2)
+	notifications.Report(event2)
+	notifications.Stop()
+
+	// wait for events to be consumed
+	<-sub1Done
+	<-sub2Done
+
+	require.Equal(t, 2, len(sub1Events))
+	require.Equal(t, 1, len(sub2Events))
+	require.Equal(t, event1, <-sub1Events)
+	require.Equal(t, event2, <-sub1Events)
+	require.Equal(t, event1, <-sub2Events)
 }
