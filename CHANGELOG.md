@@ -19,6 +19,7 @@
 ### 💡 Enhancements 💡
 
 - OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
+- Add `ObservedTimestamp` field to `pdata.LogRecord` (#5171)
 
 ### 🧰 Bug fixes 🧰
 

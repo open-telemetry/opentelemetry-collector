@@ -45,6 +45,7 @@ func (textLogsMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
 			for k := 0; k < logs.Len(); k++ {
 				buf.logEntry("LogRecord #%d", k)
 				lr := logs.At(k)
+				buf.logEntry("ObservedTimestamp: %s", lr.ObservedTimestamp())
 				buf.logEntry("Timestamp: %s", lr.Timestamp())
 				buf.logEntry("Severity: %s", lr.SeverityText())
 				buf.logEntry("Body: %s", attributeValueToString(lr.Body()))
