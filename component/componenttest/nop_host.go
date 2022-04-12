@@ -41,6 +41,6 @@ func (nh *nopHost) GetExporters() map[config.DataType]map[config.ComponentID]com
 	return nil
 }
 
-func (nh *nopHost) HealthNotifications() *component.HealthNotifications {
+func (nh *nopHost) HealthNotifications() component.HealthNotifications {
 	return nil
 }

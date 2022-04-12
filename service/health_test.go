@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component
+package service
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
 func TestHealthNotifications_MultipleSubscribers(t *testing.T) {
-	notifications := NewHealthNotifications()
+	notifications := newHealthNotifications()
 
-	expectedEvent := HealthEvent{
+	expectedEvent := component.HealthEvent{
 		ComponentID: config.NewComponentID("nop"),
 		Error:       errors.New("an error"),
 	}
@@ -33,8 +34,8 @@ func TestHealthNotifications_MultipleSubscribers(t *testing.T) {
 	sub1 := notifications.Subscribe()
 	sub2 := notifications.Subscribe()
 
-	sub1Events := make(chan HealthEvent, 2)
-	sub2Events := make(chan HealthEvent, 2)
+	sub1Events := make(chan component.HealthEvent, 2)
+	sub2Events := make(chan component.HealthEvent, 2)
 
 	sub1Done := make(chan struct{})
 	sub2Done := make(chan struct{})
@@ -78,14 +79,14 @@ func TestHealthNotifications_MultipleSubscribers(t *testing.T) {
 }
 
 func TestHealthNotifications_Unsubscribe(t *testing.T) {
-	notifications := NewHealthNotifications()
+	notifications := newHealthNotifications()
 
-	event1 := HealthEvent{
+	event1 := component.HealthEvent{
 		ComponentID: config.NewComponentID("nop"),
 		Error:       errors.New("an error"),
 	}
 
-	event2 := HealthEvent{
+	event2 := component.HealthEvent{
 		ComponentID: config.NewComponentID("nop"),
 		Error:       errors.New("a different error"),
 	}
@@ -93,8 +94,8 @@ func TestHealthNotifications_Unsubscribe(t *testing.T) {
 	sub1 := notifications.Subscribe()
 	sub2 := notifications.Subscribe()
 
-	sub1Events := make(chan HealthEvent, 2)
-	sub2Events := make(chan HealthEvent, 2)
+	sub1Events := make(chan component.HealthEvent, 2)
+	sub2Events := make(chan component.HealthEvent, 2)
 
 	sub1Done := make(chan struct{})
 	sub2Done := make(chan struct{})

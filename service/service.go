@@ -34,7 +34,7 @@ type service struct {
 	config              *config.Config
 	telemetry           component.TelemetrySettings
 	zPagesSpanProcessor *zpages.SpanProcessor
-	healthNotifications *component.HealthNotifications
+	healthNotifications component.HealthNotifications
 	asyncErrorChannel   chan error
 
 	builtExporters  builder.Exporters
@@ -51,7 +51,7 @@ func newService(set *svcSettings) (*service, error) {
 		telemetry:           set.Telemetry,
 		zPagesSpanProcessor: set.ZPagesSpanProcessor,
 		asyncErrorChannel:   set.AsyncErrorChannel,
-		healthNotifications: component.NewHealthNotifications(),
+		healthNotifications: newHealthNotifications(),
 	}
 
 	var err error
@@ -171,6 +171,6 @@ func (srv *service) GetExporters() map[config.DataType]map[config.ComponentID]co
 	return srv.builtExporters.ToMapByDataType()
 }
 
-func (srv *service) HealthNotifications() *component.HealthNotifications {
+func (srv *service) HealthNotifications() component.HealthNotifications {
 	return srv.healthNotifications
 }
