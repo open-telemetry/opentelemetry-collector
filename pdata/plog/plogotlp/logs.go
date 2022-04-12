@@ -31,7 +31,7 @@ import (
 var jsonMarshaler = &jsonpb.Marshaler{}
 var jsonUnmarshaler = &jsonpb.Unmarshaler{}
 
-// Response represents the response for gRPC client/server.
+// Response represents the response for gRPC/HTTP client/server.
 type Response struct {
 	orig *otlpcollectorlog.ExportLogsServiceResponse
 }
@@ -65,7 +65,7 @@ func (lr Response) UnmarshalJSON(data []byte) error {
 	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig)
 }
 
-// Request represents the response for gRPC client/server.
+// Request represents the request for gRPC/HTTP client/server.
 type Request struct {
 	orig *otlpcollectorlog.ExportLogsServiceRequest
 }
