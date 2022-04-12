@@ -159,6 +159,7 @@ type rawLogsServer struct {
 }
 
 func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlog.ExportLogsServiceRequest) (*otlpcollectorlog.ExportLogsServiceResponse, error) {
+	otlp.InstrumentationLibraryLogsToScope(request.ResourceLogs)
 	rsp, err := s.srv.Export(ctx, Request{orig: request})
 	return rsp.orig, err
 }
