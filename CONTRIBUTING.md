@@ -41,8 +41,7 @@ reasonably fast reviews.
 
 ### When adding a new component
 
-Consider submitting different PRs for (more details about adding new components
-[here](#adding-new-components)) :
+Consider submitting different PRs:
 
 * First PR should include the overall structure of the new component:
   * Readme, configuration, and factory implementation usually using the helper
