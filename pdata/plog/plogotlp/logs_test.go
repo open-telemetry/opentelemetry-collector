@@ -216,11 +216,11 @@ func TestGrpcTransition(t *testing.T) {
 	assert.Equal(t, NewResponse(), resp)
 }
 
-type fakeRawLogsServer struct {
+type fakeRawServer struct {
 	t *testing.T
 }
 
-func (s fakeRawLogsServer) Export(_ context.Context, req Request) (Response, error) {
+func (s fakeRawServer) Export(_ context.Context, req Request) (Response, error) {
 	assert.Equal(s.t, 1, req.Logs().LogRecordCount())
 	return NewResponse(), nil
 }
@@ -228,7 +228,7 @@ func (s fakeRawLogsServer) Export(_ context.Context, req Request) (Response, err
 func TestGrpcExport(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
-	RegisterServer(s, &fakeRawLogsServer{t: t})
+	RegisterServer(s, &fakeRawServer{t: t})
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
