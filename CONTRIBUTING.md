@@ -225,10 +225,10 @@ To keep naming patterns consistent across the project, naming patterns are enfor
 In order to simplify developing within the project, library recommendations have been set
 and should be followed.
 
-| Scenario 	| Recommended                                  	| Rationale                                                                                                               	|
-|----------	|----------------------------------------------	|--------------------------------------------------------------------------------------------------------------------------	|
-| Hashing  	| ["hashing/fnv"](https://pkg.go.dev/hash/fnv) 	| The project adopted this as the default hashing method due to the efficiency and is reasonable for non cryptographic use 	|
-| Testing  	| Use `t.Parallel()` where possible            	| Enabling more test to be run in parallel will speed up the feedback process when working on the project.                 	|
+| Scenario 	 | Recommended                   	                | Rationale                                                                                                                  |
+|------------|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| Hashing  	 | ["hashing/fnv"](https://pkg.go.dev/hash/fnv) 	 | The project adopted this as the default hashing method due to the efficiency and is reasonable for non cryptographic use 	 |
+| Testing  	 | Use `t.Parallel()` where possible            	 | Enabling more test to be run in parallel will speed up the feedback process when working on the project.                 	 |
 
 
 Within the project, there are some packages that are yet to follow the recommendations and are being address, however, any new code should adhere to the recommendations.
@@ -415,9 +415,11 @@ version (`vM.N+1`).
 Deprecation notice SHOULD contain a version starting from which the deprecation takes effect for tracking purposes. For
 example, if `GetFoo` function is going to be deprecated in `v0.45.0` version, it gets the following godoc line:
 
-```go
-// Deprecated: [v0.45.0] Use MustGetFoo instead.
-func GetFoo() Bar {
+```golang
+package test
+
+// Deprecated: [v0.45.0] Use MustDoFoo instead.
+func DoFoo() {}
 ```
 
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
