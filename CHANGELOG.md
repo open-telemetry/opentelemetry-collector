@@ -9,6 +9,7 @@
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
+- Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
 
 ## v0.49.0 Beta
 

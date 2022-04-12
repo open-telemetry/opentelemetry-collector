@@ -39,7 +39,8 @@ func newJSONMarshaler() *jsonMarshaler {
 
 func (e *jsonMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 	buf := bytes.Buffer{}
-	err := e.delegate.Marshal(&buf, internal.LogsToOtlp(ld))
+	pb := internal.LogsToProto(ld)
+	err := e.delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
 
@@ -57,10 +58,10 @@ func newJSONUnmarshaler() *jsonUnmarshaler {
 }
 
 func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
-	ld := &otlplogs.LogsData{}
-	if err := d.delegate.Unmarshal(bytes.NewReader(buf), ld); err != nil {
+	ld := otlplogs.LogsData{}
+	if err := d.delegate.Unmarshal(bytes.NewReader(buf), &ld); err != nil {
 		return Logs{}, err
 	}
 	otlp.InstrumentationLibraryLogsToScope(ld.ResourceLogs)
-	return internal.LogsFromOtlp(ld), nil
+	return internal.LogsFromProto(ld), nil
 }

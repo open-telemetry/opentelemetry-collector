@@ -126,6 +126,13 @@ var logsTransitionData = [][]byte{
 	}`),
 }
 
+func TestRequestToPData(t *testing.T) {
+	tr := NewRequest()
+	assert.Equal(t, tr.Logs().LogRecordCount(), 0)
+	tr.Logs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	assert.Equal(t, tr.Logs().LogRecordCount(), 1)
+}
+
 func TestRequestJSON(t *testing.T) {
 	lr := NewRequest()
 	assert.NoError(t, lr.UnmarshalJSON(logsRequestJSON))
