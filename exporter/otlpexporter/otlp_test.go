@@ -26,9 +26,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -59,6 +63,7 @@ func (r *mockReceiver) GetMetadata() metadata.MD {
 
 type mockTracesReceiver struct {
 	mockReceiver
+	exportError error
 	lastRequest ptrace.Traces
 }
 
@@ -70,7 +75,7 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.Request)
 	defer r.mux.Unlock()
 	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return ptraceotlp.NewResponse(), nil
+	return ptraceotlp.NewResponse(), r.exportError
 }
 
 func (r *mockTracesReceiver) GetLastRequest() ptrace.Traces {
@@ -515,6 +520,58 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		assert.NoError(t, ctx.Err())
 	}
 	cancel()
+}
+
+func TestSendTracesOnResourceExhaustion(t *testing.T) {
+	ln, err := net.Listen("tcp", "localhost:")
+	require.NoError(t, err)
+	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
+	rcv.exportError = status.Error(codes.ResourceExhausted, "resource exhausted")
+	defer rcv.srv.GracefulStop()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.RetrySettings.InitialInterval = 0
+	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+		Endpoint: ln.Addr().String(),
+		TLSSetting: configtls.TLSClientSetting{
+			Insecure: true,
+		},
+	}
+	set := componenttest.NewNopExporterCreateSettings()
+	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+
+	defer func() {
+		assert.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	host := componenttest.NewNopHost()
+	assert.NoError(t, exp.Start(context.Background(), host))
+
+	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
+
+	td := ptrace.NewTraces()
+	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+
+	assert.Never(t, func() bool {
+		return atomic.LoadInt32(&rcv.requestCount) > 1
+	}, 1*time.Second, 5*time.Millisecond, "Should not retry if RetryInfo is not included into status details by the server.")
+
+	rcv.requestCount = 0
+
+	st := status.New(codes.ResourceExhausted, "resource exhausted")
+	st, _ = st.WithDetails(&errdetails.RetryInfo{
+		RetryDelay: durationpb.New(100 * time.Millisecond),
+	})
+	rcv.exportError = st.Err()
+
+	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+
+	assert.Eventually(t, func() bool {
+		return atomic.LoadInt32(&rcv.requestCount) > 1
+	}, 10*time.Second, 5*time.Millisecond, "Should retry if RetryInfo is included into status details by the server.")
 }
 
 func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td ptrace.Traces, ln net.Listener) {

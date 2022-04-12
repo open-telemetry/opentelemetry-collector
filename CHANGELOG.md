@@ -11,6 +11,7 @@
 - Do not set MeterProvider to global otel (#5146)
 - Make `InstrumentationLibrary<signal>ToScope` helper functions unexported (#5164)
 - Remove Log's "ShortName" from logging exporter output (#5172)
+- `exporter/otlp`: Retry RESOURCE_EXHAUSTED only if the server returns RetryInfo (#5147)
 
 ### 🚩 Deprecations 🚩
 
