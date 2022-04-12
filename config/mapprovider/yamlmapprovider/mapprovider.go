@@ -42,15 +42,15 @@ func New() config.MapProvider {
 
 func (s *mapProvider) Retrieve(_ context.Context, uri string, _ config.WatcherFunc) (config.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
-		return config.Retrieved{}, fmt.Errorf("%v uri is not supported by %v provider", uri, schemeName)
+		return nil, fmt.Errorf("%v uri is not supported by %v provider", uri, schemeName)
 	}
 
 	var data map[string]interface{}
 	if err := yaml.Unmarshal([]byte(uri[len(schemeName)+1:]), &data); err != nil {
-		return config.Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
+		return nil, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 
-	return config.Retrieved{Map: config.NewMapFromStringMap(data)}, nil
+	return config.NewRetrievedFromMap(config.NewMapFromStringMap(data), nil), nil
 }
 
 func (*mapProvider) Scheme() string {

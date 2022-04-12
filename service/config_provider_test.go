@@ -44,15 +44,15 @@ type mockProvider struct {
 
 func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher config.WatcherFunc) (config.Retrieved, error) {
 	if m.errR != nil {
-		return config.Retrieved{}, m.errR
+		return nil, m.errR
 	}
 	if m.retM == nil {
-		return config.Retrieved{Map: config.NewMap()}, nil
+		return config.NewRetrievedFromMap(config.NewMap(), nil), nil
 	}
 	if watcher != nil {
 		watcher(&config.ChangeEvent{Error: m.errW})
 	}
-	return config.Retrieved{Map: m.retM, CloseFunc: func(ctx context.Context) error { return m.errC }}, nil
+	return config.NewRetrievedFromMap(m.retM, func(ctx context.Context) error { return m.errC }), nil
 }
 
 func (m *mockProvider) Scheme() string {

@@ -80,15 +80,28 @@ type ChangeEvent struct {
 }
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
-type Retrieved struct {
-	*Map
+type Retrieved interface {
+	MergeTo(dest *Map, destPath string) error
+	Close(ctx context.Context) error
+}
 
-	// CloseFunc specifies a function to be invoked when the configuration for which it was
-	// used to retrieve values is no longer in use and should close and release any watchers
-	// that it may have created.
-	//
-	// If nil, then nothing to be closed.
+// mapRetrieved holds the result of a call to the Retrieve method of a Provider object.
+type mapRetrieved struct {
+	cfgMap *Map
 	CloseFunc
+}
+
+// NewRetrievedFromMap returns a new Retrieved instance that contains a Map data.
+// * cfgMap the Map that will be merged to the given map in the MergeTo.
+// * CloseFunc specifies a function to be invoked when the configuration for which it was
+//   used to retrieve values is no longer in use and should close and release any watchers
+//	 that it may have created.
+func NewRetrievedFromMap(cfgMap *Map, close CloseFunc) Retrieved {
+	return &mapRetrieved{cfgMap: cfgMap, CloseFunc: close}
+}
+
+func (r *mapRetrieved) MergeTo(dest *Map, destPath string) error {
+	return dest.k.MergeAt(r.cfgMap.k, destPath)
 }
 
 // CloseFunc a function to close and release any watchers that it may have created.
@@ -98,3 +111,10 @@ type Retrieved struct {
 //
 // Should never be called concurrently with itself.
 type CloseFunc func(context.Context) error
+
+func (f CloseFunc) Close(ctx context.Context) error {
+	if f == nil {
+		return nil
+	}
+	return f(ctx)
+}
