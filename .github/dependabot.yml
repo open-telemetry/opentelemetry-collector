@@ -30,3 +30,7 @@ updates:
     directory: "/pdata"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/semconv"
+    schedule:
+      interval: "weekly"
