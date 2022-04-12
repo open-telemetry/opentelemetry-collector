@@ -31,6 +31,7 @@
 - Setup the correct meter provider if telemetry.useOtelForInternalMetrics featuregate enabled (#5146)
 - Fix pdata.Value.asRaw() to correctly return elements of Slice and Map type (#5153)
 - Update pdata.Slice.asRaw() to return raw representation of Slice and Map elements (#5157)
+- The codepath through the OTLP receiver for gRPC was not translating the InstrumentationLibrary* to Scope* (#5189)
 
 ## v0.48.0 Beta
 
