@@ -72,6 +72,9 @@ func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item i
 					if ok {
 						q.size.Sub(1)
 						itemConsumer.consume(item)
+					} else {
+						// channel closed, finish worker
+						return
 					}
 				case <-q.stopCh:
 					// the whole queue is closing, consume all remaining item and finish worker
