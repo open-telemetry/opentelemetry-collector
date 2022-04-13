@@ -16,59 +16,85 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for trace data structures.
 
-import "go.opentelemetry.io/collector/model/internal"
+import "go.opentelemetry.io/collector/pdata/ptrace"
 
-// TracesMarshaler is an alias for internal.TracesMarshaler interface.
-type TracesMarshaler = internal.TracesMarshaler
+// TracesMarshaler is an alias for ptrace.Marshaler interface.
+// Deprecated: [v0.49.0] Use ptrace.Marshaler instead.
+type TracesMarshaler = ptrace.Marshaler
 
-// TracesUnmarshaler is an alias for internal.TracesUnmarshaler interface.
-type TracesUnmarshaler = internal.TracesUnmarshaler
+// TracesUnmarshaler is an alias for ptrace.Unmarshaler interface.
+// Deprecated: [v0.49.0] Use ptrace.Unmarshaler instead.
+type TracesUnmarshaler = ptrace.Unmarshaler
 
-// TracesSizer is an alias for internal.TracesSizer interface.
-type TracesSizer = internal.TracesSizer
+// TracesSizer is an alias for ptrace.Sizer interface.
+// Deprecated: [v0.49.0] Use ptrace.Sizer instead.
+type TracesSizer = ptrace.Sizer
 
-// Traces is an alias for internal.Traces struct.
-type Traces = internal.Traces
+// Traces is an alias for ptrace.Traces struct.
+// Deprecated: [v0.49.0] Use ptrace.Traces instead.
+type Traces = ptrace.Traces
 
 // NewTraces is an alias for a function to create new Traces.
-var NewTraces = internal.NewTraces
+// Deprecated: [v0.49.0] Use ptrace.NewTraces instead.
+var NewTraces = ptrace.NewTraces
 
-// TraceState is an alias for internal.TraceState type.
-type TraceState = internal.TraceState
+// TraceState is an alias for ptrace.TraceState type.
+// Deprecated: [v0.49.0] Use ptrace.TraceState instead.
+type TraceState = ptrace.TraceState
 
 const (
-	TraceStateEmpty = internal.TraceStateEmpty
+	TraceStateEmpty = ptrace.TraceStateEmpty
 )
 
-// SpanKind is an alias for internal.SpanKind type.
-type SpanKind = internal.SpanKind
+// SpanKind is an alias for ptrace.SpanKind type.
+// Deprecated: [v0.49.0] Use ptrace.SpanKind instead.
+type SpanKind = ptrace.SpanKind
 
 const (
-	SpanKindUnspecified = internal.SpanKindUnspecified
-	SpanKindInternal    = internal.SpanKindInternal
-	SpanKindServer      = internal.SpanKindServer
-	SpanKindClient      = internal.SpanKindClient
-	SpanKindProducer    = internal.SpanKindProducer
-	SpanKindConsumer    = internal.SpanKindConsumer
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindUnspecified instead.
+	SpanKindUnspecified = ptrace.SpanKindUnspecified
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindInternal instead.
+	SpanKindInternal = ptrace.SpanKindInternal
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindServer instead.
+	SpanKindServer = ptrace.SpanKindServer
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindClient instead.
+	SpanKindClient = ptrace.SpanKindClient
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindProducer instead.
+	SpanKindProducer = ptrace.SpanKindProducer
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindConsumer instead.
+	SpanKindConsumer = ptrace.SpanKindConsumer
 )
 
-// StatusCode is an alias for internal.StatusCode type.
-type StatusCode = internal.StatusCode
+// StatusCode is an alias for ptrace.StatusCode type.
+// Deprecated: [v0.49.0] Use ptrace.StatusCode instead.
+type StatusCode = ptrace.StatusCode
 
 const (
-	StatusCodeUnset = internal.StatusCodeUnset
-	StatusCodeOk    = internal.StatusCodeOk
-	StatusCodeError = internal.StatusCodeError
+
+	// Deprecated: [v0.49.0] Use ptrace.StatusCodeUnset instead.
+	StatusCodeUnset = ptrace.StatusCodeUnset
+
+	// Deprecated: [v0.49.0] Use ptrace.StatusCodeOk instead.
+	StatusCodeOk = ptrace.StatusCodeOk
+
+	// Deprecated: [v0.49.0] Use ptrace.StatusCodeError instead.
+	StatusCodeError = ptrace.StatusCodeError
 )
 
 // Deprecated: [v0.48.0] Use ScopeSpansSlice instead.
-type InstrumentationLibrarySpansSlice = internal.ScopeSpansSlice
+type InstrumentationLibrarySpansSlice = ptrace.ScopeSpansSlice
 
 // Deprecated: [v0.48.0] Use NewScopeSpansSlice instead.
-var NewInstrumentationLibrarySpansSlice = internal.NewScopeSpansSlice
+var NewInstrumentationLibrarySpansSlice = ptrace.NewScopeSpansSlice
 
 // Deprecated: [v0.48.0] Use ScopeSpans instead.
-type InstrumentationLibrarySpans = internal.ScopeSpans
+type InstrumentationLibrarySpans = ptrace.ScopeSpans
 
 // Deprecated: [v0.48.0] Use NewScopeSpans instead.
-var NewInstrumentationLibrarySpans = internal.NewScopeSpans
+var NewInstrumentationLibrarySpans = ptrace.NewScopeSpans

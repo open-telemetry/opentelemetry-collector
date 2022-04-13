@@ -21,14 +21,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestNop(t *testing.T) {
 	nc := NewNop()
 	require.NotNil(t, nc)
 	assert.NotPanics(t, nc.unexported)
-	assert.NoError(t, nc.ConsumeLogs(context.Background(), pdata.NewLogs()))
-	assert.NoError(t, nc.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
-	assert.NoError(t, nc.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, nc.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.NoError(t, nc.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
+	assert.NoError(t, nc.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }

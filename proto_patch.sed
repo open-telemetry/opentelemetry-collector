@@ -1,4 +1,4 @@
-s+go.opentelemetry.io/proto/otlp/+go.opentelemetry.io/collector/model/internal/data/protogen/+g
+s+go.opentelemetry.io/proto/otlp/+go.opentelemetry.io/collector/pdata/internal/data/protogen/+g
 
 s+package opentelemetry.proto.\(.*\).v1;+package opentelemetry.proto.\1.v1;\
 \
@@ -8,14 +8,14 @@ s+bytes trace_id = \(.*\);+bytes trace_id = \1\
   [\
   // Use custom TraceId data type for this field.\
   (gogoproto.nullable) = false,\
-  (gogoproto.customtype) = "go.opentelemetry.io/collector/model/internal/data.TraceID"\
+  (gogoproto.customtype) = "go.opentelemetry.io/collector/pdata/internal/data.TraceID"\
   ];+g
 
 s+bytes \(.*span_id\) = \(.*\);+bytes \1 = \2\
   [\
   // Use custom SpanId data type for this field.\
   (gogoproto.nullable) = false,\
-  (gogoproto.customtype) = "go.opentelemetry.io/collector/model/internal/data.SpanID"\
+  (gogoproto.customtype) = "go.opentelemetry.io/collector/pdata/internal/data.SpanID"\
   ];+g
 
 s+repeated opentelemetry.proto.common.v1.KeyValue \(.*\);+repeated opentelemetry.proto.common.v1.KeyValue \1\

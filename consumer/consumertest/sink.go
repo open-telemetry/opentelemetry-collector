@@ -19,7 +19,9 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // TracesSink is a consumer.Traces that acts like a sink that
@@ -27,14 +29,14 @@ import (
 type TracesSink struct {
 	nonMutatingConsumer
 	mu        sync.Mutex
-	traces    []pdata.Traces
+	traces    []ptrace.Traces
 	spanCount int
 }
 
 var _ consumer.Traces = (*TracesSink)(nil)
 
 // ConsumeTraces stores traces to this sink.
-func (ste *TracesSink) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func (ste *TracesSink) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
@@ -45,11 +47,11 @@ func (ste *TracesSink) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 }
 
 // AllTraces returns the traces stored by this sink since last Reset.
-func (ste *TracesSink) AllTraces() []pdata.Traces {
+func (ste *TracesSink) AllTraces() []ptrace.Traces {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
-	copyTraces := make([]pdata.Traces, len(ste.traces))
+	copyTraces := make([]ptrace.Traces, len(ste.traces))
 	copy(copyTraces, ste.traces)
 	return copyTraces
 }
@@ -75,14 +77,14 @@ func (ste *TracesSink) Reset() {
 type MetricsSink struct {
 	nonMutatingConsumer
 	mu             sync.Mutex
-	metrics        []pdata.Metrics
+	metrics        []pmetric.Metrics
 	dataPointCount int
 }
 
 var _ consumer.Metrics = (*MetricsSink)(nil)
 
 // ConsumeMetrics stores metrics to this sink.
-func (sme *MetricsSink) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (sme *MetricsSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 
@@ -93,11 +95,11 @@ func (sme *MetricsSink) ConsumeMetrics(_ context.Context, md pdata.Metrics) erro
 }
 
 // AllMetrics returns the metrics stored by this sink since last Reset.
-func (sme *MetricsSink) AllMetrics() []pdata.Metrics {
+func (sme *MetricsSink) AllMetrics() []pmetric.Metrics {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 
-	copyMetrics := make([]pdata.Metrics, len(sme.metrics))
+	copyMetrics := make([]pmetric.Metrics, len(sme.metrics))
 	copy(copyMetrics, sme.metrics)
 	return copyMetrics
 }
@@ -123,14 +125,14 @@ func (sme *MetricsSink) Reset() {
 type LogsSink struct {
 	nonMutatingConsumer
 	mu             sync.Mutex
-	logs           []pdata.Logs
+	logs           []plog.Logs
 	logRecordCount int
 }
 
 var _ consumer.Logs = (*LogsSink)(nil)
 
 // ConsumeLogs stores logs to this sink.
-func (sle *LogsSink) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+func (sle *LogsSink) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
 
@@ -141,11 +143,11 @@ func (sle *LogsSink) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
 }
 
 // AllLogs returns the logs stored by this sink since last Reset.
-func (sle *LogsSink) AllLogs() []pdata.Logs {
+func (sle *LogsSink) AllLogs() []plog.Logs {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
 
-	copyLogs := make([]pdata.Logs, len(sle.logs))
+	copyLogs := make([]plog.Logs, len(sle.logs))
 	copy(copyLogs, sle.logs)
 	return copyLogs
 }

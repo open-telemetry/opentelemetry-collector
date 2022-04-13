@@ -26,17 +26,19 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/otlptext"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type loggingExporter struct {
 	logger           *zap.Logger
-	logsMarshaler    pdata.LogsMarshaler
-	metricsMarshaler pdata.MetricsMarshaler
-	tracesMarshaler  pdata.TracesMarshaler
+	logsMarshaler    plog.Marshaler
+	metricsMarshaler pmetric.Marshaler
+	tracesMarshaler  ptrace.Marshaler
 }
 
-func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
+func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
 	if !s.logger.Core().Enabled(zapcore.DebugLevel) {
 		return nil
@@ -50,7 +52,7 @@ func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 	return nil
 }
 
-func (s *loggingExporter) pushMetrics(_ context.Context, md pdata.Metrics) error {
+func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
 	if !s.logger.Core().Enabled(zapcore.DebugLevel) {
@@ -65,7 +67,7 @@ func (s *loggingExporter) pushMetrics(_ context.Context, md pdata.Metrics) error
 	return nil
 }
 
-func (s *loggingExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
+func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
 	if !s.logger.Core().Enabled(zapcore.DebugLevel) {

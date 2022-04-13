@@ -14,10 +14,12 @@
 
 package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
-import "go.opentelemetry.io/collector/model/internal"
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-// Timestamp is a an alias for internal.Timestamp.
-type Timestamp = internal.Timestamp
+// Timestamp is a an alias for pcommon.Timestamp.
+// Deprecated: [v0.49.0] Use pcommon.Timestamp instead.
+type Timestamp = pcommon.Timestamp
 
-// NewTimestampFromTime is an alias for internal.NewTimestampFromTime function.
-var NewTimestampFromTime = internal.NewTimestampFromTime
+// NewTimestampFromTime is an alias for pcommon.NewTimestampFromTime function.
+// Deprecated: [v0.49.0] Use pcommon.NewTimestampFromTime instead.
+var NewTimestampFromTime = pcommon.NewTimestampFromTime

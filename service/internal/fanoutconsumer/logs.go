@@ -22,7 +22,7 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // NewLogs wraps multiple log consumers in a single one.
@@ -64,8 +64,8 @@ func (lsc *logsConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-// ConsumeLogs exports the pdata.Logs to all consumers wrapped by the current one.
-func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+// ConsumeLogs exports the plog.Logs to all consumers wrapped by the current one.
+func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var errs error
 	// Initially pass to clone exporter to avoid the case where the optimization of sending
 	// the incoming data to a mutating consumer is used that may change the incoming data before

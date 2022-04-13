@@ -14,13 +14,16 @@
 
 package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
-import "go.opentelemetry.io/collector/model/internal"
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-// SpanID is an alias for internal.SpanID struct.
-type SpanID = internal.SpanID
+// SpanID is an alias for pcommon.SpanID struct.
+// Deprecated: [v0.49.0] Use pcommon.SpanID instead.
+type SpanID = pcommon.SpanID
 
-// InvalidSpanID is an alias for internal.InvalidSpanID function.
-var InvalidSpanID = internal.InvalidSpanID
+// InvalidSpanID is an alias for pcommon.InvalidSpanID function.
+// Deprecated: [v0.49.0] Use pcommon.InvalidSpanID instead.
+var InvalidSpanID = pcommon.InvalidSpanID
 
 // NewSpanID is an alias for a function to create new SpanID.
-var NewSpanID = internal.NewSpanID
+// Deprecated: [v0.49.0] Use pcommon.NewSpanID instead.
+var NewSpanID = pcommon.NewSpanID

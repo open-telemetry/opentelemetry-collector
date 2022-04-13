@@ -17,22 +17,22 @@ package consumer // import "go.opentelemetry.io/collector/consumer"
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// Traces is an interface that receives pdata.Traces, processes it
+// Traces is an interface that receives ptrace.Traces, processes it
 // as needed, and sends it to the next processing node if any or to the destination.
 type Traces interface {
 	baseConsumer
-	// ConsumeTraces receives pdata.Traces for consumption.
-	ConsumeTraces(ctx context.Context, td pdata.Traces) error
+	// ConsumeTraces receives ptrace.Traces for consumption.
+	ConsumeTraces(ctx context.Context, td ptrace.Traces) error
 }
 
 // ConsumeTracesFunc is a helper function that is similar to ConsumeTraces.
-type ConsumeTracesFunc func(ctx context.Context, ld pdata.Traces) error
+type ConsumeTracesFunc func(ctx context.Context, ld ptrace.Traces) error
 
 // ConsumeTraces calls f(ctx, ld).
-func (f ConsumeTracesFunc) ConsumeTraces(ctx context.Context, ld pdata.Traces) error {
+func (f ConsumeTracesFunc) ConsumeTraces(ctx context.Context, ld ptrace.Traces) error {
 	return f(ctx, ld)
 }
 
