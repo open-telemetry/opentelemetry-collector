@@ -76,12 +76,13 @@ func (q *boundedMemoryQueue) StartConsumers(num int, callback func(item interfac
 					if ok {
 						q.size.Sub(1)
 						itemConsumer.consume(item)
-					} else {
-						// channel closed, finish worker
-						return
 					}
 				case <-q.stopCh:
-					// the whole queue is closing, finish worker
+					// the whole queue is closing, consume all remaining item and finish worker
+					for item := range queue {
+						q.size.Sub(1)
+						itemConsumer.consume(item)
+					}
 					return
 				}
 			}
@@ -134,8 +135,9 @@ func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 func (q *boundedMemoryQueue) Stop() {
 	q.stopped.Store(1) // disable producer
 	close(q.stopCh)
-	q.stopWG.Wait()
 	close(*q.items)
+	q.stopWG.Wait()
+
 }
 
 // Size returns the current size of the queue
