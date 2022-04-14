@@ -5,12 +5,14 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
+- Remove non pdata deprecated funcs/structs (#5220)
 
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
+- Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
 
 ## v0.49.0 Beta
 
