@@ -34,11 +34,13 @@ func newPbMarshaler() *pbMarshaler {
 var _ Sizer = (*pbMarshaler)(nil)
 
 func (e *pbMarshaler) MarshalTraces(td Traces) ([]byte, error) {
-	return internal.TracesToOtlp(td).Marshal()
+	pb := internal.TracesToProto(td)
+	return pb.Marshal()
 }
 
 func (e *pbMarshaler) TracesSize(td Traces) int {
-	return internal.TracesToOtlp(td).Size()
+	pb := internal.TracesToProto(td)
+	return pb.Size()
 }
 
 type pbUnmarshaler struct{}
@@ -53,7 +55,7 @@ func newPbUnmarshaler() *pbUnmarshaler {
 }
 
 func (d *pbUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
-	td := &otlptrace.TracesData{}
-	err := td.Unmarshal(buf)
-	return internal.TracesFromOtlp(td), err
+	pb := otlptrace.TracesData{}
+	err := pb.Unmarshal(buf)
+	return internal.TracesFromProto(pb), err
 }

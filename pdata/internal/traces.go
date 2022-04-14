@@ -15,25 +15,51 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
+	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
+
+// TracesToOtlp internal helper to convert Traces to otlp request representation.
+func TracesToOtlp(mw Traces) *otlpcollectortrace.ExportTraceServiceRequest {
+	return mw.orig
+}
+
+// TracesFromOtlp internal helper to convert otlp request representation to Traces.
+func TracesFromOtlp(orig *otlpcollectortrace.ExportTraceServiceRequest) Traces {
+	return Traces{orig: orig}
+}
+
+// TracesToProto internal helper to convert Traces to protobuf representation.
+func TracesToProto(mw Traces) otlptrace.TracesData {
+	return otlptrace.TracesData{
+		ResourceSpans: mw.orig.ResourceSpans,
+	}
+}
+
+// TracesFromProto internal helper to convert protobuf representation to Traces.
+func TracesFromProto(orig otlptrace.TracesData) Traces {
+	return Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{
+		ResourceSpans: orig.ResourceSpans,
+	}}
+}
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
 // Use NewTraces to create new instance, zero-initialized instance is not valid for use.
 type Traces struct {
-	orig *otlptrace.TracesData
+	// When marhsal/unmarshal unless it is in the request for otlp protocol, convert to otlptrace.TracesData.
+	orig *otlpcollectortrace.ExportTraceServiceRequest
 }
 
 // NewTraces creates a new Traces.
 func NewTraces() Traces {
-	return Traces{orig: &otlptrace.TracesData{}}
+	return Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value.
 func (td Traces) MoveTo(dest Traces) {
 	*dest.orig = *td.orig
-	*td.orig = otlptrace.TracesData{}
+	*td.orig = otlpcollectortrace.ExportTraceServiceRequest{}
 }
 
 // Clone returns a copy of Traces.

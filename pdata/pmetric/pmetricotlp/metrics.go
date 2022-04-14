@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -104,11 +103,11 @@ func (mr Request) UnmarshalJSON(data []byte) error {
 }
 
 func (mr Request) SetMetrics(ld pmetric.Metrics) {
-	mr.orig.ResourceMetrics = internal.MetricsToOtlp(ld).ResourceMetrics
+	*mr.orig = *internal.MetricsToOtlp(ld)
 }
 
 func (mr Request) Metrics() pmetric.Metrics {
-	return internal.MetricsFromOtlp(&otlpmetrics.MetricsData{ResourceMetrics: mr.orig.ResourceMetrics})
+	return internal.MetricsFromOtlp(mr.orig)
 }
 
 // Client is the client API for OTLP-GRPC Metrics service.
