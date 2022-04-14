@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
-	"sync/atomic"
 	"time"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -69,7 +69,7 @@ type memoryLimiter struct {
 	ballastSize  uint64
 
 	// forceDrop is used atomically to indicate when data should be dropped.
-	forceDrop int64
+	forceDrop *atomic.Int64
 
 	ticker *time.Ticker
 
@@ -119,6 +119,7 @@ func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memo
 		ticker:         time.NewTicker(cfg.CheckInterval),
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
+		forceDrop:      atomic.NewInt64(0),
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
 			Level:                   set.MetricsLevel,
 			ProcessorID:             cfg.ID(),
@@ -261,7 +262,7 @@ func (ml *memoryLimiter) startMonitoring() {
 
 // forcingDrop indicates when memory resources need to be released.
 func (ml *memoryLimiter) forcingDrop() bool {
-	return atomic.LoadInt64(&ml.forceDrop) != 0
+	return ml.forceDrop.Load() != 0
 }
 
 func (ml *memoryLimiter) setForcingDrop(b bool) {
@@ -269,7 +270,7 @@ func (ml *memoryLimiter) setForcingDrop(b bool) {
 	if b {
 		i = 1
 	}
-	atomic.StoreInt64(&ml.forceDrop, i)
+	ml.forceDrop.Store(i)
 }
 
 func memstatToZapField(ms *runtime.MemStats) zap.Field {
