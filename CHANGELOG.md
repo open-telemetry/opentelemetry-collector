@@ -4,13 +4,19 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
+- Remove non pdata deprecated funcs/structs (#5220)
+
 ### 🚩 Deprecations 🚩
 
 - Deprecate `configunmarshaler` package, move it to internal (#5151)
+- Deprecate all API in `pdata/semconv`. The package is moved to a new `semcomv` module (#5196)
 
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
+- Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
+- `exporterhelper` now properly consumes any remaining items on stop (#5203)
 
 ## v0.49.0 Beta
 

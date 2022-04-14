@@ -220,41 +220,6 @@ func TestConfigProvider(t *testing.T) {
 	assert.NoError(t, errC)
 }
 
-// TODO: Remove when remove MustNewConfigProvider, duplicate of TestConfigProvider.
-func TestMustNewConfigProvider(t *testing.T) {
-	factories, errF := componenttest.NopFactories()
-	require.NoError(t, errF)
-	configMapProvider := func() config.MapProvider {
-		// Use fakeRetrieved with nil errors to have Watchable interface implemented.
-		cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
-		require.NoError(t, err)
-		return &mockProvider{retM: cfgMap}
-	}()
-
-	cfgW := MustNewConfigProvider(
-		[]string{"mock:"},
-		map[string]config.MapProvider{"mock": configMapProvider},
-		nil,
-		configunmarshaler.NewDefault())
-
-	_, errN := cfgW.Get(context.Background(), factories)
-	assert.NoError(t, errN)
-
-	errW := <-cfgW.Watch()
-	assert.NoError(t, errW)
-
-	// Repeat Get/Watch.
-
-	_, errN = cfgW.Get(context.Background(), factories)
-	assert.NoError(t, errN)
-
-	errW = <-cfgW.Watch()
-	assert.NoError(t, errW)
-
-	errC := cfgW.Shutdown(context.Background())
-	assert.NoError(t, errC)
-}
-
 func TestConfigProviderNoWatcher(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
@@ -262,29 +227,6 @@ func TestConfigProviderNoWatcher(t *testing.T) {
 	watcherWG := sync.WaitGroup{}
 	cfgW, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
-	_, errN := cfgW.Get(context.Background(), factories)
-	assert.NoError(t, errN)
-
-	watcherWG.Add(1)
-	go func() {
-		errW, ok := <-cfgW.Watch()
-		// Channel is closed, no exception
-		assert.False(t, ok)
-		assert.NoError(t, errW)
-		watcherWG.Done()
-	}()
-
-	assert.NoError(t, cfgW.Shutdown(context.Background()))
-	watcherWG.Wait()
-}
-
-// TODO: Remove when remove MustNewDefaultConfigProvider, duplicate of TestConfigProviderNoWatcher.
-func TestMustNewDefaultConfigProvider(t *testing.T) {
-	factories, errF := componenttest.NopFactories()
-	require.NoError(t, errF)
-
-	watcherWG := sync.WaitGroup{}
-	cfgW := MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-nop.yaml")}, nil)
 	_, errN := cfgW.Get(context.Background(), factories)
 	assert.NoError(t, errN)
 

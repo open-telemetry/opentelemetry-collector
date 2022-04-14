@@ -15,18 +15,43 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
+	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
+
+// MetricsToOtlp internal helper to convert Metrics to otlp request representation.
+func MetricsToOtlp(mw Metrics) *otlpcollectormetrics.ExportMetricsServiceRequest {
+	return mw.orig
+}
+
+// MetricsFromOtlp internal helper to convert otlp request representation to Metrics.
+func MetricsFromOtlp(orig *otlpcollectormetrics.ExportMetricsServiceRequest) Metrics {
+	return Metrics{orig: orig}
+}
+
+// MetricsToProto internal helper to convert Metrics to protobuf representation.
+func MetricsToProto(l Metrics) otlpmetrics.MetricsData {
+	return otlpmetrics.MetricsData{
+		ResourceMetrics: l.orig.ResourceMetrics,
+	}
+}
+
+// MetricsFromProto internal helper to convert protobuf representation to Metrics.
+func MetricsFromProto(orig otlpmetrics.MetricsData) Metrics {
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
+		ResourceMetrics: orig.ResourceMetrics,
+	}}
+}
 
 // Metrics is the top-level struct that is propagated through the metrics pipeline.
 // Use NewMetrics to create new instance, zero-initialized instance is not valid for use.
 type Metrics struct {
-	orig *otlpmetrics.MetricsData
+	orig *otlpcollectormetrics.ExportMetricsServiceRequest
 }
 
 // NewMetrics creates a new Metrics.
 func NewMetrics() Metrics {
-	return Metrics{orig: &otlpmetrics.MetricsData{}}
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
 }
 
 // Clone returns a copy of MetricData.
@@ -40,7 +65,7 @@ func (md Metrics) Clone() Metrics {
 // resetting the current instance to its zero value.
 func (md Metrics) MoveTo(dest Metrics) {
 	*dest.orig = *md.orig
-	*md.orig = otlpmetrics.MetricsData{}
+	*md.orig = otlpcollectormetrics.ExportMetricsServiceRequest{}
 }
 
 // ResourceMetrics returns the ResourceMetricsSlice associated with this Metrics.
@@ -236,14 +261,4 @@ func (ot OptionalType) String() string {
 		return "Double"
 	}
 	return ""
-}
-
-// Deprecated: [v0.48.0] Use ScopeMetrics instead.
-func (ms ResourceMetrics) InstrumentationLibraryMetrics() ScopeMetricsSlice {
-	return ms.ScopeMetrics()
-}
-
-// Deprecated: [v0.48.0] Use Scope instead.
-func (ms ScopeMetrics) InstrumentationLibrary() InstrumentationScope {
-	return ms.Scope()
 }

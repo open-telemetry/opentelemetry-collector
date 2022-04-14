@@ -39,7 +39,8 @@ func newJSONMarshaler() *jsonMarshaler {
 
 func (e *jsonMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 	buf := bytes.Buffer{}
-	err := e.delegate.Marshal(&buf, internal.TracesToOtlp(td))
+	pb := internal.TracesToProto(td)
+	err := e.delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
 
@@ -57,10 +58,10 @@ func newJSONUnmarshaler() *jsonUnmarshaler {
 }
 
 func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
-	td := &otlptrace.TracesData{}
-	if err := d.delegate.Unmarshal(bytes.NewReader(buf), td); err != nil {
+	td := otlptrace.TracesData{}
+	if err := d.delegate.Unmarshal(bytes.NewReader(buf), &td); err != nil {
 		return Traces{}, err
 	}
 	otlp.InstrumentationLibrarySpansToScope(td.ResourceSpans)
-	return internal.TracesFromOtlp(td), nil
+	return internal.TracesFromProto(td), nil
 }
