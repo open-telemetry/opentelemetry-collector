@@ -16,8 +16,9 @@ package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// Timestamp is a an alias for internal.Timestamp.
+// Timestamp is a time specified as UNIX Epoch time in nanoseconds since
+// 1970-01-01 00:00:00 +0000 UTC.
 type Timestamp = internal.Timestamp
 
-// NewTimestampFromTime is an alias for internal.NewTimestampFromTime function.
+// NewTimestampFromTime constructs a new Timestamp from the provided time.Time.
 var NewTimestampFromTime = internal.NewTimestampFromTime

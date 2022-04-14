@@ -18,32 +18,59 @@ import "go.opentelemetry.io/collector/pdata/internal"
 
 // This file contains aliases for trace data structures.
 
-// Traces is an alias for internal.Traces struct.
+// Traces is the top-level struct that is propagated through the traces pipeline.
+// Use NewTraces to create new instance, zero-initialized instance is not valid for use.
 type Traces = internal.Traces
 
-// NewTraces is an alias for a function to create new Traces.
+// NewTraces creates a new Traces struct.
 var NewTraces = internal.NewTraces
 
-// TraceState is an alias for internal.TraceState type.
+// TraceState is a string representing the tracestate in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
 type TraceState = internal.TraceState
 
 const (
+	// TraceStateEmpty represents the empty TraceState.
 	TraceStateEmpty = internal.TraceStateEmpty
 )
 
-// SpanKind is an alias for internal.SpanKind type.
+// SpanKind is the type of span. Can be used to specify additional relationships between spans
+// in addition to a parent/child relationship.
 type SpanKind = internal.SpanKind
 
 const (
+	// SpanKindUnspecified represents that the SpanKind is unspecified, it MUST NOT be used.
 	SpanKindUnspecified = internal.SpanKindUnspecified
-	SpanKindInternal    = internal.SpanKindInternal
-	SpanKindServer      = internal.SpanKindServer
-	SpanKindClient      = internal.SpanKindClient
-	SpanKindProducer    = internal.SpanKindProducer
-	SpanKindConsumer    = internal.SpanKindConsumer
+
+	// SpanKindInternal indicates that the span represents an internal operation within an application,
+	// as opposed to an operation happening at the boundaries. Default value.
+	SpanKindInternal = internal.SpanKindInternal
+
+	// SpanKindServer indicates that the span covers server-side handling of an RPC or other
+	// remote network request.
+	SpanKindServer = internal.SpanKindServer
+
+	// SpanKindProducer indicates that the span describes a producer sending a message to a broker.
+	// Unlike CLIENT and SERVER, there is often no direct critical path latency relationship
+	// between producer and consumer spans.
+	// A PRODUCER span ends when the message was accepted by the broker while the logical processing of
+	// the message might span a much longer time.
+	SpanKindClient = internal.SpanKindClient
+
+	// SpanKindProducer indicates that the span describes a producer sending a message to a broker.
+	// Unlike CLIENT and SERVER, there is often no direct critical path latency relationship
+	// between producer and consumer spans.
+	// A PRODUCER span ends when the message was accepted by the broker while the logical processing of
+	// the message might span a much longer time.
+	SpanKindProducer = internal.SpanKindProducer
+
+	// SpanKindConsumer indicates that the span describes consumer receiving a message from a broker.
+	// Like the PRODUCER kind, there is often no direct critical path latency relationship between
+	// producer and consumer spans.
+	SpanKindConsumer = internal.SpanKindConsumer
 )
 
-// StatusCode is an alias for internal.StatusCode type.
+// StatusCode mirrors the codes defined at
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 type StatusCode = internal.StatusCode
 
 const (

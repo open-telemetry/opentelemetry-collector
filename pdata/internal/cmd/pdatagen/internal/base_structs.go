@@ -78,11 +78,17 @@ const messageValueGenerateTestTemplate = `func generateTest${structName}() ${str
 const messageValueFillTestHeaderTemplate = `func fillTest${structName}(tv ${structName}) {`
 const messageValueFillTestFooterTemplate = `}`
 
-const messageValueAliasTemplate = `// ${structName} is an alias for ${refPackage}.${structName} struct.
-${extraStructComment}type ${structName} = ${refPackage}.${structName} 
+const messageValueAliasTemplate = `${description}
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use New${structName} function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ${structName} = internal.${structName} 
 
 // New${structName} is an alias for a function to create a new empty ${structName}.
-${extraStructComment}var New${structName} = ${refPackage}.New${structName}`
+var New${structName} = internal.New${structName}`
 
 const newLine = "\n"
 
@@ -97,7 +103,7 @@ type baseStruct interface {
 }
 
 type aliasGenerator interface {
-	generateAlias(sb *strings.Builder, deprecatedInFavor string)
+	generateAlias(sb *strings.Builder)
 }
 
 type messageValueStruct struct {
@@ -196,26 +202,13 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *strings.Builder) {
 	}))
 }
 
-func (ms *messageValueStruct) generateAlias(sb *strings.Builder, deprecatedInFavor string) {
+func (ms *messageValueStruct) generateAlias(sb *strings.Builder) {
 	sb.WriteString(os.Expand(messageValueAliasTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
-		case "refPackage":
-			if deprecatedInFavor == "" {
-				return "internal"
-			}
-			return deprecatedInFavor
-		case "extraStructComment":
-			if deprecatedInFavor != "" {
-				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + "." + ms.structName + " instead.\n"
-			}
-			return ""
-		case "extraNewComment":
-			if deprecatedInFavor != "" {
-				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + ".New" + ms.structName + " instead.\n"
-			}
-			return ""
+		case "description":
+			return ms.description
 		default:
 			panic(name)
 		}

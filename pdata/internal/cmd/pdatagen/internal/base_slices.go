@@ -111,11 +111,18 @@ func fillTest${structName}(tv ${structName}) {
 	}
 }`
 
-const commonSliceAliasTemplate = `// ${structName} is an alias for ${refPackage}.${structName} struct.
-${extraStructComment}type ${structName} = ${refPackage}.${structName}
+const commonSliceAliasTemplate = `// ${structName} logically represents a slice of ${elementName}.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use New${structName} function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type ${structName} = internal.${structName}
 
-// New${structName} is an alias for a function to create ${structName}.
-${extraNewComment}var New${structName} = ${refPackage}.New${structName}`
+// New${structName} creates a ${structName} with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
+var New${structName} = internal.New${structName}`
 
 const slicePtrTemplate = `// ${structName} logically represents a slice of ${elementName}.
 //
@@ -477,26 +484,13 @@ func (ss *sliceOfPtrs) templateFields() func(name string) string {
 	}
 }
 
-func (ss *sliceOfPtrs) generateAlias(sb *strings.Builder, deprecatedInFavor string) {
+func (ss *sliceOfPtrs) generateAlias(sb *strings.Builder) {
 	sb.WriteString(os.Expand(commonSliceAliasTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ss.structName
-		case "refPackage":
-			if deprecatedInFavor == "" {
-				return "internal"
-			}
-			return deprecatedInFavor
-		case "extraStructComment":
-			if deprecatedInFavor != "" {
-				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + "." + ss.structName + " instead.\n"
-			}
-			return ""
-		case "extraNewComment":
-			if deprecatedInFavor != "" {
-				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + ".New" + ss.structName + " instead.\n"
-			}
-			return ""
+		case "elementName":
+			return ss.element.structName
 		default:
 			panic(name)
 		}
@@ -545,26 +539,13 @@ func (ss *sliceOfValues) templateFields() func(name string) string {
 	}
 }
 
-func (ss *sliceOfValues) generateAlias(sb *strings.Builder, deprecatedInFavor string) {
+func (ss *sliceOfValues) generateAlias(sb *strings.Builder) {
 	sb.WriteString(os.Expand(commonSliceAliasTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ss.structName
-		case "refPackage":
-			if deprecatedInFavor == "" {
-				return "internal"
-			}
-			return deprecatedInFavor
-		case "extraStructComment":
-			if deprecatedInFavor != "" {
-				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + "." + ss.structName + " instead.\n"
-			}
-			return ""
-		case "extraNewComment":
-			if deprecatedInFavor != "" {
-				return "// Deprecated: [v0.49.0] Use " + deprecatedInFavor + ".New" + ss.structName + " instead.\n"
-			}
-			return ""
+		case "elementName":
+			return ss.element.structName
 		default:
 			panic(name)
 		}
