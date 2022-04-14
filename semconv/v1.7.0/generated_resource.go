@@ -23,7 +23,6 @@ const (
 	// Type: Enum
 	// Required: No
 	// Stability: stable
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudProvider = "cloud.provider"
 	// The cloud account ID the resource is assigned to.
 	//
@@ -31,18 +30,15 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '111111111111', 'opentelemetry'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudAccountID = "cloud.account.id"
-	// The geographical region the resource is running.
+	// The geographical region the resource is running. Refer to your provider's docs
+	// to see the available regions, for example Alibaba Cloud regions, AWS regions,
+	// Azure regions, or Google Cloud regions.
 	//
 	// Type: string
 	// Required: No
 	// Stability: stable
 	// Examples: 'us-central1', 'us-east-1'
-	// Note: Refer to your provider's docs to see the available regions, for example
-	// Alibaba Cloud regions, AWS regions, Azure regions, Google Cloud regions, or
-	// Tencent Cloud regions.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudRegion = "cloud.region"
 	// Cloud regions often have multiple, isolated locations known as zones to
 	// increase availability. Availability zone represents the zone where the resource
@@ -54,7 +50,6 @@ const (
 	// Examples: 'us-east-1c'
 	// Note: Availability zones are called &quot;zones&quot; on Alibaba Cloud and
 	// Google Cloud.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudAvailabilityZone = "cloud.availability_zone"
 	// The cloud platform in use.
 	//
@@ -63,92 +58,55 @@ const (
 	// Stability: stable
 	// Note: The prefix of the service SHOULD match the one specified in
 	// cloud.provider.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatform = "cloud.platform"
 )
 
 const (
 	// Alibaba Cloud
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudProviderAlibabaCloud = "alibaba_cloud"
 	// Amazon Web Services
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudProviderAWS = "aws"
 	// Microsoft Azure
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudProviderAzure = "azure"
 	// Google Cloud Platform
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudProviderGCP = "gcp"
-	// Tencent Cloud
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	AttributeCloudProviderTencentCloud = "tencent_cloud"
 )
 
 const (
 	// Alibaba Cloud Elastic Compute Service
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAlibabaCloudECS = "alibaba_cloud_ecs"
 	// Alibaba Cloud Function Compute
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAlibabaCloudFc = "alibaba_cloud_fc"
 	// AWS Elastic Compute Cloud
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAWSEC2 = "aws_ec2"
 	// AWS Elastic Container Service
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAWSECS = "aws_ecs"
 	// AWS Elastic Kubernetes Service
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAWSEKS = "aws_eks"
 	// AWS Lambda
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAWSLambda = "aws_lambda"
 	// AWS Elastic Beanstalk
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAWSElasticBeanstalk = "aws_elastic_beanstalk"
-	// AWS App Runner
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	AttributeCloudPlatformAWSAppRunner = "aws_app_runner"
 	// Azure Virtual Machines
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAzureVM = "azure_vm"
 	// Azure Container Instances
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAzureContainerInstances = "azure_container_instances"
 	// Azure Kubernetes Service
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAzureAKS = "azure_aks"
 	// Azure Functions
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAzureFunctions = "azure_functions"
 	// Azure App Service
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformAzureAppService = "azure_app_service"
 	// Google Cloud Compute Engine (GCE)
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformGCPComputeEngine = "gcp_compute_engine"
 	// Google Cloud Run
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformGCPCloudRun = "gcp_cloud_run"
 	// Google Cloud Kubernetes Engine (GKE)
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformGCPKubernetesEngine = "gcp_kubernetes_engine"
 	// Google Cloud Functions (GCF)
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformGCPCloudFunctions = "gcp_cloud_functions"
 	// Google Cloud App Engine (GAE)
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeCloudPlatformGCPAppEngine = "gcp_app_engine"
-	// Tencent Cloud Cloud Virtual Machine (CVM)
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	AttributeCloudPlatformTencentCloudCvm = "tencent_cloud_cvm"
-	// Tencent Cloud Elastic Kubernetes Service (EKS)
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	AttributeCloudPlatformTencentCloudEKS = "tencent_cloud_eks"
-	// Tencent Cloud Serverless Cloud Function (SCF)
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	AttributeCloudPlatformTencentCloudScf = "tencent_cloud_scf"
 )
 
 // Resources used by AWS Elastic Container Service (ECS).
@@ -160,7 +118,6 @@ const (
 	// Stability: stable
 	// Examples: 'arn:aws:ecs:us-
 	// west-1:123456789123:container/32624152-9086-4f0e-acae-1a75b14fe4d9'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSECSContainerARN = "aws.ecs.container.arn"
 	// The ARN of an ECS cluster.
 	//
@@ -168,14 +125,12 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSECSClusterARN = "aws.ecs.cluster.arn"
 	// The launch type for an ECS task.
 	//
 	// Type: Enum
 	// Required: No
 	// Stability: stable
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSECSLaunchtype = "aws.ecs.launchtype"
 	// The ARN of an ECS task definition.
 	//
@@ -184,7 +139,6 @@ const (
 	// Stability: stable
 	// Examples: 'arn:aws:ecs:us-
 	// west-1:123456789123:task/10838bed-421f-43ef-870a-f43feacbbb5b'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSECSTaskARN = "aws.ecs.task.arn"
 	// The task definition family this task definition is a member of.
 	//
@@ -192,7 +146,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry-family'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSECSTaskFamily = "aws.ecs.task.family"
 	// The revision for this task definition.
 	//
@@ -200,16 +153,13 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '8', '26'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSECSTaskRevision = "aws.ecs.task.revision"
 )
 
 const (
 	// ec2
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSECSLaunchtypeEC2 = "ec2"
 	// fargate
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSECSLaunchtypeFargate = "fargate"
 )
 
@@ -221,7 +171,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSEKSClusterARN = "aws.eks.cluster.arn"
 )
 
@@ -236,7 +185,6 @@ const (
 	// Note: Multiple log groups must be supported for cases like multi-container
 	// applications, where a single application has sidecar containers, and each write
 	// to their own log group.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSLogGroupNames = "aws.log.group.names"
 	// The Amazon Resource Name(s) (ARN) of the AWS log group(s).
 	//
@@ -245,7 +193,6 @@ const (
 	// Stability: stable
 	// Examples: 'arn:aws:logs:us-west-1:123456789012:log-group:/aws/my/group:*'
 	// Note: See the log group ARN format documentation.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSLogGroupARNs = "aws.log.group.arns"
 	// The name(s) of the AWS log stream(s) an application is writing to.
 	//
@@ -253,7 +200,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'logs/main/10838bed-421f-43ef-870a-f43feacbbb5b'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSLogStreamNames = "aws.log.stream.names"
 	// The ARN(s) of the AWS log stream(s).
 	//
@@ -265,19 +211,17 @@ const (
 	// Note: See the log stream ARN format documentation. One log group can contain
 	// several log streams, so these ARNs necessarily identify both a log group and a
 	// log stream.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeAWSLogStreamARNs = "aws.log.stream.arns"
 )
 
 // A container instance.
 const (
-	// Container name used by container runtime.
+	// Container name.
 	//
 	// Type: string
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry-autoconf'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeContainerName = "container.name"
 	// Container ID. Usually a UUID, as for example used to identify Docker
 	// containers. The UUID might be abbreviated.
@@ -286,7 +230,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'a3bf90e006b2'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeContainerID = "container.id"
 	// The container runtime managing this container.
 	//
@@ -294,7 +237,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'docker', 'containerd', 'rkt'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeContainerRuntime = "container.runtime"
 	// Name of the image the container was built on.
 	//
@@ -302,7 +244,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'gcr.io/opentelemetry/operator'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeContainerImageName = "container.image.name"
 	// Container image tag.
 	//
@@ -310,7 +251,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '0.1'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeContainerImageTag = "container.image.tag"
 )
 
@@ -322,7 +262,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'staging', 'production'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeDeploymentEnvironment = "deployment.environment"
 )
 
@@ -343,7 +282,6 @@ const (
 	// practices and exact implementation details. Caution should be taken when
 	// storing personal data or anything which can identify a user. GDPR and data
 	// protection laws may apply, ensure you do your own due diligence.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeDeviceID = "device.id"
 	// The model identifier for the device
 	//
@@ -354,7 +292,6 @@ const (
 	// Note: It's recommended this value represents a machine readable version of the
 	// model identifier rather than the market or consumer-friendly name of the
 	// device.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeDeviceModelIdentifier = "device.model.identifier"
 	// The marketing name for the device model
 	//
@@ -364,7 +301,6 @@ const (
 	// Examples: 'iPhone 6s Plus', 'Samsung Galaxy S6'
 	// Note: It's recommended this value represents a human readable version of the
 	// device model rather than a machine readable alternative.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeDeviceModelName = "device.model.name"
 )
 
@@ -379,7 +315,6 @@ const (
 	// Note: This is the name of the function as configured/deployed on the FaaS
 	// platform and is usually different from the name of the callback function (which
 	// may be stored in the code.namespace/code.function span attributes).
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeFaaSName = "faas.name"
 	// The unique ID of the single function that this runtime instance executes.
 	//
@@ -403,7 +338,6 @@ const (
 	// part of the ARN is not available without calling another AWS API
 	// which may be deemed too slow for a short-running lambda function.
 	// As an alternative, consider setting faas.id as a span attribute instead.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeFaaSID = "faas.id"
 	// The immutable version of the function being executed.
 	//
@@ -420,7 +354,6 @@ const (
 	// K_REVISION environment variable.</li>
 	// <li>Azure Functions: Not applicable. Do not set this attribute.</li>
 	// </ul>
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeFaaSVersion = "faas.version"
 	// The execution environment ID as a string, that will be potentially reused for
 	// other invocations to the same function/function version.
@@ -432,7 +365,6 @@ const (
 	// Note: <ul>
 	// <li>AWS Lambda: Use the (full) log stream name.</li>
 	// </ul>
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeFaaSInstance = "faas.instance"
 	// The amount of memory available to the serverless function in MiB.
 	//
@@ -444,7 +376,6 @@ const (
 	// easily stop a Java AWS Lambda function from working correctly. On AWS Lambda,
 	// the environment variable AWS_LAMBDA_FUNCTION_MEMORY_SIZE provides this
 	// information.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeFaaSMaxMemory = "faas.max_memory"
 )
 
@@ -457,7 +388,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry-test'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostID = "host.id"
 	// Name of the host. On Unix systems, it may contain what the hostname command
 	// returns, or the fully qualified hostname, or another name specified by the
@@ -467,7 +397,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry-test'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostName = "host.name"
 	// Type of host. For Cloud, this must be the machine type.
 	//
@@ -475,14 +404,12 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'n1-standard-1'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostType = "host.type"
 	// The CPU architecture the host system is running on.
 	//
 	// Type: Enum
 	// Required: No
 	// Stability: stable
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostArch = "host.arch"
 	// Name of the VM image or OS install the host was instantiated from.
 	//
@@ -490,7 +417,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'infra-ami-eks-worker-node-7d4ec78312', 'CentOS-8-x86_64-1905'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostImageName = "host.image.name"
 	// VM image ID. For Cloud, this value is from the provider.
 	//
@@ -498,7 +424,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'ami-07b06b442921831e5'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostImageID = "host.image.id"
 	// The version string of the VM image as defined in Version Attributes.
 	//
@@ -506,34 +431,23 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '0.1'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostImageVersion = "host.image.version"
 )
 
 const (
 	// AMD64
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostArchAMD64 = "amd64"
 	// ARM32
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostArchARM32 = "arm32"
 	// ARM64
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostArchARM64 = "arm64"
 	// Itanium
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostArchIA64 = "ia64"
 	// 32-bit PowerPC
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostArchPPC32 = "ppc32"
 	// 64-bit PowerPC
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostArchPPC64 = "ppc64"
-	// IBM z/Architecture
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	AttributeHostArchS390x = "s390x"
 	// 32-bit x86
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeHostArchX86 = "x86"
 )
 
@@ -545,7 +459,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry-cluster'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SClusterName = "k8s.cluster.name"
 )
 
@@ -557,7 +470,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'node-1'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SNodeName = "k8s.node.name"
 	// The UID of the Node.
 	//
@@ -565,7 +477,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '1eb3a0c6-0477-4080-a9cb-0cb7db65c6a2'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SNodeUID = "k8s.node.uid"
 )
 
@@ -577,7 +488,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'default'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SNamespaceName = "k8s.namespace.name"
 )
 
@@ -589,7 +499,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SPodUID = "k8s.pod.uid"
 	// The name of the Pod.
 	//
@@ -597,30 +506,18 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry-pod-autoconf'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SPodName = "k8s.pod.name"
 )
 
 // A container in a [PodTemplate](https://kubernetes.io/docs/concepts/workloads/pods/#pod-templates).
 const (
-	// The name of the Container from Pod specification, must be unique within a Pod.
-	// Container runtime usually uses different globally unique name (container.name).
+	// The name of the Container in a Pod template.
 	//
 	// Type: string
 	// Required: No
 	// Stability: stable
 	// Examples: 'redis'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SContainerName = "k8s.container.name"
-	// Number of times the container was restarted. This attribute can be used to
-	// identify a particular container (running or stopped) within a container spec.
-	//
-	// Type: int
-	// Required: No
-	// Stability: stable
-	// Examples: 0, 2
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	AttributeK8SContainerRestartCount = "k8s.container.restart_count"
 )
 
 // A Kubernetes ReplicaSet object.
@@ -631,7 +528,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SReplicaSetUID = "k8s.replicaset.uid"
 	// The name of the ReplicaSet.
 	//
@@ -639,7 +535,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SReplicaSetName = "k8s.replicaset.name"
 )
 
@@ -651,7 +546,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SDeploymentUID = "k8s.deployment.uid"
 	// The name of the Deployment.
 	//
@@ -659,7 +553,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SDeploymentName = "k8s.deployment.name"
 )
 
@@ -671,7 +564,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SStatefulSetUID = "k8s.statefulset.uid"
 	// The name of the StatefulSet.
 	//
@@ -679,7 +571,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SStatefulSetName = "k8s.statefulset.name"
 )
 
@@ -691,7 +582,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SDaemonSetUID = "k8s.daemonset.uid"
 	// The name of the DaemonSet.
 	//
@@ -699,7 +589,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SDaemonSetName = "k8s.daemonset.name"
 )
 
@@ -711,7 +600,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SJobUID = "k8s.job.uid"
 	// The name of the Job.
 	//
@@ -719,7 +607,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SJobName = "k8s.job.name"
 )
 
@@ -731,7 +618,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '275ecb36-5aa8-4c2a-9c47-d8bb681b9aff'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SCronJobUID = "k8s.cronjob.uid"
 	// The name of the CronJob.
 	//
@@ -739,7 +625,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeK8SCronJobName = "k8s.cronjob.name"
 )
 
@@ -750,7 +635,6 @@ const (
 	// Type: Enum
 	// Required: Always
 	// Stability: stable
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSType = "os.type"
 	// Human readable (not intended to be parsed) OS version information, like e.g.
 	// reported by ver or lsb_release -a commands.
@@ -759,7 +643,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'Microsoft Windows [Version 10.0.18363.778]', 'Ubuntu 18.04.1 LTS'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSDescription = "os.description"
 	// Human readable operating system name.
 	//
@@ -767,7 +650,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'iOS', 'Android', 'Ubuntu'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSName = "os.name"
 	// The version string of the operating system as defined in Version Attributes.
 	//
@@ -775,43 +657,31 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '14.2.1', '18.04.1'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSVersion = "os.version"
 )
 
 const (
 	// Microsoft Windows
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeWindows = "windows"
 	// Linux
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeLinux = "linux"
 	// Apple Darwin
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeDarwin = "darwin"
 	// FreeBSD
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeFreeBSD = "freebsd"
 	// NetBSD
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeNetBSD = "netbsd"
 	// OpenBSD
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeOpenBSD = "openbsd"
 	// DragonFly BSD
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeDragonflyBSD = "dragonflybsd"
 	// HP-UX (Hewlett Packard Unix)
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeHPUX = "hpux"
 	// AIX (Advanced Interactive eXecutive)
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeAIX = "aix"
 	// Oracle Solaris
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeSolaris = "solaris"
 	// IBM z/OS
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeOSTypeZOS = "z_os"
 )
 
@@ -823,7 +693,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 1234
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessPID = "process.pid"
 	// The name of the process executable. On Linux based systems, can be set to the
 	// Name in proc/[pid]/status. On Windows, can be set to the base name of
@@ -833,7 +702,6 @@ const (
 	// Required: See below
 	// Stability: stable
 	// Examples: 'otelcol'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessExecutableName = "process.executable.name"
 	// The full path to the process executable. On Linux based systems, can be set to
 	// the target of proc/[pid]/exe. On Windows, can be set to the result of
@@ -843,7 +711,6 @@ const (
 	// Required: See below
 	// Stability: stable
 	// Examples: '/usr/bin/cmd/otelcol'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessExecutablePath = "process.executable.path"
 	// The command used to launch the process (i.e. the command name). On Linux based
 	// systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can
@@ -853,7 +720,6 @@ const (
 	// Required: See below
 	// Stability: stable
 	// Examples: 'cmd/otelcol'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessCommand = "process.command"
 	// The full command used to launch the process as a single string representing the
 	// full command. On Windows, can be set to the result of GetCommandLineW. Do not
@@ -864,7 +730,6 @@ const (
 	// Required: See below
 	// Stability: stable
 	// Examples: 'C:\\cmd\\otecol --config="my directory\\config.yaml"'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessCommandLine = "process.command_line"
 	// All the command arguments (including the command/executable itself) as received
 	// by the process. On Linux-based systems (and some other Unixoid systems
@@ -876,7 +741,6 @@ const (
 	// Required: See below
 	// Stability: stable
 	// Examples: 'cmd/otecol', '--config=config.yaml'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessCommandArgs = "process.command_args"
 	// The username of the user that owns the process.
 	//
@@ -884,7 +748,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'root'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessOwner = "process.owner"
 )
 
@@ -897,7 +760,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'OpenJDK Runtime Environment'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessRuntimeName = "process.runtime.name"
 	// The version of the runtime of this process, as returned by the runtime without
 	// modification.
@@ -906,7 +768,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '14.0.2'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessRuntimeVersion = "process.runtime.version"
 	// An additional description about the runtime of the process, for example a
 	// specific vendor customization of the runtime environment.
@@ -915,7 +776,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'Eclipse OpenJ9 Eclipse OpenJ9 VM openj9-0.21.0'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeProcessRuntimeDescription = "process.runtime.description"
 )
 
@@ -932,7 +792,6 @@ const (
 	// concatenated with process.executable.name, e.g. unknown_service:bash. If
 	// process.executable.name is not available, the value MUST be set to
 	// unknown_service.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeServiceName = "service.name"
 	// A namespace for service.name.
 	//
@@ -947,7 +806,6 @@ const (
 	// services that have no explicit namespace defined (so the empty/unspecified
 	// namespace is simply one more valid namespace). Zero-length namespace string is
 	// assumed equal to unspecified namespace.
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeServiceNamespace = "service.namespace"
 	// The string ID of the service instance.
 	//
@@ -967,7 +825,6 @@ const (
 	// value of this attribute it is recommended to generate a random Version 1 or
 	// Version 4 RFC 4122 UUID (services aiming for reproducible UUIDs may also use
 	// Version 5, see RFC 4122 for more recommendations).
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeServiceInstanceID = "service.instance.id"
 	// The version string of the service API or implementation.
 	//
@@ -975,7 +832,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '2.0.0'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeServiceVersion = "service.version"
 )
 
@@ -987,14 +843,12 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'opentelemetry'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKName = "telemetry.sdk.name"
 	// The language of the telemetry SDK.
 	//
 	// Type: Enum
 	// Required: No
 	// Stability: stable
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguage = "telemetry.sdk.language"
 	// The version string of the telemetry SDK.
 	//
@@ -1002,7 +856,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '1.2.3'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKVersion = "telemetry.sdk.version"
 	// The version string of the auto instrumentation agent, if used.
 	//
@@ -1010,44 +863,30 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '1.2.3'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetryAutoVersion = "telemetry.auto.version"
 )
 
 const (
 	// cpp
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguageCPP = "cpp"
 	// dotnet
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguageDotnet = "dotnet"
 	// erlang
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguageErlang = "erlang"
 	// go
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguageGo = "go"
 	// java
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguageJava = "java"
 	// nodejs
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguageNodejs = "nodejs"
 	// php
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguagePHP = "php"
 	// python
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguagePython = "python"
 	// ruby
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguageRuby = "ruby"
 	// webjs
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeTelemetrySDKLanguageWebjs = "webjs"
-	// swift
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	AttributeTelemetrySDKLanguageSwift = "swift"
 )
 
 // Resource describing the packaged software running the application code. Web engines are typically executed using process.runtime.
@@ -1058,7 +897,6 @@ const (
 	// Required: Always
 	// Stability: stable
 	// Examples: 'WildFly'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeWebEngineName = "webengine.name"
 	// The version of the web engine.
 	//
@@ -1066,7 +904,6 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: '21.0.0'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeWebEngineVersion = "webengine.version"
 	// Additional description of the web engine (e.g. detailed version and edition
 	// information).
@@ -1075,11 +912,9 @@ const (
 	// Required: No
 	// Stability: stable
 	// Examples: 'WildFly Full 21.0.0.Final (WildFly Core 13.0.1.Final) - 2.2.2.Final'
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	AttributeWebEngineDescription = "webengine.description"
 )
 
-// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 func GetResourceSemanticConventionAttributeNames() []string {
 	return []string{
 		AttributeCloudProvider,
@@ -1126,7 +961,6 @@ func GetResourceSemanticConventionAttributeNames() []string {
 		AttributeK8SPodUID,
 		AttributeK8SPodName,
 		AttributeK8SContainerName,
-		AttributeK8SContainerRestartCount,
 		AttributeK8SReplicaSetUID,
 		AttributeK8SReplicaSetName,
 		AttributeK8SDeploymentUID,
