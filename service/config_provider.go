@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
-	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
@@ -106,24 +105,6 @@ func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings
 	}
 }
 
-// Deprecated: [v0.49.0] use NewConfigProvider instead.
-func MustNewConfigProvider(
-	locations []string,
-	configMapProviders map[string]config.MapProvider,
-	configMapConverters []config.MapConverterFunc,
-	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
-	cfgProvider, err := NewConfigProvider(ConfigProviderSettings{
-		Locations:     locations,
-		MapProviders:  configMapProviders,
-		MapConverters: configMapConverters,
-		Unmarshaler:   configUnmarshaler,
-	})
-	if err != nil {
-		panic(err)
-	}
-	return cfgProvider
-}
-
 // NewConfigProvider returns a new ConfigProvider that provides the configuration:
 // * Retrieve the config.Map by merging all retrieved maps from the given `locations` in order.
 // * Then applies all the config.MapConverterFunc in the given order.
@@ -154,17 +135,6 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 		configUnmarshaler:   set.Unmarshaler,
 		watcher:             make(chan error, 1),
 	}, nil
-}
-
-// Deprecated: [v0.49.0] use NewConfigProvider instead.
-func MustNewDefaultConfigProvider(locations []string, properties []string) ConfigProvider {
-	set := newDefaultConfigProviderSettings(locations)
-	set.MapConverters = append([]config.MapConverterFunc{overwritepropertiesmapconverter.New(properties)}, set.MapConverters...)
-	cfgProvider, err := NewConfigProvider(set)
-	if err != nil {
-		panic(err)
-	}
-	return cfgProvider
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {

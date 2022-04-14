@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove non pdata deprecated funcs/structs (#5220)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
