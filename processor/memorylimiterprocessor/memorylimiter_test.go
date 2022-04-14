@@ -113,7 +113,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		usageChecker: memUsageChecker{
 			memAllocLimit: 1024,
 		},
-		forceDrop: atomic.NewInt64(0),
+		forceDrop: atomic.NewBool(false),
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -186,7 +186,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		usageChecker: memUsageChecker{
 			memAllocLimit: 1024,
 		},
-		forceDrop: atomic.NewInt64(0),
+		forceDrop: atomic.NewBool(false),
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -258,7 +258,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		usageChecker: memUsageChecker{
 			memAllocLimit: 1024,
 		},
-		forceDrop: atomic.NewInt64(0),
+		forceDrop: atomic.NewBool(false),
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
