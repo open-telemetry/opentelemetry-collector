@@ -126,6 +126,13 @@ var tracesTransitionData = [][]byte{
 	}`),
 }
 
+func TestRequestToPData(t *testing.T) {
+	tr := NewRequest()
+	assert.Equal(t, tr.Traces().SpanCount(), 0)
+	tr.Traces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	assert.Equal(t, tr.Traces().SpanCount(), 1)
+}
+
 func TestRequestJSON(t *testing.T) {
 	tr := NewRequest()
 	assert.NoError(t, tr.UnmarshalJSON(tracesRequestJSON))
