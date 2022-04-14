@@ -34,7 +34,6 @@ type boundedMemoryQueue struct {
 	items         chan interface{}
 	onDroppedItem func(item interface{})
 	factory       func() consumer
-	stopCh        chan struct{}
 	capacity      uint32
 }
 
@@ -44,7 +43,6 @@ func NewBoundedMemoryQueue(capacity int, onDroppedItem func(item interface{})) P
 	return &boundedMemoryQueue{
 		onDroppedItem: onDroppedItem,
 		items:         make(chan interface{}, capacity),
-		stopCh:        make(chan struct{}),
 		stopped:       atomic.NewBool(false),
 		size:          atomic.NewUint32(0),
 		capacity:      uint32(capacity),
@@ -66,20 +64,9 @@ func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item i
 			startWG.Done()
 			defer q.stopWG.Done()
 			itemConsumer := q.factory()
-			for {
-				select {
-				case item, ok := <-q.items:
-					if ok {
-						q.size.Sub(1)
-						itemConsumer.consume(item)
-					} else {
-						// channel closed, finish worker
-						return
-					}
-				case <-q.stopCh:
-					// the whole queue is closing, finish worker
-					return
-				}
+			for item := range q.items {
+				q.size.Sub(1)
+				itemConsumer.consume(item)
 			}
 		}()
 	}
@@ -129,9 +116,8 @@ func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 // and releases the items channel. It blocks until all consumers have stopped.
 func (q *boundedMemoryQueue) Stop() {
 	q.stopped.Store(true) // disable producer
-	close(q.stopCh)
-	q.stopWG.Wait()
 	close(q.items)
+	q.stopWG.Wait()
 }
 
 // Size returns the current size of the queue
