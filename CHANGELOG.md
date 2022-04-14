@@ -4,6 +4,17 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+- Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
+
+## v0.49.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated structs/funcs from previous versions (#5131)
 - Do not set TraceProvider to global otel (#5138)
 - Remove deprecated funcs from otlpgrpc (#5144)
@@ -19,11 +30,11 @@
   - `model/pdata`, `model/otlp` -> `pdata/pcommon`, `pdata/plog`, `pdata/pmetric`, `pdata/ptrace`
   - `model/otlpgrpc` -> `pdata/plog/plogotlp`, `pdata/pmetric/pmetricotlp`, `pdata/ptrace/ptraceotlp`
 - Deprecate configmapprovider package, replace with mapconverter (#5167)
-- Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` (#4762)
+- Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` (#4936)
 
 ### 💡 Enhancements 💡
 
-- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
+- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5109) 
 - Add `ObservedTimestamp` field to `pdata.LogRecord` (#5171)
 
 ### 🧰 Bug fixes 🧰

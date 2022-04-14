@@ -19,12 +19,12 @@ package internal
 import (
 	"reflect"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 )
 
 // In this test we run a queue with capacity 1 and a single consumer.
@@ -145,13 +145,14 @@ type consumerState struct {
 	sync.Mutex
 	t            *testing.T
 	consumed     map[string]bool
-	consumedOnce int32
+	consumedOnce *atomic.Bool
 }
 
 func newConsumerState(t *testing.T) *consumerState {
 	return &consumerState{
-		t:        t,
-		consumed: make(map[string]bool),
+		t:            t,
+		consumed:     make(map[string]bool),
+		consumedOnce: atomic.NewBool(false),
 	}
 }
 
@@ -159,7 +160,7 @@ func (s *consumerState) record(val string) {
 	s.Lock()
 	defer s.Unlock()
 	s.consumed[val] = true
-	atomic.StoreInt32(&s.consumedOnce, 1)
+	s.consumedOnce.Store(true)
 }
 
 func (s *consumerState) snapshot() map[string]bool {
@@ -173,12 +174,7 @@ func (s *consumerState) snapshot() map[string]bool {
 }
 
 func (s *consumerState) waitToConsumeOnce() {
-	for i := 0; i < 1000; i++ {
-		if atomic.LoadInt32(&s.consumedOnce) == 0 {
-			time.Sleep(time.Millisecond)
-		}
-	}
-	require.EqualValues(s.t, 1, atomic.LoadInt32(&s.consumedOnce), "expected to consumer once")
+	require.Eventually(s.t, s.consumedOnce.Load, 2*time.Second, 10*time.Millisecond, "expected to consumer once")
 }
 
 func (s *consumerState) assertConsumed(expected map[string]bool) {
