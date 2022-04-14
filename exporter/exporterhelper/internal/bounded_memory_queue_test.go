@@ -99,14 +99,14 @@ type consumerState struct {
 	sync.Mutex
 	t            *testing.T
 	consumed     map[string]bool
-	consumedOnce *atomic.Int32
+	consumedOnce *atomic.Bool
 }
 
 func newConsumerState(t *testing.T) *consumerState {
 	return &consumerState{
 		t:            t,
 		consumed:     make(map[string]bool),
-		consumedOnce: atomic.NewInt32(0),
+		consumedOnce: atomic.NewBool(false),
 	}
 }
 
@@ -114,7 +114,7 @@ func (s *consumerState) record(val string) {
 	s.Lock()
 	defer s.Unlock()
 	s.consumed[val] = true
-	s.consumedOnce.Store(1)
+	s.consumedOnce.Store(true)
 }
 
 func (s *consumerState) snapshot() map[string]bool {
@@ -128,12 +128,7 @@ func (s *consumerState) snapshot() map[string]bool {
 }
 
 func (s *consumerState) waitToConsumeOnce() {
-	for i := 0; i < 1000; i++ {
-		if s.consumedOnce.Load() == 0 {
-			time.Sleep(time.Millisecond)
-		}
-	}
-	require.EqualValues(s.t, 1, s.consumedOnce.Load(), "expected to consumer once")
+	require.Eventually(s.t, s.consumedOnce.Load, 2*time.Second, 10*time.Millisecond, "expected to consumer once")
 }
 
 func (s *consumerState) assertConsumed(expected map[string]bool) {
