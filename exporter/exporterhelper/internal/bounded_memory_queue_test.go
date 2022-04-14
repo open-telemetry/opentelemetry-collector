@@ -108,7 +108,6 @@ func TestShutdownWhileNotEmpty(t *testing.T) {
 
 	q.StartConsumers(1, func(item interface{}) {
 		consumerState.record(item.(string))
-		//
 		time.Sleep(1 * time.Second)
 	})
 

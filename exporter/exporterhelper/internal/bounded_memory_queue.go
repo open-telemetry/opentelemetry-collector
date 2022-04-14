@@ -68,7 +68,6 @@ func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item i
 				q.size.Sub(1)
 				itemConsumer.consume(item)
 			}
-			return
 		}()
 	}
 	startWG.Wait()
