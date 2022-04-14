@@ -138,13 +138,3 @@ const (
 
 // String returns the string representation of the StatusCode.
 func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).String() }
-
-// Deprecated: [v0.48.0] Use ScopeSpans instead.
-func (ms ResourceSpans) InstrumentationLibrarySpans() ScopeSpansSlice {
-	return ms.ScopeSpans()
-}
-
-// Deprecated: [v0.48.0] Use Scope instead.
-func (ms ScopeSpans) InstrumentationLibrary() InstrumentationScope {
-	return ms.Scope()
-}
