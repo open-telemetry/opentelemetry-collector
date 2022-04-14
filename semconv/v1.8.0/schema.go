@@ -12,15 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package semconv // import "go.opentelemetry.io/collector/model/semconv/v1.9.0"
+package semconv // import "go.opentelemetry.io/collector/semconv/v1.8.0"
 
-const (
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	OtelLibraryName = "otel.library.name"
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	OtelLibraryVersion = "otel.library.version"
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	OtelStatusCode = "otel.status_code"
-	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
-	OtelStatusDescription = "otel.status_description"
-)
+// SchemaURL is the schema URL that matches the version of the semantic conventions
+// that this package defines. Conventions packages starting from v1.4.0 must declare
+// non-empty schema URL in the form https://opentelemetry.io/schemas/<version>
+const SchemaURL = "https://opentelemetry.io/schemas/1.8.0"

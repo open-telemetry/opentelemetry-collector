@@ -15,11 +15,15 @@
 package semconv // import "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
 const (
-	InstrumentationLibraryName    = "otel.library.name"
+	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
+	InstrumentationLibraryName = "otel.library.name"
+	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	InstrumentationLibraryVersion = "otel.library.version"
 )
 
 const (
-	OtelStatusCode        = "otel.status_code"
+	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
+	OtelStatusCode = "otel.status_code"
+	// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
 	OtelStatusDescription = "otel.status_description"
 )
