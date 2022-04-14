@@ -20,12 +20,12 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
@@ -45,8 +45,8 @@ import (
 
 type mockReceiver struct {
 	srv          *grpc.Server
-	requestCount int32
-	totalItems   int32
+	requestCount *atomic.Int32
+	totalItems   *atomic.Int32
 	mux          sync.Mutex
 	metadata     metadata.MD
 }
@@ -63,9 +63,9 @@ type mockTracesReceiver struct {
 }
 
 func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
-	atomic.AddInt32(&r.requestCount, 1)
+	r.requestCount.Inc()
 	td := req.Traces()
-	atomic.AddInt32(&r.totalItems, int32(td.SpanCount()))
+	r.totalItems.Add(int32(td.SpanCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = td
@@ -97,7 +97,9 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 
 	rcv := &mockTracesReceiver{
 		mockReceiver: mockReceiver{
-			srv: grpc.NewServer(sopts...),
+			srv:          grpc.NewServer(sopts...),
+			requestCount: atomic.NewInt32(0),
+			totalItems:   atomic.NewInt32(0),
 		},
 	}
 
@@ -116,9 +118,9 @@ type mockLogsReceiver struct {
 }
 
 func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.Request) (plogotlp.Response, error) {
-	atomic.AddInt32(&r.requestCount, 1)
+	r.requestCount.Inc()
 	ld := req.Logs()
-	atomic.AddInt32(&r.totalItems, int32(ld.LogRecordCount()))
+	r.totalItems.Add(int32(ld.LogRecordCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = ld
@@ -135,7 +137,9 @@ func (r *mockLogsReceiver) GetLastRequest() plog.Logs {
 func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	rcv := &mockLogsReceiver{
 		mockReceiver: mockReceiver{
-			srv: grpc.NewServer(),
+			srv:          grpc.NewServer(),
+			requestCount: atomic.NewInt32(0),
+			totalItems:   atomic.NewInt32(0),
 		},
 	}
 
@@ -155,8 +159,8 @@ type mockMetricsReceiver struct {
 
 func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.Request) (pmetricotlp.Response, error) {
 	md := req.Metrics()
-	atomic.AddInt32(&r.requestCount, 1)
-	atomic.AddInt32(&r.totalItems, int32(md.DataPointCount()))
+	r.requestCount.Inc()
+	r.totalItems.Add(int32(md.DataPointCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.lastRequest = md
@@ -173,7 +177,9 @@ func (r *mockMetricsReceiver) GetLastRequest() pmetric.Metrics {
 func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	rcv := &mockMetricsReceiver{
 		mockReceiver: mockReceiver{
-			srv: grpc.NewServer(),
+			srv:          grpc.NewServer(),
+			requestCount: atomic.NewInt32(0),
+			totalItems:   atomic.NewInt32(0),
 		},
 	}
 
@@ -221,7 +227,7 @@ func TestSendTraces(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
-	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
+	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Send empty trace.
 	td := ptrace.NewTraces()
@@ -229,11 +235,11 @@ func TestSendTraces(t *testing.T) {
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
-		return atomic.LoadInt32(&rcv.requestCount) > 0
+		return rcv.requestCount.Load() > 0
 	}, 10*time.Second, 5*time.Millisecond)
 
 	// Ensure it was received empty.
-	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
+	assert.EqualValues(t, 0, rcv.totalItems.Load())
 
 	// A trace with 2 spans.
 	td = testdata.GenerateTracesTwoSpansSameResource()
@@ -243,14 +249,14 @@ func TestSendTraces(t *testing.T) {
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
-		return atomic.LoadInt32(&rcv.requestCount) > 1
+		return rcv.requestCount.Load() > 1
 	}, 10*time.Second, 5*time.Millisecond)
 
 	expectedHeader := []string{"header-value"}
 
 	// Verify received span.
-	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
-	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
+	assert.EqualValues(t, 2, rcv.totalItems.Load())
+	assert.EqualValues(t, 2, rcv.requestCount.Load())
 	assert.EqualValues(t, td, rcv.GetLastRequest())
 
 	md := rcv.GetMetadata()
@@ -315,7 +321,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			assert.NoError(t, exp.Start(context.Background(), host))
 
 			// Ensure that initially there is no data in the receiver.
-			assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
+			assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 			// Send empty trace.
 			td := ptrace.NewTraces()
@@ -323,11 +329,11 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 
 			// Wait until it is received.
 			assert.Eventually(t, func() bool {
-				return atomic.LoadInt32(&rcv.requestCount) > 0
+				return rcv.requestCount.Load() > 0
 			}, 10*time.Second, 5*time.Millisecond)
 
 			// Ensure it was received empty.
-			assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
+			assert.EqualValues(t, 0, rcv.totalItems.Load())
 		})
 	}
 }
@@ -367,7 +373,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
-	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
+	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Send empty metric.
 	md := pmetric.NewMetrics()
@@ -375,11 +381,11 @@ func TestSendMetrics(t *testing.T) {
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
-		return atomic.LoadInt32(&rcv.requestCount) > 0
+		return rcv.requestCount.Load() > 0
 	}, 10*time.Second, 5*time.Millisecond)
 
 	// Ensure it was received empty.
-	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
+	assert.EqualValues(t, 0, rcv.totalItems.Load())
 
 	// Send two metrics.
 	md = testdata.GenerateMetricsTwoMetrics()
@@ -389,14 +395,14 @@ func TestSendMetrics(t *testing.T) {
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
-		return atomic.LoadInt32(&rcv.requestCount) > 1
+		return rcv.requestCount.Load() > 1
 	}, 10*time.Second, 5*time.Millisecond)
 
 	expectedHeader := []string{"header-value"}
 
 	// Verify received metrics.
-	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
-	assert.EqualValues(t, 4, atomic.LoadInt32(&rcv.totalItems))
+	assert.EqualValues(t, 2, rcv.requestCount.Load())
+	assert.EqualValues(t, 4, rcv.totalItems.Load())
 	assert.EqualValues(t, md, rcv.GetLastRequest())
 
 	mdata := rcv.GetMetadata()
@@ -521,7 +527,7 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pt
 	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	defer rcv.srv.GracefulStop()
 	// Ensure that initially there is no data in the receiver.
-	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
+	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Clone the request and store as expected.
 	expectedData := td.Clone()
@@ -533,11 +539,11 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pt
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
-		return atomic.LoadInt32(&rcv.requestCount) > 0
+		return rcv.requestCount.Load() > 0
 	}, 10*time.Second, 5*time.Millisecond)
 
 	// Verify received span.
-	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
+	assert.EqualValues(t, 2, rcv.totalItems.Load())
 	assert.EqualValues(t, expectedData, rcv.GetLastRequest())
 }
 
@@ -573,7 +579,7 @@ func TestSendLogData(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// Ensure that initially there is no data in the receiver.
-	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
+	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Send empty request.
 	ld := plog.NewLogs()
@@ -581,11 +587,11 @@ func TestSendLogData(t *testing.T) {
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
-		return atomic.LoadInt32(&rcv.requestCount) > 0
+		return rcv.requestCount.Load() > 0
 	}, 10*time.Second, 5*time.Millisecond)
 
 	// Ensure it was received empty.
-	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.totalItems))
+	assert.EqualValues(t, 0, rcv.totalItems.Load())
 
 	// A request with 2 log entries.
 	ld = testdata.GenerateLogsTwoLogRecordsSameResource()
@@ -595,12 +601,12 @@ func TestSendLogData(t *testing.T) {
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
-		return atomic.LoadInt32(&rcv.requestCount) > 1
+		return rcv.requestCount.Load() > 1
 	}, 10*time.Second, 5*time.Millisecond)
 
 	// Verify received logs.
-	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.requestCount))
-	assert.EqualValues(t, 2, atomic.LoadInt32(&rcv.totalItems))
+	assert.EqualValues(t, 2, rcv.requestCount.Load())
+	assert.EqualValues(t, 2, rcv.totalItems.Load())
 	assert.EqualValues(t, ld, rcv.GetLastRequest())
 
 	md := rcv.GetMetadata()

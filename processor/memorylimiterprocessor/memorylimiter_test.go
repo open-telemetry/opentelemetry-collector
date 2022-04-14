@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -112,6 +113,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		usageChecker: memUsageChecker{
 			memAllocLimit: 1024,
 		},
+		forceDrop: atomic.NewInt64(0),
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -184,6 +186,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		usageChecker: memUsageChecker{
 			memAllocLimit: 1024,
 		},
+		forceDrop: atomic.NewInt64(0),
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -255,6 +258,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		usageChecker: memUsageChecker{
 			memAllocLimit: 1024,
 		},
+		forceDrop: atomic.NewInt64(0),
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},

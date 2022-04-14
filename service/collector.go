@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"sync/atomic"
 	"syscall"
 
 	"go.opentelemetry.io/contrib/zpages"
@@ -31,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel/metric/nonrecording"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -85,7 +85,7 @@ type Collector struct {
 	zPagesSpanProcessor *zpages.SpanProcessor
 
 	service *service
-	state   int32
+	state   *atomic.Int32
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -111,7 +111,7 @@ func New(set CollectorSettings) (*Collector, error) {
 		asyncErrorChannel: make(chan error),
 
 		set:          set,
-		state:        int32(Starting),
+		state:        atomic.NewInt32(int32(Starting)),
 		shutdownChan: make(chan struct{}),
 	}, nil
 
@@ -119,7 +119,7 @@ func New(set CollectorSettings) (*Collector, error) {
 
 // GetState returns current state of the collector server.
 func (col *Collector) GetState() State {
-	return State(atomic.LoadInt32(&col.state))
+	return State(col.state.Load())
 }
 
 // GetLogger returns logger used by the Collector.
@@ -284,7 +284,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
-	atomic.StoreInt32(&col.state, int32(state))
+	col.state.Store(int32(state))
 }
 
 func getBallastSize(host component.Host) uint64 {
