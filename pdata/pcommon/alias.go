@@ -19,7 +19,7 @@ package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// ValueType is an alias for internal.ValueType type.
+// ValueType specifies the type of Value.
 type ValueType = internal.ValueType
 
 const (
@@ -33,26 +33,59 @@ const (
 	ValueTypeBytes  = internal.ValueTypeBytes
 )
 
-// Value is an alias for internal.Value struct.
+// Value is a mutable cell containing any value. Typically used as an element of Map or Slice.
+// Must use one of NewValue+ functions below to create new instances.
+//
+// Intended to be passed by value since internally it is just a pointer to actual
+// value representation. For the same reason passing by value and calling setters
+// will modify the original, e.g.:
+//
+//   func f1(val Value) { val.SetIntVal(234) }
+//   func f2() {
+//       v := NewValueString("a string")
+//       f1(v)
+//       _ := v.Type() // this will return ValueTypeInt
+//   }
+//
+// Important: zero-initialized instance is not valid for use. All Value functions below must
+// be called only on instances that are created via NewValue+ functions.
 type Value = internal.Value
 
-// Aliases for functions to create internal.Value.
 var (
-	NewValueEmpty  = internal.NewValueEmpty
+	// NewValueEmpty creates a new Value with an empty value.
+	NewValueEmpty = internal.NewValueEmpty
+
+	// NewValueString creates a new Value with the given string value.
 	NewValueString = internal.NewValueString
-	NewValueInt    = internal.NewValueInt
+
+	// NewValueInt creates a new Value with the given int64 value.
+	NewValueInt = internal.NewValueInt
+
+	// NewValueDouble creates a new Value with the given float64 value.
 	NewValueDouble = internal.NewValueDouble
-	NewValueBool   = internal.NewValueBool
-	NewValueMap    = internal.NewValueMap
-	NewValueSlice  = internal.NewValueSlice
-	NewValueBytes  = internal.NewValueBytes
+
+	// NewValueBool creates a new Value with the given bool value.
+	NewValueBool = internal.NewValueBool
+
+	// NewValueMap creates a new Value of map type.
+	NewValueMap = internal.NewValueMap
+
+	// NewValueSlice creates a new Value of array type.
+	NewValueSlice = internal.NewValueSlice
+
+	// NewValueBytes creates a new Value with the given []byte value.
+	// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+	// across multiple attributes is forbidden.
+	NewValueBytes = internal.NewValueBytes
 )
 
-// Map is an alias for internal.Map struct.
+// Map stores a map of string keys to elements of Value type.
 type Map = internal.Map
 
-// Aliases for functions to create internal.Map.
 var (
-	NewMap        = internal.NewMap
+	// NewMap creates a Map with 0 elements.
+	NewMap = internal.NewMap
+
+	// NewMapFromRaw creates a Map with values from the given map[string]interface{}.
 	NewMapFromRaw = internal.NewMapFromRaw
 )

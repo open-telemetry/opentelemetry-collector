@@ -19,145 +19,306 @@ package pmetric
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// ResourceMetricsSlice is an alias for internal.ResourceMetricsSlice struct.
+// ResourceMetricsSlice logically represents a slice of ResourceMetrics.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewResourceMetricsSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ResourceMetricsSlice = internal.ResourceMetricsSlice
 
-// NewResourceMetricsSlice is an alias for a function to create ResourceMetricsSlice.
+// NewResourceMetricsSlice creates a ResourceMetricsSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewResourceMetricsSlice = internal.NewResourceMetricsSlice
 
-// ResourceMetrics is an alias for internal.ResourceMetrics struct.
+// ResourceMetrics is a collection of metrics from a Resource.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewResourceMetrics function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ResourceMetrics = internal.ResourceMetrics
 
 // NewResourceMetrics is an alias for a function to create a new empty ResourceMetrics.
 var NewResourceMetrics = internal.NewResourceMetrics
 
-// ScopeMetricsSlice is an alias for internal.ScopeMetricsSlice struct.
+// ScopeMetricsSlice logically represents a slice of ScopeMetrics.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewScopeMetricsSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ScopeMetricsSlice = internal.ScopeMetricsSlice
 
-// NewScopeMetricsSlice is an alias for a function to create ScopeMetricsSlice.
+// NewScopeMetricsSlice creates a ScopeMetricsSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewScopeMetricsSlice = internal.NewScopeMetricsSlice
 
-// ScopeMetrics is an alias for internal.ScopeMetrics struct.
+// ScopeMetrics is a collection of metrics from a LibraryInstrumentation.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewScopeMetrics function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ScopeMetrics = internal.ScopeMetrics
 
 // NewScopeMetrics is an alias for a function to create a new empty ScopeMetrics.
 var NewScopeMetrics = internal.NewScopeMetrics
 
-// MetricSlice is an alias for internal.MetricSlice struct.
+// MetricSlice logically represents a slice of Metric.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewMetricSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type MetricSlice = internal.MetricSlice
 
-// NewMetricSlice is an alias for a function to create MetricSlice.
+// NewMetricSlice creates a MetricSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewMetricSlice = internal.NewMetricSlice
 
-// Metric is an alias for internal.Metric struct.
+// Metric represents one metric as a collection of datapoints.
+// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewMetric function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Metric = internal.Metric
 
 // NewMetric is an alias for a function to create a new empty Metric.
 var NewMetric = internal.NewMetric
 
-// Gauge is an alias for internal.Gauge struct.
+// Gauge represents the type of a numeric metric that always exports the "current value" for every data point.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewGauge function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Gauge = internal.Gauge
 
 // NewGauge is an alias for a function to create a new empty Gauge.
 var NewGauge = internal.NewGauge
 
-// Sum is an alias for internal.Sum struct.
+// Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewSum function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Sum = internal.Sum
 
 // NewSum is an alias for a function to create a new empty Sum.
 var NewSum = internal.NewSum
 
-// Histogram is an alias for internal.Histogram struct.
+// Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewHistogram function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Histogram = internal.Histogram
 
 // NewHistogram is an alias for a function to create a new empty Histogram.
 var NewHistogram = internal.NewHistogram
 
-// ExponentialHistogram is an alias for internal.ExponentialHistogram struct.
+// ExponentialHistogram represents the type of a metric that is calculated by aggregating
+// as a ExponentialHistogram of all reported double measurements over a time interval.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewExponentialHistogram function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ExponentialHistogram = internal.ExponentialHistogram
 
 // NewExponentialHistogram is an alias for a function to create a new empty ExponentialHistogram.
 var NewExponentialHistogram = internal.NewExponentialHistogram
 
-// Summary is an alias for internal.Summary struct.
+// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewSummary function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Summary = internal.Summary
 
 // NewSummary is an alias for a function to create a new empty Summary.
 var NewSummary = internal.NewSummary
 
-// NumberDataPointSlice is an alias for internal.NumberDataPointSlice struct.
+// NumberDataPointSlice logically represents a slice of NumberDataPoint.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewNumberDataPointSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type NumberDataPointSlice = internal.NumberDataPointSlice
 
-// NewNumberDataPointSlice is an alias for a function to create NumberDataPointSlice.
+// NewNumberDataPointSlice creates a NumberDataPointSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewNumberDataPointSlice = internal.NewNumberDataPointSlice
 
-// NumberDataPoint is an alias for internal.NumberDataPoint struct.
+// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewNumberDataPoint function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type NumberDataPoint = internal.NumberDataPoint
 
 // NewNumberDataPoint is an alias for a function to create a new empty NumberDataPoint.
 var NewNumberDataPoint = internal.NewNumberDataPoint
 
-// HistogramDataPointSlice is an alias for internal.HistogramDataPointSlice struct.
+// HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewHistogramDataPointSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type HistogramDataPointSlice = internal.HistogramDataPointSlice
 
-// NewHistogramDataPointSlice is an alias for a function to create HistogramDataPointSlice.
+// NewHistogramDataPointSlice creates a HistogramDataPointSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewHistogramDataPointSlice = internal.NewHistogramDataPointSlice
 
-// HistogramDataPoint is an alias for internal.HistogramDataPoint struct.
+// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewHistogramDataPoint function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type HistogramDataPoint = internal.HistogramDataPoint
 
 // NewHistogramDataPoint is an alias for a function to create a new empty HistogramDataPoint.
 var NewHistogramDataPoint = internal.NewHistogramDataPoint
 
-// ExponentialHistogramDataPointSlice is an alias for internal.ExponentialHistogramDataPointSlice struct.
+// ExponentialHistogramDataPointSlice logically represents a slice of ExponentialHistogramDataPoint.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewExponentialHistogramDataPointSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ExponentialHistogramDataPointSlice = internal.ExponentialHistogramDataPointSlice
 
-// NewExponentialHistogramDataPointSlice is an alias for a function to create ExponentialHistogramDataPointSlice.
+// NewExponentialHistogramDataPointSlice creates a ExponentialHistogramDataPointSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewExponentialHistogramDataPointSlice = internal.NewExponentialHistogramDataPointSlice
 
-// ExponentialHistogramDataPoint is an alias for internal.ExponentialHistogramDataPoint struct.
+// ExponentialHistogramDataPoint is a single data point in a timeseries that describes the
+// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
+// summary statistics for a population of values, it may optionally contain the
+// distribution of those values across a set of buckets.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewExponentialHistogramDataPoint function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ExponentialHistogramDataPoint = internal.ExponentialHistogramDataPoint
 
 // NewExponentialHistogramDataPoint is an alias for a function to create a new empty ExponentialHistogramDataPoint.
 var NewExponentialHistogramDataPoint = internal.NewExponentialHistogramDataPoint
 
-// Buckets is an alias for internal.Buckets struct.
+// Buckets are a set of bucket counts, encoded in a contiguous array of counts.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewBuckets function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Buckets = internal.Buckets
 
 // NewBuckets is an alias for a function to create a new empty Buckets.
 var NewBuckets = internal.NewBuckets
 
-// SummaryDataPointSlice is an alias for internal.SummaryDataPointSlice struct.
+// SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewSummaryDataPointSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type SummaryDataPointSlice = internal.SummaryDataPointSlice
 
-// NewSummaryDataPointSlice is an alias for a function to create SummaryDataPointSlice.
+// NewSummaryDataPointSlice creates a SummaryDataPointSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewSummaryDataPointSlice = internal.NewSummaryDataPointSlice
 
-// SummaryDataPoint is an alias for internal.SummaryDataPoint struct.
+// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewSummaryDataPoint function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type SummaryDataPoint = internal.SummaryDataPoint
 
 // NewSummaryDataPoint is an alias for a function to create a new empty SummaryDataPoint.
 var NewSummaryDataPoint = internal.NewSummaryDataPoint
 
-// ValueAtQuantileSlice is an alias for internal.ValueAtQuantileSlice struct.
+// ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewValueAtQuantileSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ValueAtQuantileSlice = internal.ValueAtQuantileSlice
 
-// NewValueAtQuantileSlice is an alias for a function to create ValueAtQuantileSlice.
+// NewValueAtQuantileSlice creates a ValueAtQuantileSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewValueAtQuantileSlice = internal.NewValueAtQuantileSlice
 
-// ValueAtQuantile is an alias for internal.ValueAtQuantile struct.
+// ValueAtQuantile is a quantile value within a Summary data point.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewValueAtQuantile function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ValueAtQuantile = internal.ValueAtQuantile
 
 // NewValueAtQuantile is an alias for a function to create a new empty ValueAtQuantile.
 var NewValueAtQuantile = internal.NewValueAtQuantile
 
-// ExemplarSlice is an alias for internal.ExemplarSlice struct.
+// ExemplarSlice logically represents a slice of Exemplar.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewExemplarSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ExemplarSlice = internal.ExemplarSlice
 
-// NewExemplarSlice is an alias for a function to create ExemplarSlice.
+// NewExemplarSlice creates a ExemplarSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewExemplarSlice = internal.NewExemplarSlice
 
-// Exemplar is an alias for internal.Exemplar struct.
+// Exemplar is a sample input double measurement.
+//
+// Exemplars also hold information about the environment when the measurement was recorded,
+// for example the span and trace ID of the active span when the exemplar was recorded.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewExemplar function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Exemplar = internal.Exemplar
 
 // NewExemplar is an alias for a function to create a new empty Exemplar.
