@@ -262,13 +262,3 @@ func (ot OptionalType) String() string {
 	}
 	return ""
 }
-
-// Deprecated: [v0.48.0] Use ScopeMetrics instead.
-func (ms ResourceMetrics) InstrumentationLibraryMetrics() ScopeMetricsSlice {
-	return ms.ScopeMetrics()
-}
-
-// Deprecated: [v0.48.0] Use Scope instead.
-func (ms ScopeMetrics) InstrumentationLibrary() InstrumentationScope {
-	return ms.Scope()
-}
