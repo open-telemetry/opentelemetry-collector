@@ -66,7 +66,7 @@ func (avt ValueType) String() string {
 	return ""
 }
 
-// Value is a mutable cell containing the value of an attribute. Typically used in Map.
+// Value is a mutable cell containing any value. Typically used as an element of Map or Slice.
 // Must use one of NewValue+ functions below to create new instances.
 //
 // Intended to be passed by value since internally it is just a pointer to actual
@@ -547,7 +547,7 @@ func newAttributeKeyValueBytes(k string, v []byte) otlpcommon.KeyValue {
 	return orig
 }
 
-// Map stores a map of attribute keys to values.
+// Map stores a map of string keys to elements of Value type.
 type Map struct {
 	orig *[]otlpcommon.KeyValue
 }

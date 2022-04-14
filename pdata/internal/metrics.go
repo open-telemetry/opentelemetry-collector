@@ -49,7 +49,7 @@ type Metrics struct {
 	orig *otlpcollectormetrics.ExportMetricsServiceRequest
 }
 
-// NewMetrics creates a new Metrics.
+// NewMetrics creates a new Metrics struct.
 func NewMetrics() Metrics {
 	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
 }

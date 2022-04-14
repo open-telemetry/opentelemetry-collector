@@ -18,13 +18,14 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// Logs is an alias for internal.Logs struct.
+// Logs is the top-level struct that is propagated through the logs pipeline.
+// Use NewLogs to create new instance, zero-initialized instance is not valid for use.
 type Logs = internal.Logs
 
-// NewLogs is an alias for a function to create new Logs.
+// NewLogs creates a new Logs struct.
 var NewLogs = internal.NewLogs
 
-// SeverityNumber is an alias for internal.SeverityNumber type.
+// SeverityNumber represents severity number of a log record.
 type SeverityNumber = internal.SeverityNumber
 
 const (

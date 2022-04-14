@@ -50,7 +50,7 @@ type Traces struct {
 	orig *otlpcollectortrace.ExportTraceServiceRequest
 }
 
-// NewTraces creates a new Traces.
+// NewTraces creates a new Traces struct.
 func NewTraces() Traces {
 	return Traces{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
 }
