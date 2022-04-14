@@ -22,8 +22,8 @@ import (
 	"errors"
 	"strconv"
 	"sync"
-	"sync/atomic"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -83,7 +83,7 @@ type persistentContiguousStorage struct {
 	writeIndex               itemIndex
 	currentlyDispatchedItems []itemIndex
 
-	itemsCount uint64
+	itemsCount *atomic.Uint64
 }
 
 type itemIndex uint64
@@ -118,6 +118,7 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, capac
 		putChan:     make(chan struct{}, capacity),
 		reqChan:     make(chan PersistentRequest),
 		stopChan:    make(chan struct{}),
+		itemsCount:  atomic.NewUint64(0),
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)
@@ -166,7 +167,7 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 		pcs.writeIndex = writeIndex
 	}
 
-	atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
+	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 }
 
 func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []PersistentRequest) {
@@ -213,7 +214,7 @@ func (pcs *persistentContiguousStorage) get() <-chan PersistentRequest {
 
 // size returns the number of currently available items, which were not picked by consumers yet
 func (pcs *persistentContiguousStorage) size() uint64 {
-	return atomic.LoadUint64(&pcs.itemsCount)
+	return pcs.itemsCount.Load()
 }
 
 func (pcs *persistentContiguousStorage) stop() {
@@ -240,7 +241,7 @@ func (pcs *persistentContiguousStorage) put(req PersistentRequest) error {
 
 	itemKey := pcs.itemKey(pcs.writeIndex)
 	pcs.writeIndex++
-	atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
+	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 
 	ctx := context.Background()
 	_, err := newBatch(pcs).setItemIndex(writeIndexKey, pcs.writeIndex).setRequest(itemKey, req).execute(ctx)
@@ -260,7 +261,7 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Persis
 		index := pcs.readIndex
 		// Increase here, so even if errors happen below, it always iterates
 		pcs.readIndex++
-		atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
+		pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 
 		pcs.updateReadIndex(ctx)
 		pcs.itemDispatchingStart(ctx, index)

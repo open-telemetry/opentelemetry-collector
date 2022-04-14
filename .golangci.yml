@@ -95,8 +95,16 @@ linters-settings:
       - kilometre
       - kilometres
 
+  depguard:
+    list-type: denylist
+    include-go-root: true
+    packages-with-error-message:
+      # See https://github.com/open-telemetry/opentelemetry-collector/issues/5200 for rationale
+      - sync/atomic: "Use go.uber.org/atomic instead of sync/atomic"
+
 linters:
   enable:
+    - depguard
     - errcheck
     - exportloopref
     - gocritic
