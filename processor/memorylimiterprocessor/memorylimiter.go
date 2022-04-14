@@ -69,7 +69,7 @@ type memoryLimiter struct {
 	ballastSize  uint64
 
 	// forceDrop is used atomically to indicate when data should be dropped.
-	forceDrop *atomic.Int64
+	forceDrop *atomic.Bool
 
 	ticker *time.Ticker
 
@@ -119,7 +119,7 @@ func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memo
 		ticker:         time.NewTicker(cfg.CheckInterval),
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
-		forceDrop:      atomic.NewInt64(0),
+		forceDrop:      atomic.NewBool(false),
 		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
 			Level:                   set.MetricsLevel,
 			ProcessorID:             cfg.ID(),
@@ -174,7 +174,7 @@ func (ml *memoryLimiter) shutdown(context.Context) error {
 
 func (ml *memoryLimiter) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	numSpans := td.SpanCount()
-	if ml.forcingDrop() {
+	if ml.forceDrop.Load() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
@@ -193,7 +193,7 @@ func (ml *memoryLimiter) processTraces(ctx context.Context, td ptrace.Traces) (p
 
 func (ml *memoryLimiter) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	numDataPoints := md.DataPointCount()
-	if ml.forcingDrop() {
+	if ml.forceDrop.Load() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
@@ -211,7 +211,7 @@ func (ml *memoryLimiter) processMetrics(ctx context.Context, md pmetric.Metrics)
 
 func (ml *memoryLimiter) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	numRecords := ld.LogRecordCount()
-	if ml.forcingDrop() {
+	if ml.forceDrop.Load() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
@@ -260,19 +260,6 @@ func (ml *memoryLimiter) startMonitoring() {
 	}
 }
 
-// forcingDrop indicates when memory resources need to be released.
-func (ml *memoryLimiter) forcingDrop() bool {
-	return ml.forceDrop.Load() != 0
-}
-
-func (ml *memoryLimiter) setForcingDrop(b bool) {
-	var i int64
-	if b {
-		i = 1
-	}
-	ml.forceDrop.Store(i)
-}
-
 func memstatToZapField(ms *runtime.MemStats) zap.Field {
 	return zap.Uint64("cur_mem_mib", ms.Alloc/mibBytes)
 }
@@ -296,7 +283,7 @@ func (ml *memoryLimiter) checkMemLimits() {
 	}
 
 	// Remember current dropping state.
-	wasForcingDrop := ml.forcingDrop()
+	wasForcingDrop := ml.forceDrop.Load()
 
 	// Check if the memory usage is above the soft limit.
 	mustForceDrop := ml.usageChecker.aboveSoftLimit(ms)
@@ -321,7 +308,7 @@ func (ml *memoryLimiter) checkMemLimits() {
 		}
 	}
 
-	ml.setForcingDrop(mustForceDrop)
+	ml.forceDrop.Store(mustForceDrop)
 }
 
 type memUsageChecker struct {
