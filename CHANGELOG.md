@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
