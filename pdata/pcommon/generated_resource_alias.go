@@ -19,7 +19,13 @@ package pcommon
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// Resource is an alias for internal.Resource struct.
+// Resource is a message representing the resource information.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewResource function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Resource = internal.Resource
 
 // NewResource is an alias for a function to create a new empty Resource.

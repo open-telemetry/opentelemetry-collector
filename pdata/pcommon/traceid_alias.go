@@ -16,11 +16,11 @@ package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// TraceID is an alias for internal.TraceID struct.
+// TraceID is a trace identifier.
 type TraceID = internal.TraceID
 
-// InvalidTraceID is an alias for internal.InvalidTraceID function.
+// InvalidTraceID returns an empty (all zero bytes) TraceID.
 var InvalidTraceID = internal.InvalidTraceID
 
-// NewTraceID is an alias for a function to create new TraceID.
+// NewTraceID returns a new TraceID from the given byte array.
 var NewTraceID = internal.NewTraceID

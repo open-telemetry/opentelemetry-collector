@@ -49,7 +49,7 @@ type Logs struct {
 	orig *otlpcollectorlog.ExportLogsServiceRequest
 }
 
-// NewLogs creates a new Logs.
+// NewLogs creates a new Logs struct.
 func NewLogs() Logs {
 	return Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
 }
@@ -88,7 +88,7 @@ func (ld Logs) ResourceLogs() ResourceLogsSlice {
 	return newResourceLogsSlice(&ld.orig.ResourceLogs)
 }
 
-// SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.
+// SeverityNumber represents severity number of a log record.
 type SeverityNumber int32
 
 const (

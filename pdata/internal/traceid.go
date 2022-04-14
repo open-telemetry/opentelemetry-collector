@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
-// TraceID is an alias of OTLP TraceID data type.
+// TraceID is a trace identifier.
 type TraceID struct {
 	orig data.TraceID
 }
