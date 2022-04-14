@@ -59,7 +59,9 @@ func local_request_TraceService_Export_0(ctx context.Context, marshaler runtime.
 	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
+	for key, val := range req.Header {
+		ctx = context.WithValue(ctx, key, val)
+	}
 	msg, err := server.Export(ctx, &protoReq)
 	return msg, metadata, err
 
