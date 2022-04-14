@@ -29,7 +29,7 @@ import (
 // to by calling the nextConsumer.Consume*() function.
 //
 // Error Handling
-// ==============
+//
 // The nextConsumer.Consume*() function may return an error to indicate that the data
 // was not accepted. There are 2 types of possible errors: Permanent and non-Permanent.
 // The receiver must check the type of the error using IsPermanent() helper.
@@ -50,7 +50,7 @@ import (
 // is returned.
 //
 // Acknowledgment Handling
-// =======================
+//
 // The receivers that receive data via a network protocol that support acknowledgments
 // MUST follow this order of operations:
 // - Receive data from some sender (typically from a network).
