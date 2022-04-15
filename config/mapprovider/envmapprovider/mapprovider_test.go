@@ -62,8 +62,8 @@ func TestEnv(t *testing.T) {
 	env := New()
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
-	retMap := config.NewMap()
-	assert.NoError(t, ret.MergeTo(retMap, ""))
+	retMap, err := ret.AsMap()
+	assert.NoError(t, err)
 	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",

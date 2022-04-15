@@ -19,8 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 func TestEmpty(t *testing.T) {
@@ -41,8 +39,8 @@ func TestOneValue(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch::timeout: 2s", nil)
 	assert.NoError(t, err)
-	retMap := config.NewMap()
-	assert.NoError(t, ret.MergeTo(retMap, ""))
+	retMap, err := ret.AsMap()
+	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"processors": map[string]interface{}{
 			"batch": map[string]interface{}{
@@ -57,8 +55,8 @@ func TestNamedComponent(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s", nil)
 	assert.NoError(t, err)
-	retMap := config.NewMap()
-	assert.NoError(t, ret.MergeTo(retMap, ""))
+	retMap, err := ret.AsMap()
+	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"processors": map[string]interface{}{
 			"batch/foo": map[string]interface{}{
@@ -73,8 +71,8 @@ func TestMapEntry(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors: {batch/foo::timeout: 3s, batch::timeout: 2s}", nil)
 	assert.NoError(t, err)
-	retMap := config.NewMap()
-	assert.NoError(t, ret.MergeTo(retMap, ""))
+	retMap, err := ret.AsMap()
+	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"processors": map[string]interface{}{
 			"batch/foo": map[string]interface{}{
@@ -92,8 +90,8 @@ func TestNewLine(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s\nprocessors::batch::timeout: 2s", nil)
 	assert.NoError(t, err)
-	retMap := config.NewMap()
-	assert.NoError(t, ret.MergeTo(retMap, ""))
+	retMap, err := ret.AsMap()
+	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"processors": map[string]interface{}{
 			"batch/foo": map[string]interface{}{
@@ -111,8 +109,8 @@ func TestDotSeparator(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors.batch.timeout: 4s", nil)
 	assert.NoError(t, err)
-	retMap := config.NewMap()
-	assert.NoError(t, ret.MergeTo(retMap, ""))
+	retMap, err := ret.AsMap()
+	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"processors.batch.timeout": "4s"}, retMap.ToStringMap())
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }

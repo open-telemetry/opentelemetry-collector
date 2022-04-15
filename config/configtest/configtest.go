@@ -36,11 +36,7 @@ func LoadConfigMap(fileName string) (*config.Map, error) {
 	if err != nil {
 		return nil, err
 	}
-	retMap := config.NewMap()
-	if err = ret.MergeTo(retMap, ""); err != nil {
-		return nil, err
-	}
-	return retMap, err
+	return ret.AsMap()
 }
 
 // CheckConfigStruct enforces that given configuration object is following the patterns

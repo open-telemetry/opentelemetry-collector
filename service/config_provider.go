@@ -225,7 +225,11 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Map, confi
 		if err != nil {
 			return nil, nil, err
 		}
-		if err = ret.MergeTo(retCfgMap, ""); err != nil {
+		retMap, err := ret.AsMap()
+		if err != nil {
+			return nil, nil, err
+		}
+		if err = retCfgMap.Merge(retMap); err != nil {
 			return nil, nil, err
 		}
 		closers = append(closers, ret.Close)

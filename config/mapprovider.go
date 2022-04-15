@@ -80,14 +80,10 @@ type ChangeEvent struct {
 }
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
-type Retrieved interface {
-	MergeTo(dest *Map, destPath string) error
-	Close(ctx context.Context) error
-}
-
-// mapRetrieved holds the result of a call to the Retrieve method of a Provider object.
-type mapRetrieved struct {
-	cfgMap *Map
+type Retrieved struct {
+	// Deprecated: Use NewRetrievedFromMap to initialize, and Retrieved.MergeTo to access.
+	*Map
+	// Deprecated: Use NewRetrievedFromMap to initialize, and Retrieved.Close to access.
 	CloseFunc
 }
 
@@ -97,24 +93,26 @@ type mapRetrieved struct {
 //   used to retrieve values is no longer in use and should close and release any watchers
 //	 that it may have created.
 func NewRetrievedFromMap(cfgMap *Map, close CloseFunc) Retrieved {
-	return &mapRetrieved{cfgMap: cfgMap, CloseFunc: close}
+	return Retrieved{Map: cfgMap, CloseFunc: close}
 }
 
-func (r *mapRetrieved) MergeTo(dest *Map, destPath string) error {
-	return dest.k.MergeAt(r.cfgMap.k, destPath)
+// AsMap returns the retrieved configuration parsed as a Map.
+func (r Retrieved) AsMap() (*Map, error) {
+	return r.Map, nil
 }
 
-// CloseFunc a function to close and release any watchers that it may have created.
+// Close and release any watchers that MapProvider.Retrieve may have created.
 //
 // Should block until all resources are closed, and guarantee that `onChange` is not
 // going to be called after it returns except when `ctx` is cancelled.
 //
 // Should never be called concurrently with itself.
-type CloseFunc func(context.Context) error
-
-func (f CloseFunc) Close(ctx context.Context) error {
-	if f == nil {
+func (r Retrieved) Close(ctx context.Context) error {
+	if r.CloseFunc == nil {
 		return nil
 	}
-	return f(ctx)
+	return r.CloseFunc(ctx)
 }
+
+// CloseFunc a function equivalent to Retrieved.Close.
+type CloseFunc func(context.Context) error

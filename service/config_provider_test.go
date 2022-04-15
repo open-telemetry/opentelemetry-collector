@@ -44,7 +44,7 @@ type mockProvider struct {
 
 func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher config.WatcherFunc) (config.Retrieved, error) {
 	if m.errR != nil {
-		return nil, m.errR
+		return config.Retrieved{}, m.errR
 	}
 	if m.retM == nil {
 		return config.NewRetrievedFromMap(config.NewMap(), nil), nil
