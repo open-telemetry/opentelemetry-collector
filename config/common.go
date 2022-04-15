@@ -12,17 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configunmarshaler // import "go.opentelemetry.io/collector/config/configunmarshaler"
+package config // import "go.opentelemetry.io/collector/config"
 
-import (
-	"go.opentelemetry.io/collector/internal/configunmarshaler"
-)
+func unmarshal(componentSection *Map, intoCfg interface{}) error {
+	if cu, ok := intoCfg.(Unmarshallable); ok {
+		return cu.Unmarshal(componentSection)
+	}
 
-// Deprecated: [v0.50.0] if you need to update the config.Config implement custom (or wrap) service.ConfigProvider.
-type ConfigUnmarshaler = configunmarshaler.ConfigUnmarshaler
-
-// Deprecated: [v0.50.0] not needed since interface will be removed.
-var NewDefault = configunmarshaler.NewDefault
-
-// Deprecated: [v0.50.0] use config.UnmarshalReceiver.
-var LoadReceiver = configunmarshaler.LoadReceiver
+	return componentSection.UnmarshalExact(intoCfg)
+}

@@ -9,6 +9,7 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate `configunmarshaler` package, move it to internal (#5151)
 - Deprecate all API in `model/semconv`. The package is moved to a new `semcomv` module (#5196)
 
 ### 💡 Enhancements 💡
