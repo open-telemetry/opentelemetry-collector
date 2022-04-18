@@ -57,10 +57,10 @@ func newJSONUnmarshaler() *jsonUnmarshaler {
 }
 
 func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
-	md := &otlpmetrics.MetricsData{}
-	if err := d.delegate.Unmarshal(bytes.NewReader(buf), md); err != nil {
+	md := otlpmetrics.MetricsData{}
+	if err := d.delegate.Unmarshal(bytes.NewReader(buf), &md); err != nil {
 		return Metrics{}, err
 	}
 	otlp.InstrumentationLibraryMetricsToScope(md.ResourceMetrics)
-	return internal.MetricsFromOtlp(md), nil
+	return internal.MetricsFromProto(md), nil
 }

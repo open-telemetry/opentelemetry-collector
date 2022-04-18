@@ -25,6 +25,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 ## Releasing opentelemetry-collector
 
+1. Make sure that there are no open issues with `release:blocker` label in Core or Contrib repo. The release has to be delayed until they are resolved.
+
 1. Make sure the current `main` branch build successfully passes (Core and Contrib).
 
 1. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.45.0` as the version to be released, following `v0.44.0`.
@@ -44,6 +46,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
     * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
 
     * Update the collector version in the manifest used by `make run` to the new release in `./cmd/otelcorecol/builder-config.yaml`.
+
+    * Update the collector version in the `cmd/otelcorecol/main.go`.
     
     * Update the collector version in the `examples/k8s/otel-config.yaml` 
 

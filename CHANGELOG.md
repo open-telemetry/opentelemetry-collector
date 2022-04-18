@@ -4,6 +4,24 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
+- Remove non pdata deprecated funcs/structs (#5220)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `configunmarshaler` package, move it to internal (#5151)
+- Deprecate all API in `model/semconv`. The package is moved to a new `semcomv` module (#5196)
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+- Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
+- `exporterhelper` now properly consumes any remaining items on stop (#5203)
+
+## v0.49.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated structs/funcs from previous versions (#5131)
 - Do not set TraceProvider to global otel (#5138)
 - Remove deprecated funcs from otlpgrpc (#5144)
@@ -20,11 +38,11 @@
   - `model/pdata`, `model/otlp` -> `pdata/pcommon`, `pdata/plog`, `pdata/pmetric`, `pdata/ptrace`
   - `model/otlpgrpc` -> `pdata/plog/plogotlp`, `pdata/pmetric/pmetricotlp`, `pdata/ptrace/ptraceotlp`
 - Deprecate configmapprovider package, replace with mapconverter (#5167)
-- Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` (#4762)
+- Deprecate `service.MustNewConfigProvider` and `service.MustNewDefaultConfigProvider`in favor of `service.NewConfigProvider` (#4936)
 
 ### 💡 Enhancements 💡
 
-- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5190) 
+- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5109) 
 - Add `ObservedTimestamp` field to `pdata.LogRecord` (#5171)
 
 ### 🧰 Bug fixes 🧰

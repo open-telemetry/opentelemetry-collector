@@ -21,11 +21,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -150,10 +150,10 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			defer tq.Stop()
 			t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
 
-			numMessagesConsumed := int32(0)
+			numMessagesConsumed := atomic.NewInt32(0)
 			tq.StartConsumers(c.numConsumers, func(item interface{}) {
 				if item != nil {
-					atomic.AddInt32(&numMessagesConsumed, 1)
+					numMessagesConsumed.Inc()
 				}
 			})
 
@@ -162,7 +162,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			}
 
 			require.Eventually(t, func() bool {
-				return c.numMessagesProduced == int(atomic.LoadInt32(&numMessagesConsumed))
+				return c.numMessagesProduced == int(numMessagesConsumed.Load())
 			}, 5*time.Second, 10*time.Millisecond)
 		})
 	}

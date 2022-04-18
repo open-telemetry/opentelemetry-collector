@@ -16,11 +16,11 @@ package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// SpanID is an alias for internal.SpanID struct.
+// SpanID is span identifier.
 type SpanID = internal.SpanID
 
-// InvalidSpanID is an alias for internal.InvalidSpanID function.
+// InvalidSpanID returns an empty (all zero bytes) SpanID.
 var InvalidSpanID = internal.InvalidSpanID
 
-// NewSpanID is an alias for a function to create new SpanID.
+// NewSpanID returns a new SpanID from the given byte array.
 var NewSpanID = internal.NewSpanID

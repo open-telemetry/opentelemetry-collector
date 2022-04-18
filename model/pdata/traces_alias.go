@@ -86,15 +86,3 @@ const (
 	// Deprecated: [v0.49.0] Use ptrace.StatusCodeError instead.
 	StatusCodeError = ptrace.StatusCodeError
 )
-
-// Deprecated: [v0.48.0] Use ScopeSpansSlice instead.
-type InstrumentationLibrarySpansSlice = ptrace.ScopeSpansSlice
-
-// Deprecated: [v0.48.0] Use NewScopeSpansSlice instead.
-var NewInstrumentationLibrarySpansSlice = ptrace.NewScopeSpansSlice
-
-// Deprecated: [v0.48.0] Use ScopeSpans instead.
-type InstrumentationLibrarySpans = ptrace.ScopeSpans
-
-// Deprecated: [v0.48.0] Use NewScopeSpans instead.
-var NewInstrumentationLibrarySpans = ptrace.NewScopeSpans

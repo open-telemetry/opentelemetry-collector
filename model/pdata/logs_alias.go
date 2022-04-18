@@ -119,15 +119,3 @@ const (
 	// Deprecated: [v0.49.0] Use plog.SeverityNumberFATAL4 instead.
 	SeverityNumberFATAL4 = plog.SeverityNumberFATAL4
 )
-
-// Deprecated: [v0.48.0] Use ScopeLogsSlice instead.
-type InstrumentationLibraryLogsSlice = plog.ScopeLogsSlice
-
-// Deprecated: [v0.48.0] Use NewScopeLogsSlice instead.
-var NewInstrumentationLibraryLogsSlice = plog.NewScopeLogsSlice
-
-// Deprecated: [v0.48.0] Use ScopeLogs instead.
-type InstrumentationLibraryLogs = plog.ScopeLogs
-
-// Deprecated: [v0.48.0] Use NewScopeLogs instead.
-var NewInstrumentationLibraryLogs = plog.NewScopeLogs

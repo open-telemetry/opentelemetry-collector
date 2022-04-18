@@ -34,7 +34,7 @@ var commonFile = &File{
 
 var scope = &messageValueStruct{
 	structName:     "InstrumentationScope",
-	description:    "// Scope is a message representing the instrumentation library information.",
+	description:    "// InstrumentationScope is a message representing the instrumentation scope information.",
 	originFullName: "otlpcommon.InstrumentationScope",
 	fields: []baseField{
 		nameField,
