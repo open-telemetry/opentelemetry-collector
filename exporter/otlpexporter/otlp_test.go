@@ -556,16 +556,16 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	host := componenttest.NewNopHost()
 	assert.NoError(t, exp.Start(context.Background(), host))
 
-	assert.EqualValues(t, 0, atomic.LoadInt32(&rcv.requestCount))
+	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	td := ptrace.NewTraces()
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	assert.Never(t, func() bool {
-		return atomic.LoadInt32(&rcv.requestCount) > 1
+		return rcv.requestCount.Load() > 1
 	}, 1*time.Second, 5*time.Millisecond, "Should not retry if RetryInfo is not included into status details by the server.")
 
-	rcv.requestCount = 0
+	rcv.requestCount.Swap(0)
 
 	st := status.New(codes.ResourceExhausted, "resource exhausted")
 	st, _ = st.WithDetails(&errdetails.RetryInfo{
@@ -576,7 +576,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 
 	assert.Eventually(t, func() bool {
-		return atomic.LoadInt32(&rcv.requestCount) > 1
+		return rcv.requestCount.Load() > 1
 	}, 10*time.Second, 5*time.Millisecond, "Should retry if RetryInfo is included into status details by the server.")
 }
 
