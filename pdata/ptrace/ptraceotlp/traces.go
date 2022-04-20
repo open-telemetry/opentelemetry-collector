@@ -65,6 +65,7 @@ func (tr Response) UnmarshalJSON(data []byte) error {
 }
 
 // Request represents the request for gRPC/HTTP client/server.
+// It's a wrapper for ptrace.Traces data.
 type Request struct {
 	orig *otlpcollectortrace.ExportTraceServiceRequest
 }
@@ -72,6 +73,13 @@ type Request struct {
 // NewRequest returns an empty Request.
 func NewRequest() Request {
 	return Request{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
+}
+
+// NewRequestFromTraces returns a Request from ptrace.Traces.
+// Because Request is a wrapper for ptrace.Traces,
+// any changes to the provided Traces struct will be reflected in the Request and vice versa.
+func NewRequestFromTraces(t ptrace.Traces) Request {
+	return Request{orig: internal.TracesToOtlp(t)}
 }
 
 // MarshalProto marshals Request into proto bytes.
@@ -106,6 +114,7 @@ func (tr Request) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Deprecated: [v0.50.0] Use NewRequestFromTraces instead.
 func (tr Request) SetTraces(td ptrace.Traces) {
 	*tr.orig = *internal.TracesToOtlp(td)
 }

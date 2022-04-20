@@ -48,8 +48,7 @@ func TestExport(t *testing.T) {
 	// Keep trace data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
 	traceData := td.Clone()
-	req := ptraceotlp.NewRequest()
-	req.SetTraces(td)
+	req := ptraceotlp.NewRequestFromTraces(td)
 
 	resp, err := traceClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
@@ -83,8 +82,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	defer traceClientDoneFn()
 
 	td := testdata.GenerateTracesOneSpan()
-	req := ptraceotlp.NewRequest()
-	req.SetTraces(td)
+	req := ptraceotlp.NewRequestFromTraces(td)
 	resp, err := traceClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, ptraceotlp.Response{}, resp)
