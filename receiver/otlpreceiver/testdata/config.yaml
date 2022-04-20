@@ -13,6 +13,14 @@ receivers:
   otlp/only_http:
     protocols:
       http:
+  # The following entry initializes the default OTLP receiver with only http support by setting it explicitly to null.
+  otlp/only_http_null:
+    protocols:
+      http: null
+  # The following entry initializes the default OTLP receiver with only http support by setting it explicitly to an empty map.
+  otlp/only_http_empty_map:
+    protocols:
+      http: {}
   # The following entry demonstrates configuring the common receiver settings:
   # - endpoint
   # This configuration is of type 'otlp' and has the name 'customname' with a full name of 'otlp/customname'
