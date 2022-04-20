@@ -65,6 +65,7 @@ func (lr Response) UnmarshalJSON(data []byte) error {
 }
 
 // Request represents the request for gRPC/HTTP client/server.
+// It's a wrapper for plog.Logs data.
 type Request struct {
 	orig *otlpcollectorlog.ExportLogsServiceRequest
 }
@@ -72,6 +73,13 @@ type Request struct {
 // NewRequest returns an empty Request.
 func NewRequest() Request {
 	return Request{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
+}
+
+// NewRequestFromLogs returns a Request from plog.Logs.
+// Because Request is a wrapper for plog.Logs,
+// any changes to the provided Logs struct will be reflected in the Request and vice versa.
+func NewRequestFromLogs(l plog.Logs) Request {
+	return Request{orig: internal.LogsToOtlp(l)}
 }
 
 // MarshalProto marshals Request into proto bytes.
@@ -106,6 +114,7 @@ func (lr Request) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Deprecated: [v0.50.0] Use NewRequestFromLogs instead.
 func (lr Request) SetLogs(ld plog.Logs) {
 	*lr.orig = *internal.LogsToOtlp(ld)
 }

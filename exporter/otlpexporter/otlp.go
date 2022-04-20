@@ -101,22 +101,19 @@ func (e *exporter) shutdown(context.Context) error {
 }
 
 func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	req := ptraceotlp.NewRequest()
-	req.SetTraces(td)
+	req := ptraceotlp.NewRequestFromTraces(td)
 	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
 func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	req := pmetricotlp.NewRequest()
-	req.SetMetrics(md)
+	req := pmetricotlp.NewRequestFromMetrics(md)
 	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
 func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	req := plogotlp.NewRequest()
-	req.SetLogs(ld)
+	req := plogotlp.NewRequestFromLogs(ld)
 	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }

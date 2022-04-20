@@ -314,10 +314,7 @@ func (f fakeLogsServer) Export(_ context.Context, request Request) (Response, er
 func generateLogsRequest() Request {
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStringVal("test_log_record")
-
-	lr := NewRequest()
-	lr.SetLogs(ld)
-	return lr
+	return NewRequestFromLogs(ld)
 }
 
 func generateLogsRequestWithInstrumentationLibrary() Request {
