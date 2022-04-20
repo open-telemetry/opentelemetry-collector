@@ -6,6 +6,7 @@
 
 - Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
 - Remove non pdata deprecated funcs/structs (#5220)
+- `pmetric.Exemplar.ValueType()` now returns new type `ExemplarValueType` (#5233)
 
 ### 🚩 Deprecations 🚩
 
@@ -15,6 +16,11 @@
   - `plogotlp.Request.SetLogs` func is deprecated in favor of `plogotlp.NewRequestFromLogs`
   - `pmetricotlp.Request.SetMetrics` func is deprecated in favor of `pmetricotlp.NewRequestFromMetrics`
   - `ptraceotlp.Request.SetTraces` func is deprecated in favor of `ptraceotlp.NewRequestFromTraces`
+- `pmetric.NumberDataPoint.ValueType()` now returns new type `NumberDataPointValueType` (#5233)
+  - `pmetric.MetricValueType` is deprecated in favor of `NumberDataPointValueType`
+  - `pmetric.MetricValueTypeNone` is deprecated in favor of `NumberDataPointValueTypeNone`
+  - `pmetric.MetricValueTypeInt` is deprecated in favor of `NumberDataPointValueTypeInt`
+  - `pmetric.MetricValueTypeDouble` is deprecated in favor of `NumberDataPointValueTypeDouble`
 
 ### 💡 Enhancements 💡
 

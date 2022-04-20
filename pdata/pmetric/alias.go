@@ -74,10 +74,34 @@ const (
 )
 
 // MetricValueType specifies the type of NumberDataPoint.
-type MetricValueType = internal.MetricValueType
+// Deprecated: [v0.50.0] Use NumberDataPointValueType or ExemplarValueType instead.
+type MetricValueType = internal.NumberDataPointValueType
 
 const (
-	MetricValueTypeNone   = internal.MetricValueTypeNone
-	MetricValueTypeInt    = internal.MetricValueTypeInt
-	MetricValueTypeDouble = internal.MetricValueTypeDouble
+	// Deprecated: [v0.50.0] Use NumberDataPointValueTypeNone instead.
+	MetricValueTypeNone = internal.NumberDataPointValueTypeNone
+
+	// Deprecated: [v0.50.0] Use NumberDataPointValueTypeInt.
+	MetricValueTypeInt = internal.NumberDataPointValueTypeInt
+
+	// Deprecated: [v0.50.0] Use NumberDataPointValueTypeDouble instead.
+	MetricValueTypeDouble = internal.NumberDataPointValueTypeDouble
+)
+
+// NumberDataPointValueType specifies the type of NumberDataPoint value.
+type NumberDataPointValueType = internal.NumberDataPointValueType
+
+const (
+	NumberDataPointValueTypeNone   = internal.NumberDataPointValueTypeNone
+	NumberDataPointValueTypeInt    = internal.NumberDataPointValueTypeInt
+	NumberDataPointValueTypeDouble = internal.NumberDataPointValueTypeDouble
+)
+
+// ExemplarValueType specifies the type of Exemplar measurement value.
+type ExemplarValueType = internal.ExemplarValueType
+
+const (
+	ExemplarValueTypeNone   = internal.ExemplarValueTypeNone
+	ExemplarValueTypeInt    = internal.ExemplarValueTypeInt
+	ExemplarValueTypeDouble = internal.ExemplarValueTypeDouble
 )

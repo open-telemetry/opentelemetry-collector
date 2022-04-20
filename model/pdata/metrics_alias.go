@@ -103,16 +103,16 @@ const (
 
 // MetricValueType is an alias for pmetric.MetricValueType type.
 // Deprecated: [v0.49.0] Use pmetric.MetricValueType instead.
-type MetricValueType = pmetric.MetricValueType
+type MetricValueType = pmetric.MetricValueType //nolint:staticcheck
 
 const (
 
 	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeNone instead.
-	MetricValueTypeNone = pmetric.MetricValueTypeNone
+	MetricValueTypeNone = pmetric.MetricValueTypeNone //nolint:staticcheck
 
 	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeInt instead.
-	MetricValueTypeInt = pmetric.MetricValueTypeInt
+	MetricValueTypeInt = pmetric.MetricValueTypeInt //nolint:staticcheck
 
 	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeDouble instead.
-	MetricValueTypeDouble = pmetric.MetricValueTypeDouble
+	MetricValueTypeDouble = pmetric.MetricValueTypeDouble //nolint:staticcheck
 )
