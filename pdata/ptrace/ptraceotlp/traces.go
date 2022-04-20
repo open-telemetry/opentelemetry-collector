@@ -77,7 +77,7 @@ func NewRequest() Request {
 
 // NewRequestFromTraces returns a Request from ptrace.Traces.
 // Because Request is a wrapper for ptrace.Traces,
-// any changes to the provided Traces struct will be reflected in the Request and vise versa.
+// any changes to the provided Traces struct will be reflected in the Request and vice versa.
 func NewRequestFromTraces(t ptrace.Traces) Request {
 	return Request{orig: internal.TracesToOtlp(t)}
 }
