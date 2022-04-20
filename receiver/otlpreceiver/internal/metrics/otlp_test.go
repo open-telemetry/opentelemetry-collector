@@ -49,8 +49,7 @@ func TestExport(t *testing.T) {
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
 	metricData := md.Clone()
 
-	req := pmetricotlp.NewRequest()
-	req.SetMetrics(md)
+	req := pmetricotlp.NewRequestFromMetrics(md)
 	resp, err := metricsClient.Export(context.Background(), req)
 
 	require.NoError(t, err, "Failed to export metrics: %v", err)
@@ -85,8 +84,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	defer metricsClientDoneFn()
 
 	md := testdata.GenerateMetricsOneMetric()
-	req := pmetricotlp.NewRequest()
-	req.SetMetrics(md)
+	req := pmetricotlp.NewRequestFromMetrics(md)
 
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")

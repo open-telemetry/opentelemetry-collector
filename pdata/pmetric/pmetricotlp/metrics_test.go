@@ -301,10 +301,7 @@ func generateMetricsRequest() Request {
 	m.SetName("test_metric")
 	m.SetDataType(pmetric.MetricDataTypeGauge)
 	m.Gauge().DataPoints().AppendEmpty()
-
-	mr := NewRequest()
-	mr.SetMetrics(md)
-	return mr
+	return NewRequestFromMetrics(md)
 }
 
 func generateMetricsRequestWithInstrumentationLibrary() Request {

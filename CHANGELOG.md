@@ -11,6 +11,10 @@
 
 - Deprecate `configunmarshaler` package, move it to internal (#5151)
 - Deprecate all API in `model/semconv`. The package is moved to a new `semcomv` module (#5196)
+- Deprecate `p<signal>otlp.Request.Set<Logs|Metrics|Traces>` (#5234)
+  - `plogotlp.Request.SetLogs` func is deprecated in favor of `plogotlp.NewRequestFromLogs`
+  - `pmetricotlp.Request.SetMetrics` func is deprecated in favor of `pmetricotlp.NewRequestFromMetrics`
+  - `ptraceotlp.Request.SetTraces` func is deprecated in favor of `ptraceotlp.NewRequestFromTraces`
 
 ### 💡 Enhancements 💡
 
