@@ -77,7 +77,7 @@ func NewRequest() Request {
 
 // NewRequestFromMetrics returns a Request from pmetric.Metrics.
 // Because Request is a wrapper for pmetric.Metrics,
-// any changes to the provided Metrics struct will be reflected in the Request and vise versa.
+// any changes to the provided Metrics struct will be reflected in the Request and vice versa.
 func NewRequestFromMetrics(m pmetric.Metrics) Request {
 	return Request{orig: internal.MetricsToOtlp(m)}
 }
