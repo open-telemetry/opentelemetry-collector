@@ -77,7 +77,7 @@ func NewRequest() Request {
 
 // NewRequestFromLogs returns a Request from plog.Logs.
 // Because Request is a wrapper for plog.Logs,
-// any changes to the provided Logs struct will be reflected in the Request and vise versa.
+// any changes to the provided Logs struct will be reflected in the Request and vice versa.
 func NewRequestFromLogs(l plog.Logs) Request {
 	return Request{orig: internal.LogsToOtlp(l)}
 }
