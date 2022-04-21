@@ -21,6 +21,7 @@
   - `pmetric.MetricValueTypeNone` is deprecated in favor of `NumberDataPointValueTypeNone`
   - `pmetric.MetricValueTypeInt` is deprecated in favor of `NumberDataPointValueTypeInt`
   - `pmetric.MetricValueTypeDouble` is deprecated in favor of `NumberDataPointValueTypeDouble`
+- Deprecate `plog.LogRecord.SetName()` function (#5230)
 
 ### 💡 Enhancements 💡
 
