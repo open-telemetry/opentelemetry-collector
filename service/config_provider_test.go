@@ -47,12 +47,14 @@ func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher config.Watc
 		return config.Retrieved{}, m.errR
 	}
 	if m.retM == nil {
-		return config.NewRetrievedFromMap(config.NewMap(), nil), nil
+		return config.NewRetrievedFromMap(config.NewMap()), nil
 	}
 	if watcher != nil {
 		watcher(&config.ChangeEvent{Error: m.errW})
 	}
-	return config.NewRetrievedFromMap(m.retM, func(ctx context.Context) error { return m.errC }), nil
+	return config.NewRetrievedFromMap(
+		m.retM,
+		config.WithRetrievedClose(func(ctx context.Context) error { return m.errC })), nil
 }
 
 func (m *mockProvider) Scheme() string {

@@ -87,13 +87,32 @@ type Retrieved struct {
 	CloseFunc
 }
 
+type retrievedSettings struct {
+	closeFunc CloseFunc
+}
+
+// RetrievedOption options to customize Retrieved values.
+type RetrievedOption func(*retrievedSettings)
+
+// WithRetrievedClose overrides the default Retrieved.Close function.
+// The default Retrieved.Close function does nothing and always returns nil.
+func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
+	return func(settings *retrievedSettings) {
+		settings.closeFunc = closeFunc
+	}
+}
+
 // NewRetrievedFromMap returns a new Retrieved instance that contains a Map data.
 // * cfgMap the Map that will be merged to the given map in the MergeTo.
 // * CloseFunc specifies a function to be invoked when the configuration for which it was
 //   used to retrieve values is no longer in use and should close and release any watchers
 //	 that it may have created.
-func NewRetrievedFromMap(cfgMap *Map, close CloseFunc) Retrieved {
-	return Retrieved{Map: cfgMap, CloseFunc: close}
+func NewRetrievedFromMap(cfgMap *Map, opts ...RetrievedOption) Retrieved {
+	set := retrievedSettings{}
+	for _, opt := range opts {
+		opt(&set)
+	}
+	return Retrieved{Map: cfgMap, CloseFunc: set.closeFunc}
 }
 
 // AsMap returns the retrieved configuration parsed as a Map.
