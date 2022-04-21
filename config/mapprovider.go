@@ -81,7 +81,7 @@ type ChangeEvent struct {
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
 type Retrieved struct {
-	// Deprecated: [v0.50.0] Use NewRetrievedFromMap to initialize, and Retrieved.MergeTo to access.
+	// Deprecated: [v0.50.0] Use NewRetrievedFromMap to initialize, and Retrieved.AsMap to access.
 	*Map
 	// Deprecated: [v0.50.0] Use NewRetrievedFromMap to initialize, and Retrieved.Close to access.
 	CloseFunc
