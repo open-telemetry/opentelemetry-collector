@@ -91,11 +91,10 @@ func TestConfigProvider_Errors(t *testing.T) {
 		expectShutdownErr bool
 	}{
 		{
-			name:              "retrieve_err",
-			locations:         []string{"mock:", "not_supported:"},
-			parserProvider:    []config.MapProvider{&mockProvider{}},
-			configUnmarshaler: configunmarshaler.NewDefault(),
-			expectNewErr:      true,
+			name:           "retrieve_err",
+			locations:      []string{"mock:", "not_supported:"},
+			parserProvider: []config.MapProvider{&mockProvider{}},
+			expectNewErr:   true,
 		},
 		{
 			name:      "retrieve_err",
@@ -104,16 +103,14 @@ func TestConfigProvider_Errors(t *testing.T) {
 				&mockProvider{},
 				&mockProvider{scheme: "err", errR: errors.New("retrieve_err")},
 			},
-			configUnmarshaler: configunmarshaler.NewDefault(),
-			expectNewErr:      true,
+			expectNewErr: true,
 		},
 		{
-			name:              "converter_err",
-			locations:         []string{"mock:", filepath.Join("testdata", "otelcol-nop.yaml")},
-			parserProvider:    []config.MapProvider{&mockProvider{}, filemapprovider.New()},
-			cfgMapConverters:  []config.MapConverterFunc{func(context.Context, *config.Map) error { return errors.New("converter_err") }},
-			configUnmarshaler: configunmarshaler.NewDefault(),
-			expectNewErr:      true,
+			name:             "converter_err",
+			locations:        []string{"mock:", filepath.Join("testdata", "otelcol-nop.yaml")},
+			parserProvider:   []config.MapProvider{&mockProvider{}, filemapprovider.New()},
+			cfgMapConverters: []config.MapConverterFunc{func(context.Context, *config.Map) error { return errors.New("converter_err") }},
+			expectNewErr:     true,
 		},
 		{
 			name:              "unmarshal_err",
@@ -123,11 +120,10 @@ func TestConfigProvider_Errors(t *testing.T) {
 			expectNewErr:      true,
 		},
 		{
-			name:              "validation_err",
-			locations:         []string{"mock:", filepath.Join("testdata", "otelcol-invalid.yaml")},
-			parserProvider:    []config.MapProvider{&mockProvider{}, filemapprovider.New()},
-			configUnmarshaler: configunmarshaler.NewDefault(),
-			expectNewErr:      true,
+			name:           "validation_err",
+			locations:      []string{"mock:", filepath.Join("testdata", "otelcol-invalid.yaml")},
+			parserProvider: []config.MapProvider{&mockProvider{}, filemapprovider.New()},
+			expectNewErr:   true,
 		},
 		{
 			name:      "watch_err",
@@ -137,8 +133,7 @@ func TestConfigProvider_Errors(t *testing.T) {
 				require.NoError(t, err)
 				return []config.MapProvider{&mockProvider{}, &mockProvider{scheme: "err", retM: cfgMap, errW: errors.New("watch_err")}}
 			}(),
-			configUnmarshaler: configunmarshaler.NewDefault(),
-			expectWatchErr:    true,
+			expectWatchErr: true,
 		},
 		{
 			name:      "close_err",
@@ -151,7 +146,6 @@ func TestConfigProvider_Errors(t *testing.T) {
 					&mockProvider{scheme: "err", retM: cfgMap, errC: errors.New("close_err")},
 				}
 			}(),
-			configUnmarshaler: configunmarshaler.NewDefault(),
 			expectShutdownErr: true,
 		},
 	}
