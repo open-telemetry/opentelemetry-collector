@@ -144,21 +144,22 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 		return nil, fmt.Errorf("cannot close previous watch: %w", err)
 	}
 
-	ret, err := cm.mergeRetrieve(ctx)
+	retMap, closer, err := cm.mergeRetrieve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
 	}
-	cm.closer = ret.CloseFunc
+
+	cm.closer = closer
 
 	// Apply all converters.
 	for _, cfgMapConv := range cm.configMapConverters {
-		if err = cfgMapConv(ctx, ret.Map); err != nil {
+		if err = cfgMapConv(ctx, retMap); err != nil {
 			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
 		}
 	}
 
 	var cfg *config.Config
-	if cfg, err = cm.configUnmarshaler.Unmarshal(ret.Map, factories); err != nil {
+	if cfg, err = cm.configUnmarshaler.Unmarshal(retMap, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
@@ -203,7 +204,7 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 // https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
 var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
-func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Retrieved, error) {
+func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Map, config.CloseFunc, error) {
 	var closers []config.CloseFunc
 	retCfgMap := config.NewMap()
 	for _, location := range cm.locations {
@@ -218,29 +219,29 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Retrieved,
 		}
 		p, ok := cm.configMapProviders[scheme]
 		if !ok {
-			return nil, fmt.Errorf("scheme %v is not supported for location %v", scheme, location)
+			return nil, nil, fmt.Errorf("scheme %v is not supported for location %v", scheme, location)
 		}
-		retr, err := p.Retrieve(ctx, location, cm.onChange)
+		ret, err := p.Retrieve(ctx, location, cm.onChange)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		if err = retCfgMap.Merge(retr.Map); err != nil {
-			return nil, err
+		retMap, err := ret.AsMap()
+		if err != nil {
+			return nil, nil, err
 		}
-		if retr.CloseFunc != nil {
-			closers = append(closers, retr.CloseFunc)
+		if err = retCfgMap.Merge(retMap); err != nil {
+			return nil, nil, err
 		}
+		closers = append(closers, ret.Close)
 	}
-	return &config.Retrieved{
-		Map: retCfgMap,
-		CloseFunc: func(ctxF context.Context) error {
+	return retCfgMap,
+		func(ctxF context.Context) error {
 			var err error
 			for _, ret := range closers {
 				err = multierr.Append(err, ret(ctxF))
 			}
 			return err
-		},
-	}, nil
+		}, nil
 }
 
 func makeConfigMapProviderMap(providers ...config.MapProvider) map[string]config.MapProvider {
