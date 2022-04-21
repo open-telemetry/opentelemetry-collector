@@ -651,12 +651,14 @@ func (ms LogRecord) SetSeverityNumber(v SeverityNumber) {
 
 // Name returns the name associated with this LogRecord.
 //
-// Deprecated: [v0.48.0] it was removed from the data model.
+// Deprecated: [v0.50.0] it was removed from the data model.
 func (ms LogRecord) Name() string {
 	return (*ms.orig).Name
 }
 
 // SetName replaces the name associated with this LogRecord.
+//
+// Deprecated: [v0.50.0] it was removed from the data model.
 func (ms LogRecord) SetName(v string) {
 	(*ms.orig).Name = v
 }

@@ -49,7 +49,7 @@ ${extraComment}func (ms ${structName}) ${fieldName}() ${returnType} {
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+${extraComment}func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = v
 }`
 
