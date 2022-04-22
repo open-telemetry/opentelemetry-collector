@@ -26,6 +26,8 @@
 
 ### 💡 Enhancements 💡
 
+- Extend config.Map.Unmarshal hook to check map key string to any TextUnmarshaler not only ComponentID (#5244)
+
 ### 🧰 Bug fixes 🧰
 - Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
 - `exporterhelper` now properly consumes any remaining items on stop (#5203)
