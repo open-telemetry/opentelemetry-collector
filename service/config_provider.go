@@ -129,11 +129,16 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 	mapConvertersCopy := make([]config.MapConverterFunc, len(set.MapConverters))
 	copy(mapConvertersCopy, set.MapConverters)
 
+	unmarshaler := set.Unmarshaler
+	if unmarshaler == nil {
+		unmarshaler = configunmarshaler.NewDefault()
+	}
+
 	return &configProvider{
 		locations:           locationsCopy,
 		configMapProviders:  mapProvidersCopy,
 		configMapConverters: mapConvertersCopy,
-		configUnmarshaler:   set.Unmarshaler,
+		configUnmarshaler:   unmarshaler,
 		watcher:             make(chan error, 1),
 	}, nil
 }
