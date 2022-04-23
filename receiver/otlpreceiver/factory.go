@@ -29,6 +29,8 @@ import (
 const (
 	typeStr = "otlp"
 
+	defaultTransport = "tcp"
+
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 	defaultHTTPEndpoint = "0.0.0.0:4318"
 )
@@ -51,13 +53,14 @@ func createDefaultConfig() config.Receiver {
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  defaultGRPCEndpoint,
-					Transport: "tcp",
+					Transport: defaultTransport,
 				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
 			},
 			HTTP: &confighttp.HTTPServerSettings{
 				Endpoint: defaultHTTPEndpoint,
+				Transport: defaultTransport,
 			},
 		},
 	}

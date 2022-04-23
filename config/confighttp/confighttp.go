@@ -203,6 +203,9 @@ type HTTPServerSettings struct {
 	// Endpoint configures the listening address for the server.
 	Endpoint string `mapstructure:"endpoint"`
 
+	// Server Transport config. For transport only "tcp" / "tcp4" / "tcp6" are valid options.
+	Transport string `mapstructure:"transport"`
+
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls, omitempty"`
 
@@ -222,7 +225,7 @@ type HTTPServerSettings struct {
 
 // ToListener creates a net.Listener.
 func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
-	listener, err := net.Listen("tcp", hss.Endpoint)
+	listener, err := net.Listen(hss.Transport, hss.Endpoint)
 	if err != nil {
 		return nil, err
 	}
