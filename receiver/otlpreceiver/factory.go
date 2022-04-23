@@ -59,7 +59,7 @@ func createDefaultConfig() config.Receiver {
 				ReadBufferSize: 512 * 1024,
 			},
 			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPEndpoint,
+				Endpoint:  defaultHTTPEndpoint,
 				Transport: defaultTransport,
 			},
 		},
