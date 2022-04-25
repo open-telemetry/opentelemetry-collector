@@ -11,9 +11,9 @@ require (
 	github.com/klauspost/compress v1.15.1
 	github.com/knadh/koanf v1.4.1
 	github.com/magiconair/properties v1.8.6
-	github.com/mitchellh/mapstructure v1.4.3
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mostynb/go-grpc-compression v1.1.16
-	github.com/prometheus/common v0.33.0
+	github.com/prometheus/common v0.34.0
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil/v3 v3.22.3
 	github.com/spf13/cast v1.4.1
@@ -37,7 +37,7 @@ require (
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
-	google.golang.org/grpc v1.45.0
+	google.golang.org/grpc v1.46.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 )
