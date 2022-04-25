@@ -39,20 +39,15 @@ func main() {
 		_, err = f.WriteString(fp.GenerateTestFile())
 		check(err)
 		check(f.Close())
-		f, err = os.Create("./model/pdata/generated_" + fp.Name + "_alias.go")
-		check(err)
 		fileName := "generated_alias.go"
 		packageName := fp.Name
 		if fp.IsCommon() {
 			fileName = "generated_" + fp.Name + "_alias.go"
 			packageName = "pcommon"
 		}
-		_, err = f.WriteString(fp.GenerateAliasFile("pdata", packageName))
-		check(err)
-		check(f.Close())
 		f, err = os.Create(filepath.Clean("./pdata/" + packageName + "/" + fileName))
 		check(err)
-		_, err = f.WriteString(fp.GenerateAliasFile(packageName, ""))
+		_, err = f.WriteString(fp.GenerateAliasFile(packageName))
 		check(err)
 		check(f.Close())
 	}

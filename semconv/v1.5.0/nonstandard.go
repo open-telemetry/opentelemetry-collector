@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configmapprovider // import "go.opentelemetry.io/collector/config/configmapprovider"
+package semconv // import "go.opentelemetry.io/collector/semconv/v1.5.0"
 
-import (
-	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
-	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
+const (
+	InstrumentationLibraryName    = "otel.library.name"
+	InstrumentationLibraryVersion = "otel.library.version"
 )
 
-// Deprecated: [v0.49.0] use expandmapconverter.New.
-var NewExpandConverter = expandmapconverter.New
-
-// Deprecated: [v0.49.0] use overwritepropertiesmapconverter.New.
-var NewOverwritePropertiesConverter = overwritepropertiesmapconverter.New
+const (
+	OtelStatusCode        = "otel.status_code"
+	OtelStatusDescription = "otel.status_description"
+)

@@ -48,11 +48,11 @@ import (
 	"go.opentelemetry.io/collector/internal/internalconsumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
-	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 )
 
 const otlpReceiverName = "receiver_test"
@@ -991,8 +991,7 @@ loop:
 
 func exportTraces(cc *grpc.ClientConn, td ptrace.Traces) error {
 	acc := ptraceotlp.NewClient(cc)
-	req := ptraceotlp.NewRequest()
-	req.SetTraces(td)
+	req := ptraceotlp.NewRequestFromTraces(td)
 	_, err := acc.Export(context.Background(), req)
 
 	return err

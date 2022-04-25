@@ -22,6 +22,7 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
@@ -51,17 +52,17 @@ func TestLogRecordCount(t *testing.T) {
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, NewLogs().LogRecordCount())
-	assert.Zero(t, Logs{orig: &otlplogs.LogsData{
+	assert.Zero(t, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{{}},
 	}}.LogRecordCount())
-	assert.Zero(t, Logs{orig: &otlplogs.LogsData{
+	assert.Zero(t, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				ScopeLogs: []*otlplogs.ScopeLogs{{}},
 			},
 		},
 	}}.LogRecordCount())
-	assert.Equal(t, 1, Logs{orig: &otlplogs.LogsData{
+	assert.Equal(t, 1, Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				ScopeLogs: []*otlplogs.ScopeLogs{
@@ -74,10 +75,11 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 	}}.LogRecordCount())
 }
 
-func TestToFromLogProto(t *testing.T) {
-	logs := LogsFromOtlp(&otlplogs.LogsData{})
+func TestToFromLogOtlp(t *testing.T) {
+	otlp := &otlpcollectorlog.ExportLogsServiceRequest{}
+	logs := LogsFromOtlp(otlp)
 	assert.EqualValues(t, NewLogs(), logs)
-	assert.EqualValues(t, &otlplogs.LogsData{}, logs.orig)
+	assert.EqualValues(t, otlp, LogsToOtlp(logs))
 }
 
 func TestResourceLogsWireCompatibility(t *testing.T) {

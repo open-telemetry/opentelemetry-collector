@@ -23,6 +23,13 @@ type Extension interface {
 	privateConfigExtension()
 }
 
+// UnmarshalExtension helper function to unmarshal an Extension config.
+// It checks if the config implements Unmarshallable and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalExtension(cfgMap *Map, cfg Extension) error {
+	return unmarshal(cfgMap, cfg)
+}
+
 // ExtensionSettings defines common settings for a component.Extension configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 //

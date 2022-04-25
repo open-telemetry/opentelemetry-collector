@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -66,6 +65,7 @@ func (tr Response) UnmarshalJSON(data []byte) error {
 }
 
 // Request represents the request for gRPC/HTTP client/server.
+// It's a wrapper for ptrace.Traces data.
 type Request struct {
 	orig *otlpcollectortrace.ExportTraceServiceRequest
 }
@@ -73,6 +73,13 @@ type Request struct {
 // NewRequest returns an empty Request.
 func NewRequest() Request {
 	return Request{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
+}
+
+// NewRequestFromTraces returns a Request from ptrace.Traces.
+// Because Request is a wrapper for ptrace.Traces,
+// any changes to the provided Traces struct will be reflected in the Request and vice versa.
+func NewRequestFromTraces(t ptrace.Traces) Request {
+	return Request{orig: internal.TracesToOtlp(t)}
 }
 
 // MarshalProto marshals Request into proto bytes.
@@ -107,12 +114,13 @@ func (tr Request) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Deprecated: [v0.50.0] Use NewRequestFromTraces instead.
 func (tr Request) SetTraces(td ptrace.Traces) {
-	tr.orig.ResourceSpans = internal.TracesToOtlp(td).ResourceSpans
+	*tr.orig = *internal.TracesToOtlp(td)
 }
 
 func (tr Request) Traces() ptrace.Traces {
-	return internal.TracesFromOtlp(&otlptrace.TracesData{ResourceSpans: tr.orig.ResourceSpans})
+	return internal.TracesFromOtlp(tr.orig)
 }
 
 // Client is the client API for OTLP-GRPC Traces service.

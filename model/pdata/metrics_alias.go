@@ -103,28 +103,16 @@ const (
 
 // MetricValueType is an alias for pmetric.MetricValueType type.
 // Deprecated: [v0.49.0] Use pmetric.MetricValueType instead.
-type MetricValueType = pmetric.MetricValueType
+type MetricValueType = pmetric.MetricValueType //nolint:staticcheck
 
 const (
 
 	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeNone instead.
-	MetricValueTypeNone = pmetric.MetricValueTypeNone
+	MetricValueTypeNone = pmetric.MetricValueTypeNone //nolint:staticcheck
 
 	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeInt instead.
-	MetricValueTypeInt = pmetric.MetricValueTypeInt
+	MetricValueTypeInt = pmetric.MetricValueTypeInt //nolint:staticcheck
 
 	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeDouble instead.
-	MetricValueTypeDouble = pmetric.MetricValueTypeDouble
+	MetricValueTypeDouble = pmetric.MetricValueTypeDouble //nolint:staticcheck
 )
-
-// Deprecated: [v0.48.0] Use ScopeMetricsSlice instead.
-type InstrumentationLibraryMetricsSlice = pmetric.ScopeMetricsSlice
-
-// Deprecated: [v0.48.0] Use NewScopeMetricsSlice instead.
-var NewInstrumentationLibraryMetricsSlice = pmetric.NewScopeMetricsSlice
-
-// Deprecated: [v0.48.0] Use ScopeMetrics instead.
-type InstrumentationLibraryMetrics = pmetric.ScopeMetrics
-
-// Deprecated: [v0.48.0] Use NewScopeMetrics instead.
-var NewInstrumentationLibraryMetrics = pmetric.NewScopeMetrics

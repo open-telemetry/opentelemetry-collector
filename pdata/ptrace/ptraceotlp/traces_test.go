@@ -126,6 +126,13 @@ var tracesTransitionData = [][]byte{
 	}`),
 }
 
+func TestRequestToPData(t *testing.T) {
+	tr := NewRequest()
+	assert.Equal(t, tr.Traces().SpanCount(), 0)
+	tr.Traces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	assert.Equal(t, tr.Traces().SpanCount(), 1)
+}
+
 func TestRequestJSON(t *testing.T) {
 	tr := NewRequest()
 	assert.NoError(t, tr.UnmarshalJSON(tracesRequestJSON))
@@ -308,10 +315,7 @@ func (f fakeTracesServer) Export(_ context.Context, request Request) (Response, 
 func generateTracesRequest() Request {
 	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("test_span")
-
-	tr := NewRequest()
-	tr.SetTraces(td)
-	return tr
+	return NewRequestFromTraces(td)
 }
 
 func generateTracesRequestWithInstrumentationLibrary() Request {

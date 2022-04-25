@@ -48,7 +48,7 @@ func (emp *mapProvider) Retrieve(_ context.Context, uri string, _ config.Watcher
 		return config.Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 
-	return config.Retrieved{Map: config.NewMapFromStringMap(data)}, nil
+	return config.NewRetrievedFromMap(config.NewMapFromStringMap(data)), nil
 }
 
 func (*mapProvider) Scheme() string {

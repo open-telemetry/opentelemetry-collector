@@ -15,25 +15,50 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
+	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
+
+// LogsToOtlp internal helper to convert Logs to otlp request representation.
+func LogsToOtlp(mw Logs) *otlpcollectorlog.ExportLogsServiceRequest {
+	return mw.orig
+}
+
+// LogsFromOtlp internal helper to convert otlp request representation to Logs.
+func LogsFromOtlp(orig *otlpcollectorlog.ExportLogsServiceRequest) Logs {
+	return Logs{orig: orig}
+}
+
+// LogsToProto internal helper to convert Logs to protobuf representation.
+func LogsToProto(l Logs) otlplogs.LogsData {
+	return otlplogs.LogsData{
+		ResourceLogs: l.orig.ResourceLogs,
+	}
+}
+
+// LogsFromProto internal helper to convert protobuf representation to Logs.
+func LogsFromProto(orig otlplogs.LogsData) Logs {
+	return Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{
+		ResourceLogs: orig.ResourceLogs,
+	}}
+}
 
 // Logs is the top-level struct that is propagated through the logs pipeline.
 // Use NewLogs to create new instance, zero-initialized instance is not valid for use.
 type Logs struct {
-	orig *otlplogs.LogsData
+	orig *otlpcollectorlog.ExportLogsServiceRequest
 }
 
-// NewLogs creates a new Logs.
+// NewLogs creates a new Logs struct.
 func NewLogs() Logs {
-	return Logs{orig: &otlplogs.LogsData{}}
+	return Logs{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value.
 func (ld Logs) MoveTo(dest Logs) {
 	*dest.orig = *ld.orig
-	*ld.orig = otlplogs.LogsData{}
+	*ld.orig = otlpcollectorlog.ExportLogsServiceRequest{}
 }
 
 // Clone returns a copy of Logs.
@@ -63,7 +88,7 @@ func (ld Logs) ResourceLogs() ResourceLogsSlice {
 	return newResourceLogsSlice(&ld.orig.ResourceLogs)
 }
 
-// SeverityNumber is the public alias of otlplogs.SeverityNumber from internal package.
+// SeverityNumber represents severity number of a log record.
 type SeverityNumber int32
 
 const (
@@ -96,13 +121,3 @@ const (
 
 // String returns the string representation of the SeverityNumber.
 func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }
-
-// Deprecated: [v0.48.0] Use ScopeLogs instead.
-func (ms ResourceLogs) InstrumentationLibraryLogs() ScopeLogsSlice {
-	return ms.ScopeLogs()
-}
-
-// Deprecated: [v0.48.0] Use Scope instead.
-func (ms ScopeLogs) InstrumentationLibrary() InstrumentationScope {
-	return ms.Scope()
-}

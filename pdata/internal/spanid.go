@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
-// SpanID is an alias of OTLP SpanID data type.
+// SpanID is span identifier.
 type SpanID struct {
 	orig data.SpanID
 }

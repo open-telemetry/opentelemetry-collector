@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestNewExpandConverter(t *testing.T) {
@@ -47,12 +47,12 @@ func TestNewExpandConverter(t *testing.T) {
 	t.Setenv("EXTRA_LIST_VALUE_1", valueExtraListElement+"_1")
 	t.Setenv("EXTRA_LIST_VALUE_2", valueExtraListElement+"_2")
 
-	expectedCfgMap, errExpected := loadConfigMap(filepath.Join("testdata", "expand-with-no-env.yaml"))
+	expectedCfgMap, errExpected := configtest.LoadConfigMap(filepath.Join("testdata", "expand-with-no-env.yaml"))
 	require.NoError(t, errExpected, "Unable to get expected config")
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			cfgMap, err := loadConfigMap(filepath.Join("testdata", test.name))
+			cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", test.name))
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
@@ -92,7 +92,7 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 	t.Setenv("MAP_VALUE_2", receiverExtraMapValue)
 
 	// Retrieve the config
-	cfgMap, err := loadConfigMap(filepath.Join("testdata", "expand-escaped-env.yaml"))
+	cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "expand-escaped-env.yaml"))
 	require.NoError(t, err, "Unable to get config")
 
 	expectedMap := map[string]interface{}{
@@ -114,12 +114,4 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 		}}
 	require.NoError(t, New()(context.Background(), cfgMap))
 	assert.Equal(t, expectedMap, cfgMap.ToStringMap())
-}
-
-func loadConfigMap(fileName string) (*config.Map, error) {
-	ret, err := filemapprovider.New().Retrieve(context.Background(), "file:"+fileName, nil)
-	if err != nil {
-		return nil, err
-	}
-	return ret.Map, nil
 }

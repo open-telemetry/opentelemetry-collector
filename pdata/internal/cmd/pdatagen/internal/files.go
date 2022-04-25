@@ -110,22 +110,18 @@ func (f *File) GenerateTestFile() string {
 }
 
 // GenerateFile generates the aliases for data structures for this File.
-func (f *File) GenerateAliasFile(packageName string, deprecatedInFavor string) string {
+func (f *File) GenerateAliasFile(packageName string) string {
 	var sb strings.Builder
 
 	generateHeader(&sb, packageName)
 
 	// Add import
-	imp := "import \"go.opentelemetry.io/collector/pdata/internal\""
-	if packageName == "pdata" {
-		imp = "import \"go.opentelemetry.io/collector/pdata/" + deprecatedInFavor + "\""
-	}
-	sb.WriteString(imp + newLine + newLine)
+	sb.WriteString("import \"go.opentelemetry.io/collector/pdata/internal\"" + newLine + newLine)
 
 	// Write all types and funcs
 	for _, s := range f.structs {
 		if ag, ok := s.(aliasGenerator); ok {
-			ag.generateAlias(&sb, deprecatedInFavor)
+			ag.generateAlias(&sb)
 		}
 	}
 	sb.WriteString(newLine)

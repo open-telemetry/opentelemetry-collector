@@ -19,37 +19,77 @@ package plog
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// ResourceLogsSlice is an alias for internal.ResourceLogsSlice struct.
+// ResourceLogsSlice logically represents a slice of ResourceLogs.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewResourceLogsSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ResourceLogsSlice = internal.ResourceLogsSlice
 
-// NewResourceLogsSlice is an alias for a function to create ResourceLogsSlice.
+// NewResourceLogsSlice creates a ResourceLogsSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewResourceLogsSlice = internal.NewResourceLogsSlice
 
-// ResourceLogs is an alias for internal.ResourceLogs struct.
+// ResourceLogs is a collection of logs from a Resource.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewResourceLogs function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ResourceLogs = internal.ResourceLogs
 
 // NewResourceLogs is an alias for a function to create a new empty ResourceLogs.
 var NewResourceLogs = internal.NewResourceLogs
 
-// ScopeLogsSlice is an alias for internal.ScopeLogsSlice struct.
+// ScopeLogsSlice logically represents a slice of ScopeLogs.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewScopeLogsSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ScopeLogsSlice = internal.ScopeLogsSlice
 
-// NewScopeLogsSlice is an alias for a function to create ScopeLogsSlice.
+// NewScopeLogsSlice creates a ScopeLogsSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewScopeLogsSlice = internal.NewScopeLogsSlice
 
-// ScopeLogs is an alias for internal.ScopeLogs struct.
+// ScopeLogs is a collection of logs from a LibraryInstrumentation.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewScopeLogs function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type ScopeLogs = internal.ScopeLogs
 
 // NewScopeLogs is an alias for a function to create a new empty ScopeLogs.
 var NewScopeLogs = internal.NewScopeLogs
 
-// LogRecordSlice is an alias for internal.LogRecordSlice struct.
+// LogRecordSlice logically represents a slice of LogRecord.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewLogRecordSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type LogRecordSlice = internal.LogRecordSlice
 
-// NewLogRecordSlice is an alias for a function to create LogRecordSlice.
+// NewLogRecordSlice creates a LogRecordSlice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewLogRecordSlice = internal.NewLogRecordSlice
 
-// LogRecord is an alias for internal.LogRecord struct.
+// LogRecord are experimental implementation of OpenTelemetry Log Data Model.
+
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewLogRecord function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type LogRecord = internal.LogRecord
 
 // NewLogRecord is an alias for a function to create a new empty LogRecord.

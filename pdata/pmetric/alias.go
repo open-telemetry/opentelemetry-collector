@@ -16,13 +16,14 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
 import "go.opentelemetry.io/collector/pdata/internal" // This file contains aliases for metric data structures.
 
-// Metrics is an alias for internal.Metrics structure.
+// Metrics is the top-level struct that is propagated through the metrics pipeline.
+// Use NewMetrics to create new instance, zero-initialized instance is not valid for use.
 type Metrics = internal.Metrics
 
-// NewMetrics is an alias for a function to create new Metrics.
+// NewMetrics creates a new Metrics struct.
 var NewMetrics = internal.NewMetrics
 
-// MetricDataType is an alias for internal.MetricDataType type.
+// MetricDataType specifies the type of data in a Metric.
 type MetricDataType = internal.MetricDataType
 
 const (
@@ -34,37 +35,73 @@ const (
 	MetricDataTypeSummary              = internal.MetricDataTypeSummary
 )
 
-// MetricAggregationTemporality is an alias for internal.MetricAggregationTemporality type.
+// MetricAggregationTemporality defines how a metric aggregator reports aggregated values.
+// It describes how those values relate to the time interval over which they are aggregated.
 type MetricAggregationTemporality = internal.MetricAggregationTemporality
 
 const (
+	// MetricAggregationTemporalityUnspecified is the default MetricAggregationTemporality, it MUST NOT be used.
 	MetricAggregationTemporalityUnspecified = internal.MetricAggregationTemporalityUnspecified
-	MetricAggregationTemporalityDelta       = internal.MetricAggregationTemporalityDelta
-	MetricAggregationTemporalityCumulative  = internal.MetricAggregationTemporalityCumulative
+
+	// MetricAggregationTemporalityDelta is a MetricAggregationTemporality for a metric aggregator which reports changes since last report time.
+	MetricAggregationTemporalityDelta = internal.MetricAggregationTemporalityDelta
+
+	// MetricAggregationTemporalityCumulative is a MetricAggregationTemporality for a metric aggregator which reports changes since a fixed start time.
+	MetricAggregationTemporalityCumulative = internal.MetricAggregationTemporalityCumulative
 )
 
-// MetricDataPointFlags is an alias for internal.MetricDataPointFlags type.
+// MetricDataPointFlags defines how a metric aggregator reports aggregated values.
+// It describes how those values relate to the time interval over which they are aggregated.
 type MetricDataPointFlags = internal.MetricDataPointFlags
 
 const (
+	// MetricDataPointFlagsNone is the default MetricDataPointFlags.
 	MetricDataPointFlagsNone = internal.MetricDataPointFlagsNone
 )
 
-// NewMetricDataPointFlags is an alias for a function to create new MetricDataPointFlags.
+// NewMetricDataPointFlags returns a new MetricDataPointFlags combining the flags passed
+// in as parameters.
 var NewMetricDataPointFlags = internal.NewMetricDataPointFlags
 
-// MetricDataPointFlag is an alias for internal.MetricDataPointFlag type.
+// MetricDataPointFlag allow users to configure DataPointFlags. This is achieved via NewMetricDataPointFlags.
+// The separation between MetricDataPointFlags and MetricDataPointFlag exists to prevent users accidentally
+// comparing the value of individual flags with MetricDataPointFlags. Instead, users must use the HasFlag method.
 type MetricDataPointFlag = internal.MetricDataPointFlag
 
 const (
+	// MetricDataPointFlagNoRecordedValue is flag for a metric aggregator which reports changes since last report time.
 	MetricDataPointFlagNoRecordedValue = internal.MetricDataPointFlagNoRecordedValue
 )
 
-// MetricValueType is an alias for internal.MetricValueType type.
-type MetricValueType = internal.MetricValueType
+// MetricValueType specifies the type of NumberDataPoint.
+// Deprecated: [v0.50.0] Use NumberDataPointValueType or ExemplarValueType instead.
+type MetricValueType = internal.NumberDataPointValueType
 
 const (
-	MetricValueTypeNone   = internal.MetricValueTypeNone
-	MetricValueTypeInt    = internal.MetricValueTypeInt
-	MetricValueTypeDouble = internal.MetricValueTypeDouble
+	// Deprecated: [v0.50.0] Use NumberDataPointValueTypeNone instead.
+	MetricValueTypeNone = internal.NumberDataPointValueTypeNone
+
+	// Deprecated: [v0.50.0] Use NumberDataPointValueTypeInt.
+	MetricValueTypeInt = internal.NumberDataPointValueTypeInt
+
+	// Deprecated: [v0.50.0] Use NumberDataPointValueTypeDouble instead.
+	MetricValueTypeDouble = internal.NumberDataPointValueTypeDouble
+)
+
+// NumberDataPointValueType specifies the type of NumberDataPoint value.
+type NumberDataPointValueType = internal.NumberDataPointValueType
+
+const (
+	NumberDataPointValueTypeNone   = internal.NumberDataPointValueTypeNone
+	NumberDataPointValueTypeInt    = internal.NumberDataPointValueTypeInt
+	NumberDataPointValueTypeDouble = internal.NumberDataPointValueTypeDouble
+)
+
+// ExemplarValueType specifies the type of Exemplar measurement value.
+type ExemplarValueType = internal.ExemplarValueType
+
+const (
+	ExemplarValueTypeNone   = internal.ExemplarValueTypeNone
+	ExemplarValueTypeInt    = internal.ExemplarValueTypeInt
+	ExemplarValueTypeDouble = internal.ExemplarValueTypeDouble
 )

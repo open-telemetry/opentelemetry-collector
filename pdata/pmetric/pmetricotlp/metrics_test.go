@@ -110,6 +110,13 @@ var metricsTransitionData = [][]byte{
 		}`),
 }
 
+func TestRequestToPData(t *testing.T) {
+	tr := NewRequest()
+	assert.Equal(t, tr.Metrics().MetricCount(), 0)
+	tr.Metrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	assert.Equal(t, tr.Metrics().MetricCount(), 1)
+}
+
 func TestRequestJSON(t *testing.T) {
 	mr := NewRequest()
 	assert.NoError(t, mr.UnmarshalJSON(metricsRequestJSON))
@@ -294,10 +301,7 @@ func generateMetricsRequest() Request {
 	m.SetName("test_metric")
 	m.SetDataType(pmetric.MetricDataTypeGauge)
 	m.Gauge().DataPoints().AppendEmpty()
-
-	mr := NewRequest()
-	mr.SetMetrics(md)
-	return mr
+	return NewRequestFromMetrics(md)
 }
 
 func generateMetricsRequestWithInstrumentationLibrary() Request {

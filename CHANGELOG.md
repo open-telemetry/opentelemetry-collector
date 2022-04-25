@@ -4,13 +4,34 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
+- Remove non pdata deprecated funcs/structs (#5220)
+- `pmetric.Exemplar.ValueType()` now returns new type `ExemplarValueType` (#5233)
+
 ### 🚩 Deprecations 🚩
 
+- Deprecate `configunmarshaler` package, move it to internal (#5151)
+- Deprecate all API in `model/semconv`. The package is moved to a new `semcomv` module (#5196)
+- Deprecate access to `config.Retrieved` fields, use the newly added funcs to interact with the internal fields (#5198)
+- Deprecate `p<signal>otlp.Request.Set<Logs|Metrics|Traces>` (#5234)
+  - `plogotlp.Request.SetLogs` func is deprecated in favor of `plogotlp.NewRequestFromLogs`
+  - `pmetricotlp.Request.SetMetrics` func is deprecated in favor of `pmetricotlp.NewRequestFromMetrics`
+  - `ptraceotlp.Request.SetTraces` func is deprecated in favor of `ptraceotlp.NewRequestFromTraces`
+- `pmetric.NumberDataPoint.ValueType()` now returns new type `NumberDataPointValueType` (#5233)
+  - `pmetric.MetricValueType` is deprecated in favor of `NumberDataPointValueType`
+  - `pmetric.MetricValueTypeNone` is deprecated in favor of `NumberDataPointValueTypeNone`
+  - `pmetric.MetricValueTypeInt` is deprecated in favor of `NumberDataPointValueTypeInt`
+  - `pmetric.MetricValueTypeDouble` is deprecated in favor of `NumberDataPointValueTypeDouble`
+- Deprecate `plog.LogRecord.SetName()` function (#5230)
 - Deprecate global `featuregate` funcs in favor of `GetRegistry` and a public `Registry` type (#5160)
 
 ### 💡 Enhancements 💡
 
+- Extend config.Map.Unmarshal hook to check map key string to any TextUnmarshaler not only ComponentID (#5244)
+
 ### 🧰 Bug fixes 🧰
+- Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
+- `exporterhelper` now properly consumes any remaining items on stop (#5203)
 
 ## v0.49.0 Beta
 
@@ -23,10 +44,10 @@
 - Do not set MeterProvider to global otel (#5146)
 - Make `InstrumentationLibrary<signal>ToScope` helper functions unexported (#5164)
 - Remove Log's "ShortName" from logging exporter output (#5172)
+- `exporter/otlp`: Retry RESOURCE_EXHAUSTED only if the server returns RetryInfo (#5147)
 
 ### 🚩 Deprecations 🚩
 
-<<<<<<< HEAD
 - All pdata related APIs from model (model/pdata, model/otlp and model/otlpgrpc) are deprecated in
   favor of packages in the new pdata module separated by telemetry signal type (#5168)
   - `model/pdata`, `model/otlp` -> `pdata/pcommon`, `pdata/plog`, `pdata/pmetric`, `pdata/ptrace`

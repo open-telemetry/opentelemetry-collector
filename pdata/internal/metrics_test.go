@@ -22,6 +22,7 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
@@ -42,11 +43,18 @@ func TestMetricDataTypeString(t *testing.T) {
 	assert.Equal(t, "", (MetricDataTypeSummary + 1).String())
 }
 
-func TestPointMetricValueTypeString(t *testing.T) {
-	assert.Equal(t, "None", MetricValueTypeNone.String())
-	assert.Equal(t, "Int", MetricValueTypeInt.String())
-	assert.Equal(t, "Double", MetricValueTypeDouble.String())
-	assert.Equal(t, "", (MetricValueTypeDouble + 1).String())
+func TestNumberDataPointValueTypeString(t *testing.T) {
+	assert.Equal(t, "None", NumberDataPointValueTypeNone.String())
+	assert.Equal(t, "Int", NumberDataPointValueTypeInt.String())
+	assert.Equal(t, "Double", NumberDataPointValueTypeDouble.String())
+	assert.Equal(t, "", (NumberDataPointValueTypeDouble + 1).String())
+}
+
+func TestExemplarValueTypeString(t *testing.T) {
+	assert.Equal(t, "None", ExemplarValueTypeNone.String())
+	assert.Equal(t, "Int", ExemplarValueTypeInt.String())
+	assert.Equal(t, "Double", ExemplarValueTypeDouble.String())
+	assert.Equal(t, "", (ExemplarValueTypeDouble + 1).String())
 }
 
 func TestResourceMetricsWireCompatibility(t *testing.T) {
@@ -226,7 +234,7 @@ func TestMetricsMoveTo(t *testing.T) {
 }
 
 func TestOtlpToInternalReadOnly(t *testing.T) {
-	md := Metrics{orig: &otlpmetrics.MetricsData{
+	md := Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -314,7 +322,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 }
 
 func TestOtlpToFromInternalReadOnly(t *testing.T) {
-	md := MetricsFromOtlp(&otlpmetrics.MetricsData{
+	md := MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -346,7 +354,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	newAttributes := NewMapFromRaw(map[string]interface{}{"k": "v"})
 
-	md := MetricsFromOtlp(&otlpmetrics.MetricsData{
+	md := MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -429,7 +437,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	newAttributes := NewMapFromRaw(map[string]interface{}{"k": "v"})
 
-	md := MetricsFromOtlp(&otlpmetrics.MetricsData{
+	md := MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -514,7 +522,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	newAttributes := NewMapFromRaw(map[string]interface{}{"k": "v"})
 
-	md := MetricsFromOtlp(&otlpmetrics.MetricsData{
+	md := MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -598,7 +606,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	newAttributes := NewMapFromRaw(map[string]interface{}{"k": "v"})
 
-	md := MetricsFromOtlp(&otlpmetrics.MetricsData{
+	md := MetricsFromOtlp(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -707,7 +715,7 @@ func BenchmarkMetricsClone(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
-	req := &otlpmetrics.MetricsData{
+	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -732,7 +740,7 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
-	req := &otlpmetrics.MetricsData{
+	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -758,7 +766,7 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
-	req := &otlpmetrics.MetricsData{
+	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -784,7 +792,7 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 }
 
 func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
-	req := &otlpmetrics.MetricsData{
+	req := &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				Resource: generateTestProtoResource(),
@@ -947,13 +955,13 @@ func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
 }
 
 func generateMetricsEmptyResource() Metrics {
-	return Metrics{orig: &otlpmetrics.MetricsData{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}},
 	}}
 }
 
 func generateMetricsEmptyInstrumentation() Metrics {
-	return Metrics{orig: &otlpmetrics.MetricsData{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{{}},
@@ -963,7 +971,7 @@ func generateMetricsEmptyInstrumentation() Metrics {
 }
 
 func generateMetricsEmptyMetrics() Metrics {
-	return Metrics{orig: &otlpmetrics.MetricsData{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
@@ -977,7 +985,7 @@ func generateMetricsEmptyMetrics() Metrics {
 }
 
 func generateMetricsEmptyDataPoints() Metrics {
-	return Metrics{orig: &otlpmetrics.MetricsData{
+	return Metrics{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
 			{
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{

@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -66,6 +65,7 @@ func (mr Response) UnmarshalJSON(data []byte) error {
 }
 
 // Request represents the request for gRPC/HTTP client/server.
+// It's a wrapper for pmetric.Metrics data.
 type Request struct {
 	orig *otlpcollectormetrics.ExportMetricsServiceRequest
 }
@@ -73,6 +73,13 @@ type Request struct {
 // NewRequest returns an empty Request.
 func NewRequest() Request {
 	return Request{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
+}
+
+// NewRequestFromMetrics returns a Request from pmetric.Metrics.
+// Because Request is a wrapper for pmetric.Metrics,
+// any changes to the provided Metrics struct will be reflected in the Request and vice versa.
+func NewRequestFromMetrics(m pmetric.Metrics) Request {
+	return Request{orig: internal.MetricsToOtlp(m)}
 }
 
 // MarshalProto marshals Request into proto bytes.
@@ -103,12 +110,13 @@ func (mr Request) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Deprecated: [v0.50.0] Use NewRequestFromMetrics instead.
 func (mr Request) SetMetrics(ld pmetric.Metrics) {
-	mr.orig.ResourceMetrics = internal.MetricsToOtlp(ld).ResourceMetrics
+	*mr.orig = *internal.MetricsToOtlp(ld)
 }
 
 func (mr Request) Metrics() pmetric.Metrics {
-	return internal.MetricsFromOtlp(&otlpmetrics.MetricsData{ResourceMetrics: mr.orig.ResourceMetrics})
+	return internal.MetricsFromOtlp(mr.orig)
 }
 
 // Client is the client API for OTLP-GRPC Metrics service.

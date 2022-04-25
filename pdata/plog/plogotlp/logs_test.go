@@ -126,6 +126,13 @@ var logsTransitionData = [][]byte{
 	}`),
 }
 
+func TestRequestToPData(t *testing.T) {
+	tr := NewRequest()
+	assert.Equal(t, tr.Logs().LogRecordCount(), 0)
+	tr.Logs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	assert.Equal(t, tr.Logs().LogRecordCount(), 1)
+}
+
 func TestRequestJSON(t *testing.T) {
 	lr := NewRequest()
 	assert.NoError(t, lr.UnmarshalJSON(logsRequestJSON))
@@ -307,10 +314,7 @@ func (f fakeLogsServer) Export(_ context.Context, request Request) (Response, er
 func generateLogsRequest() Request {
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStringVal("test_log_record")
-
-	lr := NewRequest()
-	lr.SetLogs(ld)
-	return lr
+	return NewRequestFromLogs(ld)
 }
 
 func generateLogsRequestWithInstrumentationLibrary() Request {

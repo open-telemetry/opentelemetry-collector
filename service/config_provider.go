@@ -25,13 +25,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
-	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
+	"go.opentelemetry.io/collector/internal/configunmarshaler"
 )
 
 // ConfigProvider provides the service configuration.
@@ -92,8 +91,9 @@ type ConfigProviderSettings struct {
 	// MapConverters is a slice of config.MapConverterFunc.
 	MapConverters []config.MapConverterFunc
 
-	// The configunmarshaler.ConfigUnmarshaler to be used to unmarshal the config.Map into config.Config.
-	// It is required to not be nil, use configunmarshaler.NewDefault() by default.
+	// Deprecated: [v0.50.0] because providing custom ConfigUnmarshaler is not necessary since users can wrap/implement
+	// ConfigProvider if needed to change the resulted config. This functionality will be kept for at least 2 minor versions,
+	// and if nobody express a need for it will be removed.
 	Unmarshaler configunmarshaler.ConfigUnmarshaler
 }
 
@@ -104,24 +104,6 @@ func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings
 		MapConverters: []config.MapConverterFunc{expandmapconverter.New()},
 		Unmarshaler:   configunmarshaler.NewDefault(),
 	}
-}
-
-// Deprecated: [v0.49.0] use NewConfigProvider instead.
-func MustNewConfigProvider(
-	locations []string,
-	configMapProviders map[string]config.MapProvider,
-	configMapConverters []config.MapConverterFunc,
-	configUnmarshaler configunmarshaler.ConfigUnmarshaler) ConfigProvider {
-	cfgProvider, err := NewConfigProvider(ConfigProviderSettings{
-		Locations:     locations,
-		MapProviders:  configMapProviders,
-		MapConverters: configMapConverters,
-		Unmarshaler:   configUnmarshaler,
-	})
-	if err != nil {
-		panic(err)
-	}
-	return cfgProvider
 }
 
 // NewConfigProvider returns a new ConfigProvider that provides the configuration:
@@ -147,24 +129,18 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 	mapConvertersCopy := make([]config.MapConverterFunc, len(set.MapConverters))
 	copy(mapConvertersCopy, set.MapConverters)
 
+	unmarshaler := set.Unmarshaler
+	if unmarshaler == nil {
+		unmarshaler = configunmarshaler.NewDefault()
+	}
+
 	return &configProvider{
 		locations:           locationsCopy,
 		configMapProviders:  mapProvidersCopy,
 		configMapConverters: mapConvertersCopy,
-		configUnmarshaler:   set.Unmarshaler,
+		configUnmarshaler:   unmarshaler,
 		watcher:             make(chan error, 1),
 	}, nil
-}
-
-// Deprecated: [v0.49.0] use NewConfigProvider instead.
-func MustNewDefaultConfigProvider(locations []string, properties []string) ConfigProvider {
-	set := newDefaultConfigProviderSettings(locations)
-	set.MapConverters = append([]config.MapConverterFunc{overwritepropertiesmapconverter.New(properties)}, set.MapConverters...)
-	cfgProvider, err := NewConfigProvider(set)
-	if err != nil {
-		panic(err)
-	}
-	return cfgProvider
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
@@ -173,21 +149,22 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 		return nil, fmt.Errorf("cannot close previous watch: %w", err)
 	}
 
-	ret, err := cm.mergeRetrieve(ctx)
+	retMap, closer, err := cm.mergeRetrieve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
 	}
-	cm.closer = ret.CloseFunc
+
+	cm.closer = closer
 
 	// Apply all converters.
 	for _, cfgMapConv := range cm.configMapConverters {
-		if err = cfgMapConv(ctx, ret.Map); err != nil {
+		if err = cfgMapConv(ctx, retMap); err != nil {
 			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
 		}
 	}
 
 	var cfg *config.Config
-	if cfg, err = cm.configUnmarshaler.Unmarshal(ret.Map, factories); err != nil {
+	if cfg, err = cm.configUnmarshaler.Unmarshal(retMap, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
@@ -232,7 +209,7 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 // https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
 var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
-func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Retrieved, error) {
+func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Map, config.CloseFunc, error) {
 	var closers []config.CloseFunc
 	retCfgMap := config.NewMap()
 	for _, location := range cm.locations {
@@ -247,29 +224,29 @@ func (cm *configProvider) mergeRetrieve(ctx context.Context) (*config.Retrieved,
 		}
 		p, ok := cm.configMapProviders[scheme]
 		if !ok {
-			return nil, fmt.Errorf("scheme %v is not supported for location %v", scheme, location)
+			return nil, nil, fmt.Errorf("scheme %v is not supported for location %v", scheme, location)
 		}
-		retr, err := p.Retrieve(ctx, location, cm.onChange)
+		ret, err := p.Retrieve(ctx, location, cm.onChange)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		if err = retCfgMap.Merge(retr.Map); err != nil {
-			return nil, err
+		retMap, err := ret.AsMap()
+		if err != nil {
+			return nil, nil, err
 		}
-		if retr.CloseFunc != nil {
-			closers = append(closers, retr.CloseFunc)
+		if err = retCfgMap.Merge(retMap); err != nil {
+			return nil, nil, err
 		}
+		closers = append(closers, ret.Close)
 	}
-	return &config.Retrieved{
-		Map: retCfgMap,
-		CloseFunc: func(ctxF context.Context) error {
+	return retCfgMap,
+		func(ctxF context.Context) error {
 			var err error
 			for _, ret := range closers {
 				err = multierr.Append(err, ret(ctxF))
 			}
 			return err
-		},
-	}, nil
+		}, nil
 }
 
 func makeConfigMapProviderMap(providers ...config.MapProvider) map[string]config.MapProvider {

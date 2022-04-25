@@ -21,7 +21,7 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-// Scope is a message representing the instrumentation library information.
+// InstrumentationScope is a message representing the instrumentation scope information.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.

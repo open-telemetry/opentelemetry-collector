@@ -54,9 +54,9 @@ var allowedBalancerNames = []string{roundrobin.Name, grpc.PickFirstBalancerName}
 // Refer to the original data-structure for the meaning of each parameter:
 // https://godoc.org/google.golang.org/grpc/keepalive#ClientParameters
 type KeepaliveClientConfig struct {
-	Time                time.Duration `mapstructure:"time,omitempty"`
-	Timeout             time.Duration `mapstructure:"timeout,omitempty"`
-	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
+	Time                time.Duration `mapstructure:"time"`
+	Timeout             time.Duration `mapstructure:"timeout"`
+	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
 // GRPCClientSettings defines common settings for a gRPC client configuration.
@@ -70,7 +70,7 @@ type GRPCClientSettings struct {
 	Compression configcompression.CompressionType `mapstructure:"compression"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
 
 	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
@@ -96,32 +96,32 @@ type GRPCClientSettings struct {
 	BalancerName string `mapstructure:"balancer_name"`
 
 	// Auth configuration for outgoing RPCs.
-	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+	Auth *configauth.Authentication `mapstructure:"auth"`
 }
 
 // KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
-	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
-	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
+	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters"`
+	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy"`
 }
 
 // KeepaliveServerParameters allow configuration of the keepalive.ServerParameters.
 // The same default values as keepalive.ServerParameters are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.
 type KeepaliveServerParameters struct {
-	MaxConnectionIdle     time.Duration `mapstructure:"max_connection_idle,omitempty"`
-	MaxConnectionAge      time.Duration `mapstructure:"max_connection_age,omitempty"`
-	MaxConnectionAgeGrace time.Duration `mapstructure:"max_connection_age_grace,omitempty"`
-	Time                  time.Duration `mapstructure:"time,omitempty"`
-	Timeout               time.Duration `mapstructure:"timeout,omitempty"`
+	MaxConnectionIdle     time.Duration `mapstructure:"max_connection_idle"`
+	MaxConnectionAge      time.Duration `mapstructure:"max_connection_age"`
+	MaxConnectionAgeGrace time.Duration `mapstructure:"max_connection_age_grace"`
+	Time                  time.Duration `mapstructure:"time"`
+	Timeout               time.Duration `mapstructure:"timeout"`
 }
 
 // KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
 // The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
 type KeepaliveEnforcementPolicy struct {
-	MinTime             time.Duration `mapstructure:"min_time,omitempty"`
-	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
+	MinTime             time.Duration `mapstructure:"min_time"`
+	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
 }
 
 // GRPCServerSettings defines common settings for a gRPC server configuration.
@@ -131,7 +131,7 @@ type GRPCServerSettings struct {
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
+	TLSSetting *configtls.TLSServerSetting `mapstructure:"tls"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
 	MaxRecvMsgSizeMiB uint64 `mapstructure:"max_recv_msg_size_mib"`
@@ -149,14 +149,14 @@ type GRPCServerSettings struct {
 	WriteBufferSize int `mapstructure:"write_buffer_size"`
 
 	// Keepalive anchor for all the settings related to keepalive.
-	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive,omitempty"`
+	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive"`
 
 	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+	Auth *configauth.Authentication `mapstructure:"auth"`
 
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	// Experimental: *NOTE* this option is subject to change or removal in the future.
-	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
+	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
 // SanitizedEndpoint strips the prefix of either http:// or https:// from configgrpc.GRPCClientSettings.Endpoint.

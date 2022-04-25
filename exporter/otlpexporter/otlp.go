@@ -101,22 +101,19 @@ func (e *exporter) shutdown(context.Context) error {
 }
 
 func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	req := ptraceotlp.NewRequest()
-	req.SetTraces(td)
+	req := ptraceotlp.NewRequestFromTraces(td)
 	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
 func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	req := pmetricotlp.NewRequest()
-	req.SetMetrics(md)
+	req := pmetricotlp.NewRequestFromMetrics(md)
 	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
 func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	req := plogotlp.NewRequest()
-	req.SetLogs(ld)
+	req := plogotlp.NewRequestFromLogs(ld)
 	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
@@ -147,48 +144,59 @@ func processError(err error) error {
 
 	// Now, this is this a real error.
 
-	if !shouldRetry(st.Code()) {
+	retryInfo := getRetryInfo(st)
+
+	if !shouldRetry(st.Code(), retryInfo) {
 		// It is not a retryable error, we should not retry.
 		return consumererror.NewPermanent(err)
 	}
 
-	// Need to retry.
-
 	// Check if server returned throttling information.
-	throttleDuration := getThrottleDuration(st)
+	throttleDuration := getThrottleDuration(retryInfo)
 	if throttleDuration != 0 {
+		// We are throttled. Wait before retrying as requested by the server.
 		return exporterhelper.NewThrottleRetry(err, throttleDuration)
 	}
+
+	// Need to retry.
 
 	return err
 }
 
-func shouldRetry(code codes.Code) bool {
+func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
 	switch code {
 	case codes.Canceled,
 		codes.DeadlineExceeded,
-		codes.ResourceExhausted,
 		codes.Aborted,
 		codes.OutOfRange,
 		codes.Unavailable,
 		codes.DataLoss:
 		// These are retryable errors.
 		return true
+	case codes.ResourceExhausted:
+		// Retry only if RetryInfo was supplied by the server.
+		// This indicates that the server can still recover from resource exhaustion.
+		return retryInfo != nil
 	}
 	// Don't retry on any other code.
 	return false
 }
 
-func getThrottleDuration(status *status.Status) time.Duration {
-	// See if throttling information is available.
+func getRetryInfo(status *status.Status) *errdetails.RetryInfo {
 	for _, detail := range status.Details() {
 		if t, ok := detail.(*errdetails.RetryInfo); ok {
-			if t.RetryDelay.Seconds > 0 || t.RetryDelay.Nanos > 0 {
-				// We are throttled. Wait before retrying as requested by the server.
-				return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
-			}
-			return 0
+			return t
 		}
+	}
+	return nil
+}
+
+func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
+	if t == nil || t.RetryDelay == nil {
+		return 0
+	}
+	if t.RetryDelay.Seconds > 0 || t.RetryDelay.Nanos > 0 {
+		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
 	}
 	return 0
 }

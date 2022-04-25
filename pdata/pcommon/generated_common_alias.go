@@ -19,14 +19,27 @@ package pcommon
 
 import "go.opentelemetry.io/collector/pdata/internal"
 
-// InstrumentationScope is an alias for internal.InstrumentationScope struct.
+// InstrumentationScope is a message representing the instrumentation scope information.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewInstrumentationScope function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type InstrumentationScope = internal.InstrumentationScope
 
 // NewInstrumentationScope is an alias for a function to create a new empty InstrumentationScope.
 var NewInstrumentationScope = internal.NewInstrumentationScope
 
-// Slice is an alias for internal.Slice struct.
+// Slice logically represents a slice of Value.
+//
+// This is a reference type. If passed by value and callee modifies it, the
+// caller will see the modification.
+//
+// Must use NewSlice function to create new instances.
+// Important: zero-initialized instance is not valid for use.
 type Slice = internal.Slice
 
-// NewSlice is an alias for a function to create Slice.
+// NewSlice creates a Slice with 0 elements.
+// Can use "EnsureCapacity" to initialize with a given capacity.
 var NewSlice = internal.NewSlice

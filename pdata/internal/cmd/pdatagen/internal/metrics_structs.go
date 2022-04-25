@@ -242,7 +242,7 @@ var numberDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		&oneOfField{
-			typeName:         "MetricValueType",
+			typeName:         "NumberDataPointValueType",
 			originFieldName:  "Value",
 			originTypePrefix: "otlpmetrics.NumberDataPoint_",
 			testValueIdx:     0, // Double
@@ -412,7 +412,7 @@ var exemplar = &messageValueStruct{
 	fields: []baseField{
 		timeField,
 		&oneOfField{
-			typeName:         "MetricValueType",
+			typeName:         "ExemplarValueType",
 			originFieldName:  "Value",
 			originTypePrefix: "otlpmetrics.Exemplar_",
 			testValueIdx:     1, // Int
