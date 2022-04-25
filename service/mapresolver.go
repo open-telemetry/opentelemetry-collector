@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mapresolver // import "go.opentelemetry.io/collector/service/internal/mapresolver"
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
@@ -25,56 +25,30 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
-	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
-	"go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
-	"go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
 )
 
 // follows drive-letter specification:
 // https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
 var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
-// Settings are the settings to configure the MapResolver.
-type Settings struct {
-	// Locations from where the config.Map is retrieved, and merged in the given order.
-	// It is required to have at least one location.
-	Locations []string
-
-	// MapProviders is a map of pairs <scheme, config.MapProvider>.
-	// It is required to have at least one config.MapProvider.
-	MapProviders map[string]config.MapProvider
-
-	// MapConverters is a slice of config.MapConverterFunc.
-	MapConverters []config.MapConverterFunc
-}
-
-func NewDefaultSettings(locations []string) *Settings {
-	return &Settings{
-		Locations:     locations,
-		MapProviders:  makeMapProvidersMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
-		MapConverters: []config.MapConverterFunc{expandmapconverter.New()},
-	}
-}
-
-// MapResolver resolves a configuration as a config.Map.
-type MapResolver struct {
-	locations           []string
-	configMapProviders  map[string]config.MapProvider
-	configMapConverters []config.MapConverterFunc
+// mapResolver resolves a configuration as a config.Map.
+type mapResolver struct {
+	locations     []string
+	mapProviders  map[string]config.MapProvider
+	mapConverters []config.MapConverterFunc
 
 	sync.Mutex
 	closers []config.CloseFunc
 	watcher chan error
 }
 
-// NewMapResolver returns a new MapResolver that resolves configuration from multiple locations.
+// newMapResolver returns a new mapResolver that resolves configuration from multiple locations.
 //
 // To resolve a configuration the following steps will happen:
 //   1. Retrieves individual configurations from all given "locations", and merge them in the retrieve order.
 //   2. Once the config.Map is merged, apply the converters in the given order.
 //
-// After the configuration was resolved the `MapResolver` can be used as a single point to watch for updates in
+// After the configuration was resolved the `mapResolver` can be used as a single point to watch for updates in
 // the configuration data retrieved via the config providers used to process the "initial" configuration and to generate
 // the "effective" one. The typical usage is the following:
 //
@@ -84,37 +58,37 @@ type MapResolver struct {
 //		mapResolver.Watch() // wait for an event.
 //		// repeat Resolve/Watch cycle until it is time to shut down the Collector process.
 //		mapResolver.Shutdown(ctx)
-func NewMapResolver(set *Settings) (*MapResolver, error) {
-	if len(set.Locations) == 0 {
+func newMapResolver(locations []string, mapProviders map[string]config.MapProvider, mapConverters []config.MapConverterFunc) (*mapResolver, error) {
+	if len(locations) == 0 {
 		return nil, fmt.Errorf("cannot create ConfigProvider: no Locations")
 	}
 
-	if len(set.MapProviders) == 0 {
+	if len(mapProviders) == 0 {
 		return nil, fmt.Errorf("cannot create ConfigProvider: no MapProviders")
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
-	locationsCopy := make([]string, len(set.Locations))
-	copy(locationsCopy, set.Locations)
-	mapProvidersCopy := make(map[string]config.MapProvider, len(set.MapProviders))
-	for k, v := range set.MapProviders {
+	locationsCopy := make([]string, len(locations))
+	copy(locationsCopy, locations)
+	mapProvidersCopy := make(map[string]config.MapProvider, len(mapProviders))
+	for k, v := range mapProviders {
 		mapProvidersCopy[k] = v
 	}
-	mapConvertersCopy := make([]config.MapConverterFunc, len(set.MapConverters))
-	copy(mapConvertersCopy, set.MapConverters)
+	mapConvertersCopy := make([]config.MapConverterFunc, len(mapConverters))
+	copy(mapConvertersCopy, mapConverters)
 
-	return &MapResolver{
-		locations:           locationsCopy,
-		configMapProviders:  mapProvidersCopy,
-		configMapConverters: mapConvertersCopy,
-		watcher:             make(chan error, 1),
+	return &mapResolver{
+		locations:     locationsCopy,
+		mapProviders:  mapProvidersCopy,
+		mapConverters: mapConvertersCopy,
+		watcher:       make(chan error, 1),
 	}, nil
 }
 
 // Resolve returns the configuration as a config.Map, or error otherwise.
 //
 // Should never be called concurrently with itself, Watch or Shutdown.
-func (mr *MapResolver) Resolve(ctx context.Context) (*config.Map, error) {
+func (mr *mapResolver) Resolve(ctx context.Context) (*config.Map, error) {
 	// First check if already an active watching, close that if any.
 	if err := mr.closeIfNeeded(ctx); err != nil {
 		return nil, fmt.Errorf("cannot close previous watch: %w", err)
@@ -132,7 +106,7 @@ func (mr *MapResolver) Resolve(ctx context.Context) (*config.Map, error) {
 		} else {
 			location = scheme + ":" + location
 		}
-		p, ok := mr.configMapProviders[scheme]
+		p, ok := mr.mapProviders[scheme]
 		if !ok {
 			return nil, fmt.Errorf("scheme %v is not supported for location %v", scheme, location)
 		}
@@ -151,7 +125,7 @@ func (mr *MapResolver) Resolve(ctx context.Context) (*config.Map, error) {
 	}
 
 	// Apply the converters in the given order.
-	for _, cfgMapConv := range mr.configMapConverters {
+	for _, cfgMapConv := range mr.mapConverters {
 		if err := cfgMapConv(ctx, retMap); err != nil {
 			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
 		}
@@ -167,7 +141,7 @@ func (mr *MapResolver) Resolve(ctx context.Context) (*config.Map, error) {
 // error indicates that there was a problem with watching the configuration changes.
 //
 // Should never be called concurrently with itself or Get.
-func (mr *MapResolver) Watch() <-chan error {
+func (mr *mapResolver) Watch() <-chan error {
 	return mr.watcher
 }
 
@@ -175,26 +149,26 @@ func (mr *MapResolver) Watch() <-chan error {
 // and release any resources that it may have created. It terminates the Watch channel.
 //
 // Should never be called concurrently with itself or Get.
-func (mr *MapResolver) Shutdown(ctx context.Context) error {
+func (mr *mapResolver) Shutdown(ctx context.Context) error {
 	close(mr.watcher)
 
 	var errs error
 	errs = multierr.Append(errs, mr.closeIfNeeded(ctx))
-	for _, p := range mr.configMapProviders {
+	for _, p := range mr.mapProviders {
 		errs = multierr.Append(errs, p.Shutdown(ctx))
 	}
 
 	return errs
 }
 
-func (mr *MapResolver) onChange(event *config.ChangeEvent) {
+func (mr *mapResolver) onChange(event *config.ChangeEvent) {
 	// TODO: Remove check for configsource.ErrSessionClosed when providers updated to not call onChange when closed.
 	if event.Error != configsource.ErrSessionClosed {
 		mr.watcher <- event.Error
 	}
 }
 
-func (mr *MapResolver) closeIfNeeded(ctx context.Context) error {
+func (mr *mapResolver) closeIfNeeded(ctx context.Context) error {
 	var err error
 	for _, ret := range mr.closers {
 		err = multierr.Append(err, ret(ctx))

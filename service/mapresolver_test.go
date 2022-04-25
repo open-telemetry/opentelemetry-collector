@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mapresolver
+package service
 
 import (
 	"context"
@@ -137,37 +137,31 @@ func TestMapResolver_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := &Settings{
-				Locations:     tt.locations,
-				MapProviders:  makeMapProvidersMap(tt.mapProviders...),
-				MapConverters: tt.mapConverters,
-			}
-
-			cfgW, err := NewMapResolver(set)
+			resolver, err := newMapResolver(tt.locations, makeMapProvidersMap(tt.mapProviders...), tt.mapConverters)
 			assert.NoError(t, err)
 
-			_, errN := cfgW.Resolve(context.Background())
+			_, errN := resolver.Resolve(context.Background())
 			if tt.expectResolveErr {
 				assert.Error(t, errN)
 				return
 			}
 			assert.NoError(t, errN)
 
-			errW := <-cfgW.Watch()
+			errW := <-resolver.Watch()
 			if tt.expectWatchErr {
 				assert.Error(t, errW)
 				return
 			}
 			assert.NoError(t, errW)
 
-			_, errC := cfgW.Resolve(context.Background())
+			_, errC := resolver.Resolve(context.Background())
 			if tt.expectCloseErr {
 				assert.Error(t, errC)
 				return
 			}
 			assert.NoError(t, errN)
 
-			errS := cfgW.Shutdown(context.Background())
+			errS := resolver.Shutdown(context.Background())
 			if tt.expectShutdownErr {
 				assert.Error(t, errS)
 				return
@@ -215,10 +209,9 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		set := NewDefaultSettings([]string{tt.location})
-		provider, err := NewMapResolver(set)
+		resolver, err := newMapResolver([]string{tt.location}, makeMapProvidersMap(filemapprovider.New()), nil)
 		assert.NoError(t, err)
-		_, err = provider.Resolve(context.Background())
+		_, err = resolver.Resolve(context.Background())
 		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
 	}
 }
@@ -230,57 +223,55 @@ func TestMapResolver(t *testing.T) {
 		return &mockProvider{retM: cfgMap}
 	}()
 
-	set := NewDefaultSettings([]string{"mock:"})
-	set.MapProviders[mapProvider.Scheme()] = mapProvider
-	cfgW, err := NewMapResolver(set)
+	resolver, err := newMapResolver([]string{"mock:"}, makeMapProvidersMap(mapProvider), nil)
 	require.NoError(t, err)
-	_, errN := cfgW.Resolve(context.Background())
+	_, errN := resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
 
-	errW := <-cfgW.Watch()
+	errW := <-resolver.Watch()
 	assert.NoError(t, errW)
 
 	// Repeat Resolve/Watch.
 
-	_, errN = cfgW.Resolve(context.Background())
+	_, errN = resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
 
-	errW = <-cfgW.Watch()
+	errW = <-resolver.Watch()
 	assert.NoError(t, errW)
 
-	errC := cfgW.Shutdown(context.Background())
+	errC := resolver.Shutdown(context.Background())
 	assert.NoError(t, errC)
 }
 
 func TestMapResolverNoLocations(t *testing.T) {
-	_, err := NewMapResolver(NewDefaultSettings([]string{}))
+	_, err := newMapResolver([]string{}, makeMapProvidersMap(filemapprovider.New()), nil)
 	assert.Error(t, err)
 }
 
 func TestMapResolverMapProviders(t *testing.T) {
-	set := NewDefaultSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")})
-	set.MapProviders = nil
-	_, err := NewMapResolver(set)
+	_, err := newMapResolver([]string{filepath.Join("testdata", "otelcol-nop.yaml")}, nil, nil)
 	assert.Error(t, err)
 }
 
 func TestMapResolverNoWatcher(t *testing.T) {
 	watcherWG := sync.WaitGroup{}
-	cfgW, err := NewMapResolver(NewDefaultSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	resolver, err := newMapResolver(
+		[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
+		makeMapProvidersMap(filemapprovider.New()), nil)
 	require.NoError(t, err)
-	_, errN := cfgW.Resolve(context.Background())
+	_, errN := resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
 
 	watcherWG.Add(1)
 	go func() {
-		errW, ok := <-cfgW.Watch()
+		errW, ok := <-resolver.Watch()
 		// Channel is closed, no exception
 		assert.False(t, ok)
 		assert.NoError(t, errW)
 		watcherWG.Done()
 	}()
 
-	assert.NoError(t, cfgW.Shutdown(context.Background()))
+	assert.NoError(t, resolver.Shutdown(context.Background()))
 	watcherWG.Wait()
 }
 
@@ -292,25 +283,22 @@ func TestMapResolverShutdownClosesWatch(t *testing.T) {
 		return &mockProvider{retM: cfgMap, errW: configsource.ErrSessionClosed}
 	}()
 
-	set := NewDefaultSettings([]string{"mock:"})
-	set.MapProviders[mapProvider.Scheme()] = mapProvider
-
-	watcherWG := sync.WaitGroup{}
-	cfgW, err := NewMapResolver(set)
-	_, errN := cfgW.Resolve(context.Background())
+	resolver, err := newMapResolver([]string{"mock:"}, makeMapProvidersMap(mapProvider), nil)
+	_, errN := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 
 	assert.NoError(t, errN)
 
+	watcherWG := sync.WaitGroup{}
 	watcherWG.Add(1)
 	go func() {
-		errW, ok := <-cfgW.Watch()
+		errW, ok := <-resolver.Watch()
 		// Channel is closed, no exception
 		assert.False(t, ok)
 		assert.NoError(t, errW)
 		watcherWG.Done()
 	}()
 
-	assert.NoError(t, cfgW.Shutdown(context.Background()))
+	assert.NoError(t, resolver.Shutdown(context.Background()))
 	watcherWG.Wait()
 }

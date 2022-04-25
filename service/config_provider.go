@@ -20,8 +20,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
+	"go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
+	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
+	"go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
 	"go.opentelemetry.io/collector/internal/configunmarshaler"
-	"go.opentelemetry.io/collector/service/internal/mapresolver"
 )
 
 // ConfigProvider provides the service configuration.
@@ -59,7 +62,7 @@ type ConfigProvider interface {
 }
 
 type configProvider struct {
-	mapResolver       *mapresolver.MapResolver
+	mapResolver       *mapResolver
 	configUnmarshaler configunmarshaler.ConfigUnmarshaler
 }
 
@@ -83,11 +86,10 @@ type ConfigProviderSettings struct {
 }
 
 func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings {
-	set := mapresolver.NewDefaultSettings(locations)
 	return ConfigProviderSettings{
-		Locations:     set.Locations,
-		MapProviders:  set.MapProviders,
-		MapConverters: set.MapConverters,
+		Locations:     locations,
+		MapProviders:  makeMapProvidersMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
+		MapConverters: []config.MapConverterFunc{expandmapconverter.New()},
 		Unmarshaler:   configunmarshaler.NewDefault(),
 	}
 }
@@ -98,11 +100,7 @@ func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings
 // 	 * Then applies all the config.MapConverterFunc in the given order.
 // * Then unmarshalls the config.Map into the service Config.
 func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
-	mr, err := mapresolver.NewMapResolver(&mapresolver.Settings{
-		Locations:     set.Locations,
-		MapProviders:  set.MapProviders,
-		MapConverters: set.MapConverters,
-	})
+	mr, err := newMapResolver(set.Locations, set.MapProviders, set.MapConverters)
 	if err != nil {
 		return nil, err
 	}
