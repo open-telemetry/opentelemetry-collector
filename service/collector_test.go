@@ -54,11 +54,6 @@ func TestStateString(t *testing.T) {
 // TestCollector_StartAsGoRoutine must be the first unit test on the file,
 // to test for initialization without setting CLI flags.
 func TestCollector_StartAsGoRoutine(t *testing.T) {
-	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &colTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
@@ -73,6 +68,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -93,7 +89,7 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
-func testCollectorStartHelper(t *testing.T) {
+func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 	var once sync.Once
@@ -123,6 +119,7 @@ func testCollectorStartHelper(t *testing.T) {
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
+		telemetry:      telemetry,
 	})
 	require.NoError(t, err)
 
@@ -156,29 +153,16 @@ func testCollectorStartHelper(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
-// as telemetry instance is initialized only once, we need to reset it before each test so the metrics endpoint can
-// have correct handler spawned
-func resetCollectorTelemetry() {
-	collectorTelemetry = &colTelemetry{}
-}
-
 func TestCollector_Start(t *testing.T) {
-	resetCollectorTelemetry()
-	testCollectorStartHelper(t)
+	testCollectorStartHelper(t, newColTelemetry(featuregate.NewRegistry()))
 }
 
 func TestCollector_StartWithOtelInternalMetrics(t *testing.T) {
-	resetCollectorTelemetry()
-	originalFlag := featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID)
-	defer func() {
-		featuregate.Apply(map[string]bool{
-			useOtelForInternalMetricsfeatureGateID: originalFlag,
-		})
-	}()
-	featuregate.Apply(map[string]bool{
+	colTel := newColTelemetry(featuregate.NewRegistry())
+	colTel.registry.Apply(map[string]bool{
 		useOtelForInternalMetricsfeatureGateID: true,
 	})
-	testCollectorStartHelper(t)
+	testCollectorStartHelper(t, colTel)
 }
 
 // TestCollector_ShutdownNoop verifies that shutdown can be called even if a collector
@@ -206,11 +190,6 @@ func TestCollector_ShutdownNoop(t *testing.T) {
 }
 
 func TestCollector_ShutdownBeforeRun(t *testing.T) {
-	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &colTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
@@ -224,6 +203,7 @@ func TestCollector_ShutdownBeforeRun(t *testing.T) {
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -244,10 +224,6 @@ func TestCollector_ShutdownBeforeRun(t *testing.T) {
 
 // TestCollector_ClosedStateOnStartUpError tests the collector changes it's state to Closed when a startup error occurs
 func TestCollector_ClosedStateOnStartUpError(t *testing.T) {
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &colTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
@@ -262,6 +238,7 @@ func TestCollector_ClosedStateOnStartUpError(t *testing.T) {
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -284,11 +261,6 @@ func (tel *mockColTelemetry) shutdown() error {
 }
 
 func TestCollector_ReportError(t *testing.T) {
-	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &mockColTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
@@ -302,6 +274,7 @@ func TestCollector_ReportError(t *testing.T) {
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
+		telemetry:      &mockColTelemetry{},
 	})
 	require.NoError(t, err)
 
@@ -322,11 +295,6 @@ func TestCollector_ReportError(t *testing.T) {
 
 // TestCollector_ContextCancel tests that the collector gracefully exits on context cancel
 func TestCollector_ContextCancel(t *testing.T) {
-	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &colTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
@@ -341,6 +309,7 @@ func TestCollector_ContextCancel(t *testing.T) {
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
 	}
 	col, err := New(set)
 	require.NoError(t, err)

@@ -103,6 +103,10 @@ func New(set CollectorSettings) (*Collector, error) {
 		return nil, errors.New("invalid nil config provider")
 	}
 
+	if set.telemetry == nil {
+		set.telemetry = collectorTelemetry
+	}
+
 	return &Collector{
 		logger: zap.NewNop(), // Set a Nop logger as a place holder until a logger is created based on configuration
 
@@ -222,7 +226,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	// TODO: This should be part of the service initialization, which should be responsible to create TelemetrySettings.
 	// For the moment happens here, since it needs service.Config and Logger.
 	// It is called once because that is how it is implemented using sync.Once.
-	if err = collectorTelemetry.init(col); err != nil {
+	if err = col.set.telemetry.init(col); err != nil {
 		return err
 	}
 
@@ -272,7 +276,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service: %w", err))
 	}
 
-	if err := collectorTelemetry.shutdown(); err != nil {
+	if err := col.set.telemetry.shutdown(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 

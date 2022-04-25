@@ -23,6 +23,7 @@
   - `pmetric.MetricValueTypeInt` is deprecated in favor of `NumberDataPointValueTypeInt`
   - `pmetric.MetricValueTypeDouble` is deprecated in favor of `NumberDataPointValueTypeDouble`
 - Deprecate `plog.LogRecord.SetName()` function (#5230)
+- Deprecate global `featuregate` funcs in favor of `GetRegistry` and a public `Registry` type (#5160)
 
 ### 💡 Enhancements 💡
 

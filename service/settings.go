@@ -63,4 +63,7 @@ type CollectorSettings struct {
 
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
+
+	// For testing purpose only.
+	telemetry collectorTelemetryExporter
 }
