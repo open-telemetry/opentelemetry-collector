@@ -26,15 +26,15 @@ type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Timeout sets the time after which a batch will be sent regardless of size.
-	Timeout time.Duration `mapstructure:"timeout,omitempty"`
+	Timeout time.Duration `mapstructure:"timeout"`
 
 	// SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
-	SendBatchSize uint32 `mapstructure:"send_batch_size,omitempty"`
+	SendBatchSize uint32 `mapstructure:"send_batch_size"`
 
 	// SendBatchMaxSize is the maximum size of a batch. It must be larger than SendBatchSize.
 	// Larger batches are split into smaller units.
 	// Default value is 0, that means no maximum size.
-	SendBatchMaxSize uint32 `mapstructure:"send_batch_max_size,omitempty"`
+	SendBatchMaxSize uint32 `mapstructure:"send_batch_max_size"`
 }
 
 var _ config.Processor = (*Config)(nil)
