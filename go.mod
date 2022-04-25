@@ -11,7 +11,7 @@ require (
 	github.com/klauspost/compress v1.15.1
 	github.com/knadh/koanf v1.4.1
 	github.com/magiconair/properties v1.8.6
-	github.com/mitchellh/mapstructure v1.4.3
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mostynb/go-grpc-compression v1.1.16
 	github.com/prometheus/common v0.33.0
 	github.com/rs/cors v1.8.2
