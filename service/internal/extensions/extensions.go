@@ -26,14 +26,14 @@ import (
 	"go.opentelemetry.io/collector/service/internal/components"
 )
 
-// builtExporter is an exporter that is built based on a config. It can have
-// a trace and/or a metrics consumer and have a shutdown function.
+// builtExtension is an extension that is built based on a config. It can have
+// a start function and have a shutdown function.
 type builtExtension struct {
 	logger    *zap.Logger
 	extension component.Extension
 }
 
-// Start the receiver.
+// Start the extension.
 func (ext *builtExtension) Start(ctx context.Context, host component.Host) error {
 	ext.logger.Info("Extension is starting...")
 	if err := ext.extension.Start(ctx, components.NewHostWrapper(host, ext.logger)); err != nil {
@@ -43,7 +43,7 @@ func (ext *builtExtension) Start(ctx context.Context, host component.Host) error
 	return nil
 }
 
-// Shutdown the receiver.
+// Shutdown the extension.
 func (ext *builtExtension) Shutdown(ctx context.Context) error {
 	return ext.extension.Shutdown(ctx)
 }
@@ -53,7 +53,7 @@ var _ component.Extension = (*builtExtension)(nil)
 // Extensions is a map of extensions created from extension configs.
 type Extensions map[config.ComponentID]*builtExtension
 
-// StartAll starts all exporters.
+// StartAll starts all extensions.
 func (exts Extensions) StartAll(ctx context.Context, host component.Host) error {
 	for _, ext := range exts {
 		if err := ext.Start(ctx, host); err != nil {
@@ -63,7 +63,7 @@ func (exts Extensions) StartAll(ctx context.Context, host component.Host) error 
 	return nil
 }
 
-// ShutdownAll stops all exporters.
+// ShutdownAll stops all extensions.
 func (exts Extensions) ShutdownAll(ctx context.Context) error {
 	var errs error
 	for _, ext := range exts {
