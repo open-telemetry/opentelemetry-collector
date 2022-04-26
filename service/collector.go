@@ -183,8 +183,7 @@ LOOP:
 			col.logger.Info("Received shutdown request")
 			break LOOP
 		case <-ctx.Done():
-			// Log the error for the context as a string or else zap.Error prints a stack trace.
-			col.logger.Info("Context done, terminating process", zap.String("Context Error", ctx.Err().Error()))
+			col.logger.Info("Context done, terminating process", zap.Error(ctx.Err()))
 
 			// Call shutdown with background context as the passed in context has been canceled
 			return col.shutdown(context.Background())
