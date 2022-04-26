@@ -28,7 +28,7 @@
 ### 💡 Enhancements 💡
 
 - Extend config.Map.Unmarshal hook to check map key string to any TextUnmarshaler not only ComponentID (#5244)
-- Collector will no longer print error with stack trace when the collector is shutdown due to a context cancel. ()
+- Collector will no longer print error with stack trace when the collector is shutdown due to a context cancel. (#5258)
 
 ### 🧰 Bug fixes 🧰
 - Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
