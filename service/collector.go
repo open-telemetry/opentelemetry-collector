@@ -201,11 +201,21 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
+
+	// TODO: hacky workaround to unblock v0.50.0
+	configureGRPCLogging := false
+	if col.logger == nil {
+		configureGRPCLogging = true
+	}
 	if col.logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
 
-	telemetrylogs.SetColGRPCLogger(col.logger, cfg.Service.Telemetry.Logs.Level)
+	// setting the grpc logger multiple times causes
+	// a race condition
+	if configureGRPCLogging {
+		telemetrylogs.SetColGRPCLogger(col.logger, cfg.Service.Telemetry.Logs.Level)
+	}
 
 	col.service, err = newService(&svcSettings{
 		BuildInfo: col.set.BuildInfo,
