@@ -64,6 +64,9 @@ type CollectorSettings struct {
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
 
+	// SkipSettingGRPCLogger avoids setting the grpc logger
+	SkipSettingGRPCLogger bool
+
 	// For testing purpose only.
 	telemetry collectorTelemetryExporter
 }
