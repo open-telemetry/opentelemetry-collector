@@ -34,6 +34,7 @@
 - Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
 - `exporterhelper` now properly consumes any remaining items on stop (#5203)
 - `pdata`: Fix copying of `Value` with `ValueTypeBytes` type (#5267)
+- `pdata`: Fix copying of metric fields of primitive items slice type (#5271)
 
 ## v0.49.0 Beta
 

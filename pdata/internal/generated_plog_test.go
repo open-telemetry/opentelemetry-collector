@@ -145,8 +145,12 @@ func TestResourceLogs_MoveTo(t *testing.T) {
 
 func TestResourceLogs_CopyTo(t *testing.T) {
 	ms := NewResourceLogs()
-	generateTestResourceLogs().CopyTo(ms)
-	assert.EqualValues(t, generateTestResourceLogs(), ms)
+	orig := NewResourceLogs()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestResourceLogs()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestResourceLogs_Resource(t *testing.T) {
@@ -291,8 +295,12 @@ func TestScopeLogs_MoveTo(t *testing.T) {
 
 func TestScopeLogs_CopyTo(t *testing.T) {
 	ms := NewScopeLogs()
-	generateTestScopeLogs().CopyTo(ms)
-	assert.EqualValues(t, generateTestScopeLogs(), ms)
+	orig := NewScopeLogs()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestScopeLogs()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestScopeLogs_Scope(t *testing.T) {
@@ -437,8 +445,12 @@ func TestLogRecord_MoveTo(t *testing.T) {
 
 func TestLogRecord_CopyTo(t *testing.T) {
 	ms := NewLogRecord()
-	generateTestLogRecord().CopyTo(ms)
-	assert.EqualValues(t, generateTestLogRecord(), ms)
+	orig := NewLogRecord()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestLogRecord()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestLogRecord_ObservedTimestamp(t *testing.T) {
