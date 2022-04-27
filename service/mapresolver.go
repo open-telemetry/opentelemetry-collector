@@ -33,7 +33,7 @@ var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
 // mapResolver resolves a configuration as a config.Map.
 type mapResolver struct {
-	locations     []string
+	uris          []string
 	mapProviders  map[string]config.MapProvider
 	mapConverters []config.MapConverterFunc
 
@@ -42,10 +42,10 @@ type mapResolver struct {
 	watcher chan error
 }
 
-// newMapResolver returns a new mapResolver that resolves configuration from multiple locations.
+// newMapResolver returns a new mapResolver that resolves configuration from multiple URIs.
 //
 // To resolve a configuration the following steps will happen:
-//   1. Retrieves individual configurations from all given "locations", and merge them in the retrieve order.
+//   1. Retrieves individual configurations from all given "URIs", and merge them in the retrieve order.
 //   2. Once the config.Map is merged, apply the converters in the given order.
 //
 // After the configuration was resolved the `mapResolver` can be used as a single point to watch for updates in
@@ -58,18 +58,21 @@ type mapResolver struct {
 //		mapResolver.Watch() // wait for an event.
 //		// repeat Resolve/Watch cycle until it is time to shut down the Collector process.
 //		mapResolver.Shutdown(ctx)
-func newMapResolver(locations []string, mapProviders map[string]config.MapProvider, mapConverters []config.MapConverterFunc) (*mapResolver, error) {
-	if len(locations) == 0 {
-		return nil, fmt.Errorf("cannot create ConfigProvider: no Locations")
+//
+// `uri` must follow the "<scheme>:<opaque_data>" format. This format is compatible with the URI definition
+// (see https://datatracker.ietf.org/doc/html/rfc3986). An empty "<scheme>" defaults to "file" schema.
+func newMapResolver(uris []string, mapProviders map[string]config.MapProvider, mapConverters []config.MapConverterFunc) (*mapResolver, error) {
+	if len(uris) == 0 {
+		return nil, fmt.Errorf("invalid map resolver config: no URIs")
 	}
 
 	if len(mapProviders) == 0 {
-		return nil, fmt.Errorf("cannot create ConfigProvider: no MapProviders")
+		return nil, fmt.Errorf("invalid map resolver config: no map providers")
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
-	locationsCopy := make([]string, len(locations))
-	copy(locationsCopy, locations)
+	urisCopy := make([]string, len(uris))
+	copy(urisCopy, uris)
 	mapProvidersCopy := make(map[string]config.MapProvider, len(mapProviders))
 	for k, v := range mapProviders {
 		mapProvidersCopy[k] = v
@@ -78,7 +81,7 @@ func newMapResolver(locations []string, mapProviders map[string]config.MapProvid
 	copy(mapConvertersCopy, mapConverters)
 
 	return &mapResolver{
-		locations:     locationsCopy,
+		uris:          urisCopy,
 		mapProviders:  mapProvidersCopy,
 		mapConverters: mapConvertersCopy,
 		watcher:       make(chan error, 1),
@@ -94,23 +97,23 @@ func (mr *mapResolver) Resolve(ctx context.Context) (*config.Map, error) {
 		return nil, fmt.Errorf("cannot close previous watch: %w", err)
 	}
 
-	// Retrieves individual configurations from all locations in the given order, and merge them in retMap.
+	// Retrieves individual configurations from all URIs in the given order, and merge them in retMap.
 	retMap := config.NewMap()
-	for _, location := range mr.locations {
+	for _, uri := range mr.uris {
 		// For backwards compatibility:
 		// - empty url scheme means "file".
 		// - "^[A-z]:" also means "file"
 		scheme := "file"
-		if idx := strings.Index(location, ":"); idx != -1 && !driverLetterRegexp.MatchString(location) {
-			scheme = location[:idx]
+		if idx := strings.Index(uri, ":"); idx != -1 && !driverLetterRegexp.MatchString(uri) {
+			scheme = uri[:idx]
 		} else {
-			location = scheme + ":" + location
+			uri = scheme + ":" + uri
 		}
 		p, ok := mr.mapProviders[scheme]
 		if !ok {
-			return nil, fmt.Errorf("scheme %v is not supported for location %v", scheme, location)
+			return nil, fmt.Errorf("scheme %q is not supported for uri %q", scheme, uri)
 		}
-		ret, err := p.Retrieve(ctx, location, mr.onChange)
+		ret, err := p.Retrieve(ctx, uri, mr.onChange)
 		if err != nil {
 			return nil, err
 		}
