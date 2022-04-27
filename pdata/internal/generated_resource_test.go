@@ -33,8 +33,12 @@ func TestResource_MoveTo(t *testing.T) {
 
 func TestResource_CopyTo(t *testing.T) {
 	ms := NewResource()
-	generateTestResource().CopyTo(ms)
-	assert.EqualValues(t, generateTestResource(), ms)
+	orig := NewResource()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestResource()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestResource_Attributes(t *testing.T) {

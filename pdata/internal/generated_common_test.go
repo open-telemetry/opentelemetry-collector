@@ -35,8 +35,12 @@ func TestInstrumentationScope_MoveTo(t *testing.T) {
 
 func TestInstrumentationScope_CopyTo(t *testing.T) {
 	ms := NewInstrumentationScope()
-	generateTestInstrumentationScope().CopyTo(ms)
-	assert.EqualValues(t, generateTestInstrumentationScope(), ms)
+	orig := NewInstrumentationScope()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestInstrumentationScope()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestInstrumentationScope_Name(t *testing.T) {

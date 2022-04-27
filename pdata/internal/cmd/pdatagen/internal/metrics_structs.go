@@ -475,20 +475,22 @@ var valueFloat64Field = &primitiveField{
 	testVal:         "float64(17.13)",
 }
 
-var bucketCountsField = &primitiveField{
+var bucketCountsField = &primitiveSliceField{
 	fieldName:       "BucketCounts",
 	originFieldName: "BucketCounts",
 	returnType:      "[]uint64",
 	defaultVal:      "[]uint64(nil)",
 	testVal:         "[]uint64{1, 2, 3}",
+	testItemVal:     "0",
 }
 
-var explicitBoundsField = &primitiveField{
+var explicitBoundsField = &primitiveSliceField{
 	fieldName:       "ExplicitBounds",
 	originFieldName: "ExplicitBounds",
 	returnType:      "[]float64",
 	defaultVal:      "[]float64(nil)",
 	testVal:         "[]float64{1, 2, 3}",
+	testItemVal:     "0",
 }
 
 var quantileField = &primitiveField{
