@@ -39,9 +39,9 @@ func newJSONIterUnmarshaler() *jsonIterUnmarshaler {
 
 func (d *jsonIterUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	td := readTraceData(iter)
 	err := iter.Error
-	jsoniter.ConfigFastest.ReturnIterator(iter)
 	return internal.TracesFromProto(td), err
 }
 
