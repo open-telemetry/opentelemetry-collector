@@ -20,6 +20,9 @@ on:
   # manual execution
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   integration-test:
     name: Integration test

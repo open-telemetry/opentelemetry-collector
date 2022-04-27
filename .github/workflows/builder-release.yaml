@@ -5,8 +5,13 @@ on:
     tags:
       - 'cmd/builder/v*'
 
+permissions:
+  contents: read
+
 jobs:
   goreleaser:
+    permissions:
+      contents: write  # for goreleaser/goreleaser-action to create a GitHub release
     runs-on: ubuntu-20.04
     steps:
       -

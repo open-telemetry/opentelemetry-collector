@@ -8,6 +8,9 @@ on:
     paths-ignore:
       - 'cmd/builder/**'
 
+permissions:
+  contents: read
+
 jobs:
   changedfiles:
     name: changed files
