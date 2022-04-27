@@ -663,6 +663,18 @@ func TestAttributeValue_copyTo(t *testing.T) {
 	assert.EqualValues(t, nil, destVal.Value)
 }
 
+func TestValueBytes_CopyTo(t *testing.T) {
+	orig := NewValueBytes([]byte{1, 2, 3})
+	dest := NewValueEmpty()
+	orig.CopyTo(dest)
+	assert.Equal(t, orig, dest)
+
+	orig.BytesVal()[0] = 10
+	assert.NotEqual(t, orig, dest)
+	assert.Equal(t, []byte{1, 2, 3}, dest.BytesVal())
+	assert.Equal(t, []byte{10, 2, 3}, orig.BytesVal())
+}
+
 func TestMap_Update(t *testing.T) {
 	origWithNil := []otlpcommon.KeyValue{
 		{
