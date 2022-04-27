@@ -330,6 +330,14 @@ func (v Value) copyTo(dest *otlpcommon.AnyValue) {
 		}
 		// Deep copy to dest.
 		newSlice(&ov.ArrayValue.Values).CopyTo(newSlice(&av.ArrayValue.Values))
+	case *otlpcommon.AnyValue_BytesValue:
+		bv, ok := dest.Value.(*otlpcommon.AnyValue_BytesValue)
+		if !ok {
+			bv = &otlpcommon.AnyValue_BytesValue{}
+			dest.Value = bv
+		}
+		bv.BytesValue = make([]byte, len(ov.BytesValue))
+		copy(bv.BytesValue, ov.BytesValue)
 	default:
 		// Primitive immutable type, no need for deep copy.
 		dest.Value = v.orig.Value
