@@ -147,7 +147,7 @@ func (rs *retrySender) send(req request) error {
 		err := rs.nextSender.send(req)
 		if err != nil {
 			rs.logger.Error(
-				"Exporting failed. Try enabling retry_on_failure config option.",
+				"Exporting failed. Try enabling retry_on_failure config option to retry on retryable errors",
 				zap.Error(err),
 			)
 		}
