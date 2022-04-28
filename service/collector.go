@@ -201,11 +201,14 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
+
 	if col.logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
 		return fmt.Errorf("failed to get logger: %w", err)
 	}
 
-	telemetrylogs.SetColGRPCLogger(col.logger, cfg.Service.Telemetry.Logs.Level)
+	if !col.set.SkipSettingGRPCLogger {
+		telemetrylogs.SetColGRPCLogger(col.logger, cfg.Service.Telemetry.Logs.Level)
+	}
 
 	col.service, err = newService(&svcSettings{
 		BuildInfo: col.set.BuildInfo,
