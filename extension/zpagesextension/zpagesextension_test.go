@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -40,7 +39,7 @@ func newZPagesHost() *zpagesHost {
 }
 
 func (*zpagesHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
-	mux.HandleFunc(path.Join(pathPrefix, "tracez"), func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(path.Join(pathPrefix, tracezPath), func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 }
@@ -52,7 +51,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, zap.NewNop())
+	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
@@ -83,7 +82,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 			Endpoint: endpoint,
 		},
 	}
-	zpagesExt := newServer(cfg, zap.NewNop())
+	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.Error(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -96,7 +95,7 @@ func TestZPagesMultipleStarts(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, zap.NewNop())
+	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -113,7 +112,7 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, zap.NewNop())
+	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -128,7 +127,7 @@ func TestZPagesShutdownWithoutStart(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, zap.NewNop())
+	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Shutdown(context.Background()))

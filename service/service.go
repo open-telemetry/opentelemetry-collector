@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/contrib/zpages"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,12 +28,11 @@ import (
 
 // service represents the implementation of a component.Host.
 type service struct {
-	factories           component.Factories
-	buildInfo           component.BuildInfo
-	config              *config.Config
-	telemetry           component.TelemetrySettings
-	zPagesSpanProcessor *zpages.SpanProcessor
-	asyncErrorChannel   chan error
+	factories         component.Factories
+	buildInfo         component.BuildInfo
+	config            *config.Config
+	telemetry         component.TelemetrySettings
+	asyncErrorChannel chan error
 
 	builtExporters  builder.Exporters
 	builtReceivers  builder.Receivers
@@ -44,12 +42,11 @@ type service struct {
 
 func newService(set *svcSettings) (*service, error) {
 	srv := &service{
-		factories:           set.Factories,
-		buildInfo:           set.BuildInfo,
-		config:              set.Config,
-		telemetry:           set.Telemetry,
-		zPagesSpanProcessor: set.ZPagesSpanProcessor,
-		asyncErrorChannel:   set.AsyncErrorChannel,
+		factories:         set.Factories,
+		buildInfo:         set.BuildInfo,
+		config:            set.Config,
+		telemetry:         set.Telemetry,
+		asyncErrorChannel: set.AsyncErrorChannel,
 	}
 
 	var err error

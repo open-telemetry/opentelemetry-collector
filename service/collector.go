@@ -25,7 +25,6 @@ import (
 	"runtime"
 	"syscall"
 
-	"go.opentelemetry.io/contrib/zpages"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/nonrecording"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -80,9 +79,8 @@ type Collector struct {
 	set    CollectorSettings
 	logger *zap.Logger
 
-	tracerProvider      trace.TracerProvider
-	meterProvider       metric.MeterProvider
-	zPagesSpanProcessor *zpages.SpanProcessor
+	tracerProvider trace.TracerProvider
+	meterProvider  metric.MeterProvider
 
 	service *service
 	state   *atomic.Int32
@@ -220,8 +218,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 			MeterProvider:  col.meterProvider,
 			MetricsLevel:   cfg.Telemetry.Metrics.Level,
 		},
-		ZPagesSpanProcessor: col.zPagesSpanProcessor,
-		AsyncErrorChannel:   col.asyncErrorChannel,
+		AsyncErrorChannel: col.asyncErrorChannel,
 	})
 	if err != nil {
 		return err
@@ -244,10 +241,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 // Run starts the collector according to the given configuration given, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
-	col.zPagesSpanProcessor = zpages.NewSpanProcessor()
 	col.tracerProvider = sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(internal.AlwaysRecord()),
-		sdktrace.WithSpanProcessor(col.zPagesSpanProcessor))
+	)
 
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(Closed)
