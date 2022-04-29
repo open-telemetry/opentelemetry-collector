@@ -30,8 +30,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -185,14 +183,7 @@ func TestCollectorFailedShutdown(t *testing.T) {
 func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
-	var once sync.Once
-	loggingHookCalled := false
-	hook := func(entry zapcore.Entry) error {
-		once.Do(func() {
-			loggingHookCalled = true
-		})
-		return nil
-	}
+	telemetryProvider, observed := NewTestTelemetryProvider()
 
 	metricsAddr := testutil.GetAvailableLocalAddress(t)
 	cfgSet := newDefaultConfigProviderSettings([]string{
@@ -211,7 +202,7 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
 		ConfigProvider:    cfgProvider,
-		TelemetryProvider: NewDefaultTelemetryProvider(zap.Hooks(hook)),
+		TelemetryProvider: telemetryProvider,
 		telemetry:         telemetry,
 	})
 	require.NoError(t, err)
@@ -222,7 +213,7 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 		return Running == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 	assert.Equal(t, col.logger, col.GetLogger())
-	assert.True(t, loggingHookCalled)
+	assert.True(t, observed.Len() > 1)
 
 	// All labels added to all collector metrics by default are listed below.
 	// These labels are hard coded here in order to avoid inadvertent changes:

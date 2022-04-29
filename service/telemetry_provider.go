@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/otel/metric/nonrecording"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -40,14 +42,14 @@ var _ TelemetryProvider = (*defaultTelemetryFactory)(nil)
 
 type defaultTelemetryFactory struct {
 	zPagesSpanProcessor *zpages.SpanProcessor
+	skipGRPCLogger      bool
 	loggingOptions      []zap.Option
 }
 
-// NewDefaultTelemetryProvider creates the default telemetry provider.
-func NewDefaultTelemetryProvider(loggingOptions ...zap.Option) TelemetryProvider {
+// NewDefaultTelemetryProvider creates the default telemetry provider
+func NewDefaultTelemetryProvider() TelemetryProvider {
 	return &defaultTelemetryFactory{
 		zPagesSpanProcessor: zpages.NewSpanProcessor(),
-		loggingOptions:      loggingOptions,
 	}
 }
 
@@ -58,7 +60,9 @@ func (t *defaultTelemetryFactory) SetupTelemetry(cfg config.ServiceTelemetry) (s
 		return component.TelemetrySettings{}, fmt.Errorf("failed to get logger: %w", err)
 	}
 
-	telemetrylogs.SetColGRPCLogger(set.Logger, cfg.Logs.Level)
+	if !t.skipGRPCLogger {
+		telemetrylogs.SetColGRPCLogger(set.Logger, cfg.Logs.Level)
+	}
 
 	set.TracerProvider = sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(internal.AlwaysRecord()),
@@ -73,4 +77,18 @@ func (t *defaultTelemetryFactory) SetupTelemetry(cfg config.ServiceTelemetry) (s
 // ZPages implements the TelemetryProvider interface.
 func (t *defaultTelemetryFactory) ZPages() *zpages.SpanProcessor {
 	return t.zPagesSpanProcessor
+}
+
+// NewTestTelemetryProvider creates a telemetry provider for use in tests.
+// It provides an observer.ObservedLogs to test logging behavior.
+func NewTestTelemetryProvider() (TelemetryProvider, *observer.ObservedLogs) {
+	testCore, observed := observer.New(zapcore.DebugLevel)
+	return &defaultTelemetryFactory{
+		skipGRPCLogger: true,
+		loggingOptions: []zap.Option{zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			// tee output both to usual core and to a test core that allows for observing logs.
+			return zapcore.NewTee(core, testCore)
+		})},
+		zPagesSpanProcessor: zpages.NewSpanProcessor(),
+	}, observed
 }
