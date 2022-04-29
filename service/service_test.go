@@ -38,20 +38,20 @@ func TestService_GetFactory(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	assert.Nil(t, srv.GetFactory(component.KindReceiver, "wrongtype"))
-	assert.Equal(t, factories.Receivers["nop"], srv.GetFactory(component.KindReceiver, "nop"))
+	assert.Nil(t, srv.host.GetFactory(component.KindReceiver, "wrongtype"))
+	assert.Equal(t, factories.Receivers["nop"], srv.host.GetFactory(component.KindReceiver, "nop"))
 
-	assert.Nil(t, srv.GetFactory(component.KindProcessor, "wrongtype"))
-	assert.Equal(t, factories.Processors["nop"], srv.GetFactory(component.KindProcessor, "nop"))
+	assert.Nil(t, srv.host.GetFactory(component.KindProcessor, "wrongtype"))
+	assert.Equal(t, factories.Processors["nop"], srv.host.GetFactory(component.KindProcessor, "nop"))
 
-	assert.Nil(t, srv.GetFactory(component.KindExporter, "wrongtype"))
-	assert.Equal(t, factories.Exporters["nop"], srv.GetFactory(component.KindExporter, "nop"))
+	assert.Nil(t, srv.host.GetFactory(component.KindExporter, "wrongtype"))
+	assert.Equal(t, factories.Exporters["nop"], srv.host.GetFactory(component.KindExporter, "nop"))
 
-	assert.Nil(t, srv.GetFactory(component.KindExtension, "wrongtype"))
-	assert.Equal(t, factories.Extensions["nop"], srv.GetFactory(component.KindExtension, "nop"))
+	assert.Nil(t, srv.host.GetFactory(component.KindExtension, "wrongtype"))
+	assert.Equal(t, factories.Extensions["nop"], srv.host.GetFactory(component.KindExtension, "nop"))
 
 	// Try retrieve non existing component.Kind.
-	assert.Nil(t, srv.GetFactory(42, "nop"))
+	assert.Nil(t, srv.host.GetFactory(42, "nop"))
 }
 
 func TestService_GetExtensions(t *testing.T) {
@@ -64,7 +64,7 @@ func TestService_GetExtensions(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	extMap := srv.GetExtensions()
+	extMap := srv.host.GetExtensions()
 
 	assert.Len(t, extMap, 1)
 	assert.Contains(t, extMap, config.NewComponentID("nop"))
@@ -80,7 +80,7 @@ func TestService_GetExporters(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	expMap := srv.GetExporters()
+	expMap := srv.host.GetExporters()
 	assert.Len(t, expMap, 3)
 	assert.Len(t, expMap[config.TracesDataType], 1)
 	assert.Contains(t, expMap[config.TracesDataType], config.NewComponentID("nop"))

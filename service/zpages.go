@@ -40,17 +40,17 @@ const (
 	zExtensionName = "zextensionname"
 )
 
-func (srv *service) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
-	mux.Handle(path.Join(pathPrefix, tracezPath), otelzpages.NewTracezHandler(srv.zPagesSpanProcessor))
-	mux.HandleFunc(path.Join(pathPrefix, servicezPath), srv.handleServicezRequest)
-	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), srv.handlePipelinezRequest)
+func (host *serviceHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
+	mux.Handle(path.Join(pathPrefix, tracezPath), otelzpages.NewTracezHandler(host.zPagesSpanProcessor))
+	mux.HandleFunc(path.Join(pathPrefix, servicezPath), host.handleServicezRequest)
+	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), host.handlePipelinezRequest)
 	mux.HandleFunc(path.Join(pathPrefix, featurezPath), handleFeaturezRequest)
 	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), func(w http.ResponseWriter, r *http.Request) {
-		handleExtensionzRequest(srv, w, r)
+		handleExtensionzRequest(host, w, r)
 	})
 }
 
-func (srv *service) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
+func (host *serviceHost) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "service"})
 	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
@@ -72,7 +72,7 @@ func (srv *service) handleServicezRequest(w http.ResponseWriter, r *http.Request
 	zpages.WriteHTMLPageFooter(w)
 }
 
-func (srv *service) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
+func (host *serviceHost) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
 	qValues := r.URL.Query()
 	pipelineName := qValues.Get(zPipelineName)
 	componentName := qValues.Get(zComponentName)
@@ -80,7 +80,7 @@ func (srv *service) handlePipelinezRequest(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Pipelines"})
-	zpages.WriteHTMLPipelinesSummaryTable(w, srv.getPipelinesSummaryTableData())
+	zpages.WriteHTMLPipelinesSummaryTable(w, host.getPipelinesSummaryTableData())
 	if pipelineName != "" && componentName != "" && componentKind != "" {
 		fullName := componentName
 		if componentKind == "processor" {
@@ -94,11 +94,11 @@ func (srv *service) handlePipelinezRequest(w http.ResponseWriter, r *http.Reques
 	zpages.WriteHTMLPageFooter(w)
 }
 
-func (srv *service) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
+func (host *serviceHost) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
 	data := zpages.SummaryPipelinesTableData{}
 
-	data.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(srv.builtPipelines))
-	for c, p := range srv.builtPipelines {
+	data.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(host.builtPipelines))
+	for c, p := range host.builtPipelines {
 		// TODO: Change the template to use ID.
 		var recvs []string
 		for _, recvID := range p.Config.Receivers {
