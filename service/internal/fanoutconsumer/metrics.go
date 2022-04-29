@@ -20,7 +20,7 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // NewMetrics wraps multiple metrics consumers in a single one.
@@ -62,8 +62,8 @@ func (msc *metricsConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-// ConsumeMetrics exports the pdata.Metrics to all consumers wrapped by the current one.
-func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+// ConsumeMetrics exports the pmetric.Metrics to all consumers wrapped by the current one.
+func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	var errs error
 	// Initially pass to clone exporter to avoid the case where the optimization of sending
 	// the incoming data to a mutating consumer is used that may change the incoming data before

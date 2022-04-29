@@ -20,15 +20,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var errNilFunc = errors.New("nil scrape func")
 
 // ScrapeFunc scrapes metrics.
-type ScrapeFunc func(context.Context) (pdata.Metrics, error)
+type ScrapeFunc func(context.Context) (pmetric.Metrics, error)
 
-func (sf ScrapeFunc) Scrape(ctx context.Context) (pdata.Metrics, error) {
+func (sf ScrapeFunc) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return sf(ctx)
 }
 
@@ -38,7 +38,7 @@ type Scraper interface {
 
 	// ID returns the scraper id.
 	ID() config.ComponentID
-	Scrape(context.Context) (pdata.Metrics, error)
+	Scrape(context.Context) (pmetric.Metrics, error)
 }
 
 // ScraperOption apply changes to internal options.

@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,14 +27,14 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/tag"
+	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
@@ -411,11 +410,11 @@ type mockRequest struct {
 	cnt          int
 	mu           sync.Mutex
 	consumeError error
-	requestCount *int64
+	requestCount *atomic.Int64
 }
 
 func (m *mockRequest) export(ctx context.Context) error {
-	atomic.AddInt64(m.requestCount, 1)
+	m.requestCount.Inc()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	err := m.consumeError
@@ -428,7 +427,7 @@ func (m *mockRequest) export(ctx context.Context) error {
 }
 
 func (m *mockRequest) Marshal() ([]byte, error) {
-	return otlp.NewProtobufTracesMarshaler().MarshalTraces(pdata.NewTraces())
+	return ptrace.NewProtoMarshaler().MarshalTraces(ptrace.NewTraces())
 }
 
 func (m *mockRequest) onError(error) request {
@@ -442,7 +441,7 @@ func (m *mockRequest) onError(error) request {
 
 func (m *mockRequest) checkNumRequests(t *testing.T, want int) {
 	assert.Eventually(t, func() bool {
-		return int64(want) == atomic.LoadInt64(m.requestCount)
+		return int64(want) == m.requestCount.Load()
 	}, time.Second, 1*time.Millisecond)
 }
 
@@ -455,27 +454,32 @@ func newMockRequest(ctx context.Context, cnt int, consumeError error) *mockReque
 		baseRequest:  baseRequest{ctx: ctx},
 		cnt:          cnt,
 		consumeError: consumeError,
-		requestCount: new(int64),
+		requestCount: atomic.NewInt64(0),
 	}
 }
 
 type observabilityConsumerSender struct {
 	waitGroup         *sync.WaitGroup
-	sentItemsCount    int64
-	droppedItemsCount int64
+	sentItemsCount    *atomic.Int64
+	droppedItemsCount *atomic.Int64
 	nextSender        requestSender
 }
 
 func newObservabilityConsumerSender(nextSender requestSender) *observabilityConsumerSender {
-	return &observabilityConsumerSender{waitGroup: new(sync.WaitGroup), nextSender: nextSender}
+	return &observabilityConsumerSender{
+		waitGroup:         new(sync.WaitGroup),
+		nextSender:        nextSender,
+		droppedItemsCount: atomic.NewInt64(0),
+		sentItemsCount:    atomic.NewInt64(0),
+	}
 }
 
 func (ocs *observabilityConsumerSender) send(req request) error {
 	err := ocs.nextSender.send(req)
 	if err != nil {
-		atomic.AddInt64(&ocs.droppedItemsCount, int64(req.count()))
+		ocs.droppedItemsCount.Add(int64(req.count()))
 	} else {
-		atomic.AddInt64(&ocs.sentItemsCount, int64(req.count()))
+		ocs.sentItemsCount.Add(int64(req.count()))
 	}
 	ocs.waitGroup.Done()
 	return err
@@ -491,11 +495,11 @@ func (ocs *observabilityConsumerSender) awaitAsyncProcessing() {
 }
 
 func (ocs *observabilityConsumerSender) checkSendItemsCount(t *testing.T, want int) {
-	assert.EqualValues(t, want, atomic.LoadInt64(&ocs.sentItemsCount))
+	assert.EqualValues(t, want, ocs.sentItemsCount.Load())
 }
 
 func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, want int) {
-	assert.EqualValues(t, want, atomic.LoadInt64(&ocs.droppedItemsCount))
+	assert.EqualValues(t, want, ocs.droppedItemsCount.Load())
 }
 
 // checkValueForGlobalManager checks that the given metrics with wantTags is reported by one of the

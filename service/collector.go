@@ -23,12 +23,12 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"sync/atomic"
 	"syscall"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/nonrecording"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -80,7 +80,7 @@ type Collector struct {
 	meterProvider  metric.MeterProvider
 
 	service *service
-	state   int32
+	state   *atomic.Int32
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -102,6 +102,10 @@ func New(set CollectorSettings) (*Collector, error) {
 		return nil, errors.New("invalid nil telemetry provider")
 	}
 
+	if set.telemetry == nil {
+		set.telemetry = collectorTelemetry
+	}
+
 	return &Collector{
 		logger: zap.NewNop(), // Set a Nop logger as a place holder until a logger is created based on configuration
 
@@ -110,7 +114,7 @@ func New(set CollectorSettings) (*Collector, error) {
 		asyncErrorChannel: make(chan error),
 
 		set:          set,
-		state:        int32(Starting),
+		state:        atomic.NewInt32(int32(Starting)),
 		shutdownChan: make(chan struct{}),
 	}, nil
 
@@ -118,7 +122,7 @@ func New(set CollectorSettings) (*Collector, error) {
 
 // GetState returns current state of the collector server.
 func (col *Collector) GetState() State {
-	return State(atomic.LoadInt32(&col.state))
+	return State(col.state.Load())
 }
 
 // GetLogger returns logger used by the Collector.
@@ -178,7 +182,8 @@ LOOP:
 			col.logger.Info("Received shutdown request")
 			break LOOP
 		case <-ctx.Done():
-			col.logger.Error("Context done, terminating process", zap.Error(ctx.Err()))
+			col.logger.Info("Context done, terminating process", zap.Error(ctx.Err()))
+
 			// Call shutdown with background context as the passed in context has been canceled
 			return col.shutdown(context.Background())
 		}
@@ -220,7 +225,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	// TODO: This should be part of the service initialization, which should be responsible to create TelemetrySettings.
 	// For the moment happens here, since it needs service.Config and Logger.
 	// It is called once because that is how it is implemented using sync.Once.
-	if err = collectorTelemetry.init(col); err != nil {
+	if err = col.set.telemetry.init(col); err != nil {
 		return err
 	}
 
@@ -267,7 +272,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service: %w", err))
 	}
 
-	if err := collectorTelemetry.shutdown(); err != nil {
+	if err := col.set.telemetry.shutdown(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 
@@ -279,7 +284,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
-	atomic.StoreInt32(&col.state, int32(state))
+	col.state.Store(int32(state))
 }
 
 func getBallastSize(host component.Host) uint64 {

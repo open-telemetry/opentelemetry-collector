@@ -15,9 +15,11 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -124,7 +126,7 @@ func newMapFromFile(fileName string) (*Map, error) {
 	return NewMapFromStringMap(data), nil
 }
 
-func TestExpandNilStructPointersFunc(t *testing.T) {
+func TestExpandNilStructPointersHookFunc(t *testing.T) {
 	stringMap := map[string]interface{}{
 		"boolean": nil,
 		"struct":  nil,
@@ -132,10 +134,10 @@ func TestExpandNilStructPointersFunc(t *testing.T) {
 			"struct": nil,
 		},
 	}
-	parser := NewMapFromStringMap(stringMap)
+	cfgMap := NewMapFromStringMap(stringMap)
 	cfg := &TestConfig{}
 	assert.Nil(t, cfg.Struct)
-	assert.NoError(t, parser.UnmarshalExact(cfg))
+	assert.NoError(t, cfgMap.UnmarshalExact(cfg))
 	assert.Nil(t, cfg.Boolean)
 	// assert.False(t, *cfg.Boolean)
 	assert.Nil(t, cfg.Struct)
@@ -144,7 +146,7 @@ func TestExpandNilStructPointersFunc(t *testing.T) {
 	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
 }
 
-func TestExpandNilStructPointersFunc_DefaultNotNilConfigNil(t *testing.T) {
+func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 	stringMap := map[string]interface{}{
 		"boolean": nil,
 		"struct":  nil,
@@ -152,7 +154,7 @@ func TestExpandNilStructPointersFunc_DefaultNotNilConfigNil(t *testing.T) {
 			"struct": nil,
 		},
 	}
-	parser := NewMapFromStringMap(stringMap)
+	cfgMap := NewMapFromStringMap(stringMap)
 	varBool := true
 	s1 := &Struct{Name: "s1"}
 	s2 := &Struct{Name: "s2"}
@@ -161,7 +163,7 @@ func TestExpandNilStructPointersFunc_DefaultNotNilConfigNil(t *testing.T) {
 		Struct:    s1,
 		MapStruct: map[string]*Struct{"struct": s2},
 	}
-	assert.NoError(t, parser.UnmarshalExact(cfg))
+	assert.NoError(t, cfgMap.UnmarshalExact(cfg))
 	assert.NotNil(t, cfg.Boolean)
 	assert.True(t, *cfg.Boolean)
 	assert.NotNil(t, cfg.Struct)
@@ -179,4 +181,58 @@ type TestConfig struct {
 
 type Struct struct {
 	Name string
+}
+
+type TestID string
+
+func (tID *TestID) UnmarshalText(text []byte) error {
+	*tID = TestID(strings.TrimSuffix(string(text), "_"))
+	if *tID == "error" {
+		return errors.New("parsing error")
+	}
+	return nil
+}
+
+type TestIDConfig struct {
+	Boolean bool              `mapstructure:"bool"`
+	Map     map[TestID]string `mapstructure:"map"`
+}
+
+func TestMapKeyStringToMapKeyTextUnmarshalerHookFunc(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"bool": true,
+		"map": map[string]interface{}{
+			"string": "this is a string",
+		},
+	}
+	cfgMap := NewMapFromStringMap(stringMap)
+	cfg := &TestIDConfig{}
+	assert.NoError(t, cfgMap.UnmarshalExact(cfg))
+	assert.True(t, cfg.Boolean)
+	assert.Equal(t, map[TestID]string{"string": "this is a string"}, cfg.Map)
+}
+
+func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"bool": true,
+		"map": map[string]interface{}{
+			"string":  "this is a string",
+			"string_": "this is another string",
+		},
+	}
+	cfgMap := NewMapFromStringMap(stringMap)
+	cfg := &TestIDConfig{}
+	assert.Error(t, cfgMap.UnmarshalExact(cfg))
+}
+
+func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"bool": true,
+		"map": map[string]interface{}{
+			"error": "this is a string",
+		},
+	}
+	cfgMap := NewMapFromStringMap(stringMap)
+	cfg := &TestIDConfig{}
+	assert.Error(t, cfgMap.UnmarshalExact(cfg))
 }

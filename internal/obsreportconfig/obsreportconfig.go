@@ -15,18 +15,17 @@
 package obsreportconfig // import "go.opentelemetry.io/collector/internal/obsreportconfig"
 
 import (
-	"sync/atomic"
-
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.uber.org/atomic"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 var (
-	globalLevel = int32(configtelemetry.LevelBasic)
+	globalLevel = atomic.NewInt32(int32(configtelemetry.LevelBasic))
 )
 
 // ObsMetrics wraps OpenCensus View for Collector observability metrics
@@ -37,7 +36,7 @@ type ObsMetrics struct {
 // Configure is used to control the settings that will be used by the obsreport
 // package.
 func Configure(level configtelemetry.Level) *ObsMetrics {
-	atomic.StoreInt32(&globalLevel, int32(level))
+	globalLevel.Store(int32(level))
 
 	var views []*view.View
 
@@ -52,7 +51,7 @@ func Configure(level configtelemetry.Level) *ObsMetrics {
 }
 
 func Level() configtelemetry.Level {
-	return configtelemetry.Level(atomic.LoadInt32(&globalLevel))
+	return configtelemetry.Level(globalLevel.Load())
 }
 
 // allViews return the list of all views that needs to be configured.

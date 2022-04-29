@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -235,7 +235,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			}
 
 			// Send one data.
-			log := pdata.Logs{}
+			log := plog.Logs{}
 			producer := receiver.receiver.(*testcomponents.ExampleReceiverProducer)
 			require.NoError(t, producer.ConsumeLogs(context.Background(), log))
 

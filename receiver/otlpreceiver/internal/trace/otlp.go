@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 const (
@@ -48,17 +48,17 @@ func New(id config.ComponentID, nextConsumer consumer.Traces, set component.Rece
 }
 
 // Export implements the service Export traces func.
-func (r *Receiver) Export(ctx context.Context, req otlpgrpc.TracesRequest) (otlpgrpc.TracesResponse, error) {
+func (r *Receiver) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
 	td := req.Traces()
 	// We need to ensure that it propagates the receiver name as a tag
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
-		return otlpgrpc.NewTracesResponse(), nil
+		return ptraceotlp.NewResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartTracesOp(ctx)
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return otlpgrpc.NewTracesResponse(), err
+	return ptraceotlp.NewResponse(), err
 }

@@ -6,10 +6,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
@@ -27,6 +23,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/model"
+    directory: "/pdata"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/semconv"
     schedule:
       interval: "weekly"

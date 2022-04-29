@@ -17,7 +17,9 @@ package consumertest // import "go.opentelemetry.io/collector/consumer/consumert
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type errConsumer struct {
@@ -27,15 +29,15 @@ type errConsumer struct {
 
 func (er *errConsumer) unexported() {}
 
-func (er *errConsumer) ConsumeTraces(context.Context, pdata.Traces) error {
+func (er *errConsumer) ConsumeTraces(context.Context, ptrace.Traces) error {
 	return er.err
 }
 
-func (er *errConsumer) ConsumeMetrics(context.Context, pdata.Metrics) error {
+func (er *errConsumer) ConsumeMetrics(context.Context, pmetric.Metrics) error {
 	return er.err
 }
 
-func (er *errConsumer) ConsumeLogs(context.Context, pdata.Logs) error {
+func (er *errConsumer) ConsumeLogs(context.Context, plog.Logs) error {
 	return er.err
 }
 

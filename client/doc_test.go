@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func Example_receiver() {
@@ -29,7 +29,7 @@ func Example_receiver() {
 	var next consumer.Traces
 
 	// You'll convert the incoming data into pipeline data
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 
 	// You probably have a context with client metadata from your listener or
 	// scraper

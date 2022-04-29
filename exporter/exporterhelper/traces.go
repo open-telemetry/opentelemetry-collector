@@ -23,20 +23,19 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var tracesMarshaler = otlp.NewProtobufTracesMarshaler()
-var tracesUnmarshaler = otlp.NewProtobufTracesUnmarshaler()
+var tracesMarshaler = ptrace.NewProtoMarshaler()
+var tracesUnmarshaler = ptrace.NewProtoUnmarshaler()
 
 type tracesRequest struct {
 	baseRequest
-	td     pdata.Traces
+	td     ptrace.Traces
 	pusher consumer.ConsumeTracesFunc
 }
 
-func newTracesRequest(ctx context.Context, td pdata.Traces, pusher consumer.ConsumeTracesFunc) request {
+func newTracesRequest(ctx context.Context, td ptrace.Traces, pusher consumer.ConsumeTracesFunc) request {
 	return &tracesRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		td:          td,
@@ -109,7 +108,7 @@ func NewTracesExporter(
 		}
 	})
 
-	tc, err := consumer.NewTraces(func(ctx context.Context, td pdata.Traces) error {
+	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req := newTracesRequest(ctx, td, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {

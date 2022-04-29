@@ -17,6 +17,8 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"github.com/spf13/cobra"
 
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -27,9 +29,18 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		Version:      set.BuildInfo.Version,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			featuregate.Apply(gatesList)
+			featuregate.GetRegistry().Apply(gatesList)
 			if set.ConfigProvider == nil {
-				set.ConfigProvider = MustNewDefaultConfigProvider(getConfigFlag(), getSetFlag())
+				var err error
+				cfgSet := newDefaultConfigProviderSettings(getConfigFlag())
+				// Append the "overwrite properties converter" as the first converter.
+				cfgSet.MapConverters = append(
+					[]config.MapConverterFunc{overwritepropertiesmapconverter.New(getSetFlag())},
+					cfgSet.MapConverters...)
+				set.ConfigProvider, err = NewConfigProvider(cfgSet)
+				if err != nil {
+					return err
+				}
 			}
 			col, err := New(set)
 			if err != nil {

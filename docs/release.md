@@ -25,7 +25,9 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 ## Releasing opentelemetry-collector
 
-1. Make sure the current `main` branch build successfully passes (Core and Contrib).
+1. Make sure that there are no open issues with `release:blocker` label in [Core](https://github.com/open-telemetry/opentelemetry-collector/labels/release%3Ablocker) or [Contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib/labels/release%3Ablocker) repo. The release has to be delayed until they are resolved.
+
+1. Make sure the current `main` branch build successfully passes ([Core](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml?query=branch%3Amain) and [Contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml?query=branch%3Amain)).
 
 1. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.45.0` as the version to be released, following `v0.44.0`.
 
@@ -44,6 +46,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
     * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
 
     * Update the collector version in the manifest used by `make run` to the new release in `./cmd/otelcorecol/builder-config.yaml`.
+
+    * Update the collector version in the `cmd/otelcorecol/main.go`.
     
     * Update the collector version in the `examples/k8s/otel-config.yaml` 
 
@@ -109,10 +113,10 @@ The last step of the release process creates artifacts for the new version of th
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-04-13 | v0.49.0 | @dmitryax       |
-| 2022-04-27 | v0.50.0 | @codeboten      |
 | 2022-05-11 | v0.51.0 | @bogdandrutu    |
-| 2022-05-25 | v0.52.0 | @jpkrohling     |
+| 2022-05-25 | v0.52.0 | @codeboten      |
 | 2022-06-01 | v0.53.0 | @Aneurysm9      |
 | 2022-06-15 | v0.54.0 | @mx-psi         |
 | 2022-06-29 | v0.55.0 | @tigrannajaryan |
+| 2022-07-13 | v0.56.0 | @dmitryax       |
+| 2022-07-27 | v0.57.0 | @jpkrohling     |

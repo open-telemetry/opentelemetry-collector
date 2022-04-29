@@ -15,12 +15,14 @@
 package configunmarshaler // import "go.opentelemetry.io/collector/config/configunmarshaler"
 
 import (
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/internal/configunmarshaler"
 )
 
-// ConfigUnmarshaler is the interface that unmarshalls the collector configuration from the config.Map.
-type ConfigUnmarshaler interface {
-	// Unmarshal the configuration from the given parser and factories.
-	Unmarshal(v *config.Map, factories component.Factories) (*config.Config, error)
-}
+// Deprecated: [v0.50.0] if you need to update the config.Config implement custom (or wrap) service.ConfigProvider.
+type ConfigUnmarshaler = configunmarshaler.ConfigUnmarshaler
+
+// Deprecated: [v0.50.0] not needed since interface will be removed.
+var NewDefault = configunmarshaler.NewDefault
+
+// Deprecated: [v0.50.0] use config.UnmarshalReceiver.
+var LoadReceiver = configunmarshaler.LoadReceiver

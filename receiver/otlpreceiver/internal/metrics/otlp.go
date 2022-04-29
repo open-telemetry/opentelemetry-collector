@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 )
 
 const (
@@ -48,16 +48,16 @@ func New(id config.ComponentID, nextConsumer consumer.Metrics, set component.Rec
 }
 
 // Export implements the service Export metrics func.
-func (r *Receiver) Export(ctx context.Context, req otlpgrpc.MetricsRequest) (otlpgrpc.MetricsResponse, error) {
+func (r *Receiver) Export(ctx context.Context, req pmetricotlp.Request) (pmetricotlp.Response, error) {
 	md := req.Metrics()
 	dataPointCount := md.DataPointCount()
 	if dataPointCount == 0 {
-		return otlpgrpc.NewMetricsResponse(), nil
+		return pmetricotlp.NewResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartMetricsOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
 
-	return otlpgrpc.NewMetricsResponse(), err
+	return pmetricotlp.NewResponse(), err
 }

@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,7 +28,9 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -39,7 +40,7 @@ import (
 type otlpReceiver struct {
 	cfg        *Config
 	serverGRPC *grpc.Server
-	httpMux    *mux.Router
+	httpMux    *http.ServeMux
 	serverHTTP *http.Server
 
 	traceReceiver   *trace.Receiver
@@ -59,7 +60,7 @@ func newOtlpReceiver(cfg *Config, settings component.ReceiverCreateSettings) *ot
 		settings: settings,
 	}
 	if cfg.HTTP != nil {
-		r.httpMux = mux.NewRouter()
+		r.httpMux = http.NewServeMux()
 	}
 
 	return r
@@ -112,15 +113,15 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 		r.serverGRPC = grpc.NewServer(opts...)
 
 		if r.traceReceiver != nil {
-			otlpgrpc.RegisterTracesServer(r.serverGRPC, r.traceReceiver)
+			ptraceotlp.RegisterServer(r.serverGRPC, r.traceReceiver)
 		}
 
 		if r.metricsReceiver != nil {
-			otlpgrpc.RegisterMetricsServer(r.serverGRPC, r.metricsReceiver)
+			pmetricotlp.RegisterServer(r.serverGRPC, r.metricsReceiver)
 		}
 
 		if r.logReceiver != nil {
-			otlpgrpc.RegisterLogsServer(r.serverGRPC, r.logReceiver)
+			plogotlp.RegisterServer(r.serverGRPC, r.logReceiver)
 		}
 
 		err = r.startGRPCServer(r.cfg.GRPC, host)
@@ -177,13 +178,18 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 	r.traceReceiver = trace.New(r.cfg.ID(), tc, r.settings)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
-			handleTraces(resp, req, r.traceReceiver, pbEncoder)
-		}).Methods(http.MethodPost).Headers("Content-Type", pbContentType)
-		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
-			handleTraces(resp, req, r.traceReceiver, jsEncoder)
-		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
-		r.httpMux.HandleFunc("/v1/traces", func(resp http.ResponseWriter, req *http.Request) {
-			handleUnmatchedRequests(resp, req)
+			if req.Method != http.MethodPost {
+				handleUnmatchedMethod(resp)
+				return
+			}
+			switch req.Header.Get("Content-Type") {
+			case pbContentType:
+				handleTraces(resp, req, r.traceReceiver, pbEncoder)
+			case jsonContentType:
+				handleTraces(resp, req, r.traceReceiver, jsEncoder)
+			default:
+				handleUnmatchedContentType(resp)
+			}
 		})
 	}
 	return nil
@@ -196,13 +202,18 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 	r.metricsReceiver = metrics.New(r.cfg.ID(), mc, r.settings)
 	if r.httpMux != nil {
 		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
-			handleMetrics(resp, req, r.metricsReceiver, pbEncoder)
-		}).Methods(http.MethodPost).Headers("Content-Type", pbContentType)
-		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
-			handleMetrics(resp, req, r.metricsReceiver, jsEncoder)
-		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
-		r.httpMux.HandleFunc("/v1/metrics", func(resp http.ResponseWriter, req *http.Request) {
-			handleUnmatchedRequests(resp, req)
+			if req.Method != http.MethodPost {
+				handleUnmatchedMethod(resp)
+				return
+			}
+			switch req.Header.Get("Content-Type") {
+			case pbContentType:
+				handleMetrics(resp, req, r.metricsReceiver, pbEncoder)
+			case jsonContentType:
+				handleMetrics(resp, req, r.metricsReceiver, jsEncoder)
+			default:
+				handleUnmatchedContentType(resp)
+			}
 		})
 	}
 	return nil
@@ -214,28 +225,30 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 	}
 	r.logReceiver = logs.New(r.cfg.ID(), lc, r.settings)
 	if r.httpMux != nil {
-		r.httpMux.HandleFunc("/v1/logs", func(w http.ResponseWriter, req *http.Request) {
-			handleLogs(w, req, r.logReceiver, pbEncoder)
-		}).Methods(http.MethodPost).Headers("Content-Type", pbContentType)
-		r.httpMux.HandleFunc("/v1/logs", func(w http.ResponseWriter, req *http.Request) {
-			handleLogs(w, req, r.logReceiver, jsEncoder)
-		}).Methods(http.MethodPost).Headers("Content-Type", jsonContentType)
 		r.httpMux.HandleFunc("/v1/logs", func(resp http.ResponseWriter, req *http.Request) {
-			handleUnmatchedRequests(resp, req)
+			if req.Method != http.MethodPost {
+				handleUnmatchedMethod(resp)
+				return
+			}
+			switch req.Header.Get("Content-Type") {
+			case pbContentType:
+				handleLogs(resp, req, r.logReceiver, pbEncoder)
+			case jsonContentType:
+				handleLogs(resp, req, r.logReceiver, jsEncoder)
+			default:
+				handleUnmatchedContentType(resp)
+			}
 		})
 	}
 	return nil
 }
 
-func handleUnmatchedRequests(resp http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		status := http.StatusMethodNotAllowed
-		writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v method not allowed, supported: [POST]", status)))
-		return
-	}
-	if req.Header.Get("Content-Type") == "" {
-		status := http.StatusUnsupportedMediaType
-		writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, jsonContentType, pbContentType)))
-		return
-	}
+func handleUnmatchedMethod(resp http.ResponseWriter) {
+	status := http.StatusMethodNotAllowed
+	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v method not allowed, supported: [POST]", status)))
+}
+
+func handleUnmatchedContentType(resp http.ResponseWriter) {
+	status := http.StatusUnsupportedMediaType
+	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, jsonContentType, pbContentType)))
 }

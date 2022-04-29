@@ -34,8 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func createStorageExtension(_ string) storage.Extension {
@@ -69,19 +68,19 @@ func createTemporaryDirectory() string {
 }
 
 type fakeTracesRequest struct {
-	td                         pdata.Traces
+	td                         ptrace.Traces
 	processingFinishedCallback func()
 	PersistentRequest
 }
 
-func newFakeTracesRequest(td pdata.Traces) *fakeTracesRequest {
+func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
 	return &fakeTracesRequest{
 		td: td,
 	}
 }
 
 func (fd *fakeTracesRequest) Marshal() ([]byte, error) {
-	return otlp.NewProtobufTracesMarshaler().MarshalTraces(fd.td)
+	return ptrace.NewProtoMarshaler().MarshalTraces(fd.td)
 }
 
 func (fd *fakeTracesRequest) OnProcessingFinished() {
@@ -96,7 +95,7 @@ func (fd *fakeTracesRequest) SetOnProcessingFinished(callback func()) {
 
 func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
 	return func(bytes []byte) (PersistentRequest, error) {
-		traces, err := otlp.NewProtobufTracesUnmarshaler().UnmarshalTraces(bytes)
+		traces, err := ptrace.NewProtoUnmarshaler().UnmarshalTraces(bytes)
 		if err != nil {
 			return nil, err
 		}

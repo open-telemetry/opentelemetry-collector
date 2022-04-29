@@ -81,20 +81,57 @@ type ChangeEvent struct {
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
 type Retrieved struct {
+	// Deprecated: [v0.50.0] Use NewRetrievedFromMap to initialize, and Retrieved.AsMap to access.
 	*Map
-
-	// CloseFunc specifies a function to be invoked when the configuration for which it was
-	// used to retrieve values is no longer in use and should close and release any watchers
-	// that it may have created.
-	//
-	// If nil, then nothing to be closed.
+	// Deprecated: [v0.50.0] Use NewRetrievedFromMap to initialize, and Retrieved.Close to access.
 	CloseFunc
 }
 
-// CloseFunc a function to close and release any watchers that it may have created.
+type retrievedSettings struct {
+	closeFunc CloseFunc
+}
+
+// RetrievedOption options to customize Retrieved values.
+type RetrievedOption func(*retrievedSettings)
+
+// WithRetrievedClose overrides the default Retrieved.Close function.
+// The default Retrieved.Close function does nothing and always returns nil.
+func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
+	return func(settings *retrievedSettings) {
+		settings.closeFunc = closeFunc
+	}
+}
+
+// NewRetrievedFromMap returns a new Retrieved instance that contains a Map data.
+// * cfgMap the Map that will be merged to the given map in the MergeTo.
+// * CloseFunc specifies a function to be invoked when the configuration for which it was
+//   used to retrieve values is no longer in use and should close and release any watchers
+//	 that it may have created.
+func NewRetrievedFromMap(cfgMap *Map, opts ...RetrievedOption) Retrieved {
+	set := retrievedSettings{}
+	for _, opt := range opts {
+		opt(&set)
+	}
+	return Retrieved{Map: cfgMap, CloseFunc: set.closeFunc}
+}
+
+// AsMap returns the retrieved configuration parsed as a Map.
+func (r Retrieved) AsMap() (*Map, error) {
+	return r.Map, nil
+}
+
+// Close and release any watchers that MapProvider.Retrieve may have created.
 //
 // Should block until all resources are closed, and guarantee that `onChange` is not
 // going to be called after it returns except when `ctx` is cancelled.
 //
 // Should never be called concurrently with itself.
+func (r Retrieved) Close(ctx context.Context) error {
+	if r.CloseFunc == nil {
+		return nil
+	}
+	return r.CloseFunc(ctx)
+}
+
+// CloseFunc a function equivalent to Retrieved.Close.
 type CloseFunc func(context.Context) error

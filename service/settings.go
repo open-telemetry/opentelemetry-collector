@@ -62,4 +62,7 @@ type CollectorSettings struct {
 
 	// TelemetryProvider setups and provides the Collector's own telemetry.
 	TelemetryProvider TelemetryProvider
+
+	// For testing purpose only.
+	telemetry collectorTelemetryExporter
 }

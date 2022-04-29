@@ -35,14 +35,14 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/version"
-	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
+	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/featuregate"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 // collectorTelemetry is collector's own telemetry.
-var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
+var collectorTelemetry collectorTelemetryExporter = newColTelemetry(featuregate.GetRegistry())
 
 // AddCollectorVersionTag indicates if the collector version tag should be added to all telemetry metrics
 const AddCollectorVersionTag = true
@@ -56,24 +56,25 @@ const (
 	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 )
 
-func init() {
-	//nolint:staticcheck
-	featuregate.Register(featuregate.Gate{
-		ID:          useOtelForInternalMetricsfeatureGateID,
-		Description: "controls whether the collector to uses open telemetry for internal metrics",
-		Enabled:     false,
-	})
-}
-
 type collectorTelemetryExporter interface {
 	init(col *Collector) error
 	shutdown() error
 }
 
 type colTelemetry struct {
+	registry   *featuregate.Registry
 	views      []*view.View
 	server     *http.Server
 	doInitOnce sync.Once
+}
+
+func newColTelemetry(registry *featuregate.Registry) *colTelemetry {
+	registry.MustRegister(featuregate.Gate{
+		ID:          useOtelForInternalMetricsfeatureGateID,
+		Description: "controls whether the collector to uses open telemetry for internal metrics",
+		Enabled:     false,
+	})
+	return &colTelemetry{registry: registry}
 }
 
 func (tel *colTelemetry) init(col *Collector) error {
@@ -111,7 +112,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 	instanceID := instanceUUID.String()
 
 	var pe http.Handler
-	if featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
+	if tel.registry.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
 		otelHandler, err := tel.initOpenTelemetry(col)
 		if err != nil {
 			return err

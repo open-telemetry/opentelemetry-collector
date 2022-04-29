@@ -19,10 +19,8 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -36,6 +34,8 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/featuregate"
@@ -49,32 +49,28 @@ func TestStateString(t *testing.T) {
 	assert.Equal(t, "UNKNOWN", State(13).String())
 }
 
-// TestCollector_StartAsGoRoutine must be the first unit test on the file,
-// to test for initialization without setting CLI flags.
-func TestCollector_StartAsGoRoutine(t *testing.T) {
-	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &colTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
+func TestCollectorStartAsGoRoutine(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 
+	cfgSet := newDefaultConfigProviderSettings([]string{
+		filepath.Join("testdata", "otelcol-config.yaml"),
+		"yaml:service::telemetry::metrics::address: " + testutil.GetAvailableLocalAddress(t),
+	})
+	cfgProvider, err := NewConfigProvider(cfgSet)
+	require.NoError(t, err)
+
 	set := CollectorSettings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")},
-			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(testutil.GetAvailablePort(t)), 10)}),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigProvider:    cfgProvider,
 		TelemetryProvider: NewDefaultTelemetryProvider(),
+		telemetry:         newColTelemetry(featuregate.NewRegistry()),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
 
-	colDone := make(chan struct{})
-	go func() {
-		defer close(colDone)
-		require.NoError(t, col.Run(context.Background()))
-	}()
+	wg := startCollector(context.Background(), t, col)
 
 	assert.Eventually(t, func() bool {
 		return Running == col.GetState()
@@ -82,11 +78,111 @@ func TestCollector_StartAsGoRoutine(t *testing.T) {
 
 	col.Shutdown()
 	col.Shutdown()
-	<-colDone
+	wg.Wait()
 	assert.Equal(t, Closed, col.GetState())
 }
 
-func testCollectorStartHelper(t *testing.T) {
+func TestCollectorCancelContext(t *testing.T) {
+	factories, err := testcomponents.NewDefaultFactories()
+	require.NoError(t, err)
+
+	cfgSet := newDefaultConfigProviderSettings([]string{
+		filepath.Join("testdata", "otelcol-config.yaml"),
+		"yaml:service::telemetry::metrics::address: " + testutil.GetAvailableLocalAddress(t),
+	})
+	cfgProvider, err := NewConfigProvider(cfgSet)
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigProvider:    cfgProvider,
+		TelemetryProvider: NewDefaultTelemetryProvider(),
+		telemetry:         newColTelemetry(featuregate.NewRegistry()),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := startCollector(ctx, t, col)
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	cancel()
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+}
+
+func TestCollectorReportError(t *testing.T) {
+	factories, err := testcomponents.NewDefaultFactories()
+	require.NoError(t, err)
+
+	cfgSet := newDefaultConfigProviderSettings([]string{
+		filepath.Join("testdata", "otelcol-config.yaml"),
+	})
+	cfgProvider, err := NewConfigProvider(cfgSet)
+	require.NoError(t, err)
+
+	col, err := New(CollectorSettings{
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigProvider:    cfgProvider,
+		TelemetryProvider: NewDefaultTelemetryProvider(),
+		telemetry:         newColTelemetry(featuregate.NewRegistry()),
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.service.ReportFatalError(errors.New("err2"))
+
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+}
+
+func TestCollectorFailedShutdown(t *testing.T) {
+	factories, err := testcomponents.NewDefaultFactories()
+	require.NoError(t, err)
+
+	cfgSet := newDefaultConfigProviderSettings([]string{
+		filepath.Join("testdata", "otelcol-config.yaml"),
+	})
+	cfgProvider, err := NewConfigProvider(cfgSet)
+	require.NoError(t, err)
+
+	col, err := New(CollectorSettings{
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigProvider:    cfgProvider,
+		TelemetryProvider: NewDefaultTelemetryProvider(),
+		telemetry:         &mockColTelemetry{},
+	})
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
+	}()
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.Shutdown()
+
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+}
+
+func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 	var once sync.Once
@@ -98,22 +194,29 @@ func testCollectorStartHelper(t *testing.T) {
 		return nil
 	}
 
-	metricsPort := testutil.GetAvailablePort(t)
+	metricsAddr := testutil.GetAvailableLocalAddress(t)
+	cfgSet := newDefaultConfigProviderSettings([]string{
+		filepath.Join("testdata", "otelcol-config.yaml"),
+	})
+	cfgSet.MapConverters = append([]config.MapConverterFunc{
+		overwritepropertiesmapconverter.New(
+			[]string{"service.telemetry.metrics.address=" + metricsAddr},
+		)},
+		cfgSet.MapConverters...,
+	)
+	cfgProvider, err := NewConfigProvider(cfgSet)
+	require.NoError(t, err)
+
 	col, err := New(CollectorSettings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		ConfigProvider: MustNewDefaultConfigProvider(
-			[]string{filepath.Join("testdata", "otelcol-config.yaml")},
-			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(metricsPort), 10)}),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+		Factories:         factories,
+		ConfigProvider:    cfgProvider,
 		TelemetryProvider: NewDefaultTelemetryProvider(zap.Hooks(hook)),
+		telemetry:         telemetry,
 	})
 	require.NoError(t, err)
 
-	colDone := make(chan struct{})
-	go func() {
-		defer close(colDone)
-		require.NoError(t, col.Run(context.Background()))
-	}()
+	wg := startCollector(context.Background(), t, col)
 
 	assert.Eventually(t, func() bool {
 		return Running == col.GetState()
@@ -130,106 +233,74 @@ func testCollectorStartHelper(t *testing.T) {
 	mandatoryLabels := []string{
 		"service_instance_id",
 	}
-	assertMetrics(t, metricsPort, mandatoryLabels)
+	assertMetrics(t, metricsAddr, mandatoryLabels)
 
 	assertZPages(t)
 	col.signalsChannel <- syscall.SIGTERM
 
-	<-colDone
+	wg.Wait()
 	assert.Equal(t, Closed, col.GetState())
 }
 
-// as telemetry instance is initialized only once, we need to reset it before each test so the metrics endpoint can
-// have correct handler spawned
-func resetCollectorTelemetry() {
-	collectorTelemetry = &colTelemetry{}
+func TestCollectorStartWithOpenCensusMetrics(t *testing.T) {
+	testCollectorStartHelper(t, newColTelemetry(featuregate.NewRegistry()))
 }
 
-func TestCollector_Start(t *testing.T) {
-	resetCollectorTelemetry()
-	testCollectorStartHelper(t)
-}
-
-func TestCollector_StartWithOtelInternalMetrics(t *testing.T) {
-	resetCollectorTelemetry()
-	originalFlag := featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID)
-	defer func() {
-		featuregate.Apply(map[string]bool{
-			useOtelForInternalMetricsfeatureGateID: originalFlag,
-		})
-	}()
-	featuregate.Apply(map[string]bool{
+func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
+	colTel := newColTelemetry(featuregate.NewRegistry())
+	colTel.registry.Apply(map[string]bool{
 		useOtelForInternalMetricsfeatureGateID: true,
 	})
-	testCollectorStartHelper(t)
+	testCollectorStartHelper(t, colTel)
 }
 
-// TestCollector_ShutdownNoop verifies that shutdown can be called even if a collector
-// has yet to be started and it will execute without error.
-func TestCollector_ShutdownNoop(t *testing.T) {
+func TestCollectorShutdownBeforeRun(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
+	require.NoError(t, err)
+
+	cfgSet := newDefaultConfigProviderSettings([]string{
+		filepath.Join("testdata", "otelcol-config.yaml"),
+	})
+	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
 	set := CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigProvider:    MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
+		ConfigProvider:    cfgProvider,
 		TelemetryProvider: NewDefaultTelemetryProvider(),
-	}
-	col, err := New(set)
-	require.NoError(t, err)
-
-	// Should be able to call Shutdown on an unstarted collector and nothing happens
-	require.NotPanics(t, func() { col.Shutdown() })
-}
-
-func TestCollector_ShutdownBeforeRun(t *testing.T) {
-	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &colTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
-	factories, err := testcomponents.NewDefaultFactories()
-	require.NoError(t, err)
-
-	set := CollectorSettings{
-		BuildInfo:         component.NewDefaultBuildInfo(),
-		Factories:         factories,
-		ConfigProvider:    MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
-		TelemetryProvider: NewDefaultTelemetryProvider(),
+		telemetry:         newColTelemetry(featuregate.NewRegistry()),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
 
 	// Calling shutdown before collector is running should cause it to return quickly
-	col.Shutdown()
+	require.NotPanics(t, func() { col.Shutdown() })
 
-	colDone := make(chan struct{})
-	go func() {
-		defer close(colDone)
-		require.NoError(t, col.Run(context.Background()))
-	}()
+	wg := startCollector(context.Background(), t, col)
 
 	col.Shutdown()
-	<-colDone
+	wg.Wait()
 	assert.Equal(t, Closed, col.GetState())
 }
 
-// TestCollector_ClosedStateOnStartUpError tests the collector changes it's state to Closed when a startup error occurs
-func TestCollector_ClosedStateOnStartUpError(t *testing.T) {
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &colTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
+func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 	factories, err := testcomponents.NewDefaultFactories()
+	require.NoError(t, err)
+
+	cfgSet := newDefaultConfigProviderSettings([]string{
+		filepath.Join("testdata", "otelcol-invalid.yaml"),
+	})
+	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
 	// Load a bad config causing startup to fail
 	set := CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         factories,
-		ConfigProvider:    MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}, nil),
+		ConfigProvider:    cfgProvider,
 		TelemetryProvider: NewDefaultTelemetryProvider(),
+		telemetry:         newColTelemetry(featuregate.NewRegistry()),
 	}
 	col, err := New(set)
 	require.NoError(t, err)
@@ -251,82 +322,14 @@ func (tel *mockColTelemetry) shutdown() error {
 	return errors.New("err1")
 }
 
-func TestCollector_ReportError(t *testing.T) {
-	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &mockColTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
-	factories, err := testcomponents.NewDefaultFactories()
-	require.NoError(t, err)
-
-	col, err := New(CollectorSettings{
-		BuildInfo:         component.NewDefaultBuildInfo(),
-		Factories:         factories,
-		ConfigProvider:    MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")}, nil),
-		TelemetryProvider: NewDefaultTelemetryProvider(),
-	})
-	require.NoError(t, err)
-
-	colDone := make(chan struct{})
-	go func() {
-		defer close(colDone)
-		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
-	}()
-
-	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
-	}, 2*time.Second, 200*time.Millisecond)
-	col.service.ReportFatalError(errors.New("err2"))
-
-	<-colDone
-	assert.Equal(t, Closed, col.GetState())
-}
-
-// TestCollector_ContextCancel tests that the collector gracefully exits on context cancel
-func TestCollector_ContextCancel(t *testing.T) {
-	// use a mock AppTelemetry struct to return an error on shutdown
-	preservedAppTelemetry := collectorTelemetry
-	collectorTelemetry = &colTelemetry{}
-	defer func() { collectorTelemetry = preservedAppTelemetry }()
-
-	factories, err := testcomponents.NewDefaultFactories()
-	require.NoError(t, err)
-
-	set := CollectorSettings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		ConfigProvider: MustNewDefaultConfigProvider([]string{filepath.Join("testdata", "otelcol-config.yaml")},
-			[]string{"service.telemetry.metrics.address=localhost:" + strconv.FormatUint(uint64(testutil.GetAvailablePort(t)), 10)}),
-		TelemetryProvider: NewDefaultTelemetryProvider(),
-	}
-	col, err := New(set)
-	require.NoError(t, err)
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	colDone := make(chan struct{})
-	go func() {
-		defer close(colDone)
-		require.NoError(t, col.Run(ctx))
-	}()
-
-	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
-	}, 2*time.Second, 200*time.Millisecond)
-
-	cancel()
-
-	<-colDone
-	assert.Equal(t, Closed, col.GetState())
-}
-
-func assertMetrics(t *testing.T, metricsPort uint16, mandatoryLabels []string) {
+func assertMetrics(t *testing.T, metricsAddr string, mandatoryLabels []string) {
 	client := &http.Client{}
-	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/metrics", metricsPort))
+	resp, err := client.Get("http://" + metricsAddr + "/metrics")
 	require.NoError(t, err)
 
-	defer resp.Body.Close()
+	t.Cleanup(func() {
+		assert.NoError(t, resp.Body.Close())
+	})
 	reader := bufio.NewReader(resp.Body)
 
 	var parser expfmt.TextParser
@@ -382,4 +385,14 @@ func assertZPages(t *testing.T) {
 	for _, path := range paths {
 		testZPagePathFn(t, path)
 	}
+}
+
+func startCollector(ctx context.Context, t *testing.T, col *Collector) *sync.WaitGroup {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		require.NoError(t, col.Run(ctx))
+	}()
+	return wg
 }
