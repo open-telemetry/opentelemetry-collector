@@ -152,8 +152,8 @@ func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Col
 		}
 	}
 	set.LoggingOptions = append(
-		set.LoggingOptions,
-		zap.WrapCore(withWindowsCore(elog)),
+		[]zap.Option{zap.WrapCore(withWindowsCore(elog))},
+		set.LoggingOptions...,
 	)
 	return New(set)
 }
