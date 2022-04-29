@@ -242,6 +242,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
 	col.tracerProvider = sdktrace.NewTracerProvider(
+		// needed for supporting the zpages extension
 		sdktrace.WithSampler(internal.AlwaysRecord()),
 	)
 
