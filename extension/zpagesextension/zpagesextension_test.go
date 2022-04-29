@@ -18,7 +18,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"path"
 	"runtime"
 	"testing"
 
@@ -28,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/internal/testutil"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type zpagesHost struct {
@@ -38,10 +39,27 @@ func newZPagesHost() *zpagesHost {
 	return &zpagesHost{Host: componenttest.NewNopHost()}
 }
 
-func (*zpagesHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
-	mux.HandleFunc(path.Join(pathPrefix, tracezPath), func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+func (*zpagesHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {}
+
+type registerable interface {
+	RegisterSpanProcessor(s sdktrace.SpanProcessor)
+	UnregisterSpanProcessor(s sdktrace.SpanProcessor)
+}
+
+var _ registerable = (*registerableTracerProvider)(nil)
+var _ registerable = sdktrace.NewTracerProvider()
+
+type registerableTracerProvider struct {
+	trace.TracerProvider
+}
+
+func (*registerableTracerProvider) RegisterSpanProcessor(sdktrace.SpanProcessor)   {}
+func (*registerableTracerProvider) UnregisterSpanProcessor(sdktrace.SpanProcessor) {}
+
+func newZpagesTelemetrySettings() component.TelemetrySettings {
+	set := componenttest.NewNopTelemetrySettings()
+	set.TracerProvider = &registerableTracerProvider{set.TracerProvider}
+	return set
 }
 
 func TestZPagesExtensionUsage(t *testing.T) {
@@ -51,7 +69,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
@@ -82,7 +100,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 			Endpoint: endpoint,
 		},
 	}
-	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.Error(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -95,7 +113,7 @@ func TestZPagesMultipleStarts(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -112,7 +130,7 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -127,7 +145,7 @@ func TestZPagesShutdownWithoutStart(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, componenttest.NewNopTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Shutdown(context.Background()))
