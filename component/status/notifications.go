@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"sync"
 
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
 )
 
@@ -57,14 +56,12 @@ func (n *Notifications) RegisterListener(options ...ListenerOption) UnregisterFu
 	}
 }
 
-func (n *Notifications) ReportStatus(eventType EventType, componentID config.ComponentID, options ...StatusEventOption) (errs error) {
-	ev := newStatusEvent(eventType, componentID, options...)
-
+func (n *Notifications) ReportStatus(event StatusEvent) (errs error) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
 	for _, listener := range n.listeners {
-		if err := listener.statusEventHandler(ev); err != nil {
+		if err := listener.statusEventHandler(event); err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("failure in status event handler: %w", err))
 		}
 

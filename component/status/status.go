@@ -48,7 +48,7 @@ func WithTimestamp(nanos int64) StatusEventOption {
 	}
 }
 
-func newStatusEvent(eventType EventType, componentID config.ComponentID, options ...StatusEventOption) StatusEvent {
+func NewStatusEvent(eventType EventType, componentID config.ComponentID, options ...StatusEventOption) StatusEvent {
 	ev := StatusEvent{
 		Type:        eventType,
 		ComponentID: componentID,

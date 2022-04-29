@@ -34,6 +34,8 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/internal/testcomponents"
@@ -138,6 +140,42 @@ func TestCollectorReportError(t *testing.T) {
 	}, 2*time.Second, 200*time.Millisecond)
 
 	col.service.host.ReportFatalError(errors.New("err2"))
+
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+}
+
+func TestCollector_ReportStatusWithFatalError(t *testing.T) {
+	factories, err := testcomponents.NewDefaultFactories()
+	require.NoError(t, err)
+
+	cfgSet := newDefaultConfigProviderSettings([]string{
+		filepath.Join("testdata", "otelcol-config.yaml"),
+	})
+	cfgProvider, err := NewConfigProvider(cfgSet)
+	require.NoError(t, err)
+
+	col, err := New(CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.service.host.ReportStatus(
+		status.EventError,
+		config.NewComponentID("nop"),
+		status.WithError(
+			componenterror.NewFatal(errors.New("err2")),
+		),
+	)
 
 	wg.Wait()
 	assert.Equal(t, Closed, col.GetState())

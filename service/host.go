@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/builder"
@@ -72,7 +73,11 @@ func (host *serviceHost) RegisterStatusListener(options ...status.ListenerOption
 }
 
 func (host *serviceHost) ReportStatus(eventType status.EventType, componentID config.ComponentID, options ...status.StatusEventOption) {
-	if err := host.statusNotifications.ReportStatus(eventType, componentID, options...); err != nil {
+	event := status.NewStatusEvent(eventType, componentID, options...)
+	if err := host.statusNotifications.ReportStatus(event); err != nil {
 		host.telemetry.Logger.Warn("Service failed to report status", zap.Error(err))
+	}
+	if eventType == status.EventError && event.Error != nil && componenterror.IsFatal(event.Error) {
+		host.asyncErrorChannel <- event.Error
 	}
 }

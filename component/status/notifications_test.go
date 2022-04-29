@@ -83,12 +83,16 @@ func TestNotifications_ReportStatus(t *testing.T) {
 
 	compID := config.NewComponentID("nop")
 
-	notifications.ReportStatus(EventError, compID, WithError(errors.New("err1")))
+	notifications.ReportStatus(
+		NewStatusEvent(EventError, compID, WithError(errors.New("err1"))),
+	)
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 1, eeSpy.CallCount)
 	assert.Equal(t, "err1", eeSpy.LastArg.Error.Error())
 
-	notifications.ReportStatus(EventError, compID, WithError(errors.New("err2")))
+	notifications.ReportStatus(
+		NewStatusEvent(EventError, compID, WithError(errors.New("err2"))),
+	)
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 2, eeSpy.CallCount)
 	assert.Equal(t, "err2", eeSpy.LastArg.Error.Error())
@@ -115,8 +119,8 @@ func TestNotifications_StatusHandlerWithError(t *testing.T) {
 
 	compID := config.NewComponentID("nop")
 
-	assert.Error(t, notifications.ReportStatus(EventOK, compID))
-	assert.Error(t, notifications.ReportStatus(EventError, compID, WithError(errors.New("err"))))
+	assert.Error(t, notifications.ReportStatus(NewStatusEvent(EventOK, compID)))
+	assert.Error(t, notifications.ReportStatus(NewStatusEvent(EventError, compID, WithError(errors.New("err")))))
 
 	assert.True(t, l1.StatusEventSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 2, l1.StatusEventSpy.CallCount)
@@ -149,13 +153,13 @@ func TestNotifications_RegisterUnregister(t *testing.T) {
 
 	notifications.Start()
 	notifications.PipelineReady()
-	notifications.ReportStatus(EventError, compID, WithError(errors.New("err1")))
+	notifications.ReportStatus(NewStatusEvent(EventError, compID, WithError(errors.New("err1"))))
 	un1()
 
-	notifications.ReportStatus(EventError, compID, WithError(errors.New("err2")))
+	notifications.ReportStatus(NewStatusEvent(EventError, compID, WithError(errors.New("err2"))))
 	un2()
 
-	notifications.ReportStatus(EventOK, compID)
+	notifications.ReportStatus(NewStatusEvent(EventOK, compID))
 	notifications.PipelineNotReady()
 	notifications.Shutdown()
 
