@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/contrib/zpages"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
@@ -130,46 +129,4 @@ func (srv *service) Shutdown(ctx context.Context) error {
 	}
 
 	return errs
-}
-
-var _ component.Host = (*serviceHost)(nil)
-
-type serviceHost struct {
-	asyncErrorChannel   chan error
-	factories           component.Factories
-	zPagesSpanProcessor *zpages.SpanProcessor
-
-	builtExporters  builder.Exporters
-	builtReceivers  builder.Receivers
-	builtPipelines  builder.BuiltPipelines
-	builtExtensions extensions.Extensions
-}
-
-// ReportFatalError is used to report to the host that the receiver encountered
-// a fatal error (i.e.: an error that the instance can't recover from) after
-// its start function has already returned.
-func (host *serviceHost) ReportFatalError(err error) {
-	host.asyncErrorChannel <- err
-}
-
-func (host *serviceHost) GetFactory(kind component.Kind, componentType config.Type) component.Factory {
-	switch kind {
-	case component.KindReceiver:
-		return host.factories.Receivers[componentType]
-	case component.KindProcessor:
-		return host.factories.Processors[componentType]
-	case component.KindExporter:
-		return host.factories.Exporters[componentType]
-	case component.KindExtension:
-		return host.factories.Extensions[componentType]
-	}
-	return nil
-}
-
-func (host *serviceHost) GetExtensions() map[config.ComponentID]component.Extension {
-	return host.builtExtensions.ToMap()
-}
-
-func (host *serviceHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
-	return host.builtExporters.ToMapByDataType()
 }
