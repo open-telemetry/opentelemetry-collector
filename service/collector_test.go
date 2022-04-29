@@ -137,7 +137,7 @@ func TestCollectorReportError(t *testing.T) {
 		return Running == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
-	col.service.ReportFatalError(errors.New("err2"))
+	col.service.host.ReportFatalError(errors.New("err2"))
 
 	wg.Wait()
 	assert.Equal(t, Closed, col.GetState())

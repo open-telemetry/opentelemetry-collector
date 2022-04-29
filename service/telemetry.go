@@ -153,7 +153,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 }
 
 func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http.Handler, error) {
-	processMetricsViews, err := telemetry2.NewProcessMetricsViews(getBallastSize(col.service))
+	processMetricsViews, err := telemetry2.NewProcessMetricsViews(getBallastSize(col.service.host))
 	if err != nil {
 		return nil, err
 	}
