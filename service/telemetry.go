@@ -91,7 +91,7 @@ func (tel *colTelemetry) init(col *Collector) error {
 }
 
 func (tel *colTelemetry) initOnce(col *Collector) error {
-	logger := col.logger
+	logger := col.telemetry.Logger
 	cfg := col.service.config.Telemetry
 
 	level := cfg.Metrics.Level
@@ -153,7 +153,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 }
 
 func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http.Handler, error) {
-	processMetricsViews, err := telemetry2.NewProcessMetricsViews(getBallastSize(col.service))
+	processMetricsViews, err := telemetry2.NewProcessMetricsViews(getBallastSize(col.service.host))
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (tel *colTelemetry) initOpenTelemetry(col *Collector) (http.Handler, error)
 		return nil, err
 	}
 
-	col.meterProvider = pe.MeterProvider()
+	col.telemetry.MeterProvider = pe.MeterProvider()
 	return pe, err
 }
 
