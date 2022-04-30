@@ -24,26 +24,37 @@ import (
 
 var errRegistrationNotFound = errors.New("registration not found")
 
+// Notifications is a mechanism that facilitates the passing of status events between components.
+// Status events can be used to indicate that a component is functioning as expected, or that it is
+// in an error state. Components can send status events using the ReportStatus function, and
+// components interested in receiving events can register a listener via the RegisterListener
+// function.
 type Notifications struct {
 	mu        sync.RWMutex
 	listeners []*listener
 }
 
+// NewNotifications returns a pointer to a newly initialized Notifications struct
 func NewNotifications() *Notifications {
 	return &Notifications{
 		listeners: []*listener{},
 	}
 }
 
+// Start starts notifications
 func (n *Notifications) Start() error {
 	return nil
 }
 
+// Shutdown stops notifications
 func (n *Notifications) Shutdown() error {
 	n.listeners = nil
 	return nil
 }
 
+// RegisterListener registers a component to listen to the events indicated by the passed in
+// ListenerOptions. It returns an UnregisterFunc, which should be called by the registering
+// component during Shutdown.
 func (n *Notifications) RegisterListener(options ...ListenerOption) UnregisterFunc {
 	l := newListener(options...)
 
@@ -56,6 +67,8 @@ func (n *Notifications) RegisterListener(options ...ListenerOption) UnregisterFu
 	}
 }
 
+// ReportStatus notifies all registered listeners of a StatusEvent. A StatusEvent can indicate that
+// a component is functioning normally (status.EventOK) or is in an error state (status.EventError)
 func (n *Notifications) ReportStatus(event StatusEvent) (errs error) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
@@ -70,6 +83,10 @@ func (n *Notifications) ReportStatus(event StatusEvent) (errs error) {
 	return errs
 }
 
+// PipelineReady is to be called by the service when all pipelines have been built and the receivers
+// have started, i.e.: the service is ready to receive data (note that it may already have received
+// data when this method is called). All listeners that have registered a
+// PipelineReadyHandler will be notified.
 func (n *Notifications) PipelineReady() (errs error) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
@@ -83,6 +100,10 @@ func (n *Notifications) PipelineReady() (errs error) {
 	return errs
 }
 
+// PipelineNotReady is to be called by the service when all receivers are about to be stopped,
+// i.e.: pipeline receivers will not accept new data. All listeners with a registered
+// PipelineNotReady handler will be notified. The notification is sent before receivers are stopped,
+// so the Extension can take any appropriate actions before that happens.
 func (n *Notifications) PipelineNotReady() (errs error) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
