@@ -98,7 +98,12 @@ var tracesOTLPFull = func() Traces {
 	sp.Attributes().UpsertBytes("bytes", []byte("foo"))
 	arr := internal.NewValueSlice()
 	arr.SliceVal().AppendEmpty().SetIntVal(1)
+	arr.SliceVal().AppendEmpty().SetStringVal("str")
 	sp.Attributes().Upsert("array", arr)
+	kvList := internal.NewValueMap()
+	kvList.MapVal().Upsert("int", internal.NewValueInt(1))
+	kvList.MapVal().Upsert("string", internal.NewValueString("string"))
+	sp.Attributes().Upsert("kvList", kvList)
 	// Add events.
 	event := sp.Events().AppendEmpty()
 	event.SetName("eventName")
@@ -360,6 +365,16 @@ func TestReadArrayUnknownField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	readArray(iter)
+	if assert.Error(t, iter.Error) {
+		assert.Contains(t, iter.Error.Error(), "unknown field")
+	}
+}
+
+func TestReadKvlistValueUnknownField(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	readKvlistValue(iter)
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "unknown field")
 	}

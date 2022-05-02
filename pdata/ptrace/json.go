@@ -276,17 +276,14 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 }
 
 func readAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
-	var (
-		key   string
-		value otlpcommon.AnyValue
-	)
+	kv := otlpcommon.KeyValue{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "key":
-			key = iter.ReadString()
+			kv.Key = iter.ReadString()
 		case "value":
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				value = readAnyValue(iter, f)
+				kv.Value = readAnyValue(iter, f)
 				return true
 			})
 		default:
@@ -294,10 +291,7 @@ func readAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
 		}
 		return true
 	})
-	return otlpcommon.KeyValue{
-		Key:   key,
-		Value: value,
-	}
+	return kv
 }
 
 func readAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
@@ -343,6 +337,12 @@ func readAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
 				ArrayValue: readArray(iter),
 			},
 		}
+	case "kvlistValue", "kvlist_value":
+		return otlpcommon.AnyValue{
+			Value: &otlpcommon.AnyValue_KvlistValue{
+				KvlistValue: readKvlistValue(iter),
+			},
+		}
 	default:
 		iter.ReportError("readAnyValue", fmt.Sprintf("unknown field:%v", f))
 		return otlpcommon.AnyValue{}
@@ -363,6 +363,23 @@ func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
 			})
 		default:
 			iter.ReportError("readArray", fmt.Sprintf("unknown field:%s", f))
+		}
+		return true
+	})
+	return v
+}
+
+func readKvlistValue(iter *jsoniter.Iterator) *otlpcommon.KeyValueList {
+	v := &otlpcommon.KeyValueList{}
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "values":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				v.Values = append(v.Values, readAttribute(iter))
+				return true
+			})
+		default:
+			iter.ReportError("readKvlistValue", fmt.Sprintf("unknown field:%s", f))
 		}
 		return true
 	})
