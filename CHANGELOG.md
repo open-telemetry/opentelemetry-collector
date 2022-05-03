@@ -21,6 +21,7 @@
 - Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
 - Remove non pdata deprecated funcs/structs (#5220)
 - `pmetric.Exemplar.ValueType()` now returns new type `ExemplarValueType` (#5233)
+- Remove deprecated `Delete` pdata func from (v0.47.0). (#5307)
 
 ### 🚩 Deprecations 🚩
 
