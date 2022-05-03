@@ -619,11 +619,6 @@ func (m Map) Get(key string) (Value, bool) {
 	return Value{nil}, false
 }
 
-// Deprecated: [v0.47.0] Use Remove instead.
-func (m Map) Delete(key string) bool {
-	return m.Remove(key)
-}
-
 // Remove removes the entry associated with the key and returns true if the key
 // was present in the map, otherwise returns false.
 func (m Map) Remove(key string) bool {
