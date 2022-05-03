@@ -16,6 +16,8 @@ package config // import "go.opentelemetry.io/collector/config"
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 )
 
 // MapProvider is an interface that helps to retrieve a config map and watch for any
@@ -80,9 +82,25 @@ type ChangeEvent struct {
 }
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
-type Retrieved struct {
-	cfgMap    *Map
-	closeFunc CloseFunc
+type Retrieved interface {
+	// AsMap returns the retrieved configuration parsed as a Map.
+	AsMap() (*Map, error)
+
+	// AsValue returns the retrieved configuration parsed as an interface{} which can be one of the following types:
+	//   * Primitive float/int/bool/string;
+	//   * []interface{} - every member follows the same rules as the given interface{};
+	//   * map[string]interface{} - every value follows the same rules as the given interface{};
+	AsValue() (interface{}, error)
+
+	// Close and release any watchers that MapProvider.Retrieve may have created.
+	//
+	// Should block until all resources are closed, and guarantee that `onChange` is not
+	// going to be called after it returns except when `ctx` is cancelled.
+	//
+	// Should never be called concurrently with itself.
+	Close(ctx context.Context) error
+
+	unexportedFunc()
 }
 
 type retrievedSettings struct {
@@ -100,7 +118,7 @@ func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
 	}
 }
 
-// NewRetrievedFromMap returns a new Retrieved instance that contains a Map data.
+// NewRetrievedFromMap returns a new Retrieved instance that contains a *Map value.
 // * cfgMap the Map that will be merged to the given map in the MergeTo.
 // * CloseFunc specifies a function to be invoked when the configuration for which it was
 //   used to retrieve values is no longer in use and should close and release any watchers
@@ -110,26 +128,62 @@ func NewRetrievedFromMap(cfgMap *Map, opts ...RetrievedOption) Retrieved {
 	for _, opt := range opts {
 		opt(&set)
 	}
-	return Retrieved{cfgMap: cfgMap, closeFunc: set.closeFunc}
+	return &valueRetrieved{value: cfgMap.ToStringMap(), CloseFunc: set.closeFunc}
 }
 
-// AsMap returns the retrieved configuration parsed as a Map.
-func (r Retrieved) AsMap() (*Map, error) {
-	return r.cfgMap, nil
-}
-
-// Close and release any watchers that MapProvider.Retrieve may have created.
-//
-// Should block until all resources are closed, and guarantee that `onChange` is not
-// going to be called after it returns except when `ctx` is cancelled.
-//
-// Should never be called concurrently with itself.
-func (r Retrieved) Close(ctx context.Context) error {
-	if r.closeFunc == nil {
-		return nil
+// NewRetrievedFromStringMap returns a new Retrieved instance that contains a map[string]interface{} value.
+// * cfgMap the Map that will be merged to the given map in the MergeTo.
+// * CloseFunc specifies a function to be invoked when the configuration for which it was
+//   used to retrieve values is no longer in use and should close and release any watchers
+//	 that it may have created.
+func NewRetrievedFromStringMap(value map[string]interface{}, opts ...RetrievedOption) Retrieved {
+	set := retrievedSettings{}
+	for _, opt := range opts {
+		opt(&set)
 	}
-	return r.closeFunc(ctx)
+	return &valueRetrieved{value: value, CloseFunc: set.closeFunc}
 }
+
+// NewRetrievedFromString returns a new Retrieved instance that contains a string value.
+// * cfgMap the Map that will be merged to the given map in the MergeTo.
+// * CloseFunc specifies a function to be invoked when the configuration for which it was
+//   used to retrieve values is no longer in use and should close and release any watchers
+//	 that it may have created.
+func NewRetrievedFromString(value string, opts ...RetrievedOption) Retrieved {
+	set := retrievedSettings{}
+	for _, opt := range opts {
+		opt(&set)
+	}
+	return &valueRetrieved{value: value, CloseFunc: set.closeFunc}
+}
+
+type valueRetrieved struct {
+	value interface{}
+	CloseFunc
+}
+
+func (r *valueRetrieved) AsMap() (*Map, error) {
+	val, ok := r.value.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("retrieved value (type=%v) cannot be used as a *Map", reflect.TypeOf(r.value))
+
+	}
+	return NewMapFromStringMap(val), nil
+}
+
+func (r *valueRetrieved) AsValue() (interface{}, error) {
+	return r.value, nil
+}
+
+func (r *valueRetrieved) unexportedFunc() {}
 
 // CloseFunc a function equivalent to Retrieved.Close.
 type CloseFunc func(context.Context) error
+
+// Close implements Retrieved.Close.
+func (f CloseFunc) Close(ctx context.Context) error {
+	if f == nil {
+		return nil
+	}
+	return f(ctx)
+}

@@ -8,6 +8,7 @@
 - Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
 - Remove derecated featuregate funcs/structs from v0.50.0 (#5346)
 - Remove access to deprecated members of the config.Retrieved struct (#5363)
+- Change config.Retrieved to be an interface (#5305)
 
 ### 🚩 Deprecations 🚩
 

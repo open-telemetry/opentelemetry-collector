@@ -24,20 +24,20 @@ import (
 )
 
 func TestNewRetrievedFromMap(t *testing.T) {
-	cfgMap := NewMap()
+	cfgMap := NewMapFromStringMap(map[string]interface{}{"test": "value"})
 	ret := NewRetrievedFromMap(cfgMap)
 	retMap, err := ret.AsMap()
 	require.NoError(t, err)
-	assert.Same(t, cfgMap, retMap)
+	assert.Equal(t, cfgMap, retMap)
 	assert.NoError(t, ret.Close(context.Background()))
 }
 
 func TestNewRetrievedFromMapWithOptions(t *testing.T) {
 	want := errors.New("my error")
-	cfgMap := NewMap()
+	cfgMap := NewMapFromStringMap(map[string]interface{}{"test": "value"})
 	ret := NewRetrievedFromMap(cfgMap, WithRetrievedClose(func(context.Context) error { return want }))
 	retMap, err := ret.AsMap()
 	require.NoError(t, err)
-	assert.Same(t, cfgMap, retMap)
+	assert.Equal(t, cfgMap, retMap)
 	assert.Equal(t, want, ret.Close(context.Background()))
 }
