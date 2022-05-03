@@ -34,7 +34,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
@@ -170,11 +169,9 @@ func TestCollector_ReportStatusWithFatalError(t *testing.T) {
 	}, 2*time.Second, 200*time.Millisecond)
 
 	col.service.host.ReportStatus(
-		status.EventError,
+		status.FATAL_ERROR,
 		config.NewComponentID("nop"),
-		status.WithError(
-			componenterror.NewFatal(errors.New("err2")),
-		),
+		status.WithError(errors.New("err2")),
 	)
 
 	wg.Wait()

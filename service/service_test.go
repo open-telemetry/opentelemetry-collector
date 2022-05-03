@@ -138,7 +138,7 @@ func TestService_ReportStatus(t *testing.T) {
 	expectedComponentID := config.NewComponentID("nop")
 	expectedError := errors.New("an error")
 
-	host.ReportStatus(status.EventOK, expectedComponentID, status.WithError(expectedError))
+	host.ReportStatus(status.OK, expectedComponentID, status.WithError(expectedError))
 
 	assert.True(t, statusEventHandlerCalled)
 	assert.Equal(t, expectedComponentID, errorEvent.ComponentID)

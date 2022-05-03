@@ -24,10 +24,14 @@ import (
 type EventType int
 
 const (
-	// EventOK indicates the producer of a status event is functioning normally
-	EventOK EventType = iota
-	// EventError indicates the producer of a status event is in an error state
-	EventError
+	// OK indicates the producer of a status event is functioning normally
+	OK EventType = iota
+	// RECOVERABLE_ERROR is an error that can be retried, potentially with a successful outcome
+	RECOVERABLE_ERROR
+	// PERMANENT_ERROR is an error that will be always returned if its source receives the same inputs
+	PERMANENT_ERROR
+	// FATAL_ERROR is an error that cannot be recovered from and will cause early termination of the collector
+	FATAL_ERROR
 )
 
 // StatusEvent is an event produced by a component to communicate its status to registered listeners.
