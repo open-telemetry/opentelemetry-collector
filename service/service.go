@@ -21,10 +21,10 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/internal/extensions"
+	"go.opentelemetry.io/collector/service/internal/status"
 )
 
 // service represents the implementation of a component.Host.

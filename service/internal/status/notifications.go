@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package status // import "go.opentelemetry.io/collector/component/status"
+package status // import "go.opentelemetry.io/collector/service/internal/status"
 
 import (
 	"errors"
 	"fmt"
 	"sync"
 
+	"go.opentelemetry.io/collector/component/status"
 	"go.uber.org/multierr"
 )
 
@@ -31,13 +32,13 @@ var errRegistrationNotFound = errors.New("registration not found")
 // function.
 type Notifications struct {
 	mu        sync.RWMutex
-	listeners []*listener
+	listeners []*status.Listener
 }
 
 // NewNotifications returns a pointer to a newly initialized Notifications struct
 func NewNotifications() *Notifications {
 	return &Notifications{
-		listeners: []*listener{},
+		listeners: []*status.Listener{},
 	}
 }
 
@@ -55,8 +56,8 @@ func (n *Notifications) Shutdown() error {
 // RegisterListener registers a component to listen to the events indicated by the passed in
 // ListenerOptions. It returns an UnregisterFunc, which should be called by the registering
 // component during Shutdown.
-func (n *Notifications) RegisterListener(options ...ListenerOption) UnregisterFunc {
-	l := newListener(options...)
+func (n *Notifications) RegisterListener(options ...status.ListenerOption) status.UnregisterFunc {
+	l := status.NewListener(options...)
 
 	n.mu.Lock()
 	n.listeners = append(n.listeners, l)
@@ -69,12 +70,12 @@ func (n *Notifications) RegisterListener(options ...ListenerOption) UnregisterFu
 
 // ReportStatus notifies all registered listeners of a StatusEvent. A StatusEvent can indicate that
 // a component is functioning normally (status.EventOK) or is in an error state (status.EventError)
-func (n *Notifications) ReportStatus(event StatusEvent) (errs error) {
+func (n *Notifications) ReportStatus(event status.StatusEvent) (errs error) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
 	for _, listener := range n.listeners {
-		if err := listener.statusEventHandler(event); err != nil {
+		if err := listener.StatusEventHandler(event); err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("failure in status event handler: %w", err))
 		}
 
@@ -92,7 +93,7 @@ func (n *Notifications) PipelineReady() (errs error) {
 	defer n.mu.RUnlock()
 
 	for _, listener := range n.listeners {
-		if err := listener.pipelineReadyHandler(); err != nil {
+		if err := listener.PipelineReadyHandler(); err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("failure in pipeline ready handler: %w", err))
 		}
 	}
@@ -109,7 +110,7 @@ func (n *Notifications) PipelineNotReady() (errs error) {
 	defer n.mu.RUnlock()
 
 	for _, listener := range n.listeners {
-		if err := listener.pipelineNotReadyHandler(); err != nil {
+		if err := listener.PipelineNotReadyHandler(); err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("failure in pipeline not ready handler: %w", err))
 		}
 	}
@@ -117,7 +118,7 @@ func (n *Notifications) PipelineNotReady() (errs error) {
 	return errs
 }
 
-func (n *Notifications) unregisterListener(l *listener) error {
+func (n *Notifications) unregisterListener(l *status.Listener) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 

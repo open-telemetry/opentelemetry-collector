@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/internal/extensions"
+	internalstatus "go.opentelemetry.io/collector/service/internal/status"
 )
 
 var _ component.Host = (*serviceHost)(nil)
@@ -30,7 +31,7 @@ type serviceHost struct {
 	asyncErrorChannel   chan error
 	factories           component.Factories
 	telemetry           component.TelemetrySettings
-	statusNotifications *status.Notifications
+	statusNotifications *internalstatus.Notifications
 
 	builtExporters  builder.Exporters
 	builtReceivers  builder.Receivers

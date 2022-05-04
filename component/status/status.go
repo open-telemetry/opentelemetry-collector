@@ -57,18 +57,34 @@ var noopStatusEventFunc = func(event StatusEvent) error { return nil }
 
 var noopPipelineFunc = func() error { return nil }
 
-type listener struct {
+// Listener is a struct that manages handlers to status and pipeline events
+type Listener struct {
 	statusEventHandler      StatusEventFunc
 	pipelineReadyHandler    PipelineEventFunc
 	pipelineNotReadyHandler PipelineEventFunc
 }
 
+// StatusEventHandler delegates to the underlying handler registered to the Listener
+func (l *Listener) StatusEventHandler(event StatusEvent) error {
+	return l.statusEventHandler(event)
+}
+
+// PipelineReadyHandler delegates to the underlying handler registered to the Listener
+func (l *Listener) PipelineReadyHandler() error {
+	return l.pipelineReadyHandler()
+}
+
+// PipelineNotReadyHandler delegates to the underlying handler registered to the Listener
+func (l *Listener) PipelineNotReadyHandler() error {
+	return l.pipelineNotReadyHandler()
+}
+
 // ListenerOption applies options to a status listener
-type ListenerOption func(*listener)
+type ListenerOption func(*Listener)
 
 // WithStatusEventHandler allows you to configure callback for status events
 func WithStatusEventHandler(handler StatusEventFunc) ListenerOption {
-	return func(o *listener) {
+	return func(o *Listener) {
 		o.statusEventHandler = handler
 	}
 }
@@ -76,7 +92,7 @@ func WithStatusEventHandler(handler StatusEventFunc) ListenerOption {
 // WithPipelineReadyReayHandler allows you configure a callback to be executed when the pipeline
 // state changes to "ready"
 func WithPipelineReadyHandler(handler PipelineEventFunc) ListenerOption {
-	return func(o *listener) {
+	return func(o *Listener) {
 		o.pipelineReadyHandler = handler
 	}
 }
@@ -84,13 +100,13 @@ func WithPipelineReadyHandler(handler PipelineEventFunc) ListenerOption {
 // WithPipelineReadyReayHandler allows you configure a callback to be executed when the pipeline
 // state changes to "not ready"
 func WithPipelineNotReadyHandler(handler PipelineEventFunc) ListenerOption {
-	return func(o *listener) {
+	return func(o *Listener) {
 		o.pipelineNotReadyHandler = handler
 	}
 }
 
-func newListener(options ...ListenerOption) *listener {
-	l := &listener{
+func NewListener(options ...ListenerOption) *Listener {
+	l := &Listener{
 		statusEventHandler:      noopStatusEventFunc,
 		pipelineReadyHandler:    noopPipelineFunc,
 		pipelineNotReadyHandler: noopPipelineFunc,
