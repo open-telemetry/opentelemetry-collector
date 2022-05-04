@@ -41,7 +41,7 @@ It's recommended to use at least 1.2 as the minimum version.
 
 - `max_version` (default = "1.3"): Maximum acceptable TLS version.
 
-Addiotnally certifaces may be relaoded by setting the below configuration.
+Additionally certifaces may be reloaded by setting the below configuration.
 
 - `reload_interval` (optional) : ReloadInterval specifies the duration after which the certificate will be reloaded.
    If not set, it will never be reloaded.
