@@ -169,9 +169,11 @@ func TestCollector_ReportStatusWithFatalError(t *testing.T) {
 	}, 2*time.Second, 200*time.Millisecond)
 
 	col.service.host.ReportStatus(
-		status.FATAL_ERROR,
-		config.NewComponentID("nop"),
-		status.WithError(errors.New("err2")),
+		status.StatusEvent{
+			ComponentID: config.NewComponentID("nop"),
+			Type:        status.FATAL_ERROR,
+			Error:       errors.New("err2"),
+		},
 	)
 
 	wg.Wait()

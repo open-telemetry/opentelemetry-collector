@@ -73,12 +73,11 @@ func (host *serviceHost) RegisterStatusListener(options ...status.ListenerOption
 
 // ReportStatus is an implementation of Host.ReportStatus. Note, that reporting a status.FATAL_ERROR
 // and a non-nil error will cause the collector process to terminate with a non-zero exit code.
-func (host *serviceHost) ReportStatus(eventType status.EventType, componentID config.ComponentID, options ...status.StatusEventOption) {
-	event := status.NewStatusEvent(eventType, componentID, options...)
+func (host *serviceHost) ReportStatus(event status.StatusEvent) {
 	if err := host.statusNotifications.ReportStatus(event); err != nil {
 		host.telemetry.Logger.Warn("Service failed to report status", zap.Error(err))
 	}
-	if eventType == status.FATAL_ERROR && event.Error != nil {
+	if event.Type == status.FATAL_ERROR && event.Error != nil {
 		host.asyncErrorChannel <- event.Error
 	}
 }

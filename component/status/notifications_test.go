@@ -97,14 +97,22 @@ func TestNotifications_ReportStatus(t *testing.T) {
 	compID := config.NewComponentID("nop")
 
 	notifications.ReportStatus(
-		NewStatusEvent(RECOVERABLE_ERROR, compID, WithError(errors.New("err1"))),
+		StatusEvent{
+			Type:        RECOVERABLE_ERROR,
+			ComponentID: compID,
+			Error:       errors.New("err1"),
+		},
 	)
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 1, eeSpy.CallCount)
 	assert.Equal(t, "err1", eeSpy.LastArg.Error.Error())
 
 	notifications.ReportStatus(
-		NewStatusEvent(RECOVERABLE_ERROR, compID, WithError(errors.New("err2"))),
+		StatusEvent{
+			Type:        RECOVERABLE_ERROR,
+			ComponentID: compID,
+			Error:       errors.New("err2"),
+		},
 	)
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 2, eeSpy.CallCount)
@@ -132,8 +140,18 @@ func TestNotifications_StatusHandlerWithError(t *testing.T) {
 
 	compID := config.NewComponentID("nop")
 
-	assert.Error(t, notifications.ReportStatus(NewStatusEvent(OK, compID)))
-	assert.Error(t, notifications.ReportStatus(NewStatusEvent(RECOVERABLE_ERROR, compID, WithError(errors.New("err")))))
+	assert.Error(t, notifications.ReportStatus(
+		StatusEvent{Type: OK, ComponentID: compID}),
+	)
+	assert.Error(t,
+		notifications.ReportStatus(
+			StatusEvent{
+				Type:        RECOVERABLE_ERROR,
+				ComponentID: compID,
+				Error:       errors.New("err"),
+			},
+		),
+	)
 
 	assert.True(t, l1.StatusEventSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 2, l1.StatusEventSpy.CallCount)
@@ -166,13 +184,32 @@ func TestNotifications_RegisterUnregister(t *testing.T) {
 
 	notifications.Start()
 	notifications.PipelineReady()
-	notifications.ReportStatus(NewStatusEvent(RECOVERABLE_ERROR, compID, WithError(errors.New("err1"))))
+	notifications.ReportStatus(
+		StatusEvent{
+			Type:        RECOVERABLE_ERROR,
+			ComponentID: compID,
+			Error:       errors.New("err1"),
+		},
+	)
+
 	un1()
 
-	notifications.ReportStatus(NewStatusEvent(RECOVERABLE_ERROR, compID, WithError(errors.New("err2"))))
+	notifications.ReportStatus(
+		StatusEvent{
+			Type:        RECOVERABLE_ERROR,
+			ComponentID: compID,
+			Error:       errors.New("err2"),
+		},
+	)
 	un2()
 
-	notifications.ReportStatus(NewStatusEvent(OK, compID))
+	notifications.ReportStatus(
+		StatusEvent{
+			Type:        OK,
+			ComponentID: compID,
+		},
+	)
+
 	notifications.PipelineNotReady()
 	notifications.Shutdown()
 

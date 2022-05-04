@@ -19,6 +19,7 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -138,7 +139,14 @@ func TestService_ReportStatus(t *testing.T) {
 	expectedComponentID := config.NewComponentID("nop")
 	expectedError := errors.New("an error")
 
-	host.ReportStatus(status.OK, expectedComponentID, status.WithError(expectedError))
+	host.ReportStatus(
+		status.StatusEvent{
+			ComponentID: expectedComponentID,
+			Type:        status.OK,
+			Error:       expectedError,
+			Timestamp:   time.Now().UnixNano(),
+		},
+	)
 
 	assert.True(t, statusEventHandlerCalled)
 	assert.Equal(t, expectedComponentID, errorEvent.ComponentID)

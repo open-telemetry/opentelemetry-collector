@@ -42,7 +42,7 @@ func (nh *nopHost) GetExporters() map[config.DataType]map[config.ComponentID]com
 	return nil
 }
 
-func (nh *nopHost) ReportStatus(eventType status.EventType, componentID config.ComponentID, options ...status.StatusEventOption) {
+func (nh *nopHost) ReportStatus(event status.StatusEvent) {
 }
 
 func (nh *nopHost) RegisterStatusListener(options ...status.ListenerOption) status.UnregisterFunc {

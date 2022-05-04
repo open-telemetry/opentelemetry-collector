@@ -15,8 +15,6 @@
 package status // import "go.opentelemetry.io/collector/component/status"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -35,50 +33,14 @@ const (
 )
 
 // StatusEvent is an event produced by a component to communicate its status to registered listeners.
-// An event can signal that a component is working normally (i.e. Type: status.EventOK), or that it
-// is in an error state (i.e. Type: status.EventError). An error status may optionally include an
-// error object to provide additonal insight to registered listeners.
+// An event can signal that a component is working normally (i.e. Type: status.OK), or that it
+// is in an error state (i.e. Type: status.RECOVERABLE_ERROR). An error status may optionally
+// include an error object to provide additonal insight to registered listeners.
 type StatusEvent struct {
 	Type        EventType
 	Timestamp   int64
 	ComponentID config.ComponentID
 	Error       error
-}
-
-// StatusEventOption applies options to a StatusEvent
-type StatusEventOption func(*StatusEvent)
-
-// WithError assigns an error object to a StatusEvent. It is optional and should only be applied
-// to a StatusEvent with type status.EventError.
-func WithError(err error) StatusEventOption {
-	return func(o *StatusEvent) {
-		o.Error = err
-	}
-}
-
-// WithTimestamp sets the timestamp, expected in nanos, for a StatusEvent
-func WithTimestamp(nanos int64) StatusEventOption {
-	return func(o *StatusEvent) {
-		o.Timestamp = nanos
-	}
-}
-
-// NewStatusEvent creates and returns a StatusEvent with default and / or the provided options
-func NewStatusEvent(eventType EventType, componentID config.ComponentID, options ...StatusEventOption) StatusEvent {
-	ev := StatusEvent{
-		Type:        eventType,
-		ComponentID: componentID,
-	}
-
-	for _, opt := range options {
-		opt(&ev)
-	}
-
-	if ev.Timestamp == 0 {
-		ev.Timestamp = time.Now().UnixNano()
-	}
-
-	return ev
 }
 
 // StatusEventFunc is a callback function that receives StatusEvents
