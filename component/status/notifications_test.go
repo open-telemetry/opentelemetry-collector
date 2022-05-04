@@ -34,7 +34,7 @@ func TestNotifications_PipelineReadyNotReady(t *testing.T) {
 	assert.False(t, l.PipelineReadySpy.WasCalled(), "Unexpected call to PipelineReady")
 	assert.False(t, l.PipelineReadySpy.WasCalled(), "Unexpected call to PipelineNotReady")
 
-	notifications.Start()
+	assert.NoError(t, notifications.Start())
 	defer notifications.Shutdown()
 
 	assert.NoError(t, notifications.PipelineReady())
@@ -67,7 +67,7 @@ func TestNotifications_PipelineReadyNotReadyWithError(t *testing.T) {
 	assert.False(t, l2.PipelineReadySpy.WasCalled(), "Unexpected call to PipelineReady")
 	assert.False(t, l2.PipelineReadySpy.WasCalled(), "Unexpected call to PipelineNotReady")
 
-	notifications.Start()
+	assert.NoError(t, notifications.Start())
 	defer notifications.Shutdown()
 
 	assert.Error(t, notifications.PipelineReady())
