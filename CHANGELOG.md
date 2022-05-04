@@ -12,6 +12,8 @@
 
 ### 💡 Enhancements 💡
 
+- `pdata`: Expose `pcommon.NewSliceFromRay` and `pcommon.Slice.AsRaw` functions (#5298)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.50.0 Beta
