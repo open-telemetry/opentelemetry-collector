@@ -30,6 +30,7 @@ import (
 // builtExporter is an exporter that is built based on a config. It can have
 // a trace and/or a metrics consumer and have a shutdown function.
 type builtExporter struct {
+	componentID   config.ComponentID
 	logger        *zap.Logger
 	expByDataType map[config.DataType]component.Exporter
 }
@@ -39,7 +40,7 @@ func (bexp *builtExporter) Start(ctx context.Context, host component.Host) error
 	var errs error
 	bexp.logger.Info("Exporter is starting...")
 	for _, exporter := range bexp.expByDataType {
-		errs = multierr.Append(errs, exporter.Start(ctx, components.NewHostWrapper(host, bexp.logger)))
+		errs = multierr.Append(errs, exporter.Start(ctx, components.NewHostWrapper(host, bexp.componentID, bexp.logger)))
 	}
 
 	if errs != nil {
@@ -209,6 +210,7 @@ func buildExporter(
 	inputDataTypes dataTypeRequirements,
 ) (*builtExporter, error) {
 	exporter := &builtExporter{
+		componentID:   cfg.ID(),
 		logger:        set.Logger,
 		expByDataType: make(map[config.DataType]component.Exporter, 3),
 	}

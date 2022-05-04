@@ -29,14 +29,15 @@ import (
 // builtExtension is an extension that is built based on a config. It can have
 // a start function and have a shutdown function.
 type builtExtension struct {
-	logger    *zap.Logger
-	extension component.Extension
+	componentID config.ComponentID
+	logger      *zap.Logger
+	extension   component.Extension
 }
 
 // Start the extension.
 func (ext *builtExtension) Start(ctx context.Context, host component.Host) error {
 	ext.logger.Info("Extension is starting...")
-	if err := ext.extension.Start(ctx, components.NewHostWrapper(host, ext.logger)); err != nil {
+	if err := ext.extension.Start(ctx, components.NewHostWrapper(host, ext.componentID, ext.logger)); err != nil {
 		return err
 	}
 	ext.logger.Info("Extension started.")

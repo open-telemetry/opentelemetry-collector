@@ -32,10 +32,11 @@ import (
 // It can have a trace and/or a metrics consumer (the consumer is either the first
 // processor in the pipeline or the exporter if pipeline has no processors).
 type builtPipeline struct {
-	logger  *zap.Logger
-	firstTC consumer.Traces
-	firstMC consumer.Metrics
-	firstLC consumer.Logs
+	componentID config.ComponentID
+	logger      *zap.Logger
+	firstTC     consumer.Traces
+	firstMC     consumer.Metrics
+	firstLC     consumer.Logs
 
 	// Config is the configuration of this Pipeline.
 	Config *config.Pipeline
@@ -52,7 +53,7 @@ type BuiltPipelines map[config.ComponentID]*builtPipeline
 func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Host) error {
 	for _, bp := range bps {
 		bp.logger.Info("Pipeline is starting...")
-		hostWrapper := components.NewHostWrapper(host, bp.logger)
+		hostWrapper := components.NewHostWrapper(host, bp.componentID, bp.logger)
 		// Start in reverse order, starting from the back of processors pipeline.
 		// This is important so that processors that are earlier in the pipeline and
 		// reference processors that are later in the pipeline do not start sending
@@ -237,6 +238,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 		lc = capabilitiesLogs{Logs: lc, capabilities: consumer.Capabilities{MutatesData: mutatesConsumedData}}
 	}
 	bp := &builtPipeline{
+		componentID: pipelineID,
 		logger:      pipelineLogger,
 		firstTC:     tc,
 		firstMC:     mc,

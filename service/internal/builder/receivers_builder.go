@@ -35,13 +35,14 @@ var errUnusedReceiver = errors.New("receiver defined but not used by any pipelin
 // builtReceiver is a receiver that is built based on a config. It can have
 // a trace and/or a metrics component.
 type builtReceiver struct {
-	logger   *zap.Logger
-	receiver component.Receiver
+	componentID config.ComponentID
+	logger      *zap.Logger
+	receiver    component.Receiver
 }
 
 // Start starts the receiver.
 func (rcv *builtReceiver) Start(ctx context.Context, host component.Host) error {
-	return rcv.receiver.Start(ctx, components.NewHostWrapper(host, rcv.logger))
+	return rcv.receiver.Start(ctx, components.NewHostWrapper(host, rcv.componentID, rcv.logger))
 }
 
 // Shutdown stops the receiver.
@@ -242,7 +243,8 @@ func (rb *receiversBuilder) buildReceiver(ctx context.Context, set component.Rec
 		return nil, fmt.Errorf("receiver factory not found for: %v", cfg.ID())
 	}
 	rcv := &builtReceiver{
-		logger: set.Logger,
+		componentID: id,
+		logger:      set.Logger,
 	}
 
 	// Now we have list of pipelines broken down by data type. Iterate for each data type.
