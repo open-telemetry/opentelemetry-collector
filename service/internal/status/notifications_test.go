@@ -126,6 +126,25 @@ func TestNotifications_ReportStatus(t *testing.T) {
 	assert.NoError(t, notifications.Shutdown())
 }
 
+func TestNotifications_AllHandlersOptional(t *testing.T) {
+	notifications := NewNotifications()
+	un := notifications.RegisterListener()
+
+	assert.NoError(t, notifications.PipelineReady())
+	assert.NoError(t,
+		notifications.ReportStatus(
+			status.Event{
+				Type:        status.OK,
+				ComponentID: config.NewComponentID("nop"),
+			},
+		),
+	)
+
+	assert.NoError(t, notifications.PipelineNotReady())
+	assert.NoError(t, un())
+	assert.NoError(t, notifications.Shutdown())
+}
+
 func TestNotifications_StatusHandlerWithError(t *testing.T) {
 	notifications := NewNotifications()
 
