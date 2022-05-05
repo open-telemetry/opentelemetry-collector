@@ -249,7 +249,6 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 		shouldErr    bool
 		settings     HTTPClientSettings
 		extensionMap map[config.ComponentID]component.Extension
-		host         component.Host
 	}{
 		{
 			name: "no_auth_extension_enabled",
