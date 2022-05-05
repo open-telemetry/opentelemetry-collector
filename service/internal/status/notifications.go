@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"sync"
 
-	"go.opentelemetry.io/collector/component/status"
-
 	"go.uber.org/multierr"
+
+	"go.opentelemetry.io/collector/component/status"
 )
 
 var errRegistrationNotFound = errors.New("registration not found")
