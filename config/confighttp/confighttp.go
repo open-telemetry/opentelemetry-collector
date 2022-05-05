@@ -157,11 +157,6 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		if aerr != nil {
 			return nil, aerr
 		}
-
-		clientTransport, aerr = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
-		if aerr != nil {
-			return nil, aerr
-		}
 	}
 
 	if hcs.CustomRoundTripper != nil {
