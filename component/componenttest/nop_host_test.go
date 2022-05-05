@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/status"
 )
 
 func TestNewNopHost(t *testing.T) {
@@ -30,6 +31,8 @@ func TestNewNopHost(t *testing.T) {
 	require.IsType(t, &nopHost{}, nh)
 
 	nh.ReportFatalError(errors.New("TestError"))
+	nh.ReportStatus(status.Event{})
+	assert.Nil(t, nh.RegisterStatusListener())
 	assert.Nil(t, nh.GetExporters())
 	assert.Nil(t, nh.GetExtensions())
 	assert.Nil(t, nh.GetFactory(component.KindReceiver, "test"))

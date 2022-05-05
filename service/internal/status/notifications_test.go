@@ -238,6 +238,21 @@ func TestNotifications_RegisterUnregister(t *testing.T) {
 	assert.False(t, l2.PipelineNotReadySpy.WasCalled(), "Unexpected call to PipelineNotReady")
 }
 
+func TestNotifications_LateUnregisterReturnsError(t *testing.T) {
+	l1 := newListenerSpy(false)
+
+	notifications := NewNotifications()
+	assert.NoError(t, notifications.Start())
+
+	unreg := notifications.RegisterListener(
+		status.WithPipelineNotReadyHandler(l1.PipelineNotReadySpy.Func),
+	)
+
+	// shutdown unregisters listeners
+	assert.NoError(t, notifications.Shutdown())
+	assert.Error(t, unreg())
+}
+
 type callCounter struct {
 	CallCount int
 }

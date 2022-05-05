@@ -101,10 +101,10 @@ func TestService_ReportStatus(t *testing.T) {
 
 	var readyHandlerCalled, notReadyHandlerCalled, statusEventHandlerCalled bool
 
-	var errorEvent status.Event
+	var statusEvent status.Event
 
 	statusEventHandler := func(ev status.Event) error {
-		errorEvent = ev
+		statusEvent = ev
 		statusEventHandlerCalled = true
 		return nil
 	}
@@ -142,16 +142,51 @@ func TestService_ReportStatus(t *testing.T) {
 	host.ReportStatus(
 		status.Event{
 			ComponentID: expectedComponentID,
-			Type:        status.OK,
+			Type:        status.RecoverableError,
 			Error:       expectedError,
 			Timestamp:   time.Now().UnixNano(),
 		},
 	)
 
 	assert.True(t, statusEventHandlerCalled)
-	assert.Equal(t, expectedComponentID, errorEvent.ComponentID)
-	assert.Equal(t, expectedError, errorEvent.Error)
-	assert.NotNil(t, errorEvent.Timestamp)
+	assert.Equal(t, expectedComponentID, statusEvent.ComponentID)
+	assert.Equal(t, expectedError, statusEvent.Error)
+	assert.NotNil(t, statusEvent.Timestamp)
+	assert.NoError(t, unregister())
+}
+
+func TestService_ReportStatusWithBuggyHandler(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	srv := createExampleService(t, factories)
+	host := srv.host
+
+	var statusEventHandlerCalled bool
+
+	statusEventHandler := func(ev status.Event) error {
+		statusEventHandlerCalled = true
+		return errors.New("an error")
+	}
+
+	unregister := host.RegisterStatusListener(
+		status.WithStatusEventHandler(statusEventHandler),
+	)
+
+	assert.False(t, statusEventHandlerCalled)
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	// ReportStatus handles errors in handlers (by logging) and does not surface them back to callers
+	host.ReportStatus(
+		status.Event{
+			ComponentID: config.NewComponentID("nop"),
+			Type:        status.OK,
+			Timestamp:   time.Now().UnixNano(),
+		},
+	)
+	assert.True(t, statusEventHandlerCalled)
 	assert.NoError(t, unregister())
 }
 
