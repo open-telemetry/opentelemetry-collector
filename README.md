@@ -11,14 +11,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml">
-    <img alt="Go Report Card" src="https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml/badge.svg?branch=main"></a>
-  <a href="https://circleci.com/gh/open-telemetry/opentelemetry-collector">
-    <img alt="Build Status" src="https://img.shields.io/circleci/build/github/open-telemetry/opentelemetry-collector?style=for-the-badge"></a>
+  <a href="https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml?query=branch%3Amain">
+    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/open-telemetry/opentelemetry-collector/build-and-test/main?style=for-the-badge">
+  </a>
+  <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector">
+    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector?style=for-the-badge">
+  </a>
   <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector/branch/main/">
-    <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector?style=for-the-badge"></a>
+    <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector?style=for-the-badge">
+  </a>
   <a href="https://github.com/open-telemetry/opentelemetry-collector/releases">
-    <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-collector?include_prereleases&style=for-the-badge"></a>
+    <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-collector?include_prereleases&style=for-the-badge">
+  </a>
 </p>
 
 <p align="center">
