@@ -14,6 +14,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- Fix Windows Event Logs ignoring user-specified logging options (#5298)
+
 ## v0.50.0 Beta
 
 ### 🛑 Breaking changes 🛑
