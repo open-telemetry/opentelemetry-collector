@@ -28,5 +28,5 @@ import (
 func Test_newHostWrapper(t *testing.T) {
 	hw := NewHostWrapper(componenttest.NewNopHost(), config.NewComponentID("nop"), zap.NewNop())
 	hw.ReportFatalError(errors.New("test error"))
-	hw.ReportStatus(status.StatusEvent{Type: status.OK})
+	hw.ReportStatus(status.Event{Type: status.OK})
 }

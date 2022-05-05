@@ -24,48 +24,48 @@ type EventType int
 const (
 	// OK indicates the producer of a status event is functioning normally
 	OK EventType = iota
-	// RECOVERABLE_ERROR is an error that can be retried, potentially with a successful outcome
-	RECOVERABLE_ERROR
-	// PERMANENT_ERROR is an error that will be always returned if its source receives the same inputs
-	PERMANENT_ERROR
-	// FATAL_ERROR is an error that cannot be recovered from and will cause early termination of the collector
-	FATAL_ERROR
+	// RecoverableError is an error that can be retried, potentially with a successful outcome
+	RecoverableError
+	// PermanentError is an error that will be always returned if its source receives the same inputs
+	PermanentError
+	// FatalError is an error that cannot be recovered from and will cause early termination of the collector
+	FatalError
 )
 
-// StatusEvent is an event produced by a component to communicate its status to registered listeners.
+// Event is a status event produced by a component to communicate its status to registered listeners.
 // An event can signal that a component is working normally (i.e. Type: status.OK), or that it
-// is in an error state (i.e. Type: status.RECOVERABLE_ERROR). An error status may optionally
-// include an error object to provide additonal insight to registered listeners.
-type StatusEvent struct {
+// is in an error state (i.e. Type: status.RecoverableError). An error status may optionally
+// include an error object to provide additional insight to registered listeners.
+type Event struct {
 	Type        EventType
 	Timestamp   int64
 	ComponentID config.ComponentID
 	Error       error
 }
 
-// StatusEventFunc is a callback function that receives StatusEvents
-type StatusEventFunc func(event StatusEvent) error
+// EventFunc is a callback function that receives status.Events
+type EventFunc func(event Event) error
 
-// PipelineEventFunc is a function to be called when the collector pipeline changes states
-type PipelineEventFunc func() error
+// PipelineFunc is a function to be called when the collector pipeline changes states
+type PipelineFunc func() error
 
 // UnregisterFunc is a function to be called to unregister a component that has previously
 // registered to listen to status notifications
 type UnregisterFunc func() error
 
-var noopStatusEventFunc = func(event StatusEvent) error { return nil }
+var noopStatusEventFunc = func(event Event) error { return nil }
 
 var noopPipelineFunc = func() error { return nil }
 
 // Listener is a struct that manages handlers to status and pipeline events
 type Listener struct {
-	statusEventHandler      StatusEventFunc
-	pipelineReadyHandler    PipelineEventFunc
-	pipelineNotReadyHandler PipelineEventFunc
+	statusEventHandler      EventFunc
+	pipelineReadyHandler    PipelineFunc
+	pipelineNotReadyHandler PipelineFunc
 }
 
 // StatusEventHandler delegates to the underlying handler registered to the Listener
-func (l *Listener) StatusEventHandler(event StatusEvent) error {
+func (l *Listener) StatusEventHandler(event Event) error {
 	return l.statusEventHandler(event)
 }
 
@@ -83,7 +83,7 @@ func (l *Listener) PipelineNotReadyHandler() error {
 type ListenerOption func(*Listener)
 
 // WithStatusEventHandler allows you to configure callback for status events
-func WithStatusEventHandler(handler StatusEventFunc) ListenerOption {
+func WithStatusEventHandler(handler EventFunc) ListenerOption {
 	return func(o *Listener) {
 		o.statusEventHandler = handler
 	}
@@ -91,7 +91,7 @@ func WithStatusEventHandler(handler StatusEventFunc) ListenerOption {
 
 // WithPipelineReadyReayHandler allows you configure a callback to be executed when the pipeline
 // state changes to "ready"
-func WithPipelineReadyHandler(handler PipelineEventFunc) ListenerOption {
+func WithPipelineReadyHandler(handler PipelineFunc) ListenerOption {
 	return func(o *Listener) {
 		o.pipelineReadyHandler = handler
 	}
@@ -99,7 +99,7 @@ func WithPipelineReadyHandler(handler PipelineEventFunc) ListenerOption {
 
 // WithPipelineReadyReayHandler allows you configure a callback to be executed when the pipeline
 // state changes to "not ready"
-func WithPipelineNotReadyHandler(handler PipelineEventFunc) ListenerOption {
+func WithPipelineNotReadyHandler(handler PipelineFunc) ListenerOption {
 	return func(o *Listener) {
 		o.pipelineNotReadyHandler = handler
 	}

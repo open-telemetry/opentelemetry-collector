@@ -101,9 +101,9 @@ func TestService_ReportStatus(t *testing.T) {
 
 	var readyHandlerCalled, notReadyHandlerCalled, statusEventHandlerCalled bool
 
-	var errorEvent status.StatusEvent
+	var errorEvent status.Event
 
-	statusEventHandler := func(ev status.StatusEvent) error {
+	statusEventHandler := func(ev status.Event) error {
 		errorEvent = ev
 		statusEventHandlerCalled = true
 		return nil
@@ -140,7 +140,7 @@ func TestService_ReportStatus(t *testing.T) {
 	expectedError := errors.New("an error")
 
 	host.ReportStatus(
-		status.StatusEvent{
+		status.Event{
 			ComponentID: expectedComponentID,
 			Type:        status.OK,
 			Error:       expectedError,

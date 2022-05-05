@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 )
@@ -36,7 +37,6 @@ func TestNotifications_PipelineReadyNotReady(t *testing.T) {
 	assert.False(t, l.PipelineReadySpy.WasCalled(), "Unexpected call to PipelineNotReady")
 
 	assert.NoError(t, notifications.Start())
-	defer notifications.Shutdown()
 
 	assert.NoError(t, notifications.PipelineReady())
 	assert.True(t, l.PipelineReadySpy.WasCalled(), "Expected call to PipelineReady")
@@ -45,6 +45,7 @@ func TestNotifications_PipelineReadyNotReady(t *testing.T) {
 	assert.True(t, l.PipelineNotReadySpy.WasCalled(), "Expected call to PipelineNotReady")
 
 	assert.NoError(t, un())
+	assert.NoError(t, notifications.Shutdown())
 }
 
 func TestNotifications_PipelineReadyNotReadyWithError(t *testing.T) {
@@ -69,8 +70,6 @@ func TestNotifications_PipelineReadyNotReadyWithError(t *testing.T) {
 	assert.False(t, l2.PipelineReadySpy.WasCalled(), "Unexpected call to PipelineNotReady")
 
 	assert.NoError(t, notifications.Start())
-	defer notifications.Shutdown()
-
 	assert.Error(t, notifications.PipelineReady())
 	assert.True(t, l1.PipelineReadySpy.WasCalled(), "Expected call to PipelineReady")
 	assert.True(t, l2.PipelineReadySpy.WasCalled(), "Expected call to PipelineReady")
@@ -81,6 +80,7 @@ func TestNotifications_PipelineReadyNotReadyWithError(t *testing.T) {
 
 	assert.NoError(t, un1())
 	assert.NoError(t, un2())
+	assert.NoError(t, notifications.Shutdown())
 }
 
 func TestNotifications_ReportStatus(t *testing.T) {
@@ -92,34 +92,38 @@ func TestNotifications_ReportStatus(t *testing.T) {
 		status.WithStatusEventHandler(eeSpy.Func),
 	)
 
-	notifications.Start()
-	defer notifications.Shutdown()
+	assert.NoError(t, notifications.Start())
 
 	compID := config.NewComponentID("nop")
 
-	notifications.ReportStatus(
-		status.StatusEvent{
-			Type:        status.RECOVERABLE_ERROR,
-			ComponentID: compID,
-			Error:       errors.New("err1"),
-		},
+	assert.NoError(t,
+		notifications.ReportStatus(
+			status.Event{
+				Type:        status.RecoverableError,
+				ComponentID: compID,
+				Error:       errors.New("err1"),
+			},
+		),
 	)
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 1, eeSpy.CallCount)
 	assert.Equal(t, "err1", eeSpy.LastArg.Error.Error())
 
-	notifications.ReportStatus(
-		status.StatusEvent{
-			Type:        status.RECOVERABLE_ERROR,
-			ComponentID: compID,
-			Error:       errors.New("err2"),
-		},
+	assert.NoError(t,
+		notifications.ReportStatus(
+			status.Event{
+				Type:        status.RecoverableError,
+				ComponentID: compID,
+				Error:       errors.New("err2"),
+			},
+		),
 	)
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 2, eeSpy.CallCount)
 	assert.Equal(t, "err2", eeSpy.LastArg.Error.Error())
 
 	assert.NoError(t, un())
+	assert.NoError(t, notifications.Shutdown())
 }
 
 func TestNotifications_StatusHandlerWithError(t *testing.T) {
@@ -136,18 +140,17 @@ func TestNotifications_StatusHandlerWithError(t *testing.T) {
 		status.WithStatusEventHandler(l2.StatusEventSpy.Func),
 	)
 
-	notifications.Start()
-	defer notifications.Shutdown()
+	assert.NoError(t, notifications.Start())
 
 	compID := config.NewComponentID("nop")
 
 	assert.Error(t, notifications.ReportStatus(
-		status.StatusEvent{Type: status.OK, ComponentID: compID}),
+		status.Event{Type: status.OK, ComponentID: compID}),
 	)
 	assert.Error(t,
 		notifications.ReportStatus(
-			status.StatusEvent{
-				Type:        status.RECOVERABLE_ERROR,
+			status.Event{
+				Type:        status.RecoverableError,
 				ComponentID: compID,
 				Error:       errors.New("err"),
 			},
@@ -161,6 +164,7 @@ func TestNotifications_StatusHandlerWithError(t *testing.T) {
 
 	assert.NoError(t, un1())
 	assert.NoError(t, un2())
+	assert.NoError(t, notifications.Shutdown())
 }
 
 func TestNotifications_RegisterUnregister(t *testing.T) {
@@ -183,36 +187,43 @@ func TestNotifications_RegisterUnregister(t *testing.T) {
 
 	compID := config.NewComponentID("nop")
 
-	notifications.Start()
-	notifications.PipelineReady()
-	notifications.ReportStatus(
-		status.StatusEvent{
-			Type:        status.RECOVERABLE_ERROR,
-			ComponentID: compID,
-			Error:       errors.New("err1"),
-		},
+	assert.NoError(t, notifications.Start())
+	assert.NoError(t, notifications.PipelineReady())
+	assert.NoError(t,
+		notifications.ReportStatus(
+			status.Event{
+				Type:        status.RecoverableError,
+				ComponentID: compID,
+				Error:       errors.New("err1"),
+			},
+		),
 	)
 
-	un1()
+	assert.NoError(t, un1())
 
-	notifications.ReportStatus(
-		status.StatusEvent{
-			Type:        status.RECOVERABLE_ERROR,
-			ComponentID: compID,
-			Error:       errors.New("err2"),
-		},
-	)
-	un2()
-
-	notifications.ReportStatus(
-		status.StatusEvent{
-			Type:        status.OK,
-			ComponentID: compID,
-		},
+	assert.NoError(t,
+		notifications.ReportStatus(
+			status.Event{
+				Type:        status.RecoverableError,
+				ComponentID: compID,
+				Error:       errors.New("err2"),
+			},
+		),
 	)
 
-	notifications.PipelineNotReady()
-	notifications.Shutdown()
+	assert.NoError(t, un2())
+
+	assert.NoError(t,
+		notifications.ReportStatus(
+			status.Event{
+				Type:        status.OK,
+				ComponentID: compID,
+			},
+		),
+	)
+
+	assert.NoError(t, notifications.PipelineNotReady())
+	assert.NoError(t, notifications.Shutdown())
 
 	assert.True(t, l1.PipelineReadySpy.WasCalled(), "Expected call to PipelineReady")
 	assert.True(t, l1.StatusEventSpy.WasCalled(), "Expected call to status event handler")
@@ -237,7 +248,7 @@ func (cc *callCounter) WasCalled() bool {
 
 type pipelineEventSpy struct {
 	callCounter
-	Func status.PipelineEventFunc
+	Func status.PipelineFunc
 }
 
 func newPipelineEventSpy(returnErr bool) *pipelineEventSpy {
@@ -256,8 +267,8 @@ func newPipelineEventSpy(returnErr bool) *pipelineEventSpy {
 
 type statusEventSpy struct {
 	callCounter
-	Func    status.StatusEventFunc
-	LastArg status.StatusEvent
+	Func    status.EventFunc
+	LastArg status.Event
 }
 
 func newStatusEventSpy(returnErr bool) *statusEventSpy {
@@ -267,7 +278,7 @@ func newStatusEventSpy(returnErr bool) *statusEventSpy {
 	}
 
 	spy := &statusEventSpy{}
-	spy.Func = func(ev status.StatusEvent) error {
+	spy.Func = func(ev status.Event) error {
 		spy.LastArg = ev
 		spy.CallCount++
 		return err

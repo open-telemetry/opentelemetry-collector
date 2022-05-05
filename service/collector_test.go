@@ -169,9 +169,9 @@ func TestCollector_ReportStatusWithFatalError(t *testing.T) {
 	}, 2*time.Second, 200*time.Millisecond)
 
 	col.service.host.ReportStatus(
-		status.StatusEvent{
+		status.Event{
 			ComponentID: config.NewComponentID("nop"),
-			Type:        status.FATAL_ERROR,
+			Type:        status.FatalError,
 			Error:       errors.New("err2"),
 		},
 	)
