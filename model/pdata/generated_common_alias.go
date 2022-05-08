@@ -17,16 +17,20 @@
 
 package pdata
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-// InstrumentationLibrary is an alias for pdata.InstrumentationLibrary struct.
-type InstrumentationLibrary = pdata.InstrumentationLibrary
+// InstrumentationScope is an alias for pcommon.InstrumentationScope struct.
+// Deprecated: [v0.49.0] Use pcommon.InstrumentationScope instead.
+type InstrumentationScope = pcommon.InstrumentationScope
 
-// NewInstrumentationLibrary is an alias for a function to create a new empty InstrumentationLibrary.
-var NewInstrumentationLibrary = pdata.NewInstrumentationLibrary
+// NewInstrumentationScope is an alias for a function to create a new empty InstrumentationScope.
+// Deprecated: [v0.49.0] Use pcommon.InstrumentationScope instead.
+var NewInstrumentationScope = pcommon.NewInstrumentationScope
 
-// AttributeValueSlice is an alias for pdata.AttributeValueSlice struct.
-type AttributeValueSlice = pdata.AttributeValueSlice
+// Slice is an alias for pcommon.Slice struct.
+// Deprecated: [v0.49.0] Use pcommon.Slice instead.
+type Slice = pcommon.Slice
 
-// NewAttributeValueSlice is an alias for a function to create AttributeValueSlice.
-var NewAttributeValueSlice = pdata.NewAttributeValueSlice
+// NewSlice is an alias for a function to create Slice.
+// Deprecated: [v0.49.0] Use pcommon.NewSlice instead.
+var NewSlice = pcommon.NewSlice

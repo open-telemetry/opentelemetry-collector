@@ -15,13 +15,23 @@ We release both core and contrib collectors with the same versions where the con
 * [open-telemetry/opentelemetry-collector-contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
 * [open-telemetry/opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases)
 
+## Release manager
+
+A release manager is the person responsible for a specific release. While the manager might request help from other folks, they are ultimately responsible for the success of a release.
+
+In order to have more people comfortable with the release process, and in order to decrease the burden on a small number of volunteers, all core approvers are release managers from time to time, listed under the [Release Schedule](#release-schedule) section. That table is updated at every release, with the current manager adding themselves to the bottom of the table, removing themselves from the top of the table.
+
+It is possible that a core approver isn't a contrib approver. In that case, the release manager should coordinate with a contrib approver for the steps requiring such role, like the publishing of tags.
+
 ## Releasing opentelemetry-collector
+
+1. Make sure that there are no open issues with `release:blocker` label in Core or Contrib repo. The release has to be delayed until they are resolved.
 
 1. Make sure the current `main` branch build successfully passes (Core and Contrib).
 
 1. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.45.0` as the version to be released, following `v0.44.0`.
 
-1. To keep track of the progress, it might be helpful to create a tracking issue similar to [#4870](https://github.com/open-telemetry/opentelemetry-collector/issues/4870). You are responsible for all of them, except the operator one. A template for the tracking issue can be found at the [Appendix A](#appendix-a), and once the issue is created, you can create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
+1. To keep track of the progress, it might be helpful to create a [tracking issue](https://github.com/open-telemetry/opentelemetry-collector/issues/new?assignees=&labels=release&template=release.md&title=Release+vX.X.X) similar to [#4870](https://github.com/open-telemetry/opentelemetry-collector/issues/4870). You are responsible for all of them, except the operator one. Once the issue is created, you can create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
 
 1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes, submit a PR. Open this PR as draft. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later.
 
@@ -30,12 +40,16 @@ We release both core and contrib collectors with the same versions where the con
     * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.44.0...main.
 
     * Use multimod to update the version of the collector package
-      * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/versions.yaml) and commit it
+      * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/versions.yaml) and commit it locally
       * Run `make multimod-prerelease` (it might fail if you didn't commit the change above)
 
     * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
 
     * Update the collector version in the manifest used by `make run` to the new release in `./cmd/otelcorecol/builder-config.yaml`.
+
+    * Update the collector version in the `cmd/otelcorecol/main.go`.
+    
+    * Update the collector version in the `examples/k8s/otel-config.yaml` 
 
     * Submit a PR with the changes and get the PR approved and merged.
 
@@ -47,7 +61,7 @@ We release both core and contrib collectors with the same versions where the con
 
 1. The release script for the collector builder should create a new GitHub release for the builder. This is a separate release from the core, but we might join them in the future if it makes sense.
 
-1. Create a new `v0.45.0` release and use the contents from the CHANGELOG.md as the release's description. At the top of the release's changelog, add a link to the releases repository where the binaries and other artifacts are landing, like:
+1. A new `v0.45.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description. At the top of the release's changelog, add a link to the releases repository where the binaries and other artifacts are landing, like:
 
 ```
 ### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/v0.45.0
@@ -57,7 +71,7 @@ We release both core and contrib collectors with the same versions where the con
 
 1. Prepare Contrib for release.
 
-  * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Refer to Core release notes (assuming the previous release of Core and Contrib was also performed simultaneously), and in addition to that list changes that happened in the Contrib repo.
+  * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top.
 
   * Use multimod to update the version of the collector package:
 
@@ -71,7 +85,7 @@ We release both core and contrib collectors with the same versions where the con
 
 1. Tag all the modules with the new release version by running the `make add-tag TAG=v0.45.0` command. Push them to `open-telemetry/opentelemetry-collector-contrib` with `make push-tag TAG=v0.45.0`. Wait for the new tag build to pass successfully.
 
-1. Create a new `v0.45.0` release and use the contents from the CHANGELOG.md as the release's description.
+1. A new `v0.45.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description. At the top of the description add a link to Core release notes (assuming the previous release of Core and Contrib was also performed simultaneously), e.g. "The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.45.0) (be sure to check the release notes here as well!)."
 
 ## Producing the artifacts
 
@@ -95,28 +109,14 @@ The last step of the release process creates artifacts for the new version of th
 
 1. `unknown revision internal/coreinternal/v0.45.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module. 
 
-## Appendix A
-
-```
-Like #4522, but for v0.45.0
-
-- [ ] Prepare core release v0.45.0
-- [ ] Tag and release core v0.45.0
-- [ ] Prepare contrib release v0.45.0
-- [ ] Tag and release contrib v0.45.0
-- [ ] Prepare otelcol-releases v0.45.0
-- [ ] Release binaries and container images v0.45.0
-- [ ] Release the operator v0.45.0
-```
-
-## Release history and schedule
+## Release schedule
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-03-16 | v0.47.0 | @mx-psi         |
-| 2022-03-30 | v0.48.0 | @tigrannajaryan |
 | 2022-04-13 | v0.49.0 | @dmitryax       |
 | 2022-04-27 | v0.50.0 | @codeboten      |
 | 2022-05-11 | v0.51.0 | @bogdandrutu    |
 | 2022-05-25 | v0.52.0 | @jpkrohling     |
 | 2022-06-01 | v0.53.0 | @Aneurysm9      |
+| 2022-06-15 | v0.54.0 | @mx-psi         |
+| 2022-06-29 | v0.55.0 | @tigrannajaryan |

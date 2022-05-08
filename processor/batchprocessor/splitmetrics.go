@@ -15,19 +15,19 @@
 package batchprocessor // import "go.opentelemetry.io/collector/processor/batchprocessor"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // splitMetrics removes metrics from the input data and returns a new data of the specified size.
-func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
+func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
 	dataPoints := src.DataPointCount()
 	if dataPoints <= size {
 		return src
 	}
 	totalCopiedDataPoints := 0
-	dest := pdata.NewMetrics()
+	dest := pmetric.NewMetrics()
 
-	src.ResourceMetrics().RemoveIf(func(srcRs pdata.ResourceMetrics) bool {
+	src.ResourceMetrics().RemoveIf(func(srcRs pmetric.ResourceMetrics) bool {
 		// If we are done skip everything else.
 		if totalCopiedDataPoints == size {
 			return false
@@ -43,23 +43,23 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 
 		destRs := dest.ResourceMetrics().AppendEmpty()
 		srcRs.Resource().CopyTo(destRs.Resource())
-		srcRs.InstrumentationLibraryMetrics().RemoveIf(func(srcIlm pdata.InstrumentationLibraryMetrics) bool {
+		srcRs.ScopeMetrics().RemoveIf(func(srcIlm pmetric.ScopeMetrics) bool {
 			// If we are done skip everything else.
 			if totalCopiedDataPoints == size {
 				return false
 			}
 
 			// If possible to move all metrics do that.
-			srcIlmDataPointCount := instrumentationLibraryMetricsDPC(srcIlm)
+			srcIlmDataPointCount := scopeMetricsDPC(srcIlm)
 			if srcIlmDataPointCount+totalCopiedDataPoints <= size {
 				totalCopiedDataPoints += srcIlmDataPointCount
-				srcIlm.MoveTo(destRs.InstrumentationLibraryMetrics().AppendEmpty())
+				srcIlm.MoveTo(destRs.ScopeMetrics().AppendEmpty())
 				return true
 			}
 
-			destIlm := destRs.InstrumentationLibraryMetrics().AppendEmpty()
-			srcIlm.InstrumentationLibrary().CopyTo(destIlm.InstrumentationLibrary())
-			srcIlm.Metrics().RemoveIf(func(srcMetric pdata.Metric) bool {
+			destIlm := destRs.ScopeMetrics().AppendEmpty()
+			srcIlm.Scope().CopyTo(destIlm.Scope())
+			srcIlm.Metrics().RemoveIf(func(srcMetric pmetric.Metric) bool {
 				// If we are done skip everything else.
 				if totalCopiedDataPoints == size {
 					return false
@@ -80,24 +80,24 @@ func splitMetrics(size int, src pdata.Metrics) pdata.Metrics {
 			})
 			return false
 		})
-		return srcRs.InstrumentationLibraryMetrics().Len() == 0
+		return srcRs.ScopeMetrics().Len() == 0
 	})
 
 	return dest
 }
 
-// resourceMetricsDPC calculates the total number of data points in the pdata.ResourceMetrics.
-func resourceMetricsDPC(rs pdata.ResourceMetrics) int {
+// resourceMetricsDPC calculates the total number of data points in the pmetric.ResourceMetrics.
+func resourceMetricsDPC(rs pmetric.ResourceMetrics) int {
 	dataPointCount := 0
-	ilms := rs.InstrumentationLibraryMetrics()
+	ilms := rs.ScopeMetrics()
 	for k := 0; k < ilms.Len(); k++ {
-		dataPointCount += instrumentationLibraryMetricsDPC(ilms.At(k))
+		dataPointCount += scopeMetricsDPC(ilms.At(k))
 	}
 	return dataPointCount
 }
 
-// instrumentationLibraryMetricsDPC calculates the total number of data points in the pdata.InstrumentationLibraryMetrics.
-func instrumentationLibraryMetricsDPC(ilm pdata.InstrumentationLibraryMetrics) int {
+// scopeMetricsDPC calculates the total number of data points in the pmetric.ScopeMetrics.
+func scopeMetricsDPC(ilm pmetric.ScopeMetrics) int {
 	dataPointCount := 0
 	ms := ilm.Metrics()
 	for k := 0; k < ms.Len(); k++ {
@@ -106,18 +106,18 @@ func instrumentationLibraryMetricsDPC(ilm pdata.InstrumentationLibraryMetrics) i
 	return dataPointCount
 }
 
-// metricDPC calculates the total number of data points in the pdata.Metric.
-func metricDPC(ms pdata.Metric) int {
+// metricDPC calculates the total number of data points in the pmetric.Metric.
+func metricDPC(ms pmetric.Metric) int {
 	switch ms.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		return ms.Gauge().DataPoints().Len()
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		return ms.Sum().DataPoints().Len()
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		return ms.Histogram().DataPoints().Len()
-	case pdata.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricDataTypeExponentialHistogram:
 		return ms.ExponentialHistogram().DataPoints().Len()
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		return ms.Summary().DataPoints().Len()
 	}
 	return 0
@@ -125,35 +125,35 @@ func metricDPC(ms pdata.Metric) int {
 
 // splitMetric removes metric points from the input data and moves data of the specified size to destination.
 // Returns size of moved data and boolean describing, whether the metric should be removed from original slice.
-func splitMetric(ms, dest pdata.Metric, size int) (int, bool) {
+func splitMetric(ms, dest pmetric.Metric, size int) (int, bool) {
 	dest.SetDataType(ms.DataType())
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
 
 	switch ms.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		return splitNumberDataPoints(ms.Gauge().DataPoints(), dest.Gauge().DataPoints(), size)
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		dest.Sum().SetAggregationTemporality(ms.Sum().AggregationTemporality())
 		dest.Sum().SetIsMonotonic(ms.Sum().IsMonotonic())
 		return splitNumberDataPoints(ms.Sum().DataPoints(), dest.Sum().DataPoints(), size)
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		dest.Histogram().SetAggregationTemporality(ms.Histogram().AggregationTemporality())
 		return splitHistogramDataPoints(ms.Histogram().DataPoints(), dest.Histogram().DataPoints(), size)
-	case pdata.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricDataTypeExponentialHistogram:
 		dest.ExponentialHistogram().SetAggregationTemporality(ms.ExponentialHistogram().AggregationTemporality())
 		return splitExponentialHistogramDataPoints(ms.ExponentialHistogram().DataPoints(), dest.ExponentialHistogram().DataPoints(), size)
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		return splitSummaryDataPoints(ms.Summary().DataPoints(), dest.Summary().DataPoints(), size)
 	}
 	return size, false
 }
 
-func splitNumberDataPoints(src, dst pdata.NumberDataPointSlice, size int) (int, bool) {
+func splitNumberDataPoints(src, dst pmetric.NumberDataPointSlice, size int) (int, bool) {
 	dst.EnsureCapacity(size)
 	i := 0
-	src.RemoveIf(func(dp pdata.NumberDataPoint) bool {
+	src.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 		if i < size {
 			dp.MoveTo(dst.AppendEmpty())
 			i++
@@ -164,10 +164,10 @@ func splitNumberDataPoints(src, dst pdata.NumberDataPointSlice, size int) (int, 
 	return size, false
 }
 
-func splitHistogramDataPoints(src, dst pdata.HistogramDataPointSlice, size int) (int, bool) {
+func splitHistogramDataPoints(src, dst pmetric.HistogramDataPointSlice, size int) (int, bool) {
 	dst.EnsureCapacity(size)
 	i := 0
-	src.RemoveIf(func(dp pdata.HistogramDataPoint) bool {
+	src.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
 		if i < size {
 			dp.MoveTo(dst.AppendEmpty())
 			i++
@@ -178,10 +178,10 @@ func splitHistogramDataPoints(src, dst pdata.HistogramDataPointSlice, size int) 
 	return size, false
 }
 
-func splitExponentialHistogramDataPoints(src, dst pdata.ExponentialHistogramDataPointSlice, size int) (int, bool) {
+func splitExponentialHistogramDataPoints(src, dst pmetric.ExponentialHistogramDataPointSlice, size int) (int, bool) {
 	dst.EnsureCapacity(size)
 	i := 0
-	src.RemoveIf(func(dp pdata.ExponentialHistogramDataPoint) bool {
+	src.RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
 		if i < size {
 			dp.MoveTo(dst.AppendEmpty())
 			i++
@@ -192,10 +192,10 @@ func splitExponentialHistogramDataPoints(src, dst pdata.ExponentialHistogramData
 	return size, false
 }
 
-func splitSummaryDataPoints(src, dst pdata.SummaryDataPointSlice, size int) (int, bool) {
+func splitSummaryDataPoints(src, dst pmetric.SummaryDataPointSlice, size int) (int, bool) {
 	dst.EnsureCapacity(size)
 	i := 0
-	src.RemoveIf(func(dp pdata.SummaryDataPoint) bool {
+	src.RemoveIf(func(dp pmetric.SummaryDataPoint) bool {
 		if i < size {
 			dp.MoveTo(dst.AppendEmpty())
 			i++

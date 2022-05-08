@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -31,8 +32,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -110,6 +113,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		usageChecker: memUsageChecker{
 			memAllocLimit: 1024,
 		},
+		forceDrop: atomic.NewBool(false),
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -131,7 +135,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800
@@ -182,6 +186,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		usageChecker: memUsageChecker{
 			memAllocLimit: 1024,
 		},
+		forceDrop: atomic.NewBool(false),
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -202,7 +207,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800
@@ -253,6 +258,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		usageChecker: memUsageChecker{
 			memAllocLimit: 1024,
 		},
+		forceDrop: atomic.NewBool(false),
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
@@ -273,7 +279,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 
 	// Below memAllocLimit.
 	currentMemAlloc = 800

@@ -21,7 +21,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 
-	"go.opentelemetry.io/collector/model/otlpgrpc"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 const (
@@ -36,13 +38,13 @@ var (
 )
 
 type encoder interface {
-	unmarshalTracesRequest(buf []byte) (otlpgrpc.TracesRequest, error)
-	unmarshalMetricsRequest(buf []byte) (otlpgrpc.MetricsRequest, error)
-	unmarshalLogsRequest(buf []byte) (otlpgrpc.LogsRequest, error)
+	unmarshalTracesRequest(buf []byte) (ptraceotlp.Request, error)
+	unmarshalMetricsRequest(buf []byte) (pmetricotlp.Request, error)
+	unmarshalLogsRequest(buf []byte) (plogotlp.Request, error)
 
-	marshalTracesResponse(otlpgrpc.TracesResponse) ([]byte, error)
-	marshalMetricsResponse(otlpgrpc.MetricsResponse) ([]byte, error)
-	marshalLogsResponse(otlpgrpc.LogsResponse) ([]byte, error)
+	marshalTracesResponse(ptraceotlp.Response) ([]byte, error)
+	marshalMetricsResponse(pmetricotlp.Response) ([]byte, error)
+	marshalLogsResponse(plogotlp.Response) ([]byte, error)
 
 	marshalStatus(rsp *spb.Status) ([]byte, error)
 
@@ -51,28 +53,34 @@ type encoder interface {
 
 type protoEncoder struct{}
 
-func (protoEncoder) unmarshalTracesRequest(buf []byte) (otlpgrpc.TracesRequest, error) {
-	return otlpgrpc.UnmarshalTracesRequest(buf)
+func (protoEncoder) unmarshalTracesRequest(buf []byte) (ptraceotlp.Request, error) {
+	req := ptraceotlp.NewRequest()
+	err := req.UnmarshalProto(buf)
+	return req, err
 }
 
-func (protoEncoder) unmarshalMetricsRequest(buf []byte) (otlpgrpc.MetricsRequest, error) {
-	return otlpgrpc.UnmarshalMetricsRequest(buf)
+func (protoEncoder) unmarshalMetricsRequest(buf []byte) (pmetricotlp.Request, error) {
+	req := pmetricotlp.NewRequest()
+	err := req.UnmarshalProto(buf)
+	return req, err
 }
 
-func (protoEncoder) unmarshalLogsRequest(buf []byte) (otlpgrpc.LogsRequest, error) {
-	return otlpgrpc.UnmarshalLogsRequest(buf)
+func (protoEncoder) unmarshalLogsRequest(buf []byte) (plogotlp.Request, error) {
+	req := plogotlp.NewRequest()
+	err := req.UnmarshalProto(buf)
+	return req, err
 }
 
-func (protoEncoder) marshalTracesResponse(resp otlpgrpc.TracesResponse) ([]byte, error) {
-	return resp.Marshal()
+func (protoEncoder) marshalTracesResponse(resp ptraceotlp.Response) ([]byte, error) {
+	return resp.MarshalProto()
 }
 
-func (protoEncoder) marshalMetricsResponse(resp otlpgrpc.MetricsResponse) ([]byte, error) {
-	return resp.Marshal()
+func (protoEncoder) marshalMetricsResponse(resp pmetricotlp.Response) ([]byte, error) {
+	return resp.MarshalProto()
 }
 
-func (protoEncoder) marshalLogsResponse(resp otlpgrpc.LogsResponse) ([]byte, error) {
-	return resp.Marshal()
+func (protoEncoder) marshalLogsResponse(resp plogotlp.Response) ([]byte, error) {
+	return resp.MarshalProto()
 }
 
 func (protoEncoder) marshalStatus(resp *spb.Status) ([]byte, error) {
@@ -85,27 +93,33 @@ func (protoEncoder) contentType() string {
 
 type jsonEncoder struct{}
 
-func (jsonEncoder) unmarshalTracesRequest(buf []byte) (otlpgrpc.TracesRequest, error) {
-	return otlpgrpc.UnmarshalJSONTracesRequest(buf)
+func (jsonEncoder) unmarshalTracesRequest(buf []byte) (ptraceotlp.Request, error) {
+	req := ptraceotlp.NewRequest()
+	err := req.UnmarshalJSON(buf)
+	return req, err
 }
 
-func (jsonEncoder) unmarshalMetricsRequest(buf []byte) (otlpgrpc.MetricsRequest, error) {
-	return otlpgrpc.UnmarshalJSONMetricsRequest(buf)
+func (jsonEncoder) unmarshalMetricsRequest(buf []byte) (pmetricotlp.Request, error) {
+	req := pmetricotlp.NewRequest()
+	err := req.UnmarshalJSON(buf)
+	return req, err
 }
 
-func (jsonEncoder) unmarshalLogsRequest(buf []byte) (otlpgrpc.LogsRequest, error) {
-	return otlpgrpc.UnmarshalJSONLogsRequest(buf)
+func (jsonEncoder) unmarshalLogsRequest(buf []byte) (plogotlp.Request, error) {
+	req := plogotlp.NewRequest()
+	err := req.UnmarshalJSON(buf)
+	return req, err
 }
 
-func (jsonEncoder) marshalTracesResponse(resp otlpgrpc.TracesResponse) ([]byte, error) {
+func (jsonEncoder) marshalTracesResponse(resp ptraceotlp.Response) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (jsonEncoder) marshalMetricsResponse(resp otlpgrpc.MetricsResponse) ([]byte, error) {
+func (jsonEncoder) marshalMetricsResponse(resp pmetricotlp.Response) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (jsonEncoder) marshalLogsResponse(resp otlpgrpc.LogsResponse) ([]byte, error) {
+func (jsonEncoder) marshalLogsResponse(resp plogotlp.Response) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 

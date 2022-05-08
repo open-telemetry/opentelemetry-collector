@@ -3,7 +3,7 @@ include ./Makefile.Common
 # This is the code that we want to run lint, etc.
 ALL_SRC := $(shell find . -name '*.go' \
 							-not -path './internal/tools/*' \
-							-not -path './model/internal/data/protogen/*' \
+							-not -path './pdata/internal/data/protogen/*' \
 							-not -path './service/internal/zpages/tmplgen/*' \
 							-type f | sort)
 
@@ -26,7 +26,7 @@ BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 RUN_CONFIG?=examples/local/otel-config.yaml
 CONTRIB_PATH=$(CURDIR)/../opentelemetry-collector-contrib
-COMP_REL_PATH=service/defaultcomponents/defaults.go
+COMP_REL_PATH=cmd/otelcorecol/components.go
 MOD_NAME=go.opentelemetry.io/collector
 
 ADDLICENSE=addlicense
@@ -218,7 +218,6 @@ gendependabot: $(eval SHELL:=/bin/bash)
 	@echo "version: 2" >> ${DEPENDABOT_PATH}
 	@echo "updates:" >> ${DEPENDABOT_PATH}
 	$(MAKE) internal-gendependabot DIR="/" PACKAGE="github-actions"
-	$(MAKE) internal-gendependabot DIR="/" PACKAGE="docker"
 	$(MAKE) internal-gendependabot DIR="/" PACKAGE="gomod"
 	@set -e; for dir in $(ALL_MODULES); do \
 		$(MAKE) internal-gendependabot DIR=$${dir:1} PACKAGE="gomod"; \
@@ -227,24 +226,24 @@ gendependabot: $(eval SHELL:=/bin/bash)
 # Definitions for ProtoBuf generation.
 
 # The source directory for OTLP ProtoBufs.
-OPENTELEMETRY_PROTO_SRC_DIR=model/internal/opentelemetry-proto
+OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
 # The SHA matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v0.12.0
+OPENTELEMETRY_PROTO_VERSION=v0.15.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
 
 # Target directory to write generated files to.
-PROTO_TARGET_GEN_DIR=model/internal/data/protogen
+PROTO_TARGET_GEN_DIR=pdata/internal/data/protogen
 
 # Go package name to use for generated files.
 PROTO_PACKAGE=go.opentelemetry.io/collector/$(PROTO_TARGET_GEN_DIR)
 
 # Intermediate directory used during generation.
-PROTO_INTERMEDIATE_DIR=model/internal/.patched-otlp-proto
+PROTO_INTERMEDIATE_DIR=pdata/internal/.patched-otlp-proto
 
-DOCKER_PROTOBUF ?= otel/build-protobuf:0.4.1
+DOCKER_PROTOBUF ?= otel/build-protobuf:0.9.0
 PROTOC := docker run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD}/$(PROTO_INTERMEDIATE_DIR) ${DOCKER_PROTOBUF} --proto_path=${PWD}
 PROTO_INCLUDES := -I/usr/include/github.com/gogo/protobuf -I./
 
@@ -290,7 +289,7 @@ genproto_sub:
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
 genpdata:
-	$(GOCMD) run model/internal/cmd/pdatagen/main.go
+	$(GOCMD) run pdata/internal/cmd/pdatagen/main.go
 	$(MAKE) fmt
 
 # Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
@@ -298,8 +297,8 @@ gensemconv:
 	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
 	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
 	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
-	semconvgen -o model/semconv/${SPECTAG} -t model/internal/semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/resource -p conventionType=resource
-	semconvgen -o model/semconv/${SPECTAG} -t model/internal/semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/trace -p conventionType=trace
+	semconvgen -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/resource -p conventionType=resource -f generated_resource.go
+	semconvgen -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/semantic_conventions/trace -p conventionType=trace -f generated_trace.go
 
 # Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
 # against the current version of this repo.
@@ -307,6 +306,8 @@ gensemconv:
 check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/model=$(CURDIR)/model"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 	@$(MAKE) -C $(CONTRIB_PATH) test

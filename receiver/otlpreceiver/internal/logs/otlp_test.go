@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 )
 
 func TestExport(t *testing.T) {
@@ -47,7 +47,7 @@ func TestExport(t *testing.T) {
 	// Keep log data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
 	logData := ld.Clone()
-	req := otlpgrpc.NewLogsRequest()
+	req := plogotlp.NewRequest()
 	req.SetLogs(ld)
 
 	resp, err := traceClient.Export(context.Background(), req)
@@ -69,7 +69,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	defer logClientDoneFn()
 
-	resp, err := logClient.Export(context.Background(), otlpgrpc.NewLogsRequest())
+	resp, err := logClient.Export(context.Background(), plogotlp.NewRequest())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
@@ -83,21 +83,21 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	defer logClientDoneFn()
 
 	ld := testdata.GenerateLogsOneLogRecord()
-	req := otlpgrpc.NewLogsRequest()
+	req := plogotlp.NewRequest()
 	req.SetLogs(ld)
 
 	resp, err := logClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Equal(t, otlpgrpc.LogsResponse{}, resp)
+	assert.Equal(t, plogotlp.Response{}, resp)
 }
 
-func makeLogsServiceClient(addr net.Addr) (otlpgrpc.LogsClient, func(), error) {
+func makeLogsServiceClient(addr net.Addr) (plogotlp.Client, func(), error) {
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
 
-	logClient := otlpgrpc.NewLogsClient(cc)
+	logClient := plogotlp.NewClient(cc)
 
 	doneFn := func() { _ = cc.Close() }
 	return logClient, doneFn, nil
@@ -119,7 +119,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Logs) (net.Addr, func())
 
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
-	otlpgrpc.RegisterLogsServer(srv, r)
+	plogotlp.RegisterServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()

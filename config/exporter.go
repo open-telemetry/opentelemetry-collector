@@ -23,6 +23,13 @@ type Exporter interface {
 	privateConfigExporter()
 }
 
+// UnmarshalExporter helper function to unmarshal an Exporter config.
+// It checks if the config implements Unmarshallable and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalExporter(cfgMap *Map, cfg Exporter) error {
+	return unmarshal(cfgMap, cfg)
+}
+
 // ExporterSettings defines common settings for a component.Exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
 //

@@ -44,9 +44,6 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 }
 
-// Deprecated: [v0.46.0] use NewDefaultQueueSettings instead.
-var DefaultQueueSettings = NewDefaultQueueSettings
-
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
 func NewDefaultQueueSettings() QueueSettings {
 	return QueueSettings{

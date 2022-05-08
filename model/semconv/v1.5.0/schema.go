@@ -17,4 +17,5 @@ package semconv // import "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 // SchemaURL is the schema URL that matches the version of the semantic conventions
 // that this package defines. Conventions packages starting from v1.4.0 must declare
 // non-empty schema URL in the form https://opentelemetry.io/schemas/<version>
-const SchemaURL = "https://opentelemetry.io/schemas/v1.5.0"
+// Deprecated: [v0.50.0] Use go.opentelemetry.io/collector/semconv module.
+const SchemaURL = "https://opentelemetry.io/schemas/1.5.0"

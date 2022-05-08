@@ -16,70 +16,103 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for metric data structures.
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/pdata/pmetric"
 
-// MetricsMarshaler is an alias for pdata.MetricsMarshaler interface.
-type MetricsMarshaler = pdata.MetricsMarshaler
+// MetricsMarshaler is an alias for pmetric.Marshaler interface.
+// Deprecated: [v0.49.0] Use pmetric.Marshaler instead.
+type MetricsMarshaler = pmetric.Marshaler
 
-// MetricsUnmarshaler is an alias for pdata.MetricsUnmarshaler interface.
-type MetricsUnmarshaler = pdata.MetricsUnmarshaler
+// MetricsUnmarshaler is an alias for pmetric.Unmarshaler interface.
+// Deprecated: [v0.49.0] Use pmetric.Unmarshaler instead.
+type MetricsUnmarshaler = pmetric.Unmarshaler
 
-// MetricsSizer is an alias for pdata.MetricsSizer interface.
-type MetricsSizer = pdata.MetricsSizer
+// MetricsSizer is an alias for pmetric.Sizer interface.
+// Deprecated: [v0.49.0] Use pmetric.Sizer instead.
+type MetricsSizer = pmetric.Sizer
 
-// Metrics is an alias for pdata.Metrics structure.
-type Metrics = pdata.Metrics
+// Metrics is an alias for pmetric.Metrics structure.
+// Deprecated: [v0.49.0] Use pmetric.Metrics instead.
+type Metrics = pmetric.Metrics
 
 // NewMetrics is an alias for a function to create new Metrics.
-var NewMetrics = pdata.NewMetrics
+// Deprecated: [v0.49.0] Use pmetric.NewMetrics instead.
+var NewMetrics = pmetric.NewMetrics
 
-// MetricsFromInternalRep is an alias for MetricsFromInternalRep.
-// TODO: Can be removed, internal pdata.MetricsFromInternalRep should be used instead.
-var MetricsFromInternalRep = pdata.MetricsFromInternalRep
-
-// MetricDataType is an alias for pdata.MetricDataType type.
-type MetricDataType = pdata.MetricDataType
+// MetricDataType is an alias for pmetric.MetricDataType type.
+// Deprecated: [v0.49.0] Use pmetric.MetricDataType instead.
+type MetricDataType = pmetric.MetricDataType
 
 const (
-	MetricDataTypeNone                 = pdata.MetricDataTypeNone
-	MetricDataTypeGauge                = pdata.MetricDataTypeGauge
-	MetricDataTypeSum                  = pdata.MetricDataTypeSum
-	MetricDataTypeHistogram            = pdata.MetricDataTypeHistogram
-	MetricDataTypeExponentialHistogram = pdata.MetricDataTypeExponentialHistogram
-	MetricDataTypeSummary              = pdata.MetricDataTypeSummary
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricDataTypeNone instead.
+	MetricDataTypeNone = pmetric.MetricDataTypeNone
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricDataTypeGauge instead.
+	MetricDataTypeGauge = pmetric.MetricDataTypeGauge
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricDataTypeSum instead.
+	MetricDataTypeSum = pmetric.MetricDataTypeSum
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricDataTypeHistogram instead.
+	MetricDataTypeHistogram = pmetric.MetricDataTypeHistogram
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricDataTypeExponentialHistogram instead.
+	MetricDataTypeExponentialHistogram = pmetric.MetricDataTypeExponentialHistogram
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricDataTypeSummary instead.
+	MetricDataTypeSummary = pmetric.MetricDataTypeSummary
 )
 
-// MetricAggregationTemporality is an alias for pdata.MetricAggregationTemporality type.
-type MetricAggregationTemporality = pdata.MetricAggregationTemporality
+// MetricAggregationTemporality is an alias for pmetric.MetricAggregationTemporality type.
+// Deprecated: [v0.49.0] Use pmetric.MetricAggregationTemporality instead.
+type MetricAggregationTemporality = pmetric.MetricAggregationTemporality
 
 const (
-	MetricAggregationTemporalityUnspecified = pdata.MetricAggregationTemporalityUnspecified
-	MetricAggregationTemporalityDelta       = pdata.MetricAggregationTemporalityDelta
-	MetricAggregationTemporalityCumulative  = pdata.MetricAggregationTemporalityCumulative
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricAggregationTemporalityUnspecified instead.
+	MetricAggregationTemporalityUnspecified = pmetric.MetricAggregationTemporalityUnspecified
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricAggregationTemporalityDelta instead.
+	MetricAggregationTemporalityDelta = pmetric.MetricAggregationTemporalityDelta
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricAggregationTemporalityCumulative instead.
+	MetricAggregationTemporalityCumulative = pmetric.MetricAggregationTemporalityCumulative
 )
 
-// MetricDataPointFlags is an alias for pdata.MetricDataPointFlags type.
-type MetricDataPointFlags = pdata.MetricDataPointFlags
+// MetricDataPointFlags is an alias for pmetric.MetricDataPointFlags type.
+// Deprecated: [v0.49.0] Use pmetric.MetricDataPointFlags instead.
+type MetricDataPointFlags = pmetric.MetricDataPointFlags
 
 const (
-	MetricDataPointFlagsNone = pdata.MetricDataPointFlagsNone
+	// Deprecated: [v0.49.0] Use pmetric.MetricDataPointFlagsNone instead.
+	MetricDataPointFlagsNone = pmetric.MetricDataPointFlagsNone
 )
 
 // NewMetricDataPointFlags is an alias for a function to create new MetricDataPointFlags.
-var NewMetricDataPointFlags = pdata.NewMetricDataPointFlags
+// Deprecated: [v0.49.0] Use pmetric.NewMetricDataPointFlags instead.
+var NewMetricDataPointFlags = pmetric.NewMetricDataPointFlags
 
-// MetricDataPointFlag is an alias for pdata.MetricDataPointFlag type.
-type MetricDataPointFlag = pdata.MetricDataPointFlag
+// MetricDataPointFlag is an alias for pmetric.MetricDataPointFlag type.
+// Deprecated: [v0.49.0] Use pmetric.MetricDataPointFlag instead.
+type MetricDataPointFlag = pmetric.MetricDataPointFlag
 
 const (
-	MetricDataPointFlagNoRecordedValue = pdata.MetricDataPointFlagNoRecordedValue
+	// Deprecated: [v0.49.0] Use pmetric.MetricDataPointFlagNoRecordedValue instead.
+	MetricDataPointFlagNoRecordedValue = pmetric.MetricDataPointFlagNoRecordedValue
 )
 
-// MetricValueType is an alias for pdata.MetricValueType type.
-type MetricValueType = pdata.MetricValueType
+// MetricValueType is an alias for pmetric.MetricValueType type.
+// Deprecated: [v0.49.0] Use pmetric.MetricValueType instead.
+type MetricValueType = pmetric.MetricValueType
 
 const (
-	MetricValueTypeNone   = pdata.MetricValueTypeNone
-	MetricValueTypeInt    = pdata.MetricValueTypeInt
-	MetricValueTypeDouble = pdata.MetricValueTypeDouble
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeNone instead.
+	MetricValueTypeNone = pmetric.MetricValueTypeNone
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeInt instead.
+	MetricValueTypeInt = pmetric.MetricValueTypeInt
+
+	// Deprecated: [v0.49.0] Use pmetric.MetricValueTypeDouble instead.
+	MetricValueTypeDouble = pmetric.MetricValueTypeDouble
 )

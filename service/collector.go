@@ -23,14 +23,14 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"sync/atomic"
 	"syscall"
 
 	"go.opentelemetry.io/contrib/zpages"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/nonrecording"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -85,7 +85,7 @@ type Collector struct {
 	zPagesSpanProcessor *zpages.SpanProcessor
 
 	service *service
-	state   int32
+	state   *atomic.Int32
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
@@ -106,8 +106,12 @@ func New(set CollectorSettings) (*Collector, error) {
 	return &Collector{
 		logger: zap.NewNop(), // Set a Nop logger as a place holder until a logger is created based on configuration
 
+		tracerProvider:    trace.NewNoopTracerProvider(),
+		meterProvider:     nonrecording.NewNoopMeterProvider(),
+		asyncErrorChannel: make(chan error),
+
 		set:          set,
-		state:        int32(Starting),
+		state:        atomic.NewInt32(int32(Starting)),
 		shutdownChan: make(chan struct{}),
 	}, nil
 
@@ -115,7 +119,7 @@ func New(set CollectorSettings) (*Collector, error) {
 
 // GetState returns current state of the collector server.
 func (col *Collector) GetState() State {
-	return State(atomic.LoadInt32(&col.state))
+	return State(col.state.Load())
 }
 
 // GetLogger returns logger used by the Collector.
@@ -215,6 +219,13 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return err
 	}
 
+	// TODO: This should be part of the service initialization, which should be responsible to create TelemetrySettings.
+	// For the moment happens here, since it needs service.Config and Logger.
+	// It is called once because that is how it is implemented using sync.Once.
+	if err = collectorTelemetry.init(col); err != nil {
+		return err
+	}
+
 	if err = col.service.Start(ctx); err != nil {
 		return err
 	}
@@ -230,19 +241,8 @@ func (col *Collector) Run(ctx context.Context) error {
 		sdktrace.WithSampler(internal.AlwaysRecord()),
 		sdktrace.WithSpanProcessor(col.zPagesSpanProcessor))
 
-	// Set the constructed tracer provider as Global, in case any component uses the
-	// global TracerProvider.
-	otel.SetTracerProvider(col.tracerProvider)
-
-	col.meterProvider = metric.NewNoopMeterProvider()
-
-	col.asyncErrorChannel = make(chan error)
-
 	if err := col.setupConfigurationComponents(ctx); err != nil {
-		return err
-	}
-
-	if err := collectorTelemetry.init(col); err != nil {
+		col.setCollectorState(Closed)
 		return err
 	}
 
@@ -284,7 +284,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
-	atomic.StoreInt32(&col.state, int32(state))
+	col.state.Store(int32(state))
 }
 
 func getBallastSize(host component.Host) uint64 {

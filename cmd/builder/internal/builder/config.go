@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.46.0"
+const defaultOtelColVersion = "0.49.0"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
@@ -62,9 +62,6 @@ type Module struct {
 	GoMod  string `mapstructure:"gomod"`  // a gomod-compatible spec for the module
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
 }
-
-// Deprecated: [v0.46.0] Use NewDefaultConfig instead
-var DefaultConfig = NewDefaultConfig
 
 // NewDefaultConfig creates a new config, with default values
 func NewDefaultConfig() Config {

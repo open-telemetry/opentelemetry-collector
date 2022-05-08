@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -22,7 +22,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: module-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
@@ -31,7 +31,7 @@ jobs:
         run: make gomoddownload
       - name: Cache Tools
         id: tool-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
@@ -43,9 +43,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -54,13 +54,13 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: module-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
@@ -74,9 +74,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -85,13 +85,13 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: module-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
@@ -124,33 +124,36 @@ jobs:
       - name: Multimod verify
         run: make multimod-verify
   unittest:
+    strategy:
+      matrix:
+        go-version: [1.18, 1.17]
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: ${{ matrix.go-version }}
       - name: Setup Go Environment
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: module-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Cache Build
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/.cache/go-build
           key: go-build-unittest-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
@@ -161,9 +164,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -172,26 +175,82 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: module-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/pkg/mod
           key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/go/bin
           key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
       - name: Cache Build
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /home/runner/.cache/go-build
           key: go-build-coverage-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.txt
           fail_ci_if_error: true
           verbose: true
+  cross-build-collector:
+    needs: [setup-environment]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Go 1.15 dropped support for 32-bit binaries
+          # on macOS: https://go.dev/doc/go1.15
+          #- goos: darwin
+          #  goarch: 386
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: linux
+            goarch: 386
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: 386
+          - goos: windows
+            goarch: amd64
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.17
+      - name: Setup Go Environment
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Cache Go
+        id: module-cache
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/go/pkg/mod
+          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Cache Tools
+        id: tool-cache
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/go/bin
+          key: tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod', './cmd/mdatagen/go.mod', './cmd/mdatagen/*.go') }}
+      - name: Build
+        env:
+          GOOS: ${{matrix.goos}}
+          GOARCH: ${{matrix.goarch}}
+        run: |
+          make otelcorecol

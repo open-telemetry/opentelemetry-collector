@@ -15,153 +15,39 @@
 package otlpgrpc // import "go.opentelemetry.io/collector/model/otlpgrpc"
 
 import (
-	"bytes"
-	"context"
-
-	"google.golang.org/grpc"
-
-	"go.opentelemetry.io/collector/model/internal"
-	otlpcollectormetrics "go.opentelemetry.io/collector/model/internal/data/protogen/collector/metrics/v1"
-	otlpmetrics "go.opentelemetry.io/collector/model/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 )
 
 // MetricsResponse represents the response for gRPC client/server.
-type MetricsResponse struct {
-	orig *otlpcollectormetrics.ExportMetricsServiceResponse
-}
+// Deprecated: [v0.49.0] Use pmetricotlp.Response instead.
+type MetricsResponse = pmetricotlp.Response
 
 // NewMetricsResponse returns an empty MetricsResponse.
-func NewMetricsResponse() MetricsResponse {
-	return MetricsResponse{orig: &otlpcollectormetrics.ExportMetricsServiceResponse{}}
-}
-
-// UnmarshalMetricsResponse unmarshalls MetricsResponse from proto bytes.
-func UnmarshalMetricsResponse(data []byte) (MetricsResponse, error) {
-	var orig otlpcollectormetrics.ExportMetricsServiceResponse
-	if err := orig.Unmarshal(data); err != nil {
-		return MetricsResponse{}, err
-	}
-	return MetricsResponse{orig: &orig}, nil
-}
-
-// UnmarshalJSONMetricsResponse unmarshalls MetricsResponse from JSON bytes.
-func UnmarshalJSONMetricsResponse(data []byte) (MetricsResponse, error) {
-	var orig otlpcollectormetrics.ExportMetricsServiceResponse
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
-		return MetricsResponse{}, err
-	}
-	return MetricsResponse{orig: &orig}, nil
-}
-
-// Marshal marshals MetricsResponse into proto bytes.
-func (mr MetricsResponse) Marshal() ([]byte, error) {
-	return mr.orig.Marshal()
-}
-
-// MarshalJSON marshals MetricsResponse into JSON bytes.
-func (mr MetricsResponse) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	if err := jsonMarshaler.Marshal(&buf, mr.orig); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
+// Deprecated: [v0.49.0] Use pmetricotlp.NewResponse instead.
+var NewMetricsResponse = pmetricotlp.NewResponse
 
 // MetricsRequest represents the response for gRPC client/server.
-type MetricsRequest struct {
-	orig *otlpcollectormetrics.ExportMetricsServiceRequest
-}
+// Deprecated: [v0.49.0] Use pmetricotlp.Request instead.
+type MetricsRequest = pmetricotlp.Request
 
 // NewMetricsRequest returns an empty MetricsRequest.
-func NewMetricsRequest() MetricsRequest {
-	return MetricsRequest{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
-}
-
-// UnmarshalMetricsRequest unmarshalls MetricsRequest from proto bytes.
-func UnmarshalMetricsRequest(data []byte) (MetricsRequest, error) {
-	var orig otlpcollectormetrics.ExportMetricsServiceRequest
-	if err := orig.Unmarshal(data); err != nil {
-		return MetricsRequest{}, err
-	}
-	return MetricsRequest{orig: &orig}, nil
-}
-
-// UnmarshalJSONMetricsRequest unmarshalls MetricsRequest from JSON bytes.
-func UnmarshalJSONMetricsRequest(data []byte) (MetricsRequest, error) {
-	var orig otlpcollectormetrics.ExportMetricsServiceRequest
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), &orig); err != nil {
-		return MetricsRequest{}, err
-	}
-	return MetricsRequest{orig: &orig}, nil
-}
-
-// Marshal marshals MetricsRequest into proto bytes.
-func (mr MetricsRequest) Marshal() ([]byte, error) {
-	return mr.orig.Marshal()
-}
-
-// MarshalJSON marshals LogsRequest into JSON bytes.
-func (mr MetricsRequest) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	if err := jsonMarshaler.Marshal(&buf, mr.orig); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func (mr MetricsRequest) SetMetrics(ld pdata.Metrics) {
-	mr.orig.ResourceMetrics = internal.MetricsToOtlp(ld.InternalRep()).ResourceMetrics
-}
-
-func (mr MetricsRequest) Metrics() pdata.Metrics {
-	return pdata.MetricsFromInternalRep(internal.MetricsFromOtlp(&otlpmetrics.MetricsData{ResourceMetrics: mr.orig.ResourceMetrics}))
-}
+// Deprecated: [v0.49.0] Use pmetricotlp.NewRequest instead.
+var NewMetricsRequest = pmetricotlp.NewRequest
 
 // MetricsClient is the client API for OTLP-GRPC Metrics service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type MetricsClient interface {
-	// Export pdata.Metrics to the server.
-	//
-	// For performance reasons, it is recommended to keep this RPC
-	// alive for the entire life of the application.
-	Export(ctx context.Context, request MetricsRequest, opts ...grpc.CallOption) (MetricsResponse, error)
-}
-
-type metricsClient struct {
-	rawClient otlpcollectormetrics.MetricsServiceClient
-}
+// Deprecated: [v0.49.0] Use pmetricotlp.Client instead.
+type MetricsClient = pmetricotlp.Client
 
 // NewMetricsClient returns a new MetricsClient connected using the given connection.
-func NewMetricsClient(cc *grpc.ClientConn) MetricsClient {
-	return &metricsClient{rawClient: otlpcollectormetrics.NewMetricsServiceClient(cc)}
-}
-
-func (c *metricsClient) Export(ctx context.Context, request MetricsRequest, opts ...grpc.CallOption) (MetricsResponse, error) {
-	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
-	return MetricsResponse{orig: rsp}, err
-}
+// Deprecated: [v0.49.0] Use pmetricotlp.NewClient instead.
+var NewMetricsClient = pmetricotlp.NewClient
 
 // MetricsServer is the server API for OTLP gRPC MetricsService service.
-type MetricsServer interface {
-	// Export is called every time a new request is received.
-	//
-	// For performance reasons, it is recommended to keep this RPC
-	// alive for the entire life of the application.
-	Export(context.Context, MetricsRequest) (MetricsResponse, error)
-}
+// Deprecated: [v0.49.0] Use pmetricotlp.Server instead.
+type MetricsServer = pmetricotlp.Server
 
 // RegisterMetricsServer registers the MetricsServer to the grpc.Server.
-func RegisterMetricsServer(s *grpc.Server, srv MetricsServer) {
-	otlpcollectormetrics.RegisterMetricsServiceServer(s, &rawMetricsServer{srv: srv})
-}
-
-type rawMetricsServer struct {
-	srv MetricsServer
-}
-
-func (s rawMetricsServer) Export(ctx context.Context, request *otlpcollectormetrics.ExportMetricsServiceRequest) (*otlpcollectormetrics.ExportMetricsServiceResponse, error) {
-	rsp, err := s.srv.Export(ctx, MetricsRequest{orig: request})
-	return rsp.orig, err
-}
+// Deprecated: [v0.49.0] Use pmetricotlp.RegisterServer instead.
+var RegisterMetricsServer = pmetricotlp.RegisterServer

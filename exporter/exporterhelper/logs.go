@@ -22,22 +22,20 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var logsMarshaler = otlp.NewProtobufLogsMarshaler()
-var logsUnmarshaler = otlp.NewProtobufLogsUnmarshaler()
+var logsMarshaler = plog.NewProtoMarshaler()
+var logsUnmarshaler = plog.NewProtoUnmarshaler()
 
 type logsRequest struct {
 	baseRequest
-	ld     pdata.Logs
-	pusher consumerhelper.ConsumeLogsFunc
+	ld     plog.Logs
+	pusher consumer.ConsumeLogsFunc
 }
 
-func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher consumerhelper.ConsumeLogsFunc) request {
+func newLogsRequest(ctx context.Context, ld plog.Logs, pusher consumer.ConsumeLogsFunc) request {
 	return &logsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		ld:          ld,
@@ -45,7 +43,7 @@ func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher consumerhelper.Co
 	}
 }
 
-func newLogsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeLogsFunc) internal.RequestUnmarshaler {
+func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.RequestUnmarshaler {
 	return func(bytes []byte) (internal.PersistentRequest, error) {
 		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 		if err != nil {
@@ -84,7 +82,7 @@ type logsExporter struct {
 func NewLogsExporter(
 	cfg config.Exporter,
 	set component.ExporterCreateSettings,
-	pusher consumerhelper.ConsumeLogsFunc,
+	pusher consumer.ConsumeLogsFunc,
 	options ...Option,
 ) (component.LogsExporter, error) {
 	if cfg == nil {
@@ -108,7 +106,7 @@ func NewLogsExporter(
 		}
 	})
 
-	lc, err := consumerhelper.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
+	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req := newLogsRequest(ctx, ld, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {

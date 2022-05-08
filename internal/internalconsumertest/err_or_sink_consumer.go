@@ -20,7 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type ErrOrSinkConsumer struct {
@@ -42,7 +43,7 @@ func (esc *ErrOrSinkConsumer) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeTraces stores traces to this sink.
-func (esc *ErrOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (esc *ErrOrSinkConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 
@@ -54,7 +55,7 @@ func (esc *ErrOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces
 }
 
 // ConsumeMetrics stores metrics to this sink.
-func (esc *ErrOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (esc *ErrOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 

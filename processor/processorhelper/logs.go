@@ -24,13 +24,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // ProcessLogsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
 // If error is returned then returned data are ignored. It MUST not call the next component.
-type ProcessLogsFunc func(context.Context, pdata.Logs) (pdata.Logs, error)
+type ProcessLogsFunc func(context.Context, plog.Logs) (plog.Logs, error)
 
 type logProcessor struct {
 	component.StartFunc
@@ -56,7 +55,7 @@ func NewLogsProcessor(
 
 	eventOptions := spanAttributes(cfg.ID())
 	bs := fromOptions(options)
-	logsConsumer, err := consumerhelper.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
+	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error

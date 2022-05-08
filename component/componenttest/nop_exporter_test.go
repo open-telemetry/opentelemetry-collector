@@ -22,7 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestNewNopExporterFactory(t *testing.T) {
@@ -35,18 +37,18 @@ func TestNewNopExporterFactory(t *testing.T) {
 	traces, err := factory.CreateTracesExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 	assert.NoError(t, traces.Start(context.Background(), NewNopHost()))
-	assert.NoError(t, traces.ConsumeTraces(context.Background(), pdata.NewTraces()))
+	assert.NoError(t, traces.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	assert.NoError(t, traces.Shutdown(context.Background()))
 
 	metrics, err := factory.CreateMetricsExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 	assert.NoError(t, metrics.Start(context.Background(), NewNopHost()))
-	assert.NoError(t, metrics.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, metrics.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.NoError(t, metrics.Shutdown(context.Background()))
 
 	logs, err := factory.CreateLogsExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)
 	assert.NoError(t, logs.Start(context.Background(), NewNopHost()))
-	assert.NoError(t, logs.ConsumeLogs(context.Background(), pdata.NewLogs()))
+	assert.NoError(t, logs.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.NoError(t, logs.Shutdown(context.Background()))
 }

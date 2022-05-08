@@ -39,8 +39,8 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
@@ -567,7 +567,7 @@ func TestHttpReception(t *testing.T) {
 			opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 			s := grpc.NewServer(opts...)
-			otlpgrpc.RegisterTracesServer(s, &grpcTraceServer{})
+			ptraceotlp.RegisterServer(s, &grpcTraceServer{})
 
 			go func() {
 				_ = s.Serve(ln)
@@ -581,9 +581,9 @@ func TestHttpReception(t *testing.T) {
 			assert.NoError(t, errClient)
 			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 			assert.NoError(t, errDial)
-			client := otlpgrpc.NewTracesClient(grpcClientConn)
+			client := ptraceotlp.NewClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-			resp, errResp := client.Export(ctx, otlpgrpc.NewTracesRequest(), grpc.WaitForReady(true))
+			resp, errResp := client.Export(ctx, ptraceotlp.NewRequest(), grpc.WaitForReady(true))
 			if test.hasError {
 				assert.Error(t, errResp)
 			} else {
@@ -616,7 +616,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	s := grpc.NewServer(opts...)
-	otlpgrpc.RegisterTracesServer(s, &grpcTraceServer{})
+	ptraceotlp.RegisterServer(s, &grpcTraceServer{})
 
 	go func() {
 		_ = s.Serve(ln)
@@ -632,9 +632,9 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	assert.NoError(t, errClient)
 	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 	assert.NoError(t, errDial)
-	client := otlpgrpc.NewTracesClient(grpcClientConn)
+	client := ptraceotlp.NewClient(grpcClientConn)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-	resp, errResp := client.Export(ctx, otlpgrpc.NewTracesRequest(), grpc.WaitForReady(true))
+	resp, errResp := client.Export(ctx, ptraceotlp.NewRequest(), grpc.WaitForReady(true))
 	assert.NoError(t, errResp)
 	assert.NotNil(t, resp)
 	cancelFunc()
@@ -783,14 +783,14 @@ func (ms *mockedStream) Context() context.Context {
 func TestClientInfoInterceptors(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		tester func(context.Context, otlpgrpc.TracesClient)
+		tester func(context.Context, ptraceotlp.Client)
 	}{
 		{
 			// we only have unary services, we don't have any clients we could use
 			// to test with streaming services
 			desc: "unary",
-			tester: func(ctx context.Context, cl otlpgrpc.TracesClient) {
-				resp, errResp := cl.Export(ctx, otlpgrpc.NewTracesRequest())
+			tester: func(ctx context.Context, cl ptraceotlp.Client) {
+				resp, errResp := cl.Export(ctx, ptraceotlp.NewRequest())
 				require.NoError(t, errResp)
 				require.NotNil(t, resp)
 			},
@@ -812,7 +812,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 				opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 				require.NoError(t, err)
 				srv := grpc.NewServer(opts...)
-				otlpgrpc.RegisterTracesServer(srv, mock)
+				ptraceotlp.RegisterServer(srv, mock)
 
 				defer srv.Stop()
 
@@ -845,7 +845,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 				grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 				require.NoError(t, errDial)
 
-				cl := otlpgrpc.NewTracesClient(grpcClientConn)
+				cl := ptraceotlp.NewClient(grpcClientConn)
 				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancelFunc()
 
@@ -1025,9 +1025,9 @@ type grpcTraceServer struct {
 	recordedContext context.Context
 }
 
-func (gts *grpcTraceServer) Export(ctx context.Context, _ otlpgrpc.TracesRequest) (otlpgrpc.TracesResponse, error) {
+func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.Request) (ptraceotlp.Response, error) {
 	gts.recordedContext = ctx
-	return otlpgrpc.NewTracesResponse(), nil
+	return ptraceotlp.NewResponse(), nil
 }
 
 // tempSocketName provides a temporary Unix socket name for testing.

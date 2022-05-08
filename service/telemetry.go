@@ -25,7 +25,6 @@ import (
 	"github.com/google/uuid"
 	"go.opencensus.io/stats/view"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
@@ -36,8 +35,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/version"
-	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
+	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/featuregate"
 	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
@@ -62,7 +61,7 @@ func init() {
 	featuregate.Register(featuregate.Gate{
 		ID:          useOtelForInternalMetricsfeatureGateID,
 		Description: "controls whether the collector to uses open telemetry for internal metrics",
-		Enabled:     configtelemetry.UseOpenTelemetryForInternalMetrics,
+		Enabled:     false,
 	})
 }
 
@@ -113,7 +112,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 
 	var pe http.Handler
 	if featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
-		otelHandler, err := tel.initOpenTelemetry()
+		otelHandler, err := tel.initOpenTelemetry(col)
 		if err != nil {
 			return err
 		}
@@ -193,7 +192,7 @@ func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http
 	return pe, nil
 }
 
-func (tel *colTelemetry) initOpenTelemetry() (http.Handler, error) {
+func (tel *colTelemetry) initOpenTelemetry(col *Collector) (http.Handler, error) {
 	config := otelprometheus.Config{}
 	c := controller.New(
 		processor.NewFactory(
@@ -210,7 +209,7 @@ func (tel *colTelemetry) initOpenTelemetry() (http.Handler, error) {
 		return nil, err
 	}
 
-	global.SetMeterProvider(pe.MeterProvider())
+	col.meterProvider = pe.MeterProvider()
 	return pe, err
 }
 

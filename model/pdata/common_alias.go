@@ -17,42 +17,79 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 // This file contains aliases to data structures that are common for all
 // signal types, such as timestamps, attributes, etc.
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-// AttributeValueType is an alias for pdata.AttributeValueType type.
-type AttributeValueType = pdata.AttributeValueType
+// ValueType is an alias for pcommon.ValueType type.
+// Deprecated: [v0.49.0] Use pcommon.ValueType instead.
+type ValueType = pcommon.ValueType
 
 const (
-	AttributeValueTypeEmpty  = pdata.AttributeValueTypeEmpty
-	AttributeValueTypeString = pdata.AttributeValueTypeString
-	AttributeValueTypeInt    = pdata.AttributeValueTypeInt
-	AttributeValueTypeDouble = pdata.AttributeValueTypeDouble
-	AttributeValueTypeBool   = pdata.AttributeValueTypeBool
-	AttributeValueTypeMap    = pdata.AttributeValueTypeMap
-	AttributeValueTypeArray  = pdata.AttributeValueTypeArray
-	AttributeValueTypeBytes  = pdata.AttributeValueTypeBytes
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeEmpty instead.
+	ValueTypeEmpty = pcommon.ValueTypeEmpty
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeString instead.
+	ValueTypeString = pcommon.ValueTypeString
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeInt instead.
+	ValueTypeInt = pcommon.ValueTypeInt
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeDouble instead.
+	ValueTypeDouble = pcommon.ValueTypeDouble
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeBool instead.
+	ValueTypeBool = pcommon.ValueTypeBool
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeMap instead.
+	ValueTypeMap = pcommon.ValueTypeMap
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeSlice instead.
+	ValueTypeSlice = pcommon.ValueTypeSlice
+
+	// Deprecated: [v0.49.0] Use pcommon.ValueTypeBytes instead.
+	ValueTypeBytes = pcommon.ValueTypeBytes
 )
 
-// AttributeValue is an alias for pdata.AttributeValue struct.
-type AttributeValue = pdata.AttributeValue
+// Value is an alias for pcommon.Value struct.
+// Deprecated: [v0.49.0] Use pcommon.Value instead.
+type Value = pcommon.Value
 
-// Aliases for functions to create pdata.AttributeValue.
+// Aliases for functions to create pcommon.Value.
 var (
-	NewAttributeValueEmpty  = pdata.NewAttributeValueEmpty
-	NewAttributeValueString = pdata.NewAttributeValueString
-	NewAttributeValueInt    = pdata.NewAttributeValueInt
-	NewAttributeValueDouble = pdata.NewAttributeValueDouble
-	NewAttributeValueBool   = pdata.NewAttributeValueBool
-	NewAttributeValueMap    = pdata.NewAttributeValueMap
-	NewAttributeValueArray  = pdata.NewAttributeValueArray
-	NewAttributeValueBytes  = pdata.NewAttributeValueBytes
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueEmpty instead.
+	NewValueEmpty = pcommon.NewValueEmpty
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueString instead.
+	NewValueString = pcommon.NewValueString
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueInt instead.
+	NewValueInt = pcommon.NewValueInt
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueDouble instead.
+	NewValueDouble = pcommon.NewValueDouble
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueBool instead.
+	NewValueBool = pcommon.NewValueBool
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueMap instead.
+	NewValueMap = pcommon.NewValueMap
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueSlice instead.
+	NewValueSlice = pcommon.NewValueSlice
+
+	// Deprecated: [v0.49.0] Use pcommon.NewValueBytes instead.
+	NewValueBytes = pcommon.NewValueBytes
 )
 
-// AttributeMap is an alias for pdata.AttributeMap struct.
-type AttributeMap = pdata.AttributeMap
+// Map is an alias for pcommon.Map struct.
+// Deprecated: [v0.49.0] Use pcommon.Map instead.
+type Map = pcommon.Map
 
-// Aliases for functions to create pdata.AttributeMap.
+// Aliases for functions to create pcommon.Map.
 var (
-	NewAttributeMap        = pdata.NewAttributeMap
-	NewAttributeMapFromMap = pdata.NewAttributeMapFromMap
+	// Deprecated: [v0.49.0] Use pcommon.NewMap instead.
+	NewMap = pcommon.NewMap
+
+	// Deprecated: [v0.49.0] Use pcommon.NewMapFromRaw instead.
+	NewMapFromRaw = pcommon.NewMapFromRaw
 )

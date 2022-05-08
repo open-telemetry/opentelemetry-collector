@@ -16,51 +16,73 @@ package pdata // import "go.opentelemetry.io/collector/model/pdata"
 
 // This file contains aliases for trace data structures.
 
-import "go.opentelemetry.io/collector/model/internal/pdata"
+import "go.opentelemetry.io/collector/pdata/ptrace"
 
-// TracesMarshaler is an alias for pdata.TracesMarshaler interface.
-type TracesMarshaler = pdata.TracesMarshaler
+// TracesMarshaler is an alias for ptrace.Marshaler interface.
+// Deprecated: [v0.49.0] Use ptrace.Marshaler instead.
+type TracesMarshaler = ptrace.Marshaler
 
-// TracesUnmarshaler is an alias for pdata.TracesUnmarshaler interface.
-type TracesUnmarshaler = pdata.TracesUnmarshaler
+// TracesUnmarshaler is an alias for ptrace.Unmarshaler interface.
+// Deprecated: [v0.49.0] Use ptrace.Unmarshaler instead.
+type TracesUnmarshaler = ptrace.Unmarshaler
 
-// TracesSizer is an alias for pdata.TracesSizer interface.
-type TracesSizer = pdata.TracesSizer
+// TracesSizer is an alias for ptrace.Sizer interface.
+// Deprecated: [v0.49.0] Use ptrace.Sizer instead.
+type TracesSizer = ptrace.Sizer
 
-// Traces is an alias for pdata.Traces struct.
-type Traces = pdata.Traces
+// Traces is an alias for ptrace.Traces struct.
+// Deprecated: [v0.49.0] Use ptrace.Traces instead.
+type Traces = ptrace.Traces
 
 // NewTraces is an alias for a function to create new Traces.
-var NewTraces = pdata.NewTraces
+// Deprecated: [v0.49.0] Use ptrace.NewTraces instead.
+var NewTraces = ptrace.NewTraces
 
-// TracesFromInternalRep is an alias for pdata.TracesFromInternalRep.
-// TODO: Can be removed, internal pdata.TracesFromInternalRep should be used instead.
-var TracesFromInternalRep = pdata.TracesFromInternalRep
-
-// TraceState is an alias for pdata.TraceState type.
-type TraceState = pdata.TraceState
+// TraceState is an alias for ptrace.TraceState type.
+// Deprecated: [v0.49.0] Use ptrace.TraceState instead.
+type TraceState = ptrace.TraceState
 
 const (
-	TraceStateEmpty = pdata.TraceStateEmpty
+	TraceStateEmpty = ptrace.TraceStateEmpty
 )
 
-// SpanKind is an alias for pdata.SpanKind type.
-type SpanKind = pdata.SpanKind
+// SpanKind is an alias for ptrace.SpanKind type.
+// Deprecated: [v0.49.0] Use ptrace.SpanKind instead.
+type SpanKind = ptrace.SpanKind
 
 const (
-	SpanKindUnspecified = pdata.SpanKindUnspecified
-	SpanKindInternal    = pdata.SpanKindInternal
-	SpanKindServer      = pdata.SpanKindServer
-	SpanKindClient      = pdata.SpanKindClient
-	SpanKindProducer    = pdata.SpanKindProducer
-	SpanKindConsumer    = pdata.SpanKindConsumer
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindUnspecified instead.
+	SpanKindUnspecified = ptrace.SpanKindUnspecified
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindInternal instead.
+	SpanKindInternal = ptrace.SpanKindInternal
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindServer instead.
+	SpanKindServer = ptrace.SpanKindServer
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindClient instead.
+	SpanKindClient = ptrace.SpanKindClient
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindProducer instead.
+	SpanKindProducer = ptrace.SpanKindProducer
+
+	// Deprecated: [v0.49.0] Use ptrace.SpanKindConsumer instead.
+	SpanKindConsumer = ptrace.SpanKindConsumer
 )
 
-// StatusCode is an alias for pdata.StatusCode type.
-type StatusCode = pdata.StatusCode
+// StatusCode is an alias for ptrace.StatusCode type.
+// Deprecated: [v0.49.0] Use ptrace.StatusCode instead.
+type StatusCode = ptrace.StatusCode
 
 const (
-	StatusCodeUnset = pdata.StatusCodeUnset
-	StatusCodeOk    = pdata.StatusCodeOk
-	StatusCodeError = pdata.StatusCodeError
+
+	// Deprecated: [v0.49.0] Use ptrace.StatusCodeUnset instead.
+	StatusCodeUnset = ptrace.StatusCodeUnset
+
+	// Deprecated: [v0.49.0] Use ptrace.StatusCodeOk instead.
+	StatusCodeOk = ptrace.StatusCodeOk
+
+	// Deprecated: [v0.49.0] Use ptrace.StatusCodeError instead.
+	StatusCodeError = ptrace.StatusCodeError
 )

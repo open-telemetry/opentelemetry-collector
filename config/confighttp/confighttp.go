@@ -24,6 +24,7 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -81,9 +82,6 @@ type HTTPClientSettings struct {
 	// There's an already set value, and we want to override it only if an explicit value provided
 	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
 }
-
-// Deprecated: [v0.46.0] Use NewDefaultHTTPClientSettings instead.
-var DefaultHTTPClientSettings = NewDefaultHTTPClientSettings
 
 // NewDefaultHTTPClientSettings returns HTTPClientSettings type object with
 // the default values of 'MaxIdleConns' and 'IdleConnTimeout'.
@@ -235,6 +233,7 @@ func (hss *HTTPServerSettings) ToListener() (net.Listener, error) {
 		if err != nil {
 			return nil, err
 		}
+		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
 		listener = tls.NewListener(listener, tlsCfg)
 	}
 	return listener, nil

@@ -15,41 +15,41 @@
 package otlptext // import "go.opentelemetry.io/collector/internal/otlptext"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// NewTextLogsMarshaler returns a serializer.LogsMarshaler to encode to OTLP text bytes.
-func NewTextLogsMarshaler() pdata.LogsMarshaler {
+// NewTextLogsMarshaler returns a serializer.Marshaler to encode to OTLP text bytes.
+func NewTextLogsMarshaler() plog.Marshaler {
 	return textLogsMarshaler{}
 }
 
 type textLogsMarshaler struct{}
 
-// MarshalLogs pdata.Logs to OTLP text.
-func (textLogsMarshaler) MarshalLogs(ld pdata.Logs) ([]byte, error) {
+// MarshalLogs plog.Logs to OTLP text.
+func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	buf := dataBuffer{}
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		buf.logEntry("ResourceLog #%d", i)
 		rl := rls.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
-		buf.logAttributeMap("Resource labels", rl.Resource().Attributes())
-		ills := rl.InstrumentationLibraryLogs()
+		buf.logAttributes("Resource labels", rl.Resource().Attributes())
+		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			buf.logEntry("InstrumentationLibraryLogs #%d", j)
+			buf.logEntry("ScopeLogs #%d", j)
 			ils := ills.At(j)
-			buf.logEntry("InstrumentationLibraryLogs SchemaURL: %s", ils.SchemaUrl())
-			buf.logInstrumentationLibrary(ils.InstrumentationLibrary())
+			buf.logEntry("ScopeLogs SchemaURL: %s", ils.SchemaUrl())
+			buf.logInstrumentationScope(ils.Scope())
 
 			logs := ils.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				buf.logEntry("LogRecord #%d", k)
 				lr := logs.At(k)
+				buf.logEntry("ObservedTimestamp: %s", lr.ObservedTimestamp())
 				buf.logEntry("Timestamp: %s", lr.Timestamp())
 				buf.logEntry("Severity: %s", lr.SeverityText())
-				buf.logEntry("ShortName: %s", lr.Name())
 				buf.logEntry("Body: %s", attributeValueToString(lr.Body()))
-				buf.logAttributeMap("Attributes", lr.Attributes())
+				buf.logAttributes("Attributes", lr.Attributes())
 				buf.logEntry("Trace ID: %s", lr.TraceID().HexString())
 				buf.logEntry("Span ID: %s", lr.SpanID().HexString())
 				buf.logEntry("Flags: %d", lr.Flags())

@@ -48,9 +48,6 @@ type QueueSettings struct {
 	PersistentStorageEnabled bool `mapstructure:"persistent_storage_enabled"`
 }
 
-// Deprecated: [v0.46.0] use NewDefaultQueueSettings instead.
-var DefaultQueueSettings = NewDefaultQueueSettings
-
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
 func NewDefaultQueueSettings() QueueSettings {
 	return QueueSettings{

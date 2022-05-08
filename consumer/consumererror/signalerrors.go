@@ -15,18 +15,20 @@
 package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // Traces is an error that may carry associated Trace data for a subset of received data
 // that failed to be processed or sent.
 type Traces struct {
 	error
-	failed pdata.Traces
+	failed ptrace.Traces
 }
 
 // NewTraces creates a Traces that can encapsulate received data that failed to be processed or sent.
-func NewTraces(err error, failed pdata.Traces) error {
+func NewTraces(err error, failed ptrace.Traces) error {
 	return Traces{
 		error:  err,
 		failed: failed,
@@ -34,7 +36,7 @@ func NewTraces(err error, failed pdata.Traces) error {
 }
 
 // GetTraces returns failed traces from the associated error.
-func (err Traces) GetTraces() pdata.Traces {
+func (err Traces) GetTraces() ptrace.Traces {
 	return err.failed
 }
 
@@ -47,11 +49,11 @@ func (err Traces) Unwrap() error {
 // that failed to be processed or sent.
 type Logs struct {
 	error
-	failed pdata.Logs
+	failed plog.Logs
 }
 
 // NewLogs creates a Logs that can encapsulate received data that failed to be processed or sent.
-func NewLogs(err error, failed pdata.Logs) error {
+func NewLogs(err error, failed plog.Logs) error {
 	return Logs{
 		error:  err,
 		failed: failed,
@@ -59,7 +61,7 @@ func NewLogs(err error, failed pdata.Logs) error {
 }
 
 // GetLogs returns failed logs from the associated error.
-func (err Logs) GetLogs() pdata.Logs {
+func (err Logs) GetLogs() plog.Logs {
 	return err.failed
 }
 
@@ -72,11 +74,11 @@ func (err Logs) Unwrap() error {
 // that failed to be processed or sent.
 type Metrics struct {
 	error
-	failed pdata.Metrics
+	failed pmetric.Metrics
 }
 
 // NewMetrics creates a Metrics that can encapsulate received data that failed to be processed or sent.
-func NewMetrics(err error, failed pdata.Metrics) error {
+func NewMetrics(err error, failed pmetric.Metrics) error {
 	return Metrics{
 		error:  err,
 		failed: failed,
@@ -84,7 +86,7 @@ func NewMetrics(err error, failed pdata.Metrics) error {
 }
 
 // GetMetrics returns failed metrics from the associated error.
-func (err Metrics) GetMetrics() pdata.Metrics {
+func (err Metrics) GetMetrics() pmetric.Metrics {
 	return err.failed
 }
 

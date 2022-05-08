@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -31,9 +30,6 @@ type TimeoutSettings struct {
 	// Timeout is the timeout for every attempt to send data to the backend.
 	Timeout time.Duration `mapstructure:"timeout"`
 }
-
-// Deprecated: [v0.46.0] use NewDefaultTimeoutSettings instead.
-var DefaultTimeoutSettings = NewDefaultTimeoutSettings
 
 // NewDefaultTimeoutSettings returns the default settings for TimeoutSettings.
 func NewDefaultTimeoutSettings() TimeoutSettings {
@@ -92,7 +88,7 @@ func (req *baseRequest) OnProcessingFinished() {
 type baseSettings struct {
 	component.StartFunc
 	component.ShutdownFunc
-	consumerOptions []consumerhelper.Option
+	consumerOptions []consumer.Option
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
@@ -164,7 +160,7 @@ func WithQueue(queueSettings QueueSettings) Option {
 // TODO: Verify if we can change the default to be mutable as we do for processors.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseSettings) {
-		o.consumerOptions = append(o.consumerOptions, consumerhelper.WithCapabilities(capabilities))
+		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
 	}
 }
 

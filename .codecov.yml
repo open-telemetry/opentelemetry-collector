@@ -18,4 +18,4 @@ coverage:
         target: 95%
 
 ignore:
-  - "model/internal/data/protogen/**/*"
+  - "pdata/internal/data/protogen/**/*"

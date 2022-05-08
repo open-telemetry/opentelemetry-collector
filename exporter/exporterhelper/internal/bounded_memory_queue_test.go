@@ -19,12 +19,12 @@ package internal
 import (
 	"reflect"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 )
 
 // In this test we run a queue with capacity 1 and a single consumer.
@@ -95,17 +95,63 @@ func TestBoundedQueue(t *testing.T) {
 	})
 }
 
+// In this test we run a queue with many items and a slow consumer.
+// When the queue is stopped, the remaining items should be processed.
+// Due to the way q.Stop() waits for all consumers to finish, the
+// same lock strategy use above will not work, as calling Unlock
+// only after Stop will mean the consumers are still locked while
+// trying to perform the final consumptions.
+func TestShutdownWhileNotEmpty(t *testing.T) {
+	q := NewBoundedMemoryQueue(10, func(item interface{}) {})
+
+	consumerState := newConsumerState(t)
+
+	q.StartConsumers(1, func(item interface{}) {
+		consumerState.record(item.(string))
+		time.Sleep(1 * time.Second)
+	})
+
+	q.Produce("a")
+	q.Produce("b")
+	q.Produce("c")
+	q.Produce("d")
+	q.Produce("e")
+	q.Produce("f")
+	q.Produce("g")
+	q.Produce("h")
+	q.Produce("i")
+	q.Produce("j")
+
+	q.Stop()
+
+	assert.False(t, q.Produce("x"), "cannot push to closed queue")
+	consumerState.assertConsumed(map[string]bool{
+		"a": true,
+		"b": true,
+		"c": true,
+		"d": true,
+		"e": true,
+		"f": true,
+		"g": true,
+		"h": true,
+		"i": true,
+		"j": true,
+	})
+	assert.Equal(t, 0, q.Size())
+}
+
 type consumerState struct {
 	sync.Mutex
 	t            *testing.T
 	consumed     map[string]bool
-	consumedOnce int32
+	consumedOnce *atomic.Bool
 }
 
 func newConsumerState(t *testing.T) *consumerState {
 	return &consumerState{
-		t:        t,
-		consumed: make(map[string]bool),
+		t:            t,
+		consumed:     make(map[string]bool),
+		consumedOnce: atomic.NewBool(false),
 	}
 }
 
@@ -113,7 +159,7 @@ func (s *consumerState) record(val string) {
 	s.Lock()
 	defer s.Unlock()
 	s.consumed[val] = true
-	atomic.StoreInt32(&s.consumedOnce, 1)
+	s.consumedOnce.Store(true)
 }
 
 func (s *consumerState) snapshot() map[string]bool {
@@ -127,12 +173,7 @@ func (s *consumerState) snapshot() map[string]bool {
 }
 
 func (s *consumerState) waitToConsumeOnce() {
-	for i := 0; i < 1000; i++ {
-		if atomic.LoadInt32(&s.consumedOnce) == 0 {
-			time.Sleep(time.Millisecond)
-		}
-	}
-	require.EqualValues(s.t, 1, atomic.LoadInt32(&s.consumedOnce), "expected to consumer once")
+	require.Eventually(s.t, s.consumedOnce.Load, 2*time.Second, 10*time.Millisecond, "expected to consumer once")
 }
 
 func (s *consumerState) assertConsumed(expected map[string]bool) {

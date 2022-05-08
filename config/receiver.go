@@ -23,6 +23,13 @@ type Receiver interface {
 	privateConfigReceiver()
 }
 
+// UnmarshalReceiver helper function to unmarshal a Receiver config.
+// It checks if the config implements Unmarshallable and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalReceiver(cfgMap *Map, cfg Receiver) error {
+	return unmarshal(cfgMap, cfg)
+}
+
 // ReceiverSettings defines common settings for a component.Receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 //
