@@ -43,6 +43,7 @@
 - Deprecate global `featuregate` funcs in favor of `GetRegistry` and a public `Registry` type (#5160)
 
 ### 💡 Enhancements 💡
+- Add `jsoniter` Unmarshaller (#4817)
 
 - Extend config.Map.Unmarshal hook to check map key string to any TextUnmarshaler not only ComponentID (#5244)
 - Collector will no longer print error with stack trace when the collector is shutdown due to a context cancel. (#5258)
