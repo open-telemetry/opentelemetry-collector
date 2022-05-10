@@ -25,8 +25,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -53,8 +53,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: golint
         run: make -j2 golint
@@ -80,8 +80,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: checklicense
         run: make checklicense
@@ -133,14 +133,14 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Build
         uses: actions/cache@v3
         with:
-          path: /home/runner/.cache/go-build
-          key: go-build-unittest-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          path: ~/.cache/go-build
+          key: unittest-${{ runner.os }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest
   test-coverage:
@@ -162,14 +162,14 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Cache Build
         uses: actions/cache@v3
         with:
-          path: /home/runner/.cache/go-build
-          key: go-build-coverage-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          path: ~/.cache/go-build
+          key: coverage-${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
@@ -221,8 +221,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            /home/runner/go/bin
-            /home/runner/go/pkg/mod
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Build
         env:
