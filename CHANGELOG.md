@@ -12,6 +12,8 @@
 
 ### 💡 Enhancements 💡
 
+- `pdata`: Expose `pcommon.NewSliceFromRay` and `pcommon.Slice.AsRaw` functions (#5298)
+
 ### 🧰 Bug fixes 🧰
 
 - Fix Windows Event Logs ignoring user-specified logging options (#5298)
