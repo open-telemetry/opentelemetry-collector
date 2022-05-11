@@ -66,7 +66,7 @@ func TestAttributeValue(t *testing.T) {
 	bytesValue := []byte{1, 2, 3, 4}
 	v = NewValueBytes(bytesValue)
 	assert.EqualValues(t, ValueTypeBytes, v.Type())
-	assert.EqualValues(t, bytesValue, v.BytesVal())
+	assert.EqualValues(t, bytesValue, v.MBytesVal())
 }
 
 func TestAttributeValueType(t *testing.T) {
@@ -175,8 +175,8 @@ func TestNilOrigSetAttributeValue(t *testing.T) {
 	assert.EqualValues(t, 1.23, av.DoubleVal())
 
 	av = NewValueEmpty()
-	av.SetBytesVal([]byte{1, 2, 3})
-	assert.Equal(t, []byte{1, 2, 3}, av.BytesVal())
+	av.SetMBytesVal([]byte{1, 2, 3})
+	assert.Equal(t, []byte{1, 2, 3}, av.MBytesVal())
 }
 
 func TestAttributeValueEqual(t *testing.T) {
@@ -416,7 +416,7 @@ func TestMapWithEmpty(t *testing.T) {
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{1, 2, 3}, val.BytesVal())
+	assert.EqualValues(t, []byte{1, 2, 3}, val.MBytesVal())
 
 	sm.Update("other_key", NewValueString("yet_another_value"))
 	val, exist = sm.Get("other_key")
@@ -452,7 +452,7 @@ func TestMapWithEmpty(t *testing.T) {
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{4, 5, 6}, val.BytesVal())
+	assert.EqualValues(t, []byte{4, 5, 6}, val.MBytesVal())
 
 	sm.Upsert("other_key", NewValueString("other_value"))
 	val, exist = sm.Get("other_key")
@@ -488,7 +488,7 @@ func TestMapWithEmpty(t *testing.T) {
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{7, 8, 9}, val.BytesVal())
+	assert.EqualValues(t, []byte{7, 8, 9}, val.MBytesVal())
 
 	sm.Upsert("yet_another_key", NewValueString("yet_another_value"))
 	val, exist = sm.Get("yet_another_key")
@@ -524,7 +524,7 @@ func TestMapWithEmpty(t *testing.T) {
 	val, exist = sm.Get("yet_another_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{1}, val.BytesVal())
+	assert.EqualValues(t, []byte{1}, val.MBytesVal())
 
 	assert.True(t, sm.Remove("other_key"))
 	assert.True(t, sm.Remove("other_key_string"))
@@ -669,10 +669,10 @@ func TestValueBytes_CopyTo(t *testing.T) {
 	orig.CopyTo(dest)
 	assert.Equal(t, orig, dest)
 
-	orig.BytesVal()[0] = 10
+	orig.MBytesVal()[0] = 10
 	assert.NotEqual(t, orig, dest)
-	assert.Equal(t, []byte{1, 2, 3}, dest.BytesVal())
-	assert.Equal(t, []byte{10, 2, 3}, orig.BytesVal())
+	assert.Equal(t, []byte{1, 2, 3}, dest.MBytesVal())
+	assert.Equal(t, []byte{10, 2, 3}, orig.MBytesVal())
 }
 
 func TestMap_Update(t *testing.T) {

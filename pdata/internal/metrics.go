@@ -284,39 +284,3 @@ func (ot OptionalType) String() string {
 	}
 	return ""
 }
-
-// BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
-// Deprecated: [0.51.0] Use MBucketCounts instead.
-func (ms HistogramDataPoint) BucketCounts() []uint64 {
-	return ms.orig.BucketCounts
-}
-
-// SetBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
-// Deprecated: [0.51.0] Use SetMBucketCounts instead.
-func (ms HistogramDataPoint) SetBucketCounts(v []uint64) {
-	ms.orig.BucketCounts = v
-}
-
-// ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
-// Deprecated: [0.51.0] Use MExplicitBounds instead.
-func (ms HistogramDataPoint) ExplicitBounds() []float64 {
-	return ms.orig.ExplicitBounds
-}
-
-// SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
-// Deprecated: [0.51.0] Use SetMExplicitBounds instead.
-func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
-	ms.orig.ExplicitBounds = v
-}
-
-// BucketCounts returns the bucketcounts associated with this Buckets.
-// Deprecated: [0.51.0] Use MBucketCounts instead.
-func (ms Buckets) BucketCounts() []uint64 {
-	return ms.orig.BucketCounts
-}
-
-// SetBucketCounts replaces the bucketcounts associated with this Buckets.
-// Deprecated: [0.51.0] Use SetMBucketCounts instead.
-func (ms Buckets) SetBucketCounts(v []uint64) {
-	ms.orig.BucketCounts = v
-}
