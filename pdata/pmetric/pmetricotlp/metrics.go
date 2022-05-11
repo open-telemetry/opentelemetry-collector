@@ -110,11 +110,6 @@ func (mr Request) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Deprecated: [v0.50.0] Use NewRequestFromMetrics instead.
-func (mr Request) SetMetrics(ld pmetric.Metrics) {
-	*mr.orig = *internal.MetricsToOtlp(ld)
-}
-
 func (mr Request) Metrics() pmetric.Metrics {
 	return internal.MetricsFromOtlp(mr.orig)
 }
