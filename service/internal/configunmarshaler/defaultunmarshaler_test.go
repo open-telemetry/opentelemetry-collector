@@ -230,7 +230,7 @@ func loadConfigFile(t *testing.T, fileName string, factories component.Factories
 	require.NoError(t, err)
 
 	// Unmarshal the config from the config.Map using the given factories.
-	return NewDefault().Unmarshal(cm, factories)
+	return New().Unmarshal(cm, factories)
 }
 
 func TestDefaultLoggerConfig(t *testing.T) {
