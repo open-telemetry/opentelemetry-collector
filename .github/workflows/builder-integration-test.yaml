@@ -23,16 +23,13 @@ on:
 jobs:
   integration-test:
     name: Integration test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.17
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
-
-    - name: Test
-      run: cd ./cmd/builder && ./test/test.sh
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.17
+      - name: Test
+        run: cd ./cmd/builder && ./test/test.sh
