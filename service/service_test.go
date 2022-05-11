@@ -19,7 +19,6 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -140,17 +139,16 @@ func TestService_ReportStatus(t *testing.T) {
 	expectedError := errors.New("an error")
 
 	host.ReportStatus(
-		status.Event{
-			ComponentID: expectedComponentID,
-			Type:        status.RecoverableError,
-			Error:       expectedError,
-			Timestamp:   time.Now().UnixNano(),
-		},
+		status.NewEvent(
+			status.RecoverableError,
+			status.WithComponentID(expectedComponentID),
+			status.WithError(expectedError),
+		),
 	)
 
 	assert.True(t, statusEventHandlerCalled)
-	assert.Equal(t, expectedComponentID, statusEvent.ComponentID)
-	assert.Equal(t, expectedError, statusEvent.Error)
+	assert.Equal(t, expectedComponentID, statusEvent.ComponentID())
+	assert.Equal(t, expectedError, statusEvent.Err())
 	assert.NotNil(t, statusEvent.Timestamp)
 	assert.NoError(t, unregister())
 }
@@ -180,11 +178,10 @@ func TestService_ReportStatusWithBuggyHandler(t *testing.T) {
 
 	// ReportStatus handles errors in handlers (by logging) and does not surface them back to callers
 	host.ReportStatus(
-		status.Event{
-			ComponentID: config.NewComponentID("nop"),
-			Type:        status.OK,
-			Timestamp:   time.Now().UnixNano(),
-		},
+		status.NewEvent(
+			status.OK,
+			status.WithComponentID(config.NewComponentID("nop")),
+		),
 	)
 	assert.True(t, statusEventHandlerCalled)
 	assert.NoError(t, unregister())

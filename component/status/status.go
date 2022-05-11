@@ -15,6 +15,8 @@
 package status // import "go.opentelemetry.io/collector/component/status"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -37,10 +39,72 @@ const (
 // is in an error state (i.e. Type: status.RecoverableError). An error status may optionally
 // include an error object to provide additional insight to registered listeners.
 type Event struct {
-	Type        EventType
-	Timestamp   int64
-	ComponentID config.ComponentID
-	Error       error
+	eventType   EventType
+	timestamp   int64
+	componentID config.ComponentID
+	err         error
+}
+
+// Type returns the event type
+func (ev *Event) Type() EventType {
+	return ev.eventType
+}
+
+// Timestamp returns the time of the event in nanos
+func (ev *Event) Timestamp() int64 {
+	return ev.timestamp
+}
+
+// ComponentID returns the ID of the component that generated the status.Event
+func (ev *Event) ComponentID() config.ComponentID {
+	return ev.componentID
+}
+
+// Err returns the error associated with the status.Event
+func (ev *Event) Err() error {
+	return ev.err
+}
+
+// EventOption applies options to a status.Event
+type EventOption func(*Event)
+
+// WithComponentID sets the ComponentID that generated the status.Event
+func WithComponentID(componentID config.ComponentID) EventOption {
+	return func(o *Event) {
+		o.componentID = componentID
+	}
+}
+
+// WithTimestamp sets the timestamp, expected in nanos, for a status.Event
+func WithTimestamp(nanos int64) EventOption {
+	return func(o *Event) {
+		o.timestamp = nanos
+	}
+}
+
+// WithError assigns an error object to a Event. It is optional and should only be applied
+// to a Event with type status.EventError.
+func WithError(err error) EventOption {
+	return func(o *Event) {
+		o.err = err
+	}
+}
+
+// NewEvent creates and returns a status.Event with default and / or the provided options
+func NewEvent(eventType EventType, options ...EventOption) Event {
+	ev := Event{
+		eventType: eventType,
+	}
+
+	for _, opt := range options {
+		opt(&ev)
+	}
+
+	if ev.timestamp == 0 {
+		ev.timestamp = time.Now().UnixNano()
+	}
+
+	return ev
 }
 
 // EventFunc is a callback function that receives status.Events

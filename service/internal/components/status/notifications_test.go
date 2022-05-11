@@ -98,29 +98,29 @@ func TestNotifications_ReportStatus(t *testing.T) {
 
 	assert.NoError(t,
 		notifications.ReportStatus(
-			status.Event{
-				Type:        status.RecoverableError,
-				ComponentID: compID,
-				Error:       errors.New("err1"),
-			},
+			status.NewEvent(
+				status.RecoverableError,
+				status.WithComponentID(compID),
+				status.WithError(errors.New("err1")),
+			),
 		),
 	)
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 1, eeSpy.CallCount)
-	assert.Equal(t, "err1", eeSpy.LastArg.Error.Error())
+	assert.Equal(t, "err1", eeSpy.LastArg.Err().Error())
 
 	assert.NoError(t,
 		notifications.ReportStatus(
-			status.Event{
-				Type:        status.RecoverableError,
-				ComponentID: compID,
-				Error:       errors.New("err2"),
-			},
+			status.NewEvent(
+				status.RecoverableError,
+				status.WithComponentID(compID),
+				status.WithError(errors.New("err2")),
+			),
 		),
 	)
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 2, eeSpy.CallCount)
-	assert.Equal(t, "err2", eeSpy.LastArg.Error.Error())
+	assert.Equal(t, "err2", eeSpy.LastArg.Err().Error())
 
 	assert.NoError(t, un())
 	assert.NoError(t, notifications.Shutdown())
@@ -133,10 +133,10 @@ func TestNotifications_AllHandlersOptional(t *testing.T) {
 	assert.NoError(t, notifications.PipelineReady())
 	assert.NoError(t,
 		notifications.ReportStatus(
-			status.Event{
-				Type:        status.OK,
-				ComponentID: config.NewComponentID("nop"),
-			},
+			status.NewEvent(
+				status.OK,
+				status.WithComponentID(config.NewComponentID("nop")),
+			),
 		),
 	)
 
@@ -163,16 +163,19 @@ func TestNotifications_StatusHandlerWithError(t *testing.T) {
 
 	compID := config.NewComponentID("nop")
 
-	assert.Error(t, notifications.ReportStatus(
-		status.Event{Type: status.OK, ComponentID: compID}),
-	)
 	assert.Error(t,
 		notifications.ReportStatus(
-			status.Event{
-				Type:        status.RecoverableError,
-				ComponentID: compID,
-				Error:       errors.New("err"),
-			},
+			status.NewEvent(status.OK, status.WithComponentID(compID)),
+		),
+	)
+
+	assert.Error(t,
+		notifications.ReportStatus(
+			status.NewEvent(
+				status.RecoverableError,
+				status.WithComponentID(compID),
+				status.WithError(errors.New("err")),
+			),
 		),
 	)
 
@@ -210,11 +213,11 @@ func TestNotifications_RegisterUnregister(t *testing.T) {
 	assert.NoError(t, notifications.PipelineReady())
 	assert.NoError(t,
 		notifications.ReportStatus(
-			status.Event{
-				Type:        status.RecoverableError,
-				ComponentID: compID,
-				Error:       errors.New("err1"),
-			},
+			status.NewEvent(
+				status.RecoverableError,
+				status.WithComponentID(compID),
+				status.WithError(errors.New("err1")),
+			),
 		),
 	)
 
@@ -222,11 +225,11 @@ func TestNotifications_RegisterUnregister(t *testing.T) {
 
 	assert.NoError(t,
 		notifications.ReportStatus(
-			status.Event{
-				Type:        status.RecoverableError,
-				ComponentID: compID,
-				Error:       errors.New("err2"),
-			},
+			status.NewEvent(
+				status.RecoverableError,
+				status.WithComponentID(compID),
+				status.WithError(errors.New("err2")),
+			),
 		),
 	)
 
@@ -234,10 +237,10 @@ func TestNotifications_RegisterUnregister(t *testing.T) {
 
 	assert.NoError(t,
 		notifications.ReportStatus(
-			status.Event{
-				Type:        status.OK,
-				ComponentID: compID,
-			},
+			status.NewEvent(
+				status.OK,
+				status.WithComponentID(compID),
+			),
 		),
 	)
 
@@ -247,13 +250,13 @@ func TestNotifications_RegisterUnregister(t *testing.T) {
 	assert.True(t, l1.PipelineReadySpy.WasCalled(), "Expected call to PipelineReady")
 	assert.True(t, l1.StatusEventSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 1, l1.StatusEventSpy.CallCount)
-	assert.Equal(t, "err1", l1.StatusEventSpy.LastArg.Error.Error())
+	assert.Equal(t, "err1", l1.StatusEventSpy.LastArg.Err().Error())
 	assert.False(t, l1.PipelineNotReadySpy.WasCalled(), "Unexpected call to PipelineNotReady")
 
 	assert.True(t, l2.PipelineReadySpy.WasCalled(), "Exected call to PipelineReady")
 	assert.True(t, l2.StatusEventSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 2, l2.StatusEventSpy.CallCount)
-	assert.Equal(t, "err2", l2.StatusEventSpy.LastArg.Error.Error())
+	assert.Equal(t, "err2", l2.StatusEventSpy.LastArg.Err().Error())
 	assert.False(t, l2.PipelineNotReadySpy.WasCalled(), "Unexpected call to PipelineNotReady")
 }
 

@@ -78,7 +78,7 @@ func (host *serviceHost) ReportStatus(event status.Event) {
 	if err := host.statusNotifications.ReportStatus(event); err != nil {
 		host.telemetry.Logger.Warn("Service failed to report status", zap.Error(err))
 	}
-	if event.Type == status.FatalError && event.Error != nil {
-		host.asyncErrorChannel <- event.Error
+	if event.Type() == status.FatalError && event.Err() != nil {
+		host.asyncErrorChannel <- event.Err()
 	}
 }

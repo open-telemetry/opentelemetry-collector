@@ -16,7 +16,6 @@ package components // import "go.opentelemetry.io/collector/service/internal/com
 
 import (
 	"net/http"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -49,12 +48,14 @@ func (hw *hostWrapper) ReportFatalError(err error) {
 var emptyComponentID = config.ComponentID{}
 
 func (hw *hostWrapper) ReportStatus(event status.Event) {
-	// sets default component id and timestamp on event
-	if event.ComponentID == emptyComponentID {
-		event.ComponentID = hw.ComponentID
-	}
-	if event.Timestamp == 0 {
-		event.Timestamp = time.Now().UnixNano()
+	// sets default component id
+	if event.ComponentID() == emptyComponentID {
+		event = status.NewEvent(
+			event.Type(),
+			status.WithComponentID(hw.ComponentID),
+			status.WithTimestamp(event.Timestamp()),
+			status.WithError(event.Err()),
+		)
 	}
 	hw.Host.ReportStatus(event)
 }
