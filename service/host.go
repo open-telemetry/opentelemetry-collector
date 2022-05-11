@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/builder"
+	internalstatus "go.opentelemetry.io/collector/service/internal/components/status"
 	"go.opentelemetry.io/collector/service/internal/extensions"
-	internalstatus "go.opentelemetry.io/collector/service/internal/status"
 )
 
 var _ component.Host = (*serviceHost)(nil)
