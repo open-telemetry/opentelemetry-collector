@@ -476,7 +476,7 @@ var valueFloat64Field = &primitiveField{
 }
 
 var bucketCountsField = &primitiveSliceField{
-	fieldName:       "BucketCounts",
+	fieldName:       "MBucketCounts",
 	originFieldName: "BucketCounts",
 	returnType:      "[]uint64",
 	defaultVal:      "[]uint64(nil)",
@@ -485,7 +485,7 @@ var bucketCountsField = &primitiveSliceField{
 }
 
 var explicitBoundsField = &primitiveSliceField{
-	fieldName:       "ExplicitBounds",
+	fieldName:       "MExplicitBounds",
 	originFieldName: "ExplicitBounds",
 	returnType:      "[]float64",
 	defaultVal:      "[]float64(nil)",

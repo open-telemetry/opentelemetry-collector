@@ -9,13 +9,13 @@ on:
 jobs:
   contrib_tests:
     runs-on: ubuntu-latest
-    container:
-      image: cimg/go:1.17
     steps:
-      - name: Setup Permissions
-        run: sudo chmod -R 777 $GITHUB_WORKSPACE /github /__w/_temp
       - name: Checkout Repo
         uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.17
       - name: Run Contrib Tests
         run: |
           contrib_path=/tmp/opentelemetry-collector-contrib
