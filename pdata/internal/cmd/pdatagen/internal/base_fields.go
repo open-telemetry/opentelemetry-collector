@@ -56,10 +56,20 @@ ${extraComment}func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 const copyToPrimitiveSliceTestTemplate = `	if len(ms.orig.${originFieldName}) == 0 {	
 		dest.orig.${originFieldName} = nil
 	} else {
-		dest.orig.${originFieldName} = make(${returnType}, len(ms.orig.${originFieldName}))
+		dest.orig.${originFieldName} = make(${rawType}, len(ms.orig.${originFieldName}))
 		copy(dest.orig.${originFieldName}, ms.orig.${originFieldName})
 	}
 `
+
+const accessorsPrimitiveSliceTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) ${fieldName}() ${returnType} {
+	return ${returnType}{value: (*ms.orig).${originFieldName}}
+}
+
+// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+	(*ms.orig).${originFieldName} = v.value
+}`
 
 const oneOfTypeAccessorHeaderTemplate = `// ${originFieldName}Type returns the type of the ${lowerOriginFieldName} for this ${structName}.
 // Calling this function on zero-initialized ${structName} will cause a panic.
@@ -449,17 +459,15 @@ type primitiveSliceField struct {
 	originFieldName string
 	returnType      string
 	defaultVal      string
+	rawType         string
 	testVal         string
-	testItemVal     string
 }
 
 func (psf *primitiveSliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveSliceTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
-		case "extraComment":
-			return ""
 		case "fieldName":
 			return psf.fieldName
 		case "lowerFieldName":
@@ -500,19 +508,14 @@ func (psf *primitiveSliceField) generateCopyToValue(sb *strings.Builder) {
 		switch name {
 		case "originFieldName":
 			return psf.originFieldName
+		case "rawType":
+			return psf.rawType
 		case "returnType":
 			return psf.returnType
 		default:
 			panic(name)
 		}
 	}))
-}
-
-func (psf *primitiveSliceField) generateTestItemMutation(sb *strings.Builder) {
-	sb.WriteString("\torig." + psf.fieldName + "()[0] = " + psf.testItemVal + "\n")
-	sb.WriteString("\tassert.NotEqualValues(t, orig, ms)\n")
-	sb.WriteString("\torig." + psf.fieldName + "()[0] = " + psf.testVal + "[0]\n")
-	sb.WriteString("\tassert.EqualValues(t, orig, ms)\n")
 }
 
 var _ baseField = (*primitiveStructField)(nil)

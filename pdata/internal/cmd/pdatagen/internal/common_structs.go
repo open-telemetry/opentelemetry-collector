@@ -15,7 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var commonFile = &File{
-	Name: "common",
+	Name:     "common",
+	IsCommon: true,
 	imports: []string{
 		`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 	},

@@ -1444,24 +1444,24 @@ func (ms HistogramDataPoint) SetSum(v float64) {
 	(*ms.orig).Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
 
-// MBucketCounts returns the mbucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) MBucketCounts() []uint64 {
-	return (*ms.orig).BucketCounts
+// BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) BucketCounts() ImmutableUInt64Slice {
+	return ImmutableUInt64Slice{value: (*ms.orig).BucketCounts}
 }
 
-// SetMBucketCounts replaces the mbucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetMBucketCounts(v []uint64) {
-	(*ms.orig).BucketCounts = v
+// SetBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetBucketCounts(v ImmutableUInt64Slice) {
+	(*ms.orig).BucketCounts = v.value
 }
 
-// MExplicitBounds returns the mexplicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) MExplicitBounds() []float64 {
-	return (*ms.orig).ExplicitBounds
+// ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) ExplicitBounds() ImmutableFloat64Slice {
+	return ImmutableFloat64Slice{value: (*ms.orig).ExplicitBounds}
 }
 
-// SetMExplicitBounds replaces the mexplicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetMExplicitBounds(v []float64) {
-	(*ms.orig).ExplicitBounds = v
+// SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetExplicitBounds(v ImmutableFloat64Slice) {
+	(*ms.orig).ExplicitBounds = v.value
 }
 
 // Exemplars returns the Exemplars associated with this HistogramDataPoint.
@@ -1911,14 +1911,14 @@ func (ms Buckets) SetOffset(v int32) {
 	(*ms.orig).Offset = int32(v)
 }
 
-// MBucketCounts returns the mbucketcounts associated with this Buckets.
-func (ms Buckets) MBucketCounts() []uint64 {
-	return (*ms.orig).BucketCounts
+// BucketCounts returns the bucketcounts associated with this Buckets.
+func (ms Buckets) BucketCounts() ImmutableUInt64Slice {
+	return ImmutableUInt64Slice{value: (*ms.orig).BucketCounts}
 }
 
-// SetMBucketCounts replaces the mbucketcounts associated with this Buckets.
-func (ms Buckets) SetMBucketCounts(v []uint64) {
-	(*ms.orig).BucketCounts = v
+// SetBucketCounts replaces the bucketcounts associated with this Buckets.
+func (ms Buckets) SetBucketCounts(v ImmutableUInt64Slice) {
+	(*ms.orig).BucketCounts = v.value
 }
 
 // CopyTo copies all properties from the current struct to the dest.

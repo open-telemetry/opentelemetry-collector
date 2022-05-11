@@ -208,12 +208,12 @@ func initHistogramMetric(hm pmetric.Metric) {
 	hdp1.SetSum(15)
 	hdp1.SetMin(15)
 	hdp1.SetMax(15)
-	hdp1.SetMBucketCounts([]uint64{0, 1})
+	hdp1.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1}))
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
 	exemplar.SetDoubleVal(15)
 	initMetricAttachment(exemplar.FilteredAttributes())
-	hdp1.SetMExplicitBounds([]float64{1})
+	hdp1.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1}))
 }
 
 func initExponentialHistogramMetric(hm pmetric.Metric) {
@@ -231,10 +231,10 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 
 	// positive index 1 and 2 are values sqrt(2), 2 at scale 1
 	hdp0.Positive().SetOffset(1)
-	hdp0.Positive().SetMBucketCounts([]uint64{1, 1})
+	hdp0.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1}))
 	// negative index -1 and 0 are values -1/sqrt(2), -1 at scale 1
 	hdp0.Negative().SetOffset(-1)
-	hdp0.Negative().SetMBucketCounts([]uint64{1, 1})
+	hdp0.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1}))
 
 	// The above will print:
 	// Bucket (-1.414214, -1.000000], Count: 1
@@ -256,7 +256,7 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 
 	// index -1 and 0 are values 0.25, 1 at scale -1
 	hdp1.Positive().SetOffset(-1)
-	hdp1.Positive().SetMBucketCounts([]uint64{1, 1})
+	hdp1.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1}))
 
 	// The above will print:
 	// Bucket [0, 0], Count: 1

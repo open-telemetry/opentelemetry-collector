@@ -4,7 +4,6 @@
 
 ### 🛑 Breaking changes 🛑
 
-- Remove deprecated `pdata.NewValueBytes`. (#5504)
 - Remove deprecated `GetLogger`. (#5504)
 - Remove deprecated `configtest.LoadConfigMap` (#5505)
 - Remove deprecated `config.Map` (#5505)
@@ -12,8 +11,26 @@
 - Remove deprecated `config.MapConverter` (#5505)
 - Remove deprecated `config.Received` (#5505)
 - Remove deprecated `config.CloseFunc` (#5505)
+- Deprecated `pcommon.Value.NewValueBytes` is brought back taking `pcommon.ImmutableByteSlice` as an argument instead 
+  of `[]byte` (#5299)
 
 ### 🚩 Deprecations 🚩
+
+- Use immutable slices for primitive types slices to restrict mutations. (#5299)
+  - `Value.NewValueMBytes` func is deprecated in favor of Value.NewValueMBytes func that takes
+    `ImmutableByteSlice` instead of `[]byte`
+  - `Value.SetMBytesVal` func is deprecated in favor of `Value.SetBytesVal` func that takes
+    `pcommon.ImmutableByteSlice` instead of []byte.
+  - `Value.BytesVal` func is deprecated in favor of `Value.BytesVal` func that returns `pcommon.ImmutableByteSlice`
+    instead of []byte.
+  - `<HistogramDataPoint|Buckets>.SetMBucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.SetBucketCounts` funcs that take `pcommon.ImmutableUInt64Slice` instead of []uint64.
+  - `<HistogramDataPoint|Buckets>.MBucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.BucketCounts` funcs that return `pcommon.ImmutableUInt64Slice` instead of []uint64.
+  - `HistogramDataPoint.SetMExplicitBounds` func is deprecated in favor of `HistogramDataPoint.SetExplicitBounds` func
+    that takes `pcommon.ImmutableFloat64Slice` instead of []float64.
+  - `HistogramDataPoint.MExplicitBounds` func func is deprecated in favor of `HistogramDataPoint.ExplicitBounds`
+    returns `pcommon.ImmutableFloat64Slice` instead of []float64.
 
 ### 💡 Enhancements 💡
 

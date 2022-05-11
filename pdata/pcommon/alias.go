@@ -73,9 +73,13 @@ var (
 	// NewValueSlice creates a new Value of array type.
 	NewValueSlice = internal.NewValueSlice
 
+	// NewValueBytes creates a new Value with the given ImmutableByteSlice value.
+	NewValueBytes = internal.NewValueBytes
+
 	// NewValueMBytes creates a new Value with the given []byte value.
 	// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
 	// across multiple attributes is forbidden.
+	// Deprecated: [0.54.0] Use NewValueBytes instead.
 	NewValueMBytes = internal.NewValueMBytes
 )
 
