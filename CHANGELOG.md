@@ -12,6 +12,8 @@
 
 ### 💡 Enhancements 💡
 
+- Update OTLP to v0.17.0 (#5335)
+
 ### 🧰 Bug fixes 🧰
 
 - Fix Windows Event Logs ignoring user-specified logging options (#5298)
