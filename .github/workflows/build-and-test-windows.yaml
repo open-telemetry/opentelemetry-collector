@@ -27,8 +27,8 @@ jobs:
           cache-name: cache-go-modules
         with:
           path: |
-            \Users\runneradmin\go\pkg\mod
-            %LocalAppData%\go-build
-          key: go-pkg-mod-${{ runner.os }}-${{ hashFiles('./go.mod', '**/go.sum') }}
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
         run: go test ./...

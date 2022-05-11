@@ -1306,7 +1306,7 @@ func TestNewValueFromRaw(t *testing.T) {
 			input: []interface{}{"v1", "v2"},
 			expected: (func() Value {
 				s := NewValueSlice()
-				newSliceFromRaw([]interface{}{"v1", "v2"}).CopyTo(s.SliceVal())
+				NewSliceFromRaw([]interface{}{"v1", "v2"}).CopyTo(s.SliceVal())
 				return s
 			})(),
 		},

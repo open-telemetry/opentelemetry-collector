@@ -172,7 +172,7 @@ func newValueFromRaw(iv interface{}) Value {
 		return mv
 	case []interface{}:
 		av := NewValueSlice()
-		newSliceFromRaw(tv).CopyTo(av.SliceVal())
+		NewSliceFromRaw(tv).CopyTo(av.SliceVal())
 		return av
 	default:
 		return NewValueString(fmt.Sprintf("<Invalid value type %T>", tv))
@@ -448,7 +448,7 @@ func (v Value) AsString() string {
 		return base64.StdEncoding.EncodeToString(v.BytesVal())
 
 	case ValueTypeSlice:
-		jsonStr, _ := json.Marshal(v.SliceVal().asRaw())
+		jsonStr, _ := json.Marshal(v.SliceVal().AsRaw())
 		return string(jsonStr)
 
 	default:
@@ -504,7 +504,7 @@ func (v Value) asRaw() interface{} {
 	case ValueTypeMap:
 		return v.MapVal().AsRaw()
 	case ValueTypeSlice:
-		return v.SliceVal().asRaw()
+		return v.SliceVal().AsRaw()
 	}
 	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
 }
@@ -914,8 +914,8 @@ func (m Map) AsRaw() map[string]interface{} {
 	return rawMap
 }
 
-// newSliceFromRaw creates a Slice with values from the given []interface{}.
-func newSliceFromRaw(rawSlice []interface{}) Slice {
+// NewSliceFromRaw creates a Slice with values from the given []interface{}.
+func NewSliceFromRaw(rawSlice []interface{}) Slice {
 	if len(rawSlice) == 0 {
 		v := []otlpcommon.AnyValue(nil)
 		return Slice{&v}
@@ -927,8 +927,8 @@ func newSliceFromRaw(rawSlice []interface{}) Slice {
 	return Slice{&origs}
 }
 
-// asRaw creates a slice out of a Slice.
-func (es Slice) asRaw() []interface{} {
+// AsRaw converts the Slice to a standard go slice.
+func (es Slice) AsRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		rawSlice = append(rawSlice, es.At(i).asRaw())

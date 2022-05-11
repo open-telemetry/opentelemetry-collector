@@ -12,6 +12,7 @@
 
 ### 💡 Enhancements 💡
 
+- `pdata`: Expose `pcommon.NewSliceFromRay` and `pcommon.Slice.AsRaw` functions (#5298)
 - Update OTLP to v0.17.0 (#5335)
 
 ### 🧰 Bug fixes 🧰
