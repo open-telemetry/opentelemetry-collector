@@ -4,6 +4,16 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.51.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated model module, everything is available in `pdata` and `semconv`. (#5281)
   - Old versions of the module are still available, but no new versions will be released.
 - Remove deprecated LogRecord.Name field. (#5202)
@@ -25,7 +35,7 @@
 
 ### 💡 Enhancements 💡
 
-- `pdata`: Expose `pcommon.NewSliceFromRay` and `pcommon.Slice.AsRaw` functions (#5298)
+- `pdata`: Expose `pcommon.NewSliceFromRaw` and `pcommon.Slice.AsRaw` functions (#5311)
 
 ### 🧰 Bug fixes 🧰
 
