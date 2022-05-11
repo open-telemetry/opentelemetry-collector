@@ -361,4 +361,4 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m collector-base
+	multimod prerelease -v ./versions.yaml -m collector-core
