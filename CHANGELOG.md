@@ -10,6 +10,19 @@
 
 ### 🚩 Deprecations 🚩
 
+- In preparation of migration to immutable slices for primitive type items, the following methods are renamed (#5344)
+  - `Value.BytesVal` func is deprecated in favor of `Value.MBytesVal`.
+  - `Value.SetBytesVal` func is deprecated in favor of `Value.SetMBytesVal`.
+  - `Value.UpdateBytes` func is deprecated in favor of `Value.UpdateMBytes`.
+  - `Value.InsertBytes` func is deprecated in favor of `Value.InsertMBytes`.
+  - `Value.UpsertBytes` func is deprecated in favor of `Value.UpsertMBytes`.
+  - `<HistogramDataPoint|Buckets>.BucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.MBucketCounts`.
+  - `<HistogramDataPoint|Buckets>.SetBucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.SetMBucketCounts`.
+  - `HistogramDataPoint.ExplicitBounds` func is deprecated in favor of `HistogramDataPoint.MExplicitBounds`.
+  - `HistogramDataPoint.SetExplicitBounds` func is deprecated in favor of `HistogramDataPoint.SetMExplicitBounds`.
+
 ### 💡 Enhancements 💡
 
 - `pdata`: Expose `pcommon.NewSliceFromRay` and `pcommon.Slice.AsRaw` functions (#5298)

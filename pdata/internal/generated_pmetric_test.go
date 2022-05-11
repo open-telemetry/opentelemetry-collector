@@ -1065,13 +1065,13 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	orig = generateTestHistogramDataPoint()
 	orig.CopyTo(ms)
 	assert.EqualValues(t, orig, ms)
-	orig.BucketCounts()[0] = 0
+	orig.MBucketCounts()[0] = 0
 	assert.NotEqualValues(t, orig, ms)
-	orig.BucketCounts()[0] = []uint64{1, 2, 3}[0]
+	orig.MBucketCounts()[0] = []uint64{1, 2, 3}[0]
 	assert.EqualValues(t, orig, ms)
-	orig.ExplicitBounds()[0] = 0
+	orig.MExplicitBounds()[0] = 0
 	assert.NotEqualValues(t, orig, ms)
-	orig.ExplicitBounds()[0] = []float64{1, 2, 3}[0]
+	orig.MExplicitBounds()[0] = []float64{1, 2, 3}[0]
 	assert.EqualValues(t, orig, ms)
 }
 
@@ -1115,20 +1115,20 @@ func TestHistogramDataPoint_Sum(t *testing.T) {
 	assert.EqualValues(t, testValSum, ms.Sum())
 }
 
-func TestHistogramDataPoint_BucketCounts(t *testing.T) {
+func TestHistogramDataPoint_MBucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, []uint64(nil), ms.BucketCounts())
-	testValBucketCounts := []uint64{1, 2, 3}
-	ms.SetBucketCounts(testValBucketCounts)
-	assert.EqualValues(t, testValBucketCounts, ms.BucketCounts())
+	assert.EqualValues(t, []uint64(nil), ms.MBucketCounts())
+	testValMBucketCounts := []uint64{1, 2, 3}
+	ms.SetMBucketCounts(testValMBucketCounts)
+	assert.EqualValues(t, testValMBucketCounts, ms.MBucketCounts())
 }
 
-func TestHistogramDataPoint_ExplicitBounds(t *testing.T) {
+func TestHistogramDataPoint_MExplicitBounds(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, []float64(nil), ms.ExplicitBounds())
-	testValExplicitBounds := []float64{1, 2, 3}
-	ms.SetExplicitBounds(testValExplicitBounds)
-	assert.EqualValues(t, testValExplicitBounds, ms.ExplicitBounds())
+	assert.EqualValues(t, []float64(nil), ms.MExplicitBounds())
+	testValMExplicitBounds := []float64{1, 2, 3}
+	ms.SetMExplicitBounds(testValMExplicitBounds)
+	assert.EqualValues(t, testValMExplicitBounds, ms.MExplicitBounds())
 }
 
 func TestHistogramDataPoint_Exemplars(t *testing.T) {
@@ -1375,9 +1375,9 @@ func TestBuckets_CopyTo(t *testing.T) {
 	orig = generateTestBuckets()
 	orig.CopyTo(ms)
 	assert.EqualValues(t, orig, ms)
-	orig.BucketCounts()[0] = 0
+	orig.MBucketCounts()[0] = 0
 	assert.NotEqualValues(t, orig, ms)
-	orig.BucketCounts()[0] = []uint64{1, 2, 3}[0]
+	orig.MBucketCounts()[0] = []uint64{1, 2, 3}[0]
 	assert.EqualValues(t, orig, ms)
 }
 
@@ -1389,12 +1389,12 @@ func TestBuckets_Offset(t *testing.T) {
 	assert.EqualValues(t, testValOffset, ms.Offset())
 }
 
-func TestBuckets_BucketCounts(t *testing.T) {
+func TestBuckets_MBucketCounts(t *testing.T) {
 	ms := NewBuckets()
-	assert.EqualValues(t, []uint64(nil), ms.BucketCounts())
-	testValBucketCounts := []uint64{1, 2, 3}
-	ms.SetBucketCounts(testValBucketCounts)
-	assert.EqualValues(t, testValBucketCounts, ms.BucketCounts())
+	assert.EqualValues(t, []uint64(nil), ms.MBucketCounts())
+	testValMBucketCounts := []uint64{1, 2, 3}
+	ms.SetMBucketCounts(testValMBucketCounts)
+	assert.EqualValues(t, testValMBucketCounts, ms.MBucketCounts())
 }
 
 func TestSummaryDataPointSlice(t *testing.T) {
@@ -2091,8 +2091,8 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
-	tv.SetBucketCounts([]uint64{1, 2, 3})
-	tv.SetExplicitBounds([]float64{1, 2, 3})
+	tv.SetMBucketCounts([]uint64{1, 2, 3})
+	tv.SetMExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
 }
@@ -2139,7 +2139,7 @@ func generateTestBuckets() Buckets {
 
 func fillTestBuckets(tv Buckets) {
 	tv.SetOffset(int32(909))
-	tv.SetBucketCounts([]uint64{1, 2, 3})
+	tv.SetMBucketCounts([]uint64{1, 2, 3})
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {

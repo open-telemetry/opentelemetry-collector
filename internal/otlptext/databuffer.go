@@ -119,14 +119,14 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pmetric.HistogramDataPointS
 		b.logEntry("Count: %d", p.Count())
 		b.logEntry("Sum: %f", p.Sum())
 
-		bounds := p.ExplicitBounds()
+		bounds := p.MExplicitBounds()
 		if len(bounds) != 0 {
 			for i, bound := range bounds {
 				b.logEntry("ExplicitBounds #%d: %f", i, bound)
 			}
 		}
 
-		buckets := p.BucketCounts()
+		buckets := p.MBucketCounts()
 		if len(buckets) != 0 {
 			for j, bucket := range buckets {
 				b.logEntry("Buckets #%d, Count: %d", j, bucket)
@@ -157,13 +157,13 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 		// uses a lookup table for the last finite boundary, which can be
 		// easily computed using `math/big` (for scales up to 20).
 
-		negB := p.Negative().BucketCounts()
-		posB := p.Positive().BucketCounts()
+		negB := p.Negative().MBucketCounts()
+		posB := p.Positive().MBucketCounts()
 
 		for i := 0; i < len(negB); i++ {
 			pos := len(negB) - i - 1
 			index := p.Negative().Offset() + int32(pos)
-			count := p.Negative().BucketCounts()[pos]
+			count := p.Negative().MBucketCounts()[pos]
 			lower := math.Exp(float64(index) * factor)
 			upper := math.Exp(float64(index+1) * factor)
 			b.logEntry("Bucket (%f, %f], Count: %d", -upper, -lower, count)
@@ -175,7 +175,7 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 
 		for pos := 0; pos < len(posB); pos++ {
 			index := p.Positive().Offset() + int32(pos)
-			count := p.Positive().BucketCounts()[pos]
+			count := p.Positive().MBucketCounts()[pos]
 			lower := math.Exp(float64(index) * factor)
 			upper := math.Exp(float64(index+1) * factor)
 			b.logEntry("Bucket [%f, %f), Count: %d", lower, upper, count)
