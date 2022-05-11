@@ -10,7 +10,7 @@
 
 ### 🚩 Deprecations 🚩
 
-- In preparation of migration to immutable slices for primitive type items the following methods are renamed (#5344)
+- In preparation of migration to immutable slices for primitive type items, the following methods are renamed (#5344)
   - `Value.BytesVal` func is deprecated in favor of `Value.MBytesVal`.
   - `Value.SetBytesVal` func is deprecated in favor of `Value.SetMBytesVal`.
   - `Value.UpdateBytes` func is deprecated in favor of `Value.UpdateMBytes`.
