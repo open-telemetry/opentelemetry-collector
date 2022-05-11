@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -34,7 +35,7 @@ func TestNewEventMinimal(t *testing.T) {
 func TestNewEventAllOptions(t *testing.T) {
 	expectedComponentID := config.NewComponentID("nop")
 	expectedTimestamp := time.Now().UnixNano()
-	expectedErr := errors.New("expect this!")
+	expectedErr := errors.New("expect this")
 	ev := NewEvent(
 		RecoverableError,
 		WithComponentID(expectedComponentID),
