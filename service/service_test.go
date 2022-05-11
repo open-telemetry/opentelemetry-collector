@@ -100,9 +100,9 @@ func TestService_ReportStatus(t *testing.T) {
 
 	var readyHandlerCalled, notReadyHandlerCalled, statusEventHandlerCalled bool
 
-	var statusEvent status.Event
+	var statusEvent *status.Event
 
-	statusEventHandler := func(ev status.Event) error {
+	statusEventHandler := func(ev *status.Event) error {
 		statusEvent = ev
 		statusEventHandlerCalled = true
 		return nil
@@ -161,7 +161,7 @@ func TestService_ReportStatusWithBuggyHandler(t *testing.T) {
 
 	var statusEventHandlerCalled bool
 
-	statusEventHandler := func(ev status.Event) error {
+	statusEventHandler := func(ev *status.Event) error {
 		statusEventHandlerCalled = true
 		return errors.New("an error")
 	}

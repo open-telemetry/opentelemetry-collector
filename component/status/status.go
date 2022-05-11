@@ -91,7 +91,7 @@ func WithError(err error) EventOption {
 }
 
 // NewEvent creates and returns a status.Event with default and / or the provided options
-func NewEvent(eventType EventType, options ...EventOption) Event {
+func NewEvent(eventType EventType, options ...EventOption) *Event {
 	ev := Event{
 		eventType: eventType,
 	}
@@ -104,11 +104,11 @@ func NewEvent(eventType EventType, options ...EventOption) Event {
 		ev.timestamp = time.Now().UnixNano()
 	}
 
-	return ev
+	return &ev
 }
 
 // EventFunc is a callback function that receives status.Events
-type EventFunc func(event Event) error
+type EventFunc func(event *Event) error
 
 // PipelineFunc is a function to be called when the collector pipeline changes states
 type PipelineFunc func() error
@@ -117,7 +117,7 @@ type PipelineFunc func() error
 // registered to listen to status notifications
 type UnregisterFunc func() error
 
-var noopStatusEventFunc = func(event Event) error { return nil }
+var noopStatusEventFunc = func(event *Event) error { return nil }
 
 var noopPipelineFunc = func() error { return nil }
 
@@ -129,7 +129,7 @@ type Listener struct {
 }
 
 // StatusEventHandler delegates to the underlying handler registered to the Listener
-func (l *Listener) StatusEventHandler(event Event) error {
+func (l *Listener) StatusEventHandler(event *Event) error {
 	return l.statusEventHandler(event)
 }
 

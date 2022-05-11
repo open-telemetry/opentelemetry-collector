@@ -71,7 +71,7 @@ func (n *Notifications) RegisterListener(options ...status.ListenerOption) statu
 
 // ReportStatus notifies all registered listeners of a StatusEvent. A StatusEvent can indicate that
 // a component is functioning normally (status.EventOK) or is in an error state (status.EventError)
-func (n *Notifications) ReportStatus(event status.Event) (errs error) {
+func (n *Notifications) ReportStatus(event *status.Event) (errs error) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 

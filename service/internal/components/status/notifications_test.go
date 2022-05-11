@@ -305,7 +305,7 @@ func newPipelineEventSpy(returnErr bool) *pipelineEventSpy {
 type statusEventSpy struct {
 	callCounter
 	Func    status.EventFunc
-	LastArg status.Event
+	LastArg *status.Event
 }
 
 func newStatusEventSpy(returnErr bool) *statusEventSpy {
@@ -315,7 +315,7 @@ func newStatusEventSpy(returnErr bool) *statusEventSpy {
 	}
 
 	spy := &statusEventSpy{}
-	spy.Func = func(ev status.Event) error {
+	spy.Func = func(ev *status.Event) error {
 		spy.LastArg = ev
 		spy.CallCount++
 		return err

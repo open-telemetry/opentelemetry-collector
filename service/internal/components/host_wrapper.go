@@ -47,7 +47,7 @@ func (hw *hostWrapper) ReportFatalError(err error) {
 
 var emptyComponentID = config.ComponentID{}
 
-func (hw *hostWrapper) ReportStatus(event status.Event) {
+func (hw *hostWrapper) ReportStatus(event *status.Event) {
 	// sets default component id
 	if event.ComponentID() == emptyComponentID {
 		event = status.NewEvent(

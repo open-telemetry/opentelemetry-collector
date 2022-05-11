@@ -68,7 +68,7 @@ type Host interface {
 	// ReportStatus can be used by a component to communicate its status to registered status
 	// listeners. Components can use this function to indicate that they are functioning properly,
 	// or are in an error state.
-	ReportStatus(event status.Event)
+	ReportStatus(event *status.Event)
 
 	// RegisterStatusListener allows interested components to register status listeners to receive
 	// events reported by via the ReportStatus function. Callbacks can also be provided to be
