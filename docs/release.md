@@ -45,10 +45,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
     * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
 
-    * Update the collector version in the manifest used by `make run` to the new release in `./cmd/otelcorecol/builder-config.yaml`.
+    * Update the collector version in the manifest used by `make run` to the new release in `./cmd/otelcorecol/builder-config.yaml` and run `make genotelcorecol`.
 
-    * Update the collector version in the `cmd/otelcorecol/main.go`.
-    
     * Update the collector version in the `examples/k8s/otel-config.yaml` 
 
     * Submit a PR with the changes and get the PR approved and merged.
