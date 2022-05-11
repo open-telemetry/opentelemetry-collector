@@ -56,30 +56,26 @@ func (l Level) String() string {
 	return "unknown"
 }
 
-// UnmarshalText unmarshals text to a Level.
+// UnmarshalText unmarshalls text to a Level.
 func (l *Level) UnmarshalText(text []byte) error {
 	if l == nil {
 		return fmt.Errorf("cannot unmarshal to a nil *Level")
 	}
-	var err error
-	*l, err = parseLevel(string(text))
-	return err
-}
 
-// parseLevel returns the Level represented by the string. The parsing is case-insensitive
-// and it returns error if the string value is unknown.
-func parseLevel(str string) (Level, error) {
-	str = strings.ToLower(str)
-
+	str := strings.ToLower(string(text))
 	switch str {
 	case levelNoneStr:
-		return LevelNone, nil
+		*l = LevelNone
+		return nil
 	case levelBasicStr:
-		return LevelBasic, nil
+		*l = LevelBasic
+		return nil
 	case levelNormalStr:
-		return LevelNormal, nil
+		*l = LevelNormal
+		return nil
 	case levelDetailedStr:
-		return LevelDetailed, nil
+		*l = LevelDetailed
+		return nil
 	}
-	return LevelNone, fmt.Errorf("unknown metrics level %q", str)
+	return fmt.Errorf("unknown metrics level %q", str)
 }
