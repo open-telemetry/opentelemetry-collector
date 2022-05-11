@@ -34,18 +34,6 @@ func GetRegistry() *Registry {
 	return reg
 }
 
-// Deprecated: [v0.50.0] Use GetRegistry().Apply.
-var Apply = GetRegistry().Apply
-
-// Deprecated: [v0.50.0] Use GetRegistry().IsEnabled.
-var IsEnabled = GetRegistry().IsEnabled
-
-// Deprecated: [v0.50.0] Use GetRegistry().List.
-var List = GetRegistry().List
-
-// Deprecated: [v0.50.0] Use GetRegistry().MustRegister.
-var Register = GetRegistry().MustRegister
-
 // NewRegistry returns a new empty Registry.
 func NewRegistry() *Registry {
 	return &Registry{gates: make(map[string]Gate)}

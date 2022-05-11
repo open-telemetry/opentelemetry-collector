@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
+- Remove derecated featuregate funcs/structs from v0.50.0 (#5346)
 
 ### 🚩 Deprecations 🚩
 
