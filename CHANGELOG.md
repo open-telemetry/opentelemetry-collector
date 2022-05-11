@@ -20,7 +20,7 @@
 
 ### 💡 Enhancements 💡
 
-- `pdata`: Expose `pcommon.NewSliceFromRay` and `pcommon.Slice.AsRaw` functions (#5298)
+- `pdata`: Expose `pcommon.NewSliceFromRaw` and `pcommon.Slice.AsRaw` functions (#5311)
 
 ### 🧰 Bug fixes 🧰
 
