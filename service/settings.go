@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// svcSettings holds configuration for building a new service.
-type svcSettings struct {
+// settings holds configuration for building a new service.
+type settings struct {
 	// Factories component factories.
 	Factories component.Factories
 
@@ -31,11 +31,11 @@ type svcSettings struct {
 	// Config represents the configuration of the service.
 	Config *Config
 
-	// Telemetry represents the service configured telemetry for all the components.
-	Telemetry component.TelemetrySettings
-
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
+
+	// LoggingOptions provides a way to change behavior of zap logging.
+	LoggingOptions []zap.Option
 }
 
 // CollectorSettings holds configuration for creating a new Collector.

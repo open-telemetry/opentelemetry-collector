@@ -25,16 +25,12 @@ import (
 	"runtime"
 	"syscall"
 
-	"go.opentelemetry.io/otel/metric/nonrecording"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/ballastextension"
-	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
@@ -75,8 +71,7 @@ func (s State) String() string {
 
 // Collector represents a server providing the OpenTelemetry Collector service.
 type Collector struct {
-	set       CollectorSettings
-	telemetry component.TelemetrySettings
+	set CollectorSettings
 
 	service *service
 	state   *atomic.Int32
@@ -102,11 +97,6 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	return &Collector{
-		telemetry: component.TelemetrySettings{
-			Logger:         zap.NewNop(), // Set a Nop logger as a place holder until a logger is created based on configuration
-			TracerProvider: trace.NewNoopTracerProvider(),
-			MeterProvider:  nonrecording.NewNoopMeterProvider(),
-		},
 		asyncErrorChannel: make(chan error),
 
 		set:          set,
@@ -122,9 +112,9 @@ func (col *Collector) GetState() State {
 }
 
 // GetLogger returns logger used by the Collector.
-// The logger is initialized after collector server start.
+// Deprecated: [v0.52.0] Collector owns telemetry lifecycle and accessing this func in different moments has undefined behavior. If you need access to telemetry components (logger, trace provider, etc.) create an extension.
 func (col *Collector) GetLogger() *zap.Logger {
-	return col.telemetry.Logger
+	return col.service.telemetry.Logger
 }
 
 // Shutdown shuts down the collector server.
@@ -141,7 +131,7 @@ func (col *Collector) Shutdown() {
 
 // runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
 func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
-	col.telemetry.Logger.Info("Everything is ready. Begin running and processing data.")
+	col.service.telemetry.Logger.Info("Everything is ready. Begin running and processing data.")
 
 	col.signalsChannel = make(chan os.Signal, 1)
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
@@ -155,11 +145,11 @@ LOOP:
 		select {
 		case err := <-col.set.ConfigProvider.Watch():
 			if err != nil {
-				col.telemetry.Logger.Error("Config watch failed", zap.Error(err))
+				col.service.telemetry.Logger.Error("Config watch failed", zap.Error(err))
 				break LOOP
 			}
 
-			col.telemetry.Logger.Warn("Config updated, restart service")
+			col.service.telemetry.Logger.Warn("Config updated, restart service")
 			col.setCollectorState(Closing)
 
 			if err = col.service.Shutdown(ctx); err != nil {
@@ -169,16 +159,16 @@ LOOP:
 				return fmt.Errorf("failed to setup configuration components: %w", err)
 			}
 		case err := <-col.asyncErrorChannel:
-			col.telemetry.Logger.Error("Asynchronous error received, terminating process", zap.Error(err))
+			col.service.telemetry.Logger.Error("Asynchronous error received, terminating process", zap.Error(err))
 			break LOOP
 		case s := <-col.signalsChannel:
-			col.telemetry.Logger.Info("Received signal from OS", zap.String("signal", s.String()))
+			col.service.telemetry.Logger.Info("Received signal from OS", zap.String("signal", s.String()))
 			break LOOP
 		case <-col.shutdownChan:
-			col.telemetry.Logger.Info("Received shutdown request")
+			col.service.telemetry.Logger.Info("Received shutdown request")
 			break LOOP
 		case <-ctx.Done():
-			col.telemetry.Logger.Info("Context done, terminating process", zap.Error(ctx.Err()))
+			col.service.telemetry.Logger.Info("Context done, terminating process", zap.Error(ctx.Err()))
 
 			// Call shutdown with background context as the passed in context has been canceled
 			return col.shutdown(context.Background())
@@ -197,31 +187,24 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	col.telemetry.MetricsLevel = cfg.Telemetry.Metrics.Level
-
-	if col.telemetry.Logger, err = telemetrylogs.NewLogger(cfg.Service.Telemetry.Logs, col.set.LoggingOptions); err != nil {
-		return fmt.Errorf("failed to get logger: %w", err)
-	}
-
-	if !col.set.SkipSettingGRPCLogger {
-		telemetrylogs.SetColGRPCLogger(col.telemetry.Logger, cfg.Service.Telemetry.Logs.Level)
-	}
-
-	col.service, err = newService(&svcSettings{
+	col.service, err = newService(&settings{
 		BuildInfo:         col.set.BuildInfo,
 		Factories:         col.set.Factories,
 		Config:            cfg,
-		Telemetry:         col.telemetry,
 		AsyncErrorChannel: col.asyncErrorChannel,
+		LoggingOptions:    col.set.LoggingOptions,
 	})
 	if err != nil {
 		return err
 	}
 
-	// TODO: This should be part of the service initialization, which should be responsible to create TelemetrySettings.
-	// For the moment happens here, since it needs service.Config and Logger.
+	if !col.set.SkipSettingGRPCLogger {
+		telemetrylogs.SetColGRPCLogger(col.service.telemetry.Logger, cfg.Service.Telemetry.Logs.Level)
+	}
+
+	// TODO: Move this to the service initialization.
 	// It is called once because that is how it is implemented using sync.Once.
-	if err = col.set.telemetry.init(col); err != nil {
+	if err = col.set.telemetry.init(col.service); err != nil {
 		return err
 	}
 
@@ -235,17 +218,12 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 // Run starts the collector according to the given configuration given, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
-	col.telemetry.TracerProvider = sdktrace.NewTracerProvider(
-		// needed for supporting the zpages extension
-		sdktrace.WithSampler(internal.AlwaysRecord()),
-	)
-
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(Closed)
 		return err
 	}
 
-	col.telemetry.Logger.Info("Starting "+col.set.BuildInfo.Command+"...",
+	col.service.telemetry.Logger.Info("Starting "+col.set.BuildInfo.Command+"...",
 		zap.String("Version", col.set.BuildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
@@ -261,7 +239,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	var errs error
 
 	// Begin shutdown sequence.
-	col.telemetry.Logger.Info("Starting shutdown...")
+	col.service.telemetry.Logger.Info("Starting shutdown...")
 
 	if err := col.set.ConfigProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
@@ -275,7 +253,6 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 
-	col.telemetry.Logger.Info("Shutdown complete.")
 	col.setCollectorState(Closed)
 
 	return errs

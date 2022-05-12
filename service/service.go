@@ -18,11 +18,16 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/otel/metric/nonrecording"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/internal/extensions"
+	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
 // service represents the implementation of a component.Host.
@@ -33,18 +38,31 @@ type service struct {
 	host      *serviceHost
 }
 
-func newService(set *svcSettings) (*service, error) {
+func newService(set *settings) (*service, error) {
 	srv := &service{
 		buildInfo: set.BuildInfo,
 		config:    set.Config,
-		telemetry: set.Telemetry,
+		telemetry: component.TelemetrySettings{
+			TracerProvider: trace.NewNoopTracerProvider(),
+			MeterProvider:  nonrecording.NewNoopMeterProvider(),
+			MetricsLevel:   set.Config.Telemetry.Metrics.Level,
+		},
 		host: &serviceHost{
 			factories:         set.Factories,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
 	}
 
+	srv.telemetry.TracerProvider = sdktrace.NewTracerProvider(
+		// needed for supporting the zpages extension
+		sdktrace.WithSampler(internal.AlwaysRecord()),
+	)
+
 	var err error
+	if srv.telemetry.Logger, err = telemetrylogs.NewLogger(set.Config.Service.Telemetry.Logs, set.LoggingOptions); err != nil {
+		return nil, fmt.Errorf("failed to get logger: %w", err)
+	}
+
 	if srv.host.builtExtensions, err = extensions.Build(srv.telemetry, srv.buildInfo, srv.config, srv.host.factories.Extensions); err != nil {
 		return nil, fmt.Errorf("cannot build extensions: %w", err)
 	}
@@ -126,5 +144,11 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
+	srv.telemetry.Logger.Info("Stopping extensions...")
+	if err := srv.host.builtExtensions.ShutdownAll(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
+	}
+
+	// TODO: Shutdown TracerProvider, MeterProvider, and Sync Logger.
 	return errs
 }
