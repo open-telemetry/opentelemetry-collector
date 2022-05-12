@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configunmarshaler // import "go.opentelemetry.io/collector/internal/configunmarshaler"
+package configunmarshaler // import "go.opentelemetry.io/collector/service/internal/configunmarshaler"
 
 import (
 	"fmt"
@@ -24,12 +24,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
-
-// ConfigUnmarshaler is the interface that unmarshalls the collector configuration from the config.Map.
-type ConfigUnmarshaler interface {
-	// Unmarshal the configuration from the given parser and factories.
-	Unmarshal(v *config.Map, factories component.Factories) (*config.Config, error)
-}
 
 // These are errors that can be returned by Unmarshal(). Note that error codes are not part
 // of Unmarshal()'s public API, they are for internal unit testing only.
@@ -81,17 +75,17 @@ type configSettings struct {
 	Service    map[string]interface{}                        `mapstructure:"service"`
 }
 
-type defaultUnmarshaler struct{}
+type ConfigUnmarshaler struct{}
 
-// NewDefault returns a default ConfigUnmarshaler that unmarshalls every configuration
-// using the custom unmarshaler if present or default to strict
-func NewDefault() ConfigUnmarshaler {
-	return &defaultUnmarshaler{}
+// New returns a default ConfigUnmarshaler that unmarshalls every component's configuration
+// using the custom unmarshaler if present or default strict unmarshaler otherwise.
+func New() ConfigUnmarshaler {
+	return ConfigUnmarshaler{}
 }
 
-// Unmarshal the Config from a config.Map.
+// Unmarshal the config.Config from a config.Map.
 // After the config is unmarshalled, `Validate()` must be called to validate.
-func (*defaultUnmarshaler) Unmarshal(v *config.Map, factories component.Factories) (*config.Config, error) {
+func (ConfigUnmarshaler) Unmarshal(v *config.Map, factories component.Factories) (*config.Config, error) {
 	var cfg config.Config
 
 	// Unmarshal top level sections and validate.

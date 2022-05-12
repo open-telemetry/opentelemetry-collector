@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/internal/configunmarshaler"
+	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
 
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
@@ -28,7 +28,7 @@ func LoadConfig(fileName string, factories component.Factories) (*config.Config,
 	if err != nil {
 		return nil, err
 	}
-	return configunmarshaler.NewDefault().Unmarshal(cfgMap, factories)
+	return configunmarshaler.New().Unmarshal(cfgMap, factories)
 }
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.
