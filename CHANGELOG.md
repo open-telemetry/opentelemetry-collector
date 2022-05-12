@@ -4,10 +4,12 @@
 
 ### 🛑 Breaking changes 🛑
 
-- Remove `configunmarshaler.Unmarshaler` interface, per deprecation comment )#5348)
+- Remove `configunmarshaler.Unmarshaler` interface, per deprecation comment (#5348)
 - Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
 
 ### 🚩 Deprecations 🚩
+
+- Deprecate `config.Config` and `config.Service`, use `service.Config*` (#4608)
 
 ### 💡 Enhancements 💡
 

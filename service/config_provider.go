@@ -41,7 +41,7 @@ type ConfigProvider interface {
 	// Get returns the service configuration, or error otherwise.
 	//
 	// Should never be called concurrently with itself, Watch or Shutdown.
-	Get(ctx context.Context, factories component.Factories) (*config.Config, error)
+	Get(ctx context.Context, factories component.Factories) (*Config, error)
 
 	// Watch blocks until any configuration change was detected or an unrecoverable error
 	// happened during monitoring the configuration changes.
@@ -103,13 +103,13 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 	}, nil
 }
 
-func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
+func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*Config, error) {
 	retMap, err := cm.mapResolver.Resolve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
 
-	var cfg *config.Config
+	var cfg *Config
 	if cfg, err = configunmarshaler.New().Unmarshal(retMap, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
