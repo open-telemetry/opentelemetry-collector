@@ -1444,23 +1444,23 @@ func (ms HistogramDataPoint) SetSum(v float64) {
 	(*ms.orig).Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
 
-// BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) BucketCounts() []uint64 {
+// MBucketCounts returns the mbucketcounts associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) MBucketCounts() []uint64 {
 	return (*ms.orig).BucketCounts
 }
 
-// SetBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetBucketCounts(v []uint64) {
+// SetMBucketCounts replaces the mbucketcounts associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMBucketCounts(v []uint64) {
 	(*ms.orig).BucketCounts = v
 }
 
-// ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) ExplicitBounds() []float64 {
+// MExplicitBounds returns the mexplicitbounds associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) MExplicitBounds() []float64 {
 	return (*ms.orig).ExplicitBounds
 }
 
-// SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
+// SetMExplicitBounds replaces the mexplicitbounds associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMExplicitBounds(v []float64) {
 	(*ms.orig).ExplicitBounds = v
 }
 
@@ -1822,13 +1822,13 @@ func (ms Buckets) SetOffset(v int32) {
 	(*ms.orig).Offset = int32(v)
 }
 
-// BucketCounts returns the bucketcounts associated with this Buckets.
-func (ms Buckets) BucketCounts() []uint64 {
+// MBucketCounts returns the mbucketcounts associated with this Buckets.
+func (ms Buckets) MBucketCounts() []uint64 {
 	return (*ms.orig).BucketCounts
 }
 
-// SetBucketCounts replaces the bucketcounts associated with this Buckets.
-func (ms Buckets) SetBucketCounts(v []uint64) {
+// SetMBucketCounts replaces the mbucketcounts associated with this Buckets.
+func (ms Buckets) SetMBucketCounts(v []uint64) {
 	(*ms.orig).BucketCounts = v
 }
 
