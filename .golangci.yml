@@ -38,6 +38,10 @@ run:
   # the dependency descriptions in go.mod.
   modules-download-mode: readonly
 
+  # Allow multiple parallel golangci-lint instances running.
+  # If false (default) - golangci-lint acquires file lock on start.
+  allow-parallel-runners: true
+
 # output configuration options
 output:
   # colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
@@ -116,16 +120,12 @@ linters:
     - revive
     - staticcheck
     - unconvert
+    - unused
     - unparam
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: otlp_test.go
-      linters:
-        # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007
-        - structcheck
     - text: "G404:"
       linters:
         - gosec
