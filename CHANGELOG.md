@@ -6,6 +6,7 @@
 
 - Remove `configunmarshaler.Unmarshaler` interface, per deprecation comment )#5348)
 - Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
+- Remove derecated featuregate funcs/structs from v0.50.0 (#5346)
 
 ### 🚩 Deprecations 🚩
 
