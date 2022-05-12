@@ -15,7 +15,6 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
-	"go.opentelemetry.io/contrib/zpages"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -35,9 +34,6 @@ type svcSettings struct {
 
 	// Telemetry represents the service configured telemetry for all the components.
 	Telemetry component.TelemetrySettings
-
-	// ZPagesSpanProcessor represents the SpanProcessor for tracez page.
-	ZPagesSpanProcessor *zpages.SpanProcessor
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error

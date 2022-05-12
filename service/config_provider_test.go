@@ -16,48 +16,20 @@ package service
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 )
-
-type errConfigUnmarshaler struct {
-	err error
-}
-
-func (ecu *errConfigUnmarshaler) Unmarshal(*config.Map, component.Factories) (*config.Config, error) {
-	return nil, ecu.err
-}
-
-func TestConfigProviderUnmarshalError(t *testing.T) {
-	factories, errF := componenttest.NopFactories()
-	require.NoError(t, errF)
-
-	set := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")})
-	set.Unmarshaler = &errConfigUnmarshaler{err: errors.New("unmarshal_err")}
-
-	cfgW, err := NewConfigProvider(set)
-	assert.NoError(t, err)
-
-	_, err = cfgW.Get(context.Background(), factories)
-	assert.Error(t, err)
-
-	assert.NoError(t, cfgW.Shutdown(context.Background()))
-}
 
 func TestConfigProviderValidationError(t *testing.T) {
 	factories, errF := componenttest.NopFactories()
 	require.NoError(t, errF)
 
 	set := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")})
-	set.Unmarshaler = &errConfigUnmarshaler{err: errors.New("unmarshal_err")}
 
 	cfgW, err := NewConfigProvider(set)
 	assert.NoError(t, err)

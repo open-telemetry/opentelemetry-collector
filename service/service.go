@@ -40,9 +40,8 @@ func newService(set *svcSettings) (*service, error) {
 		config:    set.Config,
 		telemetry: set.Telemetry,
 		host: &serviceHost{
-			factories:           set.Factories,
-			zPagesSpanProcessor: set.ZPagesSpanProcessor,
-			asyncErrorChannel:   set.AsyncErrorChannel,
+			factories:         set.Factories,
+			asyncErrorChannel: set.AsyncErrorChannel,
 		},
 	}
 

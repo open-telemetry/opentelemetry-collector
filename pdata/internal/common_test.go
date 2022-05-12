@@ -298,7 +298,7 @@ func TestNilMap(t *testing.T) {
 	assert.EqualValues(t, generateTestBoolMap(), insertMapBool)
 
 	insertMapBytes := NewMap()
-	insertMapBytes.InsertBytes("k", []byte{1, 2, 3, 4, 5})
+	insertMapBytes.InsertMBytes("k", []byte{1, 2, 3, 4, 5})
 	assert.EqualValues(t, generateTestBytesMap(), insertMapBytes)
 
 	updateMap := NewMap()
@@ -322,7 +322,7 @@ func TestNilMap(t *testing.T) {
 	assert.EqualValues(t, NewMap(), updateMapBool)
 
 	updateMapBytes := NewMap()
-	updateMapBytes.UpdateBytes("k", []byte{1, 2, 3})
+	updateMapBytes.UpdateMBytes("k", []byte{1, 2, 3})
 	assert.EqualValues(t, NewMap(), updateMapBytes)
 
 	upsertMap := NewMap()
@@ -346,7 +346,7 @@ func TestNilMap(t *testing.T) {
 	assert.EqualValues(t, generateTestBoolMap(), upsertMapBool)
 
 	upsertMapBytes := NewMap()
-	upsertMapBytes.UpsertBytes("k", []byte{1, 2, 3, 4, 5})
+	upsertMapBytes.UpsertMBytes("k", []byte{1, 2, 3, 4, 5})
 	assert.EqualValues(t, generateTestBytesMap(), upsertMapBytes)
 
 	removeMap := NewMap()
@@ -412,7 +412,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.True(t, val.BoolVal())
 
-	sm.InsertBytes("other_key_bytes", []byte{1, 2, 3})
+	sm.InsertMBytes("other_key_bytes", []byte{1, 2, 3})
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
@@ -448,7 +448,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.False(t, val.BoolVal())
 
-	sm.UpdateBytes("other_key_bytes", []byte{4, 5, 6})
+	sm.UpdateMBytes("other_key_bytes", []byte{4, 5, 6})
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
@@ -484,7 +484,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.True(t, val.BoolVal())
 
-	sm.UpsertBytes("other_key_bytes", []byte{7, 8, 9})
+	sm.UpsertMBytes("other_key_bytes", []byte{7, 8, 9})
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
@@ -520,7 +520,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.False(t, val.BoolVal())
 
-	sm.UpsertBytes("yet_another_key_bytes", []byte{1})
+	sm.UpsertMBytes("yet_another_key_bytes", []byte{1})
 	val, exist = sm.Get("yet_another_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())

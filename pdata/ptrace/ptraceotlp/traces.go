@@ -114,11 +114,6 @@ func (tr Request) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Deprecated: [v0.50.0] Use NewRequestFromTraces instead.
-func (tr Request) SetTraces(td ptrace.Traces) {
-	*tr.orig = *internal.TracesToOtlp(td)
-}
-
 func (tr Request) Traces() ptrace.Traces {
 	return internal.TracesFromOtlp(tr.orig)
 }
