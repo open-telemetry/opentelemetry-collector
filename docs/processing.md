@@ -152,8 +152,8 @@ Remove a forbidden attribute such as `http.request.header.authorization` from sp
 
 Remove all attributes except for some
 
-`keep(attributes, "http.method", "http.status_code") from metrics`
-`keep(attributes, "http.method", "http.status_code")`
+`keep_keys(attributes, "http.method", "http.status_code") from metrics`
+`keep_keys(attributes, "http.method", "http.status_code")`
 
 Reduce cardinality of an attribute
 
@@ -248,6 +248,16 @@ sense as a user experience.
 
 An implementation of the query language would likely parse expressions into this sort of structure so given an SQL-like
 implementation, it would likely be little overhead to support a YAML approach in addition.
+
+## Function syntax
+
+Functions should be named and formatted according to the following standards.
+- Function names MUST start with a verb.
+- Function names MUST that contain multiple words MUST separate those words with `_`.
+- Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_wildcards`.
+- Functions that interact with a single item MUST NOT have plurality in the name.  Ex: `set`, `delete`, `drop`.
+- Functions that change a specific target MUST set the target as the first parameter.
+- Functions that take a list MUST set the list as the last parameter.
 
 ## Implementing a processor function
 
