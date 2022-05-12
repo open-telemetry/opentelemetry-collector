@@ -114,11 +114,6 @@ func (lr Request) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Deprecated: [v0.50.0] Use NewRequestFromLogs instead.
-func (lr Request) SetLogs(ld plog.Logs) {
-	*lr.orig = *internal.LogsToOtlp(ld)
-}
-
 func (lr Request) Logs() plog.Logs {
 	return internal.LogsFromOtlp(lr.orig)
 }

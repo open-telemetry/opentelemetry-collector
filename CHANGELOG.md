@@ -4,15 +4,40 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
+
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.51.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated model module, everything is available in `pdata` and `semconv`. (#5281)
   - Old versions of the module are still available, but no new versions will be released.
 - Remove deprecated LogRecord.Name field. (#5202)
 
 ### 🚩 Deprecations 🚩
 
+- In preparation of migration to immutable slices for primitive type items, the following methods are renamed (#5344)
+  - `Value.BytesVal` func is deprecated in favor of `Value.MBytesVal`.
+  - `Value.SetBytesVal` func is deprecated in favor of `Value.SetMBytesVal`.
+  - `Value.UpdateBytes` func is deprecated in favor of `Value.UpdateMBytes`.
+  - `Value.InsertBytes` func is deprecated in favor of `Value.InsertMBytes`.
+  - `Value.UpsertBytes` func is deprecated in favor of `Value.UpsertMBytes`.
+  - `<HistogramDataPoint|Buckets>.BucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.MBucketCounts`.
+  - `<HistogramDataPoint|Buckets>.SetBucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.SetMBucketCounts`.
+  - `HistogramDataPoint.ExplicitBounds` func is deprecated in favor of `HistogramDataPoint.MExplicitBounds`.
+  - `HistogramDataPoint.SetExplicitBounds` func is deprecated in favor of `HistogramDataPoint.SetMExplicitBounds`.
+
 ### 💡 Enhancements 💡
 
-- `pdata`: Expose `pcommon.NewSliceFromRay` and `pcommon.Slice.AsRaw` functions (#5298)
+- `pdata`: Expose `pcommon.NewSliceFromRaw` and `pcommon.Slice.AsRaw` functions (#5311)
 
 ### 🧰 Bug fixes 🧰
 

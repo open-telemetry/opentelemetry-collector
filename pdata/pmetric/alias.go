@@ -73,21 +73,6 @@ const (
 	MetricDataPointFlagNoRecordedValue = internal.MetricDataPointFlagNoRecordedValue
 )
 
-// MetricValueType specifies the type of NumberDataPoint.
-// Deprecated: [v0.50.0] Use NumberDataPointValueType or ExemplarValueType instead.
-type MetricValueType = internal.NumberDataPointValueType
-
-const (
-	// Deprecated: [v0.50.0] Use NumberDataPointValueTypeNone instead.
-	MetricValueTypeNone = internal.NumberDataPointValueTypeNone
-
-	// Deprecated: [v0.50.0] Use NumberDataPointValueTypeInt.
-	MetricValueTypeInt = internal.NumberDataPointValueTypeInt
-
-	// Deprecated: [v0.50.0] Use NumberDataPointValueTypeDouble instead.
-	MetricValueTypeDouble = internal.NumberDataPointValueTypeDouble
-)
-
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType = internal.NumberDataPointValueType
 
