@@ -100,7 +100,7 @@ We can try to model these into a query language, in particular allowing the firs
 processing operations, and only have implementation of individual types of processing need to implement operators that
 the user can use within an expression.
 
-Telemetry is modeled in the collector as [`pdata`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/model/pdata)
+Telemetry is modeled in the collector as [`pdata`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdataa)
 which is roughly a 1:1 mapping of the [OTLP protocol](https://github.com/open-telemetry/opentelemetry-proto/tree/main/opentelemetry/proto).
 This data can be navigated using field expressions, which are fields within the protocol separated by dots. For example,
 the status message of a span is `status.message`. A map lookup can include the key as a string, for example `attributes["http.status_code"]`.
