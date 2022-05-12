@@ -28,6 +28,7 @@ type Host interface {
 	//
 	// ReportFatalError should be called by the component anytime after Component.Start() ends and
 	// before Component.Shutdown() begins.
+	// Deprecated: [0.51.0] Use ReportStatus instead (with an event of type status.FatalError)
 	ReportFatalError(err error)
 
 	// GetFactory of the specified kind. Returns the factory for a component type.
