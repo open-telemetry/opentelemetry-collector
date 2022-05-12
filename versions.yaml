@@ -13,13 +13,14 @@
 # limitations under the License.
 
 module-sets:
-  collector-base:
+  collector-core:
     version: v0.51.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/pdata
+
 excluded-modules:
   - go.opentelemetry.io/collector/cmd/otelcorecol
   - go.opentelemetry.io/collector/internal/tools
