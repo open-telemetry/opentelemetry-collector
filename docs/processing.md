@@ -253,9 +253,9 @@ implementation, it would likely be little overhead to support a YAML approach in
 
 Functions should be named and formatted according to the following standards.
 - Function names MUST start with a verb.
-- Function names MUST that contain multiple words MUST separate those words with `_`.
+- Function names that contain multiple words MUST separate those words with `_`.
 - Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_wildcards`.
-- Functions that interact with a single item MUST NOT have plurality in the name.  Ex: `set`, `delete`, `drop`.
+- Functions that interact with a single item MUST NOT have plurality in the name.  If a function would interact with multiple items due to a condition, like `where`, it is still considered singular.  Ex: `set`, `delete`, `drop`.
 - Functions that change a specific target MUST set the target as the first parameter.
 - Functions that take a list MUST set the list as the last parameter.
 
