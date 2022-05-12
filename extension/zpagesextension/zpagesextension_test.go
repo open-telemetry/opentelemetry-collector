@@ -41,24 +41,19 @@ func newZPagesHost() *zpagesHost {
 
 func (*zpagesHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {}
 
-type registerable interface {
-	RegisterSpanProcessor(s sdktrace.SpanProcessor)
-	UnregisterSpanProcessor(s sdktrace.SpanProcessor)
-}
+var _ registerableTracerProvider = (*registerableProvider)(nil)
+var _ registerableTracerProvider = sdktrace.NewTracerProvider()
 
-var _ registerable = (*registerableTracerProvider)(nil)
-var _ registerable = sdktrace.NewTracerProvider()
-
-type registerableTracerProvider struct {
+type registerableProvider struct {
 	trace.TracerProvider
 }
 
-func (*registerableTracerProvider) RegisterSpanProcessor(sdktrace.SpanProcessor)   {}
-func (*registerableTracerProvider) UnregisterSpanProcessor(sdktrace.SpanProcessor) {}
+func (*registerableProvider) RegisterSpanProcessor(sdktrace.SpanProcessor)   {}
+func (*registerableProvider) UnregisterSpanProcessor(sdktrace.SpanProcessor) {}
 
 func newZpagesTelemetrySettings() component.TelemetrySettings {
 	set := componenttest.NewNopTelemetrySettings()
-	set.TracerProvider = &registerableTracerProvider{set.TracerProvider}
+	set.TracerProvider = &registerableProvider{set.TracerProvider}
 	return set
 }
 
