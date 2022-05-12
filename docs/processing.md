@@ -110,16 +110,26 @@ signal being part of a query space. Virtual fields are added to access data from
 `resource`, `library_info`. For metrics, the structure presented for processing is actual data points, e.g. `NumberDataPoint`, 
 `HistogramDataPoint`, with the information from higher levels like `Metric` or the data type available as virtual fields.
 
-Virtual fields for all signals: `resource`, `library_info`.
-Virtual fields for metrics: `descriptor`, which contains `metric.name`, `metric.description`, `metric.unit`.
+Virtual fields for all signals: `resource`, `library_info`.  
+Virtual fields for metrics: `metric`, which contains `name`, `description`, `unit`, `type`, `aggregation_temporality`, and `is_monotonic`.
 
 Navigation can then be used with a simple expression language for identifying telemetry to operate on.
 
-`... where name = "GET /cats"`
-`... from span where attributes["http.target"] = "/health"`
-`... where resource.attributes["deployment"] = "canary"`
-`... from metric where descriptor.metric_type = gauge`
-`... from metric where descriptor.metric_name = "http.active_requests"`
+```
+... where name = "GET /cats"
+```
+```
+... from span where attributes["http.target"] = "/health"
+```
+```
+... where resource.attributes["deployment"] = "canary"
+```
+```
+... from metric where metric.type = gauge
+```
+```
+... from metric where metric.name = "http.active_requests"
+```
 
 Fields should always be fully specified - for example `attributes` refers to the `attributes` field in the telemetry, not
 the `resource`. In the future, we may allow shorthand for accessing scoped information that is not ambiguous.
