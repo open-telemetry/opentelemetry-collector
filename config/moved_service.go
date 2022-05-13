@@ -122,5 +122,5 @@ type Pipeline struct {
 	Exporters  []ComponentID `mapstructure:"exporters"`
 }
 
-// Deprecated: will be removed soon.
+// Deprecated: [v0.52.0] will be removed soon.
 type Pipelines = map[ComponentID]*Pipeline
