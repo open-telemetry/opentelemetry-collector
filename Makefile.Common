@@ -38,11 +38,11 @@ tidy:
 
 .PHONY: lint
 lint:
-	$(LINT) run --allow-parallel-runners
+	$(LINT) run
 
 .PHONY: lint-unstable
 lint-unstable:
-	$(LINT) run --allow-parallel-runners --build-tags enable_unstable
+	$(LINT) run --build-tags enable_unstable
 
 .PHONY: generate
 generate:
