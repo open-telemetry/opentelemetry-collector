@@ -12,6 +12,8 @@
 
 ### 💡 Enhancements 💡
 
+- Update OTLP to v0.17.0 (#5335)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.51.0 Beta
