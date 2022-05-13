@@ -6,10 +6,13 @@
 
 - Remove `configunmarshaler.Unmarshaler` interface, per deprecation comment )#5348)
 - Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
+- The `component.Host` interface was modified to include a `ReportStatus` function (#5304)
 
 ### 🚩 Deprecations 🚩
+- `Host.ReportFatalError` is deprecated in favor of `Host.ReportStatus` where the status event reported is of type `status.FatalError` (#5304)
 
 ### 💡 Enhancements 💡
+- Adds status reporting, which allows status events to be sent between components (#5304)
 
 ### 🧰 Bug fixes 🧰
 
@@ -75,7 +78,6 @@
 
 - Extend config.Map.Unmarshal hook to check map key string to any TextUnmarshaler not only ComponentID (#5244)
 - Collector will no longer print error with stack trace when the collector is shutdown due to a context cancel. (#5258)
-- Adds status reporting, which allows status events to be sent between components. It also provides functionality to replace the PipelineWatcher interface by registering callbacks for pipeline events, and functionality to replace `Host.ReportFatalError`, by sending a status event via `Host.ReportStatus` of type `status.FatalError` (#5304)
 
 ### 🧰 Bug fixes 🧰
 - Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
