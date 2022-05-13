@@ -26,6 +26,7 @@ var (
 )
 
 // Config defines the configuration for the various elements of collector or agent.
+// Deprecated: [v0.52.0] Use service.Config
 type Config struct {
 	// Receivers is a map of ComponentID to Receivers.
 	Receivers map[ComponentID]Receiver
@@ -145,21 +146,4 @@ func (cfg *Config) validateService() error {
 		}
 	}
 	return nil
-}
-
-// Type is the component type as it is used in the config.
-type Type string
-
-// validatable defines the interface for the configuration validation.
-type validatable interface {
-	// Validate validates the configuration and returns an error if invalid.
-	Validate() error
-}
-
-// Unmarshallable defines an optional interface for custom configuration unmarshalling.
-// A configuration struct can implement this interface to override the default unmarshalling.
-type Unmarshallable interface {
-	// Unmarshal is a function that unmarshals a config.Map into the struct in a custom way.
-	// The config.Map for this specific component may be nil or empty if no config available.
-	Unmarshal(component *Map) error
 }

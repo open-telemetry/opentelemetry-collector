@@ -18,7 +18,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 // svcSettings holds configuration for building a new service.
@@ -30,7 +29,7 @@ type svcSettings struct {
 	BuildInfo component.BuildInfo
 
 	// Config represents the configuration of the service.
-	Config *config.Config
+	Config *Config
 
 	// Telemetry represents the service configured telemetry for all the components.
 	Telemetry component.TelemetrySettings
