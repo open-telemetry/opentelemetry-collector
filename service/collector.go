@@ -35,6 +35,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
@@ -187,6 +188,13 @@ LOOP:
 	return col.shutdown(ctx)
 }
 
+// ConfigPostProcessor allows to intercept the final config and do changes in the factories or
+// pipelines. For further information refer to the issue:
+// https://github.com/open-telemetry/opentelemetry-collector/issues/3023
+type ConfigPostProcessor interface {
+	Process(c *config.Config)
+}
+
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
@@ -201,6 +209,11 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	telemetrylogs.SetColGRPCLogger(col.logger, cfg.Service.Telemetry.Logs.Level)
+
+	if postProcessor, ok := col.set.ConfigProvider.(ConfigPostProcessor); ok {
+		// Here we modify the config to be able to manipulate processors and pipelines
+		postProcessor.Process(cfg)
+	}
 
 	col.service, err = newService(&svcSettings{
 		BuildInfo: col.set.BuildInfo,
