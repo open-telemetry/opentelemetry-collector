@@ -15,6 +15,7 @@
 package status // import "go.opentelemetry.io/collector/component/status"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -66,45 +67,54 @@ func (ev *Event) Err() error {
 }
 
 // EventOption applies options to a status.Event
-type EventOption func(*Event)
+type EventOption func(*Event) error
 
 // WithComponentID sets the ComponentID that generated the status.Event
 func WithComponentID(componentID config.ComponentID) EventOption {
-	return func(o *Event) {
+	return func(o *Event) error {
 		o.componentID = componentID
+		return nil
 	}
 }
 
 // WithTimestamp sets the timestamp, expected in nanos, for a status.Event
 func WithTimestamp(nanos int64) EventOption {
-	return func(o *Event) {
+	return func(o *Event) error {
 		o.timestamp = nanos
+		return nil
 	}
 }
 
 // WithError assigns an error object to a Event. It is optional and should only be applied
-// to a Event with type status.EventError.
+// to a Event of type: RecoverableError, PermanentError, or FatalError.
 func WithError(err error) EventOption {
-	return func(o *Event) {
+	return func(o *Event) error {
+		if o.eventType == OK {
+			return errors.New("event with status.OK cannot have an error")
+		}
 		o.err = err
+		return nil
 	}
 }
 
-// NewEvent creates and returns a status.Event with default and / or the provided options
-func NewEvent(eventType EventType, options ...EventOption) *Event {
+// NewEvent creates and returns a status.Event with default and / or the provided options. Will
+// return an error if an error is provided for a non-error event type (e.g. status.OK)
+func NewEvent(eventType EventType, options ...EventOption) (*Event, error) {
 	ev := Event{
 		eventType: eventType,
 	}
 
 	for _, opt := range options {
-		opt(&ev)
+		if err := opt(&ev); err != nil {
+			return nil, err
+		}
 	}
 
 	if ev.timestamp == 0 {
 		ev.timestamp = time.Now().UnixNano()
 	}
 
-	return &ev
+	return &ev, nil
 }
 
 // EventFunc is a callback function that receives status.Events

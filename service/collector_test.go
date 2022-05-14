@@ -168,13 +168,13 @@ func TestCollector_ReportStatusWithFatalError(t *testing.T) {
 		return Running == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
-	col.service.host.ReportStatus(
-		status.NewEvent(
-			status.FatalError,
-			status.WithComponentID(config.NewComponentID("nop")),
-			status.WithError(errors.New("err2")),
-		),
+	ev, err := status.NewEvent(
+		status.FatalError,
+		status.WithComponentID(config.NewComponentID("nop")),
+		status.WithError(errors.New("err2")),
 	)
+	assert.NoError(t, err)
+	col.service.host.ReportStatus(ev)
 
 	wg.Wait()
 	assert.Equal(t, Closed, col.GetState())

@@ -138,13 +138,13 @@ func TestService_ReportStatus(t *testing.T) {
 	expectedComponentID := config.NewComponentID("nop")
 	expectedError := errors.New("an error")
 
-	host.ReportStatus(
-		status.NewEvent(
-			status.RecoverableError,
-			status.WithComponentID(expectedComponentID),
-			status.WithError(expectedError),
-		),
+	ev, err := status.NewEvent(
+		status.RecoverableError,
+		status.WithComponentID(expectedComponentID),
+		status.WithError(expectedError),
 	)
+	assert.NoError(t, err)
+	host.ReportStatus(ev)
 
 	assert.True(t, statusEventHandlerCalled)
 	assert.Equal(t, expectedComponentID, statusEvent.ComponentID())
@@ -177,12 +177,12 @@ func TestService_ReportStatusWithBuggyHandler(t *testing.T) {
 	})
 
 	// ReportStatus handles errors in handlers (by logging) and does not surface them back to callers
-	host.ReportStatus(
-		status.NewEvent(
-			status.OK,
-			status.WithComponentID(config.NewComponentID("nop")),
-		),
+	ev, err := status.NewEvent(
+		status.OK,
+		status.WithComponentID(config.NewComponentID("nop")),
 	)
+	assert.NoError(t, err)
+	host.ReportStatus(ev)
 	assert.True(t, statusEventHandlerCalled)
 	assert.NoError(t, unregister())
 }

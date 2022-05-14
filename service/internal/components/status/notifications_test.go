@@ -96,28 +96,26 @@ func TestNotifications_ReportStatus(t *testing.T) {
 
 	compID := config.NewComponentID("nop")
 
-	assert.NoError(t,
-		notifications.ReportStatus(
-			status.NewEvent(
-				status.RecoverableError,
-				status.WithComponentID(compID),
-				status.WithError(errors.New("err1")),
-			),
-		),
+	ev1, err := status.NewEvent(
+		status.RecoverableError,
+		status.WithComponentID(compID),
+		status.WithError(errors.New("err1")),
 	)
+
+	assert.NoError(t, err)
+	assert.NoError(t, notifications.ReportStatus(ev1))
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 1, eeSpy.CallCount)
 	assert.Equal(t, "err1", eeSpy.LastArg.Err().Error())
 
-	assert.NoError(t,
-		notifications.ReportStatus(
-			status.NewEvent(
-				status.RecoverableError,
-				status.WithComponentID(compID),
-				status.WithError(errors.New("err2")),
-			),
-		),
+	ev2, err := status.NewEvent(
+		status.RecoverableError,
+		status.WithComponentID(compID),
+		status.WithError(errors.New("err2")),
 	)
+
+	assert.NoError(t, err)
+	assert.NoError(t, notifications.ReportStatus(ev2))
 	assert.True(t, eeSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 2, eeSpy.CallCount)
 	assert.Equal(t, "err2", eeSpy.LastArg.Err().Error())
@@ -131,14 +129,12 @@ func TestNotifications_AllHandlersOptional(t *testing.T) {
 	un := notifications.RegisterListener()
 
 	assert.NoError(t, notifications.PipelineReady())
-	assert.NoError(t,
-		notifications.ReportStatus(
-			status.NewEvent(
-				status.OK,
-				status.WithComponentID(config.NewComponentID("nop")),
-			),
-		),
+	ev, err := status.NewEvent(
+		status.OK,
+		status.WithComponentID(config.NewComponentID("nop")),
 	)
+	assert.NoError(t, err)
+	assert.NoError(t, notifications.ReportStatus(ev))
 
 	assert.NoError(t, notifications.PipelineNotReady())
 	assert.NoError(t, un())
@@ -163,21 +159,17 @@ func TestNotifications_StatusHandlerWithError(t *testing.T) {
 
 	compID := config.NewComponentID("nop")
 
-	assert.Error(t,
-		notifications.ReportStatus(
-			status.NewEvent(status.OK, status.WithComponentID(compID)),
-		),
-	)
+	ev1, err := status.NewEvent(status.OK, status.WithComponentID(compID))
+	assert.NoError(t, err)
+	assert.Error(t, notifications.ReportStatus(ev1))
 
-	assert.Error(t,
-		notifications.ReportStatus(
-			status.NewEvent(
-				status.RecoverableError,
-				status.WithComponentID(compID),
-				status.WithError(errors.New("err")),
-			),
-		),
+	ev2, err := status.NewEvent(
+		status.RecoverableError,
+		status.WithComponentID(compID),
+		status.WithError(errors.New("err")),
 	)
+	assert.NoError(t, err)
+	assert.Error(t, notifications.ReportStatus(ev2))
 
 	assert.True(t, l1.StatusEventSpy.WasCalled(), "Expected call to status event handler")
 	assert.Equal(t, 2, l1.StatusEventSpy.CallCount)
@@ -211,38 +203,31 @@ func TestNotifications_RegisterUnregister(t *testing.T) {
 
 	assert.NoError(t, notifications.Start())
 	assert.NoError(t, notifications.PipelineReady())
-	assert.NoError(t,
-		notifications.ReportStatus(
-			status.NewEvent(
-				status.RecoverableError,
-				status.WithComponentID(compID),
-				status.WithError(errors.New("err1")),
-			),
-		),
-	)
 
+	ev1, err := status.NewEvent(
+		status.RecoverableError,
+		status.WithComponentID(compID),
+		status.WithError(errors.New("err1")),
+	)
+	assert.NoError(t, err)
+	assert.NoError(t, notifications.ReportStatus(ev1))
 	assert.NoError(t, un1())
 
-	assert.NoError(t,
-		notifications.ReportStatus(
-			status.NewEvent(
-				status.RecoverableError,
-				status.WithComponentID(compID),
-				status.WithError(errors.New("err2")),
-			),
-		),
+	ev2, err := status.NewEvent(
+		status.RecoverableError,
+		status.WithComponentID(compID),
+		status.WithError(errors.New("err2")),
 	)
-
+	assert.NoError(t, err)
+	assert.NoError(t, notifications.ReportStatus(ev2))
 	assert.NoError(t, un2())
 
-	assert.NoError(t,
-		notifications.ReportStatus(
-			status.NewEvent(
-				status.OK,
-				status.WithComponentID(compID),
-			),
-		),
+	ev3, err := status.NewEvent(
+		status.OK,
+		status.WithComponentID(compID),
 	)
+	assert.NoError(t, err)
+	assert.NoError(t, notifications.ReportStatus(ev3))
 
 	assert.NoError(t, notifications.PipelineNotReady())
 	assert.NoError(t, notifications.Shutdown())

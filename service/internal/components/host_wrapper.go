@@ -50,7 +50,7 @@ var emptyComponentID = config.ComponentID{}
 func (hw *hostWrapper) ReportStatus(event *status.Event) {
 	// sets default component id
 	if event.ComponentID() == emptyComponentID {
-		event = status.NewEvent(
+		event, _ = status.NewEvent(
 			event.Type(),
 			status.WithComponentID(hw.ComponentID),
 			status.WithTimestamp(event.Timestamp()),

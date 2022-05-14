@@ -25,7 +25,8 @@ import (
 )
 
 func TestNewEventMinimal(t *testing.T) {
-	ev := NewEvent(OK)
+	ev, err := NewEvent(OK)
+	assert.NoError(t, err)
 	assert.Equal(t, OK, ev.Type())
 	assert.NotEqual(t, 0, ev.Timestamp())
 	assert.Equal(t, config.ComponentID{}, ev.ComponentID())
@@ -36,14 +37,62 @@ func TestNewEventAllOptions(t *testing.T) {
 	expectedComponentID := config.NewComponentID("nop")
 	expectedTimestamp := time.Now().UnixNano()
 	expectedErr := errors.New("expect this")
-	ev := NewEvent(
+	ev, err := NewEvent(
 		RecoverableError,
 		WithComponentID(expectedComponentID),
 		WithTimestamp(expectedTimestamp),
 		WithError(expectedErr),
 	)
+	assert.NoError(t, err)
 	assert.Equal(t, RecoverableError, ev.Type())
 	assert.Equal(t, expectedComponentID, ev.ComponentID())
 	assert.Equal(t, expectedTimestamp, ev.Timestamp())
 	assert.Equal(t, expectedErr, ev.Err())
+}
+
+func TestNewEventErrorTypeMismatch(t *testing.T) {
+	testCases := []struct {
+		name        string
+		eventType   EventType
+		err         error
+		expectError bool
+	}{
+		{
+			"eventType: OK with error returns error",
+			OK,
+			errors.New("err"),
+			true,
+		},
+		{
+			"eventType: RecoverableError with error returns event",
+			RecoverableError,
+			errors.New("err"),
+			false,
+		},
+		{
+			"eventType: PermanentError with error returns event",
+			PermanentError,
+			errors.New("err"),
+			false,
+		},
+		{
+			"eventType: FatalError with error returns event",
+			FatalError,
+			errors.New("err"),
+			false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ev, err := NewEvent(tc.eventType, WithError(tc.err))
+			if tc.expectError {
+				assert.Nil(t, ev)
+				assert.Error(t, err)
+			} else {
+				assert.NotNil(t, ev)
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
