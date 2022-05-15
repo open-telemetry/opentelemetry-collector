@@ -16,6 +16,7 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"go.uber.org/zap"
@@ -147,7 +148,8 @@ func loggerSync(logger *zap.Logger) func(context.Context) error {
 		// Currently Sync() return a different error depending on the OS.
 		// Since these are not actionable ignore them.
 		err := logger.Sync()
-		if osErr, ok := err.(*os.PathError); ok {
+		osErr := &os.PathError{}
+		if errors.As(err, &osErr) {
 			wrappedErr := osErr.Unwrap()
 			if knownSyncError(wrappedErr) {
 				err = nil

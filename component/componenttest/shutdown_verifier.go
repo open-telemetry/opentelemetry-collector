@@ -16,6 +16,7 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,7 +39,7 @@ func verifyTracesProcessorDoesntProduceAfterShutdown(t *testing.T, factory compo
 		nextSink,
 	)
 	if err != nil {
-		if err == componenterror.ErrDataTypeIsNotSupported {
+		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
 			return
 		}
 		require.NoError(t, err)

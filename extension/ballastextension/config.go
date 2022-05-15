@@ -15,7 +15,7 @@
 package ballastextension // import "go.opentelemetry.io/collector/extension/ballastextension"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -37,7 +37,7 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	// no need to validate less than 0 case for uint64
 	if cfg.SizeInPercentage > 100 {
-		return fmt.Errorf("size_in_percentage is not in range 0 to 100")
+		return errors.New("size_in_percentage is not in range 0 to 100")
 	}
 	return nil
 }

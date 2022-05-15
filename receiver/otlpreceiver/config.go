@@ -15,7 +15,7 @@
 package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -49,7 +49,7 @@ var _ config.Unmarshallable = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if cfg.GRPC == nil &&
 		cfg.HTTP == nil {
-		return fmt.Errorf("must specify at least one protocol when using the OTLP receiver")
+		return errors.New("must specify at least one protocol when using the OTLP receiver")
 	}
 	return nil
 }
@@ -57,7 +57,7 @@ func (cfg *Config) Validate() error {
 // Unmarshal a config.Map into the config struct.
 func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
-		return fmt.Errorf("empty config for OTLP receiver")
+		return errors.New("empty config for OTLP receiver")
 	}
 	// first load the config normally
 	err := componentParser.UnmarshalExact(cfg)

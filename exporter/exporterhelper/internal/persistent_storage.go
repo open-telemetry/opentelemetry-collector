@@ -153,7 +153,7 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 	}
 
 	if err != nil {
-		if err == errValueNotSet {
+		if errors.Is(err, errValueNotSet) {
 			pcs.logger.Info("Initializing new persistent queue", zap.String(zapQueueNameKey, pcs.queueName))
 		} else {
 			pcs.logger.Error("Failed getting read/write index, starting with new ones",

@@ -16,6 +16,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -63,11 +64,11 @@ type mapResolver struct {
 // (see https://datatracker.ietf.org/doc/html/rfc3986). An empty "<scheme>" defaults to "file" schema.
 func newMapResolver(uris []string, mapProviders map[string]config.MapProvider, mapConverters []config.MapConverterFunc) (*mapResolver, error) {
 	if len(uris) == 0 {
-		return nil, fmt.Errorf("invalid map resolver config: no URIs")
+		return nil, errors.New("invalid map resolver config: no URIs")
 	}
 
 	if len(mapProviders) == 0 {
-		return nil, fmt.Errorf("invalid map resolver config: no map providers")
+		return nil, errors.New("invalid map resolver config: no map providers")
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
@@ -166,7 +167,7 @@ func (mr *mapResolver) Shutdown(ctx context.Context) error {
 
 func (mr *mapResolver) onChange(event *config.ChangeEvent) {
 	// TODO: Remove check for configsource.ErrSessionClosed when providers updated to not call onChange when closed.
-	if event.Error != configsource.ErrSessionClosed {
+	if !errors.Is(event.Error, configsource.ErrSessionClosed) {
 		mr.watcher <- event.Error
 	}
 }
