@@ -150,6 +150,24 @@ func TestCGroupsHierarchyMemoryQuota(t *testing.T) {
 			expectedDefined: true,
 			shouldHaveError: false,
 		},
+		{
+			name:            "memory/invalid-memory",
+			expectedQuota:   -1,
+			expectedDefined: false,
+			shouldHaveError: false,
+		},
+		{
+			name:            "memory/unlimited-memory",
+			expectedQuota:   9223372036854771712,
+			expectedDefined: true,
+			shouldHaveError: false,
+		},
+		{
+			name:            "memory/non-exist",
+			expectedQuota:   -1,
+			expectedDefined: false,
+			shouldHaveError: true,
+		},
 	}
 
 	cgroups := make(CGroups)
