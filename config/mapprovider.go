@@ -81,10 +81,8 @@ type ChangeEvent struct {
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
 type Retrieved struct {
-	// Deprecated: [v0.50.0] Use NewRetrievedFromMap to initialize, and Retrieved.AsMap to access.
-	*Map
-	// Deprecated: [v0.50.0] Use NewRetrievedFromMap to initialize, and Retrieved.Close to access.
-	CloseFunc
+	cfgMap    *Map
+	closeFunc CloseFunc
 }
 
 type retrievedSettings struct {
@@ -112,12 +110,12 @@ func NewRetrievedFromMap(cfgMap *Map, opts ...RetrievedOption) Retrieved {
 	for _, opt := range opts {
 		opt(&set)
 	}
-	return Retrieved{Map: cfgMap, CloseFunc: set.closeFunc}
+	return Retrieved{cfgMap: cfgMap, closeFunc: set.closeFunc}
 }
 
 // AsMap returns the retrieved configuration parsed as a Map.
 func (r Retrieved) AsMap() (*Map, error) {
-	return r.Map, nil
+	return r.cfgMap, nil
 }
 
 // Close and release any watchers that MapProvider.Retrieve may have created.
@@ -127,10 +125,10 @@ func (r Retrieved) AsMap() (*Map, error) {
 //
 // Should never be called concurrently with itself.
 func (r Retrieved) Close(ctx context.Context) error {
-	if r.CloseFunc == nil {
+	if r.closeFunc == nil {
 		return nil
 	}
-	return r.CloseFunc(ctx)
+	return r.closeFunc(ctx)
 }
 
 // CloseFunc a function equivalent to Retrieved.Close.
