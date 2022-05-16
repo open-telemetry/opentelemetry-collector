@@ -18,6 +18,7 @@
 package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggingexporter"
 
 import (
+	"errors"
 	"syscall"
 )
 
@@ -31,9 +32,5 @@ import (
 // - sync /dev/stdout: inappropriate ioctl for device
 //
 func knownSyncError(err error) bool {
-	switch err {
-	case syscall.EINVAL, syscall.ENOTSUP, syscall.ENOTTY:
-		return true
-	}
-	return false
+	return errors.Is(err, syscall.EINVAL) || errors.Is(err, syscall.ENOTSUP) || errors.Is(err, syscall.ENOTTY)
 }

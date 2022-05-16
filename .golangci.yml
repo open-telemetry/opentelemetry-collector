@@ -110,6 +110,7 @@ linters:
   enable:
     - depguard
     - errcheck
+    - errorlint
     - exportloopref
     - gocritic
     - gofmt

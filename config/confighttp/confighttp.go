@@ -16,7 +16,7 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
 	"crypto/tls"
-	"fmt"
+	"errors"
 	"net"
 	"net/http"
 	"time"
@@ -156,7 +156,7 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 
 	if hcs.Auth != nil {
 		if ext == nil {
-			return nil, fmt.Errorf("extensions configuration not found")
+			return nil, errors.New("extensions configuration not found")
 		}
 
 		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ext)

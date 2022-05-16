@@ -16,7 +16,7 @@ package extensions
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +34,7 @@ func TestService_setupExtensions(t *testing.T) {
 			return &cfg
 		},
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
-			return nil, fmt.Errorf("cannot create \"err\" extension type")
+			return nil, errors.New("cannot create \"err\" extension type")
 		},
 	)
 	errExtensionConfig := errExtensionFactory.CreateDefaultConfig()

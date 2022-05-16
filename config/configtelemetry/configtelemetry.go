@@ -16,6 +16,7 @@ package configtelemetry // import "go.opentelemetry.io/collector/config/configte
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -59,7 +60,7 @@ func (l Level) String() string {
 // UnmarshalText unmarshalls text to a Level.
 func (l *Level) UnmarshalText(text []byte) error {
 	if l == nil {
-		return fmt.Errorf("cannot unmarshal to a nil *Level")
+		return errors.New("cannot unmarshal to a nil *Level")
 	}
 
 	str := strings.ToLower(string(text))

@@ -396,14 +396,14 @@ func TestErrorResponses(t *testing.T) {
 		{
 			name:           "404",
 			responseStatus: http.StatusNotFound,
-			err:            fmt.Errorf(errMsgPrefix + "404"),
+			err:            errors.New(errMsgPrefix + "404"),
 		},
 		{
 			name:           "419",
 			responseStatus: http.StatusTooManyRequests,
 			responseBody:   status.New(codes.InvalidArgument, "Quota exceeded"),
 			err: exporterhelper.NewThrottleRetry(
-				fmt.Errorf(errMsgPrefix+"429, Message=Quota exceeded, Details=[]"),
+				errors.New(errMsgPrefix+"429, Message=Quota exceeded, Details=[]"),
 				time.Duration(0)*time.Second),
 		},
 		{
@@ -411,7 +411,7 @@ func TestErrorResponses(t *testing.T) {
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			err: exporterhelper.NewThrottleRetry(
-				fmt.Errorf(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
+				errors.New(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
 				time.Duration(0)*time.Second),
 		},
 		{
@@ -420,7 +420,7 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			headers:        map[string]string{"Retry-After": "30"},
 			err: exporterhelper.NewThrottleRetry(
-				fmt.Errorf(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
+				errors.New(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
 				time.Duration(30)*time.Second),
 		},
 	}

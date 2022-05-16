@@ -91,7 +91,7 @@ func (ConfigUnmarshaler) Unmarshal(v *config.Map, factories component.Factories)
 	// Unmarshal top level sections and validate.
 	rawCfg := configSettings{}
 	if err := v.UnmarshalExact(&rawCfg); err != nil {
-		return nil, &configError{
+		return nil, configError{
 			error: fmt.Errorf("error reading top level configuration sections: %w", err),
 			code:  errUnmarshalTopLevelStructure,
 		}
@@ -99,35 +99,35 @@ func (ConfigUnmarshaler) Unmarshal(v *config.Map, factories component.Factories)
 
 	var err error
 	if cfg.Extensions, err = unmarshalExtensions(rawCfg.Extensions, factories.Extensions); err != nil {
-		return nil, &configError{
+		return nil, configError{
 			error: err,
 			code:  errUnmarshalExtension,
 		}
 	}
 
 	if cfg.Receivers, err = unmarshalReceivers(rawCfg.Receivers, factories.Receivers); err != nil {
-		return nil, &configError{
+		return nil, configError{
 			error: err,
 			code:  errUnmarshalReceiver,
 		}
 	}
 
 	if cfg.Processors, err = unmarshalProcessors(rawCfg.Processors, factories.Processors); err != nil {
-		return nil, &configError{
+		return nil, configError{
 			error: err,
 			code:  errUnmarshalProcessor,
 		}
 	}
 
 	if cfg.Exporters, err = unmarshalExporters(rawCfg.Exporters, factories.Exporters); err != nil {
-		return nil, &configError{
+		return nil, configError{
 			error: err,
 			code:  errUnmarshalExporter,
 		}
 	}
 
 	if cfg.Service, err = unmarshalService(rawCfg.Service); err != nil {
-		return nil, &configError{
+		return nil, configError{
 			error: err,
 			code:  errUnmarshalService,
 		}

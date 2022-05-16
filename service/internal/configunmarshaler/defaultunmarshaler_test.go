@@ -15,6 +15,7 @@
 package configunmarshaler
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -194,8 +195,8 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 			_, err := loadConfigFile(t, filepath.Join("testdata", test.name+".yaml"), factories)
 			require.Error(t, err)
 			if test.expected != 0 {
-				cfgErr, ok := err.(*configError)
-				if !ok {
+				var cfgErr configError
+				if !errors.As(err, &cfgErr) {
 					t.Errorf("expected config error code %v but got a different error '%v'", test.expected, err)
 				} else {
 					assert.Equal(t, test.expected, cfgErr.code, err)

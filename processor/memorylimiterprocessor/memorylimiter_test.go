@@ -93,14 +93,13 @@ func TestNew(t *testing.T) {
 			cfg.MemoryLimitMiB = tt.args.memoryLimitMiB
 			cfg.MemorySpikeLimitMiB = tt.args.memorySpikeLimitMiB
 			got, err := newMemoryLimiter(componenttest.NewNopProcessorCreateSettings(), cfg)
-			if err != tt.wantErr {
-				t.Errorf("newMemoryLimiter() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
 				return
 			}
-			if got != nil {
-				assert.NoError(t, got.start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, got.shutdown(context.Background()))
-			}
+			assert.NoError(t, err)
+			assert.NoError(t, got.start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, got.shutdown(context.Background()))
 		})
 	}
 }

@@ -317,7 +317,8 @@ func assertScraperViews(t *testing.T, tt obsreporttest.TestTelemetry, expectedEr
 	expectedScraped := int64(sink.DataPointCount())
 	expectedErrored := int64(0)
 	if expectedErr != nil {
-		if partialError, isPartial := expectedErr.(scrapererror.PartialScrapeError); isPartial {
+		var partialError scrapererror.PartialScrapeError
+		if errors.As(expectedErr, &partialError) {
 			expectedErrored = int64(partialError.Failed)
 		} else {
 			expectedScraped = int64(0)

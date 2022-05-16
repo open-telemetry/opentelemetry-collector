@@ -69,7 +69,7 @@ func (qCfg *QueueSettings) Validate() error {
 	}
 
 	if qCfg.QueueSize <= 0 {
-		return fmt.Errorf("queue size must be positive")
+		return errors.New("queue size must be positive")
 	}
 
 	return nil
@@ -217,7 +217,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 			return int64(qrs.queue.Size())
 		}, metricdata.NewLabelValue(qrs.fullName()))
 		if err != nil {
-			return fmt.Errorf("failed to create retry queue size metric: %v", err)
+			return fmt.Errorf("failed to create retry queue size metric: %w", err)
 		}
 	}
 

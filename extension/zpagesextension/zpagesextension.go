@@ -16,6 +16,7 @@ package zpagesextension // import "go.opentelemetry.io/collector/extension/zpage
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"path"
 
@@ -88,8 +89,8 @@ func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error 
 	go func() {
 		defer close(zpe.stopCh)
 
-		if err := zpe.server.Serve(ln); err != nil && err != http.ErrServerClosed {
-			host.ReportFatalError(err)
+		if errHTTP := zpe.server.Serve(ln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
+			host.ReportFatalError(errHTTP)
 		}
 	}()
 
