@@ -2,7 +2,9 @@
 
 | Status                   |                       |
 | ------------------------ | --------------------- |
-| Stability                | [beta]                |
+| Stability                | traces [stable]       |
+|                          | metrics [stable]      |
+|                          | logs [beta]           |
 | Supported pipeline types | traces, metrics, logs |
 | Distributions            | [core], [contrib]     |
 
@@ -79,3 +81,4 @@ receivers:
 [beta]: https://github.com/open-telemetry/opentelemetry-collector-contrib#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
+[stable]: https://github.com/open-telemetry/opentelemetry-collector-contrib#stable
