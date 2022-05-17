@@ -16,8 +16,6 @@ package envmapprovider
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +25,16 @@ import (
 )
 
 const envSchemePrefix = schemeName + ":"
+
+const validYAML = `
+processors:
+  batch:
+exporters:
+  otlp:
+    endpoint: "localhost:4317"
+`
+
+const invalidYAML = "invalid"
 
 func TestEmptyName(t *testing.T) {
 	env := New()
@@ -43,21 +51,17 @@ func TestUnsupportedScheme(t *testing.T) {
 }
 
 func TestInvalidYAML(t *testing.T) {
-	bytes, err := os.ReadFile(filepath.Join("testdata", "invalid-yaml.yaml"))
-	require.NoError(t, err)
 	const envName = "invalid-yaml"
-	t.Setenv(envName, string(bytes))
+	t.Setenv(envName, invalidYAML)
 	env := New()
-	_, err = env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	_, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestEnv(t *testing.T) {
-	bytes, err := os.ReadFile(filepath.Join("testdata", "default-config.yaml"))
-	require.NoError(t, err)
 	const envName = "default-config"
-	t.Setenv(envName, string(bytes))
+	t.Setenv(envName, validYAML)
 
 	env := New()
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
