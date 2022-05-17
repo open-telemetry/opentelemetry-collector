@@ -12,6 +12,7 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate `config.Config` and `config.Service`, use `service.Config*` (#4608)
+- Deprecate `componenterror` package, move everything to `component` (#5383)
 
 ### 💡 Enhancements 💡
 

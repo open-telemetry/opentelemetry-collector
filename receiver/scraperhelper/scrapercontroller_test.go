@@ -107,7 +107,7 @@ func TestScrapeController(t *testing.T) {
 			name:            "AddMetricsScrapers_NilNextConsumerError",
 			scrapers:        2,
 			nilNextConsumer: true,
-			expectedNewErr:  "nil nextConsumer",
+			expectedNewErr:  "nil next Consumer",
 		},
 		{
 			name:                      "AddMetricsScrapersWithCollectionInterval_InvalidCollectionIntervalError",

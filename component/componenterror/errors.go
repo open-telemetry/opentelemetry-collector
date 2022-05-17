@@ -15,15 +15,13 @@
 package componenterror // import "go.opentelemetry.io/collector/component/componenterror"
 
 import (
-	"errors"
+	"go.opentelemetry.io/collector/component"
 )
 
 var (
-	// ErrNilNextConsumer indicates an error on nil next consumer.
-	ErrNilNextConsumer = errors.New("nil nextConsumer")
+	// Deprecated: use component.ErrNilNextConsumer
+	ErrNilNextConsumer = component.ErrNilNextConsumer
 
-	// ErrDataTypeIsNotSupported can be returned by receiver, exporter or processor
-	// factory methods that create the entity if the particular telemetry
-	// data type is not supported by the receiver, exporter or processor.
-	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
+	// Deprecated: use component.ErrDataTypeIsNotSupported
+	ErrDataTypeIsNotSupported = component.ErrDataTypeIsNotSupported
 )
