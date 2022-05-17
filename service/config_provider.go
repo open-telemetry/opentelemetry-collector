@@ -75,22 +75,22 @@ type ConfigProviderSettings struct {
 	// It is required to have at least one config.MapProvider.
 	MapProviders map[string]config.MapProvider
 
-	// MapConverters is a slice of config.MapConverterFunc.
-	MapConverters []config.MapConverterFunc
+	// MapConverters is a slice of config.MapConverter.
+	MapConverters []config.MapConverter
 }
 
 func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings {
 	return ConfigProviderSettings{
 		Locations:     locations,
 		MapProviders:  makeMapProvidersMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
-		MapConverters: []config.MapConverterFunc{expandmapconverter.New()},
+		MapConverters: []config.MapConverter{expandmapconverter.New()},
 	}
 }
 
 // NewConfigProvider returns a new ConfigProvider that provides the service configuration:
 // * Initially it resolves the "configuration map":
 //	 * Retrieve the config.Map by merging all retrieved maps from the given `locations` in order.
-// 	 * Then applies all the config.MapConverterFunc in the given order.
+// 	 * Then applies all the config.MapConverter in the given order.
 // * Then unmarshalls the config.Map into the service Config.
 func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 	mr, err := newMapResolver(set.Locations, set.MapProviders, set.MapConverters)

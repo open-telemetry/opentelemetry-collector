@@ -21,16 +21,20 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// New returns a config.MapConverterFunc, that expands all environment variables for a given config.Map.
+type converter struct{}
+
+// New returns a config.MapConverter, that expands all environment variables for a given config.Map.
 //
 // Notice: This API is experimental.
-func New() config.MapConverterFunc {
-	return func(_ context.Context, cfgMap *config.Map) error {
-		for _, k := range cfgMap.AllKeys() {
-			cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
-		}
-		return nil
+func New() config.MapConverter {
+	return converter{}
+}
+
+func (converter) Convert(_ context.Context, cfgMap *config.Map) error {
+	for _, k := range cfgMap.AllKeys() {
+		cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
 	}
+	return nil
 }
 
 func expandStringValues(value interface{}) interface{} {

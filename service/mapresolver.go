@@ -36,7 +36,7 @@ var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 type mapResolver struct {
 	uris          []string
 	mapProviders  map[string]config.MapProvider
-	mapConverters []config.MapConverterFunc
+	mapConverters []config.MapConverter
 
 	sync.Mutex
 	closers []config.CloseFunc
@@ -62,7 +62,7 @@ type mapResolver struct {
 //
 // `uri` must follow the "<scheme>:<opaque_data>" format. This format is compatible with the URI definition
 // (see https://datatracker.ietf.org/doc/html/rfc3986). An empty "<scheme>" defaults to "file" schema.
-func newMapResolver(uris []string, mapProviders map[string]config.MapProvider, mapConverters []config.MapConverterFunc) (*mapResolver, error) {
+func newMapResolver(uris []string, mapProviders map[string]config.MapProvider, mapConverters []config.MapConverter) (*mapResolver, error) {
 	if len(uris) == 0 {
 		return nil, errors.New("invalid map resolver config: no URIs")
 	}
@@ -78,7 +78,7 @@ func newMapResolver(uris []string, mapProviders map[string]config.MapProvider, m
 	for k, v := range mapProviders {
 		mapProvidersCopy[k] = v
 	}
-	mapConvertersCopy := make([]config.MapConverterFunc, len(mapConverters))
+	mapConvertersCopy := make([]config.MapConverter, len(mapConverters))
 	copy(mapConvertersCopy, mapConverters)
 
 	return &mapResolver{
@@ -130,7 +130,7 @@ func (mr *mapResolver) Resolve(ctx context.Context) (*config.Map, error) {
 
 	// Apply the converters in the given order.
 	for _, cfgMapConv := range mr.mapConverters {
-		if err := cfgMapConv(ctx, retMap); err != nil {
+		if err := cfgMapConv.Convert(ctx, retMap); err != nil {
 			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
 		}
 	}
