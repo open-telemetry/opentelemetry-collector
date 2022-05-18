@@ -28,6 +28,7 @@
 ### 🧰 Bug fixes 🧰
 
 - Fixes the "service.version" label value for internal metrics, always was "latest" in core/contrib distros. (#5449).
+- Send correct batch stats when SendBatchMaxSize is set (#5385)
 
 ## v0.52.0 Beta
 

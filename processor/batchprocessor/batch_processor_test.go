@@ -17,6 +17,7 @@ package batchprocessor
 import (
 	"context"
 	"fmt"
+	"math"
 	"sync"
 	"testing"
 	"time"
@@ -181,6 +182,55 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	distData = viewData[0].Data.(*view.DistributionData)
 	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
 	assert.Equal(t, sizeSum, int(distData.Sum()))
+}
+
+func TestBatchProcessorSentBySize_withMaxSize(t *testing.T) {
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
+	defer view.Unregister(views...)
+
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	sendBatchSize := 20
+	sendBatchMaxSize := 37
+	cfg.SendBatchSize = uint32(sendBatchSize)
+	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
+	cfg.Timeout = 500 * time.Millisecond
+	creationSet := componenttest.NewNopProcessorCreateSettings()
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	requestCount := 1
+	spansPerRequest := 500
+	totalSpans := requestCount * spansPerRequest
+
+	start := time.Now()
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
+		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+	}
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	// The max batch size is not a divisor of the total number of spans
+	expectedBatchesNum := int(math.Ceil(float64(totalSpans) / float64(sendBatchMaxSize)))
+
+	require.Equal(t, totalSpans, sink.SpanCount())
+	receivedTraces := sink.AllTraces()
+	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
+
+	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData := viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, sink.SpanCount(), int(distData.Sum()))
+	assert.Equal(t, totalSpans%sendBatchMaxSize, int(distData.Min))
+	assert.Equal(t, sendBatchMaxSize, int(distData.Max))
 }
 
 func TestBatchProcessorSentByTimeout(t *testing.T) {
@@ -387,7 +437,9 @@ func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 
 	batchMetrics.add(md)
 	require.Equal(t, dataPointsPerMetric*metricsCount, batchMetrics.dataPointCount)
-	require.NoError(t, batchMetrics.export(ctx, sendBatchMaxSize))
+	sent, _, sendErr := batchMetrics.export(ctx, sendBatchMaxSize, false)
+	require.NoError(t, sendErr)
+	require.Equal(t, sendBatchMaxSize, sent)
 	remainingDataPointCount := metricsCount*dataPointsPerMetric - sendBatchMaxSize
 	require.Equal(t, remainingDataPointCount, batchMetrics.dataPointCount)
 }
