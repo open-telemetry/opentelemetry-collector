@@ -1,13 +1,16 @@
 # OTLP/HTTP Exporter
 
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | traces [stable]       |
+|                          | metrics [stable]      |
+|                          | logs [beta]           |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
+
 Exports traces and/or metrics via HTTP using [OTLP](
 https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 format.
-
-Supported pipeline types: traces, metrics, logs
-
-:warning: OTLP logs format is currently marked as "Beta" and may change in
-incompatible ways.
 
 The following settings are required:
 
@@ -48,3 +51,8 @@ exporters:
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
+[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable
