@@ -9,7 +9,12 @@ The [Map](configmap.go) represents the raw configuration for a service (e.g. Ope
 
 ## MapProvider
 
-The [MapProvider](mapprovider.go) provides configuration, and allows to watch/monitor for changes.
+The [MapProvider](mapprovider.go) provides configuration, and allows to watch/monitor for changes. Any `MapProvider`
+has a `<scheme>` associated with it, and will provide configs for `configURI` that follow the "<scheme>:<opaque_data>" format.
+This format is compatible with the URI definition (see [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)).
+The `<scheme>` MUST be always included in the `configURI`. The scheme for any `MapProvider` MUST be at least 2
+characters long to avoid conflicting with a driver-letter identifier as specified in
+[file URI syntax](https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax).
 
 ## MapConverter
 
@@ -18,7 +23,7 @@ common use-case is to migrate/transform the configuration after a backwards inco
 
 ## MapResolver
 
-The `MapResolver` handles the use of multiple [MapProviders](./mapprovider.go) and [Converters](./configmap.go)
+The `MapResolver` handles the use of multiple [MapProviders](./mapprovider.go) and [MapConverters](./configmap.go)
 simplifying configuration parsing, monitoring for updates, and the overall life-cycle of the used config providers.
 The `MapResolver` provides two main functionalities: [Configuration Resolving](#configuration-resolving) and
 [Watching for Updates](#watching-for-updates).
@@ -26,7 +31,7 @@ The `MapResolver` provides two main functionalities: [Configuration Resolving](#
 ### Configuration Resolving
 
 The `MapResolver` receives as input a set of `MapProviders`, a list of `MapConverters`, and a list of configuration identifier
-`configUri` that will be used to generate the resulting, or effective, configuration in the form of a `config.Map`,
+`configURI` that will be used to generate the resulting, or effective, configuration in the form of a `config.Map`,
 that can be used by code that is oblivious to the usage of `MapProviders` and `MapConverters`.
 
 ```terminal
