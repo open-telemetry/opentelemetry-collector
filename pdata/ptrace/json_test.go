@@ -136,27 +136,10 @@ func TestJSONFull(t *testing.T) {
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLPFull)
 	assert.NoError(t, err)
 
-	decoder := newJSONUnmarshaler()
+	decoder := NewJSONUnmarshaler()
 	got, err := decoder.UnmarshalTraces(jsonBuf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, tracesOTLPFull, got)
-}
-
-func BenchmarkJSONPBUnmarshal(b *testing.B) {
-	b.ReportAllocs()
-
-	encoder := NewJSONMarshaler()
-	jsonBuf, err := encoder.MarshalTraces(tracesOTLPFull)
-	assert.NoError(b, err)
-	decoder := newJSONPBUnmarshaler()
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			_, err := decoder.UnmarshalTraces(jsonBuf)
-			assert.NoError(b, err)
-		}
-	})
 }
 
 func BenchmarkJSONUnmarshal(b *testing.B) {
@@ -165,7 +148,7 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 	encoder := NewJSONMarshaler()
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLPFull)
 	assert.NoError(b, err)
-	decoder := newJSONUnmarshaler()
+	decoder := NewJSONUnmarshaler()
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

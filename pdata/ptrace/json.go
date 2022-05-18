@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
 
 // NewJSONMarshaler returns a model.Marshaler. Marshals to OTLP json bytes.
@@ -48,16 +47,12 @@ func (e *jsonMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// NewJSONUnmarshaler returns a model.Unmarshaler. Unmarshals from OTLP json bytes.
+// NewJSONUnmarshaler returns a model.Unmarshaler. Unmarshalls from OTLP json bytes.
 func NewJSONUnmarshaler() Unmarshaler {
-	return newJSONUnmarshaler()
+	return &jsonUnmarshaler{}
 }
 
 type jsonUnmarshaler struct {
-}
-
-func newJSONUnmarshaler() *jsonUnmarshaler {
-	return &jsonUnmarshaler{}
 }
 
 func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
@@ -406,22 +401,4 @@ func readStatusCode(iter *jsoniter.Iterator) otlptrace.Status_StatusCode {
 	}
 	v := any.ToString()
 	return otlptrace.Status_StatusCode(otlptrace.Status_StatusCode_value[v])
-}
-
-// jsonpbUnmarshaler use standard `jsonpb.Unmarshaler` for benchmark and unit test.
-type jsonpbUnmarshaler struct {
-	delegate jsonpb.Unmarshaler
-}
-
-func newJSONPBUnmarshaler() *jsonpbUnmarshaler {
-	return &jsonpbUnmarshaler{delegate: jsonpb.Unmarshaler{}}
-}
-
-func (d *jsonpbUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
-	td := otlptrace.TracesData{}
-	if err := d.delegate.Unmarshal(bytes.NewReader(buf), &td); err != nil {
-		return Traces{}, err
-	}
-	otlp.InstrumentationLibrarySpansToScope(td.ResourceSpans)
-	return internal.TracesFromProto(td), nil
 }
