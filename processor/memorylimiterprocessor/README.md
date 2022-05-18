@@ -1,6 +1,10 @@
 # Memory Limiter Processor
 
-Supported pipeline types: metrics, traces, logs
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [beta]                |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
 
 The memory limiter processor is used to prevent out of memory situations on
 the collector. Given that the amount and type of data the collector processes is
@@ -93,3 +97,7 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
