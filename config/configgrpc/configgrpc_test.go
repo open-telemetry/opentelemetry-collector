@@ -16,7 +16,7 @@ package configgrpc
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"net"
 	"os"
@@ -895,7 +895,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	// prepare
 	authCalled := false
-	expectedErr := fmt.Errorf("not authenticated")
+	expectedErr := errors.New("not authenticated")
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
 		return context.Background(), expectedErr
@@ -969,7 +969,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	// prepare
 	authCalled := false
-	expectedErr := fmt.Errorf("not authenticated")
+	expectedErr := errors.New("not authenticated")
 	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
 		authCalled = true
 		return context.Background(), expectedErr

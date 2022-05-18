@@ -221,7 +221,7 @@ func (gcs *GRPCClientSettings) ToDialOptions(host component.Host, settings compo
 
 	if gcs.Auth != nil {
 		if host.GetExtensions() == nil {
-			return nil, fmt.Errorf("no extensions configuration available")
+			return nil, errors.New("no extensions configuration available")
 		}
 
 		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticator(host.GetExtensions())

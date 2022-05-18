@@ -16,7 +16,6 @@ package scrapererror
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ import (
 
 func TestPartialScrapeError(t *testing.T) {
 	failed := 2
-	err := fmt.Errorf("some error")
+	err := errors.New("some error")
 	partialErr := NewPartialScrapeError(err, failed)
 	assert.Equal(t, err.Error(), partialErr.Error())
 	assert.Equal(t, failed, partialErr.Failed)

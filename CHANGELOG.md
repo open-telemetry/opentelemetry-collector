@@ -4,15 +4,23 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove `configunmarshaler.Unmarshaler` interface, per deprecation comment (#5348)
 - Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
 - Remove deprecated pdata getters and setters of primitive slice values: `Value.BytesVal`, `Value.SetBytesVal`, 
   `Value.UpdateBytes`, `Value.InsertBytes`, `Value.UpsertBytes`, `<HistogramDataPoint|Buckets>.BucketCounts`, 
   `<HistogramDataPoint|Buckets>.SetBucketCounts`, `HistogramDataPoint.ExplicitBounds`,
   `HistogramDataPoint.SetExplicitBounds` (#5347)
+- Remove derecated featuregate funcs/structs from v0.50.0 (#5346)
+- Remove access to deprecated members of the config.Retrieved struct (#5363)
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate `config.Config` and `config.Service`, use `service.Config*` (#4608)
+- Deprecate `componenterror` package, move everything to `component` (#5383)
+
 ### 💡 Enhancements 💡
+
+- Update OTLP to v0.17.0 (#5335)
 
 ### 🧰 Bug fixes 🧰
 

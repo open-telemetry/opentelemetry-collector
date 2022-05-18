@@ -1,13 +1,16 @@
 # OTLP Receiver
 
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | traces [stable]       |
+|                          | metrics [stable]      |
+|                          | logs [beta]           |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
+
 Receives data via gRPC or HTTP using [OTLP](
 https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 format.
-
-Supported pipeline types: traces, metrics, logs
-
-:warning: OTLP logs format is currently marked as "Beta" and may change in
-incompatible ways.
 
 ## Getting Started
 
@@ -74,3 +77,8 @@ receivers:
             - Example-Header
           max_age: 7200
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
+[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable

@@ -17,7 +17,6 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -102,7 +101,7 @@ type CreateTracesExporterFunc func(context.Context, ExporterCreateSettings, conf
 // CreateTracesExporter implements ExporterFactory.CreateTracesExporter().
 func (f CreateTracesExporterFunc) CreateTracesExporter(ctx context.Context, set ExporterCreateSettings, cfg config.Exporter) (TracesExporter, error) {
 	if f == nil {
-		return nil, componenterror.ErrDataTypeIsNotSupported
+		return nil, ErrDataTypeIsNotSupported
 	}
 	return f(ctx, set, cfg)
 }
@@ -113,7 +112,7 @@ type CreateMetricsExporterFunc func(context.Context, ExporterCreateSettings, con
 // CreateMetricsExporter implements ExporterFactory.CreateMetricsExporter().
 func (f CreateMetricsExporterFunc) CreateMetricsExporter(ctx context.Context, set ExporterCreateSettings, cfg config.Exporter) (MetricsExporter, error) {
 	if f == nil {
-		return nil, componenterror.ErrDataTypeIsNotSupported
+		return nil, ErrDataTypeIsNotSupported
 	}
 	return f(ctx, set, cfg)
 }
@@ -124,7 +123,7 @@ type CreateLogsExporterFunc func(context.Context, ExporterCreateSettings, config
 // CreateLogsExporter implements ExporterFactory.CreateLogsExporter().
 func (f CreateLogsExporterFunc) CreateLogsExporter(ctx context.Context, set ExporterCreateSettings, cfg config.Exporter) (LogsExporter, error) {
 	if f == nil {
-		return nil, componenterror.ErrDataTypeIsNotSupported
+		return nil, ErrDataTypeIsNotSupported
 	}
 	return f(ctx, set, cfg)
 }

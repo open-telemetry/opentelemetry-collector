@@ -15,8 +15,6 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
-	"go.opentelemetry.io/contrib/zpages"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/builder"
@@ -26,9 +24,8 @@ import (
 var _ component.Host = (*serviceHost)(nil)
 
 type serviceHost struct {
-	asyncErrorChannel   chan error
-	factories           component.Factories
-	zPagesSpanProcessor *zpages.SpanProcessor
+	asyncErrorChannel chan error
+	factories         component.Factories
 
 	builtExporters  builder.Exporters
 	builtReceivers  builder.Receivers

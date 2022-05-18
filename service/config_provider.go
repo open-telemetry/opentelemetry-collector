@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 	"go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
-	"go.opentelemetry.io/collector/internal/configunmarshaler"
+	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
 
 // ConfigProvider provides the service configuration.
@@ -41,7 +41,7 @@ type ConfigProvider interface {
 	// Get returns the service configuration, or error otherwise.
 	//
 	// Should never be called concurrently with itself, Watch or Shutdown.
-	Get(ctx context.Context, factories component.Factories) (*config.Config, error)
+	Get(ctx context.Context, factories component.Factories) (*Config, error)
 
 	// Watch blocks until any configuration change was detected or an unrecoverable error
 	// happened during monitoring the configuration changes.
@@ -62,8 +62,7 @@ type ConfigProvider interface {
 }
 
 type configProvider struct {
-	mapResolver       *mapResolver
-	configUnmarshaler configunmarshaler.ConfigUnmarshaler
+	mapResolver *mapResolver
 }
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
@@ -78,11 +77,6 @@ type ConfigProviderSettings struct {
 
 	// MapConverters is a slice of config.MapConverterFunc.
 	MapConverters []config.MapConverterFunc
-
-	// Deprecated: [v0.50.0] because providing custom ConfigUnmarshaler is not necessary since users can wrap/implement
-	// ConfigProvider if needed to change the resulted config. This functionality will be kept for at least 2 minor versions,
-	// and if nobody express a need for it will be removed.
-	Unmarshaler configunmarshaler.ConfigUnmarshaler
 }
 
 func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings {
@@ -90,7 +84,6 @@ func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings
 		Locations:     locations,
 		MapProviders:  makeMapProvidersMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
 		MapConverters: []config.MapConverterFunc{expandmapconverter.New()},
-		Unmarshaler:   configunmarshaler.NewDefault(),
 	}
 }
 
@@ -105,25 +98,19 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 		return nil, err
 	}
 
-	unmarshaler := set.Unmarshaler
-	if unmarshaler == nil {
-		unmarshaler = configunmarshaler.NewDefault()
-	}
-
 	return &configProvider{
-		mapResolver:       mr,
-		configUnmarshaler: unmarshaler,
+		mapResolver: mr,
 	}, nil
 }
 
-func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*config.Config, error) {
+func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*Config, error) {
 	retMap, err := cm.mapResolver.Resolve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
 
-	var cfg *config.Config
-	if cfg, err = cm.configUnmarshaler.Unmarshal(retMap, factories); err != nil {
+	var cfg *Config
+	if cfg, err = configunmarshaler.New().Unmarshal(retMap, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 

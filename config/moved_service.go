@@ -21,6 +21,7 @@ import (
 )
 
 // Service defines the configurable components of the service.
+// Deprecated: [v0.52.0] Use service.ConfigService
 type Service struct {
 	// Telemetry is the configuration for collector's own telemetry.
 	Telemetry ServiceTelemetry `mapstructure:"telemetry"`
@@ -29,10 +30,11 @@ type Service struct {
 	Extensions []ComponentID `mapstructure:"extensions"`
 
 	// Pipelines are the set of data pipelines configured for the service.
-	Pipelines Pipelines `mapstructure:"pipelines"`
+	Pipelines map[ComponentID]*Pipeline `mapstructure:"pipelines"`
 }
 
 // ServiceTelemetry defines the configurable settings for service telemetry.
+// Deprecated: [v0.52.0] Use service.ConfigServiceTelemetry
 type ServiceTelemetry struct {
 	Logs    ServiceTelemetryLogs    `mapstructure:"logs"`
 	Metrics ServiceTelemetryMetrics `mapstructure:"metrics"`
@@ -41,6 +43,7 @@ type ServiceTelemetry struct {
 // ServiceTelemetryLogs defines the configurable settings for service telemetry logs.
 // This MUST be compatible with zap.Config. Cannot use directly zap.Config because
 // the collector uses mapstructure and not yaml tags.
+// Deprecated: [v0.52.0] Use service.ConfigServiceTelemetryLogs
 type ServiceTelemetryLogs struct {
 	// Level is the minimum enabled logging level.
 	// (default = "INFO")
@@ -98,6 +101,7 @@ type ServiceTelemetryLogs struct {
 
 // ServiceTelemetryMetrics exposes the common Telemetry configuration for one component.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
+// Deprecated: [v0.52.0] Use service.ConfigServiceTelemetryMetrics
 type ServiceTelemetryMetrics struct {
 	// Level is the level of telemetry metrics, the possible values are:
 	//  - "none" indicates that no telemetry data should be collected;
@@ -110,28 +114,13 @@ type ServiceTelemetryMetrics struct {
 	Address string `mapstructure:"address"`
 }
 
-// DataType is a special Type that represents the data types supported by the collector. We currently support
-// collecting metrics, traces and logs, this can expand in the future.
-type DataType = Type
-
-// Currently supported data types. Add new data types here when new types are supported in the future.
-const (
-	// TracesDataType is the data type tag for traces.
-	TracesDataType DataType = "traces"
-
-	// MetricsDataType is the data type tag for metrics.
-	MetricsDataType DataType = "metrics"
-
-	// LogsDataType is the data type tag for logs.
-	LogsDataType DataType = "logs"
-)
-
 // Pipeline defines a single pipeline.
+// Deprecated: [v0.52.0] Use service.ConfigServicePipeline
 type Pipeline struct {
 	Receivers  []ComponentID `mapstructure:"receivers"`
 	Processors []ComponentID `mapstructure:"processors"`
 	Exporters  []ComponentID `mapstructure:"exporters"`
 }
 
-// Pipelines is a map of names to Pipelines.
-type Pipelines map[ComponentID]*Pipeline
+// Deprecated: [v0.52.0] will be removed soon.
+type Pipelines = map[ComponentID]*Pipeline

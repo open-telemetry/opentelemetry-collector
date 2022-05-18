@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -61,7 +60,7 @@ func TestNewMetricsProcessor_NilRequiredFields(t *testing.T) {
 	assert.Error(t, err)
 
 	_, err = NewMetricsProcessor(&testMetricsCfg, nil, newTestMProcessor(nil))
-	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
+	assert.Equal(t, component.ErrNilNextConsumer, err)
 }
 
 func TestNewMetricsProcessor_ProcessMetricsError(t *testing.T) {

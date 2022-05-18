@@ -100,7 +100,7 @@ We can try to model these into a query language, in particular allowing the firs
 processing operations, and only have implementation of individual types of processing need to implement operators that
 the user can use within an expression.
 
-Telemetry is modeled in the collector as [`pdata`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/model/pdata)
+Telemetry is modeled in the collector as [`pdata`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata)
 which is roughly a 1:1 mapping of the [OTLP protocol](https://github.com/open-telemetry/opentelemetry-proto/tree/main/opentelemetry/proto).
 This data can be navigated using field expressions, which are fields within the protocol separated by dots. For example,
 the status message of a span is `status.message`. A map lookup can include the key as a string, for example `attributes["http.status_code"]`.
@@ -110,16 +110,26 @@ signal being part of a query space. Virtual fields are added to access data from
 `resource`, `library_info`. For metrics, the structure presented for processing is actual data points, e.g. `NumberDataPoint`, 
 `HistogramDataPoint`, with the information from higher levels like `Metric` or the data type available as virtual fields.
 
-Virtual fields for all signals: `resource`, `library_info`.
-Virtual fields for metrics: `descriptor`, which contains `metric.name`, `metric.description`, `metric.unit`.
+Virtual fields for all signals: `resource`, `library_info`.  
+Virtual fields for metrics: `metric`, which contains `name`, `description`, `unit`, `type`, `aggregation_temporality`, and `is_monotonic`.
 
 Navigation can then be used with a simple expression language for identifying telemetry to operate on.
 
-`... where name = "GET /cats"`
-`... from span where attributes["http.target"] = "/health"`
-`... where resource.attributes["deployment"] = "canary"`
-`... from metric where descriptor.metric_type = gauge`
-`... from metric where descriptor.metric_name = "http.active_requests"`
+```
+... where name = "GET /cats"
+```
+```
+... from span where attributes["http.target"] = "/health"
+```
+```
+... where resource.attributes["deployment"] = "canary"
+```
+```
+... from metric where metric.type = gauge
+```
+```
+... from metric where metric.name = "http.active_requests"
+```
 
 Fields should always be fully specified - for example `attributes` refers to the `attributes` field in the telemetry, not
 the `resource`. In the future, we may allow shorthand for accessing scoped information that is not ambiguous.
@@ -142,8 +152,8 @@ Remove a forbidden attribute such as `http.request.header.authorization` from sp
 
 Remove all attributes except for some
 
-`keep(attributes, "http.method", "http.status_code") from metrics`
-`keep(attributes, "http.method", "http.status_code")`
+`keep_keys(attributes, "http.method", "http.status_code") from metrics`
+`keep_keys(attributes, "http.method", "http.status_code")`
 
 Reduce cardinality of an attribute
 
@@ -238,6 +248,16 @@ sense as a user experience.
 
 An implementation of the query language would likely parse expressions into this sort of structure so given an SQL-like
 implementation, it would likely be little overhead to support a YAML approach in addition.
+
+## Function syntax
+
+Functions should be named and formatted according to the following standards.
+- Function names MUST start with a verb.
+- Function names that contain multiple words MUST separate those words with `_`.
+- Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_wildcards`.
+- Functions that interact with a single item MUST NOT have plurality in the name.  If a function would interact with multiple items due to a condition, like `where`, it is still considered singular.  Ex: `set`, `delete`, `drop`.
+- Functions that change a specific target MUST set the target as the first parameter.
+- Functions that take a list MUST set the list as the last parameter.
 
 ## Implementing a processor function
 

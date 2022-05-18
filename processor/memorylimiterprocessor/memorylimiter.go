@@ -57,6 +57,8 @@ var (
 	errPercentageLimitOutOfRange = errors.New(
 		"memoryLimitPercentage and memorySpikePercentage must be greater than zero and less than or equal to hundred",
 	)
+
+	errShutdownNotStarted = errors.New("no existing monitoring routine is running")
 )
 
 // make it overridable by tests
@@ -164,7 +166,7 @@ func (ml *memoryLimiter) shutdown(context.Context) error {
 	defer ml.refCounterLock.Unlock()
 
 	if ml.refCounter == 0 {
-		return fmt.Errorf("no existing monitoring routine is running")
+		return errShutdownNotStarted
 	} else if ml.refCounter == 1 {
 		ml.ticker.Stop()
 	}

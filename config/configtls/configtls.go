@@ -17,6 +17,7 @@ package configtls // import "go.opentelemetry.io/collector/config/configtls"
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -160,7 +161,7 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 	}
 
 	if (c.CertFile == "" && c.KeyFile != "") || (c.CertFile != "" && c.KeyFile == "") {
-		return nil, fmt.Errorf("for auth via TLS, either both certificate and key must be supplied, or neither")
+		return nil, errors.New("for auth via TLS, either both certificate and key must be supplied, or neither")
 	}
 
 	var getCertificate func(*tls.ClientHelloInfo) (*tls.Certificate, error)

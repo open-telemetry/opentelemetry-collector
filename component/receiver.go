@@ -17,7 +17,6 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -154,7 +153,7 @@ func (f CreateTracesReceiverFunc) CreateTracesReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Traces) (TracesReceiver, error) {
 	if f == nil {
-		return nil, componenterror.ErrDataTypeIsNotSupported
+		return nil, ErrDataTypeIsNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -170,7 +169,7 @@ func (f CreateMetricsReceiverFunc) CreateMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (MetricsReceiver, error) {
 	if f == nil {
-		return nil, componenterror.ErrDataTypeIsNotSupported
+		return nil, ErrDataTypeIsNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -186,7 +185,7 @@ func (f CreateLogsReceiverFunc) CreateLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (LogsReceiver, error) {
 	if f == nil {
-		return nil, componenterror.ErrDataTypeIsNotSupported
+		return nil, ErrDataTypeIsNotSupported
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }

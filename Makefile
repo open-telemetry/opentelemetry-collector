@@ -229,7 +229,7 @@ gendependabot: $(eval SHELL:=/bin/bash)
 OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
 # The SHA matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v0.16.0
+OPENTELEMETRY_PROTO_VERSION=v0.17.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
@@ -361,5 +361,5 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m collector-base
+	multimod prerelease -v ./versions.yaml -m collector-core
 	$(MAKE) gotidy

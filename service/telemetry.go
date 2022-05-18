@@ -15,6 +15,7 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -143,8 +144,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 	}
 
 	go func() {
-		serveErr := tel.server.ListenAndServe()
-		if serveErr != nil && serveErr != http.ErrServerClosed {
+		if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
 			col.asyncErrorChannel <- serveErr
 		}
 	}()

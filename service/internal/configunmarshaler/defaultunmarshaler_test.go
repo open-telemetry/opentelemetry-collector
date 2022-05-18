@@ -15,6 +15,7 @@
 package configunmarshaler
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -194,8 +195,8 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 			_, err := loadConfigFile(t, filepath.Join("testdata", test.name+".yaml"), factories)
 			require.Error(t, err)
 			if test.expected != 0 {
-				cfgErr, ok := err.(*configError)
-				if !ok {
+				var cfgErr configError
+				if !errors.As(err, &cfgErr) {
 					t.Errorf("expected config error code %v but got a different error '%v'", test.expected, err)
 				} else {
 					assert.Equal(t, test.expected, cfgErr.code, err)
@@ -230,7 +231,7 @@ func loadConfigFile(t *testing.T, fileName string, factories component.Factories
 	require.NoError(t, err)
 
 	// Unmarshal the config from the config.Map using the given factories.
-	return NewDefault().Unmarshal(cm, factories)
+	return New().Unmarshal(cm, factories)
 }
 
 func TestDefaultLoggerConfig(t *testing.T) {
