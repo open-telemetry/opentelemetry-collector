@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -174,7 +173,7 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 
 func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 	if tc == nil {
-		return componenterror.ErrNilNextConsumer
+		return component.ErrNilNextConsumer
 	}
 	r.traceReceiver = trace.New(r.cfg.ID(), tc, r.settings)
 	if r.httpMux != nil {
@@ -198,7 +197,7 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 
 func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 	if mc == nil {
-		return componenterror.ErrNilNextConsumer
+		return component.ErrNilNextConsumer
 	}
 	r.metricsReceiver = metrics.New(r.cfg.ID(), mc, r.settings)
 	if r.httpMux != nil {
@@ -222,7 +221,7 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 
 func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 	if lc == nil {
-		return componenterror.ErrNilNextConsumer
+		return component.ErrNilNextConsumer
 	}
 	r.logReceiver = logs.New(r.cfg.ID(), lc, r.settings)
 	if r.httpMux != nil {

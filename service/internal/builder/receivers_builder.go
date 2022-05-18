@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/service/internal/components"
@@ -191,11 +190,11 @@ func attachReceiverToPipelines(
 		createdReceiver, err = factory.CreateLogsReceiver(ctx, set, cfg, junction)
 
 	default:
-		err = componenterror.ErrDataTypeIsNotSupported
+		err = component.ErrDataTypeIsNotSupported
 	}
 
 	if err != nil {
-		if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			return fmt.Errorf(
 				"receiver %v does not support %s but it was used in a %s pipeline",
 				id, dataType, dataType)

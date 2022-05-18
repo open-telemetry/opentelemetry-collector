@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/components"
 )
@@ -238,7 +237,7 @@ func buildExporter(
 		}
 
 		if err != nil {
-			if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 				// Could not create because this exporter does not support this data type.
 				return nil, exporterTypeMismatchErr(cfg, pipelineID, dataType)
 			}

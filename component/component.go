@@ -16,8 +16,19 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/config"
+)
+
+var (
+	// ErrNilNextConsumer can be returned by receiver, or processor Start factory funcs that create the Component if the
+	// expected next Consumer is nil.
+	ErrNilNextConsumer = errors.New("nil next Consumer")
+
+	// ErrDataTypeIsNotSupported can be returned by receiver, exporter or processor factory funcs that create the
+	// Component if the particular telemetry data type is not supported by the receiver, exporter or processor.
+	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
 )
 
 // Component is either a receiver, exporter, processor, or an extension.
