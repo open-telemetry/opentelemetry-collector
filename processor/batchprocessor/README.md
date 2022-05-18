@@ -1,6 +1,12 @@
 # Batch Processor
 
-Supported pipeline types: metric, traces, logs
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | traces [beta]         |
+|                          | metrics [beta]        |
+|                          | logs [beta]           |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
 
 The batch processor accepts spans, metrics, or logs and places them into
 batches. Batching helps better compress the data and reduce the number of
@@ -36,3 +42,7 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
