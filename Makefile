@@ -146,13 +146,18 @@ install-tools:
 run: otelcorecol
 	./bin/otelcorecol_$(GOOS)_$(GOARCH) --config ${RUN_CONFIG} ${RUN_ARGS}
 
+# Append root module to all modules
 GOMODULES = $(ALL_MODULES) $(PWD)
+
+# Define a delegation target for each module
 .PHONY: $(GOMODULES)
-MODULEDIRS = $(GOMODULES:%=for-all-target-%)
+$(GOMODULES):
+	@echo "Running target '$(TARGET)' in module '$@'"
+	$(MAKE) -C $@ $(TARGET)
+
+# Triggers each module's delegation target
 .PHONY: for-all-target
-for-all-target: $(MODULEDIRS)
-$(MODULEDIRS):
-	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
+for-all-target: $(GOMODULES)
 
 .PHONY: check-component
 check-component:
