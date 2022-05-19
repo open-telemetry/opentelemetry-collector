@@ -94,6 +94,7 @@ func (tel *colTelemetry) init(col *Collector) error {
 func (tel *colTelemetry) initOnce(col *Collector) error {
 	logger := col.telemetry.Logger
 	cfg := col.service.config.Telemetry
+	resource := cfg.Resource
 
 	level := cfg.Metrics.Level
 	metricsAddr := cfg.Metrics.Address
@@ -109,8 +110,29 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 
 	logger.Info("Setting up own telemetry...")
 
-	instanceUUID, _ := uuid.NewRandom()
-	instanceID := instanceUUID.String()
+	// Construct telemetry attributes from resource attributes.
+	telAttrs := map[string]string{}
+	for k, v := range resource {
+		// nil value indicates that the attribute should not be included in the telemetry.
+		if v != nil {
+			telAttrs[k] = *v
+		}
+	}
+
+	if _, ok := resource[semconv.AttributeServiceInstanceID]; !ok {
+		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
+		instanceUUID, _ := uuid.NewRandom()
+		instanceID := instanceUUID.String()
+		telAttrs[semconv.AttributeServiceInstanceID] = instanceID
+	}
+
+	if AddCollectorVersionTag {
+		if _, ok := resource[semconv.AttributeServiceVersion]; !ok {
+			// AttributeServiceVersion is not specified in the config. Use the actual
+			// build version.
+			telAttrs[semconv.AttributeServiceVersion] = version.Version
+		}
+	}
 
 	var pe http.Handler
 	if tel.registry.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
@@ -120,7 +142,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 		}
 		pe = otelHandler
 	} else {
-		ocHandler, err := tel.initOpenCensus(col, instanceID)
+		ocHandler, err := tel.initOpenCensus(col, telAttrs)
 		if err != nil {
 			return err
 		}
@@ -131,8 +153,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 		"Serving Prometheus metrics",
 		zap.String(zapKeyTelemetryAddress, metricsAddr),
 		zap.String(zapKeyTelemetryLevel, level.String()),
-		zap.String(semconv.AttributeServiceInstanceID, instanceID),
-		zap.String(semconv.AttributeServiceVersion, version.Version),
+		zap.Any("Resource", resource),
 	)
 
 	mux := http.NewServeMux()
@@ -152,7 +173,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 	return nil
 }
 
-func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http.Handler, error) {
+func (tel *colTelemetry) initOpenCensus(col *Collector, telAttrs map[string]string) (http.Handler, error) {
 	processMetricsViews, err := telemetry2.NewProcessMetricsViews(getBallastSize(col.service.host))
 	if err != nil {
 		return nil, err
@@ -178,10 +199,8 @@ func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http
 
 	opts.ConstLabels = make(map[string]string)
 
-	opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
-
-	if AddCollectorVersionTag {
-		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceVersion)] = version.Version
+	for k, v := range telAttrs {
+		opts.ConstLabels[sanitizePrometheusKey(k)] = v
 	}
 
 	pe, err := prometheus.NewExporter(opts)
