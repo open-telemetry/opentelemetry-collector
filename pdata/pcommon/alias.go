@@ -76,7 +76,13 @@ var (
 	// NewValueBytes creates a new Value with the given []byte value.
 	// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
 	// across multiple attributes is forbidden.
-	NewValueBytes = internal.NewValueBytes
+	// Deprecated: [0.52.0] Use NewValueMBytes instead. Signature of this func will be changed to accept new immutable slice type in 0.53.0.
+	NewValueBytes = internal.NewValueMBytes
+
+	// NewValueMBytes creates a new Value with the given []byte value.
+	// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
+	// across multiple attributes is forbidden.
+	NewValueMBytes = internal.NewValueMBytes
 )
 
 // Map stores a map of string keys to elements of Value type.

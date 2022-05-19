@@ -125,10 +125,10 @@ func NewValueSlice() Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}}
 }
 
-// NewValueBytes creates a new Value with the given []byte value.
+// NewValueMBytes creates a new Value with the given []byte value.
 // The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
 // across multiple attributes is forbidden.
-func NewValueBytes(v []byte) Value {
+func NewValueMBytes(v []byte) Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v}}}
 }
 
@@ -165,7 +165,7 @@ func newValueFromRaw(iv interface{}) Value {
 	case bool:
 		return NewValueBool(tv)
 	case []byte:
-		return NewValueBytes(tv)
+		return NewValueMBytes(tv)
 	case map[string]interface{}:
 		mv := NewValueMap()
 		NewMapFromRaw(tv).CopyTo(mv.MapVal())

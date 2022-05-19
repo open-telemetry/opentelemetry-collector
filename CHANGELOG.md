@@ -17,6 +17,8 @@
 
 - Deprecate `config.Config` and `config.Service`, use `service.Config*` (#4608)
 - Deprecate `componenterror` package, move everything to `component` (#5383)
+- `pcommon.Value.NewValueBytes` is deprecated in favor of `Value.NewValueMBytes` in preparation of migration to 
+  immutable slices (#5367)
 
 ### 💡 Enhancements 💡
 
