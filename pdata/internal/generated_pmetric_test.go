@@ -1147,6 +1147,22 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 	assert.EqualValues(t, testValFlags, ms.Flags())
 }
 
+func TestHistogramDataPoint_Min(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.Min())
+	testValMin := float64(9.23)
+	ms.SetMin(testValMin)
+	assert.EqualValues(t, testValMin, ms.Min())
+}
+
+func TestHistogramDataPoint_Max(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.Max())
+	testValMax := float64(182.55)
+	ms.SetMax(testValMax)
+	assert.EqualValues(t, testValMax, ms.Max())
+}
+
 func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	es := NewExponentialHistogramDataPointSlice()
 	assert.EqualValues(t, 0, es.Len())
@@ -1357,6 +1373,22 @@ func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	testValFlags := MetricDataPointFlagsNone
 	ms.SetFlags(testValFlags)
 	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
+func TestExponentialHistogramDataPoint_Min(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.Min())
+	testValMin := float64(9.23)
+	ms.SetMin(testValMin)
+	assert.EqualValues(t, testValMin, ms.Min())
+}
+
+func TestExponentialHistogramDataPoint_Max(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.Max())
+	testValMax := float64(182.55)
+	ms.SetMax(testValMax)
+	assert.EqualValues(t, testValMax, ms.Max())
 }
 
 func TestBuckets_MoveTo(t *testing.T) {
@@ -2095,6 +2127,8 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetMExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
+	tv.SetMin(float64(9.23))
+	tv.SetMax(float64(182.55))
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
@@ -2129,6 +2163,8 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	fillTestBuckets(tv.Negative())
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
+	tv.SetMin(float64(9.23))
+	tv.SetMax(float64(182.55))
 }
 
 func generateTestBuckets() Buckets {

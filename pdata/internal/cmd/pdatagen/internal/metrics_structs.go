@@ -289,6 +289,24 @@ var histogramDataPoint = &messageValueStruct{
 		explicitBoundsField,
 		exemplarsField,
 		dataPointFlagsField,
+		&optionalPrimitiveValue{
+			fieldName:        "Min",
+			fieldType:        "Double",
+			originFieldName:  "Min",
+			originTypePrefix: "otlpmetrics.HistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(9.23)",
+		},
+		&optionalPrimitiveValue{
+			fieldName:        "Max",
+			fieldType:        "Double",
+			originFieldName:  "Max",
+			originTypePrefix: "otlpmetrics.HistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(182.55)",
+		},
 	},
 }
 
@@ -338,6 +356,24 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		},
 		exemplarsField,
 		dataPointFlagsField,
+		&optionalPrimitiveValue{
+			fieldName:        "Min",
+			fieldType:        "Double",
+			originFieldName:  "Min",
+			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(9.23)",
+		},
+		&optionalPrimitiveValue{
+			fieldName:        "Max",
+			fieldType:        "Double",
+			originFieldName:  "Max",
+			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(182.55)",
+		},
 	},
 }
 

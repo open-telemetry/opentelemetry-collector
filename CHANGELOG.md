@@ -23,6 +23,7 @@
 ### 💡 Enhancements 💡
 
 - Update OTLP to v0.17.0 (#5335)
+  - Add optional min/max fields to histograms (#5399)
 
 ### 🧰 Bug fixes 🧰
 

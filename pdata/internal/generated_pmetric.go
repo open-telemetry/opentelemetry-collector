@@ -1479,6 +1479,38 @@ func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
+// Min returns the min associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Min() float64 {
+	return (*ms.orig).GetMin()
+}
+
+// HasMin returns true if the HistogramDataPoint contains a
+// Min value, false otherwise.
+func (ms HistogramDataPoint) HasMin() bool {
+	return ms.orig.Min_ != nil
+}
+
+// SetMin replaces the min associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMin(v float64) {
+	(*ms.orig).Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
+}
+
+// Max returns the max associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Max() float64 {
+	return (*ms.orig).GetMax()
+}
+
+// HasMax returns true if the HistogramDataPoint contains a
+// Max value, false otherwise.
+func (ms HistogramDataPoint) HasMax() bool {
+	return ms.orig.Max_ != nil
+}
+
+// SetMax replaces the max associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMax(v float64) {
+	(*ms.orig).Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1505,6 +1537,14 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+	if ms.HasMin() {
+		dest.SetMin(ms.Min())
+	}
+
+	if ms.HasMax() {
+		dest.SetMax(ms.Max())
+	}
+
 }
 
 // ExponentialHistogramDataPointSlice logically represents a slice of ExponentialHistogramDataPoint.
@@ -1767,6 +1807,38 @@ func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
+// Min returns the min associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Min() float64 {
+	return (*ms.orig).GetMin()
+}
+
+// HasMin returns true if the ExponentialHistogramDataPoint contains a
+// Min value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasMin() bool {
+	return ms.orig.Min_ != nil
+}
+
+// SetMin replaces the min associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
+	(*ms.orig).Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
+}
+
+// Max returns the max associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Max() float64 {
+	return (*ms.orig).GetMax()
+}
+
+// HasMax returns true if the ExponentialHistogramDataPoint contains a
+// Max value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasMax() bool {
+	return ms.orig.Max_ != nil
+}
+
+// SetMax replaces the max associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
+	(*ms.orig).Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1780,6 +1852,14 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	ms.Negative().CopyTo(dest.Negative())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+	if ms.HasMin() {
+		dest.SetMin(ms.Min())
+	}
+
+	if ms.HasMax() {
+		dest.SetMax(ms.Max())
+	}
+
 }
 
 // Buckets are a set of bucket counts, encoded in a contiguous array of counts.
