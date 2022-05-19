@@ -64,7 +64,7 @@ func TestAttributeValue(t *testing.T) {
 	assert.True(t, v.BoolVal())
 
 	bytesValue := []byte{1, 2, 3, 4}
-	v = NewValueBytes(bytesValue)
+	v = NewValueMBytes(bytesValue)
 	assert.EqualValues(t, ValueTypeBytes, v.Type())
 	assert.EqualValues(t, bytesValue, v.MBytesVal())
 }
@@ -224,14 +224,14 @@ func TestAttributeValueEqual(t *testing.T) {
 	av1 = NewValueBool(false)
 	assert.True(t, av1.Equal(av2))
 
-	av2 = NewValueBytes([]byte{1, 2, 3})
+	av2 = NewValueMBytes([]byte{1, 2, 3})
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
-	av1 = NewValueBytes([]byte{1, 2, 4})
+	av1 = NewValueMBytes([]byte{1, 2, 4})
 	assert.False(t, av1.Equal(av2))
 
-	av1 = NewValueBytes([]byte{1, 2, 3})
+	av1 = NewValueMBytes([]byte{1, 2, 3})
 	assert.True(t, av1.Equal(av2))
 
 	av1 = NewValueSlice()
@@ -664,7 +664,7 @@ func TestAttributeValue_copyTo(t *testing.T) {
 }
 
 func TestValueBytes_CopyTo(t *testing.T) {
-	orig := NewValueBytes([]byte{1, 2, 3})
+	orig := NewValueMBytes([]byte{1, 2, 3})
 	dest := NewValueEmpty()
 	orig.CopyTo(dest)
 	assert.Equal(t, orig, dest)
@@ -1087,7 +1087,7 @@ func TestAsString(t *testing.T) {
 		},
 		{
 			name:     "bytes",
-			input:    NewValueBytes([]byte("String bytes")),
+			input:    NewValueMBytes([]byte("String bytes")),
 			expected: base64.StdEncoding.EncodeToString([]byte("String bytes")),
 		},
 	}
@@ -1122,12 +1122,12 @@ func TestValueAsRaw(t *testing.T) {
 		},
 		{
 			name:     "bytes",
-			input:    NewValueBytes([]byte("bytes")),
+			input:    NewValueMBytes([]byte("bytes")),
 			expected: []byte("bytes"),
 		},
 		{
 			name:     "bytes",
-			input:    NewValueBytes([]byte("bytes")),
+			input:    NewValueMBytes([]byte("bytes")),
 			expected: []byte("bytes"),
 		},
 		{
@@ -1286,7 +1286,7 @@ func TestNewValueFromRaw(t *testing.T) {
 		{
 			name:     "bytes",
 			input:    []byte{1, 2, 3},
-			expected: NewValueBytes([]byte{1, 2, 3}),
+			expected: NewValueMBytes([]byte{1, 2, 3}),
 		},
 		{
 			name: "map",
