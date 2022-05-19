@@ -102,3 +102,17 @@ is designed so that the following goal can be achieved:
     * Contrib modules will be kept up to date with this project's releases.
 * GitHub releases will be made for all releases.
 * Go modules will be made available at Go package mirrors.
+* Stability guaranties of modules versioned as `v1` or higher are aligned with [Go 1 compatibility 
+  promise](https://go.dev/doc/go1compat). OpenTelemetry authors reserve the right to introduce API changes breaking 
+  compatibility between minor versions in the following scenarios:
+    * **Struct literals.** It may be necessary to add new fields to exported structs in the API. Code that uses unkeyed
+      struct literals (such as pkg.T{3, "x"}) to create values of these types would fail to compile after such a change.
+      However, code that uses keyed literals (pkg.T{A: 3, B: "x"}) will continue to compile. We therefore recommend 
+      using OpenTelemetry collector structs with the keyed literals only.
+    * **Methods.** As with struct fields, it may be necessary to add methods to types. Under some circumstances,
+      such as when the type is embedded in a struct along with another type, the addition of the new method may 
+      break the struct by creating a conflict with an existing method of the other embedded type. We cannot protect 
+      against this rare case and do not guarantee compatibility in such scenarios.
+    * **Dot imports.** If a program imports a package using `import .`, additional names defined in the imported package
+      in future releases may conflict with other names defined in the program. We do not recommend the use of
+      `import .` with OpenTelemetry Collector modules.
