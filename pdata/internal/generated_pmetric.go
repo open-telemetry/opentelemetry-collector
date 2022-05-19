@@ -1820,7 +1820,7 @@ func (ms ExponentialHistogramDataPoint) HasMin() bool {
 
 // SetMin replaces the min associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
-	(*ms.orig).Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
+	(*ms.orig).Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
 }
 
 // Max returns the max associated with this ExponentialHistogramDataPoint.
@@ -1836,7 +1836,7 @@ func (ms ExponentialHistogramDataPoint) HasMax() bool {
 
 // SetMax replaces the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
-	(*ms.orig).Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
+	(*ms.orig).Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
 }
 
 // CopyTo copies all properties from the current struct to the dest.
