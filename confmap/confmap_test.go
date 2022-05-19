@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package confmap
 
 import (
 	"errors"
@@ -28,7 +28,7 @@ import (
 )
 
 func TestToStringMap_WithSet(t *testing.T) {
-	parser := NewMap()
+	parser := New()
 	parser.Set("key::embedded", int64(123))
 	assert.Equal(t, map[string]interface{}{"key": map[string]interface{}{"embedded": int64(123)}}, parser.ToStringMap())
 }
@@ -111,8 +111,8 @@ func TestToStringMap(t *testing.T) {
 	}
 }
 
-// newMapFromFile creates a new config.Map by reading the given file.
-func newMapFromFile(fileName string) (*Map, error) {
+// newMapFromFile creates a new confmap.Conf by reading the given file.
+func newMapFromFile(fileName string) (*Conf, error) {
 	content, err := ioutil.ReadFile(filepath.Clean(fileName))
 	if err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
@@ -123,7 +123,7 @@ func newMapFromFile(fileName string) (*Map, error) {
 		return nil, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 
-	return NewMapFromStringMap(data), nil
+	return NewFromStringMap(data), nil
 }
 
 func TestExpandNilStructPointersHookFunc(t *testing.T) {
@@ -134,10 +134,10 @@ func TestExpandNilStructPointersHookFunc(t *testing.T) {
 			"struct": nil,
 		},
 	}
-	cfgMap := NewMapFromStringMap(stringMap)
+	conf := NewFromStringMap(stringMap)
 	cfg := &TestConfig{}
 	assert.Nil(t, cfg.Struct)
-	assert.NoError(t, cfgMap.UnmarshalExact(cfg))
+	assert.NoError(t, conf.UnmarshalExact(cfg))
 	assert.Nil(t, cfg.Boolean)
 	// assert.False(t, *cfg.Boolean)
 	assert.Nil(t, cfg.Struct)
@@ -154,7 +154,7 @@ func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 			"struct": nil,
 		},
 	}
-	cfgMap := NewMapFromStringMap(stringMap)
+	conf := NewFromStringMap(stringMap)
 	varBool := true
 	s1 := &Struct{Name: "s1"}
 	s2 := &Struct{Name: "s2"}
@@ -163,7 +163,7 @@ func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 		Struct:    s1,
 		MapStruct: map[string]*Struct{"struct": s2},
 	}
-	assert.NoError(t, cfgMap.UnmarshalExact(cfg))
+	assert.NoError(t, conf.UnmarshalExact(cfg))
 	assert.NotNil(t, cfg.Boolean)
 	assert.True(t, *cfg.Boolean)
 	assert.NotNil(t, cfg.Struct)
@@ -205,9 +205,9 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFunc(t *testing.T) {
 			"string": "this is a string",
 		},
 	}
-	cfgMap := NewMapFromStringMap(stringMap)
+	conf := NewFromStringMap(stringMap)
 	cfg := &TestIDConfig{}
-	assert.NoError(t, cfgMap.UnmarshalExact(cfg))
+	assert.NoError(t, conf.UnmarshalExact(cfg))
 	assert.True(t, cfg.Boolean)
 	assert.Equal(t, map[TestID]string{"string": "this is a string"}, cfg.Map)
 }
@@ -220,9 +220,9 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
 			"string_": "this is another string",
 		},
 	}
-	cfgMap := NewMapFromStringMap(stringMap)
+	conf := NewFromStringMap(stringMap)
 	cfg := &TestIDConfig{}
-	assert.Error(t, cfgMap.UnmarshalExact(cfg))
+	assert.Error(t, conf.UnmarshalExact(cfg))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T) {
@@ -232,7 +232,7 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T)
 			"error": "this is a string",
 		},
 	}
-	cfgMap := NewMapFromStringMap(stringMap)
+	conf := NewFromStringMap(stringMap)
 	cfg := &TestIDConfig{}
-	assert.Error(t, cfgMap.UnmarshalExact(cfg))
+	assert.Error(t, conf.UnmarshalExact(cfg))
 }

@@ -34,7 +34,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/internal/version"
@@ -184,9 +184,9 @@ type mapConverter struct {
 	extraMap map[string]*string
 }
 
-func (m mapConverter) Convert(ctx context.Context, cfgMap *config.Map) error {
+func (m mapConverter) Convert(ctx context.Context, conf *confmap.Conf) error {
 	for k, v := range m.extraMap {
-		cfgMap.Set(k, v)
+		conf.Set(k, v)
 	}
 	return nil
 }
@@ -309,7 +309,7 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 		extraCfgAsProps["service::telemetry::resource::"+k] = v
 	}
 
-	cfgSet.MapConverters = append([]config.MapConverter{
+	cfgSet.MapConverters = append([]confmap.Converter{
 		mapConverter{extraCfgAsProps}},
 		cfgSet.MapConverters...,
 	)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package overwritepropertiesmapconverter // import "go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
+package overwritepropertiesconverter // import "go.opentelemetry.io/collector/confmap/converter/overwritepropertiesconverter"
 
 import (
 	"bytes"
@@ -22,24 +22,24 @@ import (
 	"github.com/knadh/koanf/maps"
 	"github.com/magiconair/properties"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 type converter struct {
 	properties []string
 }
 
-// New returns a config.MapConverter, that overrides all the given properties into the
+// New returns a confmap.Converter, that overrides all the given properties into the
 // input map.
 //
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
-func New(properties []string) config.MapConverter {
+func New(properties []string) confmap.Converter {
 	return &converter{properties: properties}
 }
 
-func (c *converter) Convert(_ context.Context, cfgMap *config.Map) error {
+func (c *converter) Convert(_ context.Context, conf *confmap.Conf) error {
 	if len(c.properties) == 0 {
 		return nil
 	}
@@ -65,5 +65,5 @@ func (c *converter) Convert(_ context.Context, cfgMap *config.Map) error {
 	}
 	prop := maps.Unflatten(parsed, ".")
 
-	return cfgMap.Merge(config.NewMapFromStringMap(prop))
+	return conf.Merge(confmap.NewFromStringMap(prop))
 }

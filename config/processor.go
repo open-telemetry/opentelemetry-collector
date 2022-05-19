@@ -13,6 +13,9 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // Processor is the configuration of a component.Processor. Specific extensions must implement
 // this interface and must embed ProcessorSettings struct or a struct that extends it.
@@ -26,8 +29,8 @@ type Processor interface {
 // UnmarshalProcessor helper function to unmarshal a Processor config.
 // It checks if the config implements Unmarshallable and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalProcessor(cfgMap *Map, cfg Processor) error {
-	return unmarshal(cfgMap, cfg)
+func UnmarshalProcessor(conf *confmap.Conf, cfg Processor) error {
+	return unmarshal(conf, cfg)
 }
 
 // ProcessorSettings defines common settings for a component.Processor configuration.

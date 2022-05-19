@@ -19,11 +19,11 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
-	"go.opentelemetry.io/collector/config/mapprovider/envmapprovider"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
-	"go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
 
@@ -67,31 +67,31 @@ type configProvider struct {
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
 type ConfigProviderSettings struct {
-	// Locations from where the config.Map is retrieved, and merged in the given order.
+	// Locations from where the confmap.Conf is retrieved, and merged in the given order.
 	// It is required to have at least one location.
 	Locations []string
 
-	// MapProviders is a map of pairs <scheme, config.MapProvider>.
-	// It is required to have at least one config.MapProvider.
-	MapProviders map[string]config.MapProvider
+	// MapProviders is a map of pairs <scheme, confmap.Provider>.
+	// It is required to have at least one confmap.Provider.
+	MapProviders map[string]confmap.Provider
 
-	// MapConverters is a slice of config.MapConverter.
-	MapConverters []config.MapConverter
+	// MapConverters is a slice of cconfmap.Converter.
+	MapConverters []confmap.Converter
 }
 
 func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings {
 	return ConfigProviderSettings{
 		Locations:     locations,
-		MapProviders:  makeMapProvidersMap(filemapprovider.New(), envmapprovider.New(), yamlmapprovider.New()),
-		MapConverters: []config.MapConverter{expandmapconverter.New()},
+		MapProviders:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New()),
+		MapConverters: []confmap.Converter{expandconverter.New()},
 	}
 }
 
 // NewConfigProvider returns a new ConfigProvider that provides the service configuration:
 // * Initially it resolves the "configuration map":
-//	 * Retrieve the config.Map by merging all retrieved maps from the given `locations` in order.
-// 	 * Then applies all the config.MapConverter in the given order.
-// * Then unmarshalls the config.Map into the service Config.
+//	 * Retrieve the confmap.Conf by merging all retrieved maps from the given `locations` in order.
+// 	 * Then applies all the confmap.Converter in the given order.
+// * Then unmarshalls the confmap.Conf into the service Config.
 func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 	mr, err := newMapResolver(set.Locations, set.MapProviders, set.MapConverters)
 	if err != nil {

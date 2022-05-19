@@ -12,27 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package expandmapconverter // import "go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
+package expandconverter // import "go.opentelemetry.io/collector/confmap/converter/expandconverter"
 
 import (
 	"context"
 	"os"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 type converter struct{}
 
-// New returns a config.MapConverter, that expands all environment variables for a given config.Map.
+// New returns a confmap.Converter, that expands all environment variables for a given confmap.Conf.
 //
 // Notice: This API is experimental.
-func New() config.MapConverter {
+func New() confmap.Converter {
 	return converter{}
 }
 
-func (converter) Convert(_ context.Context, cfgMap *config.Map) error {
-	for _, k := range cfgMap.AllKeys() {
-		cfgMap.Set(k, expandStringValues(cfgMap.Get(k)))
+func (converter) Convert(_ context.Context, conf *confmap.Conf) error {
+	for _, k := range conf.AllKeys() {
+		conf.Set(k, expandStringValues(conf.Get(k)))
 	}
 	return nil
 }

@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestDecodeConfig(t *testing.T) {
@@ -186,10 +186,10 @@ func TestLoadEmptyAllSections(t *testing.T) {
 }
 
 func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*config.Config, error) {
-	cm, err := configtest.LoadConfigMap(fileName)
+	cm, err := confmaptest.LoadConf(fileName)
 	require.NoError(t, err)
 
-	// Unmarshal the config from the config.Map using the given factories.
+	// Unmarshal the config from the confmap.Conf using the given factories.
 	return New().Unmarshal(cm, factories)
 }
 

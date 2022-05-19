@@ -12,28 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"context"
 )
 
-// MapProvider is an interface that helps to retrieve a config map and watch for any
+// Provider is an interface that helps to retrieve a config map and watch for any
 // changes to the config map. Implementations may load the config from a file,
 // a database or any other source.
 //
 // The typical usage is the following:
 //
-//		r, err := mapProvider.Retrieve("file:/path/to/config")
+//		r, err := provider.Retrieve("file:/path/to/config")
 //		// Use r.Map; wait for watcher to be called.
 //		r.Close()
-//		r, err = mapProvider.Retrieve("file:/path/to/config")
+//		r, err = provider.Retrieve("file:/path/to/config")
 //		// Use r.Map; wait for watcher to be called.
 //		r.Close()
 //		// repeat retrieve/wait/close cycle until it is time to shut down the Collector process.
 //		// ...
-//		mapProvider.Shutdown()
-type MapProvider interface {
+//		provider.Shutdown()
+type Provider interface {
 	// Retrieve goes to the configuration source and retrieves the selected data which
 	// contains the value to be injected in the configuration and the corresponding watcher that
 	// will be used to monitor for updates of the retrieved value.
@@ -81,7 +81,7 @@ type ChangeEvent struct {
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
 type Retrieved struct {
-	cfgMap    *Map
+	conf      *Conf
 	closeFunc CloseFunc
 }
 
@@ -101,24 +101,24 @@ func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
 }
 
 // NewRetrievedFromMap returns a new Retrieved instance that contains a Map data.
-// * cfgMap the Map that will be merged to the given map in the MergeTo.
+// * conf the Map that will be merged to the given map in the MergeTo.
 // * CloseFunc specifies a function to be invoked when the configuration for which it was
 //   used to retrieve values is no longer in use and should close and release any watchers
 //	 that it may have created.
-func NewRetrievedFromMap(cfgMap *Map, opts ...RetrievedOption) Retrieved {
+func NewRetrievedFromMap(conf *Conf, opts ...RetrievedOption) Retrieved {
 	set := retrievedSettings{}
 	for _, opt := range opts {
 		opt(&set)
 	}
-	return Retrieved{cfgMap: cfgMap, closeFunc: set.closeFunc}
+	return Retrieved{conf: conf, closeFunc: set.closeFunc}
 }
 
 // AsMap returns the retrieved configuration parsed as a Map.
-func (r Retrieved) AsMap() (*Map, error) {
-	return r.cfgMap, nil
+func (r Retrieved) AsMap() (*Conf, error) {
+	return r.conf, nil
 }
 
-// Close and release any watchers that MapProvider.Retrieve may have created.
+// Close and release any watchers that Provider.Retrieve may have created.
 //
 // Should block until all resources are closed, and guarantee that `onChange` is not
 // going to be called after it returns except when `ctx` is cancelled.

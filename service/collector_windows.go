@@ -29,8 +29,8 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
 
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/converter/overwritepropertiesconverter"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -144,7 +144,7 @@ func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Col
 		cfgSet := newDefaultConfigProviderSettings(getConfigFlag())
 		// Append the "overwrite properties converter" as the first converter.
 		cfgSet.MapConverters = append(
-			[]config.MapConverter{overwritepropertiesmapconverter.New(getSetFlag())},
+			[]confmap.Converter{overwritepropertiesconverter.New(getSetFlag())},
 			cfgSet.MapConverters...)
 		set.ConfigProvider, err = NewConfigProvider(cfgSet)
 		if err != nil {

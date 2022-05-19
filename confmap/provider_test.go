@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package confmap
 
 import (
 	"context"
@@ -24,20 +24,20 @@ import (
 )
 
 func TestNewRetrievedFromMap(t *testing.T) {
-	cfgMap := NewMap()
-	ret := NewRetrievedFromMap(cfgMap)
+	conf := New()
+	ret := NewRetrievedFromMap(conf)
 	retMap, err := ret.AsMap()
 	require.NoError(t, err)
-	assert.Same(t, cfgMap, retMap)
+	assert.Same(t, conf, retMap)
 	assert.NoError(t, ret.Close(context.Background()))
 }
 
 func TestNewRetrievedFromMapWithOptions(t *testing.T) {
 	want := errors.New("my error")
-	cfgMap := NewMap()
-	ret := NewRetrievedFromMap(cfgMap, WithRetrievedClose(func(context.Context) error { return want }))
+	conf := New()
+	ret := NewRetrievedFromMap(conf, WithRetrievedClose(func(context.Context) error { return want }))
 	retMap, err := ret.AsMap()
 	require.NoError(t, err)
-	assert.Same(t, cfgMap, retMap)
+	assert.Same(t, conf, retMap)
 	assert.Equal(t, want, ret.Close(context.Background()))
 }

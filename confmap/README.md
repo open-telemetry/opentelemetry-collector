@@ -3,39 +3,39 @@
 This document is work in progress, some concepts are not yet available
 (e.g. MapResolver is a private concept in the service for the moment).
 
-## Map
+## ConfMap
 
-The [Map](configmap.go) represents the raw configuration for a service (e.g. OpenTelemetry Collector).
+The [ConfMap](confmap.go) represents the raw configuration for a service (e.g. OpenTelemetry Collector).
 
-## MapProvider
+## Provider
 
-The [MapProvider](mapprovider.go) provides configuration, and allows to watch/monitor for changes. Any `MapProvider`
+The [Provider](provider.go) provides configuration, and allows to watch/monitor for changes. Any `Provider`
 has a `<scheme>` associated with it, and will provide configs for `configURI` that follow the "<scheme>:<opaque_data>" format.
 This format is compatible with the URI definition (see [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)).
-The `<scheme>` MUST be always included in the `configURI`. The scheme for any `MapProvider` MUST be at least 2
+The `<scheme>` MUST be always included in the `configURI`. The scheme for any `Provider` MUST be at least 2
 characters long to avoid conflicting with a driver-letter identifier as specified in
 [file URI syntax](https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax).
 
-## MapConverter
+## Converter
 
-The [MapConverter](mapconverter.go) allows implementing conversion logic for the provided configuration. One of the most
+The [Converter](converter.go) allows implementing conversion logic for the provided configuration. One of the most
 common use-case is to migrate/transform the configuration after a backwards incompatible change.
 
 ## MapResolver
 
-The `MapResolver` handles the use of multiple [MapProviders](#mapprovider) and [MapConverters](#mapconverter)
+The `MapResolver` handles the use of multiple [Providers](#provider) and [Converters](#converter)
 simplifying configuration parsing, monitoring for updates, and the overall life-cycle of the used config providers.
 The `MapResolver` provides two main functionalities: [Configuration Resolving](#configuration-resolving) and
 [Watching for Updates](#watching-for-updates).
 
 ### Configuration Resolving
 
-The `MapResolver` receives as input a set of `MapProviders`, a list of `MapConverters`, and a list of configuration identifier
+The `MapResolver` receives as input a set of `Providers`, a list of `Converters`, and a list of configuration identifier
 `configURI` that will be used to generate the resulting, or effective, configuration in the form of a `config.Map`,
-that can be used by code that is oblivious to the usage of `MapProviders` and `MapConverters`.
+that can be used by code that is oblivious to the usage of `Providers` and `Converters`.
 
 ```terminal
-             MapResolver               MapProvider
+             MapResolver                 Provider
                  │                          │
    Resolve       │                          │
 ────────────────►│                          │
@@ -49,12 +49,12 @@ that can be used by code that is oblivious to the usage of `MapProviders` and `M
               │  │   │Merge                 │
               │  │◄──┘                      │
               └─ │                          │
-                 │          MapConverter    │
+                 │            Converter     │
                  │                │         │
               ┌─ │     Convert    │         │
               │  ├───────────────►│         │
-   foreach    │  │                │         │
- MapConverter │  │◄───────────────┤         │
+    foreach   │  │                │         │
+   Converter  │  │◄───────────────┤         │
               └─ │                          │
                  │                          │
 ◄────────────────┤                          │
@@ -70,10 +70,10 @@ The `Resolve` method proceeds in the following steps:
 
 ### Watching for Updates
 After the configuration was processed, the `MapResolver` can be used as a single point to watch for updates in the
-configuration retrieved via the `MapProvider` used to retrieve the “initial” configuration and to generate the “effective” one.
+configuration retrieved via the `Provider` used to retrieve the “initial” configuration and to generate the “effective” one.
 
 ```terminal      
-        MapResolver          MapProvider
+        MapResolver          Provider
             │                     │
    Watch    │                     │
 ───────────►│                     │
@@ -86,4 +86,4 @@ configuration retrieved via the `MapProvider` used to retrieve the “initial”
 ◄───────────┤                     │
 ```
 
-The `MapResolver` does that by passing an `onChange` func to each `MapProvider.Retrieve` call and capturing all watch events. 
+The `MapResolver` does that by passing an `onChange` func to each `Provider.Retrieve` call and capturing all watch events. 
