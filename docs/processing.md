@@ -170,15 +170,22 @@ Reduce cardinality of an attribute
 
 ```
 traces:
-  replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])
+  replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
 ```
 
 Reduce cardinality of a span name
 
 ```
 traces:
-  replace_wildcards("GET /user/*/list/*", "GET /user/{userId}/list/{listId}", name)
+  replace_match(name, "GET /user/*/list/*", "GET /user/{userId}/list/{listId}")
+``` 
+
+Reduce cardinality of any matching attribute
+
 ```
+traces:
+  replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
+``` 
 
 Decrease the size of the telemetry payload by removing large resource attributes
 
@@ -292,27 +299,27 @@ implementation, it would likely be little overhead to support a YAML approach in
 Functions should be named and formatted according to the following standards.
 - Function names MUST start with a verb.
 - Function names that contain multiple words MUST separate those words with `_`.
-- Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_wildcards`.
-- Functions that interact with a single item MUST NOT have plurality in the name.  If a function would interact with multiple items due to a condition, like `where`, it is still considered singular.  Ex: `set`, `delete`, `drop`.
+- Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
+- Functions that interact with a single item MUST NOT have plurality in the name.  If a function would interact with multiple items due to a condition, like `where`, it is still considered singular.  Ex: `set`, `delete`, `drop`, `replace_match`.
 - Functions that change a specific target MUST set the target as the first parameter.
 - Functions that take a list MUST set the list as the last parameter.
 
 ## Implementing a processor function
 
-The `replace_wildcards` function may look like this.
+The `replace_match` function may look like this.
 
 ```go
 
-package replacewildcards
+package replaceMatch
 
 import "regexp"
 
 import "github.com/open-telemetry/opentelemetry/processors"
 
 // Assuming this is not in "core"
-processors.register("replace_wildcards", replace_wildcards)
+processors.register("replace_match", replace_match)
 
-func replace_wildcards(pattern regexp.Regexp, replacement string, path processors.TelemetryPath) processors.Result  {
+func replace_match(path processors.TelemetryPath, pattern regexp.Regexp, replacement string) processors.Result  {
     val := path.Get()
 	if val == nil {
 		return processors.CONTINUE
@@ -325,7 +332,7 @@ func replace_wildcards(pattern regexp.Regexp, replacement string, path processor
 }
 ```
 
-Here, the processor framework recognizes the first parameter of the function is `regexp.Regexp` so will compile the string
+Here, the processor framework recognizes the second parameter of the function is `regexp.Regexp` so will compile the string
 provided by the user in the config when processing it. Similarly for `path`, it recognizes properties of type `TelemetryPath`
 and will resolve it to the path within a matched telemetry during execution and pass it to the function. The path allows
 scalar operations on the field within the telemetry. The processor does not need to be aware of telemetry filtering,
