@@ -25,5 +25,5 @@ jobs:
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-      - name: Run Unit tests
-        run: go test ./...
+      - name: Run Unit Tests
+        run: make gotest

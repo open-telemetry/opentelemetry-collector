@@ -58,7 +58,6 @@ func TestRelativePath(t *testing.T) {
 	// verify
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Path, "/"))
 	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Path, cwd))
 }
 

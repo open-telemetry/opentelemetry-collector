@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,14 +38,17 @@ func TestGenerateInvalidCollectorVersion(t *testing.T) {
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := NewDefaultConfig()
-	cfg.Distribution.OutputPath = "/invalid"
+	cfg.Distribution.OutputPath = "/:invalid"
 	err := Generate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create output path")
 }
 
 func TestGenerateAndCompileDefault(t *testing.T) {
-	dir, err := ioutil.TempDir("/tmp", "default")
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping the test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/5403")
+	}
+	dir, err := ioutil.TempDir("", "default")
 	if err != nil {
 		log.Fatal(err)
 	}
