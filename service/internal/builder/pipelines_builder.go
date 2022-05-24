@@ -44,7 +44,8 @@ type builtPipeline struct {
 	// can mutate the TraceData or MetricsData input argument.
 	MutatesData bool
 
-	processors []component.Processor
+	processors        []component.Processor
+	processorIDLookup map[component.Processor]config.ComponentID
 }
 
 // BuiltPipelines is a map of build pipelines created from pipeline configs.
@@ -53,13 +54,15 @@ type BuiltPipelines map[config.ComponentID]*builtPipeline
 func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Host) error {
 	for _, bp := range bps {
 		bp.logger.Info("Pipeline is starting...")
-		hostWrapper := components.NewHostWrapper(host, bp.componentID, bp.logger)
 		// Start in reverse order, starting from the back of processors pipeline.
 		// This is important so that processors that are earlier in the pipeline and
 		// reference processors that are later in the pipeline do not start sending
 		// data to later pipelines which are not yet started.
 		for i := len(bp.processors) - 1; i >= 0; i-- {
-			if err := bp.processors[i].Start(ctx, hostWrapper); err != nil {
+			proc := bp.processors[i]
+			procID := bp.processorIDLookup[proc]
+			hostWrapper := components.NewHostWrapper(host, procID, bp.logger)
+			if err := proc.Start(ctx, hostWrapper); err != nil {
 				return err
 			}
 		}
@@ -140,7 +143,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 	}
 
 	processors := make([]component.Processor, len(pipelineCfg.Processors))
-
+	processorIDLookup := make(map[component.Processor]config.ComponentID, len(pipelineCfg.Processors))
 	// Now build the processors backwards, starting from the last one.
 	// The last processor points to consumer which fans out to exporters, then
 	// the processor itself becomes a consumer for the one that precedes it in
@@ -187,6 +190,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 			}
 			mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			processors[i] = proc
+			processorIDLookup[proc] = procID
 			tc = proc
 		case config.MetricsDataType:
 			var proc component.MetricsProcessor
@@ -199,6 +203,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 			}
 			mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			processors[i] = proc
+			processorIDLookup[proc] = procID
 			mc = proc
 
 		case config.LogsDataType:
@@ -212,6 +217,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 			}
 			mutatesConsumedData = mutatesConsumedData || proc.Capabilities().MutatesData
 			processors[i] = proc
+			processorIDLookup[proc] = procID
 			lc = proc
 
 		default:
@@ -238,14 +244,15 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 		lc = capabilitiesLogs{Logs: lc, capabilities: consumer.Capabilities{MutatesData: mutatesConsumedData}}
 	}
 	bp := &builtPipeline{
-		componentID: pipelineID,
-		logger:      pipelineLogger,
-		firstTC:     tc,
-		firstMC:     mc,
-		firstLC:     lc,
-		Config:      pipelineCfg,
-		MutatesData: mutatesConsumedData,
-		processors:  processors,
+		componentID:       pipelineID,
+		logger:            pipelineLogger,
+		firstTC:           tc,
+		firstMC:           mc,
+		firstLC:           lc,
+		Config:            pipelineCfg,
+		MutatesData:       mutatesConsumedData,
+		processors:        processors,
+		processorIDLookup: processorIDLookup,
 	}
 
 	return bp, nil

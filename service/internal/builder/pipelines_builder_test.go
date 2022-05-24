@@ -195,6 +195,9 @@ func testPipeline(t *testing.T, pipelineID config.ComponentID, exporterIDs []con
 	require.NotNil(t, processor)
 	assert.NotNil(t, processor.firstTC)
 	assert.Nil(t, processor.firstMC)
+	for _, proc := range processor.processors {
+		assert.NotNil(t, processor.processorIDLookup[proc])
+	}
 
 	// Compose the list of created exporters.
 	var exporters []*builtExporter
