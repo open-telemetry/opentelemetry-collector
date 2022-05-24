@@ -249,11 +249,13 @@ processors:
         - replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])
         - group_by(trace_id, 2m)
     metrics:
+      queries:
         - drop() where attributes["http.target"] = "/health"
         - delete(attributes["http.request.header.authorization"])
         - replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])
         - set(attributes["k8s_pod"], resource.attributes["k8s.pod.name"])
     logs:
+      queries:
         - drop() where attributes["http.target"] = "/health"
         - delete(attributes["http.request.header.authorization"])
         - replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])
