@@ -65,12 +65,20 @@ func (m *mockProvider) Shutdown(context.Context) error {
 	return m.errS
 }
 
+type mockConverter struct {
+	err error
+}
+
+func (m *mockConverter) Convert(context.Context, *config.Map) error {
+	return errors.New("converter_err")
+}
+
 func TestMapResolver_Errors(t *testing.T) {
 	tests := []struct {
 		name              string
 		locations         []string
 		mapProviders      []config.MapProvider
-		mapConverters     []config.MapConverterFunc
+		mapConverters     []config.MapConverter
 		expectResolveErr  bool
 		expectWatchErr    bool
 		expectCloseErr    bool
@@ -95,7 +103,7 @@ func TestMapResolver_Errors(t *testing.T) {
 			name:             "converter error",
 			locations:        []string{"mock:", filepath.Join("testdata", "otelcol-nop.yaml")},
 			mapProviders:     []config.MapProvider{&mockProvider{}, filemapprovider.New()},
-			mapConverters:    []config.MapConverterFunc{func(context.Context, *config.Map) error { return errors.New("converter_err") }},
+			mapConverters:    []config.MapConverter{&mockConverter{err: errors.New("converter_err")}},
 			expectResolveErr: true,
 		},
 		{

@@ -194,7 +194,7 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 	cfgSet := newDefaultConfigProviderSettings([]string{
 		filepath.Join("testdata", "otelcol-config.yaml"),
 	})
-	cfgSet.MapConverters = append([]config.MapConverterFunc{
+	cfgSet.MapConverters = append([]config.MapConverter{
 		overwritepropertiesmapconverter.New(
 			[]string{"service.telemetry.metrics.address=" + metricsAddr},
 		)},
