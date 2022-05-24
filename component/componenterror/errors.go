@@ -19,9 +19,9 @@ import (
 )
 
 var (
-	// Deprecated: use component.ErrNilNextConsumer
+	// Deprecated: [v0.52.0] use component.ErrNilNextConsumer
 	ErrNilNextConsumer = component.ErrNilNextConsumer
 
-	// Deprecated: use component.ErrDataTypeIsNotSupported
+	// Deprecated: [v0.52.0] use component.ErrDataTypeIsNotSupported
 	ErrDataTypeIsNotSupported = component.ErrDataTypeIsNotSupported
 )
