@@ -35,7 +35,7 @@ func TestNewEventMinimal(t *testing.T) {
 
 func TestNewEventAllOptions(t *testing.T) {
 	expectedComponentID := config.NewComponentID("nop")
-	expectedTimestamp := uint64(time.Now().UnixNano())
+	expectedTimestamp := time.Now()
 	expectedErr := errors.New("expect this")
 	ev, err := NewEvent(
 		RecoverableError,

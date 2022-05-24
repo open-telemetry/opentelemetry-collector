@@ -41,7 +41,7 @@ const (
 // include an error object to provide additional insight to registered listeners.
 type Event struct {
 	eventType   EventType
-	timestamp   uint64
+	timestamp   time.Time
 	componentID config.ComponentID
 	err         error
 }
@@ -52,7 +52,7 @@ func (ev *Event) Type() EventType {
 }
 
 // Timestamp returns the time of the event in nanos
-func (ev *Event) Timestamp() uint64 {
+func (ev *Event) Timestamp() time.Time {
 	return ev.timestamp
 }
 
@@ -78,9 +78,9 @@ func WithComponentID(componentID config.ComponentID) EventOption {
 }
 
 // WithTimestamp sets the timestamp, expected in nanos, for a status.Event
-func WithTimestamp(nanos uint64) EventOption {
+func WithTimestamp(timestamp time.Time) EventOption {
 	return func(o *Event) error {
-		o.timestamp = nanos
+		o.timestamp = timestamp
 		return nil
 	}
 }
@@ -110,8 +110,8 @@ func NewEvent(eventType EventType, options ...EventOption) (*Event, error) {
 		}
 	}
 
-	if ev.timestamp == 0 {
-		ev.timestamp = uint64(time.Now().UnixNano())
+	if ev.timestamp.IsZero() {
+		ev.timestamp = time.Now()
 	}
 
 	return &ev, nil
