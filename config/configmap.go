@@ -15,7 +15,6 @@
 package config // import "go.opentelemetry.io/collector/config"
 
 import (
-	"context"
 	"encoding"
 	"fmt"
 	"reflect"
@@ -30,10 +29,6 @@ const (
 	// KeyDelimiter is used as the default key delimiter in the default koanf instance.
 	KeyDelimiter = "::"
 )
-
-// MapConverterFunc is a converter function for the config.Map that allows distributions
-// (in the future components as well) to build backwards compatible config converters.
-type MapConverterFunc func(context.Context, *Map) error
 
 // NewMap creates a new empty config.Map instance.
 func NewMap() *Map {

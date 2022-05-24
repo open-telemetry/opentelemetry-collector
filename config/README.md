@@ -18,12 +18,12 @@ characters long to avoid conflicting with a driver-letter identifier as specifie
 
 ## MapConverter
 
-The [MapConverter](configmap.go) allows implementing conversion logic for the provided configuration. One of the most
+The [MapConverter](mapconverter.go) allows implementing conversion logic for the provided configuration. One of the most
 common use-case is to migrate/transform the configuration after a backwards incompatible change.
 
 ## MapResolver
 
-The `MapResolver` handles the use of multiple [MapProviders](./mapprovider.go) and [MapConverters](./configmap.go)
+The `MapResolver` handles the use of multiple [MapProviders](#mapprovider) and [MapConverters](#mapconverter)
 simplifying configuration parsing, monitoring for updates, and the overall life-cycle of the used config providers.
 The `MapResolver` provides two main functionalities: [Configuration Resolving](#configuration-resolving) and
 [Watching for Updates](#watching-for-updates).

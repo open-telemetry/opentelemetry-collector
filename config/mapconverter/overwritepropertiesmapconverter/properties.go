@@ -25,25 +25,27 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// New returns a config.MapConverterFunc, that overrides all the given properties into the
+type converter struct {
+	properties []string
+}
+
+// New returns a config.MapConverter, that overrides all the given properties into the
 // input map.
 //
 // Properties must follow the Java properties format, key-value list separated by equal sign with a "."
 // as key delimiter.
 //  ["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
-func New(properties []string) config.MapConverterFunc {
-	return func(_ context.Context, cfgMap *config.Map) error {
-		return convert(properties, cfgMap)
-	}
+func New(properties []string) config.MapConverter {
+	return &converter{properties: properties}
 }
 
-func convert(propsStr []string, cfgMap *config.Map) error {
-	if len(propsStr) == 0 {
+func (c *converter) Convert(_ context.Context, cfgMap *config.Map) error {
+	if len(c.properties) == 0 {
 		return nil
 	}
 
 	b := &bytes.Buffer{}
-	for _, property := range propsStr {
+	for _, property := range c.properties {
 		property = strings.TrimSpace(property)
 		b.WriteString(property)
 		b.WriteString("\n")

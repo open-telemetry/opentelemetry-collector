@@ -56,7 +56,7 @@ func TestNewExpandConverter(t *testing.T) {
 			require.NoError(t, err, "Unable to get config")
 
 			// Test that expanded configs are the same with the simple config with no env vars.
-			require.NoError(t, New()(context.Background(), cfgMap))
+			require.NoError(t, New().Convert(context.Background(), cfgMap))
 			assert.Equal(t, expectedCfgMap.ToStringMap(), cfgMap.ToStringMap())
 		})
 	}
@@ -75,7 +75,7 @@ func TestNewExpandConverter_EscapedMaps(t *testing.T) {
 				"recv": "$MAP_VALUE",
 			}},
 	)
-	require.NoError(t, New()(context.Background(), cfgMap))
+	require.NoError(t, New().Convert(context.Background(), cfgMap))
 
 	expectedMap := map[string]interface{}{
 		"test_string_map": map[string]interface{}{
@@ -112,6 +112,6 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 			// escaped $ alone
 			"recv.7": "$",
 		}}
-	require.NoError(t, New()(context.Background(), cfgMap))
+	require.NoError(t, New().Convert(context.Background(), cfgMap))
 	assert.Equal(t, expectedMap, cfgMap.ToStringMap())
 }

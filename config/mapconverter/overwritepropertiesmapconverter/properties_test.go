@@ -27,7 +27,7 @@ import (
 func TestOverwritePropertiesConverter_Empty(t *testing.T) {
 	pmp := New(nil)
 	cfgMap := config.NewMapFromStringMap(map[string]interface{}{"foo": "bar"})
-	assert.NoError(t, pmp(context.Background(), cfgMap))
+	assert.NoError(t, pmp.Convert(context.Background(), cfgMap))
 	assert.Equal(t, map[string]interface{}{"foo": "bar"}, cfgMap.ToStringMap())
 }
 
@@ -41,7 +41,7 @@ func TestOverwritePropertiesConverter(t *testing.T) {
 
 	pmp := New(props)
 	cfgMap := config.NewMap()
-	require.NoError(t, pmp(context.Background(), cfgMap))
+	require.NoError(t, pmp.Convert(context.Background(), cfgMap))
 	keys := cfgMap.AllKeys()
 	assert.Len(t, keys, 4)
 	assert.Equal(t, "2s", cfgMap.Get("processors::batch::timeout"))
@@ -53,5 +53,5 @@ func TestOverwritePropertiesConverter(t *testing.T) {
 func TestOverwritePropertiesConverter_InvalidProperty(t *testing.T) {
 	pmp := New([]string{"=2s"})
 	cfgMap := config.NewMap()
-	assert.Error(t, pmp(context.Background(), cfgMap))
+	assert.Error(t, pmp.Convert(context.Background(), cfgMap))
 }
