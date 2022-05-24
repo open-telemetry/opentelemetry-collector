@@ -111,10 +111,10 @@ The last step of the release process creates artifacts for the new version of th
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-05-11 | v0.51.0 | @bogdandrutu    |
 | 2022-05-25 | v0.52.0 | @codeboten      |
 | 2022-06-01 | v0.53.0 | @Aneurysm9      |
 | 2022-06-15 | v0.54.0 | @mx-psi         |
 | 2022-06-29 | v0.55.0 | @tigrannajaryan |
 | 2022-07-13 | v0.56.0 | @dmitryax       |
 | 2022-07-27 | v0.57.0 | @jpkrohling     |
+| 2022-08-10 | v0.58.0 | @bogdandrutu    |
