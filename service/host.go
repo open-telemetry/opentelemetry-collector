@@ -41,7 +41,7 @@ type serviceHost struct {
 // ReportFatalError is used to report to the host that the receiver encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
-// Deprecated: [0.51.0] Use ReportStatus instead (with an event of type component.FatalError)
+// Deprecated: [0.51.0] Use ReportStatus instead (with an event of type component.StatusFatalError)
 func (host *serviceHost) ReportFatalError(err error) {
 	host.asyncErrorChannel <- err
 }
@@ -72,13 +72,13 @@ func (host *serviceHost) RegisterStatusListener(options ...component.StatusListe
 	return host.statusNotifications.RegisterListener(options...)
 }
 
-// ReportStatus is an implementation of Host.ReportStatus. Note, that reporting a component.FatalError
+// ReportStatus is an implementation of Host.ReportStatus. Note, that reporting a component.StatusFatalError
 // and a non-nil error will cause the collector process to terminate with a non-zero exit code.
 func (host *serviceHost) ReportStatus(event *component.StatusEvent) {
 	if err := host.statusNotifications.ReportStatus(event); err != nil {
 		host.telemetry.Logger.Warn("Service failed to report status", zap.Error(err))
 	}
-	if event.Type() == component.FatalError && event.Err() != nil {
+	if event.Type() == component.StatusFatalError && event.Err() != nil {
 		host.asyncErrorChannel <- event.Err()
 	}
 }

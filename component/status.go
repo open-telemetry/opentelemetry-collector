@@ -25,14 +25,14 @@ import (
 type StatusEventType int
 
 const (
-	// OK indicates the producer of a status event is functioning normally
-	OK StatusEventType = iota
-	// RecoverableError is an error that can be retried, potentially with a successful outcome
-	RecoverableError
-	// PermanentError is an error that will be always returned if its source receives the same inputs
-	PermanentError
-	// FatalError is an error that cannot be recovered from and will cause early termination of the collector
-	FatalError
+	// StatusOK indicates the producer of a status event is functioning normally
+	StatusOK StatusEventType = iota
+	// StatusRecoverableError is an error that can be retried, potentially with a successful outcome
+	StatusRecoverableError
+	// StatusPermanentError is an error that will be always returned if its source receives the same inputs
+	StatusPermanentError
+	// StatusFatalError is an error that cannot be recovered from and will cause early termination of the collector
+	StatusFatalError
 )
 
 // StatusEvent is a status event produced by a component to communicate its status to registered listeners.
@@ -103,7 +103,7 @@ func WithTimestamp(timestamp time.Time) StatusEventOption {
 // to a Event of type: RecoverableError, PermanentError, or FatalError.
 func WithError(err error) StatusEventOption {
 	return func(o *StatusEvent) error {
-		if o.eventType == OK {
+		if o.eventType == StatusOK {
 			return errors.New("event with component.OK cannot have an error")
 		}
 		o.err = err

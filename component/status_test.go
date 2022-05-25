@@ -25,9 +25,9 @@ import (
 )
 
 func TestNewEventMinimal(t *testing.T) {
-	ev, err := NewStatusEvent(OK)
+	ev, err := NewStatusEvent(StatusOK)
 	assert.NoError(t, err)
-	assert.Equal(t, OK, ev.Type())
+	assert.Equal(t, StatusOK, ev.Type())
 	assert.NotEqual(t, 0, ev.Timestamp())
 	assert.Equal(t, config.ComponentID{}, ev.ComponentID())
 	assert.Nil(t, ev.Err())
@@ -38,14 +38,14 @@ func TestNewEventAllOptions(t *testing.T) {
 	expectedTimestamp := time.Now()
 	expectedErr := errors.New("expect this")
 	ev, err := NewStatusEvent(
-		RecoverableError,
+		StatusRecoverableError,
 		WithComponentKind(KindExporter),
 		WithComponentID(expectedComponentID),
 		WithTimestamp(expectedTimestamp),
 		WithError(expectedErr),
 	)
 	assert.NoError(t, err)
-	assert.Equal(t, RecoverableError, ev.Type())
+	assert.Equal(t, StatusRecoverableError, ev.Type())
 	assert.Equal(t, KindExporter, ev.ComponentKind())
 	assert.Equal(t, expectedComponentID, ev.ComponentID())
 	assert.Equal(t, expectedTimestamp, ev.Timestamp())
@@ -61,25 +61,25 @@ func TestNewEventErrorTypeMismatch(t *testing.T) {
 	}{
 		{
 			"eventType: OK with error returns error",
-			OK,
+			StatusOK,
 			errors.New("err"),
 			true,
 		},
 		{
 			"eventType: RecoverableError with error returns event",
-			RecoverableError,
+			StatusRecoverableError,
 			errors.New("err"),
 			false,
 		},
 		{
 			"eventType: PermanentError with error returns event",
-			PermanentError,
+			StatusPermanentError,
 			errors.New("err"),
 			false,
 		},
 		{
 			"eventType: FatalError with error returns event",
-			FatalError,
+			StatusFatalError,
 			errors.New("err"),
 			false,
 		},

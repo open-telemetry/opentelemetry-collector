@@ -9,7 +9,7 @@
 - The `component.Host` interface was modified to include a `ReportStatus` function (#5304)
 
 ### 🚩 Deprecations 🚩
-- `Host.ReportFatalError` is deprecated in favor of `Host.ReportStatus` where the status event reported is of type `component.FatalError` (#5304)
+- `Host.ReportFatalError` is deprecated in favor of `Host.ReportStatus` where the status event reported is of type `component.StatusFatalError` (#5304)
 
 ### 💡 Enhancements 💡
 - Adds status reporting, which allows status events to be sent between components (#5304)
