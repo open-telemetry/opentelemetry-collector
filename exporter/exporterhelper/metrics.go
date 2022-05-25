@@ -130,6 +130,9 @@ type metricsSenderWithObservability struct {
 func (mewo *metricsSenderWithObservability) send(req request) error {
 	req.setContext(mewo.obsrep.StartMetricsOp(req.context()))
 	err := mewo.nextSender.send(req)
+	if consumererror.IsPermanent(err) {
+		mewo.obsrep.recordMetricsDropped(req.context(), int64(req.count()))
+	}
 	mewo.obsrep.EndMetricsOp(req.context(), req.count(), err)
 	return err
 }

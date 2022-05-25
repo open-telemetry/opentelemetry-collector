@@ -129,6 +129,9 @@ type logsExporterWithObservability struct {
 func (lewo *logsExporterWithObservability) send(req request) error {
 	req.setContext(lewo.obsrep.StartLogsOp(req.context()))
 	err := lewo.nextSender.send(req)
+	if consumererror.IsPermanent(err) {
+		lewo.obsrep.recordLogsDropped(req.context(), int64(req.count()))
+	}
 	lewo.obsrep.EndLogsOp(req.context(), req.count(), err)
 	return err
 }

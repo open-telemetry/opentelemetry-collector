@@ -73,6 +73,24 @@ func checkExporterEnqueueFailedLogsStats(t *testing.T, insts *instruments, expor
 	checkValueForProducer(t, insts.registry, tagsForExporterView(exporter), logRecords, "exporter/enqueue_failed_log_records")
 }
 
+// checkExporterDroppedTracesStats checks that reported number of spans dropped match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func checkExporterDroppedTracesStats(t *testing.T, insts *instruments, exporter config.ComponentID, spans int64) {
+	checkValueForProducer(t, insts.registry, tagsForExporterView(exporter), spans, "exporter/dropped_spans")
+}
+
+// checkExporterDroppedMetricsStats checks that reported number of metric points dropped match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func checkExporterDroppedMetricsStats(t *testing.T, insts *instruments, exporter config.ComponentID, metricPoints int64) {
+	checkValueForProducer(t, insts.registry, tagsForExporterView(exporter), metricPoints, "exporter/dropped_metric_points")
+}
+
+// checkExporterDroppedLogsStats checks that reported number of log records dropped match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func checkExporterDroppedLogsStats(t *testing.T, insts *instruments, exporter config.ComponentID, logRecords int64) {
+	checkValueForProducer(t, insts.registry, tagsForExporterView(exporter), logRecords, "exporter/dropped_log_records")
+}
+
 // tagsForExporterView returns the tags that are needed for the exporter views.
 func tagsForExporterView(exporter config.ComponentID) []tag.Tag {
 	return []tag.Tag{

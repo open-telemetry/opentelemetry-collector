@@ -43,6 +43,9 @@ type instruments struct {
 	failedToEnqueueTraceSpans   *metric.Int64Cumulative
 	failedToEnqueueMetricPoints *metric.Int64Cumulative
 	failedToEnqueueLogRecords   *metric.Int64Cumulative
+	droppedTraceSpans           *metric.Int64Cumulative
+	droppedMetricPoints         *metric.Int64Cumulative
+	droppedLogRecords           *metric.Int64Cumulative
 }
 
 func newInstruments(registry *metric.Registry) *instruments {
@@ -61,15 +64,33 @@ func newInstruments(registry *metric.Registry) *instruments {
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
+	insts.droppedTraceSpans, _ = registry.AddInt64Cumulative(
+		obsmetrics.ExporterKey+"/dropped_spans",
+		metric.WithDescription("Number of spans that were dropped."),
+		metric.WithLabelKeys(obsmetrics.ExporterKey),
+		metric.WithUnit(metricdata.UnitDimensionless))
+
 	insts.failedToEnqueueMetricPoints, _ = registry.AddInt64Cumulative(
 		obsmetrics.ExporterKey+"/enqueue_failed_metric_points",
 		metric.WithDescription("Number of metric points failed to be added to the sending queue."),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
+	insts.droppedMetricPoints, _ = registry.AddInt64Cumulative(
+		obsmetrics.ExporterKey+"/dropped_metric_points",
+		metric.WithDescription("Number of metrics points that were dropped."),
+		metric.WithLabelKeys(obsmetrics.ExporterKey),
+		metric.WithUnit(metricdata.UnitDimensionless))
+
 	insts.failedToEnqueueLogRecords, _ = registry.AddInt64Cumulative(
 		obsmetrics.ExporterKey+"/enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue."),
+		metric.WithLabelKeys(obsmetrics.ExporterKey),
+		metric.WithUnit(metricdata.UnitDimensionless))
+
+	insts.droppedLogRecords, _ = registry.AddInt64Cumulative(
+		obsmetrics.ExporterKey+"/dropped_log_records",
+		metric.WithDescription("Number of log records failed that were dropped."),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
@@ -82,6 +103,9 @@ type obsExporter struct {
 	failedToEnqueueTraceSpansEntry   *metric.Int64CumulativeEntry
 	failedToEnqueueMetricPointsEntry *metric.Int64CumulativeEntry
 	failedToEnqueueLogRecordsEntry   *metric.Int64CumulativeEntry
+	droppedTraceSpansEntry           *metric.Int64CumulativeEntry
+	droppedMetricPointsEntry         *metric.Int64CumulativeEntry
+	droppedLogRecordsEntry           *metric.Int64CumulativeEntry
 }
 
 // newObsExporter creates a new observability exporter.
@@ -90,12 +114,18 @@ func newObsExporter(cfg obsreport.ExporterSettings, insts *instruments) *obsExpo
 	failedToEnqueueTraceSpansEntry, _ := insts.failedToEnqueueTraceSpans.GetEntry(labelValue)
 	failedToEnqueueMetricPointsEntry, _ := insts.failedToEnqueueMetricPoints.GetEntry(labelValue)
 	failedToEnqueueLogRecordsEntry, _ := insts.failedToEnqueueLogRecords.GetEntry(labelValue)
+	droppedTraceSpansEntry, _ := insts.droppedTraceSpans.GetEntry(labelValue)
+	droppedMetricPointsEntry, _ := insts.droppedMetricPoints.GetEntry(labelValue)
+	droppedLogRecordsEntry, _ := insts.droppedLogRecords.GetEntry(labelValue)
 
 	return &obsExporter{
 		Exporter:                         obsreport.NewExporter(cfg),
 		failedToEnqueueTraceSpansEntry:   failedToEnqueueTraceSpansEntry,
 		failedToEnqueueMetricPointsEntry: failedToEnqueueMetricPointsEntry,
 		failedToEnqueueLogRecordsEntry:   failedToEnqueueLogRecordsEntry,
+		droppedTraceSpansEntry:           droppedTraceSpansEntry,
+		droppedMetricPointsEntry:         droppedMetricPointsEntry,
+		droppedLogRecordsEntry:           droppedLogRecordsEntry,
 	}
 }
 
@@ -104,12 +134,27 @@ func (eor *obsExporter) recordTracesEnqueueFailure(_ context.Context, numSpans i
 	eor.failedToEnqueueTraceSpansEntry.Inc(numSpans)
 }
 
+// recordTracesDropped records number of spans that were dropped.
+func (eor *obsExporter) recordTracesDropped(_ context.Context, numSpans int64) {
+	eor.droppedTraceSpansEntry.Inc(numSpans)
+}
+
 // recordMetricsEnqueueFailure records number of metric points that failed to be added to the sending queue.
 func (eor *obsExporter) recordMetricsEnqueueFailure(_ context.Context, numMetricPoints int64) {
 	eor.failedToEnqueueMetricPointsEntry.Inc(numMetricPoints)
 }
 
+// recordTracesDropped records number of spans that were dropped.
+func (eor *obsExporter) recordMetricsDropped(_ context.Context, numMetricPoints int64) {
+	eor.droppedMetricPointsEntry.Inc(numMetricPoints)
+}
+
 // recordLogsEnqueueFailure records number of log records that failed to be added to the sending queue.
 func (eor *obsExporter) recordLogsEnqueueFailure(_ context.Context, numLogRecords int64) {
 	eor.failedToEnqueueLogRecordsEntry.Inc(numLogRecords)
+}
+
+// recordLogsDropped records number of log records that were dropped.
+func (eor *obsExporter) recordLogsDropped(_ context.Context, numLogRecords int64) {
+	eor.droppedLogRecordsEntry.Inc(numLogRecords)
 }

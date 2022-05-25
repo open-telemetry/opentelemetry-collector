@@ -10,6 +10,8 @@
 
 ### 💡 Enhancements 💡
 
+- Record dropped telemetry.
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.52.0 Beta

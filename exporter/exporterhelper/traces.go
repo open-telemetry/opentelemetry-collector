@@ -132,6 +132,9 @@ func (tewo *tracesExporterWithObservability) send(req request) error {
 	req.setContext(tewo.obsrep.StartTracesOp(req.context()))
 	// Forward the data to the next consumer (this pusher is the next).
 	err := tewo.nextSender.send(req)
+	if consumererror.IsPermanent(err) {
+		tewo.obsrep.recordTracesDropped(req.context(), int64(req.count()))
+	}
 	tewo.obsrep.EndTracesOp(req.context(), req.count(), err)
 	return err
 }

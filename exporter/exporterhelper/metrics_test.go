@@ -147,6 +147,21 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	checkExporterEnqueueFailedMetricsStats(t, globalInstruments, fakeMetricsExporterName, int64(10))
 }
 
+func TestMetricsExporter_WithPermanentError(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	wantErr := consumererror.NewPermanent(errors.New("really permanent error"))
+	te, err := NewMetricsExporter(&fakeMetricsExporterConfig, tt.ToExporterCreateSettings(), newPushMetricsData(wantErr))
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// errors are checked in the checkExporterDroppedMetricsStats function below.
+	_ = te.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetric())
+	checkExporterDroppedMetricsStats(t, globalInstruments, fakeMetricsExporterName, 2)
+}
+
 func TestMetricsExporter_WithSpan(t *testing.T) {
 	set := componenttest.NewNopExporterCreateSettings()
 	sr := new(tracetest.SpanRecorder)
