@@ -355,4 +355,4 @@ There are some known issues and limitations that we hope to address while iterat
 - Handling array-typed attributes
 - Working on a array of points, rather than a single point
 - Metric alignment - for example defining an expression on two metrics, that may not be at the same timestamp
-- The collector has separate pipelines per signal - while the query language could apply cross-signal, we will need
+- The collector has separate pipelines per signal - while the query language could apply cross-signal, we will need to remain single-signal for now
