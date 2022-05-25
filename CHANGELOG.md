@@ -4,6 +4,16 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.52.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove `configunmarshaler.Unmarshaler` interface, per deprecation comment (#5348)
 - Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
 - Remove deprecated pdata getters and setters of primitive slice values: `Value.BytesVal`, `Value.SetBytesVal`, 
@@ -25,8 +35,6 @@
 
 - Update OTLP to v0.17.0 (#5335)
   - Add optional min/max fields to histograms (#5399)
-
-### 🧰 Bug fixes 🧰
 
 ## v0.51.0 Beta
 
