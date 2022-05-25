@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated config.MapConverterFunc. (#5419)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
