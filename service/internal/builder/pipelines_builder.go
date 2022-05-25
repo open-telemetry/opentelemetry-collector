@@ -61,7 +61,7 @@ func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Ho
 		for i := len(bp.processors) - 1; i >= 0; i-- {
 			proc := bp.processors[i]
 			procID := bp.processorIDLookup[proc]
-			hostWrapper := components.NewHostWrapper(host, procID, bp.logger)
+			hostWrapper := components.NewHostWrapper(host, component.KindProcessor, procID, bp.logger)
 			if err := proc.Start(ctx, hostWrapper); err != nil {
 				return err
 			}

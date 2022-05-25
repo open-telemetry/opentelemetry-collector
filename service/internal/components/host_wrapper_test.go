@@ -21,13 +21,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 )
 
 func Test_newHostWrapper(t *testing.T) {
-	hw := NewHostWrapper(componenttest.NewNopHost(), config.NewComponentID("nop"), zap.NewNop())
+	hw := NewHostWrapper(componenttest.NewNopHost(), component.KindExporter, config.NewComponentID("nop"), zap.NewNop())
 	hw.ReportFatalError(errors.New("test error"))
 	ev, err := status.NewEvent(status.OK)
 	assert.NoError(t, err)

@@ -43,7 +43,8 @@ type Event struct {
 	eventType   EventType
 	timestamp   time.Time
 	componentID config.ComponentID
-	err         error
+	//componentKind component.Kind
+	err error
 }
 
 // Type returns the event type
@@ -76,6 +77,14 @@ func WithComponentID(componentID config.ComponentID) EventOption {
 		return nil
 	}
 }
+
+// WithComponentKind sets the component kind that generated the status.Event
+// func WithComponentKind(componentKind component.Kind) EventOption {
+// 	return func(o *Event) error {
+// 		o.componentKind = componentKind
+// 		return nil
+// 	}
+// }
 
 // WithTimestamp sets the timestamp, expected in nanos, for a status.Event
 func WithTimestamp(timestamp time.Time) EventOption {

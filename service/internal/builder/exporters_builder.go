@@ -40,7 +40,7 @@ func (bexp *builtExporter) Start(ctx context.Context, host component.Host) error
 	var errs error
 	bexp.logger.Info("Exporter is starting...")
 	for _, exporter := range bexp.expByDataType {
-		errs = multierr.Append(errs, exporter.Start(ctx, components.NewHostWrapper(host, bexp.componentID, bexp.logger)))
+		errs = multierr.Append(errs, exporter.Start(ctx, components.NewHostWrapper(host, component.KindExporter, bexp.componentID, bexp.logger)))
 	}
 
 	if errs != nil {

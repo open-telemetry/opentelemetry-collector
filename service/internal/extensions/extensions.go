@@ -37,7 +37,7 @@ type builtExtension struct {
 // Start the extension.
 func (ext *builtExtension) Start(ctx context.Context, host component.Host) error {
 	ext.logger.Info("Extension is starting...")
-	if err := ext.extension.Start(ctx, components.NewHostWrapper(host, ext.componentID, ext.logger)); err != nil {
+	if err := ext.extension.Start(ctx, components.NewHostWrapper(host, component.KindExtension, ext.componentID, ext.logger)); err != nil {
 		return err
 	}
 	ext.logger.Info("Extension started.")

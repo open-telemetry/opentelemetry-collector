@@ -42,7 +42,7 @@ type builtReceiver struct {
 
 // Start starts the receiver.
 func (rcv *builtReceiver) Start(ctx context.Context, host component.Host) error {
-	return rcv.receiver.Start(ctx, components.NewHostWrapper(host, rcv.componentID, rcv.logger))
+	return rcv.receiver.Start(ctx, components.NewHostWrapper(host, component.KindReceiver, rcv.componentID, rcv.logger))
 }
 
 // Shutdown stops the receiver.

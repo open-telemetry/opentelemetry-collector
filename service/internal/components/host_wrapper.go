@@ -27,13 +27,15 @@ import (
 // hostWrapper adds behavior on top of the component.Host being passed when starting the built components.
 type hostWrapper struct {
 	component.Host
+	component.Kind
 	config.ComponentID
 	*zap.Logger
 }
 
-func NewHostWrapper(host component.Host, componentID config.ComponentID, logger *zap.Logger) component.Host {
+func NewHostWrapper(host component.Host, componentKind component.Kind, componentID config.ComponentID, logger *zap.Logger) component.Host {
 	return &hostWrapper{
 		host,
+		componentKind,
 		componentID,
 		logger,
 	}
