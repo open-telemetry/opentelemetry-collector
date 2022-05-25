@@ -40,11 +40,11 @@ const (
 // is in an error state (i.e. Type: component.RecoverableError). An error status may optionally
 // include an error object to provide additional insight to registered listeners.
 type StatusEvent struct {
-	eventType   StatusEventType
-	timestamp   time.Time
-	componentID config.ComponentID
-	//componentKind component.Kind
-	err error
+	eventType     StatusEventType
+	timestamp     time.Time
+	componentKind Kind
+	componentID   config.ComponentID
+	err           error
 }
 
 // Type returns the event type
@@ -55,6 +55,11 @@ func (ev *StatusEvent) Type() StatusEventType {
 // Timestamp returns the time of the event in nanos
 func (ev *StatusEvent) Timestamp() time.Time {
 	return ev.timestamp
+}
+
+// ComponentKind returns the kind of the component that generated the StatusEvent
+func (ev *StatusEvent) ComponentKind() Kind {
+	return ev.componentKind
 }
 
 // ComponentID returns the ID of the component that generated the StatusEvent
@@ -79,12 +84,12 @@ func WithComponentID(componentID config.ComponentID) StatusEventOption {
 }
 
 // WithComponentKind sets the component kind that generated the StatusEvent
-// func WithComponentKind(componentKind component.Kind) EventOption {
-// 	return func(o *Event) error {
-// 		o.componentKind = componentKind
-// 		return nil
-// 	}
-// }
+func WithComponentKind(componentKind Kind) StatusEventOption {
+	return func(o *StatusEvent) error {
+		o.componentKind = componentKind
+		return nil
+	}
+}
 
 // WithTimestamp sets the timestamp, expected in nanos, for a StatusEvent
 func WithTimestamp(timestamp time.Time) StatusEventOption {

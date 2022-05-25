@@ -26,7 +26,7 @@ import (
 // hostWrapper adds behavior on top of the component.Host being passed when starting the built components.
 type hostWrapper struct {
 	component.Host
-	component.Kind
+	ComponentKind component.Kind
 	config.ComponentID
 	*zap.Logger
 }
@@ -50,9 +50,10 @@ var emptyComponentID = config.ComponentID{}
 
 func (hw *hostWrapper) ReportStatus(event *component.StatusEvent) {
 	// sets default component id
-	if event.ComponentID() == emptyComponentID {
+	if event.ComponentID() == emptyComponentID || event.ComponentKind() == 0 {
 		event, _ = component.NewStatusEvent(
 			event.Type(),
+			component.WithComponentKind(hw.ComponentKind),
 			component.WithComponentID(hw.ComponentID),
 			component.WithTimestamp(event.Timestamp()),
 			component.WithError(event.Err()),

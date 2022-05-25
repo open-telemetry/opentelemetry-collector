@@ -39,12 +39,14 @@ func TestNewEventAllOptions(t *testing.T) {
 	expectedErr := errors.New("expect this")
 	ev, err := NewStatusEvent(
 		RecoverableError,
+		WithComponentKind(KindExporter),
 		WithComponentID(expectedComponentID),
 		WithTimestamp(expectedTimestamp),
 		WithError(expectedErr),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, RecoverableError, ev.Type())
+	assert.Equal(t, KindExporter, ev.ComponentKind())
 	assert.Equal(t, expectedComponentID, ev.ComponentID())
 	assert.Equal(t, expectedTimestamp, ev.Timestamp())
 	assert.Equal(t, expectedErr, ev.Err())
