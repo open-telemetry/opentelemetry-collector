@@ -25,7 +25,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
@@ -100,9 +99,9 @@ func TestService_ReportStatus(t *testing.T) {
 
 	var readyHandlerCalled, notReadyHandlerCalled, statusEventHandlerCalled bool
 
-	var statusEvent *status.Event
+	var statusEvent *component.StatusEvent
 
-	statusEventHandler := func(ev *status.Event) error {
+	statusEventHandler := func(ev *component.StatusEvent) error {
 		statusEvent = ev
 		statusEventHandlerCalled = true
 		return nil
@@ -119,9 +118,9 @@ func TestService_ReportStatus(t *testing.T) {
 	}
 
 	unregister := host.RegisterStatusListener(
-		status.WithStatusEventHandler(statusEventHandler),
-		status.WithPipelineReadyHandler(readyHandler),
-		status.WithPipelineNotReadyHandler(notReadyHandler),
+		component.WithStatusEventHandler(statusEventHandler),
+		component.WithPipelineReadyHandler(readyHandler),
+		component.WithPipelineNotReadyHandler(notReadyHandler),
 	)
 
 	assert.False(t, statusEventHandlerCalled)
@@ -138,10 +137,10 @@ func TestService_ReportStatus(t *testing.T) {
 	expectedComponentID := config.NewComponentID("nop")
 	expectedError := errors.New("an error")
 
-	ev, err := status.NewEvent(
-		status.RecoverableError,
-		status.WithComponentID(expectedComponentID),
-		status.WithError(expectedError),
+	ev, err := component.NewStatusEvent(
+		component.RecoverableError,
+		component.WithComponentID(expectedComponentID),
+		component.WithError(expectedError),
 	)
 	assert.NoError(t, err)
 	host.ReportStatus(ev)
@@ -161,13 +160,13 @@ func TestService_ReportStatusWithBuggyHandler(t *testing.T) {
 
 	var statusEventHandlerCalled bool
 
-	statusEventHandler := func(ev *status.Event) error {
+	statusEventHandler := func(ev *component.StatusEvent) error {
 		statusEventHandlerCalled = true
 		return errors.New("an error")
 	}
 
 	unregister := host.RegisterStatusListener(
-		status.WithStatusEventHandler(statusEventHandler),
+		component.WithStatusEventHandler(statusEventHandler),
 	)
 
 	assert.False(t, statusEventHandlerCalled)
@@ -177,9 +176,9 @@ func TestService_ReportStatusWithBuggyHandler(t *testing.T) {
 	})
 
 	// ReportStatus handles errors in handlers (by logging) and does not surface them back to callers
-	ev, err := status.NewEvent(
-		status.OK,
-		status.WithComponentID(config.NewComponentID("nop")),
+	ev, err := component.NewStatusEvent(
+		component.OK,
+		component.WithComponentID(config.NewComponentID("nop")),
 	)
 	assert.NoError(t, err)
 	host.ReportStatus(ev)

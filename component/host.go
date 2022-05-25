@@ -15,7 +15,6 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
-	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -28,7 +27,7 @@ type Host interface {
 	//
 	// ReportFatalError should be called by the component anytime after Component.Start() ends and
 	// before Component.Shutdown() begins.
-	// Deprecated: [0.51.0] Use ReportStatus instead (with an event of type status.FatalError)
+	// Deprecated: [0.51.0] Use ReportStatus instead (with an event of type component.FatalError)
 	ReportFatalError(err error)
 
 	// GetFactory of the specified kind. Returns the factory for a component type.
@@ -69,10 +68,10 @@ type Host interface {
 	// ReportStatus can be used by a component to communicate its status to registered status
 	// listeners. Components can use this function to indicate that they are functioning properly,
 	// or are in an error state.
-	ReportStatus(event *status.Event)
+	ReportStatus(event *StatusEvent)
 
 	// RegisterStatusListener allows interested components to register status listeners to receive
 	// events reported by via the ReportStatus function. Callbacks can also be provided to be
 	// notified of pipeline changes (e.g. ready and / or not ready).
-	RegisterStatusListener(options ...status.ListenerOption) status.UnregisterFunc
+	RegisterStatusListener(options ...StatusListenerOption) StatusUnregisterFunc
 }

@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/builder"
-	"go.opentelemetry.io/collector/service/internal/components/status"
+	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/extensions"
 )
 
@@ -44,7 +44,7 @@ func newService(set *svcSettings) (*service, error) {
 			factories:           set.Factories,
 			asyncErrorChannel:   set.AsyncErrorChannel,
 			telemetry:           set.Telemetry,
-			statusNotifications: status.NewNotifications(),
+			statusNotifications: components.NewNotifications(),
 		},
 	}
 

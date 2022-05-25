@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package status
+package component
 
 import (
 	"errors"
@@ -25,7 +25,7 @@ import (
 )
 
 func TestNewEventMinimal(t *testing.T) {
-	ev, err := NewEvent(OK)
+	ev, err := NewStatusEvent(OK)
 	assert.NoError(t, err)
 	assert.Equal(t, OK, ev.Type())
 	assert.NotEqual(t, 0, ev.Timestamp())
@@ -37,7 +37,7 @@ func TestNewEventAllOptions(t *testing.T) {
 	expectedComponentID := config.NewComponentID("nop")
 	expectedTimestamp := time.Now()
 	expectedErr := errors.New("expect this")
-	ev, err := NewEvent(
+	ev, err := NewStatusEvent(
 		RecoverableError,
 		WithComponentID(expectedComponentID),
 		WithTimestamp(expectedTimestamp),
@@ -53,7 +53,7 @@ func TestNewEventAllOptions(t *testing.T) {
 func TestNewEventErrorTypeMismatch(t *testing.T) {
 	testCases := []struct {
 		name        string
-		eventType   EventType
+		eventType   StatusEventType
 		err         error
 		expectError bool
 	}{
@@ -85,7 +85,7 @@ func TestNewEventErrorTypeMismatch(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ev, err := NewEvent(tc.eventType, WithError(tc.err))
+			ev, err := NewStatusEvent(tc.eventType, WithError(tc.err))
 			if tc.expectError {
 				assert.Nil(t, ev)
 				assert.Error(t, err)

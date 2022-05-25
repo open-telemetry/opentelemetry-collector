@@ -23,14 +23,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 )
 
 func Test_newHostWrapper(t *testing.T) {
 	hw := NewHostWrapper(componenttest.NewNopHost(), component.KindExporter, config.NewComponentID("nop"), zap.NewNop())
 	hw.ReportFatalError(errors.New("test error"))
-	ev, err := status.NewEvent(status.OK)
+	ev, err := component.NewStatusEvent(component.OK)
 	assert.NoError(t, err)
 	hw.ReportStatus(ev)
 }

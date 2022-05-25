@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package status // import "go.opentelemetry.io/collector/service/internal/components/status"
+package components // import "go.opentelemetry.io/collector/service/internal/components"
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ import (
 
 	"go.uber.org/multierr"
 
-	"go.opentelemetry.io/collector/component/status"
+	"go.opentelemetry.io/collector/component"
 )
 
 var errRegistrationNotFound = errors.New("registration not found")
@@ -33,13 +33,13 @@ var errRegistrationNotFound = errors.New("registration not found")
 // function.
 type Notifications struct {
 	mu        sync.RWMutex
-	listeners []*status.Listener
+	listeners []*component.StatusListener
 }
 
 // NewNotifications returns a pointer to a newly initialized Notifications struct
 func NewNotifications() *Notifications {
 	return &Notifications{
-		listeners: []*status.Listener{},
+		listeners: []*component.StatusListener{},
 	}
 }
 
@@ -57,8 +57,8 @@ func (n *Notifications) Shutdown() error {
 // RegisterListener registers a component to listen to the events indicated by the passed in
 // ListenerOptions. It returns an UnregisterFunc, which should be called by the registering
 // component during Shutdown.
-func (n *Notifications) RegisterListener(options ...status.ListenerOption) status.UnregisterFunc {
-	l := status.NewListener(options...)
+func (n *Notifications) RegisterListener(options ...component.StatusListenerOption) component.StatusUnregisterFunc {
+	l := component.NewStatusListener(options...)
 
 	n.mu.Lock()
 	n.listeners = append(n.listeners, l)
@@ -70,8 +70,8 @@ func (n *Notifications) RegisterListener(options ...status.ListenerOption) statu
 }
 
 // ReportStatus notifies all registered listeners of a StatusEvent. A StatusEvent can indicate that
-// a component is functioning normally (status.EventOK) or is in an error state (status.EventError)
-func (n *Notifications) ReportStatus(event *status.Event) (errs error) {
+// a component is functioning normally (component.StatusEventOK) or is in an error state (component.StatusEventError)
+func (n *Notifications) ReportStatus(event *component.StatusEvent) (errs error) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
@@ -119,7 +119,7 @@ func (n *Notifications) PipelineNotReady() (errs error) {
 	return errs
 }
 
-func (n *Notifications) unregisterListener(l *status.Listener) error {
+func (n *Notifications) unregisterListener(l *component.StatusListener) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 

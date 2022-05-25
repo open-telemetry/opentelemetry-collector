@@ -18,10 +18,9 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/builder"
-	internalstatus "go.opentelemetry.io/collector/service/internal/components/status"
+	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/extensions"
 )
 
@@ -31,7 +30,7 @@ type serviceHost struct {
 	asyncErrorChannel   chan error
 	factories           component.Factories
 	telemetry           component.TelemetrySettings
-	statusNotifications *internalstatus.Notifications
+	statusNotifications *components.Notifications
 
 	builtExporters  builder.Exporters
 	builtReceivers  builder.Receivers
@@ -42,7 +41,7 @@ type serviceHost struct {
 // ReportFatalError is used to report to the host that the receiver encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
-// Deprecated: [0.51.0] Use ReportStatus instead (with an event of type status.FatalError)
+// Deprecated: [0.51.0] Use ReportStatus instead (with an event of type component.FatalError)
 func (host *serviceHost) ReportFatalError(err error) {
 	host.asyncErrorChannel <- err
 }
@@ -69,17 +68,17 @@ func (host *serviceHost) GetExporters() map[config.DataType]map[config.Component
 	return host.builtExporters.ToMapByDataType()
 }
 
-func (host *serviceHost) RegisterStatusListener(options ...status.ListenerOption) status.UnregisterFunc {
+func (host *serviceHost) RegisterStatusListener(options ...component.StatusListenerOption) component.StatusUnregisterFunc {
 	return host.statusNotifications.RegisterListener(options...)
 }
 
-// ReportStatus is an implementation of Host.ReportStatus. Note, that reporting a status.FatalError
+// ReportStatus is an implementation of Host.ReportStatus. Note, that reporting a component.FatalError
 // and a non-nil error will cause the collector process to terminate with a non-zero exit code.
-func (host *serviceHost) ReportStatus(event *status.Event) {
+func (host *serviceHost) ReportStatus(event *component.StatusEvent) {
 	if err := host.statusNotifications.ReportStatus(event); err != nil {
 		host.telemetry.Logger.Warn("Service failed to report status", zap.Error(err))
 	}
-	if event.Type() == status.FatalError && event.Err() != nil {
+	if event.Type() == component.FatalError && event.Err() != nil {
 		host.asyncErrorChannel <- event.Err()
 	}
 }
