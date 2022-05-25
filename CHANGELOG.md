@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated `componenterror` package. (#5420)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
