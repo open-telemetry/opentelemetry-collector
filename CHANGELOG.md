@@ -10,7 +10,7 @@
 
 ### 💡 Enhancements 💡
 
-- Record dropped telemetry.
+- Record dropped telemetry. (#5427)
 
 ### 🧰 Bug fixes 🧰
 
