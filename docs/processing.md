@@ -92,7 +92,7 @@ The processors implementing this use case are `k8sattributesprocessor`, `resourc
 
 When looking at the use cases, there are certain common features for telemetry mutation and metric generation.
 
-- Identify the type of signal (span, metric, log, resource), or apply to all signals
+- Identify the type of signal (`span`, `metric`, `log`).
 - Navigate to a path within the telemetry to operate on it
 - Define an operation, and possibly operation arguments
 
@@ -105,7 +105,7 @@ which is roughly a 1:1 mapping of the [OTLP protocol](https://github.com/open-te
 This data can be navigated using field expressions, which are fields within the protocol separated by dots. For example,
 the status message of a span is `status.message`. A map lookup can include the key as a string, for example `attributes["http.status_code"]`.
 
-Operations can be scoped to the type of a signal (`span`, `metric`, `log`), with all of the flattened points of that
+Operations are scoped to the type of a signal (`span`, `metric`, `log`), with all of the flattened points of that
 signal being part of a query space. Virtual fields are added to access data from a higher level before flattening, for
 `resource`, `library_info`. For metrics, the structure presented for processing is actual data points, e.g. `NumberDataPoint`, 
 `HistogramDataPoint`, with the information from higher levels like `Metric` or the data type available as virtual fields.
@@ -142,59 +142,90 @@ allowing the operation to mutate telemetry as needed.
 
 ### Examples
 
-These examples contain both a SQL-like declarative language and Python-like imperative language for comparison during
-the design phase. The Python-like language currently assumes statements can only be applied to one signal.
+These examples contain a SQL-like declarative language.  Applied statements interact with only one signal, but statements can be declared across multiple signals.
 
 Remove a forbidden attribute such as `http.request.header.authorization` from spans only
 
-`delete(attributes["http.request.header.authorization"]) from traces`  
-`delete(attributes["http.request.header.authorization"])`  
+```
+traces:
+  delete(attributes["http.request.header.authorization"])
+metrics:
+  delete(attributes["http.request.header.authorization"])
+logs:
+  delete(attributes["http.request.header.authorization"])
+```
 
 Remove all attributes except for some
 
-`keep_keys(attributes, "http.method", "http.status_code") from metrics`  
-`keep_keys(attributes, "http.method", "http.status_code")`  
+```
+traces:
+  keep_keys(attributes, "http.method", "http.status_code")
+metrics:
+  keep_keys(attributes, "http.method", "http.status_code")
+logs:
+  keep_keys(attributes, "http.method", "http.status_code")
+```
 
 Reduce cardinality of an attribute
 
-`replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}") from traces`  
-`replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`  
+```
+traces:
+  replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
+```
 
 Reduce cardinality of a span name
 
-`replace_match(name, "GET /user/*/list/*", "GET /user/{userId}/list/{listId}") from traces`  
-`replace_match(name, "GET /user/*/list/*", "GET /user/{userId}/list/{listId}")`  
+```
+traces:
+  replace_match(name, "GET /user/*/list/*", "GET /user/{userId}/list/{listId}")
+``` 
 
 Reduce cardinality of any matching attribute
 
-`replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}") from traces`  
-`replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`  
+```
+traces:
+  replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
+``` 
 
 Decrease the size of the telemetry payload by removing large resource attributes
 
-`delete(resource.attributes["process.command_line"]) from traces`  
-`delete(resource.attributes["process.command_line"])`  
+```
+traces:
+  delete(resource.attributes["process.command_line"])
+metrics:
+  delete(resource.attributes["process.command_line"])
+logs:
+  delete(resource.attributes["process.command_line"])
+```
 
 Filtering out signals such as by removing all metrics with a `http.target` of `/health`
 
-`drop() where attributes["http.target"] = "/health" from metrics`  
-`if attributes["http.target"] = "/health": drop()`  
+```
+metrics:
+  drop() where attributes["http.target"] = "/health"
+```
 
 Attach information from resource into telemetry, for example adding certain resource fields as metric attributes
 
-`set(attributes["k8s_pod"], resource.attributes["k8s.pod.name"]) from metrics`  
-`attributes["k8s_pod"] = resource.attributes["k8s.pod.name"]`  
+```
+metrics:
+  set(attributes["k8s_pod"], resource.attributes["k8s.pod.name"])
+```
 
 Group spans by trace ID
 
-`group_by(trace_id, 2m) from traces`  
-`group_by(trace_id, 2m)`  
+```
+traces:
+  group_by(trace_id, 2m)
+```
 
 Create utilization metric from base metrics. Because navigation expressions only operate on a single piece of telemetry,
 helper functions for reading values from other metrics need to be provided.
 
-`create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit") from metric`  
-`create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit")`  
+```
+metrics:
+  create_gauge("pod.cpu.utilized", read_gauge("pod.cpu.usage") / read_gauge("node.cpu.limit")
+```
 
 A lot of processing. Queries are executed in order. While initially performance may degrade compared to more specialized
 processors, the expectation is that over time, the query processor's engine would improve to be able to apply optimizations 
@@ -208,15 +239,26 @@ exporters:
   otlp:
 
 processors:
-  query:
+  transform:
     # Assuming group_by is defined in a contrib extension module, not baked into the "query" processor
     extensions: [group_by]
-    expressions:
-      - drop() where attributes["http.target"] = "/health"
-      - delete(attributes["http.request.header.authorization"])
-      - replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])
-      - set(attributes["k8s_pod"], resource.attributes["k8s.pod.name"]) from metric
-      - group_by(trace_id, 2m) from span
+    traces:
+      queries:
+        - drop() where attributes["http.target"] = "/health"
+        - delete(attributes["http.request.header.authorization"])
+        - replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])
+        - group_by(trace_id, 2m)
+    metrics:
+      queries:
+        - drop() where attributes["http.target"] = "/health"
+        - delete(attributes["http.request.header.authorization"])
+        - replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])
+        - set(attributes["k8s_pod"], resource.attributes["k8s.pod.name"])
+    logs:
+      queries:
+        - drop() where attributes["http.target"] = "/health"
+        - delete(attributes["http.request.header.authorization"])
+        - replace_wildcards("/user/*/list/*", "/user/{userId}/list/{listId}", attributes["http.target"])
 
 pipelines:
   - receivers: [otlp]
@@ -313,5 +355,4 @@ There are some known issues and limitations that we hope to address while iterat
 - Handling array-typed attributes
 - Working on a array of points, rather than a single point
 - Metric alignment - for example defining an expression on two metrics, that may not be at the same timestamp
-- The collector has separate pipelines per signal - while the query language could apply cross-signal, we will need
-to remain single-signal for now
+- The collector has separate pipelines per signal - while the query language could apply cross-signal, we will need to remain single-signal for now
