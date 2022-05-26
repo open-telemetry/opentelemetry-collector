@@ -159,8 +159,8 @@ func TestLogsExporter_WithPermanentError(t *testing.T) {
 	require.NotNil(t, te)
 
 	// errors are checked in the checkExporterDroppedLogsStats function below.
-	_ = te.ConsumeLogs(context.Background(), testdata.GenerateLogsTwoLogRecordsSameResourceOneDifferent())
-	checkExporterDroppedLogsStats(t, globalInstruments, fakeLogsExporterName, 2)
+	_ = te.ConsumeLogs(context.Background(), testdata.GenerateLogsOneLogRecord())
+	checkExporterDroppedLogsStats(t, globalInstruments, fakeLogsExporterName, 1)
 }
 
 func TestLogsExporter_WithSpan(t *testing.T) {
