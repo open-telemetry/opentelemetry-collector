@@ -37,7 +37,12 @@
 ### 💡 Enhancements 💡
 
 - Update OTLP to v0.17.0 (#5335)
-  - Add optional min/max fields to histograms (#5399)
+- Add optional min/max fields to histograms (#5399)
+- User-defined Resource attributes can be specified under `service.telemetry.resource`
+  configuration key and will be included as metric lables for own telemetry.
+  If `service.instance.id` is not specified it will be auto-generated. Previously
+  `service.instance.id` was always auto-generated, so the default of the new
+  behavior matches the old behavior. (#5402)
 
 ## v0.51.0 Beta
 

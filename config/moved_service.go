@@ -38,6 +38,13 @@ type Service struct {
 type ServiceTelemetry struct {
 	Logs    ServiceTelemetryLogs    `mapstructure:"logs"`
 	Metrics ServiceTelemetryMetrics `mapstructure:"metrics"`
+
+	// Resource specifies user-defined attributes to include with all emitted telemetry.
+	// For metrics the attributes become Prometheus labels.
+	// Note that some attributes are added automatically (e.g. service.version) even
+	// if they are not specified here. In order to suppress such attributes the
+	// attribute must be specified in this map with null YAML value (nil string pointer).
+	Resource map[string]*string `mapstructure:"resource"`
 }
 
 // ServiceTelemetryLogs defines the configurable settings for service telemetry logs.

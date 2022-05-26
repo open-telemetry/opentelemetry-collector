@@ -35,9 +35,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/mapconverter/overwritepropertiesmapconverter"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -178,7 +178,111 @@ func TestCollectorFailedShutdown(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
-func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter) {
+// mapConverter applies extraMap of config settings. Useful for overriding the config
+// for testing purposes. Keys must use "::" delimiter between levels.
+type mapConverter struct {
+	extraMap map[string]*string
+}
+
+func (m mapConverter) Convert(ctx context.Context, cfgMap *config.Map) error {
+	for k, v := range m.extraMap {
+		cfgMap.Set(k, v)
+	}
+	return nil
+}
+
+type labelState int
+
+const (
+	labelNotPresent labelState = iota
+	labelSpecificValue
+	labelAnyValue
+)
+
+type labelValue struct {
+	label string
+	state labelState
+}
+
+type ownMetricsTestCase struct {
+	name                string
+	userDefinedResource map[string]*string
+	expectedLabels      map[string]labelValue
+}
+
+var testResourceAttrValue = "resource_attr_test_value"
+var testInstanceID = "test_instance_id"
+var testServiceVersion = "2022-05-20"
+
+var ownMetricsTestCases = []ownMetricsTestCase{
+	{
+		name:                "no resource",
+		userDefinedResource: nil,
+		// All labels added to all collector metrics by default are listed below.
+		// These labels are hard coded here in order to avoid inadvertent changes:
+		// at this point changing labels should be treated as a breaking changing
+		// and requires a good justification. The reason is that changes to metric
+		// names or labels can break alerting, dashboards, etc that are used to
+		// monitor the Collector in production deployments.
+		expectedLabels: map[string]labelValue{
+			"service_instance_id": {state: labelAnyValue},
+			"service_version":     {label: version.Version, state: labelSpecificValue},
+		},
+	},
+	{
+		name: "resource with custom attr",
+		userDefinedResource: map[string]*string{
+			"custom_resource_attr": &testResourceAttrValue,
+		},
+		expectedLabels: map[string]labelValue{
+			"service_instance_id":  {state: labelAnyValue},
+			"service_version":      {label: version.Version, state: labelSpecificValue},
+			"custom_resource_attr": {label: "resource_attr_test_value", state: labelSpecificValue},
+		},
+	},
+	{
+		name: "override service.instance.id",
+		userDefinedResource: map[string]*string{
+			"service.instance.id": &testInstanceID,
+		},
+		expectedLabels: map[string]labelValue{
+			"service_instance_id": {label: "test_instance_id", state: labelSpecificValue},
+			"service_version":     {label: version.Version, state: labelSpecificValue},
+		},
+	},
+	{
+		name: "suppress service.instance.id",
+		userDefinedResource: map[string]*string{
+			"service.instance.id": nil, // nil value in config is used to suppress attributes.
+		},
+		expectedLabels: map[string]labelValue{
+			"service_instance_id": {state: labelNotPresent},
+			"service_version":     {label: version.Version, state: labelSpecificValue},
+		},
+	},
+	{
+		name: "override service.version",
+		userDefinedResource: map[string]*string{
+			"service.version": &testServiceVersion,
+		},
+		expectedLabels: map[string]labelValue{
+			"service_instance_id": {state: labelAnyValue},
+			"service_version":     {label: "2022-05-20", state: labelSpecificValue},
+		},
+	},
+	{
+		name: "suppress service.version",
+		userDefinedResource: map[string]*string{
+			"service.version": nil, // nil value in config is used to suppress attributes.
+		},
+		expectedLabels: map[string]labelValue{
+			"service_instance_id": {state: labelAnyValue},
+			"service_version":     {state: labelNotPresent},
+		},
+	},
+}
+
+func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter, tc ownMetricsTestCase) {
 	factories, err := testcomponents.NewDefaultFactories()
 	require.NoError(t, err)
 	var once sync.Once
@@ -194,10 +298,19 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 	cfgSet := newDefaultConfigProviderSettings([]string{
 		filepath.Join("testdata", "otelcol-config.yaml"),
 	})
+
+	// Prepare config properties to be merged with the main config.
+	extraCfgAsProps := map[string]*string{
+		// Set the metrics address to expose own metrics on.
+		"service::telemetry::metrics::address": &metricsAddr,
+	}
+	// Also include resource attributes under the service.telemetry.resource key.
+	for k, v := range tc.userDefinedResource {
+		extraCfgAsProps["service::telemetry::resource::"+k] = v
+	}
+
 	cfgSet.MapConverters = append([]config.MapConverter{
-		overwritepropertiesmapconverter.New(
-			[]string{"service.telemetry.metrics.address=" + metricsAddr},
-		)},
+		mapConverter{extraCfgAsProps}},
 		cfgSet.MapConverters...,
 	)
 	cfgProvider, err := NewConfigProvider(cfgSet)
@@ -220,16 +333,7 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 	assert.Equal(t, col.telemetry.Logger, col.GetLogger())
 	assert.True(t, loggingHookCalled)
 
-	// All labels added to all collector metrics by default are listed below.
-	// These labels are hard coded here in order to avoid inadvertent changes:
-	// at this point changing labels should be treated as a breaking changing
-	// and requires a good justification. The reason is that changes to metric
-	// names or labels can break alerting, dashboards, etc that are used to
-	// monitor the Collector in production deployments.
-	mandatoryLabels := []string{
-		"service_instance_id",
-	}
-	assertMetrics(t, metricsAddr, mandatoryLabels)
+	assertMetrics(t, metricsAddr, tc.expectedLabels)
 
 	assertZPages(t)
 	col.signalsChannel <- syscall.SIGTERM
@@ -239,15 +343,23 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 }
 
 func TestCollectorStartWithOpenCensusMetrics(t *testing.T) {
-	testCollectorStartHelper(t, newColTelemetry(featuregate.NewRegistry()))
+	for _, tc := range ownMetricsTestCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testCollectorStartHelper(t, newColTelemetry(featuregate.NewRegistry()), tc)
+		})
+	}
 }
 
 func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
-	colTel := newColTelemetry(featuregate.NewRegistry())
-	colTel.registry.Apply(map[string]bool{
-		useOtelForInternalMetricsfeatureGateID: true,
-	})
-	testCollectorStartHelper(t, colTel)
+	for _, tc := range ownMetricsTestCases {
+		t.Run(tc.name, func(t *testing.T) {
+			colTel := newColTelemetry(featuregate.NewRegistry())
+			colTel.registry.Apply(map[string]bool{
+				useOtelForInternalMetricsfeatureGateID: true,
+			})
+			testCollectorStartHelper(t, colTel, tc)
+		})
+	}
 }
 
 func TestCollectorShutdownBeforeRun(t *testing.T) {
@@ -316,7 +428,7 @@ func (tel *mockColTelemetry) shutdown() error {
 	return errors.New("err1")
 }
 
-func assertMetrics(t *testing.T, metricsAddr string, mandatoryLabels []string) {
+func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]labelValue) {
 	client := &http.Client{}
 	resp, err := client.Get("http://" + metricsAddr + "/metrics")
 	require.NoError(t, err)
@@ -341,14 +453,21 @@ func assertMetrics(t *testing.T, metricsAddr string, mandatoryLabels []string) {
 			metricName[:len(prefix)+1]+"...")
 
 		for _, metric := range metricFamily.Metric {
-			var labelNames []string
+			labelMap := map[string]string{}
 			for _, labelPair := range metric.Label {
-				labelNames = append(labelNames, *labelPair.Name)
+				labelMap[*labelPair.Name] = *labelPair.Value
 			}
 
-			for _, mandatoryLabel := range mandatoryLabels {
-				// require is used here so test fails with a single message.
-				require.Contains(t, labelNames, mandatoryLabel, "mandatory label %q not present", mandatoryLabel)
+			for k, v := range expectedLabels {
+				switch v.state {
+				case labelNotPresent:
+					_, present := labelMap[k]
+					assert.False(t, present, "label %q must not be present", k)
+				case labelSpecificValue:
+					require.Equal(t, v.label, labelMap[k], "mandatory label %q value mismatch", k)
+				case labelAnyValue:
+					assert.NotEmpty(t, labelMap[k], "mandatory label %q not present", k)
+				}
 			}
 		}
 	}
