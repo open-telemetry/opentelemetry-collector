@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated `componenterror` package. (#5420)
+- Remove deprecated config.MapConverterFunc. (#5419)
 
 ### 🚩 Deprecations 🚩
 
