@@ -92,6 +92,33 @@ func TestResourceLogsSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestResourceLogsSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestResourceLogsSlice()
+	dest := NewResourceLogsSlice()
+	src := generateTestResourceLogsSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestResourceLogsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestResourceLogsSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestResourceLogsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestResourceLogsSlice()
@@ -134,6 +161,7 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestResourceLogs_MoveTo(t *testing.T) {
 	ms := generateTestResourceLogs()
@@ -242,6 +270,33 @@ func TestScopeLogsSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestScopeLogsSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestScopeLogsSlice()
+	dest := NewScopeLogsSlice()
+	src := generateTestScopeLogsSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestScopeLogsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestScopeLogsSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestScopeLogsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestScopeLogsSlice()
@@ -284,6 +339,7 @@ func TestScopeLogsSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestScopeLogs_MoveTo(t *testing.T) {
 	ms := generateTestScopeLogs()
@@ -392,6 +448,33 @@ func TestLogRecordSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestLogRecordSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestLogRecordSlice()
+	dest := NewLogRecordSlice()
+	src := generateTestLogRecordSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestLogRecordSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestLogRecordSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestLogRecordSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestLogRecordSlice()
@@ -434,6 +517,7 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestLogRecord_MoveTo(t *testing.T) {
 	ms := generateTestLogRecord()

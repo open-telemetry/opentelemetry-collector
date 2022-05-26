@@ -128,6 +128,14 @@ func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) ResourceLogs
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ResourceLogsSlice) Move(dest ResourceLogsSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceLogsSlice) MoveAndAppendTo(dest ResourceLogsSlice) {
@@ -322,6 +330,14 @@ func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) ScopeLogsSlice {
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ScopeLogsSlice) Move(dest ScopeLogsSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeLogsSlice) MoveAndAppendTo(dest ScopeLogsSlice) {
@@ -514,6 +530,14 @@ func (es LogRecordSlice) AppendEmpty() LogRecord {
 func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) LogRecordSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
+}
+
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es LogRecordSlice) Move(dest LogRecordSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

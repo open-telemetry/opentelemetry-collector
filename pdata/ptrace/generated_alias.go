@@ -39,7 +39,7 @@ var NewResourceSpansSlice = internal.NewResourceSpansSlice
 //
 // Must use NewResourceSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ResourceSpans = internal.ResourceSpans
+type ResourceSpans = internal.ResourceSpans 
 
 // NewResourceSpans is an alias for a function to create a new empty ResourceSpans.
 var NewResourceSpans = internal.NewResourceSpans
@@ -64,7 +64,7 @@ var NewScopeSpansSlice = internal.NewScopeSpansSlice
 //
 // Must use NewScopeSpans function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ScopeSpans = internal.ScopeSpans
+type ScopeSpans = internal.ScopeSpans 
 
 // NewScopeSpans is an alias for a function to create a new empty ScopeSpans.
 var NewScopeSpans = internal.NewScopeSpans
@@ -90,7 +90,7 @@ var NewSpanSlice = internal.NewSpanSlice
 //
 // Must use NewSpan function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Span = internal.Span
+type Span = internal.Span 
 
 // NewSpan is an alias for a function to create a new empty Span.
 var NewSpan = internal.NewSpan
@@ -116,7 +116,7 @@ var NewSpanEventSlice = internal.NewSpanEventSlice
 //
 // Must use NewSpanEvent function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type SpanEvent = internal.SpanEvent
+type SpanEvent = internal.SpanEvent 
 
 // NewSpanEvent is an alias for a function to create a new empty SpanEvent.
 var NewSpanEvent = internal.NewSpanEvent
@@ -143,7 +143,7 @@ var NewSpanLinkSlice = internal.NewSpanLinkSlice
 //
 // Must use NewSpanLink function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type SpanLink = internal.SpanLink
+type SpanLink = internal.SpanLink 
 
 // NewSpanLink is an alias for a function to create a new empty SpanLink.
 var NewSpanLink = internal.NewSpanLink
@@ -156,7 +156,9 @@ var NewSpanLink = internal.NewSpanLink
 //
 // Must use NewSpanStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type SpanStatus = internal.SpanStatus
+type SpanStatus = internal.SpanStatus 
 
 // NewSpanStatus is an alias for a function to create a new empty SpanStatus.
 var NewSpanStatus = internal.NewSpanStatus
+
+

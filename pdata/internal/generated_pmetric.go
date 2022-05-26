@@ -128,6 +128,14 @@ func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) Resour
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ResourceMetricsSlice) Move(dest ResourceMetricsSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
@@ -320,6 +328,14 @@ func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
 func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) ScopeMetricsSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
+}
+
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ScopeMetricsSlice) Move(dest ScopeMetricsSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -516,6 +532,14 @@ func (es MetricSlice) Sort(less func(a, b Metric) bool) MetricSlice {
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es MetricSlice) Move(dest MetricSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
@@ -629,7 +653,7 @@ func (ms Metric) DataType() MetricDataType {
 
 // Gauge returns the gauge associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeGauge returns an invalid
+// Calling this function when DataType() != MetricDataTypeGauge returns an invalid 
 // zero-initialized instance of Gauge. Note that using such Gauge instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -643,7 +667,7 @@ func (ms Metric) Gauge() Gauge {
 
 // Sum returns the sum associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeSum returns an invalid
+// Calling this function when DataType() != MetricDataTypeSum returns an invalid 
 // zero-initialized instance of Sum. Note that using such Sum instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -657,7 +681,7 @@ func (ms Metric) Sum() Sum {
 
 // Histogram returns the histogram associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeHistogram returns an invalid
+// Calling this function when DataType() != MetricDataTypeHistogram returns an invalid 
 // zero-initialized instance of Histogram. Note that using such Histogram instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -671,7 +695,7 @@ func (ms Metric) Histogram() Histogram {
 
 // ExponentialHistogram returns the exponentialhistogram associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeExponentialHistogram returns an invalid
+// Calling this function when DataType() != MetricDataTypeExponentialHistogram returns an invalid 
 // zero-initialized instance of ExponentialHistogram. Note that using such ExponentialHistogram instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -685,7 +709,7 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 
 // Summary returns the summary associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeSummary returns an invalid
+// Calling this function when DataType() != MetricDataTypeSummary returns an invalid 
 // zero-initialized instance of Summary. Note that using such Summary instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -696,6 +720,8 @@ func (ms Metric) Summary() Summary {
 	}
 	return newSummary(v.Summary)
 }
+
+
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
@@ -876,7 +902,7 @@ func (ms Histogram) CopyTo(dest Histogram) {
 }
 
 // ExponentialHistogram represents the type of a metric that is calculated by aggregating
-// as a ExponentialHistogram of all reported double measurements over a time interval.
+	// as a ExponentialHistogram of all reported double measurements over a time interval.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
@@ -1072,6 +1098,14 @@ func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) Number
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es NumberDataPointSlice) Move(dest NumberDataPointSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es NumberDataPointSlice) MoveAndAppendTo(dest NumberDataPointSlice) {
@@ -1195,6 +1229,8 @@ func (ms NumberDataPoint) SetIntVal(v int64) {
 	}
 }
 
+
+
 // Exemplars returns the Exemplars associated with this NumberDataPoint.
 func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 	return newExemplarSlice(&(*ms.orig).Exemplars)
@@ -1217,9 +1253,9 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case NumberDataPointValueTypeDouble:
-		dest.SetDoubleVal(ms.DoubleVal())
+	 dest.SetDoubleVal(ms.DoubleVal())
 	case NumberDataPointValueTypeInt:
-		dest.SetIntVal(ms.IntVal())
+	 dest.SetIntVal(ms.IntVal())
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
@@ -1331,6 +1367,14 @@ func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) 
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es HistogramDataPointSlice) Move(dest HistogramDataPointSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
@@ -1432,17 +1476,16 @@ func (ms HistogramDataPoint) SetCount(v uint64) {
 func (ms HistogramDataPoint) Sum() float64 {
 	return (*ms.orig).GetSum()
 }
-
 // HasSum returns true if the HistogramDataPoint contains a
 // Sum value, false otherwise.
 func (ms HistogramDataPoint) HasSum() bool {
 	return ms.orig.Sum_ != nil
 }
-
 // SetSum replaces the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetSum(v float64) {
 	(*ms.orig).Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
+
 
 // MBucketCounts returns the mbucketcounts associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) MBucketCounts() []uint64 {
@@ -1483,33 +1526,31 @@ func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 func (ms HistogramDataPoint) Min() float64 {
 	return (*ms.orig).GetMin()
 }
-
 // HasMin returns true if the HistogramDataPoint contains a
 // Min value, false otherwise.
 func (ms HistogramDataPoint) HasMin() bool {
 	return ms.orig.Min_ != nil
 }
-
 // SetMin replaces the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMin(v float64) {
 	(*ms.orig).Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
 }
 
+
 // Max returns the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Max() float64 {
 	return (*ms.orig).GetMax()
 }
-
 // HasMax returns true if the HistogramDataPoint contains a
 // Max value, false otherwise.
 func (ms HistogramDataPoint) HasMax() bool {
 	return ms.orig.Max_ != nil
 }
-
 // SetMax replaces the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMax(v float64) {
 	(*ms.orig).Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
 }
+
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
@@ -1517,18 +1558,18 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
-	if ms.HasSum() {
-		dest.SetSum(ms.Sum())
-	}
+if ms.HasSum(){
+	dest.SetSum(ms.Sum())
+}
 
-	if len(ms.orig.BucketCounts) == 0 {
+	if len(ms.orig.BucketCounts) == 0 {	
 		dest.orig.BucketCounts = nil
 	} else {
 		dest.orig.BucketCounts = make([]uint64, len(ms.orig.BucketCounts))
 		copy(dest.orig.BucketCounts, ms.orig.BucketCounts)
 	}
 
-	if len(ms.orig.ExplicitBounds) == 0 {
+	if len(ms.orig.ExplicitBounds) == 0 {	
 		dest.orig.ExplicitBounds = nil
 	} else {
 		dest.orig.ExplicitBounds = make([]float64, len(ms.orig.ExplicitBounds))
@@ -1537,13 +1578,13 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
-	if ms.HasMin() {
-		dest.SetMin(ms.Min())
-	}
+if ms.HasMin(){
+	dest.SetMin(ms.Min())
+}
 
-	if ms.HasMax() {
-		dest.SetMax(ms.Max())
-	}
+if ms.HasMax(){
+	dest.SetMax(ms.Max())
+}
 
 }
 
@@ -1652,6 +1693,14 @@ func (es ExponentialHistogramDataPointSlice) Sort(less func(a, b ExponentialHist
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ExponentialHistogramDataPointSlice) Move(dest ExponentialHistogramDataPointSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ExponentialHistogramDataPointSlice) MoveAndAppendTo(dest ExponentialHistogramDataPointSlice) {
@@ -1685,9 +1734,9 @@ func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogra
 }
 
 // ExponentialHistogramDataPoint is a single data point in a timeseries that describes the
-// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
-// summary statistics for a population of values, it may optionally contain the
-// distribution of those values across a set of buckets.
+	// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
+	// summary statistics for a population of values, it may optionally contain the
+	// distribution of those values across a set of buckets.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
@@ -1811,33 +1860,31 @@ func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 func (ms ExponentialHistogramDataPoint) Min() float64 {
 	return (*ms.orig).GetMin()
 }
-
 // HasMin returns true if the ExponentialHistogramDataPoint contains a
 // Min value, false otherwise.
 func (ms ExponentialHistogramDataPoint) HasMin() bool {
 	return ms.orig.Min_ != nil
 }
-
 // SetMin replaces the min associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
 	(*ms.orig).Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
 }
 
+
 // Max returns the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Max() float64 {
 	return (*ms.orig).GetMax()
 }
-
 // HasMax returns true if the ExponentialHistogramDataPoint contains a
 // Max value, false otherwise.
 func (ms ExponentialHistogramDataPoint) HasMax() bool {
 	return ms.orig.Max_ != nil
 }
-
 // SetMax replaces the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
 	(*ms.orig).Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
 }
+
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
@@ -1852,13 +1899,13 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	ms.Negative().CopyTo(dest.Negative())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
-	if ms.HasMin() {
-		dest.SetMin(ms.Min())
-	}
+if ms.HasMin(){
+	dest.SetMin(ms.Min())
+}
 
-	if ms.HasMax() {
-		dest.SetMax(ms.Max())
-	}
+if ms.HasMax(){
+	dest.SetMax(ms.Max())
+}
 
 }
 
@@ -1915,7 +1962,7 @@ func (ms Buckets) SetMBucketCounts(v []uint64) {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Buckets) CopyTo(dest Buckets) {
 	dest.SetOffset(ms.Offset())
-	if len(ms.orig.BucketCounts) == 0 {
+	if len(ms.orig.BucketCounts) == 0 {	
 		dest.orig.BucketCounts = nil
 	} else {
 		dest.orig.BucketCounts = make([]uint64, len(ms.orig.BucketCounts))
@@ -2027,6 +2074,14 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) SummaryDataPointSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
+}
+
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es SummaryDataPointSlice) Move(dest SummaryDataPointSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2267,6 +2322,14 @@ func (es ValueAtQuantileSlice) Sort(less func(a, b ValueAtQuantile) bool) ValueA
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ValueAtQuantileSlice) Move(dest ValueAtQuantileSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
@@ -2440,6 +2503,13 @@ func (es ExemplarSlice) AppendEmpty() Exemplar {
 	*es.orig = append(*es.orig, otlpmetrics.Exemplar{})
 	return es.At(es.Len() - 1)
 }
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ExemplarSlice) Move(dest ExemplarSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
@@ -2552,6 +2622,8 @@ func (ms Exemplar) SetIntVal(v int64) {
 	}
 }
 
+
+
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
 func (ms Exemplar) FilteredAttributes() Map {
 	return newMap(&(*ms.orig).FilteredAttributes)
@@ -2582,9 +2654,9 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case ExemplarValueTypeDouble:
-		dest.SetDoubleVal(ms.DoubleVal())
+	 dest.SetDoubleVal(ms.DoubleVal())
 	case ExemplarValueTypeInt:
-		dest.SetIntVal(ms.IntVal())
+	 dest.SetIntVal(ms.IntVal())
 	}
 
 	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())

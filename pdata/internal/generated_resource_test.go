@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+
 func TestResource_MoveTo(t *testing.T) {
 	ms := generateTestResource()
 	dest := NewResource()

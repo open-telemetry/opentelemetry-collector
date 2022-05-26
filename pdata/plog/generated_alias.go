@@ -39,7 +39,7 @@ var NewResourceLogsSlice = internal.NewResourceLogsSlice
 //
 // Must use NewResourceLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ResourceLogs = internal.ResourceLogs
+type ResourceLogs = internal.ResourceLogs 
 
 // NewResourceLogs is an alias for a function to create a new empty ResourceLogs.
 var NewResourceLogs = internal.NewResourceLogs
@@ -64,7 +64,7 @@ var NewScopeLogsSlice = internal.NewScopeLogsSlice
 //
 // Must use NewScopeLogs function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ScopeLogs = internal.ScopeLogs
+type ScopeLogs = internal.ScopeLogs 
 
 // NewScopeLogs is an alias for a function to create a new empty ScopeLogs.
 var NewScopeLogs = internal.NewScopeLogs
@@ -90,7 +90,9 @@ var NewLogRecordSlice = internal.NewLogRecordSlice
 //
 // Must use NewLogRecord function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type LogRecord = internal.LogRecord
+type LogRecord = internal.LogRecord 
 
 // NewLogRecord is an alias for a function to create a new empty LogRecord.
 var NewLogRecord = internal.NewLogRecord
+
+

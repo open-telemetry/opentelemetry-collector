@@ -26,7 +26,7 @@ import "go.opentelemetry.io/collector/pdata/internal"
 //
 // Must use NewInstrumentationScope function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type InstrumentationScope = internal.InstrumentationScope
+type InstrumentationScope = internal.InstrumentationScope 
 
 // NewInstrumentationScope is an alias for a function to create a new empty InstrumentationScope.
 var NewInstrumentationScope = internal.NewInstrumentationScope
@@ -43,3 +43,5 @@ type Slice = internal.Slice
 // NewSlice creates a Slice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 var NewSlice = internal.NewSlice
+
+

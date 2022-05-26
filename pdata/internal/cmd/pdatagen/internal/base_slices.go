@@ -20,6 +20,14 @@ import (
 )
 
 const commonSliceTemplate = `
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ${structName}) Move(dest ${structName}) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ${structName}) MoveAndAppendTo(dest ${structName}) {
@@ -53,6 +61,33 @@ func (es ${structName}) RemoveIf(f func(${elementName}) bool) {
 }`
 
 const commonSliceTestTemplate = `
+
+func Test${structName}_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTest${structName}()
+	dest := New${structName}()
+	src := generateTest${structName}()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTest${structName}(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTest${structName}().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
 
 func Test${structName}_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty

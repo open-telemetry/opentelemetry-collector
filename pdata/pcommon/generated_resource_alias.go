@@ -26,7 +26,9 @@ import "go.opentelemetry.io/collector/pdata/internal"
 //
 // Must use NewResource function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Resource = internal.Resource
+type Resource = internal.Resource 
 
 // NewResource is an alias for a function to create a new empty Resource.
 var NewResource = internal.NewResource
+
+

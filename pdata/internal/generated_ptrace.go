@@ -128,6 +128,14 @@ func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) ResourceSp
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ResourceSpansSlice) Move(dest ResourceSpansSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
@@ -322,6 +330,14 @@ func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) ScopeSpansSlice 
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es ScopeSpansSlice) Move(dest ScopeSpansSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es ScopeSpansSlice) MoveAndAppendTo(dest ScopeSpansSlice) {
@@ -514,6 +530,14 @@ func (es SpanSlice) AppendEmpty() Span {
 func (es SpanSlice) Sort(less func(a, b Span) bool) SpanSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
+}
+
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es SpanSlice) Move(dest SpanSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -833,6 +857,14 @@ func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) SpanEventSlice {
 	return es
 }
 
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es SpanEventSlice) Move(dest SpanEventSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
+
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
 func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
@@ -1042,6 +1074,14 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) SpanLinkSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
+}
+
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es SpanLinkSlice) Move(dest SpanLinkSlice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

@@ -92,6 +92,33 @@ func TestResourceMetricsSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestResourceMetricsSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestResourceMetricsSlice()
+	dest := NewResourceMetricsSlice()
+	src := generateTestResourceMetricsSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestResourceMetricsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestResourceMetricsSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestResourceMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestResourceMetricsSlice()
@@ -134,6 +161,7 @@ func TestResourceMetricsSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestResourceMetrics_MoveTo(t *testing.T) {
 	ms := generateTestResourceMetrics()
@@ -242,6 +270,33 @@ func TestScopeMetricsSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestScopeMetricsSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestScopeMetricsSlice()
+	dest := NewScopeMetricsSlice()
+	src := generateTestScopeMetricsSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestScopeMetricsSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestScopeMetricsSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestScopeMetricsSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestScopeMetricsSlice()
@@ -284,6 +339,7 @@ func TestScopeMetricsSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestScopeMetrics_MoveTo(t *testing.T) {
 	ms := generateTestScopeMetrics()
@@ -392,6 +448,33 @@ func TestMetricSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestMetricSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestMetricSlice()
+	dest := NewMetricSlice()
+	src := generateTestMetricSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestMetricSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestMetricSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestMetricSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestMetricSlice()
@@ -434,6 +517,7 @@ func TestMetricSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestMetric_MoveTo(t *testing.T) {
 	ms := generateTestMetric()
@@ -486,20 +570,20 @@ func TestMetricDataType(t *testing.T) {
 	assert.Equal(t, Histogram{}, tv.Histogram())
 	assert.Equal(t, ExponentialHistogram{}, tv.ExponentialHistogram())
 	assert.Equal(t, Summary{}, tv.Summary())
-	tv.SetDataType(MetricDataTypeGauge)
-	fillTestGauge(tv.Gauge())
+tv.SetDataType(MetricDataTypeGauge)
+fillTestGauge(tv.Gauge())
 	assert.Equal(t, MetricDataTypeGauge, tv.DataType())
-	tv.SetDataType(MetricDataTypeSum)
-	fillTestSum(tv.Sum())
+tv.SetDataType(MetricDataTypeSum)
+fillTestSum(tv.Sum())
 	assert.Equal(t, MetricDataTypeSum, tv.DataType())
-	tv.SetDataType(MetricDataTypeHistogram)
-	fillTestHistogram(tv.Histogram())
+tv.SetDataType(MetricDataTypeHistogram)
+fillTestHistogram(tv.Histogram())
 	assert.Equal(t, MetricDataTypeHistogram, tv.DataType())
-	tv.SetDataType(MetricDataTypeExponentialHistogram)
-	fillTestExponentialHistogram(tv.ExponentialHistogram())
+tv.SetDataType(MetricDataTypeExponentialHistogram)
+fillTestExponentialHistogram(tv.ExponentialHistogram())
 	assert.Equal(t, MetricDataTypeExponentialHistogram, tv.DataType())
-	tv.SetDataType(MetricDataTypeSummary)
-	fillTestSummary(tv.Summary())
+tv.SetDataType(MetricDataTypeSummary)
+fillTestSummary(tv.Summary())
 	assert.Equal(t, MetricDataTypeSummary, tv.DataType())
 }
 
@@ -583,6 +667,9 @@ func TestMetric_CopyTo_Summary(t *testing.T) {
 	assert.EqualValues(t, ms, dest)
 }
 
+
+
+
 func TestGauge_MoveTo(t *testing.T) {
 	ms := generateTestGauge()
 	dest := NewGauge()
@@ -608,6 +695,7 @@ func TestGauge_DataPoints(t *testing.T) {
 	testValDataPoints := generateTestNumberDataPointSlice()
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
+
 
 func TestSum_MoveTo(t *testing.T) {
 	ms := generateTestSum()
@@ -651,6 +739,7 @@ func TestSum_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
+
 func TestHistogram_MoveTo(t *testing.T) {
 	ms := generateTestHistogram()
 	dest := NewHistogram()
@@ -685,6 +774,7 @@ func TestHistogram_DataPoints(t *testing.T) {
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
 
+
 func TestExponentialHistogram_MoveTo(t *testing.T) {
 	ms := generateTestExponentialHistogram()
 	dest := NewExponentialHistogram()
@@ -718,6 +808,7 @@ func TestExponentialHistogram_DataPoints(t *testing.T) {
 	testValDataPoints := generateTestExponentialHistogramDataPointSlice()
 	assert.EqualValues(t, testValDataPoints, ms.DataPoints())
 }
+
 
 func TestSummary_MoveTo(t *testing.T) {
 	ms := generateTestSummary()
@@ -812,6 +903,33 @@ func TestNumberDataPointSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestNumberDataPointSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestNumberDataPointSlice()
+	dest := NewNumberDataPointSlice()
+	src := generateTestNumberDataPointSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestNumberDataPointSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestNumberDataPointSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestNumberDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestNumberDataPointSlice()
@@ -854,6 +972,7 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestNumberDataPoint_MoveTo(t *testing.T) {
 	ms := generateTestNumberDataPoint()
@@ -901,9 +1020,9 @@ func TestNumberDataPointValueType(t *testing.T) {
 	tv := NewNumberDataPoint()
 	assert.Equal(t, NumberDataPointValueTypeNone, tv.ValueType())
 	assert.Equal(t, "", NumberDataPointValueType(1000).String())
-	tv.SetDoubleVal(float64(17.13))
+	 tv.SetDoubleVal(float64(17.13))
 	assert.Equal(t, NumberDataPointValueTypeDouble, tv.ValueType())
-	tv.SetIntVal(int64(17))
+	 tv.SetIntVal(int64(17))
 	assert.Equal(t, NumberDataPointValueTypeInt, tv.ValueType())
 }
 
@@ -922,6 +1041,8 @@ func TestNumberDataPoint_IntVal(t *testing.T) {
 	ms.SetIntVal(testValIntVal)
 	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
+
+
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
 	ms := NewNumberDataPoint()
@@ -1006,6 +1127,33 @@ func TestHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestHistogramDataPointSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestHistogramDataPointSlice()
+	dest := NewHistogramDataPointSlice()
+	src := generateTestHistogramDataPointSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestHistogramDataPointSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestHistogramDataPointSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestHistogramDataPointSlice()
@@ -1048,6 +1196,7 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestHistogramDataPoint_MoveTo(t *testing.T) {
 	ms := generateTestHistogramDataPoint()
@@ -1115,6 +1264,7 @@ func TestHistogramDataPoint_Sum(t *testing.T) {
 	assert.EqualValues(t, testValSum, ms.Sum())
 }
 
+
 func TestHistogramDataPoint_MBucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.EqualValues(t, []uint64(nil), ms.MBucketCounts())
@@ -1155,6 +1305,7 @@ func TestHistogramDataPoint_Min(t *testing.T) {
 	assert.EqualValues(t, testValMin, ms.Min())
 }
 
+
 func TestHistogramDataPoint_Max(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.EqualValues(t, float64(0.0), ms.Max())
@@ -1162,6 +1313,7 @@ func TestHistogramDataPoint_Max(t *testing.T) {
 	ms.SetMax(testValMax)
 	assert.EqualValues(t, testValMax, ms.Max())
 }
+
 
 func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	es := NewExponentialHistogramDataPointSlice()
@@ -1230,6 +1382,33 @@ func TestExponentialHistogramDataPointSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestExponentialHistogramDataPointSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestExponentialHistogramDataPointSlice()
+	dest := NewExponentialHistogramDataPointSlice()
+	src := generateTestExponentialHistogramDataPointSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestExponentialHistogramDataPointSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestExponentialHistogramDataPointSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestExponentialHistogramDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestExponentialHistogramDataPointSlice()
@@ -1272,6 +1451,7 @@ func TestExponentialHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestExponentialHistogramDataPoint_MoveTo(t *testing.T) {
 	ms := generateTestExponentialHistogramDataPoint()
@@ -1383,6 +1563,7 @@ func TestExponentialHistogramDataPoint_Min(t *testing.T) {
 	assert.EqualValues(t, testValMin, ms.Min())
 }
 
+
 func TestExponentialHistogramDataPoint_Max(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.EqualValues(t, float64(0.0), ms.Max())
@@ -1390,6 +1571,8 @@ func TestExponentialHistogramDataPoint_Max(t *testing.T) {
 	ms.SetMax(testValMax)
 	assert.EqualValues(t, testValMax, ms.Max())
 }
+
+
 
 func TestBuckets_MoveTo(t *testing.T) {
 	ms := generateTestBuckets()
@@ -1496,6 +1679,33 @@ func TestSummaryDataPointSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestSummaryDataPointSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestSummaryDataPointSlice()
+	dest := NewSummaryDataPointSlice()
+	src := generateTestSummaryDataPointSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestSummaryDataPointSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestSummaryDataPointSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestSummaryDataPointSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestSummaryDataPointSlice()
@@ -1538,6 +1748,7 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestSummaryDataPoint_MoveTo(t *testing.T) {
 	ms := generateTestSummaryDataPoint()
@@ -1680,6 +1891,33 @@ func TestValueAtQuantileSlice_EnsureCapacity(t *testing.T) {
 	assert.EqualValues(t, expectedEs, foundEs)
 }
 
+func TestValueAtQuantileSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestValueAtQuantileSlice()
+	dest := NewValueAtQuantileSlice()
+	src := generateTestValueAtQuantileSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestValueAtQuantileSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestValueAtQuantileSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestValueAtQuantileSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestValueAtQuantileSlice()
@@ -1722,6 +1960,7 @@ func TestValueAtQuantileSlice_RemoveIf(t *testing.T) {
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
+
 
 func TestValueAtQuantile_MoveTo(t *testing.T) {
 	ms := generateTestValueAtQuantile()
@@ -1815,6 +2054,33 @@ func TestExemplarSlice_EnsureCapacity(t *testing.T) {
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
 }
 
+func TestExemplarSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestExemplarSlice()
+	dest := NewExemplarSlice()
+	src := generateTestExemplarSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestExemplarSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestExemplarSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
+}
+
 func TestExemplarSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
 	expectedSlice := generateTestExemplarSlice()
@@ -1858,6 +2124,7 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+
 func TestExemplar_MoveTo(t *testing.T) {
 	ms := generateTestExemplar()
 	dest := NewExemplar()
@@ -1888,9 +2155,9 @@ func TestExemplarValueType(t *testing.T) {
 	tv := NewExemplar()
 	assert.Equal(t, ExemplarValueTypeNone, tv.ValueType())
 	assert.Equal(t, "", ExemplarValueType(1000).String())
-	tv.SetDoubleVal(float64(17.13))
+	 tv.SetDoubleVal(float64(17.13))
 	assert.Equal(t, ExemplarValueTypeDouble, tv.ValueType())
-	tv.SetIntVal(int64(17))
+	 tv.SetIntVal(int64(17))
 	assert.Equal(t, ExemplarValueTypeInt, tv.ValueType())
 }
 
@@ -1909,6 +2176,8 @@ func TestExemplar_IntVal(t *testing.T) {
 	ms.SetIntVal(testValIntVal)
 	assert.EqualValues(t, testValIntVal, ms.IntVal())
 }
+
+
 
 func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
@@ -2010,8 +2279,8 @@ func fillTestMetric(tv Metric) {
 	tv.SetName("test_name")
 	tv.SetDescription("test_description")
 	tv.SetUnit("1")
-	tv.SetDataType(MetricDataTypeSum)
-	fillTestSum(tv.Sum())
+tv.SetDataType(MetricDataTypeSum)
+fillTestSum(tv.Sum())
 }
 
 func generateTestGauge() Gauge {
@@ -2092,7 +2361,7 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	fillTestMap(tv.Attributes())
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetDoubleVal(float64(17.13))
+	 tv.SetDoubleVal(float64(17.13))
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
 }
@@ -2122,13 +2391,13 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetStartTimestamp(Timestamp(1234567890))
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
-	tv.SetSum(float64(17.13))
+	 tv.SetSum(float64(17.13))
 	tv.SetMBucketCounts([]uint64{1, 2, 3})
 	tv.SetMExplicitBounds([]float64{1, 2, 3})
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
-	tv.SetMin(float64(9.23))
-	tv.SetMax(float64(182.55))
+	 tv.SetMin(float64(9.23))
+	 tv.SetMax(float64(182.55))
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
@@ -2163,8 +2432,8 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	fillTestBuckets(tv.Negative())
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
-	tv.SetMin(float64(9.23))
-	tv.SetMax(float64(182.55))
+	 tv.SetMin(float64(9.23))
+	 tv.SetMax(float64(182.55))
 }
 
 func generateTestBuckets() Buckets {
@@ -2255,7 +2524,7 @@ func generateTestExemplar() Exemplar {
 
 func fillTestExemplar(tv Exemplar) {
 	tv.SetTimestamp(Timestamp(1234567890))
-	tv.SetIntVal(int64(17))
+	 tv.SetIntVal(int64(17))
 	fillTestMap(tv.FilteredAttributes())
 	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))

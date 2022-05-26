@@ -162,6 +162,13 @@ func (es Slice) AppendEmpty() Value {
 	*es.orig = append(*es.orig, otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
 }
+// Move moves all elements from the current slice and replaces the dest.
+// The current slice will be cleared.
+func (es Slice) Move(dest Slice) {
+	// We can simply move the entire vector and avoid any allocations.
+	*dest.orig = *es.orig
+	*es.orig = nil
+}
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.

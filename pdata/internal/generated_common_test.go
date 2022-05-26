@@ -25,6 +25,7 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
+
 func TestInstrumentationScope_MoveTo(t *testing.T) {
 	ms := generateTestInstrumentationScope()
 	dest := NewInstrumentationScope()
@@ -115,6 +116,33 @@ func TestSlice_EnsureCapacity(t *testing.T) {
 	assert.Equal(t, oldLen, len(expectedEs))
 	es.EnsureCapacity(ensureLargeLen)
 	assert.Equal(t, ensureLargeLen, cap(*es.orig))
+}
+
+func TestSlice_Move(t *testing.T) {
+	// assert.EqualValues(t, 1, 2)
+
+	// Test Move to empty
+	expectedSlice := generateTestSlice()
+	dest := NewSlice()
+	src := generateTestSlice()
+	assert.EqualValues(t, 7, src.Len())
+	src.Move(dest)
+	assert.EqualValues(t, generateTestSlice(), dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+
+	// Test Move empty slice
+	src.Move(dest)
+	assert.EqualValues(t, src, dest)
+	assert.EqualValues(t, 0, src.Len())
+	assert.EqualValues(t, 0, dest.Len())
+
+	// Test Move not empty slice
+	generateTestSlice().Move(dest)
+	assert.EqualValues(t, expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.EqualValues(t, expectedSlice.At(i), dest.At(i))
+	}
 }
 
 func TestSlice_MoveAndAppendTo(t *testing.T) {

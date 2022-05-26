@@ -39,7 +39,7 @@ var NewResourceMetricsSlice = internal.NewResourceMetricsSlice
 //
 // Must use NewResourceMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ResourceMetrics = internal.ResourceMetrics
+type ResourceMetrics = internal.ResourceMetrics 
 
 // NewResourceMetrics is an alias for a function to create a new empty ResourceMetrics.
 var NewResourceMetrics = internal.NewResourceMetrics
@@ -64,7 +64,7 @@ var NewScopeMetricsSlice = internal.NewScopeMetricsSlice
 //
 // Must use NewScopeMetrics function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ScopeMetrics = internal.ScopeMetrics
+type ScopeMetrics = internal.ScopeMetrics 
 
 // NewScopeMetrics is an alias for a function to create a new empty ScopeMetrics.
 var NewScopeMetrics = internal.NewScopeMetrics
@@ -90,7 +90,7 @@ var NewMetricSlice = internal.NewMetricSlice
 //
 // Must use NewMetric function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Metric = internal.Metric
+type Metric = internal.Metric 
 
 // NewMetric is an alias for a function to create a new empty Metric.
 var NewMetric = internal.NewMetric
@@ -102,7 +102,7 @@ var NewMetric = internal.NewMetric
 //
 // Must use NewGauge function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Gauge = internal.Gauge
+type Gauge = internal.Gauge 
 
 // NewGauge is an alias for a function to create a new empty Gauge.
 var NewGauge = internal.NewGauge
@@ -114,7 +114,7 @@ var NewGauge = internal.NewGauge
 //
 // Must use NewSum function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Sum = internal.Sum
+type Sum = internal.Sum 
 
 // NewSum is an alias for a function to create a new empty Sum.
 var NewSum = internal.NewSum
@@ -126,20 +126,20 @@ var NewSum = internal.NewSum
 //
 // Must use NewHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Histogram = internal.Histogram
+type Histogram = internal.Histogram 
 
 // NewHistogram is an alias for a function to create a new empty Histogram.
 var NewHistogram = internal.NewHistogram
 
 // ExponentialHistogram represents the type of a metric that is calculated by aggregating
-// as a ExponentialHistogram of all reported double measurements over a time interval.
+	// as a ExponentialHistogram of all reported double measurements over a time interval.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewExponentialHistogram function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ExponentialHistogram = internal.ExponentialHistogram
+type ExponentialHistogram = internal.ExponentialHistogram 
 
 // NewExponentialHistogram is an alias for a function to create a new empty ExponentialHistogram.
 var NewExponentialHistogram = internal.NewExponentialHistogram
@@ -151,7 +151,7 @@ var NewExponentialHistogram = internal.NewExponentialHistogram
 //
 // Must use NewSummary function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Summary = internal.Summary
+type Summary = internal.Summary 
 
 // NewSummary is an alias for a function to create a new empty Summary.
 var NewSummary = internal.NewSummary
@@ -176,7 +176,7 @@ var NewNumberDataPointSlice = internal.NewNumberDataPointSlice
 //
 // Must use NewNumberDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type NumberDataPoint = internal.NumberDataPoint
+type NumberDataPoint = internal.NumberDataPoint 
 
 // NewNumberDataPoint is an alias for a function to create a new empty NumberDataPoint.
 var NewNumberDataPoint = internal.NewNumberDataPoint
@@ -201,7 +201,7 @@ var NewHistogramDataPointSlice = internal.NewHistogramDataPointSlice
 //
 // Must use NewHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type HistogramDataPoint = internal.HistogramDataPoint
+type HistogramDataPoint = internal.HistogramDataPoint 
 
 // NewHistogramDataPoint is an alias for a function to create a new empty HistogramDataPoint.
 var NewHistogramDataPoint = internal.NewHistogramDataPoint
@@ -220,16 +220,16 @@ type ExponentialHistogramDataPointSlice = internal.ExponentialHistogramDataPoint
 var NewExponentialHistogramDataPointSlice = internal.NewExponentialHistogramDataPointSlice
 
 // ExponentialHistogramDataPoint is a single data point in a timeseries that describes the
-// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
-// summary statistics for a population of values, it may optionally contain the
-// distribution of those values across a set of buckets.
+	// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
+	// summary statistics for a population of values, it may optionally contain the
+	// distribution of those values across a set of buckets.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
 // Must use NewExponentialHistogramDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ExponentialHistogramDataPoint = internal.ExponentialHistogramDataPoint
+type ExponentialHistogramDataPoint = internal.ExponentialHistogramDataPoint 
 
 // NewExponentialHistogramDataPoint is an alias for a function to create a new empty ExponentialHistogramDataPoint.
 var NewExponentialHistogramDataPoint = internal.NewExponentialHistogramDataPoint
@@ -241,7 +241,7 @@ var NewExponentialHistogramDataPoint = internal.NewExponentialHistogramDataPoint
 //
 // Must use NewBuckets function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Buckets = internal.Buckets
+type Buckets = internal.Buckets 
 
 // NewBuckets is an alias for a function to create a new empty Buckets.
 var NewBuckets = internal.NewBuckets
@@ -266,7 +266,7 @@ var NewSummaryDataPointSlice = internal.NewSummaryDataPointSlice
 //
 // Must use NewSummaryDataPoint function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type SummaryDataPoint = internal.SummaryDataPoint
+type SummaryDataPoint = internal.SummaryDataPoint 
 
 // NewSummaryDataPoint is an alias for a function to create a new empty SummaryDataPoint.
 var NewSummaryDataPoint = internal.NewSummaryDataPoint
@@ -291,7 +291,7 @@ var NewValueAtQuantileSlice = internal.NewValueAtQuantileSlice
 //
 // Must use NewValueAtQuantile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ValueAtQuantile = internal.ValueAtQuantile
+type ValueAtQuantile = internal.ValueAtQuantile 
 
 // NewValueAtQuantile is an alias for a function to create a new empty ValueAtQuantile.
 var NewValueAtQuantile = internal.NewValueAtQuantile
@@ -319,7 +319,9 @@ var NewExemplarSlice = internal.NewExemplarSlice
 //
 // Must use NewExemplar function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type Exemplar = internal.Exemplar
+type Exemplar = internal.Exemplar 
 
 // NewExemplar is an alias for a function to create a new empty Exemplar.
 var NewExemplar = internal.NewExemplar
+
+
