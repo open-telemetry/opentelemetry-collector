@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/internal"
 )
@@ -432,4 +433,24 @@ func TestMetricsSummaryDataJSONFull(t *testing.T) {
 	got, err := decoder.UnmarshalMetrics(jsonBuf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, m, got)
+}
+
+func TestReadKvlistValueUnknownField(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	readKvlistValue(iter)
+	if assert.Error(t, iter.Error) {
+		assert.Contains(t, iter.Error.Error(), "unknown field")
+	}
+}
+
+func TestReadArrayUnknownField(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	readArray(iter)
+	if assert.Error(t, iter.Error) {
+		assert.Contains(t, iter.Error.Error(), "unknown field")
+	}
 }
