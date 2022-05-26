@@ -25,21 +25,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var _ config.Unmarshallable = (*ExampleExporter)(nil)
-
 // ExampleExporter is for testing purposes. We are defining an example config and factory
 // for "exampleexporter" exporter type.
 type ExampleExporter struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraInt                int32                    `mapstructure:"extra_int"`
-	ExtraSetting            string                   `mapstructure:"extra"`
-	ExtraMapSetting         map[string]string        `mapstructure:"extra_map"`
-	ExtraListSetting        []string                 `mapstructure:"extra_list"`
-}
-
-// Unmarshal a config.Map data into the config struct
-func (cfg *ExampleExporter) Unmarshal(componentParser *config.Map) error {
-	return componentParser.UnmarshalExact(cfg)
 }
 
 const expType = "exampleexporter"
@@ -56,9 +45,6 @@ var ExampleExporterFactory = component.NewExporterFactory(
 func createExporterDefaultConfig() config.Exporter {
 	return &ExampleExporter{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(expType)),
-		ExtraSetting:     "some export string",
-		ExtraMapSetting:  nil,
-		ExtraListSetting: nil,
 	}
 }
 

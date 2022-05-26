@@ -1,21 +1,21 @@
 receivers:
-  examplereceiver:
+  nop:
 processors:
-  exampleprocessor:
+  nop:
     unknown_section:
       a_num: 2
 exporters:
-  exampleexporter:
+  nop:
 extensions:
-  exampleextension:
+  nop:
 service:
   extensions:
     - examapleextension
   pipelines:
     traces:
       receivers:
-        - examplereceiver
+        - nop
       processors:
-        - exampleprocessor
+        - nop
       exporters:
-        - exampleexporter
+        - nop

@@ -1,13 +1,13 @@
 receivers:
-  examplereceiver:
+  nop:
 exporters:
-  exampleexporter /exp :
-  exampleexporter/ exp:
+  nop /exp :
+  nop/ exp:
 processors:
-  exampleprocessor:
+  nop:
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      exporters: [exampleexporter]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      exporters: [nop]
+      processors: [nop]

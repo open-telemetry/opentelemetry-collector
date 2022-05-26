@@ -1,23 +1,18 @@
 receivers:
-  examplereceiver:
-  examplereceiver/myreceiver:
-    endpoint: "localhost:12345"
-    extra: "some string"
+  nop:
+  nop/myreceiver:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter/myexporter:
-    extra: "some export string 2"
-  exampleexporter:
+  nop/myexporter:
+  nop:
 
 extensions:
-  exampleextension/0:
-  exampleextension/disabled:
-    extra: "not present in the service"
-  exampleextension/1:
-    extra: "some string"
+  nop/0:
+  nop/disabled:
+  nop/1:
 
 service:
   telemetry:
@@ -34,10 +29,10 @@ service:
     metrics:
       level: "normal"
       address: ":8081"
-  extensions: [exampleextension/0, exampleextension/1]
+  extensions: [nop/0, nop/1]
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      receivers: [nop/myreceiver]
+      processors: [nop]
+      exporters: [nop/myexporter]
 

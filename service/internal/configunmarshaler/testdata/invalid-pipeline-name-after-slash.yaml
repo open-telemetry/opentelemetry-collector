@@ -1,13 +1,13 @@
 receivers:
-  examplereceiver:
+  nop:
 processors:
-  exampleprocessor:
+  nop:
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics/:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

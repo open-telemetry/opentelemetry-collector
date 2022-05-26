@@ -1,19 +1,19 @@
 receivers:
-  examplereceiver:
+  nop:
 processors:
-  exampleprocessor:
+  nop:
 exporters:
-  exampleexporter:
+  nop:
 extensions:
-  exampleextension:
+  nop:
 service:
   telemetry:
     logs:
       level: "UNKNOWN"
-  extensions: [exampleextension]
+  extensions: [nop]
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
 
