@@ -1,16 +1,16 @@
 extensions:
-  exampleextension:
+  nop:
     tests
 receivers:
-  examplereceiver:
+  nop:
 processors:
-  exampleprocessor:
+  nop:
 exporters:
-  exampleexporter:
+  nop:
 service:
-  extensions: [exampleextension]
+  extensions: [nop]
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

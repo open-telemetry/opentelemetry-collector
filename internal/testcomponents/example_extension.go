@@ -25,9 +25,6 @@ import (
 // for "exampleextension" extension type.
 type ExampleExtensionCfg struct {
 	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraSetting             string                   `mapstructure:"extra"`
-	ExtraMapSetting          map[string]string        `mapstructure:"extra_map"`
-	ExtraListSetting         []string                 `mapstructure:"extra_list"`
 }
 
 const extType = "exampleextension"
@@ -49,8 +46,5 @@ var ExampleExtensionFactory = component.NewExtensionFactory(
 func createExtensionDefaultConfig() config.Extension {
 	return &ExampleExtensionCfg{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(extType)),
-		ExtraSetting:      "extra string setting",
-		ExtraMapSetting:   nil,
-		ExtraListSetting:  nil,
 	}
 }

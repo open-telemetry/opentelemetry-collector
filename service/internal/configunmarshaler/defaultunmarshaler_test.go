@@ -25,16 +25,15 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/internal/testcomponents"
 )
 
 func TestDecodeConfig(t *testing.T) {
-	factories, err := testcomponents.ExampleComponents()
-	assert.NoError(t, err)
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
 
 	// Unmarshal the config
 	cfg, err := loadConfigFile(t, filepath.Join("testdata", "valid-config.yaml"), factories)
@@ -42,62 +41,23 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify extensions.
 	assert.Equal(t, 3, len(cfg.Extensions))
-	assert.Equal(t, "some string", cfg.Extensions[config.NewComponentIDWithName("exampleextension", "1")].(*testcomponents.ExampleExtensionCfg).ExtraSetting)
+	assert.Contains(t, cfg.Extensions, config.NewComponentIDWithName("nop", "0"))
+	assert.Contains(t, cfg.Extensions, config.NewComponentIDWithName("nop", "disabled"))
+	assert.Contains(t, cfg.Extensions, config.NewComponentIDWithName("nop", "1"))
 
 	// Verify receivers
 	assert.Equal(t, 2, len(cfg.Receivers), "Incorrect receivers count")
-
-	assert.Equal(t,
-		&testcomponents.ExampleReceiver{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("examplereceiver")),
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:1000",
-			},
-			ExtraSetting: "some string",
-		},
-		cfg.Receivers[config.NewComponentID("examplereceiver")],
-		"Did not load receiver config correctly")
-
-	assert.Equal(t,
-		&testcomponents.ExampleReceiver{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName("examplereceiver", "myreceiver")),
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:12345",
-			},
-			ExtraSetting: "some string",
-		},
-		cfg.Receivers[config.NewComponentIDWithName("examplereceiver", "myreceiver")],
-		"Did not load receiver config correctly")
+	assert.Contains(t, cfg.Receivers, config.NewComponentID("nop"))
+	assert.Contains(t, cfg.Receivers, config.NewComponentIDWithName("nop", "myreceiver"))
 
 	// Verify exporters
 	assert.Equal(t, 2, len(cfg.Exporters), "Incorrect exporters count")
-
-	assert.Equal(t,
-		&testcomponents.ExampleExporter{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID("exampleexporter")),
-			ExtraSetting:     "some export string",
-		},
-		cfg.Exporters[config.NewComponentID("exampleexporter")],
-		"Did not load exporter config correctly")
-
-	assert.Equal(t,
-		&testcomponents.ExampleExporter{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName("exampleexporter", "myexporter")),
-			ExtraSetting:     "some export string 2",
-		},
-		cfg.Exporters[config.NewComponentIDWithName("exampleexporter", "myexporter")],
-		"Did not load exporter config correctly")
+	assert.Contains(t, cfg.Exporters, config.NewComponentID("nop"))
+	assert.Contains(t, cfg.Exporters, config.NewComponentIDWithName("nop", "myexporter"))
 
 	// Verify Processors
 	assert.Equal(t, 1, len(cfg.Processors), "Incorrect processors count")
-
-	assert.Equal(t,
-		&testcomponents.ExampleProcessorCfg{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("exampleprocessor")),
-			ExtraSetting:      "some export string",
-		},
-		cfg.Processors[config.NewComponentID("exampleprocessor")],
-		"Did not load processor config correctly")
+	assert.Contains(t, cfg.Exporters, config.NewComponentID("nop"))
 
 	// Verify Service Telemetry
 	assert.Equal(t,
@@ -120,24 +80,23 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify Service Extensions
 	assert.Equal(t, 2, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewComponentIDWithName("exampleextension", "0"), cfg.Service.Extensions[0])
-	assert.Equal(t, config.NewComponentIDWithName("exampleextension", "1"), cfg.Service.Extensions[1])
+	assert.Equal(t, config.NewComponentIDWithName("nop", "0"), cfg.Service.Extensions[0])
+	assert.Equal(t, config.NewComponentIDWithName("nop", "1"), cfg.Service.Extensions[1])
 
 	// Verify Service Pipelines
 	assert.Equal(t, 1, len(cfg.Service.Pipelines), "Incorrect pipelines count")
 
 	assert.Equal(t,
 		&config.Pipeline{
-			Receivers:  []config.ComponentID{config.NewComponentID("examplereceiver")},
-			Processors: []config.ComponentID{config.NewComponentID("exampleprocessor")},
-			Exporters:  []config.ComponentID{config.NewComponentID("exampleexporter")},
+			Receivers:  []config.ComponentID{config.NewComponentIDWithName("nop", "myreceiver")},
+			Processors: []config.ComponentID{config.NewComponentID("nop")},
+			Exporters:  []config.ComponentID{config.NewComponentIDWithName("nop", "myexporter")},
 		},
 		cfg.Service.Pipelines[config.NewComponentID("traces")],
 		"Did not load pipeline config correctly")
 }
 
 func TestDecodeConfig_Invalid(t *testing.T) {
-
 	var testCases = []struct {
 		name            string          // test case name (also file name containing config yaml)
 		expected        configErrorCode // expected error (if nil any error is acceptable)
@@ -187,7 +146,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 		{name: "invalid-metrics-level", expected: errUnmarshalService},
 	}
 
-	factories, err := testcomponents.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	for _, test := range testCases {
@@ -211,7 +170,7 @@ func TestDecodeConfig_Invalid(t *testing.T) {
 }
 
 func TestLoadEmpty(t *testing.T) {
-	factories, err := testcomponents.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	_, err = loadConfigFile(t, filepath.Join("testdata", "empty-config.yaml"), factories)
@@ -219,7 +178,7 @@ func TestLoadEmpty(t *testing.T) {
 }
 
 func TestLoadEmptyAllSections(t *testing.T) {
-	factories, err := testcomponents.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	_, err = loadConfigFile(t, filepath.Join("testdata", "empty-all-sections.yaml"), factories)
@@ -235,7 +194,7 @@ func loadConfigFile(t *testing.T, fileName string, factories component.Factories
 }
 
 func TestDefaultLoggerConfig(t *testing.T) {
-	factories, err := testcomponents.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	cfg, err := loadConfigFile(t, filepath.Join("testdata", "empty-all-sections.yaml"), factories)

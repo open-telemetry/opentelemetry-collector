@@ -26,9 +26,6 @@ import (
 // for "exampleprocessor" processor type.
 type ExampleProcessorCfg struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraSetting             string                   `mapstructure:"extra"`
-	ExtraMapSetting          map[string]string        `mapstructure:"extra_map"`
-	ExtraListSetting         []string                 `mapstructure:"extra_list"`
 }
 
 const procType = "exampleprocessor"
@@ -45,9 +42,6 @@ var ExampleProcessorFactory = component.NewProcessorFactory(
 func createDefaultConfig() config.Processor {
 	return &ExampleProcessorCfg{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(procType)),
-		ExtraSetting:      "some export string",
-		ExtraMapSetting:   nil,
-		ExtraListSetting:  nil,
 	}
 }
 

@@ -1,14 +1,14 @@
 extensions:
   /custom:
 receivers:
-  examplereceiver:
+  nop:
 exporters:
-  exampleexporter:
+  nop:
 processors:
-  exampleprocessor:
+  nop:
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

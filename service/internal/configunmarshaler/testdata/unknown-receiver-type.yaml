@@ -1,15 +1,15 @@
 receivers:
   nosuchreceiver:
 exporters:
-  exampleexporter:
+  nop:
 processors:
-  exampleprocessor:
+  nop:
 service:
   pipelines:
     traces:
       receivers:
-        - examplereceiver
+        - nop
       exporters:
-        - exampleexporter
+        - nop
       processors:
-        - exampleprocessor
+        - nop

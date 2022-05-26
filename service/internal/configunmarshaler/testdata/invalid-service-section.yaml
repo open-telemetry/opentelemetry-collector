@@ -1,11 +1,11 @@
 receivers:
-  examplereceiver:
+  nop:
 processors:
-  exampleprocessor:
+  nop:
 exporters:
-  exampleexporter:
+  nop:
 extensions:
-  exampleextension:
+  nop:
 service:
   extenstions:
     - examapleextension
@@ -14,8 +14,8 @@ service:
   pipelines:
     traces:
       receivers:
-        - examplereceiver
+        - nop
       processors:
-        - exampleprocessor
+        - nop
       exporters:
-        - exampleexporter
+        - nop
