@@ -18,14 +18,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	jsoniter "github.com/json-iterator/go"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/otlp"
 
 	"github.com/gogo/protobuf/jsonpb"
-
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/internal"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
 
 // NewJSONMarshaler returns a model.Marshaler. Marshals to OTLP json bytes.
@@ -86,6 +85,9 @@ func (d *jsoniterUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	td := readMetricsData(iter)
 	err := iter.Error
+	if err != nil {
+		return Metrics{}, err
+	}
 	return internal.MetricsFromProto(td), err
 }
 
@@ -98,6 +100,8 @@ func readMetricsData(iter *jsoniter.Iterator) otlpmetrics.MetricsData {
 				td.ResourceMetrics = append(td.ResourceMetrics, readResourceMetrics(iter))
 				return true
 			})
+		default:
+			iter.ReportError("readMetricsData", fmt.Sprintf("unknown field:%v", f))
 		}
 		return true
 	})
@@ -106,7 +110,6 @@ func readMetricsData(iter *jsoniter.Iterator) otlpmetrics.MetricsData {
 
 func readResourceMetrics(iter *jsoniter.Iterator) *otlpmetrics.ResourceMetrics {
 	rs := &otlpmetrics.ResourceMetrics{}
-
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource":
@@ -183,55 +186,72 @@ func readMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric {
 		case "unit":
 			sp.Unit = iter.ReadString()
 		case "sum":
-			data := sp.Data.(*otlpmetrics.Metric_Sum)
+			data := &otlpmetrics.Metric_Sum{
+				Sum: &otlpmetrics.Sum{},
+			}
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "aggregation_temporality", "aggregationTemporality":
-					data.Sum.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadInt32())
+					data.Sum.AggregationTemporality = readAggregationTemporality(iter)
 				case "is_monotonic", "isMonotonic":
 					data.Sum.IsMonotonic = iter.ReadBool()
 				case "data_points", "dataPoints":
+					var dataPoints []*otlpmetrics.NumberDataPoint
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						data.Sum.DataPoints = append(data.Sum.DataPoints, readNumberDataPoint(iter))
+						dataPoints = append(dataPoints, readNumberDataPoint(iter))
 						return true
 					})
+					data.Sum.DataPoints = dataPoints
 				default:
 					iter.ReportError("readMetric.Sum", fmt.Sprintf("unknown field:%v", f))
 				}
+				sp.Data = data
 				return true
 			})
 		case "gauge":
-			data := sp.Data.(*otlpmetrics.Metric_Gauge)
+			data := &otlpmetrics.Metric_Gauge{
+				Gauge: &otlpmetrics.Gauge{},
+			}
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "data_points", "dataPoints":
+					var dataPoints []*otlpmetrics.NumberDataPoint
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						data.Gauge.DataPoints = append(data.Gauge.DataPoints, readNumberDataPoint(iter))
+						dataPoints = append(dataPoints, readNumberDataPoint(iter))
 						return true
 					})
+					data.Gauge.DataPoints = dataPoints
 				default:
 					iter.ReportError("readMetric.Gauge", fmt.Sprintf("unknown field:%v", f))
 				}
+				sp.Data = data
 				return true
 			})
 		case "histogram":
-			data := sp.Data.(*otlpmetrics.Metric_Histogram)
+			data := &otlpmetrics.Metric_Histogram{
+				Histogram: &otlpmetrics.Histogram{},
+			}
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "data_points", "dataPoints":
+					var dataPoints []*otlpmetrics.HistogramDataPoint
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						data.Histogram.DataPoints = append(data.Histogram.DataPoints, readHistogramDataPoint(iter))
+						dataPoints = append(dataPoints, readHistogramDataPoint(iter))
 						return true
 					})
+					data.Histogram.DataPoints = dataPoints
 				case "aggregation_temporality", "aggregationTemporality":
-					data.Histogram.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadInt32())
+					data.Histogram.AggregationTemporality = readAggregationTemporality(iter)
 				default:
 					iter.ReportError("readMetric.Histogram", fmt.Sprintf("unknown field:%v", f))
 				}
+				sp.Data = data
 				return true
 			})
 		case "exponential_histogram", "exponentialHistogram":
-			data := sp.Data.(*otlpmetrics.Metric_ExponentialHistogram)
+			data := &otlpmetrics.Metric_ExponentialHistogram{
+				ExponentialHistogram: &otlpmetrics.ExponentialHistogram{},
+			}
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "data_points", "dataPoints":
@@ -241,14 +261,17 @@ func readMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric {
 						return true
 					})
 				case "aggregation_temporality", "aggregationTemporality":
-					data.ExponentialHistogram.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadInt32())
+					data.ExponentialHistogram.AggregationTemporality = readAggregationTemporality(iter)
 				default:
 					iter.ReportError("readMetric.Histogram", fmt.Sprintf("unknown field:%v", f))
 				}
+				sp.Data = data
 				return true
 			})
 		case "summary":
-			data := sp.Data.(*otlpmetrics.Metric_Summary)
+			data := &otlpmetrics.Metric_Summary{
+				Summary: &otlpmetrics.Summary{},
+			}
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "data_points", "dataPoints":
@@ -260,6 +283,7 @@ func readMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric {
 				default:
 					iter.ReportError("readMetric.Summary", fmt.Sprintf("unknown field:%v", f))
 				}
+				sp.Data = data
 				return true
 			})
 
@@ -421,25 +445,6 @@ func readExemplar(iter *jsoniter.Iterator) otlpmetrics.Exemplar {
 	return exemplar
 }
 
-func readExponentialBuckets(iter *jsoniter.Iterator) otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	buckets := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "bucket_counts", "bucketCounts":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				buckets.BucketCounts = append(buckets.BucketCounts, iter.ReadUint64())
-				return true
-			})
-		case "offset":
-			buckets.Offset = iter.ReadInt32()
-		default:
-			iter.ReportError("ExponentialBuckets", fmt.Sprintf("unknown field:%v", f))
-		}
-		return true
-	})
-	return buckets
-}
-
 func readNumberDataPoint(iter *jsoniter.Iterator) *otlpmetrics.NumberDataPoint {
 	point := &otlpmetrics.NumberDataPoint{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
@@ -495,7 +500,7 @@ func readHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.HistogramDataP
 			point.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
 		case "bucket_counts", "bucketCounts":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.BucketCounts = append(point.BucketCounts, iter.ReadUint64())
+				point.BucketCounts = append(point.BucketCounts, uint64(readInt64(iter)))
 				return true
 			})
 		case "explicit_bounds", "explicitBounds":
@@ -546,15 +551,39 @@ func readExponentialHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.Exp
 		case "scale":
 			point.Scale = iter.ReadInt32()
 		case "zero_count", "zeroCount":
-			point.ZeroCount = iter.ReadUint64()
+			point.ZeroCount = uint64(readInt64(iter))
 		case "positive":
+			positive := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				point.Positive = readExponentialBuckets(iter)
+				switch f {
+				case "bucket_counts", "bucketCounts":
+					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+						positive.BucketCounts = append(positive.BucketCounts, uint64(readInt64(iter)))
+						return true
+					})
+				case "offset":
+					positive.Offset = iter.ReadInt32()
+				default:
+					iter.ReportError("ExponentialBuckets", fmt.Sprintf("unknown field:%v", f))
+				}
+				point.Positive = positive
 				return true
 			})
 		case "negative":
+			negative := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				point.Negative = readExponentialBuckets(iter)
+				switch f {
+				case "bucket_counts", "bucketCounts":
+					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+						negative.BucketCounts = append(negative.BucketCounts, uint64(readInt64(iter)))
+						return true
+					})
+				case "offset":
+					negative.Offset = iter.ReadInt32()
+				default:
+					iter.ReportError("ExponentialBuckets", fmt.Sprintf("unknown field:%v", f))
+				}
+				point.Negative = negative
 				return true
 			})
 		case "exemplars":
@@ -626,4 +655,13 @@ func readQuantileValue(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint_Va
 		return true
 	})
 	return point
+}
+
+func readAggregationTemporality(iter *jsoniter.Iterator) otlpmetrics.AggregationTemporality {
+	value := iter.ReadAny()
+	if v := value.ToInt(); v > 0 {
+		return otlpmetrics.AggregationTemporality(v)
+	}
+	v := value.ToString()
+	return otlpmetrics.AggregationTemporality(otlpmetrics.AggregationTemporality_value[v])
 }
