@@ -151,7 +151,7 @@ func TestTracesExporter_WithPermanentError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	wantErr := consumererror.NewPermanent(errors.New("really permanent error"))
-	te, err := NewTracesExporter(&fakeMetricsExporterConfig, tt.ToExporterCreateSettings(), newTraceDataPusher(wantErr))
+	te, err := NewTracesExporter(&fakeTracesExporterConfig, tt.ToExporterCreateSettings(), newTraceDataPusher(wantErr))
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
