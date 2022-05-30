@@ -25,7 +25,7 @@ import (
 
 	"github.com/spf13/cast"
 	"go.uber.org/multierr"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
