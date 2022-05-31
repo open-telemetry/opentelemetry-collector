@@ -25,6 +25,8 @@
 
 ### 💡 Enhancements 💡
 
+- Move `service.mapResolver` to `confmap.Resolver` (#5444)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.52.0 Beta
