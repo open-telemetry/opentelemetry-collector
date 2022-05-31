@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"encoding"
@@ -30,34 +30,34 @@ const (
 	KeyDelimiter = "::"
 )
 
-// NewMap creates a new empty config.Map instance.
-func NewMap() *Map {
-	return &Map{k: koanf.New(KeyDelimiter)}
+// New creates a new empty confmap.Conf instance.
+func New() *Conf {
+	return &Conf{k: koanf.New(KeyDelimiter)}
 }
 
-// NewMapFromStringMap creates a config.Map from a map[string]interface{}.
-func NewMapFromStringMap(data map[string]interface{}) *Map {
-	p := NewMap()
+// NewFromStringMap creates a confmap.Conf from a map[string]interface{}.
+func NewFromStringMap(data map[string]interface{}) *Conf {
+	p := New()
 	// Cannot return error because the koanf instance is empty.
 	_ = p.k.Load(confmap.Provider(data, KeyDelimiter), nil)
 	return p
 }
 
-// Map represents the raw configuration map for the OpenTelemetry Collector.
-// The config.Map can be unmarshalled into the Collector's config using the "configunmarshaler" package.
-type Map struct {
+// Conf represents the raw configuration map for the OpenTelemetry Collector.
+// The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
+type Conf struct {
 	k *koanf.Koanf
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
 // Nested keys are returned with a KeyDelimiter separator.
-func (l *Map) AllKeys() []string {
+func (l *Conf) AllKeys() []string {
 	return l.k.Keys()
 }
 
 // Unmarshal unmarshalls the config into a struct.
 // Tags on the fields of the structure must be properly set.
-func (l *Map) Unmarshal(rawVal interface{}) error {
+func (l *Conf) Unmarshal(rawVal interface{}) error {
 	decoder, err := mapstructure.NewDecoder(decoderConfig(rawVal))
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func (l *Map) Unmarshal(rawVal interface{}) error {
 }
 
 // UnmarshalExact unmarshalls the config into a struct, erroring if a field is nonexistent.
-func (l *Map) UnmarshalExact(rawVal interface{}) error {
+func (l *Conf) UnmarshalExact(rawVal interface{}) error {
 	dc := decoderConfig(rawVal)
 	dc.ErrorUnused = true
 	decoder, err := mapstructure.NewDecoder(dc)
@@ -77,12 +77,12 @@ func (l *Map) UnmarshalExact(rawVal interface{}) error {
 }
 
 // Get can retrieve any value given the key to use.
-func (l *Map) Get(key string) interface{} {
+func (l *Conf) Get(key string) interface{} {
 	return l.k.Get(key)
 }
 
 // Set sets the value for the key.
-func (l *Map) Set(key string, value interface{}) {
+func (l *Conf) Set(key string, value interface{}) {
 	// koanf doesn't offer a direct setting mechanism so merging is required.
 	merged := koanf.New(KeyDelimiter)
 	_ = merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
@@ -92,34 +92,34 @@ func (l *Map) Set(key string, value interface{}) {
 
 // IsSet checks to see if the key has been set in any of the data locations.
 // IsSet is case-insensitive for a key.
-func (l *Map) IsSet(key string) bool {
+func (l *Conf) IsSet(key string) bool {
 	return l.k.Exists(key)
 }
 
 // Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
-func (l *Map) Merge(in *Map) error {
+func (l *Conf) Merge(in *Conf) error {
 	return l.k.Merge(in.k)
 }
 
-// Sub returns new Map instance representing a sub-config of this instance.
+// Sub returns new Conf instance representing a sub-config of this instance.
 // It returns an error is the sub-config is not a map[string]interface{} (use Get()), and an empty Map if none exists.
-func (l *Map) Sub(key string) (*Map, error) {
+func (l *Conf) Sub(key string) (*Conf, error) {
 	// Code inspired by the koanf "Cut" func, but returns an error instead of empty map for unsupported sub-config type.
 	data := l.Get(key)
 	if data == nil {
-		return NewMap(), nil
+		return New(), nil
 	}
 
 	if v, ok := data.(map[string]interface{}); ok {
-		return NewMapFromStringMap(v), nil
+		return NewFromStringMap(v), nil
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v)", key, data, reflect.TypeOf(data).Kind())
 }
 
 // ToStringMap creates a map[string]interface{} from a Parser.
-func (l *Map) ToStringMap() map[string]interface{} {
+func (l *Conf) ToStringMap() map[string]interface{} {
 	return maps.Unflatten(l.k.All(), KeyDelimiter)
 }
 

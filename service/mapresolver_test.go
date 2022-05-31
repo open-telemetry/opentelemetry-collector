@@ -24,34 +24,34 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
 type mockProvider struct {
 	scheme string
-	retM   *config.Map
+	retM   *confmap.Conf
 	errR   error
 	errS   error
 	errW   error
 	errC   error
 }
 
-func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher config.WatcherFunc) (config.Retrieved, error) {
+func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher confmap.WatcherFunc) (confmap.Retrieved, error) {
 	if m.errR != nil {
-		return config.Retrieved{}, m.errR
+		return confmap.Retrieved{}, m.errR
 	}
 	if m.retM == nil {
-		return config.NewRetrievedFromMap(config.NewMap()), nil
+		return confmap.NewRetrievedFromMap(confmap.New()), nil
 	}
 	if watcher != nil {
-		watcher(&config.ChangeEvent{Error: m.errW})
+		watcher(&confmap.ChangeEvent{Error: m.errW})
 	}
-	return config.NewRetrievedFromMap(
+	return confmap.NewRetrievedFromMap(
 		m.retM,
-		config.WithRetrievedClose(func(ctx context.Context) error { return m.errC })), nil
+		confmap.WithRetrievedClose(func(ctx context.Context) error { return m.errC })), nil
 }
 
 func (m *mockProvider) Scheme() string {
@@ -69,7 +69,7 @@ type mockConverter struct {
 	err error
 }
 
-func (m *mockConverter) Convert(context.Context, *config.Map) error {
+func (m *mockConverter) Convert(context.Context, *confmap.Conf) error {
 	return errors.New("converter_err")
 }
 
@@ -77,8 +77,8 @@ func TestMapResolver_Errors(t *testing.T) {
 	tests := []struct {
 		name              string
 		locations         []string
-		mapProviders      []config.MapProvider
-		mapConverters     []config.MapConverter
+		providers         []confmap.Provider
+		converters        []confmap.Converter
 		expectResolveErr  bool
 		expectWatchErr    bool
 		expectCloseErr    bool
@@ -87,13 +87,13 @@ func TestMapResolver_Errors(t *testing.T) {
 		{
 			name:             "unsupported location scheme",
 			locations:        []string{"mock:", "not_supported:"},
-			mapProviders:     []config.MapProvider{&mockProvider{}},
+			providers:        []confmap.Provider{&mockProvider{}},
 			expectResolveErr: true,
 		},
 		{
 			name:      "retrieve location config error",
 			locations: []string{"mock:", "err:"},
-			mapProviders: []config.MapProvider{
+			providers: []confmap.Provider{
 				&mockProvider{},
 				&mockProvider{scheme: "err", errR: errors.New("retrieve_err")},
 			},
@@ -102,29 +102,29 @@ func TestMapResolver_Errors(t *testing.T) {
 		{
 			name:             "converter error",
 			locations:        []string{"mock:", filepath.Join("testdata", "otelcol-nop.yaml")},
-			mapProviders:     []config.MapProvider{&mockProvider{}, filemapprovider.New()},
-			mapConverters:    []config.MapConverter{&mockConverter{err: errors.New("converter_err")}},
+			providers:        []confmap.Provider{&mockProvider{}, fileprovider.New()},
+			converters:       []confmap.Converter{&mockConverter{err: errors.New("converter_err")}},
 			expectResolveErr: true,
 		},
 		{
 			name:      "watch error",
 			locations: []string{"mock:", "err:"},
-			mapProviders: func() []config.MapProvider {
-				cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
+			providers: func() []confmap.Provider {
+				conf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
 				require.NoError(t, err)
-				return []config.MapProvider{&mockProvider{}, &mockProvider{scheme: "err", retM: cfgMap, errW: errors.New("watch_err")}}
+				return []confmap.Provider{&mockProvider{}, &mockProvider{scheme: "err", retM: conf, errW: errors.New("watch_err")}}
 			}(),
 			expectWatchErr: true,
 		},
 		{
 			name:      "close error",
 			locations: []string{"mock:", "err:"},
-			mapProviders: func() []config.MapProvider {
-				cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
+			providers: func() []confmap.Provider {
+				conf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
 				require.NoError(t, err)
-				return []config.MapProvider{
+				return []confmap.Provider{
 					&mockProvider{},
-					&mockProvider{scheme: "err", retM: cfgMap, errC: errors.New("close_err")},
+					&mockProvider{scheme: "err", retM: conf, errC: errors.New("close_err")},
 				}
 			}(),
 			expectCloseErr: true,
@@ -132,12 +132,12 @@ func TestMapResolver_Errors(t *testing.T) {
 		{
 			name:      "shutdown error",
 			locations: []string{"mock:", "err:"},
-			mapProviders: func() []config.MapProvider {
-				cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
+			providers: func() []confmap.Provider {
+				conf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
 				require.NoError(t, err)
-				return []config.MapProvider{
+				return []confmap.Provider{
 					&mockProvider{},
-					&mockProvider{scheme: "err", retM: cfgMap, errS: errors.New("close_err")},
+					&mockProvider{scheme: "err", retM: conf, errS: errors.New("close_err")},
 				}
 			}(),
 			expectShutdownErr: true,
@@ -145,7 +145,7 @@ func TestMapResolver_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resolver, err := newMapResolver(tt.locations, makeMapProvidersMap(tt.mapProviders...), tt.mapConverters)
+			resolver, err := newMapResolver(tt.locations, makeMapProvidersMap(tt.providers...), tt.converters)
 			assert.NoError(t, err)
 
 			_, errN := resolver.Resolve(context.Background())
@@ -217,7 +217,7 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		resolver, err := newMapResolver([]string{tt.location}, makeMapProvidersMap(filemapprovider.New()), nil)
+		resolver, err := newMapResolver([]string{tt.location}, makeMapProvidersMap(fileprovider.New()), nil)
 		assert.NoError(t, err)
 		_, err = resolver.Resolve(context.Background())
 		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
@@ -225,13 +225,13 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 }
 
 func TestMapResolver(t *testing.T) {
-	mapProvider := func() config.MapProvider {
-		cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
+	provider := func() confmap.Provider {
+		conf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
-		return &mockProvider{retM: cfgMap}
+		return &mockProvider{retM: conf}
 	}()
 
-	resolver, err := newMapResolver([]string{"mock:"}, makeMapProvidersMap(mapProvider), nil)
+	resolver, err := newMapResolver([]string{"mock:"}, makeMapProvidersMap(provider), nil)
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
@@ -252,7 +252,7 @@ func TestMapResolver(t *testing.T) {
 }
 
 func TestMapResolverNoLocations(t *testing.T) {
-	_, err := newMapResolver([]string{}, makeMapProvidersMap(filemapprovider.New()), nil)
+	_, err := newMapResolver([]string{}, makeMapProvidersMap(fileprovider.New()), nil)
 	assert.Error(t, err)
 }
 
@@ -265,7 +265,7 @@ func TestMapResolverNoWatcher(t *testing.T) {
 	watcherWG := sync.WaitGroup{}
 	resolver, err := newMapResolver(
 		[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
-		makeMapProvidersMap(filemapprovider.New()), nil)
+		makeMapProvidersMap(fileprovider.New()), nil)
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
@@ -284,14 +284,14 @@ func TestMapResolverNoWatcher(t *testing.T) {
 }
 
 func TestMapResolverShutdownClosesWatch(t *testing.T) {
-	mapProvider := func() config.MapProvider {
+	provider := func() confmap.Provider {
 		// Use fakeRetrieved with nil errors to have Watchable interface implemented.
-		cfgMap, err := configtest.LoadConfigMap(filepath.Join("testdata", "otelcol-nop.yaml"))
+		conf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
-		return &mockProvider{retM: cfgMap, errW: configsource.ErrSessionClosed}
+		return &mockProvider{retM: conf, errW: configsource.ErrSessionClosed}
 	}()
 
-	resolver, err := newMapResolver([]string{"mock:"}, makeMapProvidersMap(mapProvider), nil)
+	resolver, err := newMapResolver([]string{"mock:"}, makeMapProvidersMap(provider), nil)
 	_, errN := resolver.Resolve(context.Background())
 	require.NoError(t, err)
 

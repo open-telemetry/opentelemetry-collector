@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 const (
@@ -54,8 +55,8 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-// Unmarshal a config.Map into the config struct.
-func (cfg *Config) Unmarshal(componentParser *config.Map) error {
+// Unmarshal a confmap.Conf into the config struct.
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
 		return errors.New("empty config for OTLP receiver")
 	}
@@ -65,7 +66,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 		return err
 	}
 
-	// next manually search for protocols in the config.Map, if a protocol is not present it means it is disabled.
+	// next manually search for protocols in the confmap.Conf, if a protocol is not present it means it is disabled.
 	protocols, err := componentParser.Sub(protocolsFieldName)
 	if err != nil {
 		return err

@@ -24,22 +24,22 @@ import (
 
 	"go.uber.org/multierr"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // follows drive-letter specification:
 // https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
 var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
-// mapResolver resolves a configuration as a config.Map.
+// mapResolver resolves a configuration as a confmap.Conf.
 type mapResolver struct {
-	uris          []string
-	mapProviders  map[string]config.MapProvider
-	mapConverters []config.MapConverter
+	uris       []string
+	providers  map[string]confmap.Provider
+	converters []confmap.Converter
 
 	sync.Mutex
-	closers []config.CloseFunc
+	closers []confmap.CloseFunc
 	watcher chan error
 }
 
@@ -47,7 +47,7 @@ type mapResolver struct {
 //
 // To resolve a configuration the following steps will happen:
 //   1. Retrieves individual configurations from all given "URIs", and merge them in the retrieve order.
-//   2. Once the config.Map is merged, apply the converters in the given order.
+//   2. Once the confmap.Conf is merged, apply the converters in the given order.
 //
 // After the configuration was resolved the `mapResolver` can be used as a single point to watch for updates in
 // the configuration data retrieved via the config providers used to process the "initial" configuration and to generate
@@ -62,44 +62,44 @@ type mapResolver struct {
 //
 // `uri` must follow the "<scheme>:<opaque_data>" format. This format is compatible with the URI definition
 // (see https://datatracker.ietf.org/doc/html/rfc3986). An empty "<scheme>" defaults to "file" schema.
-func newMapResolver(uris []string, mapProviders map[string]config.MapProvider, mapConverters []config.MapConverter) (*mapResolver, error) {
+func newMapResolver(uris []string, providers map[string]confmap.Provider, converters []confmap.Converter) (*mapResolver, error) {
 	if len(uris) == 0 {
 		return nil, errors.New("invalid map resolver config: no URIs")
 	}
 
-	if len(mapProviders) == 0 {
+	if len(providers) == 0 {
 		return nil, errors.New("invalid map resolver config: no map providers")
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
 	urisCopy := make([]string, len(uris))
 	copy(urisCopy, uris)
-	mapProvidersCopy := make(map[string]config.MapProvider, len(mapProviders))
-	for k, v := range mapProviders {
-		mapProvidersCopy[k] = v
+	providersCopy := make(map[string]confmap.Provider, len(providers))
+	for k, v := range providers {
+		providersCopy[k] = v
 	}
-	mapConvertersCopy := make([]config.MapConverter, len(mapConverters))
-	copy(mapConvertersCopy, mapConverters)
+	convertersCopy := make([]confmap.Converter, len(converters))
+	copy(convertersCopy, converters)
 
 	return &mapResolver{
-		uris:          urisCopy,
-		mapProviders:  mapProvidersCopy,
-		mapConverters: mapConvertersCopy,
-		watcher:       make(chan error, 1),
+		uris:       urisCopy,
+		providers:  providersCopy,
+		converters: convertersCopy,
+		watcher:    make(chan error, 1),
 	}, nil
 }
 
-// Resolve returns the configuration as a config.Map, or error otherwise.
+// Resolve returns the configuration as a confmap.Conf, or error otherwise.
 //
 // Should never be called concurrently with itself, Watch or Shutdown.
-func (mr *mapResolver) Resolve(ctx context.Context) (*config.Map, error) {
+func (mr *mapResolver) Resolve(ctx context.Context) (*confmap.Conf, error) {
 	// First check if already an active watching, close that if any.
 	if err := mr.closeIfNeeded(ctx); err != nil {
 		return nil, fmt.Errorf("cannot close previous watch: %w", err)
 	}
 
 	// Retrieves individual configurations from all URIs in the given order, and merge them in retMap.
-	retMap := config.NewMap()
+	retMap := confmap.New()
 	for _, uri := range mr.uris {
 		// For backwards compatibility:
 		// - empty url scheme means "file".
@@ -110,7 +110,7 @@ func (mr *mapResolver) Resolve(ctx context.Context) (*config.Map, error) {
 		} else {
 			uri = scheme + ":" + uri
 		}
-		p, ok := mr.mapProviders[scheme]
+		p, ok := mr.providers[scheme]
 		if !ok {
 			return nil, fmt.Errorf("scheme %q is not supported for uri %q", scheme, uri)
 		}
@@ -129,9 +129,9 @@ func (mr *mapResolver) Resolve(ctx context.Context) (*config.Map, error) {
 	}
 
 	// Apply the converters in the given order.
-	for _, cfgMapConv := range mr.mapConverters {
-		if err := cfgMapConv.Convert(ctx, retMap); err != nil {
-			return nil, fmt.Errorf("cannot convert the config.Map: %w", err)
+	for _, confConv := range mr.converters {
+		if err := confConv.Convert(ctx, retMap); err != nil {
+			return nil, fmt.Errorf("cannot convert the confmap.Conf: %w", err)
 		}
 	}
 
@@ -158,14 +158,14 @@ func (mr *mapResolver) Shutdown(ctx context.Context) error {
 
 	var errs error
 	errs = multierr.Append(errs, mr.closeIfNeeded(ctx))
-	for _, p := range mr.mapProviders {
+	for _, p := range mr.providers {
 		errs = multierr.Append(errs, p.Shutdown(ctx))
 	}
 
 	return errs
 }
 
-func (mr *mapResolver) onChange(event *config.ChangeEvent) {
+func (mr *mapResolver) onChange(event *confmap.ChangeEvent) {
 	// TODO: Remove check for configsource.ErrSessionClosed when providers updated to not call onChange when closed.
 	if !errors.Is(event.Error, configsource.ErrSessionClosed) {
 		mr.watcher <- event.Error
@@ -180,8 +180,8 @@ func (mr *mapResolver) closeIfNeeded(ctx context.Context) error {
 	return err
 }
 
-func makeMapProvidersMap(providers ...config.MapProvider) map[string]config.MapProvider {
-	ret := make(map[string]config.MapProvider, len(providers))
+func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
+	ret := make(map[string]confmap.Provider, len(providers))
 	for _, provider := range providers {
 		ret[provider.Scheme()] = provider
 	}

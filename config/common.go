@@ -13,6 +13,9 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // Type is the component type as it is used in the config.
 type Type string
@@ -26,9 +29,9 @@ type validatable interface {
 // Unmarshallable defines an optional interface for custom configuration unmarshaling.
 // A configuration struct can implement this interface to override the default unmarshaling.
 type Unmarshallable interface {
-	// Unmarshal is a function that unmarshals a config.Map into the unmarshable struct in a custom way.
-	// The config.Map for this specific component may be nil or empty if no config available.
-	Unmarshal(component *Map) error
+	// Unmarshal is a function that unmarshals a confmap.Conf into the unmarshable struct in a custom way.
+	// The confmap.Conf for this specific component may be nil or empty if no config available.
+	Unmarshal(component *confmap.Conf) error
 }
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
@@ -47,7 +50,7 @@ const (
 	LogsDataType DataType = "logs"
 )
 
-func unmarshal(componentSection *Map, intoCfg interface{}) error {
+func unmarshal(componentSection *confmap.Conf, intoCfg interface{}) error {
 	if cu, ok := intoCfg.(Unmarshallable); ok {
 		return cu.Unmarshal(componentSection)
 	}

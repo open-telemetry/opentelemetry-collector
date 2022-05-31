@@ -5,9 +5,23 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated `componenterror` package. (#5420)
-- Remove deprecated config.MapConverterFunc. (#5419)
+- Remove deprecated `config.MapConverterFunc`. (#5419)
 
 ### 🚩 Deprecations 🚩
+
+- Move `config.Map` to its own package `confmap` which does not depend on any component concept (#5237)
+  - `config.Map` -> `confmap.ConfMap`
+  - `config.MapProvider` -> `confmap.Provider`
+  - `config.Received` -> `confmap.Received`
+  - `config.CloseFunc` -> `confmap.CloseFunc`
+  - `config.ChangeEvent` -> `confmap.ChangeEvent`
+  - `config.MapConverter` -> `confmap.Converter`
+  - Package `envmapprovider` -> `envprovider`
+  - Package `filemapprovider` -> `fileprovider`
+  - Package `yamlmapprovider` -> `yamlprovider`
+  - Package `expandmapconverter` -> `expandconverter`
+  - Package `filemapprovider` -> `fileprovider`
+  - Package `overwritepropertiesmapconverter` -> `overwritepropertiesconverter`
 
 ### 💡 Enhancements 💡
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filemapprovider
+package fileprovider
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 const fileSchemePrefix = schemeName + ":"
@@ -66,7 +66,7 @@ func TestRelativePath(t *testing.T) {
 	require.NoError(t, err)
 	retMap, err := ret.AsMap()
 	assert.NoError(t, err)
-	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
+	expectedMap := confmap.NewFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})
@@ -80,7 +80,7 @@ func TestAbsolutePath(t *testing.T) {
 	require.NoError(t, err)
 	retMap, err := ret.AsMap()
 	assert.NoError(t, err)
-	expectedMap := config.NewMapFromStringMap(map[string]interface{}{
+	expectedMap := confmap.NewFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
 		"exporters::otlp::endpoint": "localhost:4317",
 	})

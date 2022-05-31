@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package yamlmapprovider // import "go.opentelemetry.io/collector/config/mapprovider/yamlmapprovider"
+package yamlprovider // import "go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 
 import (
 	"context"
@@ -21,14 +21,14 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 const schemeName = "yaml"
 
-type mapProvider struct{}
+type provider struct{}
 
-// New returns a new config.MapProvider that allows to provide yaml bytes.
+// New returns a new confmap.Provider that allows to provide yaml bytes.
 //
 // This Provider supports "yaml" scheme, and can be called with a "uri" that follows:
 //   bytes-uri = "yaml:" yaml-bytes
@@ -36,27 +36,27 @@ type mapProvider struct{}
 // Examples:
 // `yaml:processors::batch::timeout: 2s`
 // `yaml:processors::batch/foo::timeout: 3s`
-func New() config.MapProvider {
-	return &mapProvider{}
+func New() confmap.Provider {
+	return &provider{}
 }
 
-func (s *mapProvider) Retrieve(_ context.Context, uri string, _ config.WatcherFunc) (config.Retrieved, error) {
+func (s *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
-		return config.Retrieved{}, fmt.Errorf("%v uri is not supported by %v provider", uri, schemeName)
+		return confmap.Retrieved{}, fmt.Errorf("%v uri is not supported by %v provider", uri, schemeName)
 	}
 
 	var data map[string]interface{}
 	if err := yaml.Unmarshal([]byte(uri[len(schemeName)+1:]), &data); err != nil {
-		return config.Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
+		return confmap.Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
 	}
 
-	return config.NewRetrievedFromMap(config.NewMapFromStringMap(data)), nil
+	return confmap.NewRetrievedFromMap(confmap.NewFromStringMap(data)), nil
 }
 
-func (*mapProvider) Scheme() string {
+func (*provider) Scheme() string {
 	return schemeName
 }
 
-func (s *mapProvider) Shutdown(context.Context) error {
+func (s *provider) Shutdown(context.Context) error {
 	return nil
 }
