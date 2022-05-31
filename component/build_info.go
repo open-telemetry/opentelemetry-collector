@@ -15,12 +15,12 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 // BuildInfo is the information that is logged at the application start and
-// passed into each component. This information can be overridden in custom builds.
+// passed into each component. This information can be overridden in custom build.
 type BuildInfo struct {
-	// Executable file name, e.g. "otelcol".
+	// Command is the executable file name, e.g. "otelcol".
 	Command string
 
-	// Full name of the collector, e.g. "OpenTelemetry Collector".
+	// Description is the full name of the collector, e.g. "OpenTelemetry Collector".
 	Description string
 
 	// Version string.
