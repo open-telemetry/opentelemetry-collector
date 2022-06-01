@@ -59,7 +59,7 @@ type exporter struct {
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg config.Exporter, settings component.TelemetrySettings, buildInfo component.BuildInfo) (*exporter, error) {
+func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
@@ -67,9 +67,9 @@ func newExporter(cfg config.Exporter, settings component.TelemetrySettings, buil
 	}
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
-		buildInfo.Description, buildInfo.Version, runtime.GOOS, runtime.GOARCH)
+		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &exporter{config: oCfg, settings: settings, userAgent: userAgent}, nil
+	return &exporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
