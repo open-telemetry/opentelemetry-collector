@@ -35,7 +35,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/featuregate"
@@ -130,7 +129,7 @@ func (tel *colTelemetry) initOnce(col *Collector) error {
 		if _, ok := resource[semconv.AttributeServiceVersion]; !ok {
 			// AttributeServiceVersion is not specified in the config. Use the actual
 			// build version.
-			telAttrs[semconv.AttributeServiceVersion] = version.Version
+			telAttrs[semconv.AttributeServiceVersion] = col.set.BuildInfo.Version
 		}
 	}
 

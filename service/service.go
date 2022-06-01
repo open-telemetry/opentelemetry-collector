@@ -40,6 +40,7 @@ func newService(set *svcSettings) (*service, error) {
 		telemetry: set.Telemetry,
 		host: &serviceHost{
 			factories:         set.Factories,
+			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
 	}
