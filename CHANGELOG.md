@@ -1643,7 +1643,7 @@ Released 2020-06-16
 #### Traces
 
 | Receivers  |   Processors   | Exporters  |
-| :--------: | :------------: | :--------: |
+|:----------:|:--------------:|:----------:|
 |   Jaeger   |   Attributes   |    File    |
 | OpenCensus |     Batch      |   Jaeger   |
 |    OTLP    | Memory Limiter |  Logging   |
@@ -1655,7 +1655,7 @@ Released 2020-06-16
 #### Metrics
 
 |  Receivers  |   Processors   | Exporters  |
-| :---------: | :------------: | :--------: |
+|:-----------:|:--------------:|:----------:|
 | HostMetrics |     Batch      |    File    |
 | OpenCensus  |     Filter     |  Logging   |
 |    OTLP     | Memory Limiter | OpenCensus |
@@ -1686,7 +1686,7 @@ Released 2020-03-30
 ### Components
 
 | Receivers / Exporters |   Processors   |      Extensions      |
-| :-------------------: | :------------: | :------------------: |
+|:---------------------:|:--------------:|:--------------------:|
 |        Jaeger         |   Attributes   |     Health Check     |
 |      OpenCensus       |     Batch      | Performance Profiler |
 |     OpenTelemetry     | Memory Limiter |        zPages        |
