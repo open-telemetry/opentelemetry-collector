@@ -27,6 +27,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- Fixes the "service.version" label value for internal metrics, always was "latest" in core/contrib distros. (#5449).
+
 ## v0.52.0 Beta
 
 ### 🛑 Breaking changes 🛑

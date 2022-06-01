@@ -20,8 +20,8 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/service/internal/runtimeinfo"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
@@ -48,7 +48,9 @@ func (host *serviceHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 
 func (host *serviceHost) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "service"})
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Service " + host.buildInfo.Command})
+	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build Info", Properties: getBuildInfoProperties(host.buildInfo)})
+	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Runtime Info", Properties: runtimeinfo.Info()})
 	zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
 		Name:              "Pipelines",
 		ComponentEndpoint: pipelinezPath,
@@ -64,7 +66,6 @@ func (host *serviceHost) handleServicezRequest(w http.ResponseWriter, r *http.Re
 		ComponentEndpoint: featurezPath,
 		Link:              true,
 	})
-	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build And Runtime", Properties: version.RuntimeVar()})
 	zpages.WriteHTMLPageFooter(w)
 }
 
@@ -174,4 +175,12 @@ func getFeaturesTableData() zpages.FeatureGateTableData {
 	}
 
 	return data
+}
+
+func getBuildInfoProperties(buildInfo component.BuildInfo) [][2]string {
+	return [][2]string{
+		{"Command", buildInfo.Command},
+		{"Description", buildInfo.Description},
+		{"Version", buildInfo.Version},
+	}
 }

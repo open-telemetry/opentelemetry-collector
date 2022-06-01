@@ -49,6 +49,7 @@ func newService(set *settings) (*service, error) {
 		},
 		host: &serviceHost{
 			factories:         set.Factories,
+			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
 	}

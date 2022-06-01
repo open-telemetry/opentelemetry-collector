@@ -37,7 +37,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -214,8 +213,8 @@ var testResourceAttrValue = "resource_attr_test_value"
 var testInstanceID = "test_instance_id"
 var testServiceVersion = "2022-05-20"
 
-var ownMetricsTestCases = []ownMetricsTestCase{
-	{
+func ownMetricsTestCases(version string) []ownMetricsTestCase {
+	return []ownMetricsTestCase{{
 		name:                "no resource",
 		userDefinedResource: nil,
 		// All labels added to all collector metrics by default are listed below.
@@ -226,60 +225,60 @@ var ownMetricsTestCases = []ownMetricsTestCase{
 		// monitor the Collector in production deployments.
 		expectedLabels: map[string]labelValue{
 			"service_instance_id": {state: labelAnyValue},
-			"service_version":     {label: version.Version, state: labelSpecificValue},
+			"service_version":     {label: version, state: labelSpecificValue},
 		},
 	},
-	{
-		name: "resource with custom attr",
-		userDefinedResource: map[string]*string{
-			"custom_resource_attr": &testResourceAttrValue,
+		{
+			name: "resource with custom attr",
+			userDefinedResource: map[string]*string{
+				"custom_resource_attr": &testResourceAttrValue,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id":  {state: labelAnyValue},
+				"service_version":      {label: version, state: labelSpecificValue},
+				"custom_resource_attr": {label: "resource_attr_test_value", state: labelSpecificValue},
+			},
 		},
-		expectedLabels: map[string]labelValue{
-			"service_instance_id":  {state: labelAnyValue},
-			"service_version":      {label: version.Version, state: labelSpecificValue},
-			"custom_resource_attr": {label: "resource_attr_test_value", state: labelSpecificValue},
+		{
+			name: "override service.instance.id",
+			userDefinedResource: map[string]*string{
+				"service.instance.id": &testInstanceID,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {label: "test_instance_id", state: labelSpecificValue},
+				"service_version":     {label: version, state: labelSpecificValue},
+			},
 		},
-	},
-	{
-		name: "override service.instance.id",
-		userDefinedResource: map[string]*string{
-			"service.instance.id": &testInstanceID,
+		{
+			name: "suppress service.instance.id",
+			userDefinedResource: map[string]*string{
+				"service.instance.id": nil, // nil value in config is used to suppress attributes.
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelNotPresent},
+				"service_version":     {label: version, state: labelSpecificValue},
+			},
 		},
-		expectedLabels: map[string]labelValue{
-			"service_instance_id": {label: "test_instance_id", state: labelSpecificValue},
-			"service_version":     {label: version.Version, state: labelSpecificValue},
+		{
+			name: "override service.version",
+			userDefinedResource: map[string]*string{
+				"service.version": &testServiceVersion,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_version":     {label: "2022-05-20", state: labelSpecificValue},
+			},
 		},
-	},
-	{
-		name: "suppress service.instance.id",
-		userDefinedResource: map[string]*string{
-			"service.instance.id": nil, // nil value in config is used to suppress attributes.
-		},
-		expectedLabels: map[string]labelValue{
-			"service_instance_id": {state: labelNotPresent},
-			"service_version":     {label: version.Version, state: labelSpecificValue},
-		},
-	},
-	{
-		name: "override service.version",
-		userDefinedResource: map[string]*string{
-			"service.version": &testServiceVersion,
-		},
-		expectedLabels: map[string]labelValue{
-			"service_instance_id": {state: labelAnyValue},
-			"service_version":     {label: "2022-05-20", state: labelSpecificValue},
-		},
-	},
-	{
-		name: "suppress service.version",
-		userDefinedResource: map[string]*string{
-			"service.version": nil, // nil value in config is used to suppress attributes.
-		},
-		expectedLabels: map[string]labelValue{
-			"service_instance_id": {state: labelAnyValue},
-			"service_version":     {state: labelNotPresent},
-		},
-	},
+		{
+			name: "suppress service.version",
+			userDefinedResource: map[string]*string{
+				"service.version": nil, // nil value in config is used to suppress attributes.
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_version":     {state: labelNotPresent},
+			},
+		}}
 }
 
 func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter, tc ownMetricsTestCase) {
@@ -317,7 +316,7 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 	require.NoError(t, err)
 
 	col, err := New(CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
+		BuildInfo:      component.BuildInfo{Version: "test version"},
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
 		LoggingOptions: []zap.Option{zap.Hooks(hook)},
@@ -343,7 +342,7 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 }
 
 func TestCollectorStartWithOpenCensusMetrics(t *testing.T) {
-	for _, tc := range ownMetricsTestCases {
+	for _, tc := range ownMetricsTestCases("test version") {
 		t.Run(tc.name, func(t *testing.T) {
 			testCollectorStartHelper(t, newColTelemetry(featuregate.NewRegistry()), tc)
 		})
@@ -351,7 +350,7 @@ func TestCollectorStartWithOpenCensusMetrics(t *testing.T) {
 }
 
 func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
-	for _, tc := range ownMetricsTestCases {
+	for _, tc := range ownMetricsTestCases("test version") {
 		t.Run(tc.name, func(t *testing.T) {
 			colTel := newColTelemetry(featuregate.NewRegistry())
 			colTel.registry.Apply(map[string]bool{
@@ -462,11 +461,11 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 				switch v.state {
 				case labelNotPresent:
 					_, present := labelMap[k]
-					assert.False(t, present, "label %q must not be present", k)
+					assert.Falsef(t, present, "label %q must not be present", k)
 				case labelSpecificValue:
-					require.Equal(t, v.label, labelMap[k], "mandatory label %q value mismatch", k)
+					require.Equalf(t, v.label, labelMap[k], "mandatory label %q value mismatch", k)
 				case labelAnyValue:
-					assert.NotEmpty(t, labelMap[k], "mandatory label %q not present", k)
+					assert.NotEmptyf(t, labelMap[k], "mandatory label %q not present", k)
 				}
 			}
 		}

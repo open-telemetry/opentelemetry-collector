@@ -12,19 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version
+package runtimeinfo // import "go.opentelemetry.io/collector/service/internal/runtimeinfo"
 
 import (
-	"strings"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"runtime"
+	"time"
 )
 
-func TestInfoString(t *testing.T) {
-	infoString := InfoVar.String()
-	for _, el := range InfoVar {
-		assert.True(t, strings.Contains(infoString, el[0]))
-		assert.True(t, strings.Contains(infoString, el[1]))
+var (
+	// InfoVar is a singleton instance of the Info struct.
+	runtimeInfoVar [][2]string
+)
+
+func init() {
+	runtimeInfoVar = [][2]string{
+		{"StartTimestamp", time.Now().String()},
+		{"Go", runtime.Version()},
+		{"OS", runtime.GOOS},
+		{"Arch", runtime.GOARCH},
+		// Add other valuable runtime information here.
 	}
+}
+
+// Info returns the runtime information like uptime, os, arch, etc.
+func Info() [][2]string {
+	return runtimeInfoVar
 }
