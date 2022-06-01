@@ -8,7 +8,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.3.0
-	github.com/klauspost/compress v1.15.4
+	github.com/klauspost/compress v1.15.5
 	github.com/knadh/koanf v1.4.1
 	github.com/magiconair/properties v1.8.6
 	github.com/mitchellh/mapstructure v1.5.0
@@ -37,7 +37,7 @@ require (
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
-	google.golang.org/grpc v1.46.2
+	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v3 v3.0.1
 )
