@@ -330,7 +330,7 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 	assert.Eventually(t, func() bool {
 		return Running == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
-	assert.Equal(t, col.telemetry.Logger, col.GetLogger())
+	assert.Equal(t, col.service.telemetry.Logger, col.GetLogger())
 	assert.True(t, loggingHookCalled)
 
 	assertMetrics(t, metricsAddr, tc.expectedLabels)
@@ -420,7 +420,7 @@ func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 
 type mockColTelemetry struct{}
 
-func (tel *mockColTelemetry) init(*Collector) error {
+func (tel *mockColTelemetry) init(*service) error {
 	return nil
 }
 

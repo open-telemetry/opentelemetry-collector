@@ -98,10 +98,9 @@ func createExampleService(t *testing.T, factories component.Factories) *service 
 	cfg, err := configunmarshaler.New().Unmarshal(conf, factories)
 	require.NoError(t, err)
 
-	srv, err := newService(&svcSettings{
+	srv, err := newService(&settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
-		Telemetry: componenttest.NewNopTelemetrySettings(),
 		Config:    cfg,
 	})
 	require.NoError(t, err)
