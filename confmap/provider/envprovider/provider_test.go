@@ -34,8 +34,6 @@ exporters:
     endpoint: "localhost:4317"
 `
 
-const invalidYAML = "invalid"
-
 func TestEmptyName(t *testing.T) {
 	env := New()
 	_, err := env.Retrieve(context.Background(), "", nil)
@@ -45,14 +43,14 @@ func TestEmptyName(t *testing.T) {
 
 func TestUnsupportedScheme(t *testing.T) {
 	env := New()
-	_, err := env.Retrieve(context.Background(), "http://", nil)
+	_, err := env.Retrieve(context.Background(), "https://", nil)
 	assert.Error(t, err)
 	assert.NoError(t, env.Shutdown(context.Background()))
 }
 
 func TestInvalidYAML(t *testing.T) {
 	const envName = "invalid-yaml"
-	t.Setenv(envName, invalidYAML)
+	t.Setenv(envName, "[invalid,")
 	env := New()
 	_, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	assert.Error(t, err)
@@ -66,7 +64,7 @@ func TestEnv(t *testing.T) {
 	env := New()
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
-	retMap, err := ret.AsMap()
+	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,

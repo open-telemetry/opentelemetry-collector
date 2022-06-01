@@ -118,7 +118,7 @@ func (mr *mapResolver) Resolve(ctx context.Context) (*confmap.Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		retCfgMap, err := ret.AsMap()
+		retCfgMap, err := ret.AsConf()
 		if err != nil {
 			return nil, err
 		}

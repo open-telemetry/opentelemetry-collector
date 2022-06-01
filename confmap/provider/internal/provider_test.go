@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package confmap
+package internal
 
 import (
 	"context"
@@ -21,23 +21,35 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
-func TestNewRetrieved(t *testing.T) {
-	ret, err := NewRetrieved(map[string]interface{}{})
+func TestNewRetrievedFromYAML(t *testing.T) {
+	ret, err := NewRetrievedFromYAML([]byte{})
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
-	assert.Equal(t, New(), retMap)
+	assert.Equal(t, confmap.New(), retMap)
 	assert.NoError(t, ret.Close(context.Background()))
 }
 
-func TestNewRetrievedWithOptions(t *testing.T) {
+func TestNewRetrievedFromYAMLWithOptions(t *testing.T) {
 	want := errors.New("my error")
-	ret, err := NewRetrieved(map[string]interface{}{}, WithRetrievedClose(func(context.Context) error { return want }))
+	ret, err := NewRetrievedFromYAML([]byte{}, confmap.WithRetrievedClose(func(context.Context) error { return want }))
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
-	assert.Equal(t, New(), retMap)
+	assert.Equal(t, confmap.New(), retMap)
 	assert.Equal(t, want, ret.Close(context.Background()))
+}
+
+func TestNewRetrievedFromYAMLInvalidYAMLBytes(t *testing.T) {
+	_, err := NewRetrievedFromYAML([]byte("[invalid:,"))
+	require.Error(t, err)
+}
+
+func TestNewRetrievedFromYAMLInvalidAsMap(t *testing.T) {
+	_, err := NewRetrievedFromYAML([]byte("string"))
+	require.Error(t, err)
 }

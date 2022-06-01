@@ -44,11 +44,14 @@ type Retrieved = confmap.Retrieved
 // Deprecated: [v0.53.0] use confmap.RetrievedOption
 type RetrievedOption = confmap.RetrievedOption
 
-// Deprecated: [v0.53.0] use confmap.NewRetrievedFromMap
+// Deprecated: [v0.53.0] use confmap.WithRetrievedClose
 var WithRetrievedClose = confmap.WithRetrievedClose
 
-// Deprecated: [v0.53.0] use confmap.NewRetrievedFromMap
-var NewRetrievedFromMap = confmap.NewRetrievedFromMap
+// Deprecated: [v0.53.0] use confmap.NewRetrieved
+func NewRetrievedFromMap(conf *confmap.Conf, opts ...confmap.RetrievedOption) confmap.Retrieved {
+	ret, _ := confmap.NewRetrieved(conf.ToStringMap(), opts...)
+	return ret
+}
 
 // Deprecated: [v0.53.0] use confmap.WatcherFunc
 type WatcherFunc = confmap.WatcherFunc

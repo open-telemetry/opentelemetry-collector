@@ -124,7 +124,7 @@ func (tel *colTelemetry) initOnce(svc *service) error {
 		if _, ok := telemetryConf.Resource[semconv.AttributeServiceVersion]; !ok {
 			// AttributeServiceVersion is not specified in the config. Use the actual
 			// build version.
-			telAttrs[semconv.AttributeServiceVersion] = col.set.BuildInfo.Version
+			telAttrs[semconv.AttributeServiceVersion] = svc.buildInfo.Version
 		}
 	}
 

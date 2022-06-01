@@ -30,7 +30,7 @@ func TestEmpty(t *testing.T) {
 
 func TestInvalidYAML(t *testing.T) {
 	sp := New()
-	_, err := sp.Retrieve(context.Background(), "yaml::2s", nil)
+	_, err := sp.Retrieve(context.Background(), "yaml:[invalid,", nil)
 	assert.Error(t, err)
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
@@ -39,7 +39,7 @@ func TestOneValue(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch::timeout: 2s", nil)
 	assert.NoError(t, err)
-	retMap, err := ret.AsMap()
+	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"processors": map[string]interface{}{
@@ -55,7 +55,7 @@ func TestNamedComponent(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s", nil)
 	assert.NoError(t, err)
-	retMap, err := ret.AsMap()
+	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"processors": map[string]interface{}{
@@ -71,7 +71,7 @@ func TestMapEntry(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors: {batch/foo::timeout: 3s, batch::timeout: 2s}", nil)
 	assert.NoError(t, err)
-	retMap, err := ret.AsMap()
+	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"processors": map[string]interface{}{
@@ -90,7 +90,7 @@ func TestNewLine(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s\nprocessors::batch::timeout: 2s", nil)
 	assert.NoError(t, err)
-	retMap, err := ret.AsMap()
+	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
 		"processors": map[string]interface{}{
@@ -109,7 +109,7 @@ func TestDotSeparator(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors.batch.timeout: 4s", nil)
 	assert.NoError(t, err)
-	retMap, err := ret.AsMap()
+	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"processors.batch.timeout": "4s"}, retMap.ToStringMap())
 	assert.NoError(t, sp.Shutdown(context.Background()))

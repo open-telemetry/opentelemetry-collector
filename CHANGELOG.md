@@ -22,6 +22,7 @@
   - Package `expandmapconverter` -> `expandconverter`
   - Package `filemapprovider` -> `fileprovider`
   - Package `overwritepropertiesmapconverter` -> `overwritepropertiesconverter`
+- Deprecate `confmap.Received.AsMap` in favor of `confmap.Received.AsConf` (#5453)
 
 ### 💡 Enhancements 💡
 

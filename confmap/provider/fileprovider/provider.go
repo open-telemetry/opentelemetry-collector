@@ -21,9 +21,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v3"
-
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/internal"
 )
 
 const schemeName = "file"
@@ -49,7 +48,7 @@ func New() confmap.Provider {
 
 func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
-		return confmap.Retrieved{}, fmt.Errorf("%v uri is not supported by %v provider", uri, schemeName)
+		return confmap.Retrieved{}, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
 
 	// Clean the path before using it.
@@ -58,12 +57,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 		return confmap.Retrieved{}, fmt.Errorf("unable to read the file %v: %w", uri, err)
 	}
 
-	var data map[string]interface{}
-	if err = yaml.Unmarshal(content, &data); err != nil {
-		return confmap.Retrieved{}, fmt.Errorf("unable to parse yaml: %w", err)
-	}
-
-	return confmap.NewRetrievedFromMap(confmap.NewFromStringMap(data)), nil
+	return internal.NewRetrievedFromYAML(content)
 }
 
 func (*provider) Scheme() string {

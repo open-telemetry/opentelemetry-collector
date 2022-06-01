@@ -32,7 +32,7 @@ import (
 
 type mockProvider struct {
 	scheme string
-	retM   *confmap.Conf
+	retM   map[string]interface{}
 	errR   error
 	errS   error
 	errW   error
@@ -44,14 +44,12 @@ func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher confmap.Wat
 		return confmap.Retrieved{}, m.errR
 	}
 	if m.retM == nil {
-		return confmap.NewRetrievedFromMap(confmap.New()), nil
+		return confmap.NewRetrieved(map[string]interface{}{})
 	}
 	if watcher != nil {
 		watcher(&confmap.ChangeEvent{Error: m.errW})
 	}
-	return confmap.NewRetrievedFromMap(
-		m.retM,
-		confmap.WithRetrievedClose(func(ctx context.Context) error { return m.errC })), nil
+	return confmap.NewRetrieved(m.retM, confmap.WithRetrievedClose(func(ctx context.Context) error { return m.errC }))
 }
 
 func (m *mockProvider) Scheme() string {
@@ -112,7 +110,7 @@ func TestMapResolver_Errors(t *testing.T) {
 			providers: func() []confmap.Provider {
 				conf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
 				require.NoError(t, err)
-				return []confmap.Provider{&mockProvider{}, &mockProvider{scheme: "err", retM: conf, errW: errors.New("watch_err")}}
+				return []confmap.Provider{&mockProvider{}, &mockProvider{scheme: "err", retM: conf.ToStringMap(), errW: errors.New("watch_err")}}
 			}(),
 			expectWatchErr: true,
 		},
@@ -124,7 +122,7 @@ func TestMapResolver_Errors(t *testing.T) {
 				require.NoError(t, err)
 				return []confmap.Provider{
 					&mockProvider{},
-					&mockProvider{scheme: "err", retM: conf, errC: errors.New("close_err")},
+					&mockProvider{scheme: "err", retM: conf.ToStringMap(), errC: errors.New("close_err")},
 				}
 			}(),
 			expectCloseErr: true,
@@ -137,7 +135,7 @@ func TestMapResolver_Errors(t *testing.T) {
 				require.NoError(t, err)
 				return []confmap.Provider{
 					&mockProvider{},
-					&mockProvider{scheme: "err", retM: conf, errS: errors.New("close_err")},
+					&mockProvider{scheme: "err", retM: conf.ToStringMap(), errS: errors.New("close_err")},
 				}
 			}(),
 			expectShutdownErr: true,
@@ -228,7 +226,7 @@ func TestMapResolver(t *testing.T) {
 	provider := func() confmap.Provider {
 		conf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
-		return &mockProvider{retM: conf}
+		return &mockProvider{retM: conf.ToStringMap()}
 	}()
 
 	resolver, err := newMapResolver([]string{"mock:"}, makeMapProvidersMap(provider), nil)
@@ -288,7 +286,7 @@ func TestMapResolverShutdownClosesWatch(t *testing.T) {
 		// Use fakeRetrieved with nil errors to have Watchable interface implemented.
 		conf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
 		require.NoError(t, err)
-		return &mockProvider{retM: conf, errW: configsource.ErrSessionClosed}
+		return &mockProvider{retM: conf.ToStringMap(), errW: configsource.ErrSessionClosed}
 	}()
 
 	resolver, err := newMapResolver([]string{"mock:"}, makeMapProvidersMap(provider), nil)
