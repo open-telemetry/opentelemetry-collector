@@ -64,9 +64,6 @@ type batch interface {
 	// itemCount returns the size of the current batch
 	itemCount() int
 
-	// size returns the size in bytes of the current batch
-	size() int
-
 	// add item to the current batch
 	add(item interface{})
 }
@@ -269,10 +266,6 @@ func (bt *batchTraces) itemCount() int {
 	return bt.spanCount
 }
 
-func (bt *batchTraces) size() int {
-	return bt.sizer.TracesSize(bt.traceData)
-}
-
 type batchMetrics struct {
 	nextConsumer   consumer.Metrics
 	metricData     pmetric.Metrics
@@ -306,10 +299,6 @@ func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int, return
 
 func (bm *batchMetrics) itemCount() int {
 	return bm.dataPointCount
-}
-
-func (bm *batchMetrics) size() int {
-	return bm.sizer.MetricsSize(bm.metricData)
 }
 
 func (bm *batchMetrics) add(item interface{}) {
@@ -356,10 +345,6 @@ func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int, returnByt
 
 func (bl *batchLogs) itemCount() int {
 	return bl.logCount
-}
-
-func (bl *batchLogs) size() int {
-	return bl.sizer.LogsSize(bl.logData)
 }
 
 func (bl *batchLogs) add(item interface{}) {
