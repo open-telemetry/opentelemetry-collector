@@ -92,7 +92,7 @@ func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 	// we might have two concurrent backing queues at the moment
 	// their combined size is stored in q.size, and their combined capacity
 	// should match the capacity of the new queue
-	if q.Size() >= q.Capacity() {
+	if q.size.Load() >= q.capacity {
 		// note that all items will be dropped if the capacity is 0
 		q.onDroppedItem(item)
 		return false
@@ -123,9 +123,4 @@ func (q *boundedMemoryQueue) Stop() {
 // Size returns the current size of the queue
 func (q *boundedMemoryQueue) Size() int {
 	return int(q.size.Load())
-}
-
-// Capacity returns capacity of the queue
-func (q *boundedMemoryQueue) Capacity() int {
-	return int(q.capacity)
 }
