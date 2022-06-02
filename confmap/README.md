@@ -1,7 +1,6 @@
 # High Level Design
 
-This document is work in progress, some concepts are not yet available
-(e.g. Resolver is a private concept in the service for the moment).
+This document is work in progress.
 
 ## Conf
 
