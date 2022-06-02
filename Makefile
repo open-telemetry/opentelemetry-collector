@@ -58,7 +58,7 @@ gomoddownload:
 
 .PHONY: gotest
 gotest:
-	@$(MAKE) for-all-target TARGET="test test-unstable"
+	@$(MAKE) for-all-target TARGET="test"
 
 .PHONY: gobenchmark
 gobenchmark:
@@ -75,7 +75,7 @@ goporto:
 
 .PHONY: golint
 golint:
-	@$(MAKE) for-all-target TARGET="lint lint-unstable"
+	@$(MAKE) for-all-target TARGET="lint"
 
 .PHONY: goimpi
 goimpi:

@@ -28,24 +28,19 @@ The following configuration options can be modified:
 
 ### Persistent Queue
 
-**Status: under development**
+**Status: [alpha]**
 
-> :warning: The capability is under development and currently can be enabled only in OpenTelemetry
-> Collector Contrib with `enable_unstable` build tag set. 
+> :warning: The capability is under development. To use it, an [filestorage] extension needs to be setup, which requires OpenTelemetry Collector Contrib
 
-With this build tag set, additional configuration option can be enabled:
+To use persistent queue, following setting needs to be enabled:
 
 - `sending_queue`
-  - `persistent_storage_enabled` (default = false): When set, enables persistence via a file storage extension
-    (note, `enable_unstable` build tag needs to be enabled first, see below for more details)
+  - `storage` (default = none): When set, enables persistence and uses the component specified as a storage extension for persistent queue
+  - `persistent_storage_enabled` (default = false): When set, enables persistence using the only available storage extension (fails when no storage extension is enabled or more than one storage extension is available)
 
-The maximum number of batches stored to disk can be controlled using `sending_queue.queue_size` parameter (which,
-similarly as for in-memory buffering, defaults to 5000 batches).
+The maximum number of batches stored to disk can be controlled using `sending_queue.queue_size` parameter (which, similarly as for in-memory buffering, defaults to 5000 batches).
 
-When `persistent_storage_enabled` is set to true, the queue is being buffered to disk using 
-[file storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage).
-If collector instance is killed while having some items in the persistent queue, on restart the items are being picked and
-the exporting is continued.
+When persistent queue is enabled, the batches are being buffered to disk using [filestorage] extension. If collector instance is killed while having some items in the persistent queue, on restart the items are being picked and the exporting is continued.
 
 ```
                                                               ┌─Consumer #1─┐
@@ -93,9 +88,9 @@ exporters:
   otlp:
     endpoint: <ENDPOINT>
     sending_queue:
-      persistent_storage_enabled: true
+      storage: file_storage/otc
 extensions:
-  file_storage:
+  file_storage/otc:
     directory: /var/lib/storage/otc
     timeout: 10s
 service:
@@ -112,3 +107,6 @@ service:
       exporters: [otlp]
 
 ```
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage

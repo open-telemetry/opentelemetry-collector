@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build enable_unstable
-// +build enable_unstable
-
 package internal
 
 import (
@@ -42,7 +39,8 @@ func createTestQueue(extension storage.Extension, capacity int) *persistentQueue
 		panic(err)
 	}
 
-	wq := NewPersistentQueue(context.Background(), "foo", capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
+	wq, start := NewPersistentQueue("foo", config.TracesDataType, capacity, logger, newFakeTracesRequestUnmarshalerFunc())
+	start(context.Background(), client)
 	return wq.(*persistentQueue)
 }
 

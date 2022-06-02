@@ -29,7 +29,9 @@ import (
 	"go.opencensus.io/tag"
 	"go.uber.org/atomic"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -115,6 +117,57 @@ func TestQueuedRetry_OnError(t *testing.T) {
 	mockR.checkNumRequests(t, 2)
 	ocs.checkSendItemsCount(t, 2)
 	ocs.checkDroppedItemsCount(t, 0)
+}
+
+// if requeueing is enabled, we eventually retry even if we failed at first
+func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
+	qCfg := NewDefaultQueueSettings()
+	qCfg.NumConsumers = 1
+	rCfg := NewDefaultRetrySettings()
+	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
+	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
+	be.qrSender.consumerSender = ocs
+	be.qrSender.requeuingEnabled = true
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, be.Shutdown(context.Background()))
+	})
+
+	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
+	mockR := newMockRequest(context.Background(), 1, traceErr)
+	ocs.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, be.sender.send(mockR))
+		ocs.waitGroup.Add(1) // necessary because we'll call send() again after requeueing
+	})
+	ocs.awaitAsyncProcessing()
+
+	// In the newMockConcurrentExporter we count requests and items even for failed requests
+	mockR.checkNumRequests(t, 2)
+	ocs.checkSendItemsCount(t, 1)
+	ocs.checkDroppedItemsCount(t, 1) // not actually dropped, but ocs counts each failed send here
+}
+
+// if requeueing is enabled, but the queue is full, we get an error
+func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
+	qCfg := NewDefaultQueueSettings()
+	qCfg.NumConsumers = 0
+	qCfg.QueueSize = 0
+	rCfg := NewDefaultRetrySettings()
+	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
+	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+	be.qrSender.requeuingEnabled = true
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, be.Shutdown(context.Background()))
+	})
+
+	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
+	mockR := newMockRequest(context.Background(), 1, traceErr)
+
+	require.Error(t, be.qrSender.consumerSender.send(mockR), "sending_queue is full")
+	mockR.checkNumRequests(t, 1)
 }
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
@@ -333,6 +386,52 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 
 	ocs.checkSendItemsCount(t, 2*wantRequests)
 	ocs.checkDroppedItemsCount(t, 0)
+}
+
+func TestQueuedRetryPersistenceEnabled(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	qCfg := NewDefaultQueueSettings()
+	qCfg.StorageEnabled = true // enable persistence
+	rCfg := NewDefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+
+	// persistent queue should set a queueStartFunc
+	require.NotNil(t, be.qrSender.queueStartFunc)
+
+	// requeueing should be enabled for the persistent queue
+	require.Equal(t, true, be.qrSender.requeuingEnabled)
+
+	var extensions = map[config.ComponentID]component.Extension{
+		config.NewComponentIDWithName("file_storage", "storage"): &mockStorageExtension{},
+	}
+	host := &mockHost{ext: extensions}
+
+	// we start correctly with a file storage extension
+	require.NoError(t, be.Start(context.Background(), host))
+	require.NoError(t, be.Shutdown(context.Background()))
+}
+
+func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
+	storageError := errors.New("could not get storage client")
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	qCfg := NewDefaultQueueSettings()
+	qCfg.StorageEnabled = true // enable persistence
+	rCfg := NewDefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+
+	var extensions = map[config.ComponentID]component.Extension{
+		config.NewComponentIDWithName("file_storage", "storage"): &mockStorageExtension{GetClientError: storageError},
+	}
+	host := &mockHost{ext: extensions}
+
+	// we fail to start if we get an error creating the storage client
+	require.Error(t, be.Start(context.Background(), host))
 }
 
 func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
