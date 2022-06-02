@@ -32,7 +32,6 @@ import (
 // by holding a startLock before submitting items to the queue.
 func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerFn func(item interface{}))) {
 	q := NewBoundedMemoryQueue(1, func(item interface{}) {})
-	assert.Equal(t, 1, q.Capacity())
 
 	var startLock sync.Mutex
 
