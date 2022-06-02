@@ -16,7 +16,6 @@ package confmap
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -104,26 +103,10 @@ func TestToStringMap(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			parser, err := newMapFromFile(test.fileName)
-			require.NoError(t, err)
-			assert.Equal(t, test.stringMap, parser.ToStringMap())
+			conf := newConfFromFile(t, test.fileName)
+			assert.Equal(t, test.stringMap, conf.ToStringMap())
 		})
 	}
-}
-
-// newMapFromFile creates a new confmap.Conf by reading the given file.
-func newMapFromFile(fileName string) (*Conf, error) {
-	content, err := ioutil.ReadFile(filepath.Clean(fileName))
-	if err != nil {
-		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
-	}
-
-	var data map[string]interface{}
-	if err = yaml.Unmarshal(content, &data); err != nil {
-		return nil, fmt.Errorf("unable to parse yaml: %w", err)
-	}
-
-	return NewFromStringMap(data), nil
 }
 
 func TestExpandNilStructPointersHookFunc(t *testing.T) {
@@ -235,4 +218,15 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T)
 	conf := NewFromStringMap(stringMap)
 	cfg := &TestIDConfig{}
 	assert.Error(t, conf.UnmarshalExact(cfg))
+}
+
+// newConfFromFile creates a new Conf by reading the given file.
+func newConfFromFile(t *testing.T, fileName string) *Conf {
+	content, err := ioutil.ReadFile(filepath.Clean(fileName))
+	require.NoErrorf(t, err, "unable to read the file %v", fileName)
+
+	var data map[string]interface{}
+	require.NoError(t, yaml.Unmarshal(content, &data), "unable to parse yaml")
+
+	return NewFromStringMap(data)
 }

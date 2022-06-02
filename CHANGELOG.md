@@ -26,6 +26,8 @@
 
 ### 💡 Enhancements 💡
 
+- Move `service.mapResolver` to `confmap.Resolver` (#5444)
+
 ### 🧰 Bug fixes 🧰
 
 - Fixes the "service.version" label value for internal metrics, always was "latest" in core/contrib distros. (#5449).

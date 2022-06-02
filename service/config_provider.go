@@ -62,10 +62,11 @@ type ConfigProvider interface {
 }
 
 type configProvider struct {
-	mapResolver *mapResolver
+	mapResolver *confmap.Resolver
 }
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
+// TODO: embed confmap.ResolverSettings into this to avoid duplicates.
 type ConfigProviderSettings struct {
 	// Locations from where the confmap.Conf is retrieved, and merged in the given order.
 	// It is required to have at least one location.
@@ -93,7 +94,7 @@ func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings
 // 	 * Then applies all the confmap.Converter in the given order.
 // * Then unmarshalls the confmap.Conf into the service Config.
 func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
-	mr, err := newMapResolver(set.Locations, set.MapProviders, set.MapConverters)
+	mr, err := confmap.NewResolver(confmap.ResolverSettings{URIs: set.Locations, Providers: set.MapProviders, Converters: set.MapConverters})
 	if err != nil {
 		return nil, err
 	}
@@ -127,4 +128,12 @@ func (cm *configProvider) Watch() <-chan error {
 
 func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return cm.mapResolver.Shutdown(ctx)
+}
+
+func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
+	ret := make(map[string]confmap.Provider, len(providers))
+	for _, provider := range providers {
+		ret[provider.Scheme()] = provider
+	}
+	return ret
 }
