@@ -18,10 +18,13 @@ The following configuration options can be modified:
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping; ignored if `enabled` is `false`
-  User should calculate this as `num_seconds * requests_per_second` where:
+  User should calculate this as `num_seconds * requests_per_second / requests_per_batch` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
-    - `requests_per_second` is the average number of requests per seconds.
-- `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend.
+    - `requests_per_second` is the average number of requests per seconds
+    - `requests_per_batch` is the average number of requests per batch (if 
+      [the batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)
+      is used, the metric `batch_send_size` can be used for estimation)
+- `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
 ### Persistent Queue
 
