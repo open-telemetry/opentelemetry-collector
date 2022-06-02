@@ -14,10 +14,6 @@ IMPI=impi
 test:
 	$(GOTEST) $(GOTEST_OPT) ./...
 
-.PHONY: test-unstable
-test-unstable:
-	$(GOTEST) $(GOTEST_OPT) -tags enable_unstable ./...
-
 .PHONY: test-with-cover
 test-with-cover:
 	$(GO_ACC) --output=coverage.out ./...
@@ -39,10 +35,6 @@ tidy:
 .PHONY: lint
 lint:
 	$(LINT) run
-
-.PHONY: lint-unstable
-lint-unstable:
-	$(LINT) run --build-tags enable_unstable
 
 .PHONY: generate
 generate:
