@@ -19,13 +19,15 @@ import (
 )
 
 // splitTraces removes spans from the input trace and returns a new trace of the specified size.
-func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
-	if src.SpanCount() <= size {
-		return src
-	}
-	totalCopiedSpans := 0
+func splitTraces(size int, src ptrace.Traces) (ptrace.Traces, int) {
 	dest := ptrace.NewTraces()
+	spanCount := src.SpanCount()
+	if spanCount <= size {
+		src.MoveTo(dest)
+		return dest, spanCount
+	}
 
+	totalCopiedSpans := 0
 	src.ResourceSpans().RemoveIf(func(srcRs ptrace.ResourceSpans) bool {
 		// If we are done skip everything else.
 		if totalCopiedSpans == size {
@@ -72,7 +74,7 @@ func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
 		return srcRs.ScopeSpans().Len() == 0
 	})
 
-	return dest
+	return dest, totalCopiedSpans
 }
 
 // resourceSC calculates the total number of spans in the ptrace.ResourceSpans.

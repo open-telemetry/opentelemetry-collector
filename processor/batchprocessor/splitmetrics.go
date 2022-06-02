@@ -19,14 +19,15 @@ import (
 )
 
 // splitMetrics removes metrics from the input data and returns a new data of the specified size.
-func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
+func splitMetrics(size int, src pmetric.Metrics) (pmetric.Metrics, int) {
+	dest := pmetric.NewMetrics()
 	dataPoints := src.DataPointCount()
 	if dataPoints <= size {
-		return src
+		src.MoveTo(dest)
+		return dest, dataPoints
 	}
-	totalCopiedDataPoints := 0
-	dest := pmetric.NewMetrics()
 
+	totalCopiedDataPoints := 0
 	src.ResourceMetrics().RemoveIf(func(srcRs pmetric.ResourceMetrics) bool {
 		// If we are done skip everything else.
 		if totalCopiedDataPoints == size {
@@ -83,7 +84,7 @@ func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
 		return srcRs.ScopeMetrics().Len() == 0
 	})
 
-	return dest
+	return dest, totalCopiedDataPoints
 }
 
 // resourceMetricsDPC calculates the total number of data points in the pmetric.ResourceMetrics.

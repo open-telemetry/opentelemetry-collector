@@ -26,8 +26,10 @@ import (
 func TestSplitTraces_noop(t *testing.T) {
 	td := testdata.GenerateTracesManySpansSameResource(20)
 	splitSize := 40
-	split := splitTraces(splitSize, td)
-	assert.Equal(t, td, split)
+	split, size := splitTraces(splitSize, td)
+	assert.Equal(t, 20, size)
+	assert.Equal(t, ptrace.NewTraces(), td)
+	assert.Equal(t, testdata.GenerateTracesManySpansSameResource(20), split)
 
 	i := 0
 	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(_ ptrace.Span) bool {
@@ -57,24 +59,28 @@ func TestSplitTraces(t *testing.T) {
 	spans.At(4).CopyTo(cpSpans.AppendEmpty())
 
 	splitSize := 5
-	split := splitTraces(splitSize, td)
+	split, size := splitTraces(splitSize, td)
+	assert.Equal(t, splitSize, size)
 	assert.Equal(t, splitSize, split.SpanCount())
 	assert.Equal(t, cp, split)
 	assert.Equal(t, 15, td.SpanCount())
 	assert.Equal(t, "test-span-0-0", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 	assert.Equal(t, "test-span-0-4", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(4).Name())
 
-	split = splitTraces(splitSize, td)
+	split, size = splitTraces(splitSize, td)
+	assert.Equal(t, splitSize, size)
 	assert.Equal(t, 10, td.SpanCount())
 	assert.Equal(t, "test-span-0-5", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 	assert.Equal(t, "test-span-0-9", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(4).Name())
 
-	split = splitTraces(splitSize, td)
+	split, size = splitTraces(splitSize, td)
+	assert.Equal(t, splitSize, size)
 	assert.Equal(t, 5, td.SpanCount())
 	assert.Equal(t, "test-span-0-10", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 	assert.Equal(t, "test-span-0-14", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(4).Name())
 
-	split = splitTraces(splitSize, td)
+	split, size = splitTraces(splitSize, td)
+	assert.Equal(t, splitSize, size)
 	assert.Equal(t, 5, td.SpanCount())
 	assert.Equal(t, "test-span-0-15", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 	assert.Equal(t, "test-span-0-19", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(4).Name())
@@ -95,7 +101,8 @@ func TestSplitTracesMultipleResourceSpans(t *testing.T) {
 	}
 
 	splitSize := 5
-	split := splitTraces(splitSize, td)
+	split, size := splitTraces(splitSize, td)
+	assert.Equal(t, splitSize, size)
 	assert.Equal(t, splitSize, split.SpanCount())
 	assert.Equal(t, 35, td.SpanCount())
 	assert.Equal(t, "test-span-0-0", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
@@ -117,7 +124,8 @@ func TestSplitTracesMultipleResourceSpans_SplitSizeGreaterThanSpanSize(t *testin
 	}
 
 	splitSize := 25
-	split := splitTraces(splitSize, td)
+	split, size := splitTraces(splitSize, td)
+	assert.Equal(t, splitSize, size)
 	assert.Equal(t, splitSize, split.SpanCount())
 	assert.Equal(t, 40-splitSize, td.SpanCount())
 	assert.Equal(t, 1, td.ResourceSpans().Len())
@@ -171,7 +179,8 @@ func TestSplitTracesMultipleILS(t *testing.T) {
 	}
 
 	splitSize := 40
-	split := splitTraces(splitSize, td)
+	split, size := splitTraces(splitSize, td)
+	assert.Equal(t, splitSize, size)
 	assert.Equal(t, splitSize, split.SpanCount())
 	assert.Equal(t, 20, td.SpanCount())
 	assert.Equal(t, "test-span-0-0", split.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
@@ -201,8 +210,8 @@ func BenchmarkSplitTraces(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		cloneReq := clones[n]
-		split := splitTraces(128, cloneReq)
-		if split.SpanCount() != 128 || cloneReq.SpanCount() != 400-128 {
+		split, size := splitTraces(128, cloneReq)
+		if size != 128 || split.SpanCount() != 128 || cloneReq.SpanCount() != 400-128 {
 			b.Fail()
 		}
 	}

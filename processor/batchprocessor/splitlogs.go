@@ -19,13 +19,16 @@ import (
 )
 
 // splitLogs removes logrecords from the input data and returns a new data of the specified size.
-func splitLogs(size int, src plog.Logs) plog.Logs {
-	if src.LogRecordCount() <= size {
-		return src
-	}
-	totalCopiedLogRecords := 0
+func splitLogs(size int, src plog.Logs) (plog.Logs, int) {
 	dest := plog.NewLogs()
 
+	logRecordCount := src.LogRecordCount()
+	if size == 0 || logRecordCount <= size {
+		src.MoveTo(dest)
+		return dest, logRecordCount
+	}
+
+	totalCopiedLogRecords := 0
 	src.ResourceLogs().RemoveIf(func(srcRl plog.ResourceLogs) bool {
 		// If we are done skip everything else.
 		if totalCopiedLogRecords == size {
@@ -72,7 +75,7 @@ func splitLogs(size int, src plog.Logs) plog.Logs {
 		return srcRl.ScopeLogs().Len() == 0
 	})
 
-	return dest
+	return dest, totalCopiedLogRecords
 }
 
 // resourceLRC calculates the total number of log records in the plog.ResourceLogs.

@@ -16,6 +16,7 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"context"
+	"math"
 	"runtime"
 	"sync"
 	"time"
@@ -176,12 +177,12 @@ func (bp *batchProcessor) sendItems(triggerMeasure *stats.Int64Measure) {
 	sent, bytes, err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize, detailed)
 	if err != nil {
 		bp.logger.Warn("Sender failed", zap.Error(err))
-	} else {
-		// Add that it came form the trace pipeline?
-		stats.Record(bp.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(int64(sent)))
-		if detailed {
-			stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(bytes)))
-		}
+		return
+	}
+
+	stats.Record(bp.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(int64(sent)))
+	if detailed {
+		stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(bytes)))
 	}
 }
 
@@ -243,19 +244,12 @@ func (bt *batchTraces) add(item interface{}) {
 }
 
 func (bt *batchTraces) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
-	var req ptrace.Traces
-	var sent int
-	var bytes int
-	if sendBatchMaxSize > 0 && bt.itemCount() > sendBatchMaxSize {
-		req = splitTraces(sendBatchMaxSize, bt.traceData)
-		bt.spanCount -= sendBatchMaxSize
-		sent = sendBatchMaxSize
-	} else {
-		req = bt.traceData
-		sent = bt.spanCount
-		bt.traceData = ptrace.NewTraces()
-		bt.spanCount = 0
+	if sendBatchMaxSize <= 0 {
+		sendBatchMaxSize = math.MaxInt
 	}
+	req, sent := splitTraces(sendBatchMaxSize, bt.traceData)
+	bt.spanCount -= sent
+	var bytes int
 	if returnBytes {
 		bytes = bt.sizer.TracesSize(req)
 	}
@@ -278,19 +272,12 @@ func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
 }
 
 func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
-	var req pmetric.Metrics
-	var sent int
-	var bytes int
-	if sendBatchMaxSize > 0 && bm.dataPointCount > sendBatchMaxSize {
-		req = splitMetrics(sendBatchMaxSize, bm.metricData)
-		bm.dataPointCount -= sendBatchMaxSize
-		sent = sendBatchMaxSize
-	} else {
-		req = bm.metricData
-		sent = bm.dataPointCount
-		bm.metricData = pmetric.NewMetrics()
-		bm.dataPointCount = 0
+	if sendBatchMaxSize < 0 {
+		sendBatchMaxSize = math.MaxInt
 	}
+	req, sent := splitMetrics(sendBatchMaxSize, bm.metricData)
+	bm.dataPointCount -= sent
+	var bytes int
 	if returnBytes {
 		bytes = bm.sizer.MetricsSize(req)
 	}
@@ -324,19 +311,12 @@ func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
 }
 
 func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
-	var req plog.Logs
-	var sent int
-	var bytes int
-	if sendBatchMaxSize > 0 && bl.logCount > sendBatchMaxSize {
-		req = splitLogs(sendBatchMaxSize, bl.logData)
-		bl.logCount -= sendBatchMaxSize
-		sent = sendBatchMaxSize
-	} else {
-		req = bl.logData
-		sent = bl.logCount
-		bl.logData = plog.NewLogs()
-		bl.logCount = 0
+	if sendBatchMaxSize <= 0 {
+		sendBatchMaxSize = math.MaxInt
 	}
+	req, sent := splitLogs(sendBatchMaxSize, bl.logData)
+	bl.logCount -= sent
+	var bytes int
 	if returnBytes {
 		bytes = bl.sizer.LogsSize(req)
 	}
