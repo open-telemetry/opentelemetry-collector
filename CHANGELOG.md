@@ -22,6 +22,7 @@
   - Package `expandmapconverter` -> `expandconverter`
   - Package `filemapprovider` -> `fileprovider`
   - Package `overwritepropertiesmapconverter` -> `overwritepropertiesconverter`
+- Deprecate `component.ExtensionDefaultConfigFunc` in favor of `component.ExtensionCreateDefaultConfigFunc` (#5451)
 
 ### 💡 Enhancements 💡
 

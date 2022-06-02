@@ -52,11 +52,14 @@ type ExtensionCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// ExtensionDefaultConfigFunc is the equivalent of component.ExtensionFactory.CreateDefaultConfig()
-type ExtensionDefaultConfigFunc func() config.Extension
+// Deprecated: [v0.53.0] use ExtensionCreateDefaultConfigFunc.
+type ExtensionDefaultConfigFunc = ExtensionCreateDefaultConfigFunc
+
+// ExtensionCreateDefaultConfigFunc is the equivalent of component.ExtensionFactory.CreateDefaultConfig()
+type ExtensionCreateDefaultConfigFunc func() config.Extension
 
 // CreateDefaultConfig implements ExtensionFactory.CreateDefaultConfig()
-func (f ExtensionDefaultConfigFunc) CreateDefaultConfig() config.Extension {
+func (f ExtensionCreateDefaultConfigFunc) CreateDefaultConfig() config.Extension {
 	return f()
 }
 
@@ -87,17 +90,17 @@ type ExtensionFactory interface {
 
 type extensionFactory struct {
 	baseFactory
-	ExtensionDefaultConfigFunc
+	ExtensionCreateDefaultConfigFunc
 	CreateExtensionFunc
 }
 
 func NewExtensionFactory(
 	cfgType config.Type,
-	createDefaultConfig ExtensionDefaultConfigFunc,
+	createDefaultConfig ExtensionCreateDefaultConfigFunc,
 	createServiceExtension CreateExtensionFunc) ExtensionFactory {
 	return &extensionFactory{
-		baseFactory:                baseFactory{cfgType: cfgType},
-		ExtensionDefaultConfigFunc: createDefaultConfig,
-		CreateExtensionFunc:        createServiceExtension,
+		baseFactory:                      baseFactory{cfgType: cfgType},
+		ExtensionCreateDefaultConfigFunc: createDefaultConfig,
+		CreateExtensionFunc:              createServiceExtension,
 	}
 }
