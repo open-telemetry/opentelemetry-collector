@@ -100,17 +100,13 @@ func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
 	}
 }
 
-// NewRetrievedFromMap returns a new Retrieved instance that contains a Map data.
-// * conf the Map that will be merged to the given map in the MergeTo.
-// * CloseFunc specifies a function to be invoked when the configuration for which it was
-//   used to retrieve values is no longer in use and should close and release any watchers
-//	 that it may have created.
-func NewRetrievedFromMap(conf *Conf, opts ...RetrievedOption) Retrieved {
+// NewRetrieved returns a new Retrieved instance that contains the data from the raw deserialized config.
+func NewRetrieved(rawConf map[string]interface{}, opts ...RetrievedOption) (Retrieved, error) {
 	set := retrievedSettings{}
 	for _, opt := range opts {
 		opt(&set)
 	}
-	return Retrieved{conf: conf, closeFunc: set.closeFunc}
+	return Retrieved{conf: NewFromStringMap(rawConf), closeFunc: set.closeFunc}, nil
 }
 
 // AsMap returns the retrieved configuration parsed as a Map.

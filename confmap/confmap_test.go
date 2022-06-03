@@ -104,7 +104,7 @@ func TestToStringMap(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			conf := newConfFromFile(t, test.fileName)
-			assert.Equal(t, test.stringMap, conf.ToStringMap())
+			assert.Equal(t, test.stringMap, conf)
 		})
 	}
 }
@@ -221,12 +221,12 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T)
 }
 
 // newConfFromFile creates a new Conf by reading the given file.
-func newConfFromFile(t *testing.T, fileName string) *Conf {
+func newConfFromFile(t *testing.T, fileName string) map[string]interface{} {
 	content, err := ioutil.ReadFile(filepath.Clean(fileName))
 	require.NoErrorf(t, err, "unable to read the file %v", fileName)
 
 	var data map[string]interface{}
 	require.NoError(t, yaml.Unmarshal(content, &data), "unable to parse yaml")
 
-	return NewFromStringMap(data)
+	return NewFromStringMap(data).ToStringMap()
 }

@@ -23,21 +23,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewRetrievedFromMap(t *testing.T) {
-	conf := New()
-	ret := NewRetrievedFromMap(conf)
+func TestNewRetrieved(t *testing.T) {
+	ret, err := NewRetrieved(nil)
+	require.NoError(t, err)
 	retMap, err := ret.AsMap()
 	require.NoError(t, err)
-	assert.Same(t, conf, retMap)
+	assert.Equal(t, New(), retMap)
 	assert.NoError(t, ret.Close(context.Background()))
 }
 
-func TestNewRetrievedFromMapWithOptions(t *testing.T) {
+func TestNewRetrievedWithOptions(t *testing.T) {
 	want := errors.New("my error")
-	conf := New()
-	ret := NewRetrievedFromMap(conf, WithRetrievedClose(func(context.Context) error { return want }))
+	ret, err := NewRetrieved(nil, WithRetrievedClose(func(context.Context) error { return want }))
+	require.NoError(t, err)
 	retMap, err := ret.AsMap()
 	require.NoError(t, err)
-	assert.Same(t, conf, retMap)
+	assert.Equal(t, New(), retMap)
 	assert.Equal(t, want, ret.Close(context.Background()))
 }
