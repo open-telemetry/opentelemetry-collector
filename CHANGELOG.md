@@ -6,6 +6,7 @@
 
 - Remove deprecated `componenterror` package. (#5420)
 - Remove deprecated `config.MapConverterFunc`. (#5419)
+- Remove `AddCollectorVersionTag`, enabled for long time already. (#5471)
 
 ### 🚩 Deprecations 🚩
 
