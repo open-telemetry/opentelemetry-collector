@@ -64,7 +64,7 @@ func TestRelativePath(t *testing.T) {
 	fp := New()
 	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+filepath.Join("testdata", "default-config.yaml"), nil)
 	require.NoError(t, err)
-	retMap, err := ret.AsMap()
+	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
@@ -78,7 +78,7 @@ func TestAbsolutePath(t *testing.T) {
 	fp := New()
 	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+absolutePath(t, filepath.Join("testdata", "default-config.yaml")), nil)
 	require.NoError(t, err)
-	retMap, err := ret.AsMap()
+	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,

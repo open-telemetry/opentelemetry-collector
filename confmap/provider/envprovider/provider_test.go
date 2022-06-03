@@ -64,7 +64,7 @@ func TestEnv(t *testing.T) {
 	env := New()
 	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
-	retMap, err := ret.AsMap()
+	retMap, err := ret.AsConf()
 	assert.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]interface{}{
 		"processors::batch":         nil,
