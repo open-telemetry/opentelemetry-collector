@@ -37,7 +37,7 @@ func TestEmptyName(t *testing.T) {
 
 func TestUnsupportedScheme(t *testing.T) {
 	fp := New()
-	_, err := fp.Retrieve(context.Background(), "http://", nil)
+	_, err := fp.Retrieve(context.Background(), "https://", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }

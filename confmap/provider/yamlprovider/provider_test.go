@@ -30,7 +30,7 @@ func TestEmpty(t *testing.T) {
 
 func TestInvalidYAML(t *testing.T) {
 	sp := New()
-	_, err := sp.Retrieve(context.Background(), "yaml::2s", nil)
+	_, err := sp.Retrieve(context.Background(), "yaml:[invalid,", nil)
 	assert.Error(t, err)
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
