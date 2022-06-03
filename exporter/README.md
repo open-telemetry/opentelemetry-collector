@@ -78,7 +78,9 @@ service:
 ## Data Ownership
 
 When multiple exporters are configured to send the same data (e.g. by configuring multiple
-exporters for the same pipeline) the exporters will have a shared access to the data.
+exporters for the same pipeline):
+* exporters *not* configured to mutate the data will have shared access to the data
+* exporters with the Capabilities to mutate the data will receive a copy of the data
 If the exporter signals that it mutates data via its Capabilities, a copy is actually passed to the exporter.
 Exporters get access to this shared data when `ConsumeTraces`/`ConsumeMetrics`/`ConsumeLogs`
 function is called. Exporters MUST NOT modify the `pdata.Traces`/`pdata.Metrics`/`pdata.Logs` argument of
