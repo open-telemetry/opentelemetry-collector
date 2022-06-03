@@ -1,0 +1,11 @@
+test_map:
+  extra: "${EXTRA}"
+  extra_map:
+    recv.1: "${EXTRA_MAP_VALUE_1}"
+    recv.2: "${EXTRA_MAP_VALUE_2}"
+  extra_list_map:
+    - { recv.1: "${EXTRA_LIST_MAP_VALUE_1}",recv.2: "${EXTRA_LIST_MAP_VALUE_2}" }
+  extra_list:
+    - "${EXTRA_LIST_VALUE_1}"
+    - "${EXTRA_LIST_VALUE_2}"
+    

@@ -16,6 +16,7 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"context"
+	"fmt"
 )
 
 // Provider is an interface that helps to retrieve a config map and watch for any
@@ -81,7 +82,7 @@ type ChangeEvent struct {
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
 type Retrieved struct {
-	conf      *Conf
+	rawConf   interface{}
 	closeFunc CloseFunc
 }
 
@@ -101,17 +102,39 @@ func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
 }
 
 // NewRetrieved returns a new Retrieved instance that contains the data from the raw deserialized config.
-func NewRetrieved(rawConf map[string]interface{}, opts ...RetrievedOption) (Retrieved, error) {
+// The rawConf can be one of the following types:
+//   - Primitives: int, int32, int64, float32, float64, bool, string;
+//   - []interface{};
+//   - map[string]interface{};
+func NewRetrieved(rawConf interface{}, opts ...RetrievedOption) (Retrieved, error) {
+	if err := checkRawConfType(rawConf); err != nil {
+		return Retrieved{}, err
+	}
 	set := retrievedSettings{}
 	for _, opt := range opts {
 		opt(&set)
 	}
-	return Retrieved{conf: NewFromStringMap(rawConf), closeFunc: set.closeFunc}, nil
+	return Retrieved{rawConf: rawConf, closeFunc: set.closeFunc}, nil
 }
 
 // AsConf returns the retrieved configuration parsed as a Conf.
-func (r Retrieved) AsConf() (*Conf, error) {
-	return r.conf, nil
+func (r *Retrieved) AsConf() (*Conf, error) {
+	if r.rawConf == nil {
+		return New(), nil
+	}
+	val, ok := r.rawConf.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("retrieved value (type=%T) cannot be used as a Conf", r.rawConf)
+	}
+	return NewFromStringMap(val), nil
+}
+
+// AsRaw returns the retrieved configuration parsed as an interface{} which can be one of the following types:
+//   - Primitives: int, int32, int64, float32, float64, bool, string;
+//   - []interface{} - every member follows the same rules as the given interface{};
+//   - map[string]interface{} - every value follows the same rules as the given interface{};
+func (r *Retrieved) AsRaw() (interface{}, error) {
+	return r.rawConf, nil
 }
 
 // Close and release any watchers that Provider.Retrieve may have created.
@@ -129,3 +152,15 @@ func (r Retrieved) Close(ctx context.Context) error {
 
 // CloseFunc a function equivalent to Retrieved.Close.
 type CloseFunc func(context.Context) error
+
+func checkRawConfType(rawConf interface{}) error {
+	if rawConf == nil {
+		return nil
+	}
+	switch rawConf.(type) {
+	case int, int32, int64, float32, float64, bool, string, []interface{}, map[string]interface{}:
+		return nil
+	default:
+		return fmt.Errorf("unsupported type=%T for retrieved config", rawConf)
+	}
+}
