@@ -58,17 +58,33 @@ func (m *mockProvider) Shutdown(context.Context) error {
 	return m.errS
 }
 
-type errFileProvider struct{}
-
-func (m *errFileProvider) Retrieve(_ context.Context, uri string, watcher WatcherFunc) (Retrieved, error) {
-	return Retrieved{}, errors.New(uri)
+type fakeProvider struct {
+	scheme string
+	ret    func(ctx context.Context, uri string, watcher WatcherFunc) (Retrieved, error)
 }
 
-func (m *errFileProvider) Scheme() string {
-	return "file"
+func newFileProvider(t testing.TB) Provider {
+	return newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(newConfFromFile(t, uri[5:]))
+	})
 }
 
-func (m *errFileProvider) Shutdown(context.Context) error {
+func newFakeProvider(scheme string, ret func(ctx context.Context, uri string, watcher WatcherFunc) (Retrieved, error)) Provider {
+	return &fakeProvider{
+		scheme: scheme,
+		ret:    ret,
+	}
+}
+
+func (f *fakeProvider) Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (Retrieved, error) {
+	return f.ret(ctx, uri, watcher)
+}
+
+func (f *fakeProvider) Scheme() string {
+	return f.scheme
+}
+
+func (f *fakeProvider) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -116,34 +132,28 @@ func TestResolverErrors(t *testing.T) {
 		{
 			name:      "watch error",
 			locations: []string{"mock:", "err:"},
-			providers: func() []Provider {
-				conf := newConfFromFile(t, filepath.Join("testdata", "config.yaml"))
-				return []Provider{&mockProvider{}, &mockProvider{scheme: "err", retM: conf, errW: errors.New("watch_err")}}
-			}(),
+			providers: []Provider{
+				&mockProvider{},
+				&mockProvider{scheme: "err", retM: map[string]interface{}{}, errW: errors.New("watch_err")},
+			},
 			expectWatchErr: true,
 		},
 		{
 			name:      "close error",
 			locations: []string{"mock:", "err:"},
-			providers: func() []Provider {
-				conf := newConfFromFile(t, filepath.Join("testdata", "config.yaml"))
-				return []Provider{
-					&mockProvider{},
-					&mockProvider{scheme: "err", retM: conf, errC: errors.New("close_err")},
-				}
-			}(),
+			providers: []Provider{
+				&mockProvider{},
+				&mockProvider{scheme: "err", retM: map[string]interface{}{}, errC: errors.New("close_err")},
+			},
 			expectCloseErr: true,
 		},
 		{
 			name:      "shutdown error",
 			locations: []string{"mock:", "err:"},
-			providers: func() []Provider {
-				conf := newConfFromFile(t, filepath.Join("testdata", "config.yaml"))
-				return []Provider{
-					&mockProvider{},
-					&mockProvider{scheme: "err", retM: conf, errS: errors.New("close_err")},
-				}
-			}(),
+			providers: []Provider{
+				&mockProvider{},
+				&mockProvider{scheme: "err", retM: map[string]interface{}{}, errS: errors.New("close_err")},
+			},
 			expectShutdownErr: true,
 		},
 	}
@@ -157,21 +167,21 @@ func TestResolverErrors(t *testing.T) {
 				assert.Error(t, errN)
 				return
 			}
-			assert.NoError(t, errN)
+			require.NoError(t, errN)
 
 			errW := <-resolver.Watch()
 			if tt.expectWatchErr {
 				assert.Error(t, errW)
 				return
 			}
-			assert.NoError(t, errW)
+			require.NoError(t, errW)
 
 			_, errC := resolver.Resolve(context.Background())
 			if tt.expectCloseErr {
 				assert.Error(t, errC)
 				return
 			}
-			assert.NoError(t, errN)
+			require.NoError(t, errN)
 
 			errS := resolver.Shutdown(context.Background())
 			if tt.expectShutdownErr {
@@ -221,7 +231,12 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		resolver, err := NewResolver(ResolverSettings{URIs: []string{tt.location}, Providers: makeMapProvidersMap(&errFileProvider{}), Converters: nil})
+		resolver, err := NewResolver(ResolverSettings{
+			URIs: []string{tt.location},
+			Providers: makeMapProvidersMap(newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+				return Retrieved{}, errors.New(uri)
+			})),
+			Converters: nil})
 		assert.NoError(t, err)
 		_, err = resolver.Resolve(context.Background())
 		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
@@ -229,11 +244,10 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 }
 
 func TestResolver(t *testing.T) {
-	provider := func() Provider {
-		return &mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}
-	}()
-
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"mock:"}, Providers: makeMapProvidersMap(provider), Converters: nil})
+	resolver, err := NewResolver(ResolverSettings{
+		URIs:       []string{"mock:"},
+		Providers:  makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
+		Converters: nil})
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
@@ -254,35 +268,34 @@ func TestResolver(t *testing.T) {
 }
 
 func TestResolverNoLocations(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{URIs: []string{}, Providers: makeMapProvidersMap(&mockProvider{}), Converters: nil})
+	_, err := NewResolver(ResolverSettings{
+		URIs:       []string{},
+		Providers:  makeMapProvidersMap(&mockProvider{}),
+		Converters: nil})
 	assert.Error(t, err)
 }
 
 func TestResolverNoProviders(t *testing.T) {
-	_, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", "config.yaml")}, Providers: nil, Converters: nil})
+	_, err := NewResolver(ResolverSettings{
+		URIs:       []string{filepath.Join("testdata", "config.yaml")},
+		Providers:  nil,
+		Converters: nil})
 	assert.Error(t, err)
 }
 
 func TestResolverShutdownClosesWatch(t *testing.T) {
-	provider := func() Provider {
-		return &mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}
-	}()
-
-	resolver, err := NewResolver(ResolverSettings{URIs: []string{"mock:"}, Providers: makeMapProvidersMap(provider), Converters: nil})
-	_, errN := resolver.Resolve(context.Background())
+	resolver, err := NewResolver(ResolverSettings{
+		URIs:       []string{filepath.Join("testdata", "config.yaml")},
+		Providers:  makeMapProvidersMap(newFileProvider(t)),
+		Converters: nil})
 	require.NoError(t, err)
-
+	_, errN := resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
 
 	var watcherWG sync.WaitGroup
 	watcherWG.Add(1)
 	go func() {
-		// The mock implementation sends a first watch event.
 		errW, ok := <-resolver.Watch()
-		assert.Nil(t, errW)
-		assert.True(t, ok)
-
-		errW, ok = <-resolver.Watch()
 		// Channel is closed, no exception
 		assert.Nil(t, errW)
 		assert.False(t, ok)
@@ -292,6 +305,7 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 	assert.NoError(t, resolver.Shutdown(context.Background()))
 	watcherWG.Wait()
 }
+
 func makeMapProvidersMap(providers ...Provider) map[string]Provider {
 	ret := make(map[string]Provider, len(providers))
 	for _, provider := range providers {
