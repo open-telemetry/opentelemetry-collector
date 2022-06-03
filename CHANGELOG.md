@@ -24,6 +24,7 @@
   - Package `filemapprovider` -> `fileprovider`
   - Package `overwritepropertiesmapconverter` -> `overwritepropertiesconverter`
 - Deprecate `component.ExtensionDefaultConfigFunc` in favor of `component.ExtensionCreateDefaultConfigFunc` (#5451)
+- Deprecate `confmap.Received.AsMap` in favor of `confmap.Received.AsConf` (#5465)
 
 ### 💡 Enhancements 💡
 

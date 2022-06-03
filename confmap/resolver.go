@@ -129,7 +129,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		retCfgMap, err := ret.AsMap()
+		retCfgMap, err := ret.AsConf()
 		if err != nil {
 			return nil, err
 		}

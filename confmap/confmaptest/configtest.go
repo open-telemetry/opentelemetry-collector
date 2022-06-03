@@ -27,5 +27,5 @@ func LoadConf(fileName string) (*confmap.Conf, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ret.AsMap()
+	return ret.AsConf()
 }
