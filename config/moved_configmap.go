@@ -44,7 +44,7 @@ type Retrieved = confmap.Retrieved
 // Deprecated: [v0.53.0] use confmap.RetrievedOption
 type RetrievedOption = confmap.RetrievedOption
 
-// Deprecated: [v0.53.0] use confmap.NewRetrievedFromMap
+// Deprecated: [v0.53.0] use confmap.WithRetrievedClose
 var WithRetrievedClose = confmap.WithRetrievedClose
 
 // Deprecated: [v0.53.0] use confmap.NewRetrievedFromMap
