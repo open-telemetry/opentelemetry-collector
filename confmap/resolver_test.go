@@ -27,7 +27,7 @@ import (
 
 type mockProvider struct {
 	scheme string
-	retC   *Conf
+	retM   map[string]interface{}
 	errR   error
 	errS   error
 	errW   error
@@ -38,15 +38,13 @@ func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher WatcherFunc
 	if m.errR != nil {
 		return Retrieved{}, m.errR
 	}
-	if m.retC == nil {
-		return NewRetrievedFromMap(New()), nil
+	if m.retM == nil {
+		return NewRetrieved(nil)
 	}
 	if watcher != nil {
 		watcher(&ChangeEvent{Error: m.errW})
 	}
-	return NewRetrievedFromMap(
-		m.retC,
-		WithRetrievedClose(func(ctx context.Context) error { return m.errC })), nil
+	return NewRetrieved(m.retM, WithRetrievedClose(func(ctx context.Context) error { return m.errC }))
 }
 
 func (m *mockProvider) Scheme() string {
@@ -120,7 +118,7 @@ func TestResolverErrors(t *testing.T) {
 			locations: []string{"mock:", "err:"},
 			providers: func() []Provider {
 				conf := newConfFromFile(t, filepath.Join("testdata", "config.yaml"))
-				return []Provider{&mockProvider{}, &mockProvider{scheme: "err", retC: conf, errW: errors.New("watch_err")}}
+				return []Provider{&mockProvider{}, &mockProvider{scheme: "err", retM: conf, errW: errors.New("watch_err")}}
 			}(),
 			expectWatchErr: true,
 		},
@@ -131,7 +129,7 @@ func TestResolverErrors(t *testing.T) {
 				conf := newConfFromFile(t, filepath.Join("testdata", "config.yaml"))
 				return []Provider{
 					&mockProvider{},
-					&mockProvider{scheme: "err", retC: conf, errC: errors.New("close_err")},
+					&mockProvider{scheme: "err", retM: conf, errC: errors.New("close_err")},
 				}
 			}(),
 			expectCloseErr: true,
@@ -143,7 +141,7 @@ func TestResolverErrors(t *testing.T) {
 				conf := newConfFromFile(t, filepath.Join("testdata", "config.yaml"))
 				return []Provider{
 					&mockProvider{},
-					&mockProvider{scheme: "err", retC: conf, errS: errors.New("close_err")},
+					&mockProvider{scheme: "err", retM: conf, errS: errors.New("close_err")},
 				}
 			}(),
 			expectShutdownErr: true,
@@ -232,7 +230,7 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 
 func TestResolver(t *testing.T) {
 	provider := func() Provider {
-		return &mockProvider{retC: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}
+		return &mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}
 	}()
 
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"mock:"}, Providers: makeMapProvidersMap(provider), Converters: nil})
@@ -267,7 +265,7 @@ func TestResolverNoProviders(t *testing.T) {
 
 func TestResolverShutdownClosesWatch(t *testing.T) {
 	provider := func() Provider {
-		return &mockProvider{retC: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}
+		return &mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}
 	}()
 
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"mock:"}, Providers: makeMapProvidersMap(provider), Converters: nil})

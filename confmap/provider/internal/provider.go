@@ -28,5 +28,5 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...confmap.RetrievedOption) (co
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
 		return confmap.Retrieved{}, err
 	}
-	return confmap.NewRetrievedFromMap(confmap.NewFromStringMap(rawConf), opts...), nil
+	return confmap.NewRetrieved(rawConf, opts...)
 }

@@ -13,6 +13,7 @@
   - `config.Map` -> `confmap.ConfMap`
   - `config.MapProvider` -> `confmap.Provider`
   - `config.Received` -> `confmap.Received`
+  - `config.NewReceivedFromMap` -> `confmap.NewReceived`
   - `config.CloseFunc` -> `confmap.CloseFunc`
   - `config.ChangeEvent` -> `confmap.ChangeEvent`
   - `config.MapConverter` -> `confmap.Converter`
