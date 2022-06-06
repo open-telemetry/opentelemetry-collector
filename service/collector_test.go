@@ -180,14 +180,11 @@ func TestCollectorFailedShutdown(t *testing.T) {
 // mapConverter applies extraMap of config settings. Useful for overriding the config
 // for testing purposes. Keys must use "::" delimiter between levels.
 type mapConverter struct {
-	extraMap map[string]*string
+	extraMap map[string]interface{}
 }
 
 func (m mapConverter) Convert(ctx context.Context, conf *confmap.Conf) error {
-	for k, v := range m.extraMap {
-		conf.Set(k, v)
-	}
-	return nil
+	return conf.Merge(confmap.NewFromStringMap(m.extraMap))
 }
 
 type labelState int
@@ -299,7 +296,7 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 	})
 
 	// Prepare config properties to be merged with the main config.
-	extraCfgAsProps := map[string]*string{
+	extraCfgAsProps := map[string]interface{}{
 		// Set the metrics address to expose own metrics on.
 		"service::telemetry::metrics::address": &metricsAddr,
 	}

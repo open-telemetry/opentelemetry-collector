@@ -195,7 +195,7 @@ func NewManager(_ *confmap.Conf) (*Manager, error) {
 // the given input config map are resolved to actual literal values of the env vars or config sources.
 // This method must be called only once per lifetime of a Manager object.
 func (m *Manager) Resolve(ctx context.Context, configMap *confmap.Conf) (*confmap.Conf, error) {
-	res := confmap.New()
+	out := make(map[string]interface{})
 	allKeys := configMap.AllKeys()
 	for _, k := range allKeys {
 		if strings.HasPrefix(k, configSourcesKey) {
@@ -209,10 +209,10 @@ func (m *Manager) Resolve(ctx context.Context, configMap *confmap.Conf) (*confma
 		if err != nil {
 			return nil, err
 		}
-		res.Set(k, value)
+		out[k] = value
 	}
 
-	return res, nil
+	return confmap.NewFromStringMap(out), nil
 }
 
 // WatchForUpdate must watch for updates on any of the values retrieved from config sources

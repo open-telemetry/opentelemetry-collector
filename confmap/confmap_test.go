@@ -26,10 +26,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestToStringMap_WithSet(t *testing.T) {
-	parser := New()
-	parser.Set("key::embedded", int64(123))
-	assert.Equal(t, map[string]interface{}{"key": map[string]interface{}{"embedded": int64(123)}}, parser.ToStringMap())
+func TestToStringMapFlatten(t *testing.T) {
+	conf := NewFromStringMap(map[string]interface{}{"key::embedded": int64(123)})
+	assert.Equal(t, map[string]interface{}{"key": map[string]interface{}{"embedded": int64(123)}}, conf.ToStringMap())
 }
 
 func TestToStringMap(t *testing.T) {
