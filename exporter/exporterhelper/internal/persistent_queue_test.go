@@ -20,7 +20,6 @@ package internal
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -48,8 +47,7 @@ func createTestQueue(extension storage.Extension, capacity int) *persistentQueue
 }
 
 func TestPersistentQueue_Capacity(t *testing.T) {
-	path := createTemporaryDirectory()
-	defer os.RemoveAll(path)
+	path := t.TempDir()
 
 	for i := 0; i < 100; i++ {
 		ext := createStorageExtension(path)
@@ -82,8 +80,7 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 }
 
 func TestPersistentQueue_Close(t *testing.T) {
-	path := createTemporaryDirectory()
-	defer os.RemoveAll(path)
+	path := t.TempDir()
 
 	ext := createStorageExtension(path)
 	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
@@ -138,7 +135,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("#messages: %d #consumers: %d", c.numMessagesProduced, c.numConsumers), func(t *testing.T) {
-			path := createTemporaryDirectory()
+			path := t.TempDir()
 
 			traces := newTraces(1, 10)
 			req := newFakeTracesRequest(traces)
@@ -146,7 +143,6 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			ext := createStorageExtension(path)
 			tq := createTestQueue(ext, 5000)
 
-			defer os.RemoveAll(path)
 			defer tq.Stop()
 			t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
 
