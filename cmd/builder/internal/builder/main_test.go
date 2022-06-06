@@ -15,6 +15,7 @@
 package builder
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
@@ -42,6 +43,9 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 }
 
 func TestGenerateAndCompileDefault(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping the test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/5403")
+	}
 	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = t.TempDir()
 
