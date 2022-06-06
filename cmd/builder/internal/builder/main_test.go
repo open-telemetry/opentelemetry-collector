@@ -15,11 +15,9 @@
 package builder
 
 import (
-	"io/ioutil"
-	"log"
-	"os"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,17 +46,16 @@ func TestGenerateAndCompileDefault(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping the test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/5403")
 	}
-	dir, err := ioutil.TempDir("", "default")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
 	cfg := NewDefaultConfig()
-	cfg.Distribution.OutputPath = dir
+	cfg.Distribution.OutputPath = t.TempDir()
 
 	// we override this version, otherwise this would break during releases
-	cfg.Distribution.OtelColVersion = "0.38.0"
+	cfg.Distribution.OtelColVersion = "0.52.0"
 
 	assert.NoError(t, cfg.Validate())
 	require.NoError(t, GenerateAndCompile(cfg))
+
+	// Sleep for 1 second to make sure all processes using the files are completed
+	// (on Windows fail to delete temp dir otherwise).
+	time.Sleep(1 * time.Second)
 }
