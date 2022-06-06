@@ -44,9 +44,6 @@ import (
 // collectorTelemetry is collector's own telemetry.
 var collectorTelemetry collectorTelemetryExporter = newColTelemetry(featuregate.GetRegistry())
 
-// AddCollectorVersionTag indicates if the collector version tag should be added to all telemetry metrics
-const AddCollectorVersionTag = true
-
 const (
 	zapKeyTelemetryAddress = "address"
 	zapKeyTelemetryLevel   = "level"
@@ -120,12 +117,10 @@ func (tel *colTelemetry) initOnce(svc *service) error {
 		telAttrs[semconv.AttributeServiceInstanceID] = instanceID
 	}
 
-	if AddCollectorVersionTag {
-		if _, ok := telemetryConf.Resource[semconv.AttributeServiceVersion]; !ok {
-			// AttributeServiceVersion is not specified in the config. Use the actual
-			// build version.
-			telAttrs[semconv.AttributeServiceVersion] = svc.buildInfo.Version
-		}
+	if _, ok := telemetryConf.Resource[semconv.AttributeServiceVersion]; !ok {
+		// AttributeServiceVersion is not specified in the config. Use the actual
+		// build version.
+		telAttrs[semconv.AttributeServiceVersion] = svc.buildInfo.Version
 	}
 
 	var pe http.Handler
