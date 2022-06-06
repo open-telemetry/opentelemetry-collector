@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package middleware // import "go.opentelemetry.io/collector/internal/middleware"
+package configgrpc // import "go.opentelemetry.io/collector/config/configgrpc"
 
 import (
 	"context"
@@ -23,22 +23,23 @@ import (
 
 // this functionality was originally copied from grpc-ecosystem/go-grpc-middleware project
 
-// WrappedServerStream is a thin wrapper around grpc.ServerStream that allows modifying context.
-type WrappedServerStream struct {
+// wrappedServerStream is a thin wrapper around grpc.ServerStream that allows modifying context.
+type wrappedServerStream struct {
 	grpc.ServerStream
-	// WrappedContext is the wrapper's own Context. You can assign it.
-	WrappedContext context.Context
+	// wrappedContext is the wrapper's own Context. You can assign it.
+	wrappedCtx context.Context
 }
 
-// Context returns the wrapper's WrappedContext, overwriting the nested grpc.ServerStream.Context()
-func (w *WrappedServerStream) Context() context.Context {
-	return w.WrappedContext
+// Context returns the wrapper's wrappedContext, overwriting the nested grpc.ServerStream.Context()
+func (w *wrappedServerStream) Context() context.Context {
+	return w.wrappedCtx
 }
 
-// WrapServerStream returns a ServerStream that has the ability to overwrite context.
-func WrapServerStream(stream grpc.ServerStream) *WrappedServerStream {
-	if existing, ok := stream.(*WrappedServerStream); ok {
+// wrapServerStream returns a ServerStream with the new context.
+func wrapServerStream(wrappedCtx context.Context, stream grpc.ServerStream) *wrappedServerStream {
+	if existing, ok := stream.(*wrappedServerStream); ok {
+		existing.wrappedCtx = wrappedCtx
 		return existing
 	}
-	return &WrappedServerStream{ServerStream: stream, WrappedContext: stream.Context()}
+	return &wrappedServerStream{ServerStream: stream, wrappedCtx: wrappedCtx}
 }
