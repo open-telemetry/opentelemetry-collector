@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlptext // import "go.opentelemetry.io/collector/internal/otlptext"
+package otlptext // import "go.opentelemetry.io/collector/exporter/loggingexporter/internal/otlptext"
 
 import (
 	"bytes"
