@@ -20,16 +20,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats/view"
+	"go.opencensus.io/metric"
+	"go.opencensus.io/metric/metricdata"
 )
 
 func TestProcessTelemetry(t *testing.T) {
-	const ballastSizeBytes uint64 = 0
-	pmv, err := NewProcessMetricsViews(ballastSizeBytes)
+	registry := metric.NewRegistry()
+	err := RegisterProcessMetrics(registry, 0)
 	require.NoError(t, err)
-	assert.NotNil(t, pmv)
 
-	expectedViews := []string{
+	expectedMetrics := []string{
 		// Changing a metric name is a breaking change.
 		// Adding new metrics is ok as long it follows the conventions described at
 		// https://pkg.go.dev/go.opentelemetry.io/collector/obsreport?tab=doc#hdr-Naming_Convention_for_New_Metrics
@@ -40,37 +40,42 @@ func TestProcessTelemetry(t *testing.T) {
 		"process/cpu_seconds",
 		"process/memory/rss",
 	}
-	processViews := pmv.Views()
-	assert.Len(t, processViews, len(expectedViews))
-
-	require.NoError(t, view.Register(processViews...))
-	defer view.Unregister(processViews...)
 
 	// Check that the views are actually filled.
-	pmv.updateViews()
 	<-time.After(200 * time.Millisecond)
 
-	for _, viewName := range expectedViews {
-		rows, err := view.RetrieveData(viewName)
-		require.NoError(t, err, viewName)
+	metrics := registry.Read()
 
-		require.Len(t, rows, 1, viewName)
-		row := rows[0]
-		assert.Len(t, row.Tags, 0)
+	for _, metricName := range expectedMetrics {
+		m := findMetric(metrics, metricName)
+		require.NotNil(t, m)
+		require.Len(t, m.TimeSeries, 1)
+		ts := m.TimeSeries[0]
+		assert.Len(t, ts.LabelValues, 0)
+		require.Len(t, ts.Points, 1)
 
 		var value float64
-		if viewName == "process/uptime" {
-			value = row.Data.(*view.SumData).Value
+		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
+			value = ts.Points[0].Value.(float64)
 		} else {
-			value = row.Data.(*view.LastValueData).Value
+			value = float64(ts.Points[0].Value.(int64))
 		}
 
-		if viewName == "process/uptime" || viewName == "process/cpu_seconds" {
+		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
 			// This likely will still be zero when running the test.
-			assert.True(t, value >= 0, viewName)
+			assert.True(t, value >= 0, metricName)
 			continue
 		}
 
-		assert.True(t, value > 0, viewName)
+		assert.True(t, value > 0, metricName)
 	}
+}
+
+func findMetric(metrics []*metricdata.Metric, name string) *metricdata.Metric {
+	for _, m := range metrics {
+		if m.Descriptor.Name == name {
+			return m
+		}
+	}
+	return nil
 }
