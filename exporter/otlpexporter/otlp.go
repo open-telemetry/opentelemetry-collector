@@ -147,59 +147,48 @@ func processError(err error) error {
 
 	// Now, this is this a real error.
 
-	retryInfo := getRetryInfo(st)
-
-	if !shouldRetry(st.Code(), retryInfo) {
+	if !shouldRetry(st.Code()) {
 		// It is not a retryable error, we should not retry.
 		return consumererror.NewPermanent(err)
 	}
 
+	// Need to retry.
+
 	// Check if server returned throttling information.
-	throttleDuration := getThrottleDuration(retryInfo)
+	throttleDuration := getThrottleDuration(st)
 	if throttleDuration != 0 {
-		// We are throttled. Wait before retrying as requested by the server.
 		return exporterhelper.NewThrottleRetry(err, throttleDuration)
 	}
-
-	// Need to retry.
 
 	return err
 }
 
-func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
+func shouldRetry(code codes.Code) bool {
 	switch code {
 	case codes.Canceled,
 		codes.DeadlineExceeded,
+		codes.ResourceExhausted,
 		codes.Aborted,
 		codes.OutOfRange,
 		codes.Unavailable,
 		codes.DataLoss:
 		// These are retryable errors.
 		return true
-	case codes.ResourceExhausted:
-		// Retry only if RetryInfo was supplied by the server.
-		// This indicates that the server can still recover from resource exhaustion.
-		return retryInfo != nil
 	}
 	// Don't retry on any other code.
 	return false
 }
 
-func getRetryInfo(status *status.Status) *errdetails.RetryInfo {
+func getThrottleDuration(status *status.Status) time.Duration {
+	// See if throttling information is available.
 	for _, detail := range status.Details() {
 		if t, ok := detail.(*errdetails.RetryInfo); ok {
-			return t
+			if t.RetryDelay.Seconds > 0 || t.RetryDelay.Nanos > 0 {
+				// We are throttled. Wait before retrying as requested by the server.
+				return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
+			}
+			return 0
 		}
-	}
-	return nil
-}
-
-func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
-	if t == nil || t.RetryDelay == nil {
-		return 0
-	}
-	if t.RetryDelay.Seconds > 0 || t.RetryDelay.Nanos > 0 {
-		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
 	}
 	return 0
 }
