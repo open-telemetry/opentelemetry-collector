@@ -176,6 +176,13 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 		getClientCertificate = func(cri *tls.CertificateRequestInfo) (*tls.Certificate, error) { return certReloader.GetCertificate() }
 	}
 
+	// Setting default TLS minVersion
+	if c.MinVersion == "" {
+		c.MinVersion = "1.0"
+	}
+	if c.MaxVersion == "" {
+		c.MaxVersion = "1.3"
+	}
 	minTLS, err := convertVersion(c.MinVersion)
 	if err != nil {
 		return nil, fmt.Errorf("invalid TLS min_version: %w", err)
@@ -240,9 +247,6 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 }
 
 func convertVersion(v string) (uint16, error) {
-	if v == "" {
-		return tls.VersionTLS12, nil // default
-	}
 	val, ok := tlsVersions[v]
 	if !ok {
 		return 0, fmt.Errorf("unsupported TLS version: %q", v)
