@@ -63,7 +63,7 @@ Objectives:
 - Extensible: Customizable without touching the core code.
 - Unified: Single codebase, deployable as an agent or collector with support for traces, metrics and logs.
 
-## Stability levels
+### Component stability levels
 
 The collector components and implementation are in different stages of stability, and usually split between
 functionality and configuration. The status for each component is available in the README file for the component. While
@@ -71,25 +71,58 @@ we intend to provide high-quality components as part of this repository, we ackn
 for prime time. As such, each component should list its current stability level for each telemetry signal, according to
 the following definitions:
 
-### In development
+#### In development
 
 Not all pieces of the component are in place yet and it might not be available as part of any distributions yet. Bugs and performance issues should be reported, but it is likely that the component owners might not give them much attention. Your feedback is still desired, especially when it comes to the user-experience (configuration options, component observability, technical implementation details, ...). Configuration options might break often depending on how things evolve. The component should not be used in production.
 
-### Alpha
+#### Alpha
 
 The component is ready to be used for limited non-critical workloads and the authors of this component would welcome your feedback. Bugs and performance problems should be reported, but component owners might not work on them right away. The configuration options might change often without backwards compatibility guarantees.
 
-### Beta
+#### Beta
 
 Same as Alpha, but the configuration options are deemed stable. While there might be breaking changes between releases, component owners should try to minimize them. A component at this stage is expected to have had exposure to non-critical production workloads already during its **Alpha** phase, making it suitable for broader usage.
 
-### Stable
+#### Stable
 
 The component is ready for general availability. Bugs and performance problems should be reported and there's an expectation that the component owners will work on them. Breaking changes, including configuration options and the component's output are not expected to happen without prior notice, unless under special circumstances.
 
-### Deprecated
+#### Deprecated
 
 The component is planned to be removed in a future version and no further support will be provided. Note that new issues will likely not be worked on. When a component enters "deprecated" mode, it is expected to exist for at least two minor releases. See the component's readme file for more details on when a component will cease to exist.
+
+### Metric stability levels
+
+Receivers that produce metrics should declare a stability level for each metric. A for each metric may not exceed the The status for each metric should be listed in the receiver's `documentation.md` file according to the following definitions:
+
+#### In development
+
+The metric may be documented but not available, or available but subject to change at any time. Bugs and performance issues should be reported, but it is likely that the component owners might not give them much attention. Your feedback is still desired. The metric should not be used in production.
+
+#### Alpha
+
+The component is ready to be used for limited non-critical workloads and the authors of this component would welcome your feedback. Bugs and performance problems should be reported, but component owners might not work on them right away. The configuration options might change often without backwards compatibility guarantees.
+
+#### Beta
+
+Same as Alpha, but the configuration options are deemed stable. While there might be breaking changes between releases, component owners should try to minimize them. A component at this stage is expected to have had exposure to non-critical production workloads already during its **Alpha** phase, making it suitable for broader usage.
+
+#### Stable
+
+The component is ready for general availability. Bugs and performance problems should be reported and there's an expectation that the component owners will work on them. Breaking changes, including configuration options and the component's output are not expected to happen without prior notice, unless under special circumstances.
+
+#### Deprecated
+
+The component is planned to be removed in a future version and no further support will be provided. Note that new issues will likely not be worked on. When a component enters "deprecated" mode, it is expected to exist for at least two minor releases. See the component's readme file for more details on when a component will cease to exist.
+
+### Stability level progression
+
+Comonents and metric stability levels should progress according to the following guidelines:
+- A component that produces metrics should produce at least one metric of the same stability level. For example, a Stable component should produce at least one Stable metric.
+- A component should not produce any metrics with a stability level that exceed that of the component. For example, a Beta component should not produce a Stable metric.
+- Deprecated metrics may be produced only by Stable or Deprecated components.
+- All metrics produced by a Deprecated component should be Deprecated.
+
 
 ## Compatibility
 
