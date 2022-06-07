@@ -72,7 +72,7 @@ func newService(set *settings) (*service, error) {
 	// which are referenced before objects which reference them.
 
 	// First create exporters.
-	if srv.host.builtExporters, err = builder.BuildExporters(srv.telemetry, srv.buildInfo, srv.config, srv.host.factories.Exporters); err != nil {
+	if srv.host.builtExporters, err = builder.BuildExporters(context.Background(), srv.telemetry, srv.buildInfo, srv.config, srv.host.factories.Exporters); err != nil {
 		return nil, fmt.Errorf("cannot build exporters: %w", err)
 	}
 

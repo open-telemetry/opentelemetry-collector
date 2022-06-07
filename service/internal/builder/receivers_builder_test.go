@@ -94,7 +94,7 @@ func testReceivers(t *testing.T, test testCase) {
 	require.NoError(t, err)
 
 	// Build the pipeline
-	allExporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
+	allExporters, err := BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NoError(t, err)
 	pipelineProcessors, err := BuildPipelines(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
@@ -111,10 +111,10 @@ func testReceivers(t *testing.T, test testCase) {
 	assert.NotNil(t, receiver.receiver)
 
 	// Compose the list of created exporters.
-	var exporters []*builtExporter
+	var exporters []component.Exporter
 	for _, expID := range test.exporterIDs {
 		// Ensure exporter is created.
-		exp := allExporters[expID]
+		exp := allExporters.exporters[config.TracesDataType][expID]
 		require.NotNil(t, exp)
 		exporters = append(exporters, exp)
 	}
@@ -123,7 +123,7 @@ func testReceivers(t *testing.T, test testCase) {
 
 	// First check that there are no traces in the exporters yet.
 	for _, exporter := range exporters {
-		consumer := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
+		consumer := exporter.(*testcomponents.ExampleExporterConsumer)
 		require.Equal(t, len(consumer.Traces), 0)
 		require.Equal(t, len(consumer.Metrics), 0)
 	}
@@ -142,9 +142,6 @@ func testReceivers(t *testing.T, test testCase) {
 
 	// Now verify received data.
 	for _, expID := range test.exporterIDs {
-		// Check that the data is received by exporter.
-		exporter := allExporters[expID]
-
 		// Validate traces.
 		if test.hasTraces {
 			var spanDuplicationCount int
@@ -154,7 +151,7 @@ func testReceivers(t *testing.T, test testCase) {
 				spanDuplicationCount = 1
 			}
 
-			traceConsumer := exporter.getTracesExporter().(*testcomponents.ExampleExporterConsumer)
+			traceConsumer := allExporters.exporters[config.TracesDataType][expID].(*testcomponents.ExampleExporterConsumer)
 			require.Equal(t, spanDuplicationCount, len(traceConsumer.Traces))
 
 			for i := 0; i < spanDuplicationCount; i++ {
@@ -164,22 +161,22 @@ func testReceivers(t *testing.T, test testCase) {
 
 		// Validate metrics.
 		if test.hasMetrics {
-			metricsConsumer := exporter.getMetricsExporter().(*testcomponents.ExampleExporterConsumer)
+			metricsConsumer := allExporters.exporters[config.MetricsDataType][expID].(*testcomponents.ExampleExporterConsumer)
 			require.Equal(t, 1, len(metricsConsumer.Metrics))
 			assert.EqualValues(t, md, metricsConsumer.Metrics[0])
 		}
 	}
 }
 
-func TestBuildReceivers_BuildCustom(t *testing.T) {
+func TestBuildReceiversBuildCustom(t *testing.T) {
 	factories := createTestFactories()
 
 	tests := []struct {
-		dataType   string
+		dataType   config.DataType
 		shouldFail bool
 	}{
 		{
-			dataType:   "logs",
+			dataType:   config.LogsDataType,
 			shouldFail: false,
 		},
 		{
@@ -189,13 +186,11 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.dataType, func(t *testing.T) {
-			dataType := test.dataType
-
-			cfg := createExampleConfig(dataType)
+		t.Run(string(test.dataType), func(t *testing.T) {
+			cfg := createExampleConfig(test.dataType)
 
 			// Build the pipeline
-			allExporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
+			allExporters, err := BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 			if test.shouldFail {
 				assert.Error(t, err)
 				return
@@ -218,10 +213,10 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 			// Compose the list of created exporters.
 			exporterIDs := []config.ComponentID{config.NewComponentID("exampleexporter")}
-			var exporters []*builtExporter
+			var exporters []component.Exporter
 			for _, expID := range exporterIDs {
 				// Ensure exporter is created.
-				exp := allExporters[expID]
+				exp := allExporters.exporters[config.LogsDataType][expID]
 				require.NotNil(t, exp)
 				exporters = append(exporters, exp)
 			}
@@ -230,7 +225,7 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 
 			// First check that there are no traces in the exporters yet.
 			for _, exporter := range exporters {
-				consumer := exporter.getLogsExporter().(*testcomponents.ExampleExporterConsumer)
+				consumer := exporter.(*testcomponents.ExampleExporterConsumer)
 				require.Equal(t, len(consumer.Logs), 0)
 			}
 
@@ -240,12 +235,9 @@ func TestBuildReceivers_BuildCustom(t *testing.T) {
 			require.NoError(t, producer.ConsumeLogs(context.Background(), log))
 
 			// Now verify received data.
-			for _, expID := range exporterIDs {
-				// Check that the data is received by exporter.
-				exporter := allExporters[expID]
-
+			for _, exporter := range exporters {
 				// Validate exported data.
-				consumer := exporter.getLogsExporter().(*testcomponents.ExampleExporterConsumer)
+				consumer := exporter.(*testcomponents.ExampleExporterConsumer)
 				require.Equal(t, 1, len(consumer.Logs))
 				assert.EqualValues(t, log, consumer.Logs[0])
 			}
@@ -279,7 +271,7 @@ func TestBuildReceivers_Unused(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Build the pipeline
-	allExporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
+	allExporters, err := BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NoError(t, err)
 	pipelineProcessors, err := BuildPipelines(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, allExporters, factories.Processors)
 	assert.NoError(t, err)
@@ -315,7 +307,7 @@ func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, cfg)
 
-			allExporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
+			allExporters, err := BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 			assert.NoError(t, err)
 
 			pipelineProcessors, err := BuildPipelines(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, allExporters, factories.Processors)
