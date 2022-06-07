@@ -39,17 +39,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
     * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.44.0...main.
 
-    * Use multimod to update the version of the collector package
-      * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/versions.yaml) and commit it locally
-      * Run `make multimod-prerelease` (it might fail if you didn't commit the change above)
-
-    * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
-
-    * Update the collector version in the manifest used by `make run` to the new release in `./cmd/otelcorecol/builder-config.yaml` and run `make genotelcorecol`.
-
-    * Update the collector version in the `examples/k8s/otel-config.yaml` 
-
-    * Submit a PR with the changes and get the PR approved and merged.
+    * Run `make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0`
 
     * Ensure the `main` branch builds successfully.
 
