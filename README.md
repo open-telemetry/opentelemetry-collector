@@ -93,7 +93,7 @@ The component is planned to be removed in a future version and no further suppor
 
 ### Metric stability levels
 
-Receivers that produce metrics should declare a stability level for each metric. A for each metric may not exceed the The status for each metric should be listed in the receiver's `documentation.md` file according to the following definitions:
+Receivers that produce metrics should declare a stability level for each metric. The status for each metric should be listed in the receiver's `documentation.md` file according to the following definitions:
 
 #### In development
 
