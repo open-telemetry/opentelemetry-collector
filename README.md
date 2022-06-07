@@ -101,19 +101,19 @@ The metric may be documented but not available, or available but subject to chan
 
 #### Alpha
 
-The component is ready to be used for limited non-critical workloads and the authors of this component would welcome your feedback. Bugs and performance problems should be reported, but component owners might not work on them right away. The configuration options might change often without backwards compatibility guarantees.
+The metric is ready to be used for limited non-critical workloads and the authors of this component would welcome your feedback. Bugs and performance problems should be reported, but component owners might not work on them right away. The metric data model might change often without backwards compatibility guarantees. A metric at this stage should typically not be enabled by default.
 
 #### Beta
 
-Same as Alpha, but the configuration options are deemed stable. While there might be breaking changes between releases, component owners should try to minimize them. A component at this stage is expected to have had exposure to non-critical production workloads already during its **Alpha** phase, making it suitable for broader usage.
+Same as Alpha, but the metric data model is unlikely to change. While there might be breaking changes between releases, component owners should try to minimize them. A metric at this stage is expected to have had exposure to non-critical production workloads already during its **Alpha** phase, making it suitable for broader usage. Whether or not the metric is enabled by default may still change.
 
 #### Stable
 
-The component is ready for general availability. Bugs and performance problems should be reported and there's an expectation that the component owners will work on them. Breaking changes, including configuration options and the component's output are not expected to happen without prior notice, unless under special circumstances.
+The metric is ready for general availability. Bugs and performance problems should be reported and there's an expectation that the component owners will work on them. Breaking changes are not expected to happen without prior notice, unless under special circumstances. If the metric is disabled by default, it may still be enabled by default in a later version.
 
 #### Deprecated
 
-The component is planned to be removed in a future version and no further support will be provided. Note that new issues will likely not be worked on. When a component enters "deprecated" mode, it is expected to exist for at least two minor releases. See the component's readme file for more details on when a component will cease to exist.
+The metric is planned to be removed in a future version and no further support will be provided. Note that new issues will likely not be worked on. When a metric enters "deprecated" mode, it is expected to exist for at least two minor releases. See the component's documentation.md file for more details on when a metric will cease to exist. A metric at this stage should be disabled by default.
 
 ### Stability level progression
 
