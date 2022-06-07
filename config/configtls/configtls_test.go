@@ -351,3 +351,40 @@ func TestCertificateReload(t *testing.T) {
 		})
 	}
 }
+
+func TestMinMaxTLSVersions(t *testing.T) {
+	tests := []struct {
+		name          string
+		minVersion    string
+		maxVersion    string
+		outMinVersion uint16
+		outMaxVersion uint16
+		errorTxt      string
+	}{
+		{name: `TLS Config ["", ""] to give [TLS1.0, TLS1.3]`, minVersion: "", maxVersion: "", outMinVersion: tls.VersionTLS10, outMaxVersion: tls.VersionTLS13},
+		{name: `TLS Config ["", "1.3"] to give [TLS1.0, TLS1.3]`, minVersion: "", maxVersion: "1.3", outMinVersion: tls.VersionTLS10, outMaxVersion: tls.VersionTLS13},
+		{name: `TLS Config ["1.3", "1.3"] to give [TLS1.3, TLS1.3]`, minVersion: "1.3", maxVersion: "1.3", outMinVersion: tls.VersionTLS13, outMaxVersion: tls.VersionTLS13},
+		{name: `TLS Config ["1.0", "1.0"] to give [TLS1.0, TLS1.0]`, minVersion: "1.0", maxVersion: "1.0", outMinVersion: tls.VersionTLS10, outMaxVersion: tls.VersionTLS10},
+		{name: `TLS Config ["1.2", ""] to give [TLS1.2, TLS1.3]`, minVersion: "1.2", maxVersion: "", outMinVersion: tls.VersionTLS12, outMaxVersion: tls.VersionTLS13},
+		{name: `TLS Config ["1.3", "1.2"] to give [Error]`, minVersion: "1.3", maxVersion: "1.2", errorTxt: "tls min_version is greater than tls max_version: 1.3 > 1.2"},
+		{name: `TLS Config ["1.2", "1.0"] to give [Error]`, minVersion: "1.2", maxVersion: "1.0", errorTxt: "tls min_version is greater than tls max_version: 1.2 > 1.0"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			setting := TLSSetting{
+				MinVersion: test.minVersion,
+				MaxVersion: test.maxVersion,
+			}
+
+			config, err := setting.loadTLSConfig()
+
+			if test.errorTxt == "" {
+				assert.Equal(t, config.MinVersion, test.outMinVersion)
+				assert.Equal(t, config.MaxVersion, test.outMaxVersion)
+			} else {
+				assert.EqualError(t, err, test.errorTxt)
+			}
+		})
+	}
+}

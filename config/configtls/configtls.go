@@ -180,6 +180,7 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 	if c.MinVersion == "" {
 		c.MinVersion = "1.0"
 	}
+	// Setting default TLS maxVersion
 	if c.MaxVersion == "" {
 		c.MaxVersion = "1.3"
 	}
@@ -190,6 +191,9 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 	maxTLS, err := convertVersion(c.MaxVersion)
 	if err != nil {
 		return nil, fmt.Errorf("invalid TLS max_version: %w", err)
+	}
+	if minTLS > maxTLS {
+		return nil, fmt.Errorf("tls min_version is greater than tls max_version: %s > %s", c.MinVersion, c.MaxVersion)
 	}
 
 	return &tls.Config{
