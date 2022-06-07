@@ -81,7 +81,7 @@ func (l *Conf) Get(key string) interface{} {
 	return l.k.Get(key)
 }
 
-// Set sets the value for the key.
+// Deprecated: [v0.53.0] use "Merge" or construct a map[string]interface{}.
 func (l *Conf) Set(key string, value interface{}) {
 	// koanf doesn't offer a direct setting mechanism so merging is required.
 	merged := koanf.New(KeyDelimiter)

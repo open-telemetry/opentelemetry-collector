@@ -31,10 +31,11 @@ func New() confmap.Converter {
 }
 
 func (converter) Convert(_ context.Context, conf *confmap.Conf) error {
+	out := make(map[string]interface{})
 	for _, k := range conf.AllKeys() {
-		conf.Set(k, expandStringValues(conf.Get(k)))
+		out[k] = expandStringValues(conf.Get(k))
 	}
-	return nil
+	return conf.Merge(confmap.NewFromStringMap(out))
 }
 
 func expandStringValues(value interface{}) interface{} {
