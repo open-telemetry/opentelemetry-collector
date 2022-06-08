@@ -27,13 +27,13 @@ import (
 	"golang.org/x/sys/windows/svc"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/testcomponents"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestNewSvcHandler(t *testing.T) {
-	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-config.yaml")}
+	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-nop.yaml")}
 
-	factories, err := testcomponents.NewDefaultFactories()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	s := NewSvcHandler(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
