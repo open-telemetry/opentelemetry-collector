@@ -4,6 +4,16 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.53.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated `componenterror` package. (#5420)
 - Remove deprecated `config.MapConverterFunc`. (#5419)
 - Remove `AddCollectorVersionTag`, enabled for long time already. (#5471)
