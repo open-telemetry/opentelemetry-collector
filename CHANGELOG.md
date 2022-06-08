@@ -8,6 +8,8 @@
 
 ### 💡 Enhancements 💡
 
+- Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.53.0 Beta
