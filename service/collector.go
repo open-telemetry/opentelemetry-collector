@@ -111,12 +111,6 @@ func (col *Collector) GetState() State {
 	return State(col.state.Load())
 }
 
-// GetLogger returns logger used by the Collector.
-// Deprecated: [v0.52.0] Collector owns telemetry lifecycle and accessing this func in different moments has undefined behavior. If you need access to telemetry components (logger, trace provider, etc.) create an extension.
-func (col *Collector) GetLogger() *zap.Logger {
-	return col.service.telemetry.Logger
-}
-
 // Shutdown shuts down the collector server.
 func (col *Collector) Shutdown() {
 	// Only shutdown if we're in a Running or Starting State else noop
