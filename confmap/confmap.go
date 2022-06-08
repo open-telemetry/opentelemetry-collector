@@ -81,15 +81,6 @@ func (l *Conf) Get(key string) interface{} {
 	return l.k.Get(key)
 }
 
-// Deprecated: [v0.53.0] use "Merge" or construct a map[string]interface{}.
-func (l *Conf) Set(key string, value interface{}) {
-	// koanf doesn't offer a direct setting mechanism so merging is required.
-	merged := koanf.New(KeyDelimiter)
-	_ = merged.Load(confmap.Provider(map[string]interface{}{key: value}, KeyDelimiter), nil)
-	// TODO (issue 4467): return this error on `Set`.
-	_ = l.k.Merge(merged)
-}
-
 // IsSet checks to see if the key has been set in any of the data locations.
 // IsSet is case-insensitive for a key.
 func (l *Conf) IsSet(key string) bool {

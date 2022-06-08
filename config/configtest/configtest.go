@@ -21,12 +21,7 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
-
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
-
-// Deprecated: [v0.53.0] use confmaptest.LoadConf
-var LoadConfigMap = confmaptest.LoadConf
 
 // The regular expression for valid config field tag.
 var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
