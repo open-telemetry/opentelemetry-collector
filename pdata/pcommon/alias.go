@@ -73,12 +73,6 @@ var (
 	// NewValueSlice creates a new Value of array type.
 	NewValueSlice = internal.NewValueSlice
 
-	// NewValueBytes creates a new Value with the given []byte value.
-	// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-	// across multiple attributes is forbidden.
-	// Deprecated: [0.52.0] Use NewValueMBytes instead. Signature of this func will be changed to accept new immutable slice type in 0.53.0.
-	NewValueBytes = internal.NewValueMBytes
-
 	// NewValueMBytes creates a new Value with the given []byte value.
 	// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
 	// across multiple attributes is forbidden.

@@ -4,6 +4,9 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated `pdata.NewValueBytes`. (#5504)
+- Remove deprecated `GetLogger`. (#5504)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
