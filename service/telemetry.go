@@ -24,6 +24,8 @@ import (
 
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
+	"go.opencensus.io/metric"
+	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
@@ -59,8 +61,11 @@ type collectorTelemetryExporter interface {
 }
 
 type colTelemetry struct {
-	registry   *featuregate.Registry
-	views      []*view.View
+	registry *featuregate.Registry
+	views    []*view.View
+
+	ocRegistry *metric.Registry
+
 	server     *http.Server
 	doInitOnce sync.Once
 }
@@ -162,24 +167,22 @@ func (tel *colTelemetry) initOnce(svc *service) error {
 }
 
 func (tel *colTelemetry) initOpenCensus(svc *service, telAttrs map[string]string) (http.Handler, error) {
-	telemetryConf := svc.config.Telemetry
-	processMetricsViews, err := telemetry.NewProcessMetricsViews(getBallastSize(svc.host))
-	if err != nil {
+	tel.ocRegistry = metric.NewRegistry()
+	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
+
+	if err := telemetry.RegisterProcessMetrics(tel.ocRegistry, getBallastSize(svc.host)); err != nil {
 		return nil, err
 	}
 
 	var views []*view.View
-	obsMetrics := obsreportconfig.Configure(telemetryConf.Metrics.Level)
+	obsMetrics := obsreportconfig.Configure(svc.config.Telemetry.Metrics.Level)
 	views = append(views, batchprocessor.MetricViews()...)
 	views = append(views, obsMetrics.Views...)
-	views = append(views, processMetricsViews.Views()...)
 
 	tel.views = views
-	if err = view.Register(views...); err != nil {
+	if err := view.Register(views...); err != nil {
 		return nil, err
 	}
-
-	processMetricsViews.StartCollection()
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := prometheus.Options{
@@ -223,6 +226,8 @@ func (tel *colTelemetry) initOpenTelemetry(svc *service) (http.Handler, error) {
 }
 
 func (tel *colTelemetry) shutdown() error {
+	metricproducer.GlobalManager().DeleteProducer(tel.ocRegistry)
+
 	view.Unregister(tel.views...)
 
 	if tel.server != nil {
