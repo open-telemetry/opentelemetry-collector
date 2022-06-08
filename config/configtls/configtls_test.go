@@ -368,6 +368,9 @@ func TestMinMaxTLSVersions(t *testing.T) {
 		{name: `TLS Config ["1.2", ""] to give [TLS1.2, TLS1.3]`, minVersion: "1.2", maxVersion: "", outMinVersion: tls.VersionTLS12, outMaxVersion: tls.VersionTLS13},
 		{name: `TLS Config ["1.3", "1.2"] to give [Error]`, minVersion: "1.3", maxVersion: "1.2", errorTxt: "tls min_version is greater than tls max_version: 1.3 > 1.2"},
 		{name: `TLS Config ["1.2", "1.0"] to give [Error]`, minVersion: "1.2", maxVersion: "1.0", errorTxt: "tls min_version is greater than tls max_version: 1.2 > 1.0"},
+		{name: `TLS Config ["asd", ""] to give [Error]`, minVersion: "asd", maxVersion: "", errorTxt: `invalid TLS min_version: unsupported TLS version: "asd"`},
+		{name: `TLS Config ["", "asd"] to give [Error]`, minVersion: "", maxVersion: "asd", errorTxt: `invalid TLS max_version: unsupported TLS version: "asd"`},
+		{name: `TLS Config ["0.4", ""] to give [Error]`, minVersion: "0.4", maxVersion: "", errorTxt: `invalid TLS min_version: unsupported TLS version: "0.4"`},
 	}
 
 	for _, test := range tests {
