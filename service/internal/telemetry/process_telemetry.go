@@ -25,8 +25,8 @@ import (
 	"go.opencensus.io/stats"
 )
 
-// ProcessMetrics is a struct that contains views related to process metrics (cpu, mem, etc)
-type ProcessMetrics struct {
+// processMetrics is a struct that contains views related to process metrics (cpu, mem, etc)
+type processMetrics struct {
 	startTimeUnixNano int64
 	ballastSizeBytes  uint64
 	proc              *process.Process
@@ -44,10 +44,10 @@ type ProcessMetrics struct {
 	ms         *runtime.MemStats
 }
 
-// RegisterProcessMetrics creates a new set of ProcessMetrics (mem, cpu) that can be used to measure
+// RegisterProcessMetrics creates a new set of processMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
 func RegisterProcessMetrics(registry *metric.Registry, ballastSizeBytes uint64) error {
-	pm := &ProcessMetrics{
+	pm := &processMetrics{
 		startTimeUnixNano: time.Now().UnixNano(),
 		ballastSizeBytes:  ballastSizeBytes,
 		ms:                &runtime.MemStats{},
@@ -127,33 +127,33 @@ func RegisterProcessMetrics(registry *metric.Registry, ballastSizeBytes uint64) 
 	return nil
 }
 
-func (pm *ProcessMetrics) updateProcessUptime() float64 {
+func (pm *processMetrics) updateProcessUptime() float64 {
 	now := time.Now().UnixNano()
 	return float64(now-pm.startTimeUnixNano) / 1e9
 }
 
-func (pm *ProcessMetrics) updateAllocMem() int64 {
+func (pm *processMetrics) updateAllocMem() int64 {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	pm.readMemStatsIfNeeded()
 	return int64(pm.ms.Alloc)
 }
 
-func (pm *ProcessMetrics) updateTotalAllocMem() int64 {
+func (pm *processMetrics) updateTotalAllocMem() int64 {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	pm.readMemStatsIfNeeded()
 	return int64(pm.ms.TotalAlloc)
 }
 
-func (pm *ProcessMetrics) updateSysMem() int64 {
+func (pm *processMetrics) updateSysMem() int64 {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	pm.readMemStatsIfNeeded()
 	return int64(pm.ms.Sys)
 }
 
-func (pm *ProcessMetrics) updateCPUSeconds() float64 {
+func (pm *processMetrics) updateCPUSeconds() float64 {
 	times, err := pm.proc.Times()
 	if err != nil {
 		return 0
@@ -162,7 +162,7 @@ func (pm *ProcessMetrics) updateCPUSeconds() float64 {
 	return times.Total()
 }
 
-func (pm *ProcessMetrics) updateRSSMemory() int64 {
+func (pm *processMetrics) updateRSSMemory() int64 {
 	mem, err := pm.proc.MemoryInfo()
 	if err != nil {
 		return 0
@@ -170,7 +170,7 @@ func (pm *ProcessMetrics) updateRSSMemory() int64 {
 	return int64(mem.RSS)
 }
 
-func (pm *ProcessMetrics) readMemStatsIfNeeded() {
+func (pm *processMetrics) readMemStatsIfNeeded() {
 	now := time.Now()
 	// If last time we read was less than one second ago just reuse the values
 	if now.Sub(pm.lastMsRead) < time.Second {
