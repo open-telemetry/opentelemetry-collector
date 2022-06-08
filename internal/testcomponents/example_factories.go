@@ -29,10 +29,6 @@ func ExampleComponents() (
 	factories component.Factories,
 	err error,
 ) {
-	if factories.Extensions, err = component.MakeExtensionFactoryMap(ExampleExtensionFactory); err != nil {
-		return
-	}
-
 	if factories.Receivers, err = component.MakeReceiverFactoryMap(ExampleReceiverFactory); err != nil {
 		return
 	}
