@@ -16,6 +16,7 @@
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
+- Enable Persistent Queue by default. (#5457)
 
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
 - Update OTLP to v0.18.0 (#5530)
@@ -58,7 +59,6 @@
 
 - Move `service.mapResolver` to `confmap.Resolver` (#5444)
 - Add `linux-arm` architecture to cross build tests in CI (#5472)
-- Enable Persistent Queue by default. (#5457)
 
 ### 🧰 Bug fixes 🧰
 
