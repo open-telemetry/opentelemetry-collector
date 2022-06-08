@@ -24,24 +24,23 @@ import (
 	"go.opencensus.io/metric/metricdata"
 )
 
+var expectedMetrics = []string{
+	// Changing a metric name is a breaking change.
+	// Adding new metrics is ok as long it follows the conventions described at
+	// https://pkg.go.dev/go.opentelemetry.io/collector/obsreport?tab=doc#hdr-Naming_Convention_for_New_Metrics
+	"process/uptime",
+	"process/runtime/heap_alloc_bytes",
+	"process/runtime/total_alloc_bytes",
+	"process/runtime/total_sys_memory_bytes",
+	"process/cpu_seconds",
+	"process/memory/rss",
+}
+
 func TestProcessTelemetry(t *testing.T) {
 	registry := metric.NewRegistry()
-	err := RegisterProcessMetrics(registry, 0)
-	require.NoError(t, err)
+	require.NoError(t, RegisterProcessMetrics(registry, 0))
 
-	expectedMetrics := []string{
-		// Changing a metric name is a breaking change.
-		// Adding new metrics is ok as long it follows the conventions described at
-		// https://pkg.go.dev/go.opentelemetry.io/collector/obsreport?tab=doc#hdr-Naming_Convention_for_New_Metrics
-		"process/uptime",
-		"process/runtime/heap_alloc_bytes",
-		"process/runtime/total_alloc_bytes",
-		"process/runtime/total_sys_memory_bytes",
-		"process/cpu_seconds",
-		"process/memory/rss",
-	}
-
-	// Check that the views are actually filled.
+	// Check that the metrics are actually filled.
 	<-time.After(200 * time.Millisecond)
 
 	metrics := registry.Read()
@@ -68,6 +67,18 @@ func TestProcessTelemetry(t *testing.T) {
 		}
 
 		assert.True(t, value > 0, metricName)
+	}
+}
+
+func TestProcessTelemetryFailToRegister(t *testing.T) {
+
+	for _, metricName := range expectedMetrics {
+		t.Run(metricName, func(t *testing.T) {
+			registry := metric.NewRegistry()
+			_, err := registry.AddFloat64Gauge(metricName)
+			require.NoError(t, err)
+			assert.Error(t, RegisterProcessMetrics(registry, 0))
+		})
 	}
 }
 
