@@ -52,9 +52,6 @@ type ExtensionCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// Deprecated: [v0.53.0] use ExtensionCreateDefaultConfigFunc.
-type ExtensionDefaultConfigFunc = ExtensionCreateDefaultConfigFunc
-
 // ExtensionCreateDefaultConfigFunc is the equivalent of component.ExtensionFactory.CreateDefaultConfig()
 type ExtensionCreateDefaultConfigFunc func() config.Extension
 

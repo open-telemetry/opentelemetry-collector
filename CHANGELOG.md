@@ -6,6 +6,12 @@
 
 - Remove deprecated `pdata.NewValueBytes`. (#5504)
 - Remove deprecated `GetLogger`. (#5504)
+- Remove deprecated `configtest.LoadConfigMap` (#5505)
+- Remove deprecated `config.Map` (#5505)
+- Remove deprecated `config.MapProvider` (#5505)
+- Remove deprecated `config.MapConverter` (#5505)
+- Remove deprecated `config.Received` (#5505)
+- Remove deprecated `config.CloseFunc` (#5505)
 
 ### 🚩 Deprecations 🚩
 

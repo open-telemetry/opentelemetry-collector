@@ -16,24 +16,12 @@ package configtest
 
 import (
 	"io"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestLoadConfigMap_FileNotFound(t *testing.T) {
-	_, err := LoadConfigMap("file/not/found")
-	assert.Error(t, err)
-}
-
-func TestLoadConfigMap(t *testing.T) {
-	cfg, err := LoadConfigMap(filepath.Join("testdata", "simple.yaml"))
-	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"floating": 3.14}, cfg.ToStringMap())
-}
 
 func TestCheckConfigStructPointerAndValue(t *testing.T) {
 	config := struct {

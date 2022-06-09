@@ -109,11 +109,6 @@ func NewRetrieved(rawConf map[string]interface{}, opts ...RetrievedOption) (Retr
 	return Retrieved{conf: NewFromStringMap(rawConf), closeFunc: set.closeFunc}, nil
 }
 
-// Deprecated: [v0.53.0] Use AsConf.
-func (r *Retrieved) AsMap() (*Conf, error) {
-	return r.AsConf()
-}
-
 // AsConf returns the retrieved configuration parsed as a Conf.
 func (r Retrieved) AsConf() (*Conf, error) {
 	return r.conf, nil
