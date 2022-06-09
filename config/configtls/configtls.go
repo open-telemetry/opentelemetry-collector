@@ -42,12 +42,10 @@ type TLSSetting struct {
 
 	// MinVersion sets the minimum TLS version that is acceptable.
 	// If not set, refer to crypto/tls for defaults. (optional)
-	// Which is TLS 1.2 for clients and TLS 1.0 for servers
 	MinVersion string `mapstructure:"min_version"`
 
 	// MaxVersion sets the maximum TLS version that is acceptable.
 	// If not set, refer to crypto/tls for defaults. (optional)
-	// Which is currently TLS 1.3.
 	MaxVersion string `mapstructure:"max_version"`
 
 	// ReloadInterval specifies the duration after which the certificate will be reloaded
