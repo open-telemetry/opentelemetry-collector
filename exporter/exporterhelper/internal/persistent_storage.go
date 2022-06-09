@@ -34,6 +34,8 @@ type persistentStorage interface {
 	get() <-chan PersistentRequest
 	// size returns the current size of the persistent storage with items waiting for processing
 	size() uint64
+	// start attaches the storage client and initializes the storage
+	start(ctx context.Context, client storage.Client)
 	// stop gracefully stops the storage
 	stop()
 }
@@ -104,11 +106,10 @@ var (
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
-// The queue needs to be initialized separately using initPersistentContiguousStorage.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, capacity uint64, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) *persistentContiguousStorage {
+// The queue needs to be started separately using start().
+func newPersistentContiguousStorage(queueName string, capacity uint64, logger *zap.Logger, unmarshaler RequestUnmarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
 		logger:      logger,
-		client:      client,
 		queueName:   queueName,
 		unmarshaler: unmarshaler,
 		capacity:    capacity,
@@ -118,7 +119,14 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, capac
 		itemsCount:  atomic.NewUint64(0),
 	}
 
-	initPersistentContiguousStorage(ctx, pcs)
+	return pcs
+}
+
+// start attaches the storage client and initializes the queue
+func (pcs *persistentContiguousStorage) start(ctx context.Context, client storage.Client) {
+	pcs.client = client
+
+	pcs.initPersistentContiguousStorage(ctx)
 	notDispatchedReqs := pcs.retrieveNotDispatchedReqs(context.Background())
 
 	// We start the loop first so in case there are more elements in the persistent storage than the capacity,
@@ -132,11 +140,9 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, capac
 	for i := uint64(0); i < pcs.size(); i++ {
 		pcs.putChan <- struct{}{}
 	}
-
-	return pcs
 }
 
-func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContiguousStorage) {
+func (pcs *persistentContiguousStorage) initPersistentContiguousStorage(ctx context.Context) {
 	var writeIndex itemIndex
 	var readIndex itemIndex
 	batch, err := newBatch(pcs).get(readIndexKey, writeIndexKey).execute(ctx)

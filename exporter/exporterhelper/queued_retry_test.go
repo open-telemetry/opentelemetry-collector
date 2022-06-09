@@ -56,7 +56,7 @@ func TestQueuedRetry_DropOnPermanentError(t *testing.T) {
 	})
 
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		// This is asynchronous so it should just enqueue, no errors expectedError.
 		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
@@ -80,7 +80,7 @@ func TestQueuedRetry_DropOnNoRetry(t *testing.T) {
 
 	mockR := newMockRequest(context.Background(), 2, errors.New("transient error"))
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		// This is asynchronous so it should just enqueue, no errors expectedError.
 		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
@@ -106,7 +106,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTracesOneSpan())
 	mockR := newMockRequest(context.Background(), 2, traceErr)
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		// This is asynchronous so it should just enqueue, no errors expectedError.
 		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
@@ -128,14 +128,14 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 
 	firstMockR := newMockRequest(context.Background(), 2, errors.New("transient error"))
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		// This is asynchronous so it should just enqueue, no errors expectedError.
 		require.NoError(t, be.sender.send(firstMockR))
 	})
 
 	// Enqueue another request to ensure when calling shutdown we drain the queue.
 	secondMockR := newMockRequest(context.Background(), 3, nil)
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		// This is asynchronous so it should just enqueue, no errors expectedError.
 		require.NoError(t, be.sender.send(secondMockR))
 	})
 
@@ -166,7 +166,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 	cancelFunc()
 	mockR := newMockRequest(ctx, 2, nil)
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		// This is asynchronous so it should just enqueue, no errors expectedError.
 		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
@@ -199,7 +199,7 @@ func TestQueuedRetry_MaxElapsedTime(t *testing.T) {
 	mockR := newMockRequest(context.Background(), 2, nil)
 	start := time.Now()
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		// This is asynchronous so it should just enqueue, no errors expectedError.
 		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
@@ -241,7 +241,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 	mockR := newMockRequest(context.Background(), 2, wrappedError{retry})
 	start := time.Now()
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		// This is asynchronous so it should just enqueue, no errors expectedError.
 		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()
@@ -271,7 +271,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 
 	mockR := newMockRequest(context.Background(), 2, errors.New("transient error"))
 	ocs.run(func() {
-		// This is asynchronous so it should just enqueue, no errors expected.
+		// This is asynchronous so it should just enqueue, no errors expectedError.
 		require.NoError(t, be.sender.send(mockR))
 	})
 	ocs.awaitAsyncProcessing()

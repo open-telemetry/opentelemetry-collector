@@ -39,7 +39,8 @@ func createTestQueue(extension storage.Extension, capacity int) *persistentQueue
 		panic(err)
 	}
 
-	wq := NewPersistentQueue(context.Background(), "foo", config.TracesDataType, capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
+	wq, start := NewPersistentQueue("foo", config.TracesDataType, capacity, logger, newFakeTracesRequestUnmarshalerFunc())
+	start(context.Background(), client)
 	return wq.(*persistentQueue)
 }
 

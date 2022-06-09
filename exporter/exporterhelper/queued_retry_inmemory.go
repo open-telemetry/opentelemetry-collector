@@ -40,8 +40,13 @@ type QueueSettings struct {
 	NumConsumers int `mapstructure:"num_consumers"`
 	// QueueSize is the maximum number of batches allowed in queue at a given time.
 	QueueSize int `mapstructure:"queue_size"`
-	// PersistentStorageEnabled describes whether persistence via a file storage extension is enabled
-	PersistentStorageEnabled bool `mapstructure:"persistent_storage_enabled"`
+	// StorageID if not empty, enables the persistent storage and uses the component specified
+	// as a storage extension for the persistent queue
+	StorageID *config.ComponentID `mapstructure:"storage"`
+	// StorageEnabled describes whether persistence via a file storage extension is enabled using the single
+	// default storage extension.
+	// Deprecated: this does not allow to specify which extension is going to be used when several ones are available
+	StorageEnabled bool `mapstructure:"persistent_storage_enabled"`
 }
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
@@ -53,8 +58,8 @@ func NewDefaultQueueSettings() QueueSettings {
 		// This is a pretty decent value for production.
 		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
 		// multiply that by the number of requests per seconds.
-		QueueSize:                5000,
-		PersistentStorageEnabled: false,
+		QueueSize:      5000,
+		StorageEnabled: false,
 	}
 }
 
@@ -71,9 +76,53 @@ func (qCfg *QueueSettings) Validate() error {
 	return nil
 }
 
+func (qCfg *QueueSettings) getStorageExtension(logger *zap.Logger, extensions map[config.ComponentID]component.Extension) (storage.Extension, error) {
+	if qCfg.StorageID != nil {
+		if ext, found := extensions[*qCfg.StorageID]; found {
+			if storageExt, ok := ext.(storage.Extension); ok {
+				return storageExt, nil
+			}
+			return nil, errWrongExtensionType
+		}
+	} else if qCfg.StorageEnabled {
+		logger.Warn("enabling persistent storage via deprecated `persistent_storage_enabled` setting; please change to `storage` and specify extension ID")
+		var storageExtension storage.Extension
+		for _, ext := range extensions {
+			if se, ok := ext.(storage.Extension); ok {
+				if storageExtension != nil {
+					return nil, errMultipleStorageClients
+				}
+				storageExtension = se
+			}
+		}
+
+		return storageExtension, nil
+	}
+
+	return nil, nil
+}
+
+func (qCfg *QueueSettings) toStorageClient(ctx context.Context, logger *zap.Logger, host component.Host, ownerID config.ComponentID, signal config.DataType) (storage.Client, error) {
+	extension, err := qCfg.getStorageExtension(logger, host.GetExtensions())
+	if err != nil {
+		return nil, err
+	}
+	if extension == nil {
+		return nil, errNoStorageClient
+	}
+
+	client, err := extension.GetClient(ctx, component.KindExporter, ownerID, string(signal))
+	if err != nil {
+		return nil, err
+	}
+
+	return client, err
+}
+
 var (
 	errNoStorageClient        = errors.New("no storage client extension found")
-	errMultipleStorageClients = errors.New("multiple storage extensions found")
+	errWrongExtensionType     = errors.New("requested extension is not a storage extension")
+	errMultipleStorageClients = errors.New("multiple storage extensions found while default extension expectedError")
 )
 
 type queuedRetrySender struct {
@@ -83,6 +132,7 @@ type queuedRetrySender struct {
 	cfg                QueueSettings
 	consumerSender     requestSender
 	queue              internal.ProducerConsumerQueue
+	queueStartFunc     internal.PersistentQueueStartFunc
 	retryStopCh        chan struct{}
 	traceAttributes    []attribute.KeyValue
 	logger             *zap.Logger
@@ -116,52 +166,15 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 		onTemporaryFailure: qrs.onTemporaryFailure,
 	}
 
-	if !qCfg.PersistentStorageEnabled {
+	if qCfg.StorageEnabled || qCfg.StorageID != nil {
+		qrs.queue, qrs.queueStartFunc = internal.NewPersistentQueue(qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, qrs.requestUnmarshaler)
+		// TODO: following can be further exposed as a config param rather than relying on a type of queue
+		qrs.requeuingEnabled = true
+	} else {
 		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize, func(item interface{}) {})
 	}
-	// The Persistent Queue is initialized separately as it needs extra information about the component
 
 	return qrs
-}
-
-func getStorageClient(ctx context.Context, host component.Host, id config.ComponentID, signal config.DataType) (*storage.Client, error) {
-	var storageExtension storage.Extension
-	for _, ext := range host.GetExtensions() {
-		if se, ok := ext.(storage.Extension); ok {
-			if storageExtension != nil {
-				return nil, errMultipleStorageClients
-			}
-			storageExtension = se
-		}
-	}
-
-	if storageExtension == nil {
-		return nil, errNoStorageClient
-	}
-
-	client, err := storageExtension.GetClient(ctx, component.KindExporter, id, string(signal))
-	if err != nil {
-		return nil, err
-	}
-
-	return &client, err
-}
-
-// initializePersistentQueue uses extra information for initialization available from component.Host
-func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, host component.Host) error {
-	if qrs.cfg.PersistentStorageEnabled {
-		storageClient, err := getStorageClient(ctx, host, qrs.id, qrs.signal)
-		if err != nil {
-			return err
-		}
-
-		qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, *storageClient, qrs.requestUnmarshaler)
-
-		// TODO: this can be further exposed as a config param rather than relying on a type of queue
-		qrs.requeuingEnabled = true
-	}
-
-	return nil
 }
 
 func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req request, err error) error {
@@ -191,9 +204,12 @@ func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req request
 
 // start is invoked during service startup.
 func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) error {
-	err := qrs.initializePersistentQueue(ctx, host)
-	if err != nil {
-		return err
+	if qrs.queueStartFunc != nil {
+		storageClient, err := qrs.cfg.toStorageClient(ctx, qrs.logger, host, qrs.id, qrs.signal)
+		if err != nil {
+			return err
+		}
+		qrs.queueStartFunc(ctx, storageClient)
 	}
 
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {

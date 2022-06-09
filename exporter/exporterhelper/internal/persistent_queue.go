@@ -35,18 +35,19 @@ type persistentQueue struct {
 	storage    persistentStorage
 }
 
-// buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
-// to avoid conflicts between different signals, which require unique persistent storage name
-func buildPersistentStorageName(name string, signal config.DataType) string {
-	return fmt.Sprintf("%s-%s", name, signal)
-}
+// PersistentQueueStartFunc defines a function that can be used to start the persistent queue
+type PersistentQueueStartFunc func(ctx context.Context, client storage.Client)
 
 // NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func NewPersistentQueue(ctx context.Context, name string, signal config.DataType, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
-	return &persistentQueue{
+func NewPersistentQueue(name string, signal config.DataType, capacity int, logger *zap.Logger, unmarshaler RequestUnmarshaler) (ProducerConsumerQueue, PersistentQueueStartFunc) {
+	pq := &persistentQueue{
 		logger:   logger,
 		stopChan: make(chan struct{}),
-		storage:  newPersistentContiguousStorage(ctx, buildPersistentStorageName(name, signal), uint64(capacity), logger, client, unmarshaler),
+		storage:  newPersistentContiguousStorage(buildPersistentStorageName(name, signal), uint64(capacity), logger, unmarshaler),
+	}
+
+	return pq, func(ctx context.Context, client storage.Client) {
+		pq.storage.start(ctx, client)
 	}
 }
 
@@ -93,4 +94,10 @@ func (pq *persistentQueue) Stop() {
 // Size returns the current depth of the queue, excluding the item already in the storage channel (if any)
 func (pq *persistentQueue) Size() int {
 	return int(pq.storage.size())
+}
+
+// buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
+// to avoid conflicts between different signals, which require unique persistent storage name
+func buildPersistentStorageName(name string, signal config.DataType) string {
+	return fmt.Sprintf("%s-%s", name, signal)
 }

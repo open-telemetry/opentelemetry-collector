@@ -35,11 +35,12 @@ The following configuration options can be modified:
 To use persistent queue, following setting needs to be enabled:
 
 - `sending_queue`
-  - `persistent_storage_enabled` (default = false): When set, enables persistence via a file storage extension
+  - `storage` (default = none): When set, enables persistence and uses the component specified as a storage extension for persistent queue
+  - (deprecated) `persistent_storage_enabled` (default = false): When set, enables persistence via a file storage extension
 
 The maximum number of batches stored to disk can be controlled using `sending_queue.queue_size` parameter (which, similarly as for in-memory buffering, defaults to 5000 batches).
 
-When `persistent_storage_enabled` is set to true, the queue is being buffered to disk using [filestorage] extension. If collector instance is killed while having some items in the persistent queue, on restart the items are being picked and the exporting is continued.
+When persistent queue is enabled, the batches are being buffered to disk using [filestorage] extension. If collector instance is killed while having some items in the persistent queue, on restart the items are being picked and the exporting is continued.
 
 ```
                                                               ┌─Consumer #1─┐
@@ -87,9 +88,9 @@ exporters:
   otlp:
     endpoint: <ENDPOINT>
     sending_queue:
-      persistent_storage_enabled: true
+      storage: file_storage/otc
 extensions:
-  file_storage:
+  file_storage/otc:
     directory: /var/lib/storage/otc
     timeout: 10s
 service:
