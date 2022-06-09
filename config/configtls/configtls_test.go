@@ -361,16 +361,17 @@ func TestMinMaxTLSVersions(t *testing.T) {
 		outMaxVersion uint16
 		errorTxt      string
 	}{
-		{name: `TLS Config ["", ""] to give [TLS1.0, TLS1.3]`, minVersion: "", maxVersion: "", outMinVersion: tls.VersionTLS10, outMaxVersion: tls.VersionTLS13},
-		{name: `TLS Config ["", "1.3"] to give [TLS1.0, TLS1.3]`, minVersion: "", maxVersion: "1.3", outMinVersion: tls.VersionTLS10, outMaxVersion: tls.VersionTLS13},
+		{name: `TLS Config ["", ""] to give [0, 0]`, minVersion: "", maxVersion: "", outMinVersion: 0, outMaxVersion: 0},
+		{name: `TLS Config ["", "1.3"] to give [0, TLS1.3]`, minVersion: "", maxVersion: "1.3", outMinVersion: 0, outMaxVersion: tls.VersionTLS13},
+		{name: `TLS Config ["1.2", ""] to give [TLS1.2, 0]`, minVersion: "1.2", maxVersion: "", outMinVersion: tls.VersionTLS12, outMaxVersion: 0},
 		{name: `TLS Config ["1.3", "1.3"] to give [TLS1.3, TLS1.3]`, minVersion: "1.3", maxVersion: "1.3", outMinVersion: tls.VersionTLS13, outMaxVersion: tls.VersionTLS13},
-		{name: `TLS Config ["1.0", "1.0"] to give [TLS1.0, TLS1.0]`, minVersion: "1.0", maxVersion: "1.0", outMinVersion: tls.VersionTLS10, outMaxVersion: tls.VersionTLS10},
-		{name: `TLS Config ["1.2", ""] to give [TLS1.2, TLS1.3]`, minVersion: "1.2", maxVersion: "", outMinVersion: tls.VersionTLS12, outMaxVersion: tls.VersionTLS13},
-		{name: `TLS Config ["1.3", "1.2"] to give [Error]`, minVersion: "1.3", maxVersion: "1.2", errorTxt: "tls min_version is greater than tls max_version: 1.3 > 1.2"},
-		{name: `TLS Config ["1.2", "1.0"] to give [Error]`, minVersion: "1.2", maxVersion: "1.0", errorTxt: "tls min_version is greater than tls max_version: 1.2 > 1.0"},
+		{name: `TLS Config ["1.0", "1.1"] to give [TLS1.0, TLS1.1]`, minVersion: "1.0", maxVersion: "1.1", outMinVersion: tls.VersionTLS10, outMaxVersion: tls.VersionTLS11},
 		{name: `TLS Config ["asd", ""] to give [Error]`, minVersion: "asd", maxVersion: "", errorTxt: `invalid TLS min_version: unsupported TLS version: "asd"`},
 		{name: `TLS Config ["", "asd"] to give [Error]`, minVersion: "", maxVersion: "asd", errorTxt: `invalid TLS max_version: unsupported TLS version: "asd"`},
 		{name: `TLS Config ["0.4", ""] to give [Error]`, minVersion: "0.4", maxVersion: "", errorTxt: `invalid TLS min_version: unsupported TLS version: "0.4"`},
+
+		// Allowing this, however, expecting downstream TLS handshake will throw an error
+		{name: `TLS Config ["1.2", "1.1"] to give [TLS1.2, TLS1.1]`, minVersion: "1.2", maxVersion: "1.1", outMinVersion: tls.VersionTLS12, outMaxVersion: tls.VersionTLS11},
 	}
 
 	for _, test := range tests {

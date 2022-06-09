@@ -41,11 +41,13 @@ type TLSSetting struct {
 	KeyFile string `mapstructure:"key_file"`
 
 	// MinVersion sets the minimum TLS version that is acceptable.
-	// If not set, TLS 1.0 is used. (optional)
+	// If not set, refer to crypto/tls for defaults. (optional)
+	// Which is TLS 1.2 for clients and TLS 1.0 for servers
 	MinVersion string `mapstructure:"min_version"`
 
 	// MaxVersion sets the maximum TLS version that is acceptable.
-	// If not set, TLS 1.3 is used. (optional)
+	// If not set, refer to crypto/tls for defaults. (optional)
+	// Which is currently TLS 1.3.
 	MaxVersion string `mapstructure:"max_version"`
 
 	// ReloadInterval specifies the duration after which the certificate will be reloaded
@@ -176,14 +178,6 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 		getClientCertificate = func(cri *tls.CertificateRequestInfo) (*tls.Certificate, error) { return certReloader.GetCertificate() }
 	}
 
-	// Setting default TLS minVersion
-	if c.MinVersion == "" {
-		c.MinVersion = "1.0"
-	}
-	// Setting default TLS maxVersion
-	if c.MaxVersion == "" {
-		c.MaxVersion = "1.3"
-	}
 	minTLS, err := convertVersion(c.MinVersion)
 	if err != nil {
 		return nil, fmt.Errorf("invalid TLS min_version: %w", err)
@@ -191,9 +185,6 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 	maxTLS, err := convertVersion(c.MaxVersion)
 	if err != nil {
 		return nil, fmt.Errorf("invalid TLS max_version: %w", err)
-	}
-	if minTLS > maxTLS {
-		return nil, fmt.Errorf("tls min_version is greater than tls max_version: %s > %s", c.MinVersion, c.MaxVersion)
 	}
 
 	return &tls.Config{
@@ -251,6 +242,10 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 }
 
 func convertVersion(v string) (uint16, error) {
+	// Defaults will be handled by go/crypto/tls
+	if v == "" {
+		return 0, nil
+	}
 	val, ok := tlsVersions[v]
 	if !ok {
 		return 0, fmt.Errorf("unsupported TLS version: %q", v)

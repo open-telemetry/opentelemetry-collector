@@ -36,10 +36,11 @@ won't use TLS at all.
 
 Minimum and maximum TLS version can be set:
 
-- `min_version` (default = "1.2"): Minimum acceptable TLS version.
-It's recommended to use at least 1.2 as the minimum version.
+- `min_version` (default = "" handled by [crypto/tls](https://github.com/golang/go/blob/master/src/crypto/tls/common.go#L694)): Minimum acceptable TLS version.
+  - options: ["1.0", "1.1", "1.2", "1.3"]
 
-- `max_version` (default = "1.3"): Maximum acceptable TLS version.
+- `max_version` (default = "" handled by [crypto/tls](https://github.com/golang/go/blob/master/src/crypto/tls/common.go#L700)): Maximum acceptable TLS version.
+  - options: ["1.0", "1.1", "1.2", "1.3"]
 
 Additionally certifaces may be reloaded by setting the below configuration.
 
