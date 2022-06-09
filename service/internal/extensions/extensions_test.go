@@ -20,13 +20,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 )
 
-func TestService_setupExtensions(t *testing.T) {
+func TestServiceSetupExtensions(t *testing.T) {
 	errExtensionFactory := component.NewExtensionFactory(
 		"err",
 		func() config.Extension {
@@ -42,33 +43,26 @@ func TestService_setupExtensions(t *testing.T) {
 	badExtensionCfg := badExtensionFactory.CreateDefaultConfig()
 
 	tests := []struct {
-		name       string
-		factories  component.Factories
-		config     *config.Config
-		wantErrMsg string
+		name              string
+		factories         component.Factories
+		extensionsConfigs map[config.ComponentID]config.Extension
+		serviceExtensions []config.ComponentID
+		wantErrMsg        string
 	}{
 		{
 			name: "extension_not_configured",
-			config: &config.Config{
-				Service: config.Service{
-					Extensions: []config.ComponentID{
-						config.NewComponentID("myextension"),
-					},
-				},
+			serviceExtensions: []config.ComponentID{
+				config.NewComponentID("myextension"),
 			},
 			wantErrMsg: "extension \"myextension\" is not configured",
 		},
 		{
 			name: "missing_extension_factory",
-			config: &config.Config{
-				Extensions: map[config.ComponentID]config.Extension{
-					config.NewComponentID(errExtensionFactory.Type()): errExtensionConfig,
-				},
-				Service: config.Service{
-					Extensions: []config.ComponentID{
-						config.NewComponentID(errExtensionFactory.Type()),
-					},
-				},
+			extensionsConfigs: map[config.ComponentID]config.Extension{
+				config.NewComponentID(errExtensionFactory.Type()): errExtensionConfig,
+			},
+			serviceExtensions: []config.ComponentID{
+				config.NewComponentID(errExtensionFactory.Type()),
 			},
 			wantErrMsg: "extension factory for type \"err\" is not configured",
 		},
@@ -79,17 +73,13 @@ func TestService_setupExtensions(t *testing.T) {
 					errExtensionFactory.Type(): errExtensionFactory,
 				},
 			},
-			config: &config.Config{
-				Extensions: map[config.ComponentID]config.Extension{
-					config.NewComponentID(errExtensionFactory.Type()): errExtensionConfig,
-				},
-				Service: config.Service{
-					Extensions: []config.ComponentID{
-						config.NewComponentID(errExtensionFactory.Type()),
-					},
-				},
+			extensionsConfigs: map[config.ComponentID]config.Extension{
+				config.NewComponentID(errExtensionFactory.Type()): errExtensionConfig,
 			},
-			wantErrMsg: "failed to create extension err: cannot create \"err\" extension type",
+			serviceExtensions: []config.ComponentID{
+				config.NewComponentID(errExtensionFactory.Type()),
+			},
+			wantErrMsg: "failed to create extension \"err\": cannot create \"err\" extension type",
 		},
 		{
 			name: "bad_factory",
@@ -98,27 +88,21 @@ func TestService_setupExtensions(t *testing.T) {
 					badExtensionFactory.Type(): badExtensionFactory,
 				},
 			},
-			config: &config.Config{
-				Extensions: map[config.ComponentID]config.Extension{
-					config.NewComponentID(badExtensionFactory.Type()): badExtensionCfg,
-				},
-				Service: config.Service{
-					Extensions: []config.ComponentID{
-						config.NewComponentID(badExtensionFactory.Type()),
-					},
-				},
+			extensionsConfigs: map[config.ComponentID]config.Extension{
+				config.NewComponentID(badExtensionFactory.Type()): badExtensionCfg,
 			},
-			wantErrMsg: "factory for bf produced a nil extension",
+			serviceExtensions: []config.ComponentID{
+				config.NewComponentID(badExtensionFactory.Type()),
+			},
+			wantErrMsg: "factory for \"bf\" produced a nil extension",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ext, err := Build(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), tt.config, tt.factories.Extensions)
-
-			assert.Error(t, err)
+			_, err := Build(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), tt.extensionsConfigs, tt.serviceExtensions, tt.factories.Extensions)
+			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
-			assert.Equal(t, 0, len(ext))
 		})
 	}
 }
