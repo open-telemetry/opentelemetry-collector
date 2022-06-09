@@ -26,10 +26,10 @@ type validatable interface {
 	Validate() error
 }
 
-// Unmarshallable defines an optional interface for custom configuration unmarshaling.
-// A configuration struct can implement this interface to override the default unmarshaling.
+// Unmarshallable defines an optional interface for custom configuration unmarshalling.
+// A configuration struct can implement this interface to override the default unmarshalling.
 type Unmarshallable interface {
-	// Unmarshal is a function that unmarshals a confmap.Conf into the unmarshable struct in a custom way.
+	// Unmarshal is a function that unmarshalls a confmap.Conf into the unmarshable struct in a custom way.
 	// The confmap.Conf for this specific component may be nil or empty if no config available.
 	Unmarshal(component *confmap.Conf) error
 }
