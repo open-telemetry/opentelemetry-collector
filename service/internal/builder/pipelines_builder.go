@@ -85,7 +85,7 @@ type pipelinesBuilder struct {
 	settings  component.TelemetrySettings
 	buildInfo component.BuildInfo
 	config    *config.Config
-	exporters Exporters
+	exporters *BuiltExporters
 	factories map[config.Type]component.ProcessorFactory
 }
 
@@ -95,7 +95,7 @@ func BuildPipelines(
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	config *config.Config,
-	exporters Exporters,
+	exporters *BuiltExporters,
 	factories map[config.Type]component.ProcessorFactory,
 ) (BuiltPipelines, error) {
 	pb := &pipelinesBuilder{settings, buildInfo, config, exporters, factories}
@@ -249,23 +249,11 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 	return bp, nil
 }
 
-// Converts the list of exporter names to a list of corresponding builtExporters.
-func (pb *pipelinesBuilder) getBuiltExportersByIDs(exporterIDs []config.ComponentID) []*builtExporter {
-	var result []*builtExporter
-	for _, expID := range exporterIDs {
-		exporter := pb.exporters[expID]
-		result = append(result, exporter)
-	}
-
-	return result
-}
-
 func (pb *pipelinesBuilder) buildFanoutExportersTracesConsumer(exporterIDs []config.ComponentID) consumer.Traces {
-	builtExporters := pb.getBuiltExportersByIDs(exporterIDs)
-
+	tracesExporters := pb.exporters.exporters[config.TracesDataType]
 	var exporters []consumer.Traces
-	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.getTracesExporter())
+	for _, expID := range exporterIDs {
+		exporters = append(exporters, tracesExporters[expID].(consumer.Traces))
 	}
 
 	// Create a junction point that fans out to all exporters.
@@ -273,11 +261,10 @@ func (pb *pipelinesBuilder) buildFanoutExportersTracesConsumer(exporterIDs []con
 }
 
 func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterIDs []config.ComponentID) consumer.Metrics {
-	builtExporters := pb.getBuiltExportersByIDs(exporterIDs)
-
+	metricsExporters := pb.exporters.exporters[config.MetricsDataType]
 	var exporters []consumer.Metrics
-	for _, builtExp := range builtExporters {
-		exporters = append(exporters, builtExp.getMetricsExporter())
+	for _, expID := range exporterIDs {
+		exporters = append(exporters, metricsExporters[expID].(consumer.Metrics))
 	}
 
 	// Create a junction point that fans out to all exporters.
@@ -285,11 +272,10 @@ func (pb *pipelinesBuilder) buildFanoutExportersMetricsConsumer(exporterIDs []co
 }
 
 func (pb *pipelinesBuilder) buildFanoutExportersLogsConsumer(exporterIDs []config.ComponentID) consumer.Logs {
-	builtExporters := pb.getBuiltExportersByIDs(exporterIDs)
-
-	exporters := make([]consumer.Logs, len(builtExporters))
-	for i, builtExp := range builtExporters {
-		exporters[i] = builtExp.getLogsExporter()
+	logsExporters := pb.exporters.exporters[config.LogsDataType]
+	var exporters []consumer.Logs
+	for _, expID := range exporterIDs {
+		exporters = append(exporters, logsExporters[expID].(consumer.Logs))
 	}
 
 	// Create a junction point that fans out to all exporters.

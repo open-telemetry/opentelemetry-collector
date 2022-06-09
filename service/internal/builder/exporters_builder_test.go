@@ -21,174 +21,101 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestBuildExporters(t *testing.T) {
-	factories, err := testcomponents.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
-	otlpFactory := otlpexporter.NewFactory()
-	factories.Exporters[otlpFactory.Type()] = otlpFactory
 	cfg := &config.Config{
 		Exporters: map[config.ComponentID]config.Exporter{
-			config.NewComponentID("otlp"): &otlpexporter.Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint: "0.0.0.0:12345",
-				},
-			},
+			config.NewComponentID("nop"): factories.Exporters["nop"].CreateDefaultConfig(),
 		},
 
 		Service: config.Service{
 			Pipelines: map[config.ComponentID]*config.Pipeline{
 				config.NewComponentID("traces"): {
-					Exporters: []config.ComponentID{config.NewComponentID("otlp")},
+					Exporters: []config.ComponentID{config.NewComponentID("nop")},
+				},
+				config.NewComponentID("metrics"): {
+					Exporters: []config.ComponentID{config.NewComponentID("nop")},
+				},
+				config.NewComponentID("logs"): {
+					Exporters: []config.ComponentID{config.NewComponentID("nop")},
 				},
 			},
 		},
 	}
 
-	exporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
-
+	exporters, err := BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NoError(t, err)
-	require.NotNil(t, exporters)
 
-	e1 := exporters[config.NewComponentID("otlp")]
-
-	// Ensure exporter has its fields correctly populated.
-	require.NotNil(t, e1)
-	assert.NotNil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricsExporter())
-	assert.Nil(t, e1.getLogsExporter())
+	exps := exporters.ToMapByDataType()
+	require.Len(t, exps, 3)
+	assert.NotNil(t, exps[config.TracesDataType][config.NewComponentID("nop")])
+	assert.NotNil(t, exps[config.MetricsDataType][config.NewComponentID("nop")])
+	assert.NotNil(t, exps[config.LogsDataType][config.NewComponentID("nop")])
 
 	// Ensure it can be started.
 	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
 
 	// Ensure it can be stopped.
-	if err = e1.Shutdown(context.Background()); err != nil {
-		// TODO Find a better way to handle this case
-		// Since the endpoint of otlp exporter doesn't actually exist, e1 may
-		// already stop because it cannot connect.
-		// The test should stop running if this isn't the error cause.
-		require.EqualError(t, err, "rpc error: code = Canceled desc = grpc: the client connection is closing")
-	}
+	assert.NoError(t, exporters.ShutdownAll(context.Background()))
 
 	// Remove the pipeline so that the exporter is not attached to any pipeline.
 	// This should result in creating an exporter that has none of consumption
 	// functions set.
-	delete(cfg.Service.Pipelines, config.NewComponentID("traces"))
-	exporters, err = BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
-	assert.NotNil(t, exporters)
+	cfg.Service.Pipelines = map[config.ComponentID]*config.Pipeline{}
+	exporters, err = BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 	assert.NoError(t, err)
 
-	e1 = exporters[config.NewComponentID("otlp")]
-
-	// Ensure exporter has its fields correctly populated, ie TracesExporter and MetricsExporter are nil.
-	require.NotNil(t, e1)
-	assert.Nil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricsExporter())
-	assert.Nil(t, e1.getLogsExporter())
-
-	// TODO: once we have an exporter that supports metrics data type test it too.
+	exps = exporters.ToMapByDataType()
+	require.Len(t, exps, 3)
+	assert.Len(t, exps[config.TracesDataType], 0)
+	assert.Len(t, exps[config.MetricsDataType], 0)
+	assert.Len(t, exps[config.LogsDataType], 0)
 }
 
-func TestBuildExporters_BuildLogs(t *testing.T) {
-	factories, err := testcomponents.ExampleComponents()
-	assert.Nil(t, err)
-
-	cfg := &config.Config{
-		Exporters: map[config.ComponentID]config.Exporter{
-			config.NewComponentID("exampleexporter"): &testcomponents.ExampleExporter{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID("exampleexporter")),
-			},
-		},
-
-		Service: config.Service{
-			Pipelines: map[config.ComponentID]*config.Pipeline{
-				config.NewComponentID("logs"): {
-					Exporters: []config.ComponentID{config.NewComponentID("exampleexporter")},
-				},
-			},
-		},
-	}
-
-	exporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
-
-	assert.NoError(t, err)
-	require.NotNil(t, exporters)
-
-	e1 := exporters[config.NewComponentID("exampleexporter")]
-
-	// Ensure exporter has its fields correctly populated.
-	require.NotNil(t, e1)
-	assert.NotNil(t, e1.getLogsExporter())
-	assert.Nil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricsExporter())
-
-	// Ensure it can be started.
-	err = exporters.StartAll(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
-
-	// Ensure it can be stopped.
-	err = e1.Shutdown(context.Background())
-	assert.NoError(t, err)
-
-	// Remove the pipeline so that the exporter is not attached to any pipeline.
-	// This should result in creating an exporter that has none of consumption
-	// functions set.
-	delete(cfg.Service.Pipelines, config.NewComponentID("logs"))
-	exporters, err = BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
-	assert.NotNil(t, exporters)
-	assert.Nil(t, err)
-
-	e1 = exporters[config.NewComponentID("exampleexporter")]
-
-	// Ensure exporter has its fields correctly populated, ie Trace Exporter and
-	// Metrics Exporter are nil.
-	require.NotNil(t, e1)
-	assert.Nil(t, e1.getTracesExporter())
-	assert.Nil(t, e1.getMetricsExporter())
-	assert.Nil(t, e1.getLogsExporter())
-}
-
-func TestBuildExporters_StartStopAll(t *testing.T) {
-	exporters := make(Exporters)
+func TestBuildExportersStartStopAll(t *testing.T) {
 	traceExporter := &testcomponents.ExampleExporterConsumer{}
 	metricExporter := &testcomponents.ExampleExporterConsumer{}
 	logsExporter := &testcomponents.ExampleExporterConsumer{}
-	exporters[config.NewComponentID("example")] = &builtExporter{
-		logger: zap.NewNop(),
-		expByDataType: map[config.DataType]component.Exporter{
-			config.TracesDataType:  traceExporter,
-			config.MetricsDataType: metricExporter,
-			config.LogsDataType:    logsExporter,
+	exps := &BuiltExporters{
+		settings: componenttest.NewNopTelemetrySettings(),
+		exporters: map[config.DataType]map[config.ComponentID]component.Exporter{
+			config.TracesDataType: {
+				config.NewComponentID("example"): traceExporter,
+			},
+			config.MetricsDataType: {
+				config.NewComponentID("example"): metricExporter,
+			},
+			config.LogsDataType: {
+				config.NewComponentID("example"): logsExporter,
+			},
 		},
 	}
 	assert.False(t, traceExporter.ExporterStarted)
 	assert.False(t, metricExporter.ExporterStarted)
 	assert.False(t, logsExporter.ExporterStarted)
 
-	assert.NoError(t, exporters.StartAll(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exps.StartAll(context.Background(), componenttest.NewNopHost()))
 	assert.True(t, traceExporter.ExporterStarted)
 	assert.True(t, metricExporter.ExporterStarted)
 	assert.True(t, logsExporter.ExporterStarted)
 
-	assert.NoError(t, exporters.ShutdownAll(context.Background()))
+	assert.NoError(t, exps.ShutdownAll(context.Background()))
 	assert.True(t, traceExporter.ExporterShutdown)
 	assert.True(t, metricExporter.ExporterShutdown)
 	assert.True(t, logsExporter.ExporterShutdown)
 }
 
-func TestBuildExporters_NotSupportedDataType(t *testing.T) {
+func TestBuildExportersNotSupportedDataType(t *testing.T) {
 	factories := createTestFactories()
 
 	tests := []struct {
@@ -211,9 +138,8 @@ func TestBuildExporters_NotSupportedDataType(t *testing.T) {
 			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
 			require.Nil(t, err)
 
-			exporters, err := BuildExporters(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
+			_, err = BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
 			assert.Error(t, err)
-			assert.Zero(t, len(exporters))
 		})
 	}
 }
