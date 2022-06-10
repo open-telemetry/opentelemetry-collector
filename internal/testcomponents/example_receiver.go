@@ -44,7 +44,7 @@ func createReceiverDefaultConfig() config.Receiver {
 	}
 }
 
-// CreateTracesReceiver creates a trace receiver based on this config.
+// createTracesReceiver creates a trace receiver based on this config.
 func createTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateSettings,
@@ -56,7 +56,7 @@ func createTracesReceiver(
 	return receiver, nil
 }
 
-// CreateMetricsReceiver creates a metrics receiver based on this config.
+// createMetricsReceiver creates a metrics receiver based on this config.
 func createMetricsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateSettings,
