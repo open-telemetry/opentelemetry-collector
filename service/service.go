@@ -81,7 +81,7 @@ func (srv *service) Start(ctx context.Context) error {
 	}
 
 	if err := srv.host.pipelines.StartAll(ctx, srv.host); err != nil {
-		return fmt.Errorf("cannot start exporters: %w", err)
+		return fmt.Errorf("cannot start pipelines: %w", err)
 	}
 
 	return srv.host.builtExtensions.NotifyPipelineReady()
@@ -96,7 +96,7 @@ func (srv *service) Shutdown(ctx context.Context) error {
 	}
 
 	if err := srv.host.pipelines.ShutdownAll(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown exporters: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
 	if err := srv.host.builtExtensions.ShutdownAll(ctx); err != nil {
