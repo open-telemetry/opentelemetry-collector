@@ -15,13 +15,7 @@
 package testcomponents // import "go.opentelemetry.io/collector/internal/testcomponents"
 
 import (
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
 // ExampleComponents registers example factories. This is only used by tests.
@@ -40,38 +34,4 @@ func ExampleComponents() (
 	factories.Processors, err = component.MakeProcessorFactoryMap(ExampleProcessorFactory)
 
 	return
-}
-
-// NewDefaultFactories returns the set of components in "testdata/otelcol-config.yaml". This is only used by tests.
-func NewDefaultFactories() (component.Factories, error) {
-	var errs error
-
-	extensions, err := component.MakeExtensionFactoryMap(
-		zpagesextension.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	receivers, err := component.MakeReceiverFactoryMap(
-		otlpreceiver.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	processors, err := component.MakeProcessorFactoryMap(
-		batchprocessor.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	exporters, err := component.MakeExporterFactoryMap(
-		otlpexporter.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	factories := component.Factories{
-		Extensions: extensions,
-		Receivers:  receivers,
-		Processors: processors,
-		Exporters:  exporters,
-	}
-
-	return factories, errs
 }
