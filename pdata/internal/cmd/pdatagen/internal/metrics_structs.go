@@ -327,7 +327,15 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		countField,
-		doubleSumField,
+		&optionalPrimitiveValue{
+			fieldName:        "Sum",
+			fieldType:        "Double",
+			originFieldName:  "Sum",
+			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(17.13)",
+		},
 		&primitiveTypedField{
 			fieldName:       "Scale",
 			originFieldName: "Scale",
