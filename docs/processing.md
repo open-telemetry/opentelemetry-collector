@@ -140,6 +140,8 @@ contrib components, and in the future can even allow user plugins possibly throu
 [HTTP proxies](https://github.com/proxy-wasm/spec). The arguments to operations will primarily be field expressions,
 allowing the operation to mutate telemetry as needed.
 
+There are times when the query language input and the underlying telemetry model do not translate cleanly.  For example, a span ID is represented in pdata as a SpanID struct, but in the query language it is more natural to represent the span ID as a string or a byte array.  The solution to this problem is Factories. Factories are functions that help translate between the query language input into the underlying pdata structure.  These types of functions do not change the telemetry in any way.  Instead, they manipulate the query language input into a form that will make working with the telemetry easier or more efficient.
+
 ### Examples
 
 These examples contain a SQL-like declarative language.  Applied statements interact with only one signal, but statements can be declared across multiple signals.
@@ -217,6 +219,16 @@ Group spans by trace ID
 ```
 traces:
   group_by(trace_id, 2m)
+```
+
+
+Update a spans ID
+
+```
+logs:
+  set(span_id, SpanID(0x0000000000000000))
+traces:
+  set(span_id, SpanID(0x0000000000000000))
 ```
 
 Create utilization metric from base metrics. Because navigation expressions only operate on a single piece of telemetry,
@@ -299,7 +311,8 @@ implementation, it would likely be little overhead to support a YAML approach in
 ## Function syntax
 
 Functions should be named and formatted according to the following standards.
-- Function names MUST start with a verb.
+- Function names MUST start with a verb unless it is a Factory.
+- Factory functions MUST be UpperCamelCase and named based on the object being created.
 - Function names that contain multiple words MUST separate those words with `_`.
 - Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
 - Functions that interact with a single item MUST NOT have plurality in the name.  If a function would interact with multiple items due to a condition, like `where`, it is still considered singular.  Ex: `set`, `delete`, `drop`, `replace_match`.
