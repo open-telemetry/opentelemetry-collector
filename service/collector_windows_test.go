@@ -31,6 +31,8 @@ import (
 )
 
 func TestNewSvcHandler(t *testing.T) {
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
 	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-nop.yaml")}
 
 	factories, err := componenttest.NopFactories()

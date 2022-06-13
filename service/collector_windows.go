@@ -19,6 +19,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"syscall"
@@ -37,11 +38,12 @@ import (
 type windowsService struct {
 	settings CollectorSettings
 	col      *Collector
+	flags    *flag.FlagSet
 }
 
 // NewSvcHandler constructs a new svc.Handler using the given CollectorSettings.
 func NewSvcHandler(set CollectorSettings) svc.Handler {
-	return &windowsService{settings: set}
+	return &windowsService{settings: set, flags: flags()}
 }
 
 // Execute implements https://godoc.org/golang.org/x/sys/windows/svc#Handler
@@ -90,12 +92,12 @@ func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeReques
 
 func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
 	// Parse all the flags manually.
-	if err := flags().Parse(os.Args[1:]); err != nil {
+	if err := s.flags.Parse(os.Args[1:]); err != nil {
 		return err
 	}
 	featuregate.GetRegistry().Apply(gatesList)
 	var err error
-	s.col, err = newWithWindowsEventLogCore(s.settings, elog)
+	s.col, err = newWithWindowsEventLogCore(s.settings, s.flags, elog)
 	if err != nil {
 		return err
 	}
@@ -138,13 +140,13 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	return elog, nil
 }
 
-func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Collector, error) {
+func newWithWindowsEventLogCore(set CollectorSettings, flags *flag.FlagSet, elog *eventlog.Log) (*Collector, error) {
 	if set.ConfigProvider == nil {
 		var err error
-		cfgSet := newDefaultConfigProviderSettings(getConfigFlag())
+		cfgSet := newDefaultConfigProviderSettings(getConfigFlag(flags))
 		// Append the "overwrite properties converter" as the first converter.
 		cfgSet.MapConverters = append(
-			[]confmap.Converter{overwritepropertiesconverter.New(getSetFlag())},
+			[]confmap.Converter{overwritepropertiesconverter.New(getSetFlag(flags))},
 			cfgSet.MapConverters...)
 		set.ConfigProvider, err = NewConfigProvider(cfgSet)
 		if err != nil {
