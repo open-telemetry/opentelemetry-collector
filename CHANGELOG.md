@@ -18,6 +18,7 @@
 ### 💡 Enhancements 💡
 
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
+- Log histogram min/max fields with `logging` exporter (#5520)
 
 ### 🧰 Bug fixes 🧰
 
