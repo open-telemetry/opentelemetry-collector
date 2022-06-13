@@ -23,6 +23,7 @@
 ### 🧰 Bug fixes 🧰
 
 - Update sum field of exponential histograms to make it optional (#5530)
+- Remove redundant extension shutdown call (#5532)
 
 ## v0.53.0 Beta
 
