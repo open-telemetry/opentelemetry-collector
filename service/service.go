@@ -145,11 +145,6 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
-	srv.telemetry.Logger.Info("Stopping extensions...")
-	if err := srv.host.builtExtensions.ShutdownAll(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
-	}
-
 	// TODO: Shutdown TracerProvider, MeterProvider, and Sync Logger.
 	return errs
 }
