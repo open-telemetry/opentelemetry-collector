@@ -25,13 +25,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// ExampleExporter is for testing purposes. We are defining an example config and factory
-// for "exampleexporter" exporter type.
-type ExampleExporter struct {
+const expType = "exampleexporter"
+
+// ExampleExporterConfig config for ExampleExporter.
+type ExampleExporterConfig struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
-
-const expType = "exampleexporter"
 
 // ExampleExporterFactory is factory for ExampleExporter.
 var ExampleExporterFactory = component.NewExporterFactory(
@@ -41,65 +40,64 @@ var ExampleExporterFactory = component.NewExporterFactory(
 	component.WithMetricsExporter(createMetricsExporter),
 	component.WithLogsExporter(createLogsExporter))
 
-// CreateDefaultConfig creates the default configuration for the Exporter.
 func createExporterDefaultConfig() config.Exporter {
-	return &ExampleExporter{
+	return &ExampleExporterConfig{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(expType)),
 	}
 }
 
 func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {
-	return &ExampleExporterConsumer{}, nil
+	return &ExampleExporter{}, nil
 }
 
 func createMetricsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error) {
-	return &ExampleExporterConsumer{}, nil
+	return &ExampleExporter{}, nil
 }
 
 func createLogsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error) {
-	return &ExampleExporterConsumer{}, nil
+	return &ExampleExporter{}, nil
 }
 
-// ExampleExporterConsumer stores consumed traces and metrics for testing purposes.
-type ExampleExporterConsumer struct {
-	Traces           []ptrace.Traces
-	Metrics          []pmetric.Metrics
-	Logs             []plog.Logs
-	ExporterStarted  bool
-	ExporterShutdown bool
+// ExampleExporter stores consumed traces and metrics for testing purposes.
+type ExampleExporter struct {
+	Traces  []ptrace.Traces
+	Metrics []pmetric.Metrics
+	Logs    []plog.Logs
+	Started bool
+	Stopped bool
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) error {
-	exp.ExporterStarted = true
+func (exp *ExampleExporter) Start(_ context.Context, _ component.Host) error {
+	exp.Started = true
 	return nil
 }
 
 // ConsumeTraces receives ptrace.Traces for processing by the consumer.Traces.
-func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+func (exp *ExampleExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
 }
 
-func (exp *ExampleExporterConsumer) Capabilities() consumer.Capabilities {
+func (exp *ExampleExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
 // ConsumeMetrics receives pmetric.Metrics for processing by the Metrics.
-func (exp *ExampleExporterConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (exp *ExampleExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	exp.Metrics = append(exp.Metrics, md)
 	return nil
 }
 
-func (exp *ExampleExporterConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+func (exp *ExampleExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	exp.Logs = append(exp.Logs, ld)
 	return nil
 }
 
 // Shutdown is invoked during shutdown.
-func (exp *ExampleExporterConsumer) Shutdown(context.Context) error {
-	exp.ExporterShutdown = true
+func (exp *ExampleExporter) Shutdown(context.Context) error {
+	exp.Stopped = true
 	return nil
 }

@@ -144,9 +144,9 @@ func TestBuildPipelines_BuildVarious(t *testing.T) {
 			// Send Logs via processor and verify that all exporters of the pipeline receive it.
 
 			// First check that there are no logs in the exporters yet.
-			var exporterConsumers []*testcomponents.ExampleExporterConsumer
+			var exporterConsumers []*testcomponents.ExampleExporter
 			for _, exporter := range exporters {
-				expConsumer := exporter.(*testcomponents.ExampleExporterConsumer)
+				expConsumer := exporter.(*testcomponents.ExampleExporter)
 				exporterConsumers = append(exporterConsumers, expConsumer)
 				require.Equal(t, len(expConsumer.Logs), 0)
 			}
@@ -206,9 +206,9 @@ func testPipeline(t *testing.T, pipelineID config.ComponentID, exporterIDs []con
 	// Send TraceData via processor and verify that all exporters of the pipeline receive it.
 
 	// First check that there are no traces in the exporters yet.
-	var exporterConsumers []*testcomponents.ExampleExporterConsumer
+	var exporterConsumers []*testcomponents.ExampleExporter
 	for _, exporter := range exporters {
-		expConsumer := exporter.(*testcomponents.ExampleExporterConsumer)
+		expConsumer := exporter.(*testcomponents.ExampleExporter)
 		exporterConsumers = append(exporterConsumers, expConsumer)
 		require.Equal(t, len(expConsumer.Traces), 0)
 	}
