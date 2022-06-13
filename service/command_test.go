@@ -15,7 +15,7 @@
 package service
 
 import (
-	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,45 +23,28 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 )
 
-func TestNewCommand(t *testing.T) {
-	set := CollectorSettings{}
-	cmd := NewCommand(set)
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Equal(t, set.BuildInfo.Version, cmd.Version)
+func TestNewCommandVersion(t *testing.T) {
+	cmd := NewCommand(CollectorSettings{BuildInfo: component.BuildInfo{Version: "test_version"}})
+	assert.Equal(t, "test_version", cmd.Version)
 }
 
-func TestNewCommandMapProviderIsNil(t *testing.T) {
-	settings := CollectorSettings{}
-	settings.ConfigProvider = nil
-	cmd := NewCommand(settings)
-	err := cmd.Execute()
-	require.Error(t, err)
-}
-
-func TestNewCommandInvalidFactories(t *testing.T) {
+func TestNewCommandNoConfigURI(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
-	factories.Extensions[badConfigExtensionFactory.Type()] = badConfigExtensionFactory
-	settings := CollectorSettings{Factories: factories}
-	cmd := NewCommand(settings)
-	err = cmd.Execute()
-	require.Error(t, err)
+
+	cmd := NewCommand(CollectorSettings{Factories: factories})
+	require.Error(t, cmd.Execute())
 }
 
-// badConfigExtensionFactory was created to force error path from factory returning
-// a config not satisfying the validation.
-var badConfigExtensionFactory = component.NewExtensionFactory(
-	"bad_config",
-	func() config.Extension {
-		return &struct {
-			config.ExtensionSettings
-			BadTagField int `mapstructure:"tag-with-dashes"`
-		}{}
-	},
-	func(context.Context, component.ExtensionCreateSettings, config.Extension) (component.Extension, error) {
-		return nil, nil
-	})
+func TestNewCommandInvalidComponent(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
+	require.NoError(t, err)
+
+	cmd := NewCommand(CollectorSettings{Factories: factories, ConfigProvider: cfgProvider})
+	require.Error(t, cmd.Execute())
+}
