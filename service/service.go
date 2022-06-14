@@ -90,7 +90,6 @@ func newService(set *settings) (*service, error) {
 }
 
 func (srv *service) Start(ctx context.Context) error {
-	srv.telemetry.Logger.Info("Starting extensions...")
 	if err := srv.host.builtExtensions.StartAll(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
@@ -140,7 +139,6 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown exporters: %w", err))
 	}
 
-	srv.telemetry.Logger.Info("Stopping extensions...")
 	if err := srv.host.builtExtensions.ShutdownAll(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}

@@ -27,17 +27,10 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-func TestServiceSetupExtensions(t *testing.T) {
-	errExtensionFactory := component.NewExtensionFactory(
-		"err",
-		func() config.Extension {
-			cfg := config.NewExtensionSettings(config.NewComponentID("err"))
-			return &cfg
-		},
-		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
-			return nil, errors.New("cannot create \"err\" extension type")
-		},
-	)
+func TestBuildExtensions(t *testing.T) {
+	nopExtensionFactory := componenttest.NewNopExtensionFactory()
+	nopExtensionConfig := nopExtensionFactory.CreateDefaultConfig()
+	errExtensionFactory := newCreateErrorExtensionFactory()
 	errExtensionConfig := errExtensionFactory.CreateDefaultConfig()
 	badExtensionFactory := newBadExtensionFactory()
 	badExtensionCfg := badExtensionFactory.CreateDefaultConfig()
@@ -59,12 +52,12 @@ func TestServiceSetupExtensions(t *testing.T) {
 		{
 			name: "missing_extension_factory",
 			extensionsConfigs: map[config.ComponentID]config.Extension{
-				config.NewComponentID(errExtensionFactory.Type()): errExtensionConfig,
+				config.NewComponentID("unknown"): nopExtensionConfig,
 			},
 			serviceExtensions: []config.ComponentID{
-				config.NewComponentID(errExtensionFactory.Type()),
+				config.NewComponentID("unknown"),
 			},
-			wantErrMsg: "extension factory for type \"err\" is not configured",
+			wantErrMsg: "extension factory for type \"unknown\" is not configured",
 		},
 		{
 			name: "error_on_create_extension",
@@ -119,6 +112,22 @@ func newBadExtensionFactory() component.ExtensionFactory {
 		},
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
 			return nil, nil
+		},
+	)
+}
+
+func newCreateErrorExtensionFactory() component.ExtensionFactory {
+	return component.NewExtensionFactory(
+		"err",
+		func() config.Extension {
+			return &struct {
+				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			}{
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("err")),
+			}
+		},
+		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
+			return nil, errors.New("cannot create \"err\" extension type")
 		},
 	)
 }

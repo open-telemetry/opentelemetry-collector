@@ -56,7 +56,7 @@ func (host *serviceHost) GetFactory(kind component.Kind, componentType config.Ty
 }
 
 func (host *serviceHost) GetExtensions() map[config.ComponentID]component.Extension {
-	return host.builtExtensions.ToMap()
+	return host.builtExtensions.GetExtensions()
 }
 
 func (host *serviceHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
