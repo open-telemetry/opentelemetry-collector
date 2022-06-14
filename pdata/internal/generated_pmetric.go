@@ -1754,12 +1754,18 @@ func (ms ExponentialHistogramDataPoint) SetCount(v uint64) {
 
 // Sum returns the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Sum() float64 {
-	return (*ms.orig).Sum
+	return (*ms.orig).GetSum()
+}
+
+// HasSum returns true if the ExponentialHistogramDataPoint contains a
+// Sum value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasSum() bool {
+	return ms.orig.Sum_ != nil
 }
 
 // SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
-	(*ms.orig).Sum = v
+	(*ms.orig).Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
 }
 
 // Scale returns the scale associated with this ExponentialHistogramDataPoint.
@@ -1845,7 +1851,10 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
-	dest.SetSum(ms.Sum())
+	if ms.HasSum() {
+		dest.SetSum(ms.Sum())
+	}
+
 	dest.SetScale(ms.Scale())
 	dest.SetZeroCount(ms.ZeroCount())
 	ms.Positive().CopyTo(dest.Positive())

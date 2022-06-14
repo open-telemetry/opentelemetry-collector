@@ -1,0 +1,15 @@
+name: dependabot-pr
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run dependabot-pr.sh
+        run: ./.github/workflows/scripts/dependabot-pr.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -34,8 +34,9 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/internal/testcomponents"
+	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
@@ -49,13 +50,10 @@ func TestStateString(t *testing.T) {
 }
 
 func TestCollectorStartAsGoRoutine(t *testing.T) {
-	factories, err := testcomponents.NewDefaultFactories()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
-	cfgSet := newDefaultConfigProviderSettings([]string{
-		filepath.Join("testdata", "otelcol-config.yaml"),
-		"yaml:service::telemetry::metrics::address: " + testutil.GetAvailableLocalAddress(t),
-	})
+	cfgSet := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
@@ -81,13 +79,10 @@ func TestCollectorStartAsGoRoutine(t *testing.T) {
 }
 
 func TestCollectorCancelContext(t *testing.T) {
-	factories, err := testcomponents.NewDefaultFactories()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
-	cfgSet := newDefaultConfigProviderSettings([]string{
-		filepath.Join("testdata", "otelcol-config.yaml"),
-		"yaml:service::telemetry::metrics::address: " + testutil.GetAvailableLocalAddress(t),
-	})
+	cfgSet := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
 
@@ -113,11 +108,11 @@ func TestCollectorCancelContext(t *testing.T) {
 }
 
 func TestCollectorReportError(t *testing.T) {
-	factories, err := testcomponents.NewDefaultFactories()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	cfgSet := newDefaultConfigProviderSettings([]string{
-		filepath.Join("testdata", "otelcol-config.yaml"),
+		filepath.Join("testdata", "otelcol-nop.yaml"),
 	})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
@@ -143,11 +138,11 @@ func TestCollectorReportError(t *testing.T) {
 }
 
 func TestCollectorFailedShutdown(t *testing.T) {
-	factories, err := testcomponents.NewDefaultFactories()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	cfgSet := newDefaultConfigProviderSettings([]string{
-		filepath.Join("testdata", "otelcol-config.yaml"),
+		filepath.Join("testdata", "otelcol-nop.yaml"),
 	})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
@@ -279,7 +274,9 @@ func ownMetricsTestCases(version string) []ownMetricsTestCase {
 }
 
 func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter, tc ownMetricsTestCase) {
-	factories, err := testcomponents.NewDefaultFactories()
+	factories, err := componenttest.NopFactories()
+	zpagesExt := zpagesextension.NewFactory()
+	factories.Extensions[zpagesExt.Type()] = zpagesExt
 	require.NoError(t, err)
 	var once sync.Once
 	loggingHookCalled := false
@@ -292,13 +289,16 @@ func testCollectorStartHelper(t *testing.T, telemetry collectorTelemetryExporter
 
 	metricsAddr := testutil.GetAvailableLocalAddress(t)
 	cfgSet := newDefaultConfigProviderSettings([]string{
-		filepath.Join("testdata", "otelcol-config.yaml"),
+		filepath.Join("testdata", "otelcol-nop.yaml"),
 	})
 
 	// Prepare config properties to be merged with the main config.
 	extraCfgAsProps := map[string]interface{}{
+		// Setup the zpages extension.
+		"extensions::zpages":  nil,
+		"service::extensions": "nop, zpages",
 		// Set the metrics address to expose own metrics on.
-		"service::telemetry::metrics::address": &metricsAddr,
+		"service::telemetry::metrics::address": metricsAddr,
 	}
 	// Also include resource attributes under the service.telemetry.resource key.
 	for k, v := range tc.userDefinedResource {
@@ -358,11 +358,11 @@ func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
 }
 
 func TestCollectorShutdownBeforeRun(t *testing.T) {
-	factories, err := testcomponents.NewDefaultFactories()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	cfgSet := newDefaultConfigProviderSettings([]string{
-		filepath.Join("testdata", "otelcol-config.yaml"),
+		filepath.Join("testdata", "otelcol-nop.yaml"),
 	})
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)
@@ -387,7 +387,7 @@ func TestCollectorShutdownBeforeRun(t *testing.T) {
 }
 
 func TestCollectorClosedStateOnStartUpError(t *testing.T) {
-	factories, err := testcomponents.NewDefaultFactories()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	cfgSet := newDefaultConfigProviderSettings([]string{
