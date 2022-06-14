@@ -206,6 +206,8 @@ func initHistogramMetric(hm pmetric.Metric) {
 	hdp1.SetTimestamp(TestMetricTimestamp)
 	hdp1.SetCount(1)
 	hdp1.SetSum(15)
+	hdp1.SetMin(15)
+	hdp1.SetMax(15)
 	hdp1.SetMBucketCounts([]uint64{0, 1})
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
@@ -247,6 +249,8 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 	hdp1.SetTimestamp(TestMetricTimestamp)
 	hdp1.SetCount(3)
 	hdp1.SetSum(1.25)
+	hdp1.SetMin(0)
+	hdp1.SetMax(1)
 	hdp1.SetZeroCount(1)
 	hdp1.SetScale(-1)
 

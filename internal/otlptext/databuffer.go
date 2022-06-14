@@ -117,7 +117,18 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pmetric.HistogramDataPointS
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %f", p.Sum())
+
+		if p.HasSum() {
+			b.logEntry("Sum: %f", p.Sum())
+		}
+
+		if p.HasMin() {
+			b.logEntry("Min: %f", p.Min())
+		}
+
+		if p.HasMax() {
+			b.logEntry("Max: %f", p.Max())
+		}
 
 		bounds := p.MExplicitBounds()
 		if len(bounds) != 0 {
@@ -144,7 +155,18 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %f", p.Sum())
+
+		if p.HasSum() {
+			b.logEntry("Sum: %f", p.Sum())
+		}
+
+		if p.HasMin() {
+			b.logEntry("Min: %f", p.Min())
+		}
+
+		if p.HasMax() {
+			b.logEntry("Max: %f", p.Max())
+		}
 
 		scale := int(p.Scale())
 		factor := math.Ldexp(math.Ln2, -scale)
