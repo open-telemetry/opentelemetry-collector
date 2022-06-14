@@ -17,11 +17,8 @@ package configgrpc
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"net"
-	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
@@ -597,14 +594,11 @@ func TestHttpReception(t *testing.T) {
 }
 
 func TestReceiveOnUnixDomainSocket(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on windows")
-	}
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	socketName := tempSocketName(t)
+	socketName := filepath.Join(t.TempDir(), "sock")
 	gss := &GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  socketName,
@@ -622,8 +616,9 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 		_ = s.Serve(ln)
 	}()
 
+	t.Log(filepath.ToSlash(socketName)[len(filepath.VolumeName(socketName)):])
 	gcs := &GRPCClientSettings{
-		Endpoint: "unix://" + ln.Addr().String(),
+		Endpoint: "unix://" + filepath.ToSlash(socketName)[len(filepath.VolumeName(socketName)):],
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
@@ -1028,16 +1023,6 @@ type grpcTraceServer struct {
 func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.Request) (ptraceotlp.Response, error) {
 	gts.recordedContext = ctx
 	return ptraceotlp.NewResponse(), nil
-}
-
-// tempSocketName provides a temporary Unix socket name for testing.
-func tempSocketName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "sock")
-	require.NoError(t, err)
-	require.NoError(t, tmpfile.Close())
-	socket := tmpfile.Name()
-	require.NoError(t, os.Remove(socket))
-	return socket
 }
 
 type mockHost struct {
