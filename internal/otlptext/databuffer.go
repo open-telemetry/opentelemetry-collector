@@ -155,7 +155,10 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
 		b.logEntry("Count: %d", p.Count())
-		b.logEntry("Sum: %f", p.Sum())
+
+		if p.HasSum() {
+			b.logEntry("Sum: %f", p.Sum())
+		}
 
 		if p.HasMin() {
 			b.logEntry("Min: %f", p.Min())
