@@ -22,13 +22,12 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// ExampleReceiver is for testing purposes. We are defining an example config and factory
-// for "examplereceiver" receiver type.
-type ExampleReceiver struct {
+const receiverType = config.Type("examplereceiver")
+
+// ExampleReceiverConfig config for ExampleReceiver.
+type ExampleReceiverConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
-
-const receiverType = config.Type("examplereceiver")
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
 var ExampleReceiverFactory = component.NewReceiverFactory(
@@ -39,7 +38,7 @@ var ExampleReceiverFactory = component.NewReceiverFactory(
 	component.WithLogsReceiver(createLogsReceiver))
 
 func createReceiverDefaultConfig() config.Receiver {
-	return &ExampleReceiver{
+	return &ExampleReceiverConfig{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(receiverType)),
 	}
 }
@@ -76,18 +75,17 @@ func createLogsReceiver(
 ) (component.LogsReceiver, error) {
 	receiver := createReceiver(cfg)
 	receiver.Logs = nextConsumer
-
 	return receiver, nil
 }
 
-func createReceiver(cfg config.Receiver) *ExampleReceiverProducer {
+func createReceiver(cfg config.Receiver) *ExampleReceiver {
 	// There must be one receiver for all data types. We maintain a map of
 	// receivers per config.
 
 	// Check to see if there is already a receiver for this config.
 	receiver, ok := exampleReceivers[cfg]
 	if !ok {
-		receiver = &ExampleReceiverProducer{}
+		receiver = &ExampleReceiver{}
 		// Remember the receiver in the map
 		exampleReceivers[cfg] = receiver
 	}
@@ -95,23 +93,23 @@ func createReceiver(cfg config.Receiver) *ExampleReceiverProducer {
 	return receiver
 }
 
-// ExampleReceiverProducer allows producing traces and metrics for testing purposes.
-type ExampleReceiverProducer struct {
-	Started bool
-	Stopped bool
+// ExampleReceiver allows producing traces and metrics for testing purposes.
+type ExampleReceiver struct {
 	consumer.Traces
 	consumer.Metrics
 	consumer.Logs
+	Started bool
+	Stopped bool
 }
 
 // Start tells the receiver to start its processing.
-func (erp *ExampleReceiverProducer) Start(_ context.Context, _ component.Host) error {
+func (erp *ExampleReceiver) Start(_ context.Context, _ component.Host) error {
 	erp.Started = true
 	return nil
 }
 
 // Shutdown tells the receiver that should stop reception,
-func (erp *ExampleReceiverProducer) Shutdown(context.Context) error {
+func (erp *ExampleReceiver) Shutdown(context.Context) error {
 	erp.Stopped = true
 	return nil
 }
@@ -120,4 +118,4 @@ func (erp *ExampleReceiverProducer) Shutdown(context.Context) error {
 // We maintain this map because the ReceiverFactory is asked trace and metric receivers separately
 // when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
-var exampleReceivers = map[config.Receiver]*ExampleReceiverProducer{}
+var exampleReceivers = map[config.Receiver]*ExampleReceiver{}

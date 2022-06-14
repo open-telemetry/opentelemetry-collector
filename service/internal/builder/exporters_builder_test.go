@@ -83,9 +83,9 @@ func TestBuildExporters(t *testing.T) {
 }
 
 func TestBuildExportersStartStopAll(t *testing.T) {
-	traceExporter := &testcomponents.ExampleExporterConsumer{}
-	metricExporter := &testcomponents.ExampleExporterConsumer{}
-	logsExporter := &testcomponents.ExampleExporterConsumer{}
+	traceExporter := &testcomponents.ExampleExporter{}
+	metricExporter := &testcomponents.ExampleExporter{}
+	logsExporter := &testcomponents.ExampleExporter{}
 	exps := &BuiltExporters{
 		settings: componenttest.NewNopTelemetrySettings(),
 		exporters: map[config.DataType]map[config.ComponentID]component.Exporter{
@@ -100,19 +100,19 @@ func TestBuildExportersStartStopAll(t *testing.T) {
 			},
 		},
 	}
-	assert.False(t, traceExporter.ExporterStarted)
-	assert.False(t, metricExporter.ExporterStarted)
-	assert.False(t, logsExporter.ExporterStarted)
+	assert.False(t, traceExporter.Started)
+	assert.False(t, metricExporter.Started)
+	assert.False(t, logsExporter.Started)
 
 	assert.NoError(t, exps.StartAll(context.Background(), componenttest.NewNopHost()))
-	assert.True(t, traceExporter.ExporterStarted)
-	assert.True(t, metricExporter.ExporterStarted)
-	assert.True(t, logsExporter.ExporterStarted)
+	assert.True(t, traceExporter.Started)
+	assert.True(t, metricExporter.Started)
+	assert.True(t, logsExporter.Started)
 
 	assert.NoError(t, exps.ShutdownAll(context.Background()))
-	assert.True(t, traceExporter.ExporterShutdown)
-	assert.True(t, metricExporter.ExporterShutdown)
-	assert.True(t, logsExporter.ExporterShutdown)
+	assert.True(t, traceExporter.Stopped)
+	assert.True(t, metricExporter.Stopped)
+	assert.True(t, logsExporter.Stopped)
 }
 
 func TestBuildExportersNotSupportedDataType(t *testing.T) {
