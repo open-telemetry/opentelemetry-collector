@@ -45,7 +45,6 @@ type QueueSettings struct {
 	StorageID *config.ComponentID `mapstructure:"storage"`
 	// StorageEnabled describes whether persistence via a file storage extension is enabled using the single
 	// default storage extension.
-	// Deprecated: this does not allow to specify which extension is going to be used when several ones are available
 	StorageEnabled bool `mapstructure:"persistent_storage_enabled"`
 }
 
@@ -85,11 +84,11 @@ func (qCfg *QueueSettings) getStorageExtension(logger *zap.Logger, extensions ma
 			return nil, errWrongExtensionType
 		}
 	} else if qCfg.StorageEnabled {
-		logger.Warn("enabling persistent storage via deprecated `persistent_storage_enabled` setting; please change to `storage` and specify extension ID")
 		var storageExtension storage.Extension
 		for _, ext := range extensions {
 			if se, ok := ext.(storage.Extension); ok {
 				if storageExtension != nil {
+					logger.Error("multiple storage extensions found, please specify which one to use using `storage: ` configuration attribute")
 					return nil, errMultipleStorageClients
 				}
 				storageExtension = se
@@ -122,7 +121,7 @@ func (qCfg *QueueSettings) toStorageClient(ctx context.Context, logger *zap.Logg
 var (
 	errNoStorageClient        = errors.New("no storage client extension found")
 	errWrongExtensionType     = errors.New("requested extension is not a storage extension")
-	errMultipleStorageClients = errors.New("multiple storage extensions found while default extension expectedError")
+	errMultipleStorageClients = errors.New("multiple storage extensions found while default extension expected")
 )
 
 type queuedRetrySender struct {

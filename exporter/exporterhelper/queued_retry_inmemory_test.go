@@ -77,13 +77,13 @@ func TestGetRetrySettings(t *testing.T) {
 			expectedError: errNoStorageClient,
 		},
 		{
-			desc:           "obtain default storage extension (deprecated)",
+			desc:           "obtain default storage extension",
 			numStorages:    1,
 			storageEnabled: true,
 			expectedError:  nil,
 		},
 		{
-			desc:           "fail on obtaining default storage extension (deprecated)",
+			desc:           "fail on obtaining default storage extension",
 			numStorages:    2,
 			storageEnabled: true,
 			expectedError:  errMultipleStorageClients,
