@@ -228,13 +228,13 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 	// Because of this wrap the first consumer if any consumers in the pipeline
 	// mutate the data and the first says that it doesn't.
 	if tc != nil {
-		tc = capabilitiesTraces{Traces: tc, capabilities: consumer.Capabilities{MutatesData: mutatesConsumedData}}
+		tc = wrapTraces(tc, consumer.Capabilities{MutatesData: mutatesConsumedData})
 	}
 	if mc != nil {
-		mc = capabilitiesMetrics{Metrics: mc, capabilities: consumer.Capabilities{MutatesData: mutatesConsumedData}}
+		mc = wrapMetrics(mc, consumer.Capabilities{MutatesData: mutatesConsumedData})
 	}
 	if lc != nil {
-		lc = capabilitiesLogs{Logs: lc, capabilities: consumer.Capabilities{MutatesData: mutatesConsumedData}}
+		lc = wrapLogs(lc, consumer.Capabilities{MutatesData: mutatesConsumedData})
 	}
 	bp := &builtPipeline{
 		logger:      pipelineLogger,
@@ -280,31 +280,4 @@ func (pb *pipelinesBuilder) buildFanoutExportersLogsConsumer(exporterIDs []confi
 
 	// Create a junction point that fans out to all exporters.
 	return fanoutconsumer.NewLogs(exporters)
-}
-
-type capabilitiesLogs struct {
-	consumer.Logs
-	capabilities consumer.Capabilities
-}
-
-func (mts capabilitiesLogs) Capabilities() consumer.Capabilities {
-	return mts.capabilities
-}
-
-type capabilitiesMetrics struct {
-	consumer.Metrics
-	capabilities consumer.Capabilities
-}
-
-func (mts capabilitiesMetrics) Capabilities() consumer.Capabilities {
-	return mts.capabilities
-}
-
-type capabilitiesTraces struct {
-	consumer.Traces
-	capabilities consumer.Capabilities
-}
-
-func (mts capabilitiesTraces) Capabilities() consumer.Capabilities {
-	return mts.capabilities
 }
