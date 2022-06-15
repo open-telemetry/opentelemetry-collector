@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package middleware // import "go.opentelemetry.io/collector/internal/middleware"
+package configgrpc // import "go.opentelemetry.io/collector/internal/middleware"
 
 import (
 	"context"
@@ -23,19 +23,24 @@ import (
 	"google.golang.org/grpc"
 )
 
+type ctxKey struct{}
+
+var oneCtxKey = ctxKey{}
+var otherCtxKey = ctxKey{}
+
 func TestWrapServerStream(t *testing.T) {
-	ctx := context.WithValue(context.TODO(), "something", 1) //nolint
+	ctx := context.WithValue(context.TODO(), oneCtxKey, 1)
 	fake := &fakeServerStream{ctx: ctx}
-	wrapped := WrapServerStream(fake)
-	assert.NotNil(t, wrapped.Context().Value("something"), "values from fake must propagate to wrapper")
-	wrapped.WrappedContext = context.WithValue(wrapped.Context(), "other", 2) //nolint
-	assert.NotNil(t, wrapped.Context().Value("other"), "values from wrapper must be set")
+	assert.NotNil(t, fake.Context().Value(oneCtxKey), "values from fake must propagate to wrapper")
+	wrapped := wrapServerStream(context.WithValue(fake.Context(), otherCtxKey, 2), fake)
+	assert.NotNil(t, wrapped.Context().Value(oneCtxKey), "values from wrapper must be set")
+	assert.NotNil(t, wrapped.Context().Value(otherCtxKey), "values from wrapper must be set")
 }
 
 func TestDoubleWrapping(t *testing.T) {
 	fake := &fakeServerStream{ctx: context.Background()}
-	wrapped := WrapServerStream(fake)
-	wrapped = WrapServerStream(wrapped) // should be noop
+	wrapped := wrapServerStream(fake.Context(), fake)
+	assert.Same(t, wrapped, wrapServerStream(wrapped.Context(), wrapped)) // should be noop
 	assert.Equal(t, fake, wrapped.ServerStream)
 }
 
