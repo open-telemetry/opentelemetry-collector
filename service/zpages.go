@@ -34,16 +34,13 @@ const (
 	zPipelineName  = "zpipelinename"
 	zComponentName = "zcomponentname"
 	zComponentKind = "zcomponentkind"
-	zExtensionName = "zextensionname"
 )
 
 func (host *serviceHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 	mux.HandleFunc(path.Join(pathPrefix, servicezPath), host.handleServicezRequest)
 	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), host.handlePipelinezRequest)
 	mux.HandleFunc(path.Join(pathPrefix, featurezPath), handleFeaturezRequest)
-	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), func(w http.ResponseWriter, r *http.Request) {
-		handleExtensionzRequest(host, w, r)
-	})
+	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), host.builtExtensions.HandleZPages)
 }
 
 func (host *serviceHost) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
@@ -117,37 +114,6 @@ func (host *serviceHost) getPipelinesSummaryTableData() zpages.SummaryPipelinesT
 			Processors:  procs,
 			Exporters:   exps,
 		}
-		data.Rows = append(data.Rows, row)
-	}
-
-	sort.Slice(data.Rows, func(i, j int) bool {
-		return data.Rows[i].FullName < data.Rows[j].FullName
-	})
-	return data
-}
-
-func handleExtensionzRequest(host component.Host, w http.ResponseWriter, r *http.Request) {
-	extensionName := r.URL.Query().Get(zExtensionName)
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Extensions"})
-	zpages.WriteHTMLExtensionsSummaryTable(w, getExtensionsSummaryTableData(host))
-	if extensionName != "" {
-		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
-			Name: extensionName,
-		})
-		// TODO: Add config + status info.
-	}
-	zpages.WriteHTMLPageFooter(w)
-}
-
-func getExtensionsSummaryTableData(host component.Host) zpages.SummaryExtensionsTableData {
-	data := zpages.SummaryExtensionsTableData{}
-
-	extensions := host.GetExtensions()
-	data.Rows = make([]zpages.SummaryExtensionsTableRowData, 0, len(extensions))
-	for c := range extensions {
-		row := zpages.SummaryExtensionsTableRowData{FullName: c.String()}
 		data.Rows = append(data.Rows, row)
 	}
 
