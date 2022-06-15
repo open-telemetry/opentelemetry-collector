@@ -25,8 +25,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/internal"
-	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/internal/extensions"
+	"go.opentelemetry.io/collector/service/internal/pipelines"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
@@ -68,22 +68,8 @@ func newService(set *settings) (*service, error) {
 		return nil, fmt.Errorf("cannot build extensions: %w", err)
 	}
 
-	// Pipeline is built backwards, starting from exporters, so that we create objects
-	// which are referenced before objects which reference them.
-
-	// First create exporters.
-	if srv.host.builtExporters, err = builder.BuildExporters(context.Background(), srv.telemetry, srv.buildInfo, srv.config, srv.host.factories.Exporters); err != nil {
-		return nil, fmt.Errorf("cannot build exporters: %w", err)
-	}
-
-	// Create pipelines and their processors and plug exporters to the end of the pipelines.
-	if srv.host.builtPipelines, err = builder.BuildPipelines(srv.telemetry, srv.buildInfo, srv.config, srv.host.builtExporters, srv.host.factories.Processors); err != nil {
+	if srv.host.pipelines, err = pipelines.Build(context.Background(), srv.telemetry, srv.buildInfo, srv.config, srv.host.factories); err != nil {
 		return nil, fmt.Errorf("cannot build pipelines: %w", err)
-	}
-
-	// Create receivers and plug them into the start of the pipelines.
-	if srv.host.builtReceivers, err = builder.BuildReceivers(srv.telemetry, srv.buildInfo, srv.config, srv.host.builtPipelines, srv.host.factories.Receivers); err != nil {
-		return nil, fmt.Errorf("cannot build receivers: %w", err)
 	}
 
 	return srv, nil
@@ -94,19 +80,8 @@ func (srv *service) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
 
-	srv.telemetry.Logger.Info("Starting exporters...")
-	if err := srv.host.builtExporters.StartAll(ctx, srv.host); err != nil {
+	if err := srv.host.pipelines.StartAll(ctx, srv.host); err != nil {
 		return fmt.Errorf("cannot start exporters: %w", err)
-	}
-
-	srv.telemetry.Logger.Info("Starting processors...")
-	if err := srv.host.builtPipelines.StartProcessors(ctx, srv.host); err != nil {
-		return fmt.Errorf("cannot start processors: %w", err)
-	}
-
-	srv.telemetry.Logger.Info("Starting receivers...")
-	if err := srv.host.builtReceivers.StartAll(ctx, srv.host); err != nil {
-		return fmt.Errorf("cannot start receivers: %w", err)
 	}
 
 	return srv.host.builtExtensions.NotifyPipelineReady()
@@ -120,22 +95,7 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
-	// Pipeline shutdown order is the reverse of building/starting: first receivers, then flushing pipelines
-	// giving senders a chance to send all their data. This may take time, the allowed
-	// time should be part of configuration.
-
-	srv.telemetry.Logger.Info("Stopping receivers...")
-	if err := srv.host.builtReceivers.ShutdownAll(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown receivers: %w", err))
-	}
-
-	srv.telemetry.Logger.Info("Stopping processors...")
-	if err := srv.host.builtPipelines.ShutdownProcessors(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown processors: %w", err))
-	}
-
-	srv.telemetry.Logger.Info("Stopping exporters...")
-	if err := srv.host.builtExporters.ShutdownAll(ctx); err != nil {
+	if err := srv.host.pipelines.ShutdownAll(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown exporters: %w", err))
 	}
 

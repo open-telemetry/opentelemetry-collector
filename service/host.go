@@ -17,8 +17,8 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/internal/builder"
 	"go.opentelemetry.io/collector/service/internal/extensions"
+	"go.opentelemetry.io/collector/service/internal/pipelines"
 )
 
 var _ component.Host = (*serviceHost)(nil)
@@ -28,9 +28,7 @@ type serviceHost struct {
 	factories         component.Factories
 	buildInfo         component.BuildInfo
 
-	builtExporters  *builder.BuiltExporters
-	builtReceivers  builder.Receivers
-	builtPipelines  builder.BuiltPipelines
+	pipelines       *pipelines.Pipelines
 	builtExtensions *extensions.BuiltExtensions
 }
 
@@ -60,5 +58,5 @@ func (host *serviceHost) GetExtensions() map[config.ComponentID]component.Extens
 }
 
 func (host *serviceHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
-	return host.builtExporters.ToMapByDataType()
+	return host.pipelines.GetExporters()
 }
