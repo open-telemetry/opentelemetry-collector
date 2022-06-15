@@ -120,6 +120,7 @@ linters:
     - misspell
     - revive
     - staticcheck
+    - tenv
     - unconvert
     - unused
     - unparam
