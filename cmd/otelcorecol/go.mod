@@ -55,6 +55,7 @@ require (
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/pdata v0.54.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.54.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0 // indirect
@@ -79,6 +80,10 @@ require (
 )
 
 replace go.opentelemetry.io/collector => ../../
+
+replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+replace go.opentelemetry.io/collector/internal/testdata => ../../internal/testdata
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
