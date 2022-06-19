@@ -228,36 +228,3 @@ func testPipeline(t *testing.T, pipelineID config.ComponentID, exporterIDs []con
 	err = pipelineProcessors.ShutdownProcessors(context.Background())
 	assert.NoError(t, err)
 }
-
-func TestBuildPipelines_NotSupportedDataType(t *testing.T) {
-	factories := createTestFactories()
-
-	tests := []struct {
-		configFile string
-	}{
-		{
-			configFile: "not_supported_processor_logs.yaml",
-		},
-		{
-			configFile: "not_supported_processor_metrics.yaml",
-		},
-		{
-			configFile: "not_supported_processor_traces.yaml",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.configFile, func(t *testing.T) {
-
-			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
-			require.Nil(t, err)
-
-			allExporters, err := BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
-			assert.NoError(t, err)
-
-			pipelineProcessors, err := BuildPipelines(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, allExporters, factories.Processors)
-			assert.Error(t, err)
-			assert.Zero(t, len(pipelineProcessors))
-		})
-	}
-}

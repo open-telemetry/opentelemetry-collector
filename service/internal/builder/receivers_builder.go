@@ -35,17 +35,17 @@ var errUnusedReceiver = errors.New("receiver defined but not used by any pipelin
 // a trace and/or a metrics component.
 type builtReceiver struct {
 	logger   *zap.Logger
-	receiver component.Receiver
+	Receiver component.Receiver
 }
 
 // Start starts the receiver.
 func (rcv *builtReceiver) Start(ctx context.Context, host component.Host) error {
-	return rcv.receiver.Start(ctx, components.NewHostWrapper(host, rcv.logger))
+	return rcv.Receiver.Start(ctx, components.NewHostWrapper(host, rcv.logger))
 }
 
 // Shutdown stops the receiver.
 func (rcv *builtReceiver) Shutdown(ctx context.Context) error {
-	return rcv.receiver.Shutdown(ctx)
+	return rcv.Receiver.Shutdown(ctx)
 }
 
 // Receivers is a map of receivers created from receiver configs.
@@ -207,11 +207,11 @@ func attachReceiverToPipelines(
 		return fmt.Errorf("factory for %v produced a nil receiver", id)
 	}
 
-	if rcv.receiver != nil {
+	if rcv.Receiver != nil {
 		// The receiver was previously created for this config. This can happen if the
 		// same receiver type supports more than one data type. In that case we expect
 		// that CreateTracesReceiver and CreateMetricsReceiver return the same value.
-		if rcv.receiver != createdReceiver {
+		if rcv.Receiver != createdReceiver {
 			return fmt.Errorf(
 				"factory for %q is implemented incorrectly: "+
 					"CreateTracesReceiver, CreateMetricsReceiver and CreateLogsReceiver must return "+
@@ -220,7 +220,7 @@ func attachReceiverToPipelines(
 			)
 		}
 	}
-	rcv.receiver = createdReceiver
+	rcv.Receiver = createdReceiver
 
 	set.Logger.Info("Receiver was built.", zap.String("datatype", string(dataType)))
 
@@ -258,7 +258,7 @@ func (rb *receiversBuilder) buildReceiver(ctx context.Context, set component.Rec
 		}
 	}
 
-	if rcv.receiver == nil {
+	if rcv.Receiver == nil {
 		return nil, errUnusedReceiver
 	}
 

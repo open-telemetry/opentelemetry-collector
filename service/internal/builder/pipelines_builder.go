@@ -43,7 +43,7 @@ type builtPipeline struct {
 	// can mutate the TraceData or MetricsData input argument.
 	MutatesData bool
 
-	processors []component.Processor
+	Processors []component.Processor
 }
 
 // BuiltPipelines is a map of build pipelines created from pipeline configs.
@@ -57,8 +57,8 @@ func (bps BuiltPipelines) StartProcessors(ctx context.Context, host component.Ho
 		// This is important so that processors that are earlier in the pipeline and
 		// reference processors that are later in the pipeline do not start sending
 		// data to later pipelines which are not yet started.
-		for i := len(bp.processors) - 1; i >= 0; i-- {
-			if err := bp.processors[i].Start(ctx, hostWrapper); err != nil {
+		for i := len(bp.Processors) - 1; i >= 0; i-- {
+			if err := bp.Processors[i].Start(ctx, hostWrapper); err != nil {
 				return err
 			}
 		}
@@ -71,7 +71,7 @@ func (bps BuiltPipelines) ShutdownProcessors(ctx context.Context) error {
 	var errs error
 	for _, bp := range bps {
 		bp.logger.Info("Pipeline is shutting down...")
-		for _, p := range bp.processors {
+		for _, p := range bp.Processors {
 			errs = multierr.Append(errs, p.Shutdown(ctx))
 		}
 		bp.logger.Info("Pipeline is shutdown.")
@@ -243,7 +243,7 @@ func (pb *pipelinesBuilder) buildPipeline(ctx context.Context, pipelineID config
 		firstLC:     lc,
 		Config:      pipelineCfg,
 		MutatesData: mutatesConsumedData,
-		processors:  processors,
+		Processors:  processors,
 	}
 
 	return bp, nil

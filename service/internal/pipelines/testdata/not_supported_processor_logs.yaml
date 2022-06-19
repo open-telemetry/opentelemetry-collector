@@ -1,0 +1,13 @@
+receivers:
+  nop:
+processors:
+  bf:
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [bf]
+      exporters: [nop]
