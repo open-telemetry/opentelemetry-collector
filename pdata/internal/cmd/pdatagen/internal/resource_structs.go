@@ -15,7 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var resourceFile = &File{
-	Name: "resource",
+	Name:     "resource",
+	IsCommon: true,
 	imports: []string{
 		`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 	},

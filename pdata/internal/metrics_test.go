@@ -310,15 +310,15 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	// First point
 	assert.EqualValues(t, startTime, histogramDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(0).Timestamp())
-	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints.At(0).MExplicitBounds())
+	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints.At(0).ExplicitBounds().AsRaw())
 	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{"key0": "value0"}), histogramDataPoints.At(0).Attributes())
-	assert.EqualValues(t, []uint64{10, 15, 1}, histogramDataPoints.At(0).MBucketCounts())
+	assert.EqualValues(t, []uint64{10, 15, 1}, histogramDataPoints.At(0).BucketCounts().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, histogramDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(1).Timestamp())
-	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(1).MExplicitBounds())
+	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(1).ExplicitBounds().AsRaw())
 	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{"key1": "value1"}), histogramDataPoints.At(1).Attributes())
-	assert.EqualValues(t, []uint64{10, 1}, histogramDataPoints.At(1).MBucketCounts())
+	assert.EqualValues(t, []uint64{10, 1}, histogramDataPoints.At(1).BucketCounts().AsRaw())
 }
 
 func TestOtlpToFromInternalReadOnly(t *testing.T) {
@@ -559,9 +559,9 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	histogramDataPoints.At(0).Attributes().Remove("key0")
 	histogramDataPoints.At(0).Attributes().UpsertString("k", "v")
 	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes())
-	histogramDataPoints.At(0).SetMExplicitBounds([]float64{1})
-	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).MExplicitBounds())
-	histogramDataPoints.At(0).SetMBucketCounts([]uint64{21, 32})
+	histogramDataPoints.At(0).SetExplicitBounds(NewImmutableFloat64Slice(([]float64{1})))
+	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).ExplicitBounds().AsRaw())
+	histogramDataPoints.At(0).SetBucketCounts(NewImmutableUInt64Slice(([]uint64{21, 32})))
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{

@@ -38,6 +38,7 @@ var AllFiles = []*File{
 	commonFile,
 	metricsFile,
 	resourceFile,
+	immutableSliceFile,
 	traceFile,
 	logFile,
 }
@@ -45,6 +46,7 @@ var AllFiles = []*File{
 // File represents the struct for one generated file.
 type File struct {
 	Name        string
+	IsCommon    bool
 	imports     []string
 	testImports []string
 	// Can be any of sliceOfPtrs, sliceOfValues, messageValueStruct, or messagePtrStruct
@@ -126,10 +128,6 @@ func (f *File) GenerateAliasFile(packageName string) string {
 	}
 	sb.WriteString(newLine)
 	return sb.String()
-}
-
-func (f *File) IsCommon() bool {
-	return f.Name == "resource" || f.Name == "common"
 }
 
 func generateHeader(sb *strings.Builder, packageName string) {

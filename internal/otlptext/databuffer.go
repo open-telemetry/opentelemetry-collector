@@ -130,18 +130,12 @@ func (b *dataBuffer) logDoubleHistogramDataPoints(ps pmetric.HistogramDataPointS
 			b.logEntry("Max: %f", p.Max())
 		}
 
-		bounds := p.MExplicitBounds()
-		if len(bounds) != 0 {
-			for i, bound := range bounds {
-				b.logEntry("ExplicitBounds #%d: %f", i, bound)
-			}
+		for i := 0; i < p.ExplicitBounds().Len(); i++ {
+			b.logEntry("ExplicitBounds #%d: %f", i, p.ExplicitBounds().At(i))
 		}
 
-		buckets := p.MBucketCounts()
-		if len(buckets) != 0 {
-			for j, bucket := range buckets {
-				b.logEntry("Buckets #%d, Count: %d", j, bucket)
-			}
+		for j := 0; j < p.BucketCounts().Len(); j++ {
+			b.logEntry("Buckets #%d, Count: %d", j, p.BucketCounts().At(j))
 		}
 	}
 }
@@ -179,28 +173,26 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 		// uses a lookup table for the last finite boundary, which can be
 		// easily computed using `math/big` (for scales up to 20).
 
-		negB := p.Negative().MBucketCounts()
-		posB := p.Positive().MBucketCounts()
+		negB := p.Negative().BucketCounts()
+		posB := p.Positive().BucketCounts()
 
-		for i := 0; i < len(negB); i++ {
-			pos := len(negB) - i - 1
+		for i := 0; i < negB.Len(); i++ {
+			pos := negB.Len() - i - 1
 			index := p.Negative().Offset() + int32(pos)
-			count := p.Negative().MBucketCounts()[pos]
 			lower := math.Exp(float64(index) * factor)
 			upper := math.Exp(float64(index+1) * factor)
-			b.logEntry("Bucket (%f, %f], Count: %d", -upper, -lower, count)
+			b.logEntry("Bucket (%f, %f], Count: %d", -upper, -lower, negB.At(pos))
 		}
 
 		if p.ZeroCount() != 0 {
 			b.logEntry("Bucket [0, 0], Count: %d", p.ZeroCount())
 		}
 
-		for pos := 0; pos < len(posB); pos++ {
+		for pos := 0; pos < posB.Len(); pos++ {
 			index := p.Positive().Offset() + int32(pos)
-			count := p.Positive().MBucketCounts()[pos]
 			lower := math.Exp(float64(index) * factor)
 			upper := math.Exp(float64(index+1) * factor)
-			b.logEntry("Bucket [%f, %f), Count: %d", lower, upper, count)
+			b.logEntry("Bucket [%f, %f), Count: %d", lower, upper, posB.At(pos))
 		}
 	}
 }
