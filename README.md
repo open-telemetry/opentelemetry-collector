@@ -114,13 +114,15 @@ See the [Contributing Guide](CONTRIBUTING.md) for details.
 Here is a list of community roles with current and previous members:
 
 - Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
-   - [Alolita Sharma](https://github.com/alolita), AWS
-   - [Punya Biswal](https://github.com/punya), Google
-   - [Steve Flanders](https://github.com/flands), Splunk
+
+  - Actively seeking contributors to triage issues
 
 - Emeritus Triagers:
 
    - [Andrew Hsu](https://github.com/andrewhsu), Lightstep
+   - [Alolita Sharma](https://github.com/alolita), AWS
+   - [Punya Biswal](https://github.com/punya), Google
+   - [Steve Flanders](https://github.com/flands), Splunk
 
 - Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
