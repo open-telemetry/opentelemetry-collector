@@ -17,7 +17,6 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"net/http"
 	"path"
-	"sort"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/featuregate"
@@ -30,20 +29,16 @@ const (
 	pipelinezPath  = "pipelinez"
 	extensionzPath = "extensionz"
 	featurezPath   = "featurez"
-
-	zPipelineName  = "zpipelinename"
-	zComponentName = "zcomponentname"
-	zComponentKind = "zcomponentkind"
 )
 
 func (host *serviceHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
-	mux.HandleFunc(path.Join(pathPrefix, servicezPath), host.handleServicezRequest)
-	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), host.handlePipelinezRequest)
-	mux.HandleFunc(path.Join(pathPrefix, featurezPath), handleFeaturezRequest)
+	mux.HandleFunc(path.Join(pathPrefix, servicezPath), host.zPagesRequest)
+	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), host.pipelines.HandleZPages)
 	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), host.builtExtensions.HandleZPages)
+	mux.HandleFunc(path.Join(pathPrefix, featurezPath), handleFeaturezRequest)
 }
 
-func (host *serviceHost) handleServicezRequest(w http.ResponseWriter, r *http.Request) {
+func (host *serviceHost) zPagesRequest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Service " + host.buildInfo.Command})
 	zpages.WriteHTMLPropertiesTable(w, zpages.PropertiesTableData{Name: "Build Info", Properties: getBuildInfoProperties(host.buildInfo)})
@@ -64,63 +59,6 @@ func (host *serviceHost) handleServicezRequest(w http.ResponseWriter, r *http.Re
 		Link:              true,
 	})
 	zpages.WriteHTMLPageFooter(w)
-}
-
-func (host *serviceHost) handlePipelinezRequest(w http.ResponseWriter, r *http.Request) {
-	qValues := r.URL.Query()
-	pipelineName := qValues.Get(zPipelineName)
-	componentName := qValues.Get(zComponentName)
-	componentKind := qValues.Get(zComponentKind)
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Pipelines"})
-	zpages.WriteHTMLPipelinesSummaryTable(w, host.getPipelinesSummaryTableData())
-	if pipelineName != "" && componentName != "" && componentKind != "" {
-		fullName := componentName
-		if componentKind == "processor" {
-			fullName = pipelineName + "/" + componentName
-		}
-		zpages.WriteHTMLComponentHeader(w, zpages.ComponentHeaderData{
-			Name: componentKind + ": " + fullName,
-		})
-		// TODO: Add config + status info.
-	}
-	zpages.WriteHTMLPageFooter(w)
-}
-
-func (host *serviceHost) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
-	data := zpages.SummaryPipelinesTableData{}
-
-	data.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(host.builtPipelines))
-	for c, p := range host.builtPipelines {
-		// TODO: Change the template to use ID.
-		var recvs []string
-		for _, recvID := range p.Config.Receivers {
-			recvs = append(recvs, recvID.String())
-		}
-		var procs []string
-		for _, procID := range p.Config.Processors {
-			procs = append(procs, procID.String())
-		}
-		var exps []string
-		for _, expID := range p.Config.Exporters {
-			exps = append(exps, expID.String())
-		}
-		row := zpages.SummaryPipelinesTableRowData{
-			FullName:    c.String(),
-			InputType:   string(c.Type()),
-			MutatesData: p.MutatesData,
-			Receivers:   recvs,
-			Processors:  procs,
-			Exporters:   exps,
-		}
-		data.Rows = append(data.Rows, row)
-	}
-
-	sort.Slice(data.Rows, func(i, j int) bool {
-		return data.Rows[i].FullName < data.Rows[j].FullName
-	})
-	return data
 }
 
 func handleFeaturezRequest(w http.ResponseWriter, r *http.Request) {
