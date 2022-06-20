@@ -1,0 +1,13 @@
+receivers:
+  nop:
+processors:
+  unknown:
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors: [unknown]
+      exporters: [nop]

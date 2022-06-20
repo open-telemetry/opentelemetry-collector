@@ -108,7 +108,7 @@ func testReceivers(t *testing.T, test testCase) {
 	// Ensure receiver has its fields correctly populated.
 	require.NotNil(t, receiver)
 
-	assert.NotNil(t, receiver.receiver)
+	assert.NotNil(t, receiver.Receiver)
 
 	// Compose the list of created exporters.
 	var exporters []component.Exporter
@@ -130,13 +130,13 @@ func testReceivers(t *testing.T, test testCase) {
 
 	td := testdata.GenerateTracesOneSpan()
 	if test.hasTraces {
-		traceProducer := receiver.receiver.(*testcomponents.ExampleReceiver)
+		traceProducer := receiver.Receiver.(*testcomponents.ExampleReceiver)
 		assert.NoError(t, traceProducer.ConsumeTraces(context.Background(), td))
 	}
 
 	md := testdata.GenerateMetricsOneMetric()
 	if test.hasMetrics {
-		metricsProducer := receiver.receiver.(*testcomponents.ExampleReceiver)
+		metricsProducer := receiver.Receiver.(*testcomponents.ExampleReceiver)
 		assert.NoError(t, metricsProducer.ConsumeMetrics(context.Background(), md))
 	}
 
@@ -209,7 +209,7 @@ func TestBuildReceiversBuildCustom(t *testing.T) {
 			// Ensure receiver has its fields correctly populated.
 			require.NotNil(t, receiver)
 
-			assert.NotNil(t, receiver.receiver)
+			assert.NotNil(t, receiver.Receiver)
 
 			// Compose the list of created exporters.
 			exporterIDs := []config.ComponentID{config.NewComponentID("exampleexporter")}
@@ -231,7 +231,7 @@ func TestBuildReceiversBuildCustom(t *testing.T) {
 
 			// Send one data.
 			log := plog.Logs{}
-			producer := receiver.receiver.(*testcomponents.ExampleReceiver)
+			producer := receiver.Receiver.(*testcomponents.ExampleReceiver)
 			require.NoError(t, producer.ConsumeLogs(context.Background(), log))
 
 			// Now verify received data.
@@ -251,7 +251,7 @@ func TestBuildReceivers_StartAll(t *testing.T) {
 
 	receivers[config.NewComponentID("example")] = &builtReceiver{
 		logger:   zap.NewNop(),
-		receiver: receiver,
+		Receiver: receiver,
 	}
 
 	assert.False(t, receiver.Started)
@@ -281,41 +281,4 @@ func TestBuildReceivers_Unused(t *testing.T) {
 
 	assert.NoError(t, receivers.StartAll(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, receivers.ShutdownAll(context.Background()))
-}
-
-func TestBuildReceivers_NotSupportedDataType(t *testing.T) {
-	factories := createTestFactories()
-
-	tests := []struct {
-		configFile string
-	}{
-		{
-			configFile: "not_supported_receiver_logs.yaml",
-		},
-		{
-			configFile: "not_supported_receiver_metrics.yaml",
-		},
-		{
-			configFile: "not_supported_receiver_traces.yaml",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.configFile, func(t *testing.T) {
-
-			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
-			assert.NoError(t, err)
-			require.NotNil(t, cfg)
-
-			allExporters, err := BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
-			assert.NoError(t, err)
-
-			pipelineProcessors, err := BuildPipelines(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, allExporters, factories.Processors)
-			assert.NoError(t, err)
-
-			receivers, err := BuildReceivers(componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, pipelineProcessors, factories.Receivers)
-			assert.Error(t, err)
-			assert.Zero(t, len(receivers))
-		})
-	}
 }

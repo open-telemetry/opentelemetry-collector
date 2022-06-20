@@ -16,7 +16,6 @@ package builder
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/testcomponents"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestBuildExporters(t *testing.T) {
@@ -113,33 +111,4 @@ func TestBuildExportersStartStopAll(t *testing.T) {
 	assert.True(t, traceExporter.Stopped)
 	assert.True(t, metricExporter.Stopped)
 	assert.True(t, logsExporter.Stopped)
-}
-
-func TestBuildExportersNotSupportedDataType(t *testing.T) {
-	factories := createTestFactories()
-
-	tests := []struct {
-		configFile string
-	}{
-		{
-			configFile: "not_supported_exporter_logs.yaml",
-		},
-		{
-			configFile: "not_supported_exporter_metrics.yaml",
-		},
-		{
-			configFile: "not_supported_exporter_traces.yaml",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.configFile, func(t *testing.T) {
-
-			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
-			require.Nil(t, err)
-
-			_, err = BuildExporters(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories.Exporters)
-			assert.Error(t, err)
-		})
-	}
 }
