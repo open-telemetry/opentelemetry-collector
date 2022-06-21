@@ -93,7 +93,7 @@ func TestConfigValidate(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name: "custom-service-telemetry-encoding",
+			name: "custom-service-telemetrySettings-encoding",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Service.Telemetry.Logs.Encoding = "test_encoding"
