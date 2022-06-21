@@ -64,7 +64,7 @@ func newService(set *settings) (*service, error) {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
 
-	if srv.host.builtExtensions, err = extensions.Build(context.Background(), srv.telemetry, srv.buildInfo, srv.config.Extensions, srv.config.Service.Extensions, srv.host.factories.Extensions); err != nil {
+	if srv.host.extensions, err = extensions.Build(context.Background(), srv.telemetry, srv.buildInfo, srv.config.Extensions, srv.config.Service.Extensions, srv.host.factories.Extensions); err != nil {
 		return nil, fmt.Errorf("cannot build extensions: %w", err)
 	}
 
@@ -76,7 +76,7 @@ func newService(set *settings) (*service, error) {
 }
 
 func (srv *service) Start(ctx context.Context) error {
-	if err := srv.host.builtExtensions.StartAll(ctx, srv.host); err != nil {
+	if err := srv.host.extensions.StartAll(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
 
@@ -84,14 +84,14 @@ func (srv *service) Start(ctx context.Context) error {
 		return fmt.Errorf("cannot start pipelines: %w", err)
 	}
 
-	return srv.host.builtExtensions.NotifyPipelineReady()
+	return srv.host.extensions.NotifyPipelineReady()
 }
 
 func (srv *service) Shutdown(ctx context.Context) error {
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
 
-	if err := srv.host.builtExtensions.NotifyPipelineNotReady(); err != nil {
+	if err := srv.host.extensions.NotifyPipelineNotReady(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
@@ -99,7 +99,7 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
-	if err := srv.host.builtExtensions.ShutdownAll(ctx); err != nil {
+	if err := srv.host.extensions.ShutdownAll(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
