@@ -13,6 +13,9 @@
 - Remove deprecated `config.CloseFunc` (#5505)
 - Deprecated `pcommon.Value.NewValueBytes` is brought back taking `pcommon.ImmutableByteSlice` as an argument instead 
   of `[]byte` (#5299)
+- Remove deprecated `config.ServiceTelemetry` (#5565)
+- Remove deprecated `config.ServiceTelemetryLogs` (#5565)
+- Remove deprecated `config.ServiceTelemetryMetrics` (#5565)
 
 ### 🚩 Deprecations 🚩
 
@@ -31,6 +34,7 @@
     that takes `pcommon.ImmutableFloat64Slice` instead of []float64.
   - `HistogramDataPoint.MExplicitBounds` func func is deprecated in favor of `HistogramDataPoint.ExplicitBounds`
     returns `pcommon.ImmutableFloat64Slice` instead of []float64.
+- Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
 
 ### 💡 Enhancements 💡
 

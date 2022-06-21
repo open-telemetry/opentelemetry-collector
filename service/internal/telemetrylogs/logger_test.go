@@ -21,19 +21,19 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func TestGRPCLogger(t *testing.T) {
 	tests := []struct {
 		name       string
-		cfg        config.ServiceTelemetryLogs
+		cfg        telemetry.LogsConfig
 		infoLogged bool
 		warnLogged bool
 	}{
 		{
 			"collector_info_level_grpc_log_warn",
-			config.ServiceTelemetryLogs{
+			telemetry.LogsConfig{
 				Level:    zapcore.InfoLevel,
 				Encoding: "console",
 			},
@@ -42,7 +42,7 @@ func TestGRPCLogger(t *testing.T) {
 		},
 		{
 			"collector_debug_level_grpc_log_debug",
-			config.ServiceTelemetryLogs{
+			telemetry.LogsConfig{
 				Level:    zapcore.DebugLevel,
 				Encoding: "console",
 			},
@@ -51,7 +51,7 @@ func TestGRPCLogger(t *testing.T) {
 		},
 		{
 			"collector_warn_level_grpc_log_warn",
-			config.ServiceTelemetryLogs{
+			telemetry.LogsConfig{
 				Development: false, // this must set the grpc loggerV2 to loggerV2
 				Level:       zapcore.WarnLevel,
 				Encoding:    "console",
