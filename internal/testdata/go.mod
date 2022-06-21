@@ -1,4 +1,4 @@
-module go.opentelemetry.io/opentelemetry-collector/internal/testdata
+module go.opentelemetry.io/collector/internal/testdata
 
 go 1.18
 

@@ -28,5 +28,7 @@ processors:
 
 replaces:
   - go.opentelemetry.io/collector => ../../
+  - go.opentelemetry.io/collector/consumer => ../../consumer
+  - go.opentelemetry.io/collector/internal/testdata => ../../internal/testdata
   - go.opentelemetry.io/collector/semconv => ../../semconv
   - go.opentelemetry.io/collector/pdata => ../../pdata

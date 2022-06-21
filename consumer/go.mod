@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/consumer
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.4
 	go.opentelemetry.io/collector/internal/testdata v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v0.53.0
 )
