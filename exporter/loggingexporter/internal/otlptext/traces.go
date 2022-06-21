@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlptext // import "go.opentelemetry.io/collector/internal/otlptext"
+package otlptext // import "go.opentelemetry.io/collector/exporter/loggingexporter/internal/otlptext"
 
 import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// NewTextTracesMarshaler returns a serializer.Marshaler to encode to OTLP text bytes.
+// NewTextTracesMarshaler returns a ptrace.Marshaler to encode to OTLP text bytes.
 func NewTextTracesMarshaler() ptrace.Marshaler {
 	return textTracesMarshaler{}
 }
