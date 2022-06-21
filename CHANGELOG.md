@@ -42,7 +42,10 @@
 
 - Update sum field of exponential histograms to make it optional (#5530)
 - Remove redundant extension shutdown call (#5532)
-
+- Refactor pipelines builder, fix some issues (#5512)
+  - Unconfigured receivers are not identified, this was not a real problem in final binaries since the validation of the config catch this.
+  - Allow configurations to contain "unused" receivers. Receivers that are configured but not used in any pipeline, this was possible already for exporters and processors.
+  - Remove the enforcement/check that Receiver factories create the same instance for the same config.
 ## v0.53.0 Beta
 
 ### 🛑 Breaking changes 🛑
