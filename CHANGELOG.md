@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.54.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated `GetLogger`. (#5504)
@@ -11,13 +13,12 @@
 - Remove deprecated `config.MapConverter` (#5505)
 - Remove deprecated `config.Received` (#5505)
 - Remove deprecated `config.CloseFunc` (#5505)
-- Deprecated `pcommon.Value.NewValueBytes` is brought back taking `pcommon.ImmutableByteSlice` as an argument instead 
-  of `[]byte` (#5299)
+- Deprecated `pcommon.Value.NewValueBytes` is brought back taking `pcommon.ImmutableByteSlice` as an argument instead of `[]byte` (#5299)
 
 ### 🚩 Deprecations 🚩
 
 - Use immutable slices for primitive types slices to restrict mutations. (#5299)
-  - `Value.NewValueMBytes` func is deprecated in favor of Value.NewValueMBytes func that takes
+  - `Value.NewValueMBytes` func is deprecated in favor of `Value.NewValueBytes` func that takes
     `ImmutableByteSlice` instead of `[]byte`
   - `Value.SetMBytesVal` func is deprecated in favor of `Value.SetBytesVal` func that takes
     `pcommon.ImmutableByteSlice` instead of []byte.
@@ -46,6 +47,7 @@
   - Unconfigured receivers are not identified, this was not a real problem in final binaries since the validation of the config catch this.
   - Allow configurations to contain "unused" receivers. Receivers that are configured but not used in any pipeline, this was possible already for exporters and processors.
   - Remove the enforcement/check that Receiver factories create the same instance for the same config.
+
 ## v0.53.0 Beta
 
 ### 🛑 Breaking changes 🛑
