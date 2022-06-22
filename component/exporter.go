@@ -169,6 +169,13 @@ func WithLogsExporter(createLogsExporter CreateLogsExporterFunc) ExporterFactory
 	})
 }
 
+// WithExporterStabiityLevel overrides the default "unmaintained" stability level.
+func WithExporterStabilityLevel(sl StabilityLevel) ExporterFactoryOption {
+	return func(o *exporterFactory) {
+		o.stability = sl
+	}
+}
+
 // NewExporterFactory returns a ExporterFactory.
 func NewExporterFactory(cfgType config.Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
 	f := &exporterFactory{

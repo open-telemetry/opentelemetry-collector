@@ -104,6 +104,37 @@ const (
 	KindExtension
 )
 
+// StabilityLevel represents the stability level of the component created by the factory.
+type StabilityLevel int
+
+const (
+	_ StabilityLevel = iota // skip 0, start types from 1.
+	StabilityLevelUnmaintained
+	StabilityLevelDeprecated
+	StabilityLevelInDevelopment
+	StabilityLevelAlpha
+	StabilityLevelBeta
+	StabilityLevelStable
+)
+
+func (sl StabilityLevel) String() string {
+	switch sl {
+	case StabilityLevelUnmaintained:
+		return "unmaintained"
+	case StabilityLevelDeprecated:
+		return "deprecated"
+	case StabilityLevelInDevelopment:
+		return "in development"
+	case StabilityLevelAlpha:
+		return "alpha"
+	case StabilityLevelBeta:
+		return "beta"
+	case StabilityLevelStable:
+		return "stable"
+	}
+	return "undefined"
+}
+
 // Factory is implemented by all component factories.
 //
 // This interface cannot be directly implemented. Implementations must
@@ -116,11 +147,16 @@ type Factory interface {
 }
 
 type baseFactory struct {
-	cfgType config.Type
+	cfgType   config.Type
+	stability StabilityLevel
 }
 
 func (baseFactory) unexportedFactoryFunc() {}
 
 func (bf baseFactory) Type() config.Type {
 	return bf.cfgType
+}
+
+func (bf baseFactory) StabilityLevel() StabilityLevel {
+	return bf.stability
 }
