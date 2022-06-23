@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `exporter/logging`: Skip "bad file descriptor" sync errors (#TODO)
+
 ## v0.54.0 Beta
 
 ### 🛑 Breaking changes 🛑

@@ -23,14 +23,24 @@ import (
 )
 
 // knownSyncError returns true if the given error is one of the known
-// non-actionable errors returned by Sync on Linux and macOS:
-//
-// Linux:
-// - sync /dev/stdout: invalid argument
-//
-// macOS:
-// - sync /dev/stdout: inappropriate ioctl for device
-//
+// non-actionable errors returned by Sync on Linux and macOS.
 func knownSyncError(err error) bool {
-	return errors.Is(err, syscall.EINVAL) || errors.Is(err, syscall.ENOTSUP) || errors.Is(err, syscall.ENOTTY)
+	var knownSyncErrors = []error{
+		// sync /dev/stdout: invalid argument
+		syscall.EINVAL,
+		// sync /dev/stdout: not supported
+		syscall.ENOTSUP,
+		// sync /dev/stdout: inappropriate ioctl for device
+		syscall.ENOTTY,
+		// sync /dev/stdout: bad file descriptor
+		syscall.EBADF,
+	}
+
+	for _, syncError := range knownSyncErrors {
+		if errors.Is(err, syncError) {
+			return true
+		}
+	}
+
+	return false
 }
