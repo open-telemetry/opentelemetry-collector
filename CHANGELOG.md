@@ -4,7 +4,7 @@
 
 ### 💡 Enhancements 💡
 
-- `exporter/logging`: Skip "bad file descriptor" sync errors (#TODO)
+- `exporter/logging`: Skip "bad file descriptor" sync errors (#5585)
 
 ## v0.54.0 Beta
 
