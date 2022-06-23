@@ -105,6 +105,9 @@ const (
 )
 
 // StabilityLevel represents the stability level of the component created by the factory.
+// The stability level is used to determine if the component should be used in production
+// or not. For more details see:
+// https://github.com/open-telemetry/opentelemetry-collector#stability-levels
 type StabilityLevel int
 
 const (
