@@ -125,9 +125,6 @@ func (e *exporter) enhanceContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-// Send a trace or metrics request to the server. "perform" function is expected to make
-// the actual gRPC unary call that sends the request. This function implements the
-// common OTLP logic around request handling such as retries and throttling.
 func processError(err error) error {
 	if err == nil {
 		// Request is successful, we are done.
