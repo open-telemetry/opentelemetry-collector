@@ -46,7 +46,12 @@ func NewNopExporterFactory() component.ExporterFactory {
 		component.WithTracesExporter(createTracesExporter),
 		component.WithMetricsExporter(createMetricsExporter),
 		component.WithLogsExporter(createLogsExporter),
-		component.WithExporterStabilityLevel(component.StabilityLevelInDevelopment))
+		component.WithExporterStabilityLevel(map[config.Type]component.StabilityLevel{
+			config.LogsDataType:    component.StabilityLevelInDevelopment,
+			config.TracesDataType:  component.StabilityLevelInDevelopment,
+			config.MetricsDataType: component.StabilityLevelInDevelopment,
+		}),
+	)
 }
 
 func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {

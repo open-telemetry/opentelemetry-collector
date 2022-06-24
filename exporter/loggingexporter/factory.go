@@ -27,7 +27,6 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr                   = "logging"
-	stability                 = component.StabilityLevelInDevelopment
 	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
@@ -40,7 +39,11 @@ func NewFactory() component.ExporterFactory {
 		component.WithTracesExporter(createTracesExporter),
 		component.WithMetricsExporter(createMetricsExporter),
 		component.WithLogsExporter(createLogsExporter),
-		component.WithExporterStabilityLevel(stability))
+		component.WithExporterStabilityLevel(map[config.Type]component.StabilityLevel{
+			config.LogsDataType:    component.StabilityLevelInDevelopment,
+			config.TracesDataType:  component.StabilityLevelInDevelopment,
+			config.MetricsDataType: component.StabilityLevelInDevelopment,
+		}))
 }
 
 func createDefaultConfig() config.Exporter {

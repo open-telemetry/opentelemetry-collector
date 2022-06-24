@@ -67,7 +67,7 @@ type Pipelines struct {
 
 // StartAll starts all pipelines.
 //
-// Start with exporters, processors (in revers configured order), then receivers.
+// Start with exporters, processors (in reverse configured order), then receivers.
 // This is important so that components that are earlier in the pipeline and reference components that are
 // later in the pipeline do not start sending data to later components which are not yet started.
 func (bps *Pipelines) StartAll(ctx context.Context, host component.Host) error {
@@ -304,6 +304,23 @@ func Build(ctx context.Context, settings component.TelemetrySettings, buildInfo 
 	return exps, nil
 }
 
+func logStabilityMessage(logger *zap.Logger, sl component.StabilityLevel) {
+	switch sl {
+	case component.StabilityLevelDeprecated:
+		logger.Info("Component has been deprecated and will be removed in future releases.", zap.String(components.ZapStabilityKey, sl.String()))
+	case component.StabilityLevelUnmaintained:
+		logger.Info("Component is unmaintained and actively looking for contributors.", zap.String(components.ZapStabilityKey, sl.String()))
+	case component.StabilityLevelInDevelopment:
+		logger.Info("Component is under development.", zap.String(components.ZapStabilityKey, sl.String()))
+	case component.StabilityLevelAlpha:
+	case component.StabilityLevelBeta:
+	case component.StabilityLevelStable:
+		logger.Debug("Stability level", zap.String(components.ZapStabilityKey, sl.String()))
+	default:
+		logger.Info("Stability level of component undefined", zap.String(components.ZapStabilityKey, sl.String()))
+	}
+}
+
 func buildExporter(
 	ctx context.Context,
 	settings component.TelemetrySettings,
@@ -328,6 +345,7 @@ func buildExporter(
 		BuildInfo:         buildInfo,
 	}
 	set.TelemetrySettings.Logger = exporterLogger(settings.Logger, id, pipelineID.Type())
+	logStabilityMessage(set.TelemetrySettings.Logger, factory.StabilityLevel(pipelineID.Type()))
 
 	exp, err := createExporter(ctx, set, cfg, id, pipelineID, factory)
 	if err != nil {

@@ -42,7 +42,11 @@ var ExampleExporterFactory = component.NewExporterFactory(
 	component.WithTracesExporter(createTracesExporter),
 	component.WithMetricsExporter(createMetricsExporter),
 	component.WithLogsExporter(createLogsExporter),
-	component.WithExporterStabilityLevel(stability))
+	component.WithExporterStabilityLevel(map[config.Type]component.StabilityLevel{
+		config.LogsDataType:    component.StabilityLevelInDevelopment,
+		config.TracesDataType:  component.StabilityLevelInDevelopment,
+		config.MetricsDataType: component.StabilityLevelInDevelopment,
+	}))
 
 func createExporterDefaultConfig() config.Exporter {
 	return &ExampleExporterConfig{

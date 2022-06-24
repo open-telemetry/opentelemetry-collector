@@ -111,7 +111,7 @@ const (
 type StabilityLevel int
 
 const (
-	_ StabilityLevel = iota // skip 0, start types from 1.
+	StabilityLevelUndefined = iota // skip 0, start types from 1.
 	StabilityLevelUnmaintained
 	StabilityLevelDeprecated
 	StabilityLevelInDevelopment
@@ -146,12 +146,15 @@ type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() config.Type
 
+	// StabilityLevel gets the stability level of the component.
+	StabilityLevel(config.Type) StabilityLevel
+
 	unexportedFactoryFunc()
 }
 
 type baseFactory struct {
 	cfgType   config.Type
-	stability StabilityLevel
+	stability map[config.Type]StabilityLevel
 }
 
 func (baseFactory) unexportedFactoryFunc() {}
@@ -160,6 +163,9 @@ func (bf baseFactory) Type() config.Type {
 	return bf.cfgType
 }
 
-func (bf baseFactory) StabilityLevel() StabilityLevel {
-	return bf.stability
+func (bf baseFactory) StabilityLevel(cfgType config.Type) StabilityLevel {
+	if val, ok := bf.stability[cfgType]; ok {
+		return val
+	}
+	return StabilityLevelUndefined
 }

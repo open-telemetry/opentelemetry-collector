@@ -42,7 +42,11 @@ func NewFactory() component.ExporterFactory {
 		component.WithTracesExporter(createTracesExporter),
 		component.WithMetricsExporter(createMetricsExporter),
 		component.WithLogsExporter(createLogsExporter),
-		component.WithExporterStabilityLevel(stability))
+		component.WithExporterStabilityLevel(map[config.Type]component.StabilityLevel{
+			config.LogsDataType:    component.StabilityLevelBeta,
+			config.TracesDataType:  component.StabilityLevelStable,
+			config.MetricsDataType: component.StabilityLevelStable,
+		}))
 }
 
 func createDefaultConfig() config.Exporter {
