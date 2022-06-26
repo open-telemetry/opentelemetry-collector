@@ -342,11 +342,11 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
+	checkValueForGlobalManager(t, defaultExporterTags, int64(5000), "exporter/queue_capacity")
 	for i := 0; i < 7; i++ {
 		require.NoError(t, be.sender.send(newErrorRequest(context.Background())))
 	}
 	checkValueForGlobalManager(t, defaultExporterTags, int64(7), "exporter/queue_size")
-	checkValueForGlobalManager(t, defaultExporterTags, int64(5000), "exporter/queue_capacity")
 
 	assert.NoError(t, be.Shutdown(context.Background()))
 	checkValueForGlobalManager(t, defaultExporterTags, int64(0), "exporter/queue_size")
