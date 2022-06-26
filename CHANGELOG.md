@@ -85,6 +85,7 @@
 
 ### 💡 Enhancements 💡
 
+- Add `otelcol_exporter_queue_capacity` metrics show the collector's exporter queue capacity (#5475)
 - Deprecate `HTTPClientSettings.ToClient` in favor of `HTTPClientSettings.ToClientWithHost` (#5584)
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
 - Update OTLP to v0.18.0 (#5530)
