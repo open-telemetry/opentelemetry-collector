@@ -48,7 +48,7 @@ var (
 )
 
 func TestLogsRequest(t *testing.T) {
-	lr := newLogsRequest(context.Background(), testdata.GenerateLogsOneLogRecord(), nil)
+	lr := newLogsRequest(context.Background(), testdata.GenerateLogs(1), nil)
 
 	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
 	assert.EqualValues(
@@ -137,7 +137,7 @@ func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	md := testdata.GenerateLogsTwoLogRecordsSameResourceOneDifferent()
+	md := testdata.GenerateLogs(3)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		// errors are checked in the checkExporterEnqueueFailedLogsStats function below.
@@ -209,7 +209,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
+	ld := testdata.GenerateLogs(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, le.ConsumeLogs(context.Background(), ld))
@@ -224,7 +224,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, le component.LogsExporter
 }
 
 func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le component.LogsExporter, numRequests int, wantError error) {
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 	ctx, span := tracer.Start(context.Background(), fakeLogsParentSpanName)
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

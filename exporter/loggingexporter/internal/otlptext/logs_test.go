@@ -32,11 +32,9 @@ func TestLogsText(t *testing.T) {
 		args  args
 		empty bool
 	}{
-		{"empty logs", args{plog.NewLogs()}, true},
-		{"logs data with empty resource log", args{testdata.GenerateLogsOneEmptyResourceLogs()}, false},
-		{"logs data with no log records", args{testdata.GenerateLogsNoLogRecords()}, false},
-		{"logs with one empty log", args{testdata.GenerateLogsOneEmptyLogRecord()}, false},
-		{"logs with one log", args{testdata.GenerateLogsOneLogRecord()}, false},
+		{"empty logs", args{ld: plog.NewLogs()}, true},
+		{"logs with one log", args{ld: testdata.GenerateLogs(1)}, false},
+		{"logs with lots of log records", args{ld: testdata.GenerateLogs(10)}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
