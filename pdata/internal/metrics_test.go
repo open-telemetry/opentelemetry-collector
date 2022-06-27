@@ -693,12 +693,12 @@ func TestMetricsDataPointFlags(t *testing.T) {
 
 	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags())
 	assert.True(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
-	assert.False(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
+	assert.False(t, gauge.DataPoints().At(0).Flags().NoRecordedValue())
 	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).Flags().String())
 
-	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags(MetricDataPointFlagNoRecordedValue))
+	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags().SetNoRecordedValue())
 	assert.False(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
-	assert.True(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
+	assert.True(t, gauge.DataPoints().At(0).Flags().NoRecordedValue())
 	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(0).Flags().String())
 }
 

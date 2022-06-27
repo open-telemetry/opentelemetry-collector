@@ -192,19 +192,18 @@ const (
 	MetricDataPointFlagsNone = MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NONE)
 )
 
-// NewMetricDataPointFlags returns a new MetricDataPointFlags combining the flags passed
-// in as parameters.
-func NewMetricDataPointFlags(flags ...MetricDataPointFlag) MetricDataPointFlags {
-	var flag MetricDataPointFlags
-	for _, f := range flags {
-		flag |= MetricDataPointFlags(f)
-	}
-	return flag
+// NewMetricDataPointFlags returns a new MetricDataPointFlags with no flags set.
+func NewMetricDataPointFlags() MetricDataPointFlags {
+	return MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NONE)
 }
 
-// HasFlag returns true if the MetricDataPointFlags contains the specified flag
-func (d MetricDataPointFlags) HasFlag(flag MetricDataPointFlag) bool {
-	return d&MetricDataPointFlags(flag) != 0
+// NoRecordedValue returns true if the MetricDataPointFlags contains the NO_RECORDED_VALUE flag.
+func (d MetricDataPointFlags) NoRecordedValue() bool {
+	return d&MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
+}
+
+func (d MetricDataPointFlags) SetNoRecordedValue() MetricDataPointFlags {
+	return d | MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 }
 
 // String returns the string representation of the MetricDataPointFlags.
