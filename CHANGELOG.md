@@ -23,8 +23,6 @@
 - Remove deprecated `config.MapConverter` (#5505)
 - Remove deprecated `config.Received` (#5505)
 - Remove deprecated `config.CloseFunc` (#5505)
-- Deprecated `pcommon.Value.NewValueBytes` is brought back taking `pcommon.ImmutableByteSlice` as an argument instead 
-  of `[]byte` (#5299)
 - Deprecated `pcommon.Value.NewValueBytes` is brought back taking `pcommon.ImmutableByteSlice` as an argument instead of `[]byte` (#5299)
 
 ### 🚩 Deprecations 🚩
