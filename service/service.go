@@ -61,7 +61,14 @@ func newService(set *settings) (*service, error) {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
 
-	if srv.host.extensions, err = extensions.Build(context.Background(), srv.telemetry, srv.buildInfo, srv.config.Extensions, srv.config.Service.Extensions, srv.host.factories.Extensions); err != nil {
+	extensionsSettings := extensions.Settings{
+		Telemetry:         srv.telemetry,
+		BuildInfo:         srv.buildInfo,
+		Configs:           srv.config.Extensions,
+		Factories:         srv.host.factories.Extensions,
+		ServiceExtensions: srv.config.Service.Extensions,
+	}
+	if srv.host.extensions, err = extensions.Build(context.Background(), extensionsSettings); err != nil {
 		return nil, fmt.Errorf("cannot build extensions: %w", err)
 	}
 

@@ -118,38 +118,52 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 	zpages.WriteHTMLPageFooter(w)
 }
 
+// Settings holds configuration for building Extensions.
+type Settings struct {
+	Telemetry component.TelemetrySettings
+	BuildInfo component.BuildInfo
+
+	// Configs is a map of config.ComponentID to config.Extension.
+	Configs map[config.ComponentID]config.Extension
+
+	// Factories maps extensin type names in the config to the respective component.ExtensionFactory.
+	Factories map[config.Type]component.ExtensionFactory
+
+	// ServiceExtensions are the ordered list of extensions configured for the service.
+	ServiceExtensions []config.ComponentID
+}
+
 // Build builds Extensions from config.
-func Build(
-	ctx context.Context,
-	settings component.TelemetrySettings,
-	buildInfo component.BuildInfo,
-	extensionsConfigs map[config.ComponentID]config.Extension,
-	serviceExtensions []config.ComponentID,
-	factories map[config.Type]component.ExtensionFactory,
-) (*Extensions, error) {
+func Build(ctx context.Context, set Settings) (*Extensions, error) {
 	exts := &Extensions{
-		telemetry: settings,
+		telemetry: set.Telemetry,
 		extMap:    make(map[config.ComponentID]component.Extension),
 	}
-	for _, extID := range serviceExtensions {
-		extCfg, existsCfg := extensionsConfigs[extID]
+	for _, extID := range set.ServiceExtensions {
+		extCfg, existsCfg := set.Configs[extID]
 		if !existsCfg {
 			return nil, fmt.Errorf("extension %q is not configured", extID)
 		}
 
-		factory, existsFactory := factories[extID.Type()]
+		factory, existsFactory := set.Factories[extID.Type()]
 		if !existsFactory {
 			return nil, fmt.Errorf("extension factory for type %q is not configured", extID.Type())
 		}
 
-		set := component.ExtensionCreateSettings{
-			TelemetrySettings: settings,
-			BuildInfo:         buildInfo,
+		extSet := component.ExtensionCreateSettings{
+			TelemetrySettings: set.Telemetry,
+			BuildInfo:         set.BuildInfo,
 		}
-		set.TelemetrySettings.Logger = settings.Logger
-		ext, err := buildExtension(ctx, factory, set, extCfg)
+		extSet.TelemetrySettings.Logger = extensionLogger(set.Telemetry.Logger, extID)
+
+		ext, err := factory.CreateExtension(ctx, extSet, extCfg)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create extension %q: %w", extID, err)
+		}
+
+		// Check if the factory really created the extension.
+		if ext == nil {
+			return nil, fmt.Errorf("factory for %q produced a nil extension", extID)
 		}
 
 		exts.extMap[extID] = ext
@@ -162,18 +176,4 @@ func extensionLogger(logger *zap.Logger, id config.ComponentID) *zap.Logger {
 	return logger.With(
 		zap.String(components.ZapKindKey, components.ZapKindExtension),
 		zap.String(components.ZapNameKey, id.String()))
-}
-
-func buildExtension(ctx context.Context, factory component.ExtensionFactory, creationSet component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	ext, err := factory.CreateExtension(ctx, creationSet, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create extension %q: %w", cfg.ID(), err)
-	}
-
-	// Check if the factory really created the extension.
-	if ext == nil {
-		return nil, fmt.Errorf("factory for %q produced a nil extension", cfg.ID())
-	}
-
-	return ext, nil
 }
