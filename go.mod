@@ -13,7 +13,7 @@ require (
 	github.com/magiconair/properties v1.8.6
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mostynb/go-grpc-compression v1.1.16
-	github.com/prometheus/common v0.34.0
+	github.com/prometheus/common v0.35.0
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil/v3 v3.22.5
 	github.com/spf13/cast v1.5.0
