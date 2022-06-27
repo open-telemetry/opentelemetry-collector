@@ -25,7 +25,7 @@ import (
 )
 
 func TestTraces(t *testing.T) {
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 	err := errors.New("some error")
 	traceErr := NewTraces(err, td)
 	assert.Equal(t, err.Error(), traceErr.Error())
@@ -37,7 +37,7 @@ func TestTraces(t *testing.T) {
 }
 
 func TestTraces_Unwrap(t *testing.T) {
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 	var err error = testErrorType{"some error"}
 	// Wrapping err with error Traces.
 	traceErr := NewTraces(err, td)
@@ -49,7 +49,7 @@ func TestTraces_Unwrap(t *testing.T) {
 }
 
 func TestLogs(t *testing.T) {
-	td := testdata.GenerateLogsOneLogRecord()
+	td := testdata.GenerateLogs(1)
 	err := errors.New("some error")
 	logsErr := NewLogs(err, td)
 	assert.Equal(t, err.Error(), logsErr.Error())
@@ -61,7 +61,7 @@ func TestLogs(t *testing.T) {
 }
 
 func TestLogs_Unwrap(t *testing.T) {
-	td := testdata.GenerateLogsOneLogRecord()
+	td := testdata.GenerateLogs(1)
 	var err error = testErrorType{"some error"}
 	// Wrapping err with error Logs.
 	logsErr := NewLogs(err, td)
@@ -73,7 +73,7 @@ func TestLogs_Unwrap(t *testing.T) {
 }
 
 func TestMetrics(t *testing.T) {
-	td := testdata.GenerateMetricsOneMetric()
+	td := testdata.GenerateMetrics(1)
 	err := errors.New("some error")
 	metricErr := NewMetrics(err, td)
 	assert.Equal(t, err.Error(), metricErr.Error())
@@ -85,7 +85,7 @@ func TestMetrics(t *testing.T) {
 }
 
 func TestMetrics_Unwrap(t *testing.T) {
-	td := testdata.GenerateMetricsOneMetric()
+	td := testdata.GenerateMetrics(1)
 	var err error = testErrorType{"some error"}
 	// Wrapping err with error Metrics.
 	metricErr := NewMetrics(err, td)

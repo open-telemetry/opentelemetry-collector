@@ -18,70 +18,47 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var (
-	resourceAttributes1 = pcommon.NewMapFromRaw(map[string]interface{}{"resource-attr": "resource-attr-val-1"})
-	resourceAttributes2 = pcommon.NewMapFromRaw(map[string]interface{}{"resource-attr": "resource-attr-val-2"})
-	spanEventAttributes = pcommon.NewMapFromRaw(map[string]interface{}{"span-event-attr": "span-event-attr-val"})
-	spanLinkAttributes  = pcommon.NewMapFromRaw(map[string]interface{}{"span-link-attr": "span-link-attr-val"})
-	spanAttributes      = pcommon.NewMapFromRaw(map[string]interface{}{"span-attr": "span-attr-val"})
-	metricAttachment    = pcommon.NewMapFromRaw(map[string]interface{}{"exemplar-attachment": "exemplar-attachment-value"})
-)
-
 const (
-	TestLabelKey1   = "label-1"
-	TestLabelValue1 = "label-value-1"
-	TestLabelKey2   = "label-2"
-	TestLabelValue2 = "label-value-2"
-	TestLabelKey3   = "label-3"
-	TestLabelValue3 = "label-value-3"
+	testLabelKey2   = "label-2"
+	testLabelValue2 = "label-value-2"
 )
 
 func initResourceAttributes1(dest pcommon.Map) {
 	dest.Clear()
-	resourceAttributes1.CopyTo(dest)
-}
-
-func initResourceAttributes2(dest pcommon.Map) {
-	dest.Clear()
-	resourceAttributes2.CopyTo(dest)
-}
-
-func initSpanAttributes(dest pcommon.Map) {
-	dest.Clear()
-	spanAttributes.CopyTo(dest)
+	dest.InsertString("resource-attr", "resource-attr-val-1")
 }
 
 func initSpanEventAttributes(dest pcommon.Map) {
 	dest.Clear()
-	spanEventAttributes.CopyTo(dest)
+	dest.InsertString("span-event-attr", "span-event-attr-val")
 }
 
 func initSpanLinkAttributes(dest pcommon.Map) {
 	dest.Clear()
-	spanLinkAttributes.CopyTo(dest)
+	dest.InsertString("span-link-attr", "span-link-attr-val")
 }
 
-func initMetricAttachment(dest pcommon.Map) {
+func initMetricExemplarAttributes(dest pcommon.Map) {
 	dest.Clear()
-	metricAttachment.CopyTo(dest)
+	dest.InsertString("exemplar-attachment", "exemplar-attachment-value")
 }
 
 func initMetricAttributes1(dest pcommon.Map) {
 	dest.Clear()
-	dest.InsertString(TestLabelKey1, TestLabelValue1)
+	dest.InsertString("label-1", "label-value-1")
 }
 
 func initMetricAttributes12(dest pcommon.Map) {
 	initMetricAttributes1(dest)
-	dest.InsertString(TestLabelKey2, TestLabelValue2)
+	dest.InsertString(testLabelKey2, testLabelValue2)
 }
 
 func initMetricAttributes13(dest pcommon.Map) {
 	initMetricAttributes1(dest)
-	dest.InsertString(TestLabelKey3, TestLabelValue3)
+	dest.InsertString("label-3", "label-value-3")
 }
 
 func initMetricAttributes2(dest pcommon.Map) {
 	dest.Clear()
-	dest.InsertString(TestLabelKey2, TestLabelValue2)
+	dest.InsertString(testLabelKey2, testLabelValue2)
 }

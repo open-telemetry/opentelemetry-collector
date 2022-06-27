@@ -22,57 +22,27 @@ import (
 )
 
 var (
-	TestLogTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestLogTimestamp = pcommon.NewTimestampFromTime(TestLogTime)
+	logTimestamp = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC))
 )
 
-func GenerateLogsOneEmptyResourceLogs() plog.Logs {
+func GenerateLogs(count int) plog.Logs {
 	ld := plog.NewLogs()
-	ld.ResourceLogs().AppendEmpty()
+	initResource(ld.ResourceLogs().AppendEmpty().Resource())
+	logs := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords()
+	logs.EnsureCapacity(count)
+	for i := 0; i < count; i++ {
+		switch i % 2 {
+		case 0:
+			fillLogOne(logs.AppendEmpty())
+		case 1:
+			fillLogTwo(logs.AppendEmpty())
+		}
+	}
 	return ld
 }
 
-func GenerateLogsNoLogRecords() plog.Logs {
-	ld := GenerateLogsOneEmptyResourceLogs()
-	initResource1(ld.ResourceLogs().At(0).Resource())
-	return ld
-}
-
-func GenerateLogsOneEmptyLogRecord() plog.Logs {
-	ld := GenerateLogsNoLogRecords()
-	rs0 := ld.ResourceLogs().At(0)
-	rs0.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	return ld
-}
-
-func GenerateLogsOneLogRecord() plog.Logs {
-	ld := GenerateLogsOneEmptyLogRecord()
-	fillLogOne(ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0))
-	return ld
-}
-
-func GenerateLogsTwoLogRecordsSameResource() plog.Logs {
-	ld := GenerateLogsOneEmptyLogRecord()
-	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	fillLogOne(logs.At(0))
-	fillLogTwo(logs.AppendEmpty())
-	return ld
-}
-
-func GenerateLogsTwoLogRecordsSameResourceOneDifferent() plog.Logs {
-	ld := plog.NewLogs()
-	rl0 := ld.ResourceLogs().AppendEmpty()
-	initResource1(rl0.Resource())
-	logs := rl0.ScopeLogs().AppendEmpty().LogRecords()
-	fillLogOne(logs.AppendEmpty())
-	fillLogTwo(logs.AppendEmpty())
-	rl1 := ld.ResourceLogs().AppendEmpty()
-	initResource2(rl1.Resource())
-	fillLogThree(rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
-	return ld
-}
 func fillLogOne(log plog.LogRecord) {
-	log.SetTimestamp(TestLogTimestamp)
+	log.SetTimestamp(logTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberINFO)
 	log.SetSeverityText("Info")
@@ -87,7 +57,7 @@ func fillLogOne(log plog.LogRecord) {
 }
 
 func fillLogTwo(log plog.LogRecord) {
-	log.SetTimestamp(TestLogTimestamp)
+	log.SetTimestamp(logTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberINFO)
 	log.SetSeverityText("Info")
@@ -97,34 +67,4 @@ func fillLogTwo(log plog.LogRecord) {
 	attrs.InsertString("env", "dev")
 
 	log.Body().SetStringVal("something happened")
-}
-
-func fillLogThree(log plog.LogRecord) {
-	log.SetTimestamp(TestLogTimestamp)
-	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberWARN)
-	log.SetSeverityText("Warning")
-
-	log.Body().SetStringVal("something else happened")
-}
-
-func GenerateLogsManyLogRecordsSameResource(count int) plog.Logs {
-	ld := GenerateLogsOneEmptyLogRecord()
-	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	logs.EnsureCapacity(count)
-	for i := 0; i < count; i++ {
-		var l plog.LogRecord
-		if i < logs.Len() {
-			l = logs.At(i)
-		} else {
-			l = logs.AppendEmpty()
-		}
-
-		if i%2 == 0 {
-			fillLogOne(l)
-		} else {
-			fillLogTwo(l)
-		}
-	}
-	return ld
 }

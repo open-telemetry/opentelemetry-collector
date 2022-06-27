@@ -47,7 +47,7 @@ var (
 )
 
 func TestMetricsRequest(t *testing.T) {
-	mr := newMetricsRequest(context.Background(), testdata.GenerateMetricsOneMetric(), nil)
+	mr := newMetricsRequest(context.Background(), testdata.GenerateMetrics(1), nil)
 
 	metricsErr := consumererror.NewMetrics(errors.New("some error"), pmetric.NewMetrics())
 	assert.EqualValues(
@@ -136,7 +136,7 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		// errors are checked in the checkExporterEnqueueFailedMetricsStats function below.
@@ -210,7 +210,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	md := testdata.GenerateMetricsTwoMetrics()
+	md := testdata.GenerateMetrics(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, me.ConsumeMetrics(context.Background(), md))
@@ -226,7 +226,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, me component.MetricsEx
 }
 
 func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me component.MetricsExporter, numRequests int, wantError error) {
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 	ctx, span := tracer.Start(context.Background(), fakeMetricsParentSpanName)
 	defer span.End()
 	for i := 0; i < numRequests; i++ {

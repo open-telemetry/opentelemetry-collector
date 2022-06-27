@@ -24,7 +24,7 @@ import (
 )
 
 func TestSplitLogs_noop(t *testing.T) {
-	td := testdata.GenerateLogsManyLogRecordsSameResource(20)
+	td := testdata.GenerateLogs(20)
 	splitSize := 40
 	split := splitLogs(splitSize, td)
 	assert.Equal(t, td, split)
@@ -38,7 +38,7 @@ func TestSplitLogs_noop(t *testing.T) {
 }
 
 func TestSplitLogs(t *testing.T) {
-	ld := testdata.GenerateLogsManyLogRecordsSameResource(20)
+	ld := testdata.GenerateLogs(20)
 	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(0, i))
@@ -81,13 +81,13 @@ func TestSplitLogs(t *testing.T) {
 }
 
 func TestSplitLogsMultipleResourceLogs(t *testing.T) {
-	td := testdata.GenerateLogsManyLogRecordsSameResource(20)
+	td := testdata.GenerateLogs(20)
 	logs := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(0, i))
 	}
 	// add second index to resource logs
-	testdata.GenerateLogsManyLogRecordsSameResource(20).
+	testdata.GenerateLogs(20).
 		ResourceLogs().At(0).CopyTo(td.ResourceLogs().AppendEmpty())
 	logs = td.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
@@ -103,13 +103,13 @@ func TestSplitLogsMultipleResourceLogs(t *testing.T) {
 }
 
 func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testing.T) {
-	td := testdata.GenerateLogsManyLogRecordsSameResource(20)
+	td := testdata.GenerateLogs(20)
 	logs := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(0, i))
 	}
 	// add second index to resource logs
-	testdata.GenerateLogsManyLogRecordsSameResource(20).
+	testdata.GenerateLogs(20).
 		ResourceLogs().At(0).CopyTo(td.ResourceLogs().AppendEmpty())
 	logs = td.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
@@ -128,7 +128,7 @@ func TestSplitLogsMultipleResourceLogs_split_size_greater_than_log_size(t *testi
 }
 
 func TestSplitLogsMultipleILL(t *testing.T) {
-	td := testdata.GenerateLogsManyLogRecordsSameResource(20)
+	td := testdata.GenerateLogs(20)
 	logs := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < logs.Len(); i++ {
 		logs.At(i).SetSeverityText(getTestLogSeverityText(0, i))
@@ -161,7 +161,7 @@ func BenchmarkSplitLogs(b *testing.B) {
 	md := plog.NewLogs()
 	rms := md.ResourceLogs()
 	for i := 0; i < 20; i++ {
-		testdata.GenerateLogsManyLogRecordsSameResource(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
+		testdata.GenerateLogs(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
 		ms := rms.At(rms.Len() - 1).ScopeLogs().At(0).LogRecords()
 		for i := 0; i < ms.Len(); i++ {
 			ms.At(i).SetSeverityText(getTestLogSeverityText(1, i))

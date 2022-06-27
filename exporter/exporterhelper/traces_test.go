@@ -47,7 +47,7 @@ var (
 )
 
 func TestTracesRequest(t *testing.T) {
-	mr := newTracesRequest(context.Background(), testdata.GenerateTracesOneSpan(), nil)
+	mr := newTracesRequest(context.Background(), testdata.GenerateTraces(1), nil)
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
 	assert.EqualValues(t, newTracesRequest(context.Background(), ptrace.NewTraces(), nil), mr.onError(traceErr))
@@ -134,7 +134,7 @@ func TestTracesExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		// errors are checked in the checkExporterEnqueueFailedTracesStats function below.
@@ -210,7 +210,7 @@ func checkRecordedMetricsForTracesExporter(t *testing.T, te component.TracesExpo
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
 		require.Equal(t, wantError, te.ConsumeTraces(context.Background(), td))

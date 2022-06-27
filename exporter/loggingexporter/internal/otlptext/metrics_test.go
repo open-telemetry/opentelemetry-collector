@@ -33,9 +33,10 @@ func TestMetricsText(t *testing.T) {
 		empty bool
 	}{
 		{"empty metrics", args{pmetric.NewMetrics()}, true},
-		{"metrics with all types and datapoints", args{testdata.GeneratMetricsAllTypesWithSampleDatapoints()}, false},
-		{"metrics with all types without datapoints", args{testdata.GenerateMetricsAllTypesEmptyDataPoint()}, false},
+		{"metrics with all types and datapoints", args{testdata.GenerateMetricsAllTypes()}, false},
+		{"metrics with all types without datapoints", args{testdata.GenerateMetricsAllTypesEmpty()}, false},
 		{"metrics with invalid metric types", args{testdata.GenerateMetricsMetricTypeInvalid()}, false},
+		{"metrics with lots of metrics", args{testdata.GenerateMetrics(10)}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

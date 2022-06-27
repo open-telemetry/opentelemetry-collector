@@ -39,7 +39,7 @@ func TestLogsMultiplexingNonMutating(t *testing.T) {
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
 	assert.False(t, lfc.Capabilities().MutatesData)
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
 		err := lfc.ConsumeLogs(context.Background(), ld)
@@ -72,7 +72,7 @@ func TestLogsMultiplexingMutating(t *testing.T) {
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
 	assert.False(t, lfc.Capabilities().MutatesData)
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
 		err := lfc.ConsumeLogs(context.Background(), ld)
@@ -106,7 +106,7 @@ func TestLogsMultiplexingMixLastMutating(t *testing.T) {
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
 	assert.False(t, lfc.Capabilities().MutatesData)
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
 		err := lfc.ConsumeLogs(context.Background(), ld)
@@ -141,7 +141,7 @@ func TestLogsMultiplexingMixLastNonMutating(t *testing.T) {
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
 	assert.False(t, lfc.Capabilities().MutatesData)
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
 		err := lfc.ConsumeLogs(context.Background(), ld)
@@ -174,7 +174,7 @@ func TestLogsWhenErrors(t *testing.T) {
 	p3 := new(consumertest.LogsSink)
 
 	lfc := NewLogs([]consumer.Logs{p1, p2, p3})
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 
 	for i := 0; i < 2; i++ {
 		assert.Error(t, lfc.ConsumeLogs(context.Background(), ld))
