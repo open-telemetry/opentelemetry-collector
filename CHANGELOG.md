@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated `config.ServiceTelemetry` (#5565)
+- Remove deprecated `config.ServiceTelemetryLogs` (#5565)
+- Remove deprecated `config.ServiceTelemetryMetrics` (#5565)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
+
 ## v0.54.0 Beta
 
 ### 🛑 Breaking changes 🛑

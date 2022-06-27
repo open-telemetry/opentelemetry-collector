@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func TestDecodeConfig(t *testing.T) {
@@ -61,8 +62,8 @@ func TestDecodeConfig(t *testing.T) {
 
 	// Verify Service Telemetry
 	assert.Equal(t,
-		config.ServiceTelemetry{
-			Logs: config.ServiceTelemetryLogs{
+		telemetry.Config{
+			Logs: telemetry.LogsConfig{
 				Level:             zapcore.DebugLevel,
 				Development:       true,
 				Encoding:          "console",
@@ -72,7 +73,7 @@ func TestDecodeConfig(t *testing.T) {
 				ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
 				InitialFields:     map[string]interface{}{"field_key": "filed_value"},
 			},
-			Metrics: config.ServiceTelemetryMetrics{
+			Metrics: telemetry.MetricsConfig{
 				Level:   configtelemetry.LevelNormal,
 				Address: ":8081",
 			},
@@ -202,7 +203,7 @@ func TestDefaultLoggerConfig(t *testing.T) {
 
 	zapProdCfg := zap.NewProductionConfig()
 	assert.Equal(t,
-		config.ServiceTelemetryLogs{
+		telemetry.LogsConfig{
 			Level:             zapProdCfg.Level.Level(),
 			Development:       zapProdCfg.Development,
 			Encoding:          "console",
