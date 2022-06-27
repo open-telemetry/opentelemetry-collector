@@ -28,8 +28,8 @@ type serviceHost struct {
 	factories         component.Factories
 	buildInfo         component.BuildInfo
 
-	pipelines       *pipelines.Pipelines
-	builtExtensions *extensions.BuiltExtensions
+	pipelines  *pipelines.Pipelines
+	extensions *extensions.Extensions
 }
 
 // ReportFatalError is used to report to the host that the receiver encountered
@@ -54,7 +54,7 @@ func (host *serviceHost) GetFactory(kind component.Kind, componentType config.Ty
 }
 
 func (host *serviceHost) GetExtensions() map[config.ComponentID]component.Extension {
-	return host.builtExtensions.GetExtensions()
+	return host.extensions.GetExtensions()
 }
 
 func (host *serviceHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated `config.ServiceTelemetry` (#5565)
+- Remove deprecated `config.ServiceTelemetryLogs` (#5565)
+- Remove deprecated `config.ServiceTelemetryMetrics` (#5565)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
+
 ### 💡 Enhancements 💡
 
 - `exporter/logging`: Skip "bad file descriptor" sync errors (#5585)
@@ -89,6 +99,7 @@
 
 - Fixes the "service.version" label value for internal metrics, always was "latest" in core/contrib distros. (#5449).
 - Send correct batch stats when SendBatchMaxSize is set (#5385)
+- TLS `MinVersion` and `MaxVersion` defaults will be handled by `crypto/tls` (#5480)
 
 ## v0.52.0 Beta
 

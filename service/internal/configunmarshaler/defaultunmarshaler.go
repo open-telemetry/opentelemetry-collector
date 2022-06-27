@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 // These are errors that can be returned by Unmarshal(). Note that error codes are not part
@@ -169,8 +170,8 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 	// Setup default telemetry values as in service/logger.go.
 	// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
 	srv := config.Service{
-		Telemetry: config.ServiceTelemetry{
-			Logs: config.ServiceTelemetryLogs{
+		Telemetry: telemetry.Config{
+			Logs: telemetry.LogsConfig{
 				Level:             zapcore.InfoLevel,
 				Development:       false,
 				Encoding:          "console",
@@ -196,8 +197,8 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 	return srv, nil
 }
 
-func defaultServiceTelemetryMetricsSettings() config.ServiceTelemetryMetrics {
-	return config.ServiceTelemetryMetrics{
+func defaultServiceTelemetryMetricsSettings() telemetry.MetricsConfig {
+	return telemetry.MetricsConfig{
 		Level:   configtelemetry.LevelBasic, //nolint:staticcheck
 		Address: ":8888",
 	}

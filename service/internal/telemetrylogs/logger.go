@@ -20,10 +20,10 @@ import (
 	"go.uber.org/zap/zapgrpc"
 	"google.golang.org/grpc/grpclog"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-func NewLogger(cfg config.ServiceTelemetryLogs, options []zap.Option) (*zap.Logger, error) {
+func NewLogger(cfg telemetry.LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	// Copied from NewProductionConfig.
 	zapCfg := &zap.Config{
 		Level:       zap.NewAtomicLevelAt(cfg.Level),

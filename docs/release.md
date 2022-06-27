@@ -7,7 +7,7 @@ We release both core and contrib collectors with the same versions where the con
 1. The [Contrib](#releasing-opentelemetry-collector-contrib) collector.
 1. The [artifacts](#producing-the-artifacts)
 
-**Important Note:** You’ll need to be able to sign git commits/tags in order to be able to release a collector version. Follow [this guide](https://docs.github.com/en/github/authenticating-to-github/signing-commits) to setup it up.
+**Important Note:** You’ll need to be able to sign git commits/tags in order to be able to release a collector version. Follow [this guide](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) to setup it up.
 
 **Important Note:** You’ll need to be an approver for both the repos in order to be able to make the release. This is required as you’ll need to push tags and commits directly to the following repositories:
 
