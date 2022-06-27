@@ -331,7 +331,7 @@ func buildExporter(
 
 	exp, err := createExporter(ctx, set, cfg, id, pipelineID, factory)
 	if err != nil {
-		return nil, fmt.Errorf("failt to create %q exporter, in pipeline %q: %w", id, pipelineID, err)
+		return nil, fmt.Errorf("failed to create %q exporter, in pipeline %q: %w", id, pipelineID, err)
 	}
 
 	return exp, nil
@@ -412,7 +412,7 @@ func buildProcessor(ctx context.Context,
 
 	proc, err := createProcessor(ctx, set, procCfg, id, pipelineID, next, factory)
 	if err != nil {
-		return nil, fmt.Errorf("failt to create %q processor, in pipeline %q: %w", id, pipelineID, err)
+		return nil, fmt.Errorf("failed to create %q processor, in pipeline %q: %w", id, pipelineID, err)
 	}
 	return proc, nil
 }
@@ -465,7 +465,7 @@ func buildReceiver(ctx context.Context,
 
 	recv, err := createReceiver(ctx, set, cfg, id, pipelineID, nexts, factory)
 	if err != nil {
-		return nil, fmt.Errorf("failt to create %q receiver, in pipeline %q: %w", id, pipelineID, err)
+		return nil, fmt.Errorf("failed to create %q receiver, in pipeline %q: %w", id, pipelineID, err)
 	}
 
 	return recv, nil

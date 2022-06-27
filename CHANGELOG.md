@@ -4,6 +4,18 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated `config.ServiceTelemetry` (#5565)
+- Remove deprecated `config.ServiceTelemetryLogs` (#5565)
+- Remove deprecated `config.ServiceTelemetryMetrics` (#5565)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
+
+## v0.54.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated `GetLogger`. (#5504)
 - Remove deprecated `configtest.LoadConfigMap` (#5505)
 - Remove deprecated `config.Map` (#5505)
@@ -13,14 +25,12 @@
 - Remove deprecated `config.CloseFunc` (#5505)
 - Deprecated `pcommon.Value.NewValueBytes` is brought back taking `pcommon.ImmutableByteSlice` as an argument instead 
   of `[]byte` (#5299)
-- Remove deprecated `config.ServiceTelemetry` (#5565)
-- Remove deprecated `config.ServiceTelemetryLogs` (#5565)
-- Remove deprecated `config.ServiceTelemetryMetrics` (#5565)
+- Deprecated `pcommon.Value.NewValueBytes` is brought back taking `pcommon.ImmutableByteSlice` as an argument instead of `[]byte` (#5299)
 
 ### 🚩 Deprecations 🚩
 
 - Use immutable slices for primitive types slices to restrict mutations. (#5299)
-  - `Value.NewValueMBytes` func is deprecated in favor of Value.NewValueMBytes func that takes
+  - `Value.NewValueMBytes` func is deprecated in favor of `Value.NewValueBytes` func that takes
     `ImmutableByteSlice` instead of `[]byte`
   - `Value.SetMBytesVal` func is deprecated in favor of `Value.SetBytesVal` func that takes
     `pcommon.ImmutableByteSlice` instead of []byte.
@@ -34,7 +44,6 @@
     that takes `pcommon.ImmutableFloat64Slice` instead of []float64.
   - `HistogramDataPoint.MExplicitBounds` func func is deprecated in favor of `HistogramDataPoint.ExplicitBounds`
     returns `pcommon.ImmutableFloat64Slice` instead of []float64.
-- Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
 
 ### 💡 Enhancements 💡
 
@@ -50,6 +59,7 @@
   - Unconfigured receivers are not identified, this was not a real problem in final binaries since the validation of the config catch this.
   - Allow configurations to contain "unused" receivers. Receivers that are configured but not used in any pipeline, this was possible already for exporters and processors.
   - Remove the enforcement/check that Receiver factories create the same instance for the same config.
+
 ## v0.53.0 Beta
 
 ### 🛑 Breaking changes 🛑
@@ -87,6 +97,7 @@
 
 - Fixes the "service.version" label value for internal metrics, always was "latest" in core/contrib distros. (#5449).
 - Send correct batch stats when SendBatchMaxSize is set (#5385)
+- TLS `MinVersion` and `MaxVersion` defaults will be handled by `crypto/tls` (#5480)
 
 ## v0.52.0 Beta
 
