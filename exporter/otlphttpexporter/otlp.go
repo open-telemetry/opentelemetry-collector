@@ -61,7 +61,7 @@ const (
 	maxHTTPResponseReadBytes = 64 * 1024
 )
 
-// Crete new exporter.
+// Create new exporter.
 func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 

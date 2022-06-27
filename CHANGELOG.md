@@ -45,6 +45,7 @@
 
 ### 💡 Enhancements 💡
 
+- Deprecate `HTTPClientSettings.ToClient` in favor of `HTTPClientSettings.ToClientWithHost` (#5584)
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
 - Update OTLP to v0.18.0 (#5530)
 - Log histogram min/max fields with `logging` exporter (#5520)

@@ -99,6 +99,7 @@ func NewDefaultHTTPClientSettings() HTTPClientSettings {
 }
 
 // ToClient creates an HTTP client.
+// Deprecated: [v0.55.0] Use ToClientWithHost instead.
 func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
@@ -181,6 +182,11 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
 	}, nil
+}
+
+// ToClientWithHost creates an HTTP client.
+func (hcs *HTTPClientSettings) ToClientWithHost(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	return hcs.ToClient(host.GetExtensions(), settings)
 }
 
 // Custom RoundTripper that adds headers.
