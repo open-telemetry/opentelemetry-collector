@@ -133,7 +133,19 @@ type ReceiverFactory interface {
 }
 
 // ReceiverFactoryOption apply changes to ReceiverOptions.
-type ReceiverFactoryOption func(o *receiverFactory)
+type ReceiverFactoryOption interface {
+	// applyReceiverFactoryOption applies the option.
+	applyReceiverFactoryOption(o *receiverFactory)
+}
+
+var _ ReceiverFactoryOption = (*receiverFactoryOptionFunc)(nil)
+
+// receiverFactoryOptionFunc is an ReceiverFactoryOption created through a function.
+type receiverFactoryOptionFunc func(*receiverFactory)
+
+func (f receiverFactoryOptionFunc) applyReceiverFactoryOption(o *receiverFactory) {
+	f(o)
+}
 
 // ReceiverCreateDefaultConfigFunc is the equivalent of ReceiverFactory.CreateDefaultConfig().
 type ReceiverCreateDefaultConfigFunc func() config.Receiver
@@ -200,23 +212,23 @@ type receiverFactory struct {
 
 // WithTracesReceiver overrides the default "error not supported" implementation for CreateTracesReceiver.
 func WithTracesReceiver(createTracesReceiver CreateTracesReceiverFunc) ReceiverFactoryOption {
-	return func(o *receiverFactory) {
+	return receiverFactoryOptionFunc(func(o *receiverFactory) {
 		o.CreateTracesReceiverFunc = createTracesReceiver
-	}
+	})
 }
 
 // WithMetricsReceiver overrides the default "error not supported" implementation for CreateMetricsReceiver.
 func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiverFunc) ReceiverFactoryOption {
-	return func(o *receiverFactory) {
+	return receiverFactoryOptionFunc(func(o *receiverFactory) {
 		o.CreateMetricsReceiverFunc = createMetricsReceiver
-	}
+	})
 }
 
 // WithLogsReceiver overrides the default "error not supported" implementation for CreateLogsReceiver.
 func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc) ReceiverFactoryOption {
-	return func(o *receiverFactory) {
+	return receiverFactoryOptionFunc(func(o *receiverFactory) {
 		o.CreateLogsReceiverFunc = createLogsReceiver
-	}
+	})
 }
 
 // NewReceiverFactory returns a ReceiverFactory.
@@ -226,7 +238,7 @@ func NewReceiverFactory(cfgType config.Type, createDefaultConfig ReceiverCreateD
 		ReceiverCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
-		opt(f)
+		opt.applyReceiverFactoryOption(f)
 	}
 	return f
 }

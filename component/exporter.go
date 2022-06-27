@@ -85,7 +85,19 @@ type ExporterFactory interface {
 }
 
 // ExporterFactoryOption apply changes to ExporterOptions.
-type ExporterFactoryOption func(o *exporterFactory)
+type ExporterFactoryOption interface {
+	// applyExporterFactoryOption applies the option.
+	applyExporterFactoryOption(o *exporterFactory)
+}
+
+var _ ExporterFactoryOption = (*exporterFactoryOptionFunc)(nil)
+
+// exporterFactoryOptionFunc is an ExporterFactoryOption created through a function.
+type exporterFactoryOptionFunc func(*exporterFactory)
+
+func (f exporterFactoryOptionFunc) applyExporterFactoryOption(o *exporterFactory) {
+	f(o)
+}
 
 // ExporterCreateDefaultConfigFunc is the equivalent of ExporterFactory.CreateDefaultConfig().
 type ExporterCreateDefaultConfigFunc func() config.Exporter
@@ -138,23 +150,23 @@ type exporterFactory struct {
 
 // WithTracesExporter overrides the default "error not supported" implementation for CreateTracesExporter.
 func WithTracesExporter(createTracesExporter CreateTracesExporterFunc) ExporterFactoryOption {
-	return func(o *exporterFactory) {
+	return exporterFactoryOptionFunc(func(o *exporterFactory) {
 		o.CreateTracesExporterFunc = createTracesExporter
-	}
+	})
 }
 
 // WithMetricsExporter overrides the default "error not supported" implementation for CreateMetricsExporter.
 func WithMetricsExporter(createMetricsExporter CreateMetricsExporterFunc) ExporterFactoryOption {
-	return func(o *exporterFactory) {
+	return exporterFactoryOptionFunc(func(o *exporterFactory) {
 		o.CreateMetricsExporterFunc = createMetricsExporter
-	}
+	})
 }
 
 // WithLogsExporter overrides the default "error not supported" implementation for CreateLogsExporter.
 func WithLogsExporter(createLogsExporter CreateLogsExporterFunc) ExporterFactoryOption {
-	return func(o *exporterFactory) {
+	return exporterFactoryOptionFunc(func(o *exporterFactory) {
 		o.CreateLogsExporterFunc = createLogsExporter
-	}
+	})
 }
 
 // NewExporterFactory returns a ExporterFactory.
@@ -164,7 +176,7 @@ func NewExporterFactory(cfgType config.Type, createDefaultConfig ExporterCreateD
 		ExporterCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
-		opt(f)
+		opt.applyExporterFactoryOption(f)
 	}
 	return f
 }
