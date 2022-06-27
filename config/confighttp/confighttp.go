@@ -99,6 +99,7 @@ func NewDefaultHTTPClientSettings() HTTPClientSettings {
 }
 
 // ToClient creates an HTTP client.
+// Deprecated: [v0.55.0] Use ToClientWithHost instead.
 func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
@@ -185,87 +186,7 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 
 // ToClientWithHost creates an HTTP client.
 func (hcs *HTTPClientSettings) ToClientWithHost(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
-	if err != nil {
-		return nil, err
-	}
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	if tlsCfg != nil {
-		transport.TLSClientConfig = tlsCfg
-	}
-	if hcs.ReadBufferSize > 0 {
-		transport.ReadBufferSize = hcs.ReadBufferSize
-	}
-	if hcs.WriteBufferSize > 0 {
-		transport.WriteBufferSize = hcs.WriteBufferSize
-	}
-
-	if hcs.MaxIdleConns != nil {
-		transport.MaxIdleConns = *hcs.MaxIdleConns
-	}
-
-	if hcs.MaxIdleConnsPerHost != nil {
-		transport.MaxIdleConnsPerHost = *hcs.MaxIdleConnsPerHost
-	}
-
-	if hcs.MaxConnsPerHost != nil {
-		transport.MaxConnsPerHost = *hcs.MaxConnsPerHost
-	}
-
-	if hcs.IdleConnTimeout != nil {
-		transport.IdleConnTimeout = *hcs.IdleConnTimeout
-	}
-
-	clientTransport := (http.RoundTripper)(transport)
-	if len(hcs.Headers) > 0 {
-		clientTransport = &headerRoundTripper{
-			transport: transport,
-			headers:   hcs.Headers,
-		}
-	}
-	// wrapping http transport with otelhttp transport to enable otel instrumenetation
-	if settings.TracerProvider != nil && settings.MeterProvider != nil {
-		clientTransport = otelhttp.NewTransport(
-			clientTransport,
-			otelhttp.WithTracerProvider(settings.TracerProvider),
-			otelhttp.WithMeterProvider(settings.MeterProvider),
-			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-		)
-	}
-
-	// Compress the body using specified compression methods if non-empty string is provided.
-	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
-	if configcompression.IsCompressed(hcs.Compression) {
-		clientTransport = newCompressRoundTripper(clientTransport, hcs.Compression)
-	}
-
-	if hcs.Auth != nil {
-		if host.GetExtensions() == nil {
-			return nil, errors.New("extensions configuration not found")
-		}
-
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(host.GetExtensions())
-		if aerr != nil {
-			return nil, aerr
-		}
-
-		clientTransport, err = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if hcs.CustomRoundTripper != nil {
-		clientTransport, err = hcs.CustomRoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &http.Client{
-		Transport: clientTransport,
-		Timeout:   hcs.Timeout,
-	}, nil
+	return hcs.ToClient(host.GetExtensions(), settings)
 }
 
 // Custom RoundTripper that adds headers.
