@@ -17,6 +17,8 @@ package config // import "go.opentelemetry.io/collector/config"
 import (
 	"errors"
 	"fmt"
+
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 var (
@@ -147,3 +149,27 @@ func (cfg *Config) validateService() error {
 	}
 	return nil
 }
+
+// Service defines the configurable components of the service.
+// Deprecated: [v0.52.0] Use service.ConfigService
+type Service struct {
+	// Telemetry is the configuration for collector's own telemetry.
+	Telemetry telemetry.Config `mapstructure:"telemetry"`
+
+	// Extensions are the ordered list of extensions configured for the service.
+	Extensions []ComponentID `mapstructure:"extensions"`
+
+	// Pipelines are the set of data pipelines configured for the service.
+	Pipelines map[ComponentID]*Pipeline `mapstructure:"pipelines"`
+}
+
+// Pipeline defines a single pipeline.
+// Deprecated: [v0.52.0] Use service.ConfigServicePipeline
+type Pipeline struct {
+	Receivers  []ComponentID `mapstructure:"receivers"`
+	Processors []ComponentID `mapstructure:"processors"`
+	Exporters  []ComponentID `mapstructure:"exporters"`
+}
+
+// Deprecated: [v0.52.0] will be removed soon.
+type Pipelines = map[ComponentID]*Pipeline

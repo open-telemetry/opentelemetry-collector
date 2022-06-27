@@ -58,7 +58,7 @@ func flags() *flag.FlagSet {
 	flagSet.Var(
 		gatesList,
 		"feature-gates",
-		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature.  '+' or no prefix will enable the feature.")
+		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
 	return flagSet
 }

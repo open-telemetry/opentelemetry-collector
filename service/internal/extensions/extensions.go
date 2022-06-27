@@ -31,14 +31,14 @@ import (
 
 const zExtensionName = "zextensionname"
 
-// BuiltExtensions is a map of extensions created from extension configs.
-type BuiltExtensions struct {
+// Extensions is a map of extensions created from extension configs.
+type Extensions struct {
 	telemetry component.TelemetrySettings
 	extMap    map[config.ComponentID]component.Extension
 }
 
 // StartAll starts all extensions.
-func (bes *BuiltExtensions) StartAll(ctx context.Context, host component.Host) error {
+func (bes *Extensions) StartAll(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for extID, ext := range bes.extMap {
 		extLogger := extensionLogger(bes.telemetry.Logger, extID)
@@ -52,7 +52,7 @@ func (bes *BuiltExtensions) StartAll(ctx context.Context, host component.Host) e
 }
 
 // ShutdownAll stops all extensions.
-func (bes *BuiltExtensions) ShutdownAll(ctx context.Context) error {
+func (bes *Extensions) ShutdownAll(ctx context.Context) error {
 	bes.telemetry.Logger.Info("Stopping extensions...")
 	var errs error
 	for _, ext := range bes.extMap {
@@ -62,7 +62,7 @@ func (bes *BuiltExtensions) ShutdownAll(ctx context.Context) error {
 	return errs
 }
 
-func (bes *BuiltExtensions) NotifyPipelineReady() error {
+func (bes *Extensions) NotifyPipelineReady() error {
 	for extID, ext := range bes.extMap {
 		if pw, ok := ext.(component.PipelineWatcher); ok {
 			if err := pw.Ready(); err != nil {
@@ -73,7 +73,7 @@ func (bes *BuiltExtensions) NotifyPipelineReady() error {
 	return nil
 }
 
-func (bes *BuiltExtensions) NotifyPipelineNotReady() error {
+func (bes *Extensions) NotifyPipelineNotReady() error {
 	// Notify extensions in reverse order.
 	var errs error
 	for _, ext := range bes.extMap {
@@ -84,7 +84,7 @@ func (bes *BuiltExtensions) NotifyPipelineNotReady() error {
 	return errs
 }
 
-func (bes *BuiltExtensions) GetExtensions() map[config.ComponentID]component.Extension {
+func (bes *Extensions) GetExtensions() map[config.ComponentID]component.Extension {
 	result := make(map[config.ComponentID]component.Extension, len(bes.extMap))
 	for extID, v := range bes.extMap {
 		result[extID] = v
@@ -92,7 +92,7 @@ func (bes *BuiltExtensions) GetExtensions() map[config.ComponentID]component.Ext
 	return result
 }
 
-func (bes *BuiltExtensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
+func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 	extensionName := r.URL.Query().Get(zExtensionName)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -118,7 +118,7 @@ func (bes *BuiltExtensions) HandleZPages(w http.ResponseWriter, r *http.Request)
 	zpages.WriteHTMLPageFooter(w)
 }
 
-// Build builds BuiltExtensions from config.
+// Build builds Extensions from config.
 func Build(
 	ctx context.Context,
 	settings component.TelemetrySettings,
@@ -126,8 +126,8 @@ func Build(
 	extensionsConfigs map[config.ComponentID]config.Extension,
 	serviceExtensions []config.ComponentID,
 	factories map[config.Type]component.ExtensionFactory,
-) (*BuiltExtensions, error) {
-	exts := &BuiltExtensions{
+) (*Extensions, error) {
+	exts := &Extensions{
 		telemetry: settings,
 		extMap:    make(map[config.ComponentID]component.Extension),
 	}

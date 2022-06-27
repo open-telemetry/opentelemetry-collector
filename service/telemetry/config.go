@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"go.uber.org/zap/zapcore"
@@ -20,38 +20,22 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// Service defines the configurable components of the service.
-// Deprecated: [v0.52.0] Use service.ConfigService
-type Service struct {
-	// Telemetry is the configuration for collector's own telemetry.
-	Telemetry ServiceTelemetry `mapstructure:"telemetry"`
-
-	// Extensions are the ordered list of extensions configured for the service.
-	Extensions []ComponentID `mapstructure:"extensions"`
-
-	// Pipelines are the set of data pipelines configured for the service.
-	Pipelines map[ComponentID]*Pipeline `mapstructure:"pipelines"`
-}
-
-// ServiceTelemetry defines the configurable settings for service telemetry.
-// Deprecated: [v0.52.0] Use service.ConfigServiceTelemetry
-type ServiceTelemetry struct {
-	Logs    ServiceTelemetryLogs    `mapstructure:"logs"`
-	Metrics ServiceTelemetryMetrics `mapstructure:"metrics"`
+// Config defines the configurable settings for service telemetry.
+type Config struct {
+	Logs    LogsConfig    `mapstructure:"logs"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
 
 	// Resource specifies user-defined attributes to include with all emitted telemetry.
-	// For metrics the attributes become Prometheus labels.
 	// Note that some attributes are added automatically (e.g. service.version) even
 	// if they are not specified here. In order to suppress such attributes the
 	// attribute must be specified in this map with null YAML value (nil string pointer).
 	Resource map[string]*string `mapstructure:"resource"`
 }
 
-// ServiceTelemetryLogs defines the configurable settings for service telemetry logs.
+// LogsConfig defines the configurable settings for service telemetry logs.
 // This MUST be compatible with zap.Config. Cannot use directly zap.Config because
 // the collector uses mapstructure and not yaml tags.
-// Deprecated: [v0.52.0] Use service.ConfigServiceTelemetryLogs
-type ServiceTelemetryLogs struct {
+type LogsConfig struct {
 	// Level is the minimum enabled logging level.
 	// (default = "INFO")
 	Level zapcore.Level `mapstructure:"level"`
@@ -106,10 +90,9 @@ type ServiceTelemetryLogs struct {
 	InitialFields map[string]interface{} `mapstructure:"initial_fields"`
 }
 
-// ServiceTelemetryMetrics exposes the common Telemetry configuration for one component.
+// MetricsConfig exposes the common Telemetry configuration for one component.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
-// Deprecated: [v0.52.0] Use service.ConfigServiceTelemetryMetrics
-type ServiceTelemetryMetrics struct {
+type MetricsConfig struct {
 	// Level is the level of telemetry metrics, the possible values are:
 	//  - "none" indicates that no telemetry data should be collected;
 	//  - "basic" is the recommended and covers the basics of the service telemetry.
@@ -120,14 +103,3 @@ type ServiceTelemetryMetrics struct {
 	// Address is the [address]:port that metrics exposition should be bound to.
 	Address string `mapstructure:"address"`
 }
-
-// Pipeline defines a single pipeline.
-// Deprecated: [v0.52.0] Use service.ConfigServicePipeline
-type Pipeline struct {
-	Receivers  []ComponentID `mapstructure:"receivers"`
-	Processors []ComponentID `mapstructure:"processors"`
-	Exporters  []ComponentID `mapstructure:"exporters"`
-}
-
-// Deprecated: [v0.52.0] will be removed soon.
-type Pipelines = map[ComponentID]*Pipeline

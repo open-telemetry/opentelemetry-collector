@@ -120,7 +120,7 @@ Here is a list of community roles with current and previous members:
 - Emeritus Triagers:
 
    - [Andrew Hsu](https://github.com/andrewhsu), Lightstep
-   - [Alolita Sharma](https://github.com/alolita), AWS
+   - [Alolita Sharma](https://github.com/alolita), Apple
    - [Punya Biswal](https://github.com/punya), Google
    - [Steve Flanders](https://github.com/flands), Splunk
 
