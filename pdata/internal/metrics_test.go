@@ -696,10 +696,15 @@ func TestMetricsDataPointFlags(t *testing.T) {
 	assert.False(t, gauge.DataPoints().At(0).Flags().NoRecordedValue())
 	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).Flags().String())
 
-	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags().SetNoRecordedValue())
+	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags().SetNoRecordedValue(true))
 	assert.False(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
 	assert.True(t, gauge.DataPoints().At(0).Flags().NoRecordedValue())
 	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(0).Flags().String())
+	assert.True(t, gauge.DataPoints().At(0).Flags().SetNoRecordedValue(false) == MetricDataPointFlagsNone)
+	assert.False(t, gauge.DataPoints().At(0).Flags().SetNoRecordedValue(false).NoRecordedValue())
+
+	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags())
+	assert.True(t, gauge.DataPoints().At(0).Flags().SetNoRecordedValue(false) == MetricDataPointFlagsNone)
 }
 
 func BenchmarkMetricsClone(b *testing.B) {

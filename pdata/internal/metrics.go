@@ -202,8 +202,11 @@ func (d MetricDataPointFlags) NoRecordedValue() bool {
 	return d&MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
 }
 
-func (d MetricDataPointFlags) SetNoRecordedValue() MetricDataPointFlags {
-	return d | MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+func (d MetricDataPointFlags) SetNoRecordedValue(set bool) MetricDataPointFlags {
+	if set {
+		return d | MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+	}
+	return d &^ MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 }
 
 // String returns the string representation of the MetricDataPointFlags.
