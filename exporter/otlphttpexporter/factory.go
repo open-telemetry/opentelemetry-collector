@@ -30,8 +30,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr   = "otlphttp"
-	stability = component.StabilityLevelBeta
+	typeStr = "otlphttp"
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -39,14 +38,10 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter),
-		component.WithExporterStabilityLevel(map[config.Type]component.StabilityLevel{
-			config.LogsDataType:    component.StabilityLevelBeta,
-			config.TracesDataType:  component.StabilityLevelStable,
-			config.MetricsDataType: component.StabilityLevelStable,
-		}))
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, component.StabilityLevelStable),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, component.StabilityLevelStable),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, component.StabilityLevelBeta),
+	)
 }
 
 func createDefaultConfig() config.Exporter {

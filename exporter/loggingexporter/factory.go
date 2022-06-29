@@ -36,14 +36,10 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter),
-		component.WithExporterStabilityLevel(map[config.Type]component.StabilityLevel{
-			config.LogsDataType:    component.StabilityLevelInDevelopment,
-			config.TracesDataType:  component.StabilityLevelInDevelopment,
-			config.MetricsDataType: component.StabilityLevelInDevelopment,
-		}))
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, component.StabilityLevelInDevelopment),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, component.StabilityLevelInDevelopment),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, component.StabilityLevelInDevelopment),
+	)
 }
 
 func createDefaultConfig() config.Exporter {

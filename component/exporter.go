@@ -149,37 +149,57 @@ type exporterFactory struct {
 }
 
 // WithTracesExporter overrides the default "error not supported" implementation for CreateTracesExporter.
+// Deprecated: [v0.55.0] Use WithTracesExporterAndStabilityLevel instead.
 func WithTracesExporter(createTracesExporter CreateTracesExporterFunc) ExporterFactoryOption {
 	return exporterFactoryOptionFunc(func(o *exporterFactory) {
 		o.CreateTracesExporterFunc = createTracesExporter
 	})
 }
 
+// WithTracesExporterAndStabilityLevel overrides the default "error not supported" implementation for CreateTracesExporter and the default "undefined" stability level.
+func WithTracesExporterAndStabilityLevel(createTracesExporter CreateTracesExporterFunc, sl StabilityLevel) ExporterFactoryOption {
+	return exporterFactoryOptionFunc(func(o *exporterFactory) {
+		o.stability[config.TracesDataType] = sl
+		o.CreateTracesExporterFunc = createTracesExporter
+	})
+}
+
 // WithMetricsExporter overrides the default "error not supported" implementation for CreateMetricsExporter.
+// Deprecated: [v0.55.0] Use WithMetricsExporterAndStabilityLevel instead.
 func WithMetricsExporter(createMetricsExporter CreateMetricsExporterFunc) ExporterFactoryOption {
 	return exporterFactoryOptionFunc(func(o *exporterFactory) {
 		o.CreateMetricsExporterFunc = createMetricsExporter
 	})
 }
 
+// WithMetricsExporterAndStabilityLevel overrides the default "error not supported" implementation for CreateMetricsExporter and the default "undefined" stability level.
+func WithMetricsExporterAndStabilityLevel(createMetricsExporter CreateMetricsExporterFunc, sl StabilityLevel) ExporterFactoryOption {
+	return exporterFactoryOptionFunc(func(o *exporterFactory) {
+		o.stability[config.MetricsDataType] = sl
+		o.CreateMetricsExporterFunc = createMetricsExporter
+	})
+}
+
 // WithLogsExporter overrides the default "error not supported" implementation for CreateLogsExporter.
+// Deprecated: [v0.55.0] Use WithLogsExporterAndStabilityLevel instead.
 func WithLogsExporter(createLogsExporter CreateLogsExporterFunc) ExporterFactoryOption {
 	return exporterFactoryOptionFunc(func(o *exporterFactory) {
 		o.CreateLogsExporterFunc = createLogsExporter
 	})
 }
 
-// WithExporterStabiityLevel overrides the default "unmaintained" stability level.
-func WithExporterStabilityLevel(sl map[config.Type]StabilityLevel) ExporterFactoryOption {
-	return func(o *exporterFactory) {
-		o.stability = sl
-	}
+// WithLogsExporterAndStabilityLevel overrides the default "error not supported" implementation for CreateLogsExporter and the default "undefined" stability level.
+func WithLogsExporterAndStabilityLevel(createLogsExporter CreateLogsExporterFunc, sl StabilityLevel) ExporterFactoryOption {
+	return exporterFactoryOptionFunc(func(o *exporterFactory) {
+		o.stability[config.LogsDataType] = sl
+		o.CreateLogsExporterFunc = createLogsExporter
+	})
 }
 
 // NewExporterFactory returns a ExporterFactory.
 func NewExporterFactory(cfgType config.Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
 	f := &exporterFactory{
-		baseFactory:                     baseFactory{cfgType: cfgType},
+		baseFactory:                     baseFactory{cfgType: cfgType, stability: map[config.Type]StabilityLevel{}},
 		ExporterCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {

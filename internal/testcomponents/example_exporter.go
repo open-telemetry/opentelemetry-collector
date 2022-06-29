@@ -39,14 +39,10 @@ type ExampleExporterConfig struct {
 var ExampleExporterFactory = component.NewExporterFactory(
 	typeStr,
 	createExporterDefaultConfig,
-	component.WithTracesExporter(createTracesExporter),
-	component.WithMetricsExporter(createMetricsExporter),
-	component.WithLogsExporter(createLogsExporter),
-	component.WithExporterStabilityLevel(map[config.Type]component.StabilityLevel{
-		config.LogsDataType:    component.StabilityLevelInDevelopment,
-		config.TracesDataType:  component.StabilityLevelInDevelopment,
-		config.MetricsDataType: component.StabilityLevelInDevelopment,
-	}))
+	component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
+	component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
+	component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
+)
 
 func createExporterDefaultConfig() config.Exporter {
 	return &ExampleExporterConfig{

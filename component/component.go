@@ -147,7 +147,7 @@ type Factory interface {
 	Type() config.Type
 
 	// StabilityLevel gets the stability level of the component.
-	StabilityLevel(config.Type) StabilityLevel
+	StabilityLevel(config.DataType) StabilityLevel
 
 	unexportedFactoryFunc()
 }
@@ -163,8 +163,8 @@ func (bf baseFactory) Type() config.Type {
 	return bf.cfgType
 }
 
-func (bf baseFactory) StabilityLevel(cfgType config.Type) StabilityLevel {
-	if val, ok := bf.stability[cfgType]; ok {
+func (bf baseFactory) StabilityLevel(dt config.DataType) StabilityLevel {
+	if val, ok := bf.stability[dt]; ok {
 		return val
 	}
 	return StabilityLevelUndefined
