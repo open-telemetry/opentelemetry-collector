@@ -61,7 +61,11 @@ const (
 
 // NewMetricDataPointFlags returns a new MetricDataPointFlags combining the flags passed
 // in as parameters.
+// Deprecated: [0.55.0] Use NewEmptyMetricDataPointFlags instead.
 var NewMetricDataPointFlags = internal.NewMetricDataPointFlags
+
+// NewEmptyMetricDataPointFlags returns a new empty MetricDataPointFlags.
+var NewEmptyMetricDataPointFlags = internal.NewEmptyMetricDataPointFlags
 
 // MetricDataPointFlag allow users to configure DataPointFlags. This is achieved via NewMetricDataPointFlags.
 // The separation between MetricDataPointFlags and MetricDataPointFlag exists to prevent users accidentally

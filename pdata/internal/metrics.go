@@ -192,8 +192,30 @@ const (
 	MetricDataPointFlagsNone = MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NONE)
 )
 
-// NewMetricDataPointFlags returns a new MetricDataPointFlags with no flags set.
-func NewMetricDataPointFlags() MetricDataPointFlags {
+// NewMetricDataPointFlags returns a new MetricDataPointFlags combining the flags passed
+// in as parameters.
+// Deprecated: [0.55.0] Use NewEmptyMetricDataPointFlags and SetNoRecordedValue instead.
+func NewMetricDataPointFlags(flags ...MetricDataPointFlag) MetricDataPointFlags {
+	var flag MetricDataPointFlags
+	for _, f := range flags {
+		flag |= MetricDataPointFlags(f)
+	}
+	return flag
+}
+
+// HasFlag returns true if the MetricDataPointFlags contains the specified flag
+// Deprecated: [0.55.0] Use NoRecordedValue instead.
+func (d MetricDataPointFlags) HasFlag(flag MetricDataPointFlag) bool {
+	return d&MetricDataPointFlags(flag) != 0
+}
+
+// String returns the string representation of the MetricDataPointFlags.
+func (d MetricDataPointFlags) String() string {
+	return otlpmetrics.DataPointFlags(d).String()
+}
+
+// NewEmptyMetricDataPointFlags returns a new MetricDataPointFlags with no flags set.
+func NewEmptyMetricDataPointFlags() MetricDataPointFlags {
 	return MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NONE)
 }
 
@@ -202,16 +224,13 @@ func (d MetricDataPointFlags) NoRecordedValue() bool {
 	return d&MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
 }
 
+// SetNoRecordedValue sets the FLAG_NO_RECORDED_VALUE flag if true and removes it if false.
+// A new MetricDataPointFlags is returned.
 func (d MetricDataPointFlags) SetNoRecordedValue(set bool) MetricDataPointFlags {
 	if set {
 		return d | MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 	}
 	return d &^ MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
-}
-
-// String returns the string representation of the MetricDataPointFlags.
-func (d MetricDataPointFlags) String() string {
-	return otlpmetrics.DataPointFlags(d).String()
 }
 
 // MetricDataPointFlag allow users to configure DataPointFlags. This is achieved via NewMetricDataPointFlags.

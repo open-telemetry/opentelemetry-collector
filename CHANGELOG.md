@@ -11,6 +11,7 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
+- Deprecate `NewMetricDataPointFlags` and `HasFlag` (#5602)
 
 ## v0.54.0 Beta
 
