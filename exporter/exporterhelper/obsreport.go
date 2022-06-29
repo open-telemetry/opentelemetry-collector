@@ -58,7 +58,7 @@ func newInstruments(registry *metric.Registry) *instruments {
 
 	insts.queueCapacity, _ = registry.AddInt64DerivedGauge(
 		obsmetrics.ExporterKey+"/queue_capacity",
-		metric.WithDescription("Current capacity of the retry queue (in batches)"),
+		metric.WithDescription("Fixed capacity of the retry queue (in batches)"),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
