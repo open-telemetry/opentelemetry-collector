@@ -12,6 +12,10 @@
 
 - Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
 
+### 🧰 Bug fixes 🧰
+
+- Fix initialization of the OpenTelemetry MetricProvider. (#5571)
+
 ## v0.54.0 Beta
 
 ### 🛑 Breaking changes 🛑
