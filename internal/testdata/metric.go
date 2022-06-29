@@ -22,14 +22,9 @@ import (
 )
 
 var (
-	TestMetricStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestMetricStartTimestamp = pcommon.NewTimestampFromTime(TestMetricStartTime)
-
-	TestMetricExemplarTime      = time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC)
-	TestMetricExemplarTimestamp = pcommon.NewTimestampFromTime(TestMetricExemplarTime)
-
-	TestMetricTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestMetricTimestamp = pcommon.NewTimestampFromTime(TestMetricTime)
+	metricStartTimestamp    = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC))
+	metricExemplarTimestamp = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 123, time.UTC))
+	metricTimestamp         = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC))
 )
 
 const (
@@ -42,44 +37,16 @@ const (
 	TestSummaryMetricName              = "summary"
 )
 
-func GenerateMetricsOneEmptyResourceMetrics() pmetric.Metrics {
+func generateMetricsOneEmptyInstrumentationScope() pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	md.ResourceMetrics().AppendEmpty()
-	return md
-}
-
-func GenerateMetricsNoLibraries() pmetric.Metrics {
-	md := GenerateMetricsOneEmptyResourceMetrics()
-	ms0 := md.ResourceMetrics().At(0)
-	initResource1(ms0.Resource())
-	return md
-}
-
-func GenerateMetricsOneEmptyInstrumentationScope() pmetric.Metrics {
-	md := GenerateMetricsNoLibraries()
+	initResource(md.ResourceMetrics().AppendEmpty().Resource())
 	md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
 	return md
 }
 
-func GenerateMetricsOneMetric() pmetric.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationScope()
-	rm0ils0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	return md
-}
-
-func GenerateMetricsTwoMetrics() pmetric.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationScope()
-	rm0ils0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	return md
-}
-
-func GenerateMetricsAllTypesEmptyDataPoint() pmetric.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationScope()
-	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	ms := ilm0.Metrics()
+func GenerateMetricsAllTypesEmpty() pmetric.Metrics {
+	md := generateMetricsOneEmptyInstrumentationScope()
+	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
 	doubleGauge := ms.AppendEmpty()
 	initMetric(doubleGauge, TestGaugeDoubleMetricName, pmetric.MetricDataTypeGauge)
@@ -103,17 +70,14 @@ func GenerateMetricsAllTypesEmptyDataPoint() pmetric.Metrics {
 }
 
 func GenerateMetricsMetricTypeInvalid() pmetric.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationScope()
-	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	initMetric(ilm0.Metrics().AppendEmpty(), TestSumIntMetricName, pmetric.MetricDataTypeNone)
+	md := generateMetricsOneEmptyInstrumentationScope()
+	initMetric(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty(), TestSumIntMetricName, pmetric.MetricDataTypeNone)
 	return md
 }
 
-func GeneratMetricsAllTypesWithSampleDatapoints() pmetric.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationScope()
-
-	ilm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	ms := ilm.Metrics()
+func GenerateMetricsAllTypes() pmetric.Metrics {
+	md := generateMetricsOneEmptyInstrumentationScope()
+	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	initGaugeIntMetric(ms.AppendEmpty())
 	initGaugeDoubleMetric(ms.AppendEmpty())
 	initSumIntMetric(ms.AppendEmpty())
@@ -124,19 +88,44 @@ func GeneratMetricsAllTypesWithSampleDatapoints() pmetric.Metrics {
 	return md
 }
 
+func GenerateMetrics(count int) pmetric.Metrics {
+	md := generateMetricsOneEmptyInstrumentationScope()
+	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	ms.EnsureCapacity(count)
+	for i := 0; i < count; i++ {
+		switch i % 7 {
+		case 0:
+			initGaugeIntMetric(ms.AppendEmpty())
+		case 1:
+			initGaugeDoubleMetric(ms.AppendEmpty())
+		case 2:
+			initSumIntMetric(ms.AppendEmpty())
+		case 3:
+			initSumDoubleMetric(ms.AppendEmpty())
+		case 4:
+			initHistogramMetric(ms.AppendEmpty())
+		case 5:
+			initExponentialHistogramMetric(ms.AppendEmpty())
+		case 6:
+			initSummaryMetric(ms.AppendEmpty())
+		}
+	}
+	return md
+}
+
 func initGaugeIntMetric(im pmetric.Metric) {
 	initMetric(im, TestGaugeIntMetricName, pmetric.MetricDataTypeGauge)
 
 	idps := im.Gauge().DataPoints()
 	idp0 := idps.AppendEmpty()
 	initMetricAttributes1(idp0.Attributes())
-	idp0.SetStartTimestamp(TestMetricStartTimestamp)
-	idp0.SetTimestamp(TestMetricTimestamp)
+	idp0.SetStartTimestamp(metricStartTimestamp)
+	idp0.SetTimestamp(metricTimestamp)
 	idp0.SetIntVal(123)
 	idp1 := idps.AppendEmpty()
 	initMetricAttributes2(idp1.Attributes())
-	idp1.SetStartTimestamp(TestMetricStartTimestamp)
-	idp1.SetTimestamp(TestMetricTimestamp)
+	idp1.SetStartTimestamp(metricStartTimestamp)
+	idp1.SetTimestamp(metricTimestamp)
 	idp1.SetIntVal(456)
 }
 
@@ -146,13 +135,13 @@ func initGaugeDoubleMetric(im pmetric.Metric) {
 	idps := im.Gauge().DataPoints()
 	idp0 := idps.AppendEmpty()
 	initMetricAttributes12(idp0.Attributes())
-	idp0.SetStartTimestamp(TestMetricStartTimestamp)
-	idp0.SetTimestamp(TestMetricTimestamp)
+	idp0.SetStartTimestamp(metricStartTimestamp)
+	idp0.SetTimestamp(metricTimestamp)
 	idp0.SetDoubleVal(1.23)
 	idp1 := idps.AppendEmpty()
 	initMetricAttributes13(idp1.Attributes())
-	idp1.SetStartTimestamp(TestMetricStartTimestamp)
-	idp1.SetTimestamp(TestMetricTimestamp)
+	idp1.SetStartTimestamp(metricStartTimestamp)
+	idp1.SetTimestamp(metricTimestamp)
 	idp1.SetDoubleVal(4.56)
 }
 
@@ -162,13 +151,13 @@ func initSumIntMetric(im pmetric.Metric) {
 	idps := im.Sum().DataPoints()
 	idp0 := idps.AppendEmpty()
 	initMetricAttributes1(idp0.Attributes())
-	idp0.SetStartTimestamp(TestMetricStartTimestamp)
-	idp0.SetTimestamp(TestMetricTimestamp)
+	idp0.SetStartTimestamp(metricStartTimestamp)
+	idp0.SetTimestamp(metricTimestamp)
 	idp0.SetIntVal(123)
 	idp1 := idps.AppendEmpty()
 	initMetricAttributes2(idp1.Attributes())
-	idp1.SetStartTimestamp(TestMetricStartTimestamp)
-	idp1.SetTimestamp(TestMetricTimestamp)
+	idp1.SetStartTimestamp(metricStartTimestamp)
+	idp1.SetTimestamp(metricTimestamp)
 	idp1.SetIntVal(456)
 }
 
@@ -178,14 +167,14 @@ func initSumDoubleMetric(dm pmetric.Metric) {
 	ddps := dm.Sum().DataPoints()
 	ddp0 := ddps.AppendEmpty()
 	initMetricAttributes12(ddp0.Attributes())
-	ddp0.SetStartTimestamp(TestMetricStartTimestamp)
-	ddp0.SetTimestamp(TestMetricTimestamp)
+	ddp0.SetStartTimestamp(metricStartTimestamp)
+	ddp0.SetTimestamp(metricTimestamp)
 	ddp0.SetDoubleVal(1.23)
 
 	ddp1 := ddps.AppendEmpty()
 	initMetricAttributes13(ddp1.Attributes())
-	ddp1.SetStartTimestamp(TestMetricStartTimestamp)
-	ddp1.SetTimestamp(TestMetricTimestamp)
+	ddp1.SetStartTimestamp(metricStartTimestamp)
+	ddp1.SetTimestamp(metricTimestamp)
 	ddp1.SetDoubleVal(4.56)
 }
 
@@ -195,24 +184,24 @@ func initHistogramMetric(hm pmetric.Metric) {
 	hdps := hm.Histogram().DataPoints()
 	hdp0 := hdps.AppendEmpty()
 	initMetricAttributes13(hdp0.Attributes())
-	hdp0.SetStartTimestamp(TestMetricStartTimestamp)
-	hdp0.SetTimestamp(TestMetricTimestamp)
+	hdp0.SetStartTimestamp(metricStartTimestamp)
+	hdp0.SetTimestamp(metricTimestamp)
 	hdp0.SetCount(1)
 	hdp0.SetSum(15)
 
 	hdp1 := hdps.AppendEmpty()
 	initMetricAttributes2(hdp1.Attributes())
-	hdp1.SetStartTimestamp(TestMetricStartTimestamp)
-	hdp1.SetTimestamp(TestMetricTimestamp)
+	hdp1.SetStartTimestamp(metricStartTimestamp)
+	hdp1.SetTimestamp(metricTimestamp)
 	hdp1.SetCount(1)
 	hdp1.SetSum(15)
 	hdp1.SetMin(15)
 	hdp1.SetMax(15)
 	hdp1.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1}))
 	exemplar := hdp1.Exemplars().AppendEmpty()
-	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
+	exemplar.SetTimestamp(metricExemplarTimestamp)
 	exemplar.SetDoubleVal(15)
-	initMetricAttachment(exemplar.FilteredAttributes())
+	initMetricExemplarAttributes(exemplar.FilteredAttributes())
 	hdp1.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1}))
 }
 
@@ -222,8 +211,8 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 	hdps := hm.ExponentialHistogram().DataPoints()
 	hdp0 := hdps.AppendEmpty()
 	initMetricAttributes13(hdp0.Attributes())
-	hdp0.SetStartTimestamp(TestMetricStartTimestamp)
-	hdp0.SetTimestamp(TestMetricTimestamp)
+	hdp0.SetStartTimestamp(metricStartTimestamp)
+	hdp0.SetTimestamp(metricTimestamp)
 	hdp0.SetCount(5)
 	hdp0.SetSum(0.15)
 	hdp0.SetZeroCount(1)
@@ -245,8 +234,8 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 
 	hdp1 := hdps.AppendEmpty()
 	initMetricAttributes2(hdp1.Attributes())
-	hdp1.SetStartTimestamp(TestMetricStartTimestamp)
-	hdp1.SetTimestamp(TestMetricTimestamp)
+	hdp1.SetStartTimestamp(metricStartTimestamp)
+	hdp1.SetTimestamp(metricTimestamp)
 	hdp1.SetCount(3)
 	hdp1.SetSum(1.25)
 	hdp1.SetMin(0)
@@ -264,9 +253,9 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 	// Bucket [1.000000, 4.000000), Count: 1
 
 	exemplar := hdp1.Exemplars().AppendEmpty()
-	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
+	exemplar.SetTimestamp(metricExemplarTimestamp)
 	exemplar.SetDoubleVal(15)
-	initMetricAttachment(exemplar.FilteredAttributes())
+	initMetricExemplarAttributes(exemplar.FilteredAttributes())
 }
 
 func initSummaryMetric(sm pmetric.Metric) {
@@ -275,15 +264,15 @@ func initSummaryMetric(sm pmetric.Metric) {
 	sdps := sm.Summary().DataPoints()
 	sdp0 := sdps.AppendEmpty()
 	initMetricAttributes13(sdp0.Attributes())
-	sdp0.SetStartTimestamp(TestMetricStartTimestamp)
-	sdp0.SetTimestamp(TestMetricTimestamp)
+	sdp0.SetStartTimestamp(metricStartTimestamp)
+	sdp0.SetTimestamp(metricTimestamp)
 	sdp0.SetCount(1)
 	sdp0.SetSum(15)
 
 	sdp1 := sdps.AppendEmpty()
 	initMetricAttributes2(sdp1.Attributes())
-	sdp1.SetStartTimestamp(TestMetricStartTimestamp)
-	sdp1.SetTimestamp(TestMetricTimestamp)
+	sdp1.SetStartTimestamp(metricStartTimestamp)
+	sdp1.SetTimestamp(metricTimestamp)
 	sdp1.SetCount(1)
 	sdp1.SetSum(15)
 
@@ -309,14 +298,4 @@ func initMetric(m pmetric.Metric, name string, ty pmetric.MetricDataType) {
 		histo := m.ExponentialHistogram()
 		histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	}
-}
-
-func GenerateMetricsManyMetricsSameResource(metricsCount int) pmetric.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationScope()
-	rs0ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	rs0ilm0.Metrics().EnsureCapacity(metricsCount)
-	for i := 0; i < metricsCount; i++ {
-		initSumIntMetric(rs0ilm0.Metrics().AppendEmpty())
-	}
-	return md
 }

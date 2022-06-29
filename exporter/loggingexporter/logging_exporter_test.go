@@ -37,7 +37,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, lte.ConsumeTraces(context.Background(), ptrace.NewTraces()))
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTracesTwoSpansSameResourceOneDifferent()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraces(10)))
 
 	assert.NoError(t, lte.Shutdown(context.Background()))
 }
@@ -48,9 +48,10 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GeneratMetricsAllTypesWithSampleDatapoints()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmptyDataPoint()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypes()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmpty()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(10)))
 
 	assert.NoError(t, lme.Shutdown(context.Background()))
 }
@@ -61,9 +62,7 @@ func TestLoggingLogsExporterNoErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, lle.ConsumeLogs(context.Background(), plog.NewLogs()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyResourceLogs()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsNoLogRecords()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyLogRecord()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogs(10)))
 
 	assert.NoError(t, lle.Shutdown(context.Background()))
 }

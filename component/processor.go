@@ -100,15 +100,27 @@ type ProcessorFactory interface {
 	) (LogsProcessor, error)
 }
 
-// ProcessorFactoryOption apply changes to ProcessorOptions.
-type ProcessorFactoryOption func(o *processorFactory)
-
 // ProcessorCreateDefaultConfigFunc is the equivalent of ProcessorFactory.CreateDefaultConfig().
 type ProcessorCreateDefaultConfigFunc func() config.Processor
 
 // CreateDefaultConfig implements ProcessorFactory.CreateDefaultConfig().
 func (f ProcessorCreateDefaultConfigFunc) CreateDefaultConfig() config.Processor {
 	return f()
+}
+
+// ProcessorFactoryOption apply changes to ProcessorOptions.
+type ProcessorFactoryOption interface {
+	// applyProcessorFactoryOption applies the option.
+	applyProcessorFactoryOption(o *processorFactory)
+}
+
+var _ ProcessorFactoryOption = (*processorFactoryOptionFunc)(nil)
+
+// processorFactoryOptionFunc is an ProcessorFactoryOption created through a function.
+type processorFactoryOptionFunc func(*processorFactory)
+
+func (f processorFactoryOptionFunc) applyProcessorFactoryOption(o *processorFactory) {
+	f(o)
 }
 
 // CreateTracesProcessorFunc is the equivalent of ProcessorFactory.CreateTracesProcessor().
@@ -168,23 +180,23 @@ type processorFactory struct {
 
 // WithTracesProcessor overrides the default "error not supported" implementation for CreateTracesProcessor.
 func WithTracesProcessor(createTracesProcessor CreateTracesProcessorFunc) ProcessorFactoryOption {
-	return func(o *processorFactory) {
+	return processorFactoryOptionFunc(func(o *processorFactory) {
 		o.CreateTracesProcessorFunc = createTracesProcessor
-	}
+	})
 }
 
 // WithMetricsProcessor overrides the default "error not supported" implementation for CreateMetricsProcessor.
 func WithMetricsProcessor(createMetricsProcessor CreateMetricsProcessorFunc) ProcessorFactoryOption {
-	return func(o *processorFactory) {
+	return processorFactoryOptionFunc(func(o *processorFactory) {
 		o.CreateMetricsProcessorFunc = createMetricsProcessor
-	}
+	})
 }
 
 // WithLogsProcessor overrides the default "error not supported" implementation for CreateLogsProcessor.
 func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc) ProcessorFactoryOption {
-	return func(o *processorFactory) {
+	return processorFactoryOptionFunc(func(o *processorFactory) {
 		o.CreateLogsProcessorFunc = createLogsProcessor
-	}
+	})
 }
 
 // NewProcessorFactory returns a ProcessorFactory.
@@ -194,7 +206,7 @@ func NewProcessorFactory(cfgType config.Type, createDefaultConfig ProcessorCreat
 		ProcessorCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
-		opt(f)
+		opt.applyProcessorFactoryOption(f)
 	}
 	return f
 }

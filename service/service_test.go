@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
 
@@ -55,7 +56,7 @@ func TestService_GetFactory(t *testing.T) {
 	assert.Nil(t, srv.host.GetFactory(42, "nop"))
 }
 
-func TestService_GetExtensions(t *testing.T) {
+func TestServiceGetExtensions(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	srv := createExampleService(t, factories)
@@ -71,7 +72,7 @@ func TestService_GetExtensions(t *testing.T) {
 	assert.Contains(t, extMap, config.NewComponentID("nop"))
 }
 
-func TestService_GetExporters(t *testing.T) {
+func TestServiceGetExporters(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	srv := createExampleService(t, factories)
@@ -98,11 +99,16 @@ func createExampleService(t *testing.T, factories component.Factories) *service 
 	cfg, err := configunmarshaler.New().Unmarshal(conf, factories)
 	require.NoError(t, err)
 
+	telemetry := newColTelemetry(featuregate.NewRegistry())
 	srv, err := newService(&settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
 		Config:    cfg,
+		telemetry: telemetry,
 	})
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, telemetry.shutdown())
+	})
 	return srv
 }

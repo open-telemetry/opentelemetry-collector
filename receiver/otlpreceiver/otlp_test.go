@@ -422,7 +422,7 @@ func TestProtoHttp(t *testing.T) {
 	// Wait for the servers to start
 	<-time.After(10 * time.Millisecond)
 
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 	traceBytes, err := ptrace.NewProtoMarshaler().MarshalTraces(td)
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
@@ -645,7 +645,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	addr := testutil.GetAvailableLocalAddress(t)
-	req := testdata.GenerateTracesOneSpan()
+	req := testdata.GenerateTraces(1)
 
 	exporters := []struct {
 		receiverTag string
@@ -745,7 +745,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
 
-	td := testdata.GenerateTracesManySpansSameResource(50000)
+	td := testdata.GenerateTraces(50000)
 	require.Error(t, exportTraces(cc, td))
 	cc.Close()
 	require.NoError(t, ocr.Shutdown(context.Background()))
@@ -761,7 +761,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, err)
 	defer cc.Close()
 
-	td = testdata.GenerateTracesManySpansSameResource(50000)
+	td = testdata.GenerateTraces(50000)
 	require.NoError(t, exportTraces(cc, td))
 	require.Len(t, sink.AllTraces(), 1)
 	assert.Equal(t, td, sink.AllTraces()[0])
@@ -978,12 +978,12 @@ loop:
 			break loop
 		default:
 		}
-		senderFn(testdata.GenerateTracesOneSpan())
+		senderFn(testdata.GenerateTraces(1))
 	}
 
 	// After getting the signal to stop, send one more span and then
 	// finally stop. We should never receive this last span.
-	senderFn(testdata.GenerateTracesOneSpan())
+	senderFn(testdata.GenerateTraces(1))
 
 	// Indicate that we are done.
 	close(doneSignal)

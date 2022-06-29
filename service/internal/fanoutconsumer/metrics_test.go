@@ -39,7 +39,7 @@ func TestMetricsMultiplexingNonMutating(t *testing.T) {
 
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
 		err := mfc.ConsumeMetrics(context.Background(), md)
@@ -72,7 +72,7 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
 		err := mfc.ConsumeMetrics(context.Background(), md)
@@ -106,7 +106,7 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
 		err := mfc.ConsumeMetrics(context.Background(), md)
@@ -141,7 +141,7 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
 	assert.False(t, mfc.Capabilities().MutatesData)
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
 		err := mfc.ConsumeMetrics(context.Background(), md)
@@ -174,7 +174,7 @@ func TestMetricsWhenErrors(t *testing.T) {
 	p3 := new(consumertest.MetricsSink)
 
 	mfc := NewMetrics([]consumer.Metrics{p1, p2, p3})
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 
 	for i := 0; i < 2; i++ {
 		assert.Error(t, mfc.ConsumeMetrics(context.Background(), md))

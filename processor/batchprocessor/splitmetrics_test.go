@@ -24,7 +24,7 @@ import (
 )
 
 func TestSplitMetrics_noop(t *testing.T) {
-	td := testdata.GenerateMetricsManyMetricsSameResource(20)
+	td := testdata.GenerateMetrics(20)
 	splitSize := 40
 	split := splitMetrics(splitSize, td)
 	assert.Equal(t, td, split)
@@ -38,7 +38,7 @@ func TestSplitMetrics_noop(t *testing.T) {
 }
 
 func TestSplitMetrics(t *testing.T) {
-	md := testdata.GenerateMetricsManyMetricsSameResource(20)
+	md := testdata.GenerateMetrics(20)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
@@ -84,7 +84,7 @@ func TestSplitMetrics(t *testing.T) {
 }
 
 func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
-	md := testdata.GenerateMetricsManyMetricsSameResource(20)
+	md := testdata.GenerateMetrics(20)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
@@ -92,7 +92,7 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	// add second index to resource metrics
-	testdata.GenerateMetricsManyMetricsSameResource(20).
+	testdata.GenerateMetrics(20).
 		ResourceMetrics().At(0).CopyTo(md.ResourceMetrics().AppendEmpty())
 	metrics = md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
@@ -109,7 +109,7 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 }
 
 func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *testing.T) {
-	td := testdata.GenerateMetricsManyMetricsSameResource(20)
+	td := testdata.GenerateMetrics(20)
 	metrics := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
@@ -117,7 +117,7 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 		assert.Equal(t, dataPointCount, metricDPC(metrics.At(i)))
 	}
 	// add second index to resource metrics
-	testdata.GenerateMetricsManyMetricsSameResource(20).
+	testdata.GenerateMetrics(20).
 		ResourceMetrics().At(0).CopyTo(td.ResourceMetrics().AppendEmpty())
 	metrics = td.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
@@ -137,7 +137,7 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 }
 
 func TestSplitMetricsUneven(t *testing.T) {
-	md := testdata.GenerateMetricsManyMetricsSameResource(10)
+	md := testdata.GenerateMetrics(10)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := 2
 	for i := 0; i < metrics.Len(); i++ {
@@ -164,7 +164,7 @@ func TestSplitMetricsUneven(t *testing.T) {
 }
 
 func TestSplitMetricsAllTypes(t *testing.T) {
-	md := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
+	md := testdata.GenerateMetricsAllTypes()
 	dataPointCount := 2
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < metrics.Len(); i++ {
@@ -263,7 +263,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 }
 
 func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
-	md := testdata.GenerateMetricsManyMetricsSameResource(2)
+	md := testdata.GenerateMetrics(2)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := 2
 	for i := 0; i < metrics.Len(); i++ {
@@ -276,37 +276,29 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 	splitMetric := split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 2, md.MetricCount())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, splitMetric.Sum().AggregationTemporality())
-	assert.Equal(t, true, splitMetric.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-0", splitMetric.Name())
 
 	split = splitMetrics(splitSize, md)
 	splitMetric = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, splitMetric.Sum().AggregationTemporality())
-	assert.Equal(t, true, splitMetric.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-0", splitMetric.Name())
 
 	split = splitMetrics(splitSize, md)
 	splitMetric = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, splitMetric.Sum().AggregationTemporality())
-	assert.Equal(t, true, splitMetric.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-1", splitMetric.Name())
 
 	split = splitMetrics(splitSize, md)
 	splitMetric = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, splitMetric.Sum().AggregationTemporality())
-	assert.Equal(t, true, splitMetric.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-1", splitMetric.Name())
 }
 
 func TestSplitMetricsMultipleILM(t *testing.T) {
-	md := testdata.GenerateMetricsManyMetricsSameResource(20)
+	md := testdata.GenerateMetrics(20)
 	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	dataPointCount := metricDPC(metrics.At(0))
 	for i := 0; i < metrics.Len(); i++ {
@@ -338,7 +330,7 @@ func BenchmarkSplitMetrics(b *testing.B) {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics()
 	for i := 0; i < 20; i++ {
-		testdata.GenerateMetricsManyMetricsSameResource(20).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+		testdata.GenerateMetrics(20).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 		ms := rms.At(rms.Len() - 1).ScopeMetrics().At(0).Metrics()
 		for i := 0; i < ms.Len(); i++ {
 			ms.At(i).SetName(getTestMetricName(1, i))

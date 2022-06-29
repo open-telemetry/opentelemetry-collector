@@ -135,17 +135,17 @@ func TestBuild(t *testing.T) {
 				traceReceiver := pipelines.allReceivers[config.TracesDataType][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, traceReceiver.Started)
 				// Send traces.
-				assert.NoError(t, traceReceiver.ConsumeTraces(context.Background(), testdata.GenerateTracesOneSpan()))
+				assert.NoError(t, traceReceiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 
 				metricsReceiver := pipelines.allReceivers[config.MetricsDataType][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, metricsReceiver.Started)
 				// Send metrics.
-				assert.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetric()))
+				assert.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 
 				logsReceiver := pipelines.allReceivers[config.LogsDataType][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, logsReceiver.Started)
 				// Send logs.
-				assert.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogsOneLogRecord()))
+				assert.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
 			}
 
 			assert.NoError(t, pipelines.ShutdownAll(context.Background()))
@@ -181,19 +181,19 @@ func TestBuild(t *testing.T) {
 				// Validate traces.
 				traceExporter := pipelines.GetExporters()[config.TracesDataType][expID].(*testcomponents.ExampleExporter)
 				require.Len(t, traceExporter.Traces, test.expectedRequests)
-				assert.EqualValues(t, testdata.GenerateTracesOneSpan(), traceExporter.Traces[0])
+				assert.EqualValues(t, testdata.GenerateTraces(1), traceExporter.Traces[0])
 				assert.True(t, traceExporter.Stopped)
 
 				// Validate metrics.
 				metricsExporter := pipelines.GetExporters()[config.MetricsDataType][expID].(*testcomponents.ExampleExporter)
 				require.Len(t, metricsExporter.Metrics, test.expectedRequests)
-				assert.EqualValues(t, testdata.GenerateMetricsOneMetric(), metricsExporter.Metrics[0])
+				assert.EqualValues(t, testdata.GenerateMetrics(1), metricsExporter.Metrics[0])
 				assert.True(t, metricsExporter.Stopped)
 
 				// Validate logs.
 				logsExporter := pipelines.GetExporters()[config.LogsDataType][expID].(*testcomponents.ExampleExporter)
 				require.Len(t, logsExporter.Logs, test.expectedRequests)
-				assert.EqualValues(t, testdata.GenerateLogsOneLogRecord(), logsExporter.Logs[0])
+				assert.EqualValues(t, testdata.GenerateLogs(1), logsExporter.Logs[0])
 				assert.True(t, logsExporter.Stopped)
 			}
 		})
