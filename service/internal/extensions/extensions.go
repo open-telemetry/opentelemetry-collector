@@ -126,7 +126,7 @@ type Settings struct {
 	// Configs is a map of config.ComponentID to config.Extension.
 	Configs map[config.ComponentID]config.Extension
 
-	// Factories maps extensin type names in the config to the respective component.ExtensionFactory.
+	// Factories maps extension type names in the config to the respective component.ExtensionFactory.
 	Factories map[config.Type]component.ExtensionFactory
 
 	// ServiceExtensions are the ordered list of extensions configured for the service.
