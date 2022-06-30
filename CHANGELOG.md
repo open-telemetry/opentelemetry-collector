@@ -11,6 +11,15 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
+- Deprecate the following component functions to ensure a stability level is set (#5580): 
+  - `component.WithTracesExporter` -> `component.WithTracesExporterAndStabilityLevel`
+  - `component.WithMetricsExporter` -> `component.WithMetricsExporterAndStabilityLevel`
+  - `component.WithLogsExporter` -> `component.WithLogsExporterAndStabilityLevel`
+
+### 💡 Enhancements 💡
+
+- Components stability levels are now logged. By default components which haven't defined their stability levels, or which are
+  unmaintained, deprecated or in development will log a message. (#5580)
 
 ### 🧰 Bug fixes 🧰
 

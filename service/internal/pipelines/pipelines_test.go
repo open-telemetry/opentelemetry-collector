@@ -20,11 +20,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go.uber.org/zap/zapcore"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
