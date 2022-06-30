@@ -312,11 +312,7 @@ func logStabilityMessage(logger *zap.Logger, sl component.StabilityLevel) {
 		logger.Info("Component is unmaintained and actively looking for contributors. This component will become deprecated after 6 months of remaining unmaintained", zap.String(components.ZapStabilityKey, sl.String()))
 	case component.StabilityLevelInDevelopment:
 		logger.Info("Component is under development.", zap.String(components.ZapStabilityKey, sl.String()))
-	case component.StabilityLevelAlpha:
-		fallthrough
-	case component.StabilityLevelBeta:
-		fallthrough
-	case component.StabilityLevelStable:
+	case component.StabilityLevelAlpha, component.StabilityLevelBeta, component.StabilityLevelStable:
 		logger.Debug("Stability level", zap.String(components.ZapStabilityKey, sl.String()))
 	default:
 		logger.Info("Stability level of component undefined", zap.String(components.ZapStabilityKey, sl.String()))
