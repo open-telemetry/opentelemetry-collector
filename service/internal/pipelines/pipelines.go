@@ -425,6 +425,7 @@ func buildProcessor(ctx context.Context,
 		BuildInfo:         buildInfo,
 	}
 	set.TelemetrySettings.Logger = processorLogger(settings.Logger, id, pipelineID)
+	logStabilityMessage(set.TelemetrySettings.Logger, factory.StabilityLevel(pipelineID.Type()))
 
 	proc, err := createProcessor(ctx, set, procCfg, id, pipelineID, next, factory)
 	if err != nil {
@@ -478,6 +479,7 @@ func buildReceiver(ctx context.Context,
 		BuildInfo:         buildInfo,
 	}
 	set.TelemetrySettings.Logger = receiverLogger(settings.Logger, id, pipelineID.Type())
+	logStabilityMessage(set.TelemetrySettings.Logger, factory.StabilityLevel(pipelineID.Type()))
 
 	recv, err := createReceiver(ctx, set, cfg, id, pipelineID, nexts, factory)
 	if err != nil {
