@@ -199,7 +199,7 @@ func WithLogsExporterAndStabilityLevel(createLogsExporter CreateLogsExporterFunc
 // NewExporterFactory returns a ExporterFactory.
 func NewExporterFactory(cfgType config.Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
 	f := &exporterFactory{
-		baseFactory:                     baseFactory{cfgType: cfgType, stability: map[config.Type]StabilityLevel{}},
+		baseFactory:                     baseFactory{cfgType: cfgType, stability: make(map[config.DataType]StabilityLevel)},
 		ExporterCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
