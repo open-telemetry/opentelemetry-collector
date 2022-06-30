@@ -211,7 +211,7 @@ func NewMetricDataPointFlags() MetricDataPointFlags {
 // resetting the current instance to its zero value
 func (ms MetricDataPointFlags) MoveTo(dest MetricDataPointFlags) {
 	*dest.orig = *ms.orig
-	*ms.orig = 0
+	ms.Reset()
 }
 
 // CopyTo copies all properties from the current struct to the dest.
