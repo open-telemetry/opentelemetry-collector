@@ -12,6 +12,10 @@
 
 - Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
 
+### 💡 Enhancements 💡
+
+- `exporter/logging`: Skip "bad file descriptor" sync errors (#5585)
+
 ### 🧰 Bug fixes 🧰
 
 - Fix initialization of the OpenTelemetry MetricProvider. (#5571)
