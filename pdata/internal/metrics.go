@@ -185,63 +185,69 @@ func (at MetricAggregationTemporality) String() string {
 
 // MetricDataPointFlags defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
-type MetricDataPointFlags uint32
-
-const (
-	// MetricDataPointFlagsNone is the default MetricDataPointFlags.
-	MetricDataPointFlagsNone = MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NONE)
-)
-
-// NewMetricDataPointFlags returns a new MetricDataPointFlags combining the flags passed
-// in as parameters.
-// Deprecated: [0.55.0] Use NewEmptyMetricDataPointFlags and SetNoRecordedValue instead.
-func NewMetricDataPointFlags(flags ...MetricDataPointFlag) MetricDataPointFlags {
-	var flag MetricDataPointFlags
-	for _, f := range flags {
-		flag |= MetricDataPointFlags(f)
-	}
-	return flag
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewMetricDataPointFlags function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type MetricDataPointFlags struct {
+	orig *uint32
 }
 
-// HasFlag returns true if the MetricDataPointFlags contains the specified flag
-// Deprecated: [0.55.0] Use NoRecordedValue instead.
-func (d MetricDataPointFlags) HasFlag(flag MetricDataPointFlag) bool {
-	return d&MetricDataPointFlags(flag) != 0
+func newMetricDataPointFlags(orig *uint32) MetricDataPointFlags {
+	return MetricDataPointFlags{orig: orig}
 }
 
-// String returns the string representation of the MetricDataPointFlags.
-func (d MetricDataPointFlags) String() string {
-	return otlpmetrics.DataPointFlags(d).String()
+// NewMetricDataPointFlags creates a new empty NewMetricDataPointFlags.
+//
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
+func NewMetricDataPointFlags() MetricDataPointFlags {
+	return newMetricDataPointFlags(new(uint32))
 }
 
-// NewEmptyMetricDataPointFlags returns a new MetricDataPointFlags with no flags set.
-func NewEmptyMetricDataPointFlags() MetricDataPointFlags {
-	return MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NONE)
+// MoveTo moves all properties from the current struct to dest
+// resetting the current instance to its zero value
+func (ms MetricDataPointFlags) MoveTo(dest MetricDataPointFlags) {
+	*dest.orig = *ms.orig
+	*ms.orig = 0
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms MetricDataPointFlags) CopyTo(dest MetricDataPointFlags) {
+	*dest.orig = *ms.orig
+}
+
+// None returns true if MetricDataPointFlags is FLAG_NONE.
+func (ms MetricDataPointFlags) None() bool {
+	return *ms.orig == uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
+}
+
+// Reset resets the flags to be FLAG_NONE.
+func (ms MetricDataPointFlags) Reset() {
+	*ms.orig = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
 }
 
 // NoRecordedValue returns true if the MetricDataPointFlags contains the NO_RECORDED_VALUE flag.
-func (d MetricDataPointFlags) NoRecordedValue() bool {
-	return d&MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
+func (ms MetricDataPointFlags) NoRecordedValue() bool {
+	return *ms.orig&uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
 }
 
 // SetNoRecordedValue sets the FLAG_NO_RECORDED_VALUE flag if true and removes it if false.
-// A new MetricDataPointFlags is returned.
-func (d MetricDataPointFlags) SetNoRecordedValue(set bool) MetricDataPointFlags {
-	if set {
-		return d | MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+// Setting this Flag when it is already set will change nothing.
+func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
+	if b {
+		*ms.orig = *ms.orig | uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+	} else {
+		*ms.orig = *ms.orig &^ uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 	}
-	return d &^ MetricDataPointFlags(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 }
 
-// MetricDataPointFlag allow users to configure DataPointFlags. This is achieved via NewMetricDataPointFlags.
-// The separation between MetricDataPointFlags and MetricDataPointFlag exists to prevent users accidentally
-// comparing the value of individual flags with MetricDataPointFlags. Instead, users must use the HasFlag method.
-type MetricDataPointFlag uint32
-
-const (
-	// MetricDataPointFlagNoRecordedValue is flag for a metric aggregator which reports changes since last report time.
-	MetricDataPointFlagNoRecordedValue = MetricDataPointFlag(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
-)
+// String returns the string representation of the MetricDataPointFlags.
+func (ms MetricDataPointFlags) String() string {
+	return otlpmetrics.DataPointFlags(*ms.orig).String()
+}
 
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType int32

@@ -489,6 +489,15 @@ var exemplar = &messageValueStruct{
 	},
 }
 
+var dataPointFlagsField = &messageValueField{
+	fieldName:       "Flags",
+	originFieldName: "Flags",
+	returnMessage: &messageValueStruct{
+		structName:     "MetricDataPointFlags",
+		originFullName: "uint32",
+	},
+}
+
 var exemplarsField = &sliceField{
 	fieldName:       "Exemplars",
 	originFieldName: "Exemplars",
@@ -560,15 +569,6 @@ var aggregationTemporalityField = &primitiveTypedField{
 	rawType:         "otlpmetrics.AggregationTemporality",
 	defaultVal:      "MetricAggregationTemporalityUnspecified",
 	testVal:         "MetricAggregationTemporalityCumulative",
-}
-
-var dataPointFlagsField = &primitiveTypedField{
-	fieldName:       "Flags",
-	originFieldName: "Flags",
-	returnType:      "MetricDataPointFlags",
-	rawType:         "uint32",
-	defaultVal:      "MetricDataPointFlagsNone",
-	testVal:         "MetricDataPointFlagsNone",
 }
 
 var optionalDoubleSumField = &optionalPrimitiveValue{

@@ -691,20 +691,30 @@ func TestMetricsClone(t *testing.T) {
 func TestMetricsDataPointFlags(t *testing.T) {
 	gauge := generateTestGauge()
 
-	gauge.DataPoints().At(0).SetFlags(NewEmptyMetricDataPointFlags())
-	assert.True(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
+	assert.True(t, gauge.DataPoints().At(0).Flags().None())
 	assert.False(t, gauge.DataPoints().At(0).Flags().NoRecordedValue())
 	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).Flags().String())
 
-	gauge.DataPoints().At(0).SetFlags(NewEmptyMetricDataPointFlags().SetNoRecordedValue(true))
-	assert.False(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
-	assert.True(t, gauge.DataPoints().At(0).Flags().NoRecordedValue())
-	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(0).Flags().String())
-	assert.True(t, gauge.DataPoints().At(0).Flags().SetNoRecordedValue(false) == MetricDataPointFlagsNone)
-	assert.False(t, gauge.DataPoints().At(0).Flags().SetNoRecordedValue(false).NoRecordedValue())
+	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(true)
+	assert.False(t, gauge.DataPoints().At(1).Flags().None())
+	assert.True(t, gauge.DataPoints().At(1).Flags().NoRecordedValue())
+	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(1).Flags().String())
+	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(false)
+	assert.True(t, gauge.DataPoints().At(1).Flags().None())
+	assert.False(t, gauge.DataPoints().At(1).Flags().NoRecordedValue())
 
-	gauge.DataPoints().At(0).SetFlags(NewEmptyMetricDataPointFlags())
-	assert.True(t, gauge.DataPoints().At(0).Flags().SetNoRecordedValue(false) == MetricDataPointFlagsNone)
+	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(true)
+	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(true)
+	assert.False(t, gauge.DataPoints().At(1).Flags().None())
+	assert.True(t, gauge.DataPoints().At(1).Flags().NoRecordedValue())
+
+	gauge.DataPoints().At(2).Flags().SetNoRecordedValue(true)
+	gauge.DataPoints().At(2).Flags().Reset()
+	assert.True(t, gauge.DataPoints().At(2).Flags().None())
+	assert.False(t, gauge.DataPoints().At(2).Flags().NoRecordedValue())
+	gauge.DataPoints().At(2).Flags().SetNoRecordedValue(false)
+	assert.True(t, gauge.DataPoints().At(2).Flags().None())
+	assert.False(t, gauge.DataPoints().At(2).Flags().NoRecordedValue())
 }
 
 func BenchmarkMetricsClone(b *testing.B) {
@@ -1011,4 +1021,14 @@ func generateMetricsEmptyDataPoints() Metrics {
 			},
 		},
 	}}
+}
+
+func fillTestMetricDataPointFlags(tv MetricDataPointFlags) {
+	*tv.orig = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
+}
+
+func generateTestMetricDataPointFlags() MetricDataPointFlags {
+	tv := NewMetricDataPointFlags()
+	fillTestMetricDataPointFlags(tv)
+	return tv
 }
