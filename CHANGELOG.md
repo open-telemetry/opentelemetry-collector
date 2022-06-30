@@ -7,11 +7,11 @@
 - Remove deprecated `config.ServiceTelemetry` (#5565)
 - Remove deprecated `config.ServiceTelemetryLogs` (#5565)
 - Remove deprecated `config.ServiceTelemetryMetrics` (#5565)
+- Removed `HasFlag`, `MetricDataPointFlagsNone`, and `MetricDataPointFlagNoRecordedValue`. Use new Flags API to check for Flags and to set and remove Flags (#5602)
 
 ### 🚩 Deprecations 🚩
 
 - Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
-- Deprecate `NewMetricDataPointFlags` and `HasFlag` (#5602)
 
 ## v0.54.0 Beta
 
