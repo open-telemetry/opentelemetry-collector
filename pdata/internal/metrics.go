@@ -238,9 +238,9 @@ func (ms MetricDataPointFlags) NoRecordedValue() bool {
 // Setting this Flag when it is already set will change nothing.
 func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
 	if b {
-		*ms.orig = *ms.orig | uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+		*ms.orig |= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 	} else {
-		*ms.orig = *ms.orig &^ uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+		*ms.orig &^= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 	}
 }
 
