@@ -8,7 +8,7 @@
 | Supported pipeline types | traces, metrics, logs |
 | Distributions            | [core], [contrib]     |
 
-Exports data via gRPC using [OTLP](
+Export data via gRPC using [OTLP](
 https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 format. By default, this exporter requires TLS and offers queued retry capabilities.
 
@@ -37,7 +37,7 @@ exporters:
       insecure: true
 ```
 
-By default `gzip` compression is enabled. See [compression comparison](../../config/configgrpc/README.md#compression-comparison) for details benchmark information. To disable, configure as follows:
+By default, `gzip` compression is enabled. See [compression comparison](../../config/configgrpc/README.md#compression-comparison) for details benchmark information. To disable, configure as follows:
 
 ```yaml
 exporters:
