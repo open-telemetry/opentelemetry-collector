@@ -82,8 +82,19 @@ func newService(set *settings) (*service, error) {
 		return nil, fmt.Errorf("failed build extensions: %w", err)
 	}
 
-	if srv.host.pipelines, err = pipelines.Build(context.Background(), srv.telemetrySettings, srv.buildInfo, srv.config, srv.host.factories); err != nil {
-		return nil, fmt.Errorf("failed build pipelines: %w", err)
+	pipelinesSettings := pipelines.Settings{
+		Telemetry:          srv.telemetrySettings,
+		BuildInfo:          srv.buildInfo,
+		ReceiverFactories:  srv.host.factories.Receivers,
+		ReceiverConfigs:    srv.config.Receivers,
+		ProcessorFactories: srv.host.factories.Processors,
+		ProcessorConfigs:   srv.config.Processors,
+		ExporterFactories:  srv.host.factories.Exporters,
+		ExporterConfigs:    srv.config.Exporters,
+		PipelineConfigs:    srv.config.Service.Pipelines,
+	}
+	if srv.host.pipelines, err = pipelines.Build(context.Background(), pipelinesSettings); err != nil {
+		return nil, fmt.Errorf("cannot build pipelines: %w", err)
 	}
 
 	// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
