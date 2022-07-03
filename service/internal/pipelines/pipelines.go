@@ -67,7 +67,7 @@ type Pipelines struct {
 
 // StartAll starts all pipelines.
 //
-// Start with exporters, processors (in revers configured order), then receivers.
+// Start with exporters, processors (in reverse configured order), then receivers.
 // This is important so that components that are earlier in the pipeline and reference components that are
 // later in the pipeline do not start sending data to later components which are not yet started.
 func (bps *Pipelines) StartAll(ctx context.Context, host component.Host) error {
@@ -99,11 +99,11 @@ func (bps *Pipelines) StartAll(ctx context.Context, host component.Host) error {
 	for dt, recvByID := range bps.allReceivers {
 		for recvID, recv := range recvByID {
 			recvLogger := receiverLogger(bps.telemetry.Logger, recvID, dt)
-			recvLogger.Info("Exporter is starting...")
+			recvLogger.Info("Receiver is starting...")
 			if err := recv.Start(ctx, components.NewHostWrapper(host, recvLogger)); err != nil {
 				return err
 			}
-			recvLogger.Info("Exporter started.")
+			recvLogger.Info("Receiver started.")
 		}
 	}
 	return nil
