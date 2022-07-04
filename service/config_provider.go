@@ -76,7 +76,7 @@ type ConfigProviderSettings struct {
 	// It is required to have at least one confmap.Provider.
 	MapProviders map[string]confmap.Provider
 
-	// MapConverters is a slice of cconfmap.Converter.
+	// MapConverters is a slice of confmap.Converter.
 	MapConverters []confmap.Converter
 }
 
