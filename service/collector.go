@@ -243,6 +243,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 
+	col.service.telemetrySettings.Logger.Info("Shutdown complete.")
 	col.setCollectorState(Closed)
 
 	return errs
