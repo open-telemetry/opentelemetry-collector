@@ -138,6 +138,24 @@ func (sl StabilityLevel) String() string {
 	return "undefined"
 }
 
+func (sl StabilityLevel) LogMessage() string {
+	switch sl {
+	case StabilityLevelUnmaintained:
+		return "This component is unmaintained and actively looking for contributors. This component will become deprecated after 6 months of remaining unmaintained."
+	case StabilityLevelDeprecated:
+		return "This component has been deprecated and will be removed in future releases."
+	case StabilityLevelInDevelopment:
+		return "This component is in development and may change in the future."
+	case StabilityLevelAlpha:
+		return "This component is alpha and may change in the future."
+	case StabilityLevelBeta:
+		return "This component is beta and may change in the future."
+	case StabilityLevelStable:
+		return "This component is stable."
+	}
+	return "The stability level of this component is undefined"
+}
+
 // Factory is implemented by all component factories.
 //
 // This interface cannot be directly implemented. Implementations must
