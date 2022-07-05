@@ -43,9 +43,9 @@ func NewNopExporterFactory() component.ExporterFactory {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID("nop")),
 			}
 		},
-		component.WithTracesExporterAndStabilityLevel(createTracesExporter, component.StabilityLevelInDevelopment),
-		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, component.StabilityLevelInDevelopment),
-		component.WithLogsExporterAndStabilityLevel(createLogsExporter, component.StabilityLevelInDevelopment),
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, component.StabilityLevelStable),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, component.StabilityLevelStable),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, component.StabilityLevelStable),
 	)
 }
 
