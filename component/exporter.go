@@ -151,9 +151,7 @@ type exporterFactory struct {
 // WithTracesExporter overrides the default "error not supported" implementation for CreateTracesExporter.
 // Deprecated: [v0.55.0] Use WithTracesExporterAndStabilityLevel instead.
 func WithTracesExporter(createTracesExporter CreateTracesExporterFunc) ExporterFactoryOption {
-	return exporterFactoryOptionFunc(func(o *exporterFactory) {
-		o.CreateTracesExporterFunc = createTracesExporter
-	})
+	return WithTracesExporterAndStabilityLevel(createTracesExporter, StabilityLevelUndefined)
 }
 
 // WithTracesExporterAndStabilityLevel overrides the default "error not supported" implementation for CreateTracesExporter and the default "undefined" stability level.
@@ -167,9 +165,7 @@ func WithTracesExporterAndStabilityLevel(createTracesExporter CreateTracesExport
 // WithMetricsExporter overrides the default "error not supported" implementation for CreateMetricsExporter.
 // Deprecated: [v0.55.0] Use WithMetricsExporterAndStabilityLevel instead.
 func WithMetricsExporter(createMetricsExporter CreateMetricsExporterFunc) ExporterFactoryOption {
-	return exporterFactoryOptionFunc(func(o *exporterFactory) {
-		o.CreateMetricsExporterFunc = createMetricsExporter
-	})
+	return WithMetricsExporterAndStabilityLevel(createMetricsExporter, StabilityLevelUndefined)
 }
 
 // WithMetricsExporterAndStabilityLevel overrides the default "error not supported" implementation for CreateMetricsExporter and the default "undefined" stability level.
@@ -183,9 +179,7 @@ func WithMetricsExporterAndStabilityLevel(createMetricsExporter CreateMetricsExp
 // WithLogsExporter overrides the default "error not supported" implementation for CreateLogsExporter.
 // Deprecated: [v0.55.0] Use WithLogsExporterAndStabilityLevel instead.
 func WithLogsExporter(createLogsExporter CreateLogsExporterFunc) ExporterFactoryOption {
-	return exporterFactoryOptionFunc(func(o *exporterFactory) {
-		o.CreateLogsExporterFunc = createLogsExporter
-	})
+	return WithLogsExporterAndStabilityLevel(createLogsExporter, StabilityLevelUndefined)
 }
 
 // WithLogsExporterAndStabilityLevel overrides the default "error not supported" implementation for CreateLogsExporter and the default "undefined" stability level.

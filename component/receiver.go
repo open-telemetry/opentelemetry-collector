@@ -213,9 +213,7 @@ type receiverFactory struct {
 // WithTracesReceiver overrides the default "error not supported" implementation for CreateTracesReceiver.
 // Deprecated: [v0.55.0] Use WithTracesReceiverAndStabilityLevel instead.
 func WithTracesReceiver(createTracesReceiver CreateTracesReceiverFunc) ReceiverFactoryOption {
-	return receiverFactoryOptionFunc(func(o *receiverFactory) {
-		o.CreateTracesReceiverFunc = createTracesReceiver
-	})
+	return WithTracesReceiverAndStabilityLevel(createTracesReceiver, StabilityLevelUndefined)
 }
 
 // WithTracesReceiverAndStabilityLevel overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
@@ -229,9 +227,7 @@ func WithTracesReceiverAndStabilityLevel(createTracesReceiver CreateTracesReceiv
 // WithMetricsReceiver overrides the default "error not supported" implementation for CreateMetricsReceiver.
 // Deprecated: [v0.55.0] Use WithMetricsReceiverAndStabilityLevel instead.
 func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiverFunc) ReceiverFactoryOption {
-	return receiverFactoryOptionFunc(func(o *receiverFactory) {
-		o.CreateMetricsReceiverFunc = createMetricsReceiver
-	})
+	return WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, StabilityLevelUndefined)
 }
 
 // WithMetricsReceiverAndStabilityLevel overrides the default "error not supported" implementation for CreateMetricsReceiver and the default "undefined" stability level.
@@ -245,9 +241,7 @@ func WithMetricsReceiverAndStabilityLevel(createMetricsReceiver CreateMetricsRec
 // WithLogsReceiver overrides the default "error not supported" implementation for CreateLogsReceiver.
 // Deprecated: [v0.55.0] Use WithLogsReceiverAndStabilityLevel instead.
 func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc) ReceiverFactoryOption {
-	return receiverFactoryOptionFunc(func(o *receiverFactory) {
-		o.CreateLogsReceiverFunc = createLogsReceiver
-	})
+	return WithLogsReceiverAndStabilityLevel(createLogsReceiver, StabilityLevelUndefined)
 }
 
 // WithLogsReceiverAndStabilityLevel overrides the default "error not supported" implementation for CreateLogsReceiver and the default "undefined" stability level.

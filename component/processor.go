@@ -181,9 +181,7 @@ type processorFactory struct {
 // WithTracesProcessor overrides the default "error not supported" implementation for CreateTracesProcessor.
 // Deprecated: [v0.55.0] Use WithTracesProcessorAndStabilityLevel instead.
 func WithTracesProcessor(createTracesProcessor CreateTracesProcessorFunc) ProcessorFactoryOption {
-	return processorFactoryOptionFunc(func(o *processorFactory) {
-		o.CreateTracesProcessorFunc = createTracesProcessor
-	})
+	return WithTracesProcessorAndStabilityLevel(createTracesProcessor, StabilityLevelUndefined)
 }
 
 // WithTracesProcessorAndStabilityLevel overrides the default "error not supported" implementation for CreateTracesProcessor and the default "undefined" stability level.
@@ -197,9 +195,7 @@ func WithTracesProcessorAndStabilityLevel(createTracesProcessor CreateTracesProc
 // WithMetricsProcessor overrides the default "error not supported" implementation for CreateMetricsProcessor.
 // Deprecated: [v0.55.0] Use WithMetricsProcessorAndStabilityLevel instead.
 func WithMetricsProcessor(createMetricsProcessor CreateMetricsProcessorFunc) ProcessorFactoryOption {
-	return processorFactoryOptionFunc(func(o *processorFactory) {
-		o.CreateMetricsProcessorFunc = createMetricsProcessor
-	})
+	return WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, StabilityLevelUndefined)
 }
 
 // WithMetricsProcessorAndStabilityLevel overrides the default "error not supported" implementation for CreateMetricsProcessor and the default "undefined" stability level.
@@ -213,9 +209,7 @@ func WithMetricsProcessorAndStabilityLevel(createMetricsProcessor CreateMetricsP
 // WithLogsProcessor overrides the default "error not supported" implementation for CreateLogsProcessor.
 // Deprecated: [v0.55.0] Use WithLogsProcessorAndStabilityLevel instead.
 func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc) ProcessorFactoryOption {
-	return processorFactoryOptionFunc(func(o *processorFactory) {
-		o.CreateLogsProcessorFunc = createLogsProcessor
-	})
+	return WithLogsProcessorAndStabilityLevel(createLogsProcessor, StabilityLevelUndefined)
 }
 
 // WithLogsProcessorAndStabilityLevel overrides the default "error not supported" implementation for CreateLogsProcessor and the default "undefined" stability level.
