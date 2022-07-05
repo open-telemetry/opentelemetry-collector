@@ -43,9 +43,10 @@ func NewNopExporterFactory() component.ExporterFactory {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID("nop")),
 			}
 		},
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, component.StabilityLevelStable),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, component.StabilityLevelStable),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, component.StabilityLevelStable),
+	)
 }
 
 func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {

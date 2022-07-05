@@ -331,6 +331,21 @@ func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 	return exps, nil
 }
 
+func logStabilityMessage(logger *zap.Logger, sl component.StabilityLevel) {
+	switch sl {
+	case component.StabilityLevelDeprecated:
+		logger.Info("Component has been deprecated and will be removed in future releases.", zap.String(components.ZapStabilityKey, sl.String()))
+	case component.StabilityLevelUnmaintained:
+		logger.Info("Component is unmaintained and actively looking for contributors. This component will become deprecated after 6 months of remaining unmaintained", zap.String(components.ZapStabilityKey, sl.String()))
+	case component.StabilityLevelInDevelopment:
+		logger.Info("Component is under development.", zap.String(components.ZapStabilityKey, sl.String()))
+	case component.StabilityLevelAlpha, component.StabilityLevelBeta, component.StabilityLevelStable:
+		logger.Debug("Stability level", zap.String(components.ZapStabilityKey, sl.String()))
+	default:
+		logger.Info("Stability level of component undefined", zap.String(components.ZapStabilityKey, sl.String()))
+	}
+}
+
 func buildExporter(
 	ctx context.Context,
 	settings component.TelemetrySettings,
@@ -355,6 +370,7 @@ func buildExporter(
 		BuildInfo:         buildInfo,
 	}
 	set.TelemetrySettings.Logger = exporterLogger(settings.Logger, id, pipelineID.Type())
+	logStabilityMessage(set.TelemetrySettings.Logger, factory.StabilityLevel(pipelineID.Type()))
 
 	exp, err := createExporter(ctx, set, cfg, id, pipelineID, factory)
 	if err != nil {
@@ -436,6 +452,7 @@ func buildProcessor(ctx context.Context,
 		BuildInfo:         buildInfo,
 	}
 	set.TelemetrySettings.Logger = processorLogger(settings.Logger, id, pipelineID)
+	logStabilityMessage(set.TelemetrySettings.Logger, factory.StabilityLevel(pipelineID.Type()))
 
 	proc, err := createProcessor(ctx, set, procCfg, id, pipelineID, next, factory)
 	if err != nil {
@@ -489,6 +506,7 @@ func buildReceiver(ctx context.Context,
 		BuildInfo:         buildInfo,
 	}
 	set.TelemetrySettings.Logger = receiverLogger(settings.Logger, id, pipelineID.Type())
+	logStabilityMessage(set.TelemetrySettings.Logger, factory.StabilityLevel(pipelineID.Type()))
 
 	recv, err := createReceiver(ctx, set, cfg, id, pipelineID, nexts, factory)
 	if err != nil {

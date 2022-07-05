@@ -62,6 +62,31 @@ func TestNewReceiverFactory_WithOptions(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestNewReceiverFactory_WithStabilityLevels(t *testing.T) {
+	const typeStr = "test"
+	defaultCfg := config.NewReceiverSettings(config.NewComponentID(typeStr))
+	factory := NewReceiverFactory(
+		typeStr,
+		func() config.Receiver { return &defaultCfg },
+		WithTracesReceiverAndStabilityLevel(createTracesReceiver, StabilityLevelDeprecated),
+		WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, StabilityLevelAlpha),
+		WithLogsReceiverAndStabilityLevel(createLogsReceiver, StabilityLevelStable))
+	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+
+	assert.EqualValues(t, StabilityLevelDeprecated, factory.StabilityLevel(config.TracesDataType))
+	_, err := factory.CreateTracesReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, StabilityLevelAlpha, factory.StabilityLevel(config.MetricsDataType))
+	_, err = factory.CreateMetricsReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, StabilityLevelStable, factory.StabilityLevel(config.LogsDataType))
+	_, err = factory.CreateLogsReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
+	assert.NoError(t, err)
+}
+
 func createTracesReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Traces) (TracesReceiver, error) {
 	return nil, nil
 }

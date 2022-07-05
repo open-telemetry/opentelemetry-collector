@@ -23,4 +23,5 @@ const (
 	ZapKindPipeline  = "pipeline"
 	ZapNameKey       = "name"
 	ZapDataTypeKey   = "data_type"
+	ZapStabilityKey  = "stability"
 )

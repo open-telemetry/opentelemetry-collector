@@ -33,9 +33,9 @@ type ExampleProcessorConfig struct {
 var ExampleProcessorFactory = component.NewProcessorFactory(
 	procType,
 	createDefaultConfig,
-	component.WithTracesProcessor(createTracesProcessor),
-	component.WithMetricsProcessor(createMetricsProcessor),
-	component.WithLogsProcessor(createLogsProcessor))
+	component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, component.StabilityLevelInDevelopment),
+	component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, component.StabilityLevelInDevelopment),
+	component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, component.StabilityLevelInDevelopment))
 
 // CreateDefaultConfig creates the default configuration for the Processor.
 func createDefaultConfig() config.Processor {

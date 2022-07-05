@@ -179,22 +179,43 @@ type processorFactory struct {
 }
 
 // WithTracesProcessor overrides the default "error not supported" implementation for CreateTracesProcessor.
+// Deprecated: [v0.55.0] Use WithTracesProcessorAndStabilityLevel instead.
 func WithTracesProcessor(createTracesProcessor CreateTracesProcessorFunc) ProcessorFactoryOption {
+	return WithTracesProcessorAndStabilityLevel(createTracesProcessor, StabilityLevelUndefined)
+}
+
+// WithTracesProcessorAndStabilityLevel overrides the default "error not supported" implementation for CreateTracesProcessor and the default "undefined" stability level.
+func WithTracesProcessorAndStabilityLevel(createTracesProcessor CreateTracesProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
+		o.stability[config.TracesDataType] = sl
 		o.CreateTracesProcessorFunc = createTracesProcessor
 	})
 }
 
 // WithMetricsProcessor overrides the default "error not supported" implementation for CreateMetricsProcessor.
+// Deprecated: [v0.55.0] Use WithMetricsProcessorAndStabilityLevel instead.
 func WithMetricsProcessor(createMetricsProcessor CreateMetricsProcessorFunc) ProcessorFactoryOption {
+	return WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, StabilityLevelUndefined)
+}
+
+// WithMetricsProcessorAndStabilityLevel overrides the default "error not supported" implementation for CreateMetricsProcessor and the default "undefined" stability level.
+func WithMetricsProcessorAndStabilityLevel(createMetricsProcessor CreateMetricsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
+		o.stability[config.MetricsDataType] = sl
 		o.CreateMetricsProcessorFunc = createMetricsProcessor
 	})
 }
 
 // WithLogsProcessor overrides the default "error not supported" implementation for CreateLogsProcessor.
+// Deprecated: [v0.55.0] Use WithLogsProcessorAndStabilityLevel instead.
 func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc) ProcessorFactoryOption {
+	return WithLogsProcessorAndStabilityLevel(createLogsProcessor, StabilityLevelUndefined)
+}
+
+// WithLogsProcessorAndStabilityLevel overrides the default "error not supported" implementation for CreateLogsProcessor and the default "undefined" stability level.
+func WithLogsProcessorAndStabilityLevel(createLogsProcessor CreateLogsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
+		o.stability[config.LogsDataType] = sl
 		o.CreateLogsProcessorFunc = createLogsProcessor
 	})
 }
@@ -202,7 +223,7 @@ func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc) ProcessorFac
 // NewProcessorFactory returns a ProcessorFactory.
 func NewProcessorFactory(cfgType config.Type, createDefaultConfig ProcessorCreateDefaultConfigFunc, options ...ProcessorFactoryOption) ProcessorFactory {
 	f := &processorFactory{
-		baseFactory:                      baseFactory{cfgType: cfgType},
+		baseFactory:                      baseFactory{cfgType: cfgType, stability: make(map[config.DataType]StabilityLevel)},
 		ProcessorCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {

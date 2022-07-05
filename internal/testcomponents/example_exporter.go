@@ -25,7 +25,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-const expType = "exampleexporter"
+const (
+	typeStr   = "exampleexporter"
+	stability = component.StabilityLevelInDevelopment
+)
 
 // ExampleExporterConfig config for ExampleExporter.
 type ExampleExporterConfig struct {
@@ -34,15 +37,16 @@ type ExampleExporterConfig struct {
 
 // ExampleExporterFactory is factory for ExampleExporter.
 var ExampleExporterFactory = component.NewExporterFactory(
-	expType,
+	typeStr,
 	createExporterDefaultConfig,
-	component.WithTracesExporter(createTracesExporter),
-	component.WithMetricsExporter(createMetricsExporter),
-	component.WithLogsExporter(createLogsExporter))
+	component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
+	component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
+	component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
+)
 
 func createExporterDefaultConfig() config.Exporter {
 	return &ExampleExporterConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(expType)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 	}
 }
 

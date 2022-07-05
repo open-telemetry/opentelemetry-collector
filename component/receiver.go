@@ -211,22 +211,43 @@ type receiverFactory struct {
 }
 
 // WithTracesReceiver overrides the default "error not supported" implementation for CreateTracesReceiver.
+// Deprecated: [v0.55.0] Use WithTracesReceiverAndStabilityLevel instead.
 func WithTracesReceiver(createTracesReceiver CreateTracesReceiverFunc) ReceiverFactoryOption {
+	return WithTracesReceiverAndStabilityLevel(createTracesReceiver, StabilityLevelUndefined)
+}
+
+// WithTracesReceiverAndStabilityLevel overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
+func WithTracesReceiverAndStabilityLevel(createTracesReceiver CreateTracesReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
+		o.stability[config.TracesDataType] = sl
 		o.CreateTracesReceiverFunc = createTracesReceiver
 	})
 }
 
 // WithMetricsReceiver overrides the default "error not supported" implementation for CreateMetricsReceiver.
+// Deprecated: [v0.55.0] Use WithMetricsReceiverAndStabilityLevel instead.
 func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiverFunc) ReceiverFactoryOption {
+	return WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, StabilityLevelUndefined)
+}
+
+// WithMetricsReceiverAndStabilityLevel overrides the default "error not supported" implementation for CreateMetricsReceiver and the default "undefined" stability level.
+func WithMetricsReceiverAndStabilityLevel(createMetricsReceiver CreateMetricsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
+		o.stability[config.MetricsDataType] = sl
 		o.CreateMetricsReceiverFunc = createMetricsReceiver
 	})
 }
 
 // WithLogsReceiver overrides the default "error not supported" implementation for CreateLogsReceiver.
+// Deprecated: [v0.55.0] Use WithLogsReceiverAndStabilityLevel instead.
 func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc) ReceiverFactoryOption {
+	return WithLogsReceiverAndStabilityLevel(createLogsReceiver, StabilityLevelUndefined)
+}
+
+// WithLogsReceiverAndStabilityLevel overrides the default "error not supported" implementation for CreateLogsReceiver and the default "undefined" stability level.
+func WithLogsReceiverAndStabilityLevel(createLogsReceiver CreateLogsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
+		o.stability[config.LogsDataType] = sl
 		o.CreateLogsReceiverFunc = createLogsReceiver
 	})
 }
@@ -234,7 +255,7 @@ func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc) ReceiverFactory
 // NewReceiverFactory returns a ReceiverFactory.
 func NewReceiverFactory(cfgType config.Type, createDefaultConfig ReceiverCreateDefaultConfigFunc, options ...ReceiverFactoryOption) ReceiverFactory {
 	f := &receiverFactory{
-		baseFactory:                     baseFactory{cfgType: cfgType},
+		baseFactory:                     baseFactory{cfgType: cfgType, stability: make(map[config.DataType]StabilityLevel)},
 		ReceiverCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {
