@@ -29,7 +29,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Make sure the current `main` branch build successfully passes ([Core](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/build-and-test.yml?query=branch%3Amain) and [Contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml?query=branch%3Amain)).
 
-1. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.55.0` as the version to be released, following `v0.44.0`.
+1. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.55.0` as the version to be released, following `v0.54.0`.
 
 1. To keep track of the progress, it might be helpful to create a [tracking issue](https://github.com/open-telemetry/opentelemetry-collector/issues/new?assignees=&labels=release&template=release.md&title=Release+vX.X.X) similar to [#4870](https://github.com/open-telemetry/opentelemetry-collector/issues/4870). You are responsible for all of them, except the operator one. Once the issue is created, you can create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
 
