@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.55.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated `config.ServiceTelemetry` (#5565)
