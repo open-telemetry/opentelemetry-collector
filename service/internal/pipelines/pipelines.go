@@ -342,7 +342,7 @@ func logStabilityMessage(logger *zap.Logger, sl component.StabilityLevel) {
 	case component.StabilityLevelAlpha, component.StabilityLevelBeta, component.StabilityLevelStable:
 		logger.Debug("Stability level", zap.String(components.ZapStabilityKey, sl.String()))
 	default:
-		logger.Info("Stability level of component undefined", zap.String(components.ZapStabilityKey, sl.String()))
+		logger.Debug("Stability level of component undefined", zap.String(components.ZapStabilityKey, sl.String()))
 	}
 }
 

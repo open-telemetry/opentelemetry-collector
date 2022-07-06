@@ -34,6 +34,7 @@
 ### 🧰 Bug fixes 🧰
 
 - Fix initialization of the OpenTelemetry MetricProvider. (#5571)
+- Set log level for `undefined` stability level to debug. (#5635)
 
 ## v0.54.0 Beta
 

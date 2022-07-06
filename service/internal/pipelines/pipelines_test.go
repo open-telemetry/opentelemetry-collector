@@ -359,7 +359,7 @@ func TestLogStabilityLevle(t *testing.T) {
 		},
 		{
 			level:        zapcore.InfoLevel,
-			expectedLogs: 4,
+			expectedLogs: 3,
 		},
 	}
 
