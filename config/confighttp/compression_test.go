@@ -233,6 +233,40 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 	}
 }
 
+func TestHTTPContentCompressionNilRequestBody(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	})
+
+	addr := testutil.GetAvailableLocalAddress(t)
+	ln, err := net.Listen("tcp", addr)
+	require.NoError(t, err, "failed to create listener: %v", err)
+	srv := &http.Server{
+		Handler: handler,
+	}
+	go func() {
+		_ = srv.Serve(ln)
+	}()
+	// Wait for the servers to start
+	<-time.After(10 * time.Millisecond)
+
+	serverURL := fmt.Sprintf("http://%s", ln.Addr().String())
+
+	req, err := http.NewRequest("GET", serverURL, nil)
+	require.NoError(t, err, "failed to create request to test handler")
+
+	client := http.Client{}
+	client.Transport = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+
+	res, err := client.Do(req)
+	require.NoError(t, err)
+
+	_, err = ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+	require.NoError(t, srv.Close())
+}
+
 func compressGzip(body []byte) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 
