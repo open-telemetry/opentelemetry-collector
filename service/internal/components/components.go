@@ -19,6 +19,17 @@ import (
 	"go.uber.org/zap"
 )
 
+StabilityLevelUndefined = iota // skip 0, start types from 1.
+StabilityLevelUnmaintained
+StabilityLevelDeprecated
+StabilityLevelInDevelopment
+StabilityLevelAlpha
+StabilityLevelBeta
+StabilityLevelStable
+
+// LogStabilityLevel logs the stability level of a component. The log level is set to info for
+// log levels: undefined, unmaintained, deprecated and in development. The log level is set to debug
+// for alpha, beta and stable.
 func LogStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
 	if sl >= component.StabilityLevelAlpha {
 		logger.Debug(sl.LogMessage(), zap.String(ZapStabilityKey, sl.String()))
