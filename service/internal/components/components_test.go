@@ -18,10 +18,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestLogStabilityLevle(t *testing.T) {

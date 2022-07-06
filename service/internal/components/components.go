@@ -15,8 +15,9 @@
 package components // import "go.opentelemetry.io/collector/service/internal/components"
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 // LogStabilityLevel logs the stability level of a component. The log level is set to info for
