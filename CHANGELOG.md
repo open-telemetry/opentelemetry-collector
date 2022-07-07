@@ -5,7 +5,7 @@
 ## v0.55.0 Beta
 
 ### 🛑 Breaking changes 🛑
-
+- Add `linux-ppc64le` architecture to cross build tests in CI
 - Remove deprecated `config.ServiceTelemetry` (#5565)
 - Remove deprecated `config.ServiceTelemetryLogs` (#5565)
 - Remove deprecated `config.ServiceTelemetryMetrics` (#5565)
