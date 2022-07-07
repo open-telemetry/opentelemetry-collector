@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/internal"
 	"go.opentelemetry.io/collector/service/internal/extensions"
 	"go.opentelemetry.io/collector/service/internal/pipelines"
@@ -97,9 +98,11 @@ func newService(set *settings) (*service, error) {
 		return nil, fmt.Errorf("cannot build pipelines: %w", err)
 	}
 
-	// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-	if err = telemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, getBallastSize(srv.host)); err != nil {
-		return nil, fmt.Errorf("failed to register process metrics: %w", err)
+	if set.Config.Telemetry.Metrics.Level != configtelemetry.LevelNone && set.Config.Telemetry.Metrics.Address != "" {
+		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
+		if err = telemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, getBallastSize(srv.host)); err != nil {
+			return nil, fmt.Errorf("failed to register process metrics: %w", err)
+		}
 	}
 
 	return srv, nil

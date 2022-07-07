@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🧰 Bug fixes 🧰
+
+- Fix Collector panic when disabling telemetry metrics (#5642)
+
 ## v0.55.0 Beta
 
 ### 🛑 Breaking changes 🛑
