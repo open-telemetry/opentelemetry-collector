@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func TestLogStabilityLevle(t *testing.T) {
+func TestLogStabilityLevel(t *testing.T) {
 	tests := []struct {
 		level        zapcore.Level
 		expectedLogs int

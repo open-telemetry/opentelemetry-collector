@@ -141,19 +141,19 @@ func (sl StabilityLevel) String() string {
 func (sl StabilityLevel) LogMessage() string {
 	switch sl {
 	case StabilityLevelUnmaintained:
-		return "This component is unmaintained and actively looking for contributors. This component will become deprecated after 6 months of remaining unmaintained."
+		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 6 months of remaining unmaintained."
 	case StabilityLevelDeprecated:
-		return "This component has been deprecated and will be removed in future releases."
+		return "Deprecated component. Will be removed in future releases."
 	case StabilityLevelInDevelopment:
-		return "This component is in development and may change in the future."
+		return "In development component. May change in the future."
 	case StabilityLevelAlpha:
-		return "This component is alpha and may change in the future."
+		return "Alpha component. May change in the future."
 	case StabilityLevelBeta:
-		return "This component is beta and may change in the future."
+		return "Beta component. May change in the future."
 	case StabilityLevelStable:
-		return "This component is stable."
+		return "Stable component."
 	}
-	return "The stability level of this component is undefined"
+	return "Stability level of component is undefined"
 }
 
 // Factory is implemented by all component factories.
