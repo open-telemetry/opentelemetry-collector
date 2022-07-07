@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	fluentobserv "go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.opentelemetry.io/collector/receiver/kafkareceiver"
-	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
 // applicationTelemetry is application's own telemetry.
@@ -54,10 +53,10 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 		return nil
 	}
 
-	processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
-	if err != nil {
-		return err
-	}
+	// processMetricsViews, err := telemetry2.NewProcessMetricsViews(ballastSizeBytes)
+	// if err != nil {
+	// 	return err
+	// }
 
 	var views []*view.View
 	views = append(views, batchprocessor.MetricViews()...)
@@ -65,18 +64,18 @@ func (tel *appTelemetry) init(asyncErrorChannel chan<- error, ballastSizeBytes u
 	views = append(views, jaegerexporter.MetricViews()...)
 	views = append(views, kafkareceiver.MetricViews()...)
 	views = append(views, obsreport.Configure(level)...)
-	views = append(views, processMetricsViews.Views()...)
+	// views = append(views, processMetricsViews.Views()...)
 	views = append(views, processor.MetricViews()...)
 
 	tel.views = views
 	// 报错关键字；a different view with the same name is already registered
 	// 启用多个协程的时候会多次注册公共view，导致报错，暂时屏蔽该报错
 	// 以后有时间再修 TODO
-	if err = view.Register(views...); err != nil && !strings.Contains(err.Error(), "a different view with the same name is already registered") {
+	if err := view.Register(views...); err != nil && !strings.Contains(err.Error(), "a different view with the same name is already registered") {
 		return err
 	}
 
-	processMetricsViews.StartCollection()
+	// processMetricsViews.StartCollection()
 
 	// 因为启动多个application,这里可能会重复监听prometheus端口
 	// TODO 以后有时间处理
