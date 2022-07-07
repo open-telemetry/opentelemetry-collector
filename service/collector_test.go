@@ -360,7 +360,7 @@ func TestCollectorRun(t *testing.T) {
 			factories, err := componenttest.NopFactories()
 			require.NoError(t, err)
 
-			cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-noaddress.yaml")}))
+			cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", tt.file)}))
 			require.NoError(t, err)
 
 			set := CollectorSettings{
