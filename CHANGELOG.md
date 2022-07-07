@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- Add `linux-ppc64le` architecture to cross build tests in CI
+
 ## v0.55.0 Beta
 
 ### 🛑 Breaking changes 🛑
