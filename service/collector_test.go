@@ -347,6 +347,32 @@ func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
 	}
 }
 
+func TestCollectorWithNoMetrics(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nometrics.yaml")}))
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	// Calling shutdown before collector is running should cause it to return quickly
+	require.NotPanics(t, func() { col.Shutdown() })
+
+	wg := startCollector(context.Background(), t, col)
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+}
+
 func TestCollectorShutdownBeforeRun(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
@@ -362,9 +388,6 @@ func TestCollectorShutdownBeforeRun(t *testing.T) {
 	}
 	col, err := New(set)
 	require.NoError(t, err)
-
-	// Calling shutdown before collector is running should cause it to return quickly
-	require.NotPanics(t, func() { col.Shutdown() })
 
 	wg := startCollector(context.Background(), t, col)
 
