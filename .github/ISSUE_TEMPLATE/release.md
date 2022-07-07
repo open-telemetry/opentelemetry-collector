@@ -16,4 +16,4 @@ Like #4522, but for vX.X.X
 - [ ] Prepare otelcol-releases vX.X.X
 - [ ] Release binaries and container images vX.X.X
 - [ ] Release the operator vX.X.X
-- [ ] Update the opentelemetry-collector helm chart to use vX.X.X
+- [ ] Update the opentelemetry-collector helm chart to use vX.X.X docker image
