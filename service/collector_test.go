@@ -363,9 +363,6 @@ func TestCollectorWithNoMetrics(t *testing.T) {
 	col, err := New(set)
 	require.NoError(t, err)
 
-	// Calling shutdown before collector is running should cause it to return quickly
-	require.NotPanics(t, func() { col.Shutdown() })
-
 	wg := startCollector(context.Background(), t, col)
 
 	col.Shutdown()
@@ -388,6 +385,9 @@ func TestCollectorShutdownBeforeRun(t *testing.T) {
 	}
 	col, err := New(set)
 	require.NoError(t, err)
+
+	// Calling shutdown before collector is running should cause it to return quickly
+	require.NotPanics(t, func() { col.Shutdown() })
 
 	wg := startCollector(context.Background(), t, col)
 
