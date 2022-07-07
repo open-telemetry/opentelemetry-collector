@@ -347,27 +347,38 @@ func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
 	}
 }
 
-func TestCollectorWithNoMetrics(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nometrics.yaml")}))
-	require.NoError(t, err)
-
-	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
-		ConfigProvider: cfgProvider,
-		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+func TestCollectorRun(t *testing.T) {
+	tests := []struct {
+		file string
+	}{
+		{file: "otelcol-nometrics.yaml"},
+		{file: "otelcol-noaddress.yaml"},
 	}
-	col, err := New(set)
-	require.NoError(t, err)
 
-	wg := startCollector(context.Background(), t, col)
+	for _, tt := range tests {
+		t.Run(tt.file, func(t *testing.T) {
+			factories, err := componenttest.NopFactories()
+			require.NoError(t, err)
 
-	col.Shutdown()
-	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+			cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-noaddress.yaml")}))
+			require.NoError(t, err)
+
+			set := CollectorSettings{
+				BuildInfo:      component.NewDefaultBuildInfo(),
+				Factories:      factories,
+				ConfigProvider: cfgProvider,
+				telemetry:      newColTelemetry(featuregate.NewRegistry()),
+			}
+			col, err := New(set)
+			require.NoError(t, err)
+
+			wg := startCollector(context.Background(), t, col)
+
+			col.Shutdown()
+			wg.Wait()
+			assert.Equal(t, Closed, col.GetState())
+		})
+	}
 }
 
 func TestCollectorShutdownBeforeRun(t *testing.T) {
