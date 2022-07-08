@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- Add `linux-ppc64le` architecture to cross build tests in CI
+
 ### 🧰 Bug fixes 🧰
 
 - Fix Collector panic when disabling telemetry metrics (#5642)
