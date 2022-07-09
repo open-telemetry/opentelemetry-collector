@@ -46,6 +46,7 @@ type Registry struct {
 
 // Apply a configuration in the form of a map of Gate identifiers to boolean values.
 // Sets only those values provided in the map, other gate values are not changed.
+// Deprecated: [v0.56.0] Use MustApply instead.
 func (r *Registry) Apply(cfg map[string]bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -53,6 +54,21 @@ func (r *Registry) Apply(cfg map[string]bool) {
 		if g, ok := r.gates[id]; ok {
 			g.Enabled = val
 			r.gates[g.ID] = g
+		}
+	}
+}
+
+// MustApply a configuration in the form of a map of Gate identifiers to boolean values.
+// Sets only those values provided in the map, other gate values are not changed.
+func (r *Registry) MustApply(cfg map[string]bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for id, val := range cfg {
+		if g, ok := r.gates[id]; ok {
+			g.Enabled = val
+			r.gates[g.ID] = g
+		} else {
+			panic(fmt.Sprintf("feature gate %s is unregistered", id))
 		}
 	}
 }
