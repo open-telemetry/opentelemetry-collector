@@ -547,7 +547,9 @@ func readExponentialHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.Exp
 		case "count":
 			point.Count = uint64(readInt64(iter))
 		case "sum":
-			point.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+			point.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{
+				Sum: iter.ReadFloat64(),
+			}
 		case "scale":
 			point.Scale = iter.ReadInt32()
 		case "zero_count", "zeroCount":
