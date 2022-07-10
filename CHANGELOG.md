@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🧰 Bug fixes 🧰
+
+- Fix undefined cgroupv1 memroy limit with HierarchyMemoryQuota (#4972)
+
 ### 💡 Enhancements 💡
 
 - Add `linux-ppc64le` architecture to cross build tests in CI

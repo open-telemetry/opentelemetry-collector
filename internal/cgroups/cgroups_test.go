@@ -137,6 +137,61 @@ func TestCGroupsCPUQuota(t *testing.T) {
 	}
 }
 
+func TestCGroupsHierarchyMemoryQuota(t *testing.T) {
+	testTable := []struct {
+		name            string
+		expectedQuota   int64
+		expectedDefined bool
+		shouldHaveError bool
+	}{
+		{
+			name:            "memory",
+			expectedQuota:   4294967296,
+			expectedDefined: true,
+			shouldHaveError: false,
+		},
+		{
+			name:            "memory/invalid-memory",
+			expectedQuota:   -1,
+			expectedDefined: false,
+			shouldHaveError: false,
+		},
+		{
+			name:            "memory/unlimited-memory",
+			expectedQuota:   9223372036854771712,
+			expectedDefined: true,
+			shouldHaveError: false,
+		},
+		{
+			name:            "memory/non-exist",
+			expectedQuota:   -1,
+			expectedDefined: false,
+			shouldHaveError: true,
+		},
+	}
+
+	cgroups := make(CGroups)
+
+	quota, defined, err := cgroups.HierarchyMemoryQuota()
+	assert.Equal(t, int64(-1), quota, "nonexistent")
+	assert.False(t, defined, "nonexistent")
+	assert.NoError(t, err, "nonexistent")
+
+	for _, tt := range testTable {
+		cgroupPath := filepath.Join(testDataCGroupsPath, tt.name)
+		cgroups[_cgroupSubsysMemory] = NewCGroup(cgroupPath)
+
+		quota, defined, err := cgroups.HierarchyMemoryQuota()
+		assert.Equal(t, tt.expectedQuota, quota, tt.name)
+		assert.Equal(t, tt.expectedDefined, defined, tt.name)
+		if tt.shouldHaveError {
+			assert.Error(t, err, tt.name)
+		} else {
+			assert.NoError(t, err, tt.name)
+		}
+	}
+}
+
 func TestCGroupsIsCGroupV2(t *testing.T) {
 	testTable := []struct {
 		name            string
