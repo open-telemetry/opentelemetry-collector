@@ -105,9 +105,7 @@ type MetricsConfig struct {
 	Address string `mapstructure:"address"`
 }
 
-// TracesConfig defines settings to configure context propagation of the collector traces. Collector uses
-// go.opentelemetry.io/contrib/propagators/autoprop package to propagate the context and OTEL_PROPAGATORS
-// environment variable can be set to configure the propagators.
+// TracesConfig defines the configurable settings for service telemetry traces.
 type TracesConfig struct {
 	// DisablePropagation disables propagation of the trace context to external backend beyond exporters.
 	// The context is propagated by default.
