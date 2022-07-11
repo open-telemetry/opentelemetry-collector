@@ -20,7 +20,7 @@ import (
 
 	"go.opentelemetry.io/contrib/propagators/autoprop"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric/nonrecording"
+	"go.opentelemetry.io/otel/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -53,7 +53,7 @@ func newService(set *settings) (*service, error) {
 				// needed for supporting the zpages extension
 				sdktrace.WithSampler(internal.AlwaysRecord()),
 			),
-			MeterProvider: nonrecording.NewNoopMeterProvider(),
+			MeterProvider: metric.NewNoopMeterProvider(),
 			MetricsLevel:  set.Config.Telemetry.Metrics.Level,
 		},
 		host: &serviceHost{

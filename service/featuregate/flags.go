@@ -44,6 +44,10 @@ func (f FlagValue) String() string {
 
 // Set applies the FlagValue encoded in the input string
 func (f FlagValue) Set(s string) error {
+	if s == "" {
+		return nil
+	}
+
 	return f.setSlice(strings.Split(s, ","))
 }
 
