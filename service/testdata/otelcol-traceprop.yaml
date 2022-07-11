@@ -8,7 +8,7 @@ service:
   telemetry:
     traces:
       propagation:
-        enabled: false
+        enabled: true
   pipelines:
     metrics:
       receivers: [nop]
