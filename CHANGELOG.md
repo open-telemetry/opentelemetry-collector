@@ -9,6 +9,7 @@
 ### 🧰 Bug fixes 🧰
 
 - Fix Collector panic when disabling telemetry metrics (#5642)
+- Fix Collector panic when featuregate value is empty (#5663)
 
 ## v0.55.0 Beta
 
