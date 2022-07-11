@@ -64,7 +64,7 @@ func newService(set *settings) (*service, error) {
 		telemetryInitializer: set.telemetry,
 	}
 
-	if !set.Config.Service.Telemetry.Traces.DisablePropagation {
+	if set.Config.Service.Telemetry.Traces.Propagation.Enabled {
 		otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
 	}
 

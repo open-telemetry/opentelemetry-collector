@@ -107,7 +107,13 @@ type MetricsConfig struct {
 
 // TracesConfig defines the configurable settings for service telemetry traces.
 type TracesConfig struct {
-	// DisablePropagation disables propagation of the trace context to external backend beyond exporters.
-	// The context is propagated by default.
-	DisablePropagation bool `mapstructure:"disable_propagation"`
+	// Configuration related to propagation of collector traces.
+	Propagation PropagationConfig `mapstructure:"propagation"`
+}
+
+// PropagationConfig defines the configuration related to propagation of collectors traces
+type PropagationConfig struct {
+	// Enabled sets context propagation of collector traces to downstream
+	// services consuming collectors export requests.
+	Enabled bool `mapstructure:"enabled"`
 }
