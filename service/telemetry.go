@@ -28,7 +28,6 @@ import (
 	"go.opencensus.io/stats/view"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/nonrecording"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
@@ -76,7 +75,7 @@ func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
 	})
 	return &telemetryInitializer{
 		registry: registry,
-		mp:       nonrecording.NewNoopMeterProvider(),
+		mp:       metric.NewNoopMeterProvider(),
 	}
 }
 
