@@ -5,7 +5,6 @@
 ### 💡 Enhancements 💡
 
 - Add `linux-ppc64le` architecture to cross build tests in CI
-- Collector failed when passed an unregistered feature gate (#5660)
 
 ### 🧰 Bug fixes 🧰
 
