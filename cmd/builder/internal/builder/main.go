@@ -85,11 +85,12 @@ func Compile(cfg Config) error {
 	}
 
 	cfg.Logger.Info("Compiling")
-	// #nosec G204
+
 	args := []string{"build", "-ldflags=-s -w", "-trimpath", "-o", cfg.Distribution.Name}
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
 	}
+	// #nosec G204
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
