@@ -347,6 +347,18 @@ func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
 	}
 }
 
+func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
+	for _, tc := range ownMetricsTestCases("test version") {
+		t.Run(tc.name, func(t *testing.T) {
+			colTel := newColTelemetry(featuregate.NewRegistry())
+			colTel.registry.Apply(map[string]bool{
+				allowTraceContextPropagationFeatureGateID: true,
+			})
+			testCollectorStartHelper(t, colTel, tc)
+		})
+	}
+}
+
 func TestCollectorRun(t *testing.T) {
 	tests := []struct {
 		file string
