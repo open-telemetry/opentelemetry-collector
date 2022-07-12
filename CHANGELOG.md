@@ -5,7 +5,8 @@
 ### 💡 Enhancements 💡
 
 - Add `linux-ppc64le` architecture to cross build tests in CI
-- Add support to propagate context of internal trace generated in collector's export request (#5572)
+- Add support to propagate context of internal trace generated in collector's export request if 
+  telemetry.allowTraceContextPropagation featuregate is enabled (#5572)
 
 ### 🧰 Bug fixes 🧰
 
