@@ -5,7 +5,7 @@
 ### 💡 Enhancements 💡
 
 - Add `linux-ppc64le` architecture to cross build tests in CI
-- `loggingexporter`: Decouple `loglevel` field from level of logged messages (#TODO)
+- `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
 
 ### 🧰 Bug fixes 🧰
 
