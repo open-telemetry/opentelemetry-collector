@@ -94,7 +94,5 @@ var (
 	NewMapFromRaw = internal.NewMapFromRaw
 )
 
-var (
-	// NewSliceFromRaw creates a Slice with values from the given []interface{}.
-	NewSliceFromRaw = internal.NewSliceFromRaw
-)
+// NewSliceFromRaw creates a Slice with values from the given []interface{}.
+var NewSliceFromRaw = internal.NewSliceFromRaw
