@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🧰 Bug fixes 🧰
+
+- Fix undefined cgroupv1 memroy limit with HierarchyMemoryQuota (#4972)
+
 ### 🛑 Breaking changes 🛑
 
 - Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
