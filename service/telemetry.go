@@ -56,8 +56,8 @@ const (
 	// telemetrySettings for internal metrics.
 	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 
-	// allowTraceContextPropagationFeatureGateID is the feature gate ID to propagate trace context of internal spans
-	// generated for collector's export requests.
+	// allowTraceContextPropagationFeatureGateID is the feature gate ID to propagate trace context of collectors
+	// internal spans
 	allowTraceContextPropagationFeatureGateID = "telemetry.allowTraceContextPropagation"
 )
 
