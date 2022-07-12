@@ -32,6 +32,7 @@
   - `component.WithTracesProcessor` -> `component.WithTracesProcessorAndStabilityLevel`
   - `component.WithMetricsProcessor` -> `component.WithMetricsProcessorAndStabilityLevel`
   - `component.WithLogsProcessor` -> `component.WithLogsProcessorAndStabilityLevel`
+- Deprecate `Registry.Apply` in `service.featuregate` (#5660)
 
 ### 💡 Enhancements 💡
 
