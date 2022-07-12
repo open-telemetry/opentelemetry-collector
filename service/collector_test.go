@@ -353,7 +353,6 @@ func TestCollectorRun(t *testing.T) {
 	}{
 		{file: "otelcol-nometrics.yaml"},
 		{file: "otelcol-noaddress.yaml"},
-		{file: "otelcol-traceprop.yaml"},
 	}
 
 	for _, tt := range tests {

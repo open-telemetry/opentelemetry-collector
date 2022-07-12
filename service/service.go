@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/contrib/propagators/autoprop"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/multierr"
@@ -62,10 +60,6 @@ func newService(set *settings) (*service, error) {
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
 		telemetryInitializer: set.telemetry,
-	}
-
-	if set.Config.Service.Telemetry.Traces.Propagation.Enabled {
-		otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
 	}
 
 	var err error

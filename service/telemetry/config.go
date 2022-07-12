@@ -24,7 +24,6 @@ import (
 type Config struct {
 	Logs    LogsConfig    `mapstructure:"logs"`
 	Metrics MetricsConfig `mapstructure:"metrics"`
-	Traces  TracesConfig  `mapstructure:"traces"`
 
 	// Resource specifies user-defined attributes to include with all emitted telemetry.
 	// Note that some attributes are added automatically (e.g. service.version) even
@@ -103,17 +102,4 @@ type MetricsConfig struct {
 
 	// Address is the [address]:port that metrics exposition should be bound to.
 	Address string `mapstructure:"address"`
-}
-
-// TracesConfig defines the configurable settings for service telemetry traces.
-type TracesConfig struct {
-	// Configuration related to propagation of collector traces.
-	Propagation PropagationConfig `mapstructure:"propagation"`
-}
-
-// PropagationConfig defines the configuration related to propagation of collectors traces
-type PropagationConfig struct {
-	// Enabled sets context propagation of collector traces to downstream
-	// services consuming collectors export requests.
-	Enabled bool `mapstructure:"enabled"`
 }
