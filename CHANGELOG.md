@@ -5,6 +5,7 @@
 ### 💡 Enhancements 💡
 
 - Add `linux-ppc64le` architecture to cross build tests in CI
+- Expose `internal.NewSliceFromRaw` as `NewSliceFromRaw` in pdata (#5679)
 
 ### 🧰 Bug fixes 🧰
 
