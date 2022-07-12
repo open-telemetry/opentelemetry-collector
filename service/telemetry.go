@@ -16,7 +16,6 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"errors"
-
 	"net/http"
 	"strings"
 	"sync"
