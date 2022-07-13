@@ -91,6 +91,7 @@ package client // import "go.opentelemetry.io/collector/client"
 import (
 	"context"
 	"net"
+	"strings"
 )
 
 type ctxKey struct{}
@@ -160,7 +161,19 @@ func NewMetadata(md map[string][]string) Metadata {
 func (m Metadata) Get(key string) []string {
 	vals := m.data[key]
 	if len(vals) == 0 {
-		return nil
+		// we didn't find the key, but perhaps it just has different cases?
+		for k, v := range m.data {
+			if strings.EqualFold(key, k) {
+				vals = v
+				// we optimize for the next lookup
+				m.data[key] = v
+			}
+		}
+
+		// if it's still not found, it's really not here
+		if len(vals) == 0 {
+			return nil
+		}
 	}
 
 	ret := make([]string, len(vals))
