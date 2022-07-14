@@ -26,10 +26,10 @@ import (
 	ocmetric "go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
+	"go.opentelemetry.io/contrib/propagators/autoprop"
 	"go.opentelemetry.io/otel"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
@@ -137,9 +137,7 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 	}
 
 	if tel.registry.IsEnabled(allowTraceContextPropagationFeatureGateID) {
-		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
-			propagation.TraceContext{},
-			propagation.Baggage{}))
+		otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
 	}
 
 	var pe http.Handler
