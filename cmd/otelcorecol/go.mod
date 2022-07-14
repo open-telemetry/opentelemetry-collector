@@ -59,6 +59,11 @@ require (
 	go.opentelemetry.io/collector/semconv v0.54.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.33.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0 // indirect
+	go.opentelemetry.io/contrib/propagators/autoprop v0.33.0 // indirect
+	go.opentelemetry.io/contrib/propagators/aws v1.8.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.8.0 // indirect
+	go.opentelemetry.io/contrib/propagators/jaeger v1.8.0 // indirect
+	go.opentelemetry.io/contrib/propagators/ot v1.8.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.33.0 // indirect
 	go.opentelemetry.io/otel v1.8.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.31.0 // indirect
