@@ -178,7 +178,9 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
 	}
 
-	if resp.StatusCode == http.StatusBadRequest {
+	// do not retry these errors
+	if resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusRequestEntityTooLarge ||
+		resp.StatusCode == http.StatusPaymentRequired {
 		// Report the failure as permanent if the server thinks the request is malformed.
 		return consumererror.NewPermanent(formattedErr)
 	}
