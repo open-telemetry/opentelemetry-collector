@@ -19,10 +19,12 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -255,6 +257,61 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	_, err = ioutil.ReadAll(res.Body)
 	require.NoError(t, err)
 	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+}
+
+func TestHTTPContentCompressionCopyError(t *testing.T) {
+	copyErrorCompressRoundTripper := &compressRoundTripper{
+		RoundTripper:    http.DefaultTransport,
+		compressionType: "copyFailed",
+		writer: func(buf *bytes.Buffer) (io.WriteCloser, error) {
+			return nil, fmt.Errorf("copy failed")
+		},
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}))
+	defer server.Close()
+
+	req, err := http.NewRequest("GET", server.URL, nil)
+	require.NoError(t, err, "failed to create request to test handler")
+
+	client := http.Client{}
+	client.Transport = copyErrorCompressRoundTripper
+	_, err = client.Do(req)
+	require.Error(t, err)
+}
+
+type closeFailBody struct {
+	*bytes.Buffer
+}
+
+func (*closeFailBody) Close() error {
+	return fmt.Errorf("close failed")
+}
+
+func TestHTTPContentCompressionRequestBodyCloseError(t *testing.T) {
+	testBody := []byte("blank")
+	body := &closeFailBody{
+		Buffer: bytes.NewBuffer(testBody),
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}))
+	defer server.Close()
+
+	url, _ := url.Parse(server.URL)
+	req := &http.Request{
+		Method: "GET",
+		URL:    url,
+		Body:   body,
+	}
+
+	client := http.Client{}
+	client.Transport = newCompressRoundTripper(http.DefaultTransport, configcompression.Gzip)
+	_, err := client.Do(req)
+	require.Error(t, err)
 }
 
 func compressGzip(body []byte) (*bytes.Buffer, error) {
