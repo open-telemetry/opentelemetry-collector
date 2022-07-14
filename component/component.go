@@ -16,8 +16,19 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/config"
+)
+
+var (
+	// ErrNilNextConsumer can be returned by receiver, or processor Start factory funcs that create the Component if the
+	// expected next Consumer is nil.
+	ErrNilNextConsumer = errors.New("nil next Consumer")
+
+	// ErrDataTypeIsNotSupported can be returned by receiver, exporter or processor factory funcs that create the
+	// Component if the particular telemetry data type is not supported by the receiver, exporter or processor.
+	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
 )
 
 // Component is either a receiver, exporter, processor, or an extension.
@@ -93,6 +104,58 @@ const (
 	KindExtension
 )
 
+// StabilityLevel represents the stability level of the component created by the factory.
+// The stability level is used to determine if the component should be used in production
+// or not. For more details see:
+// https://github.com/open-telemetry/opentelemetry-collector#stability-levels
+type StabilityLevel int
+
+const (
+	StabilityLevelUndefined = iota // skip 0, start types from 1.
+	StabilityLevelUnmaintained
+	StabilityLevelDeprecated
+	StabilityLevelInDevelopment
+	StabilityLevelAlpha
+	StabilityLevelBeta
+	StabilityLevelStable
+)
+
+func (sl StabilityLevel) String() string {
+	switch sl {
+	case StabilityLevelUnmaintained:
+		return "unmaintained"
+	case StabilityLevelDeprecated:
+		return "deprecated"
+	case StabilityLevelInDevelopment:
+		return "in development"
+	case StabilityLevelAlpha:
+		return "alpha"
+	case StabilityLevelBeta:
+		return "beta"
+	case StabilityLevelStable:
+		return "stable"
+	}
+	return "undefined"
+}
+
+func (sl StabilityLevel) LogMessage() string {
+	switch sl {
+	case StabilityLevelUnmaintained:
+		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 6 months of remaining unmaintained."
+	case StabilityLevelDeprecated:
+		return "Deprecated component. Will be removed in future releases."
+	case StabilityLevelInDevelopment:
+		return "In development component. May change in the future."
+	case StabilityLevelAlpha:
+		return "Alpha component. May change in the future."
+	case StabilityLevelBeta:
+		return "Beta component. May change in the future."
+	case StabilityLevelStable:
+		return "Stable component."
+	}
+	return "Stability level of component is undefined"
+}
+
 // Factory is implemented by all component factories.
 //
 // This interface cannot be directly implemented. Implementations must
@@ -101,15 +164,26 @@ type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() config.Type
 
+	// StabilityLevel gets the stability level of the component.
+	StabilityLevel(config.DataType) StabilityLevel
+
 	unexportedFactoryFunc()
 }
 
 type baseFactory struct {
-	cfgType config.Type
+	cfgType   config.Type
+	stability map[config.Type]StabilityLevel
 }
 
 func (baseFactory) unexportedFactoryFunc() {}
 
 func (bf baseFactory) Type() config.Type {
 	return bf.cfgType
+}
+
+func (bf baseFactory) StabilityLevel(dt config.DataType) StabilityLevel {
+	if val, ok := bf.stability[dt]; ok {
+		return val
+	}
+	return StabilityLevelUndefined
 }

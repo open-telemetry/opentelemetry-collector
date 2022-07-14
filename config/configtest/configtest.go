@@ -15,26 +15,16 @@
 package configtest // import "go.opentelemetry.io/collector/config/configtest"
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
 
 	"go.uber.org/multierr"
-
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 )
 
 // The regular expression for valid config field tag.
 var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
-
-// LoadConfigMap loads a config.Map from file, and does NOT validate the configuration.
-func LoadConfigMap(fileName string) (*config.Map, error) {
-	ret, err := filemapprovider.New().Retrieve(context.Background(), "file:"+fileName, nil)
-	return ret.Map, err
-}
 
 // CheckConfigStruct enforces that given configuration object is following the patterns
 // used by the collector. This ensures consistency between different implementations

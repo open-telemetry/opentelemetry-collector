@@ -17,6 +17,7 @@ package configtls // import "go.opentelemetry.io/collector/config/configtls"
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -40,11 +41,11 @@ type TLSSetting struct {
 	KeyFile string `mapstructure:"key_file"`
 
 	// MinVersion sets the minimum TLS version that is acceptable.
-	// If not set, TLS 1.0 is used. (optional)
+	// If not set, refer to crypto/tls for defaults. (optional)
 	MinVersion string `mapstructure:"min_version"`
 
 	// MaxVersion sets the maximum TLS version that is acceptable.
-	// If not set, TLS 1.3 is used. (optional)
+	// If not set, refer to crypto/tls for defaults. (optional)
 	MaxVersion string `mapstructure:"max_version"`
 
 	// ReloadInterval specifies the duration after which the certificate will be reloaded
@@ -160,7 +161,7 @@ func (c TLSSetting) loadTLSConfig() (*tls.Config, error) {
 	}
 
 	if (c.CertFile == "" && c.KeyFile != "") || (c.CertFile != "" && c.KeyFile == "") {
-		return nil, fmt.Errorf("for auth via TLS, either both certificate and key must be supplied, or neither")
+		return nil, errors.New("for auth via TLS, either both certificate and key must be supplied, or neither")
 	}
 
 	var getCertificate func(*tls.ClientHelloInfo) (*tls.Certificate, error)
@@ -239,8 +240,9 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 }
 
 func convertVersion(v string) (uint16, error) {
+	// Defaults will be handled by go/crypto/tls
 	if v == "" {
-		return tls.VersionTLS12, nil // default
+		return 0, nil
 	}
 	val, ok := tlsVersions[v]
 	if !ok {

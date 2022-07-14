@@ -1,0 +1,12 @@
+receivers:
+  nop:
+exporters:
+  nop:
+  /custom:
+processors:
+  nop:
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      exporters: [nop]

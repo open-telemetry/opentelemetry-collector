@@ -20,6 +20,7 @@ TOOLS_MOD_DIR := ./internal/tools
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 
+# TODO: Find a way to configure this in the generated code, currently no effect.
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
@@ -146,13 +147,18 @@ install-tools:
 run: otelcorecol
 	./bin/otelcorecol_$(GOOS)_$(GOARCH) --config ${RUN_CONFIG} ${RUN_ARGS}
 
+# Append root module to all modules
 GOMODULES = $(ALL_MODULES) $(PWD)
+
+# Define a delegation target for each module
 .PHONY: $(GOMODULES)
-MODULEDIRS = $(GOMODULES:%=for-all-target-%)
+$(GOMODULES):
+	@echo "Running target '$(TARGET)' in module '$@'"
+	$(MAKE) -C $@ $(TARGET)
+
+# Triggers each module's delegation target
 .PHONY: for-all-target
-for-all-target: $(MODULEDIRS)
-$(MODULEDIRS):
-	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
+for-all-target: $(GOMODULES)
 
 .PHONY: check-component
 check-component:
@@ -229,7 +235,7 @@ gendependabot: $(eval SHELL:=/bin/bash)
 OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
 # The SHA matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v0.15.0
+OPENTELEMETRY_PROTO_VERSION=v0.18.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
@@ -308,7 +314,6 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv"
-	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/model=$(CURDIR)/model"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 	@$(MAKE) -C $(CONTRIB_PATH) test
 	@echo Restoring contrib to no longer use this core checkout
@@ -362,4 +367,5 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m collector-base
+	multimod prerelease -v ./versions.yaml -m collector-core
+	$(MAKE) gotidy

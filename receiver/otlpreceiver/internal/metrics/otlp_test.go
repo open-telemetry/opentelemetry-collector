@@ -43,14 +43,13 @@ func TestExport(t *testing.T) {
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 
 	// Keep metric data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
 	metricData := md.Clone()
 
-	req := pmetricotlp.NewRequest()
-	req.SetMetrics(md)
+	req := pmetricotlp.NewRequestFromMetrics(md)
 	resp, err := metricsClient.Export(context.Background(), req)
 
 	require.NoError(t, err, "Failed to export metrics: %v", err)
@@ -84,9 +83,8 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	defer metricsClientDoneFn()
 
-	md := testdata.GenerateMetricsOneMetric()
-	req := pmetricotlp.NewRequest()
-	req.SetMetrics(md)
+	md := testdata.GenerateMetrics(1)
+	req := pmetricotlp.NewRequestFromMetrics(md)
 
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")

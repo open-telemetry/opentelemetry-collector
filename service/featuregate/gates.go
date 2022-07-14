@@ -27,40 +27,29 @@ type Gate struct {
 	Enabled     bool
 }
 
-var reg = &registry{gates: make(map[string]Gate)}
+var reg = NewRegistry()
 
-// IsEnabled returns true if a registered feature gate is enabled and false otherwise.
-func IsEnabled(id string) bool {
-	return reg.isEnabled(id)
+// GetRegistry returns the global Registry.
+func GetRegistry() *Registry {
+	return reg
 }
 
-// List returns a slice of copies of all registered Gates.
-func List() []Gate {
-	return reg.list()
+// NewRegistry returns a new empty Registry.
+func NewRegistry() *Registry {
+	return &Registry{gates: make(map[string]Gate)}
 }
 
-// Register a Gate. May only be called in an init() function.
-// Will panic() if a Gate with the same ID is already registered.
-func Register(g Gate) {
-	if err := reg.add(g); err != nil {
-		panic(err)
-	}
+type Registry struct {
+	mu    sync.RWMutex
+	gates map[string]Gate
 }
 
 // Apply a configuration in the form of a map of Gate identifiers to boolean values.
 // Sets only those values provided in the map, other gate values are not changed.
-func Apply(cfg map[string]bool) {
-	reg.apply(cfg)
-}
-
-type registry struct {
-	sync.RWMutex
-	gates map[string]Gate
-}
-
-func (r *registry) apply(cfg map[string]bool) {
-	r.Lock()
-	defer r.Unlock()
+// Deprecated: [v0.56.0] Use MustApply instead.
+func (r *Registry) Apply(cfg map[string]bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	for id, val := range cfg {
 		if g, ok := r.gates[id]; ok {
 			g.Enabled = val
@@ -69,27 +58,51 @@ func (r *registry) apply(cfg map[string]bool) {
 	}
 }
 
-func (r *registry) add(g Gate) error {
-	r.Lock()
-	defer r.Unlock()
-	if _, ok := r.gates[g.ID]; ok {
-		return fmt.Errorf("attempted to add pre-existing gate %q", g.ID)
+// MustApply a configuration in the form of a map of Gate identifiers to boolean values.
+// Sets only those values provided in the map, other gate values are not changed.
+func (r *Registry) MustApply(cfg map[string]bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for id, val := range cfg {
+		if g, ok := r.gates[id]; ok {
+			g.Enabled = val
+			r.gates[g.ID] = g
+		} else {
+			panic(fmt.Sprintf("feature gate %s is unregistered", id))
+		}
 	}
-
-	r.gates[g.ID] = g
-	return nil
 }
 
-func (r *registry) isEnabled(id string) bool {
-	r.RLock()
-	defer r.RUnlock()
+// IsEnabled returns true if a registered feature gate is enabled and false otherwise.
+func (r *Registry) IsEnabled(id string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	g, ok := r.gates[id]
 	return ok && g.Enabled
 }
 
-func (r *registry) list() []Gate {
-	r.RLock()
-	defer r.RUnlock()
+// MustRegister like Register but panics if a Gate with the same ID is already registered.
+func (r *Registry) MustRegister(g Gate) {
+	if err := r.Register(g); err != nil {
+		panic(err)
+	}
+}
+
+// Register registers a Gate. May only be called in an init() function.
+func (r *Registry) Register(g Gate) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.gates[g.ID]; ok {
+		return fmt.Errorf("attempted to add pre-existing gate %q", g.ID)
+	}
+	r.gates[g.ID] = g
+	return nil
+}
+
+// List returns a slice of copies of all registered Gates.
+func (r *Registry) List() []Gate {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	ret := make([]Gate, len(r.gates))
 	i := 0
 	for _, gate := range r.gates {

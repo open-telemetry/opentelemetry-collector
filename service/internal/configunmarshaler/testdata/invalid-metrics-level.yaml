@@ -1,0 +1,19 @@
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+extensions:
+  nop:
+service:
+  telemetry:
+    metrics:
+      level: "unknown"
+  extensions: [nop]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
+

@@ -1,0 +1,13 @@
+receivers:
+  nop/ recv:
+  nop /recv :
+exporters:
+  nop:
+processors:
+  nop:
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      exporters: [nop]
+      processors: [nop]

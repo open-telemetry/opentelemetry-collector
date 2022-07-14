@@ -89,9 +89,3 @@ func (pq *persistentQueue) Stop() {
 func (pq *persistentQueue) Size() int {
 	return int(pq.storage.size())
 }
-
-// Capacity returns the current capacity of persistent queue.
-// Currently, it is unlimited but in the future it can take into account available storage space or configured limits
-func (pq *persistentQueue) Capacity() int {
-	return pq.Size() + 1
-}

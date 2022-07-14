@@ -6,21 +6,239 @@
 
 - Fix undefined cgroupv1 memroy limit with HierarchyMemoryQuota (#4972)
 
+### 💡 Enhancements 💡
+
+- Add `linux-ppc64le` architecture to cross build tests in CI
+- `client`: perform case insensitive lookups in case the requested metadata value isn't found (#5646)
+- `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
+
+### 🧰 Bug fixes 🧰
+
+- Fix Collector panic when disabling telemetry metrics (#5642)
+- Fix Collector panic when featuregate value is empty (#5663)
+
+## v0.55.0 Beta
+
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated `config.ServiceTelemetry` (#5565)
+- Remove deprecated `config.ServiceTelemetryLogs` (#5565)
+- Remove deprecated `config.ServiceTelemetryMetrics` (#5565)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
+- Deprecate the following component functions to ensure a stability level is set (#5580):
+  - `component.WithTracesExporter` -> `component.WithTracesExporterAndStabilityLevel`
+  - `component.WithMetricsExporter` -> `component.WithMetricsExporterAndStabilityLevel`
+  - `component.WithLogsExporter` -> `component.WithLogsExporterAndStabilityLevel`
+  - `component.WithTracesReceiver` -> `component.WithTracesReceiverAndStabilityLevel`
+  - `component.WithMetricsReceiver` -> `component.WithMetricsReceiverAndStabilityLevel`
+  - `component.WithLogsReceiver` -> `component.WithLogsReceiverAndStabilityLevel`
+  - `component.WithTracesProcessor` -> `component.WithTracesProcessorAndStabilityLevel`
+  - `component.WithMetricsProcessor` -> `component.WithMetricsProcessorAndStabilityLevel`
+  - `component.WithLogsProcessor` -> `component.WithLogsProcessorAndStabilityLevel`
+- Deprecate `Registry.Apply` in `service.featuregate` (#5660)
+
+### 💡 Enhancements 💡
+
+- Components stability levels are now logged. By default components which haven't defined their stability levels, or which are
+  unmaintained, deprecated or in development will log a message. (#5580)
+
+### 💡 Enhancements 💡
+
+- `exporter/logging`: Skip "bad file descriptor" sync errors (#5585)
+
+### 🧰 Bug fixes 🧰
+
+- Fix initialization of the OpenTelemetry MetricProvider. (#5571)
+- Set log level for `undefined` stability level to debug. (#5635)
+
+## v0.54.0 Beta
+
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated `GetLogger`. (#5504)
+- Remove deprecated `configtest.LoadConfigMap` (#5505)
+- Remove deprecated `config.Map` (#5505)
+- Remove deprecated `config.MapProvider` (#5505)
+- Remove deprecated `config.MapConverter` (#5505)
+- Remove deprecated `config.Received` (#5505)
+- Remove deprecated `config.CloseFunc` (#5505)
+- Deprecated `pcommon.Value.NewValueBytes` is brought back taking `pcommon.ImmutableByteSlice` as an argument instead of `[]byte` (#5299)
+
+### 🚩 Deprecations 🚩
+
+- Use immutable slices for primitive types slices to restrict mutations. (#5299)
+  - `Value.NewValueMBytes` func is deprecated in favor of `Value.NewValueBytes` func that takes
+    `ImmutableByteSlice` instead of `[]byte`
+  - `Value.SetMBytesVal` func is deprecated in favor of `Value.SetBytesVal` func that takes
+    `pcommon.ImmutableByteSlice` instead of []byte.
+  - `Value.BytesVal` func is deprecated in favor of `Value.BytesVal` func that returns `pcommon.ImmutableByteSlice`
+    instead of []byte.
+  - `<HistogramDataPoint|Buckets>.SetMBucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.SetBucketCounts` funcs that take `pcommon.ImmutableUInt64Slice` instead of []uint64.
+  - `<HistogramDataPoint|Buckets>.MBucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.BucketCounts` funcs that return `pcommon.ImmutableUInt64Slice` instead of []uint64.
+  - `HistogramDataPoint.SetMExplicitBounds` func is deprecated in favor of `HistogramDataPoint.SetExplicitBounds` func
+    that takes `pcommon.ImmutableFloat64Slice` instead of []float64.
+  - `HistogramDataPoint.MExplicitBounds` func func is deprecated in favor of `HistogramDataPoint.ExplicitBounds`
+    returns `pcommon.ImmutableFloat64Slice` instead of []float64.
+
+### 💡 Enhancements 💡
+
+- Deprecate `HTTPClientSettings.ToClient` in favor of `HTTPClientSettings.ToClientWithHost` (#5584)
+- Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
+- Update OTLP to v0.18.0 (#5530)
+- Log histogram min/max fields with `logging` exporter (#5520)
+
+### 🧰 Bug fixes 🧰
+
+- Update sum field of exponential histograms to make it optional (#5530)
+- Remove redundant extension shutdown call (#5532)
+- Refactor pipelines builder, fix some issues (#5512)
+  - Unconfigured receivers are not identified, this was not a real problem in final binaries since the validation of the config catch this.
+  - Allow configurations to contain "unused" receivers. Receivers that are configured but not used in any pipeline, this was possible already for exporters and processors.
+  - Remove the enforcement/check that Receiver factories create the same instance for the same config.
+
+## v0.53.0 Beta
+
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated `componenterror` package. (#5420)
+- Remove deprecated `config.MapConverterFunc`. (#5419)
+- Remove `AddCollectorVersionTag`, enabled for long time already. (#5471)
+
+### 🚩 Deprecations 🚩
+
+- Move `config.Map` to its own package `confmap` which does not depend on any component concept (#5237)
+  - `config.Map` -> `confmap.ConfMap`
+  - `config.MapProvider` -> `confmap.Provider`
+  - `config.Received` -> `confmap.Received`
+  - `config.NewReceivedFromMap` -> `confmap.NewReceived`
+  - `config.CloseFunc` -> `confmap.CloseFunc`
+  - `config.ChangeEvent` -> `confmap.ChangeEvent`
+  - `config.MapConverter` -> `confmap.Converter`
+  - Package `envmapprovider` -> `envprovider`
+  - Package `filemapprovider` -> `fileprovider`
+  - Package `yamlmapprovider` -> `yamlprovider`
+  - Package `expandmapconverter` -> `expandconverter`
+  - Package `filemapprovider` -> `fileprovider`
+  - Package `overwritepropertiesmapconverter` -> `overwritepropertiesconverter`
+- Deprecate `component.ExtensionDefaultConfigFunc` in favor of `component.ExtensionCreateDefaultConfigFunc` (#5451)
+- Deprecate `confmap.Received.AsMap` in favor of `confmap.Received.AsConf` (#5465)
+- Deprecate `confmap.Conf.Set`, not used anywhere for the moment (#5485)
+
+### 💡 Enhancements 💡
+
+- Move `service.mapResolver` to `confmap.Resolver` (#5444)
+- Add `linux-arm` architecture to cross build tests in CI (#5472)
+
+### 🧰 Bug fixes 🧰
+
+- Fixes the "service.version" label value for internal metrics, always was "latest" in core/contrib distros. (#5449).
+- Send correct batch stats when SendBatchMaxSize is set (#5385)
+- TLS `MinVersion` and `MaxVersion` defaults will be handled by `crypto/tls` (#5480)
+
+## v0.52.0 Beta
+
+### 🛑 Breaking changes 🛑
+
+- Remove `configunmarshaler.Unmarshaler` interface, per deprecation comment (#5348)
+- Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
+- Remove deprecated pdata getters and setters of primitive slice values: `Value.BytesVal`, `Value.SetBytesVal`, 
+  `Value.UpdateBytes`, `Value.InsertBytes`, `Value.UpsertBytes`, `<HistogramDataPoint|Buckets>.BucketCounts`, 
+  `<HistogramDataPoint|Buckets>.SetBucketCounts`, `HistogramDataPoint.ExplicitBounds`,
+  `HistogramDataPoint.SetExplicitBounds` (#5347)
+- Remove deprecated featuregate funcs/structs from v0.50.0 (#5346)
+- Remove access to deprecated members of the config.Retrieved struct (#5363)
+- Replace usage of `config.MapConverterFunc` with `config.MapConverter` (#5382)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `config.Config` and `config.Service`, use `service.Config*` (#4608)
+- Deprecate `componenterror` package, move everything to `component` (#5383)
+- `pcommon.Value.NewValueBytes` is deprecated in favor of `Value.NewValueMBytes` in preparation of migration to 
+  immutable slices (#5367)
+
+### 💡 Enhancements 💡
+
+- Update OTLP to v0.17.0 (#5335)
+- Add optional min/max fields to histograms (#5399)
+- User-defined Resource attributes can be specified under `service.telemetry.resource`
+  configuration key and will be included as metric lables for own telemetry.
+  If `service.instance.id` is not specified it will be auto-generated. Previously
+  `service.instance.id` was always auto-generated, so the default of the new
+  behavior matches the old behavior. (#5402)
+
+## v0.51.0 Beta
+
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated model module, everything is available in `pdata` and `semconv`. (#5281)
+  - Old versions of the module are still available, but no new versions will be released.
+- Remove deprecated LogRecord.Name field. (#5202)
+
+### 🚩 Deprecations 🚩
+
+- In preparation of migration to immutable slices for primitive type items, the following methods are renamed (#5344)
+  - `Value.BytesVal` func is deprecated in favor of `Value.MBytesVal`.
+  - `Value.SetBytesVal` func is deprecated in favor of `Value.SetMBytesVal`.
+  - `Value.UpdateBytes` func is deprecated in favor of `Value.UpdateMBytes`.
+  - `Value.InsertBytes` func is deprecated in favor of `Value.InsertMBytes`.
+  - `Value.UpsertBytes` func is deprecated in favor of `Value.UpsertMBytes`.
+  - `<HistogramDataPoint|Buckets>.BucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.MBucketCounts`.
+  - `<HistogramDataPoint|Buckets>.SetBucketCounts` funcs are deprecated in favor of
+    `<HistogramDataPoint|Buckets>.SetMBucketCounts`.
+  - `HistogramDataPoint.ExplicitBounds` func is deprecated in favor of `HistogramDataPoint.MExplicitBounds`.
+  - `HistogramDataPoint.SetExplicitBounds` func is deprecated in favor of `HistogramDataPoint.SetMExplicitBounds`.
+
+### 💡 Enhancements 💡
+
+- `pdata`: Expose `pcommon.NewSliceFromRaw` and `pcommon.Slice.AsRaw` functions (#5311)
+
+### 🧰 Bug fixes 🧰
+
+- Fix Windows Event Logs ignoring user-specified logging options (#5298)
+
+## v0.50.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
 - Remove non pdata deprecated funcs/structs (#5220)
+- `pmetric.Exemplar.ValueType()` now returns new type `ExemplarValueType` (#5233)
+- Remove deprecated `Delete` pdata func from (v0.47.0). (#5307)
 
 ### 🚩 Deprecations 🚩
 
 - Deprecate `configunmarshaler` package, move it to internal (#5151)
 - Deprecate all API in `model/semconv`. The package is moved to a new `semcomv` module (#5196)
+- Deprecate access to `config.Retrieved` fields, use the newly added funcs to interact with the internal fields (#5198)
+- Deprecate `p<signal>otlp.Request.Set<Logs|Metrics|Traces>` (#5234)
+  - `plogotlp.Request.SetLogs` func is deprecated in favor of `plogotlp.NewRequestFromLogs`
+  - `pmetricotlp.Request.SetMetrics` func is deprecated in favor of `pmetricotlp.NewRequestFromMetrics`
+  - `ptraceotlp.Request.SetTraces` func is deprecated in favor of `ptraceotlp.NewRequestFromTraces`
+- `pmetric.NumberDataPoint.ValueType()` now returns new type `NumberDataPointValueType` (#5233)
+  - `pmetric.MetricValueType` is deprecated in favor of `NumberDataPointValueType`
+  - `pmetric.MetricValueTypeNone` is deprecated in favor of `NumberDataPointValueTypeNone`
+  - `pmetric.MetricValueTypeInt` is deprecated in favor of `NumberDataPointValueTypeInt`
+  - `pmetric.MetricValueTypeDouble` is deprecated in favor of `NumberDataPointValueTypeDouble`
+- Deprecate `plog.LogRecord.SetName()` function (#5230)
+- Deprecate global `featuregate` funcs in favor of `GetRegistry` and a public `Registry` type (#5160)
 
 ### 💡 Enhancements 💡
+- Add `jsoniter` Unmarshaller (#4817)
+
+- Extend config.Map.Unmarshal hook to check map key string to any TextUnmarshaler not only ComponentID (#5244)
+- Collector will no longer print error with stack trace when the collector is shutdown due to a context cancel. (#5258)
 
 ### 🧰 Bug fixes 🧰
 - Fix translation from otlp.Request to pdata representation, changes to the returned pdata not all reflected to the otlp.Request (#5197)
 - `exporterhelper` now properly consumes any remaining items on stop (#5203)
+- `pdata`: Fix copying of `Value` with `ValueTypeBytes` type (#5267)
+- `pdata`: Fix copying of metric fields of primitive items slice type (#5271)
 
 ## v0.49.0 Beta
 
@@ -1536,7 +1754,7 @@ Released 2020-06-16
 #### Traces
 
 | Receivers  |   Processors   | Exporters  |
-| :--------: | :------------: | :--------: |
+|:----------:|:--------------:|:----------:|
 |   Jaeger   |   Attributes   |    File    |
 | OpenCensus |     Batch      |   Jaeger   |
 |    OTLP    | Memory Limiter |  Logging   |
@@ -1548,7 +1766,7 @@ Released 2020-06-16
 #### Metrics
 
 |  Receivers  |   Processors   | Exporters  |
-| :---------: | :------------: | :--------: |
+|:-----------:|:--------------:|:----------:|
 | HostMetrics |     Batch      |    File    |
 | OpenCensus  |     Filter     |  Logging   |
 |    OTLP     | Memory Limiter | OpenCensus |
@@ -1579,7 +1797,7 @@ Released 2020-03-30
 ### Components
 
 | Receivers / Exporters |   Processors   |      Extensions      |
-| :-------------------: | :------------: | :------------------: |
+|:---------------------:|:--------------:|:--------------------:|
 |        Jaeger         |   Attributes   |     Health Check     |
 |      OpenCensus       |     Batch      | Performance Profiler |
 |     OpenTelemetry     | Memory Limiter |        zPages        |

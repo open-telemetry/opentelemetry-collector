@@ -32,8 +32,6 @@ type ProducerConsumerQueue interface {
 	Produce(item interface{}) bool
 	// Size returns the current Size of the queue
 	Size() int
-	// Capacity returns capacity of the queue
-	Capacity() int
 	// Stop stops all consumers, as well as the length reporter if started,
 	// and releases the items channel. It blocks until all consumers have stopped.
 	Stop()

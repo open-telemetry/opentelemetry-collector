@@ -1,6 +1,12 @@
 # Batch Processor
 
-Supported pipeline types: metric, traces, logs
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | traces [beta]         |
+|                          | metrics [beta]        |
+|                          | logs [beta]           |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
 
 The batch processor accepts spans, metrics, or logs and places them into
 batches. Batching helps better compress the data and reduce the number of
@@ -22,7 +28,7 @@ regardless of size.
 - `send_batch_max_size` (default = 0): The upper limit of the batch size.
   `0` means no upper limit of the batch size.
   This property ensures that larger batches are split into smaller units.
-  It must be greater or equal to `send_batch_size`.
+  It must be greater than or equal to `send_batch_size`.
 
 Examples:
 
@@ -36,3 +42,7 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

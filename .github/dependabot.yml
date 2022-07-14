@@ -23,10 +23,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/model"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/pdata"
     schedule:
       interval: "weekly"

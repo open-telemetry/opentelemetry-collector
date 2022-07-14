@@ -16,13 +16,13 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -38,7 +38,7 @@ func verifyTracesProcessorDoesntProduceAfterShutdown(t *testing.T, factory compo
 		nextSink,
 	)
 	if err != nil {
-		if err == componenterror.ErrDataTypeIsNotSupported {
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			return
 		}
 		require.NoError(t, err)
@@ -49,7 +49,7 @@ func verifyTracesProcessorDoesntProduceAfterShutdown(t *testing.T, factory compo
 	// Send some traces to the processor.
 	const generatedCount = 10
 	for i := 0; i < generatedCount; i++ {
-		require.NoError(t, processor.ConsumeTraces(context.Background(), testdata.GenerateTracesOneSpan()))
+		require.NoError(t, processor.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 	}
 
 	// Now shutdown the processor.

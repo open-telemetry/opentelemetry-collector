@@ -39,10 +39,6 @@ are required.  Avoid querying the registry in a loop.
 
 ## Controlling Gates
 
-```
-N.B.: This feature has not yet been implemented and is subject to change.
-```
-
 Feature gates can be enabled or disabled via the CLI, with the 
 `--feature-gates` flag. When using the CLI flag, gate 
 identifiers must be presented as a comma-delimited list. Gate identifiers

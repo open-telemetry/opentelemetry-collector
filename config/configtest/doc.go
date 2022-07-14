@@ -12,6 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package configtest loads the configuration to test packages
-// implementing the config package interfaces.
+// Package configtest provides testing functionality for config package interfaces.
 package configtest // import "go.opentelemetry.io/collector/config/configtest"

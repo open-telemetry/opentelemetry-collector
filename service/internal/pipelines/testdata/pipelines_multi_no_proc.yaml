@@ -1,0 +1,21 @@
+receivers:
+  examplereceiver:
+  examplereceiver/1:
+
+exporters:
+  exampleexporter:
+  exampleexporter/1:
+
+service:
+  pipelines:
+    traces:
+      receivers: [ examplereceiver, examplereceiver/1 ]
+      exporters: [ exampleexporter, exampleexporter/1 ]
+
+    metrics:
+      receivers: [ examplereceiver, examplereceiver/1 ]
+      exporters: [ exampleexporter, exampleexporter/1 ]
+
+    logs:
+      receivers: [ examplereceiver, examplereceiver/1 ]
+      exporters: [ exampleexporter, exampleexporter/1 ]

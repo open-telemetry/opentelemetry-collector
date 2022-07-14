@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.49.0"
+const defaultOtelColVersion = "0.55.0"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
@@ -147,7 +147,7 @@ func parseModules(mods []Module) ([]Module, error) {
 		if strings.HasPrefix(mod.Path, "./") {
 			path, err := os.Getwd()
 			if err != nil {
-				return mods, fmt.Errorf("module has a relative Path element, but we couldn't get the current working dir: %v", err)
+				return mods, fmt.Errorf("module has a relative Path element, but we couldn't get the current working dir: %w", err)
 			}
 
 			mod.Path = fmt.Sprintf("%s/%s", path, mod.Path[2:])

@@ -65,8 +65,12 @@ func Test${structName}_MoveTo(t *testing.T) {
 
 func Test${structName}_CopyTo(t *testing.T) {
 	ms := New${structName}()
-	generateTest${structName}().CopyTo(ms)
-	assert.EqualValues(t, generateTest${structName}(), ms)
+	orig := New${structName}()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTest${structName}()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }`
 
 const messageValueGenerateTestTemplate = `func generateTest${structName}() ${structName} {
@@ -164,6 +168,7 @@ func (ms *messageValueStruct) generateTests(sb *strings.Builder) {
 			panic(name)
 		}
 	}))
+
 	// Write accessors tests for the struct
 	for _, f := range ms.fields {
 		sb.WriteString(newLine + newLine)

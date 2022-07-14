@@ -222,23 +222,45 @@ const (
 	MetricDataPointFlagNoRecordedValue = MetricDataPointFlag(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 )
 
-// MetricValueType specifies the type of NumberDataPoint.
-type MetricValueType int32
+// NumberDataPointValueType specifies the type of NumberDataPoint value.
+type NumberDataPointValueType int32
 
 const (
-	MetricValueTypeNone MetricValueType = iota
-	MetricValueTypeInt
-	MetricValueTypeDouble
+	NumberDataPointValueTypeNone NumberDataPointValueType = iota
+	NumberDataPointValueTypeInt
+	NumberDataPointValueTypeDouble
 )
 
-// String returns the string representation of the MetricValueType.
-func (mdt MetricValueType) String() string {
-	switch mdt {
-	case MetricValueTypeNone:
+// String returns the string representation of the NumberDataPointValueType.
+func (nt NumberDataPointValueType) String() string {
+	switch nt {
+	case NumberDataPointValueTypeNone:
 		return "None"
-	case MetricValueTypeInt:
+	case NumberDataPointValueTypeInt:
 		return "Int"
-	case MetricValueTypeDouble:
+	case NumberDataPointValueTypeDouble:
+		return "Double"
+	}
+	return ""
+}
+
+// ExemplarValueType specifies the type of Exemplar measurement value.
+type ExemplarValueType int32
+
+const (
+	ExemplarValueTypeNone ExemplarValueType = iota
+	ExemplarValueTypeInt
+	ExemplarValueTypeDouble
+)
+
+// String returns the string representation of the ExemplarValueType.
+func (nt ExemplarValueType) String() string {
+	switch nt {
+	case ExemplarValueTypeNone:
+		return "None"
+	case ExemplarValueTypeInt:
+		return "Int"
+	case ExemplarValueTypeDouble:
 		return "Double"
 	}
 	return ""
@@ -261,4 +283,40 @@ func (ot OptionalType) String() string {
 		return "Double"
 	}
 	return ""
+}
+
+// MBucketCounts returns the bucketcounts associated with this HistogramDataPoint.
+// Deprecated: [0.54.0] Use BucketCounts instead.
+func (ms HistogramDataPoint) MBucketCounts() []uint64 {
+	return ms.orig.BucketCounts
+}
+
+// SetMBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
+// Deprecated: [0.54.0] Use SetBucketCounts instead.
+func (ms HistogramDataPoint) SetMBucketCounts(v []uint64) {
+	ms.orig.BucketCounts = v
+}
+
+// MExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
+// Deprecated: [0.54.0] Use ExplicitBounds instead.
+func (ms HistogramDataPoint) MExplicitBounds() []float64 {
+	return ms.orig.ExplicitBounds
+}
+
+// SetMExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
+// Deprecated: [0.54.0] Use SetExplicitBounds instead.
+func (ms HistogramDataPoint) SetMExplicitBounds(v []float64) {
+	ms.orig.ExplicitBounds = v
+}
+
+// MBucketCounts returns the bucketcounts associated with this Buckets.
+// Deprecated: [0.54.0] Use BucketCounts instead.
+func (ms Buckets) MBucketCounts() []uint64 {
+	return ms.orig.BucketCounts
+}
+
+// SetMBucketCounts replaces the bucketcounts associated with this Buckets.
+// Deprecated: [0.54.0] Use SetBucketCounts instead.
+func (ms Buckets) SetMBucketCounts(v []uint64) {
+	ms.orig.BucketCounts = v
 }

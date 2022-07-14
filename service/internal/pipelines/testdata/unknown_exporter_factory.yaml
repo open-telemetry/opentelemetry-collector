@@ -1,0 +1,10 @@
+receivers:
+  nop:
+exporters:
+  unknown:
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [unknown]

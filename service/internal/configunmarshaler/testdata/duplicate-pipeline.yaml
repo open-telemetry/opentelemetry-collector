@@ -1,0 +1,16 @@
+receivers:
+  nop:
+exporters:
+  nop:
+processors:
+  nop:
+service:
+  pipelines:
+    traces /pipe:
+      receivers: [nop]
+      exporters: [nop]
+      processors: [nop]
+    traces/ pipe :
+      receivers: [nop]
+      exporters: [nop]
+      processors: [nop]

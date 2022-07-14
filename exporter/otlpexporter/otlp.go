@@ -59,7 +59,7 @@ type exporter struct {
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg config.Exporter, settings component.TelemetrySettings, buildInfo component.BuildInfo) (*exporter, error) {
+func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
@@ -67,21 +67,21 @@ func newExporter(cfg config.Exporter, settings component.TelemetrySettings, buil
 	}
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
-		buildInfo.Description, buildInfo.Version, runtime.GOOS, runtime.GOARCH)
+		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &exporter{config: oCfg, settings: settings, userAgent: userAgent}, nil
+	return &exporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *exporter) start(_ context.Context, host component.Host) (err error) {
+func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 	dialOpts, err := e.config.GRPCClientSettings.ToDialOptions(host, e.settings)
 	if err != nil {
 		return err
 	}
 	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
 
-	if e.clientConn, err = grpc.Dial(e.config.GRPCClientSettings.SanitizedEndpoint(), dialOpts...); err != nil {
+	if e.clientConn, err = grpc.DialContext(ctx, e.config.GRPCClientSettings.SanitizedEndpoint(), dialOpts...); err != nil {
 		return err
 	}
 
@@ -101,22 +101,19 @@ func (e *exporter) shutdown(context.Context) error {
 }
 
 func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	req := ptraceotlp.NewRequest()
-	req.SetTraces(td)
+	req := ptraceotlp.NewRequestFromTraces(td)
 	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
 func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	req := pmetricotlp.NewRequest()
-	req.SetMetrics(md)
+	req := pmetricotlp.NewRequestFromMetrics(md)
 	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
 func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	req := plogotlp.NewRequest()
-	req.SetLogs(ld)
+	req := plogotlp.NewRequestFromLogs(ld)
 	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
@@ -128,9 +125,6 @@ func (e *exporter) enhanceContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-// Send a trace or metrics request to the server. "perform" function is expected to make
-// the actual gRPC unary call that sends the request. This function implements the
-// common OTLP logic around request handling such as retries and throttling.
 func processError(err error) error {
 	if err == nil {
 		// Request is successful, we are done.

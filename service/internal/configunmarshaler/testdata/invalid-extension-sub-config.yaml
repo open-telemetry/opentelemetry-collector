@@ -1,0 +1,16 @@
+extensions:
+  nop:
+    tests
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+service:
+  extensions: [nop]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

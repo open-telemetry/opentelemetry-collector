@@ -1,0 +1,10 @@
+receivers:
+  nop:
+exporters:
+  bf:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      exporters: [bf]

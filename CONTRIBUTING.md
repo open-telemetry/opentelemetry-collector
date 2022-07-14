@@ -181,10 +181,9 @@ $ git push fork feature
 
 ## General Notes
 
-This project uses Go 1.17.* and CircleCI.
+This project uses Go 1.17.* and [Github Actions.](https://github.com/features/actions)
 
-CircleCI uses the Makefile with the `ci` target, it is recommended to
-run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.
+It is recommended to run `make gofmt all` before submitting your PR
 
 The dependencies are managed with `go mod` if you work with the sources under your
 `$GOPATH` you need to set the environment variable `GO111MODULE=on`.

@@ -24,7 +24,7 @@ import (
 )
 
 func TestSplitTraces_noop(t *testing.T) {
-	td := testdata.GenerateTracesManySpansSameResource(20)
+	td := testdata.GenerateTraces(20)
 	splitSize := 40
 	split := splitTraces(splitSize, td)
 	assert.Equal(t, td, split)
@@ -38,7 +38,7 @@ func TestSplitTraces_noop(t *testing.T) {
 }
 
 func TestSplitTraces(t *testing.T) {
-	td := testdata.GenerateTracesManySpansSameResource(20)
+	td := testdata.GenerateTraces(20)
 	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(0, i))
@@ -81,13 +81,13 @@ func TestSplitTraces(t *testing.T) {
 }
 
 func TestSplitTracesMultipleResourceSpans(t *testing.T) {
-	td := testdata.GenerateTracesManySpansSameResource(20)
+	td := testdata.GenerateTraces(20)
 	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	}
 	// add second index to resource spans
-	testdata.GenerateTracesManySpansSameResource(20).
+	testdata.GenerateTraces(20).
 		ResourceSpans().At(0).CopyTo(td.ResourceSpans().AppendEmpty())
 	spans = td.ResourceSpans().At(1).ScopeSpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
@@ -103,13 +103,13 @@ func TestSplitTracesMultipleResourceSpans(t *testing.T) {
 }
 
 func TestSplitTracesMultipleResourceSpans_SplitSizeGreaterThanSpanSize(t *testing.T) {
-	td := testdata.GenerateTracesManySpansSameResource(20)
+	td := testdata.GenerateTraces(20)
 	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(0, i))
 	}
 	// add second index to resource spans
-	testdata.GenerateTracesManySpansSameResource(20).
+	testdata.GenerateTraces(20).
 		ResourceSpans().At(0).CopyTo(td.ResourceSpans().AppendEmpty())
 	spans = td.ResourceSpans().At(1).ScopeSpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
@@ -131,7 +131,7 @@ func BenchmarkCloneSpans(b *testing.B) {
 	td := ptrace.NewTraces()
 	rms := td.ResourceSpans()
 	for i := 0; i < 20; i++ {
-		testdata.GenerateTracesManySpansSameResource(20).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
+		testdata.GenerateTraces(20).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
 		ms := rms.At(rms.Len() - 1).ScopeSpans().At(0).Spans()
 		for i := 0; i < ms.Len(); i++ {
 			ms.At(i).SetName(getTestMetricName(1, i))
@@ -149,7 +149,7 @@ func BenchmarkCloneSpans(b *testing.B) {
 }
 
 func TestSplitTracesMultipleILS(t *testing.T) {
-	td := testdata.GenerateTracesManySpansSameResource(20)
+	td := testdata.GenerateTraces(20)
 	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 	for i := 0; i < spans.Len(); i++ {
 		spans.At(i).SetName(getTestSpanName(0, i))
@@ -182,7 +182,7 @@ func BenchmarkSplitTraces(b *testing.B) {
 	td := ptrace.NewTraces()
 	rms := td.ResourceSpans()
 	for i := 0; i < 20; i++ {
-		testdata.GenerateTracesManySpansSameResource(20).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
+		testdata.GenerateTraces(20).ResourceSpans().MoveAndAppendTo(td.ResourceSpans())
 		ms := rms.At(rms.Len() - 1).ScopeSpans().At(0).Spans()
 		for i := 0; i < ms.Len(); i++ {
 			ms.At(i).SetName(getTestMetricName(1, i))

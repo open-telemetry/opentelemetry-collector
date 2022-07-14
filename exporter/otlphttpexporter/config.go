@@ -15,7 +15,7 @@
 package otlphttpexporter // import "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -44,7 +44,7 @@ var _ config.Exporter = (*Config)(nil)
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.Endpoint == "" && cfg.TracesEndpoint == "" && cfg.MetricsEndpoint == "" && cfg.LogsEndpoint == "" {
-		return fmt.Errorf("at least one endpoint must be specified")
+		return errors.New("at least one endpoint must be specified")
 	}
 	return nil
 }

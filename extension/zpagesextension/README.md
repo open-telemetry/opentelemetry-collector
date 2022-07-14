@@ -1,5 +1,10 @@
 # zPages
 
+| Status                   |                   |
+| ------------------------ | ----------------- |
+| Stability                | [beta]            |
+| Distributions            | [core], [contrib] |
+
 Enables an extension that serves zPages, an HTTP endpoint that provides live
 data for debugging different components that were properly instrumented for such.
 All core exporters and receivers provide some zPage instrumentation.
@@ -70,5 +75,6 @@ that are properly instrumented. For example when using gRPC
 
 Example URL: http://localhost:55679/debug/rpcz
 
-
-
+[beta]: https://github.com/open-telemetry/opentelemetry-collector-contrib#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

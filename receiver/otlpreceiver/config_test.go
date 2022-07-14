@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 10)
+	assert.Equal(t, len(cfg.Receivers), 12)
 
 	assert.Equal(t, cfg.Receivers[config.NewComponentID(typeStr)], factory.CreateDefaultConfig())
 
@@ -55,6 +55,16 @@ func TestLoadConfig(t *testing.T) {
 	defaultOnlyHTTP.SetIDName("only_http")
 	defaultOnlyHTTP.GRPC = nil
 	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "only_http")], defaultOnlyHTTP)
+
+	defaultOnlyHTTPNull := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyHTTPNull.SetIDName("only_http_null")
+	defaultOnlyHTTPNull.GRPC = nil
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "only_http_null")], defaultOnlyHTTPNull)
+
+	defaultOnlyHTTPEmptyMap := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyHTTPEmptyMap.SetIDName("only_http_empty_map")
+	defaultOnlyHTTPEmptyMap.GRPC = nil
+	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "only_http_empty_map")], defaultOnlyHTTPEmptyMap)
 
 	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")],
 		&Config{

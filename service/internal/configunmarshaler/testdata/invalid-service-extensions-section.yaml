@@ -1,0 +1,18 @@
+extensions:
+  nop:
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions:
+    nop:
+      error: true
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

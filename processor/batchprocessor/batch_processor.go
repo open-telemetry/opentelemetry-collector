@@ -59,13 +59,10 @@ type batchProcessor struct {
 
 type batch interface {
 	// export the current batch
-	export(ctx context.Context, sendBatchMaxSize int) error
+	export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (sentBatchSize int, sentBatchBytes int, err error)
 
 	// itemCount returns the size of the current batch
 	itemCount() int
-
-	// size returns the size in bytes of the current batch
-	size() int
 
 	// add item to the current batch
 	add(item interface{})
@@ -175,15 +172,16 @@ func (bp *batchProcessor) resetTimer() {
 }
 
 func (bp *batchProcessor) sendItems(triggerMeasure *stats.Int64Measure) {
-	// Add that it came form the trace pipeline?
-	stats.Record(bp.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(int64(bp.batch.itemCount())))
-
-	if bp.telemetryLevel == configtelemetry.LevelDetailed {
-		stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(bp.batch.size())))
-	}
-
-	if err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize); err != nil {
+	detailed := bp.telemetryLevel == configtelemetry.LevelDetailed
+	sent, bytes, err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize, detailed)
+	if err != nil {
 		bp.logger.Warn("Sender failed", zap.Error(err))
+	} else {
+		// Add that it came form the trace pipeline?
+		stats.Record(bp.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(int64(sent)))
+		if detailed {
+			stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(bytes)))
+		}
 	}
 }
 
@@ -244,25 +242,28 @@ func (bt *batchTraces) add(item interface{}) {
 	td.ResourceSpans().MoveAndAppendTo(bt.traceData.ResourceSpans())
 }
 
-func (bt *batchTraces) export(ctx context.Context, sendBatchMaxSize int) error {
+func (bt *batchTraces) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
 	var req ptrace.Traces
+	var sent int
+	var bytes int
 	if sendBatchMaxSize > 0 && bt.itemCount() > sendBatchMaxSize {
 		req = splitTraces(sendBatchMaxSize, bt.traceData)
 		bt.spanCount -= sendBatchMaxSize
+		sent = sendBatchMaxSize
 	} else {
 		req = bt.traceData
+		sent = bt.spanCount
 		bt.traceData = ptrace.NewTraces()
 		bt.spanCount = 0
 	}
-	return bt.nextConsumer.ConsumeTraces(ctx, req)
+	if returnBytes {
+		bytes = bt.sizer.TracesSize(req)
+	}
+	return sent, bytes, bt.nextConsumer.ConsumeTraces(ctx, req)
 }
 
 func (bt *batchTraces) itemCount() int {
 	return bt.spanCount
-}
-
-func (bt *batchTraces) size() int {
-	return bt.sizer.TracesSize(bt.traceData)
 }
 
 type batchMetrics struct {
@@ -276,25 +277,28 @@ func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
 	return &batchMetrics{nextConsumer: nextConsumer, metricData: pmetric.NewMetrics(), sizer: pmetric.NewProtoMarshaler().(pmetric.Sizer)}
 }
 
-func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int) error {
+func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
 	var req pmetric.Metrics
+	var sent int
+	var bytes int
 	if sendBatchMaxSize > 0 && bm.dataPointCount > sendBatchMaxSize {
 		req = splitMetrics(sendBatchMaxSize, bm.metricData)
 		bm.dataPointCount -= sendBatchMaxSize
+		sent = sendBatchMaxSize
 	} else {
 		req = bm.metricData
+		sent = bm.dataPointCount
 		bm.metricData = pmetric.NewMetrics()
 		bm.dataPointCount = 0
 	}
-	return bm.nextConsumer.ConsumeMetrics(ctx, req)
+	if returnBytes {
+		bytes = bm.sizer.MetricsSize(req)
+	}
+	return sent, bytes, bm.nextConsumer.ConsumeMetrics(ctx, req)
 }
 
 func (bm *batchMetrics) itemCount() int {
 	return bm.dataPointCount
-}
-
-func (bm *batchMetrics) size() int {
-	return bm.sizer.MetricsSize(bm.metricData)
 }
 
 func (bm *batchMetrics) add(item interface{}) {
@@ -319,25 +323,28 @@ func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
 	return &batchLogs{nextConsumer: nextConsumer, logData: plog.NewLogs(), sizer: plog.NewProtoMarshaler().(plog.Sizer)}
 }
 
-func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int) error {
+func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
 	var req plog.Logs
+	var sent int
+	var bytes int
 	if sendBatchMaxSize > 0 && bl.logCount > sendBatchMaxSize {
 		req = splitLogs(sendBatchMaxSize, bl.logData)
 		bl.logCount -= sendBatchMaxSize
+		sent = sendBatchMaxSize
 	} else {
 		req = bl.logData
+		sent = bl.logCount
 		bl.logData = plog.NewLogs()
 		bl.logCount = 0
 	}
-	return bl.nextConsumer.ConsumeLogs(ctx, req)
+	if returnBytes {
+		bytes = bl.sizer.LogsSize(req)
+	}
+	return sent, bytes, bl.nextConsumer.ConsumeLogs(ctx, req)
 }
 
 func (bl *batchLogs) itemCount() int {
 	return bl.logCount
-}
-
-func (bl *batchLogs) size() int {
-	return bl.sizer.LogsSize(bl.logData)
 }
 
 func (bl *batchLogs) add(item interface{}) {

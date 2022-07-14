@@ -1,9 +1,0 @@
-package testdata
-
-
-import (
-    "go.opentelemetry.io/collector/exporter/exporter1"
-)
-
-func main() {
-}

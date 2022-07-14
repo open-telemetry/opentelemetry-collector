@@ -1161,14 +1161,14 @@ func (ms NumberDataPoint) SetTimestamp(v Timestamp) {
 
 // ValueType returns the type of the value for this NumberDataPoint.
 // Calling this function on zero-initialized NumberDataPoint will cause a panic.
-func (ms NumberDataPoint) ValueType() MetricValueType {
+func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
-		return MetricValueTypeDouble
+		return NumberDataPointValueTypeDouble
 	case *otlpmetrics.NumberDataPoint_AsInt:
-		return MetricValueTypeInt
+		return NumberDataPointValueTypeInt
 	}
-	return MetricValueTypeNone
+	return NumberDataPointValueTypeNone
 }
 
 // DoubleVal returns the doubleval associated with this NumberDataPoint.
@@ -1216,9 +1216,9 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
-	case MetricValueTypeDouble:
+	case NumberDataPointValueTypeDouble:
 		dest.SetDoubleVal(ms.DoubleVal())
-	case MetricValueTypeInt:
+	case NumberDataPointValueTypeInt:
 		dest.SetIntVal(ms.IntVal())
 	}
 
@@ -1445,23 +1445,23 @@ func (ms HistogramDataPoint) SetSum(v float64) {
 }
 
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) BucketCounts() []uint64 {
-	return (*ms.orig).BucketCounts
+func (ms HistogramDataPoint) BucketCounts() ImmutableUInt64Slice {
+	return ImmutableUInt64Slice{value: (*ms.orig).BucketCounts}
 }
 
 // SetBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetBucketCounts(v []uint64) {
-	(*ms.orig).BucketCounts = v
+func (ms HistogramDataPoint) SetBucketCounts(v ImmutableUInt64Slice) {
+	(*ms.orig).BucketCounts = v.value
 }
 
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) ExplicitBounds() []float64 {
-	return (*ms.orig).ExplicitBounds
+func (ms HistogramDataPoint) ExplicitBounds() ImmutableFloat64Slice {
+	return ImmutableFloat64Slice{value: (*ms.orig).ExplicitBounds}
 }
 
 // SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetExplicitBounds(v []float64) {
-	(*ms.orig).ExplicitBounds = v
+func (ms HistogramDataPoint) SetExplicitBounds(v ImmutableFloat64Slice) {
+	(*ms.orig).ExplicitBounds = v.value
 }
 
 // Exemplars returns the Exemplars associated with this HistogramDataPoint.
@@ -1479,6 +1479,38 @@ func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
+// Min returns the min associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Min() float64 {
+	return (*ms.orig).GetMin()
+}
+
+// HasMin returns true if the HistogramDataPoint contains a
+// Min value, false otherwise.
+func (ms HistogramDataPoint) HasMin() bool {
+	return ms.orig.Min_ != nil
+}
+
+// SetMin replaces the min associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMin(v float64) {
+	(*ms.orig).Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
+}
+
+// Max returns the max associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Max() float64 {
+	return (*ms.orig).GetMax()
+}
+
+// HasMax returns true if the HistogramDataPoint contains a
+// Max value, false otherwise.
+func (ms HistogramDataPoint) HasMax() bool {
+	return ms.orig.Max_ != nil
+}
+
+// SetMax replaces the max associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetMax(v float64) {
+	(*ms.orig).Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
@@ -1489,10 +1521,30 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 		dest.SetSum(ms.Sum())
 	}
 
-	dest.SetBucketCounts(ms.BucketCounts())
-	dest.SetExplicitBounds(ms.ExplicitBounds())
+	if len(ms.orig.BucketCounts) == 0 {
+		dest.orig.BucketCounts = nil
+	} else {
+		dest.orig.BucketCounts = make([]uint64, len(ms.orig.BucketCounts))
+		copy(dest.orig.BucketCounts, ms.orig.BucketCounts)
+	}
+
+	if len(ms.orig.ExplicitBounds) == 0 {
+		dest.orig.ExplicitBounds = nil
+	} else {
+		dest.orig.ExplicitBounds = make([]float64, len(ms.orig.ExplicitBounds))
+		copy(dest.orig.ExplicitBounds, ms.orig.ExplicitBounds)
+	}
+
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+	if ms.HasMin() {
+		dest.SetMin(ms.Min())
+	}
+
+	if ms.HasMax() {
+		dest.SetMax(ms.Max())
+	}
+
 }
 
 // ExponentialHistogramDataPointSlice logically represents a slice of ExponentialHistogramDataPoint.
@@ -1702,12 +1754,18 @@ func (ms ExponentialHistogramDataPoint) SetCount(v uint64) {
 
 // Sum returns the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Sum() float64 {
-	return (*ms.orig).Sum
+	return (*ms.orig).GetSum()
+}
+
+// HasSum returns true if the ExponentialHistogramDataPoint contains a
+// Sum value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasSum() bool {
+	return ms.orig.Sum_ != nil
 }
 
 // SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
-	(*ms.orig).Sum = v
+	(*ms.orig).Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
 }
 
 // Scale returns the scale associated with this ExponentialHistogramDataPoint.
@@ -1755,19 +1813,62 @@ func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
 
+// Min returns the min associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Min() float64 {
+	return (*ms.orig).GetMin()
+}
+
+// HasMin returns true if the ExponentialHistogramDataPoint contains a
+// Min value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasMin() bool {
+	return ms.orig.Min_ != nil
+}
+
+// SetMin replaces the min associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
+	(*ms.orig).Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
+}
+
+// Max returns the max associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Max() float64 {
+	return (*ms.orig).GetMax()
+}
+
+// HasMax returns true if the ExponentialHistogramDataPoint contains a
+// Max value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasMax() bool {
+	return ms.orig.Max_ != nil
+}
+
+// SetMax replaces the max associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
+	(*ms.orig).Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetCount(ms.Count())
-	dest.SetSum(ms.Sum())
+	if ms.HasSum() {
+		dest.SetSum(ms.Sum())
+	}
+
 	dest.SetScale(ms.Scale())
 	dest.SetZeroCount(ms.ZeroCount())
 	ms.Positive().CopyTo(dest.Positive())
 	ms.Negative().CopyTo(dest.Negative())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+	if ms.HasMin() {
+		dest.SetMin(ms.Min())
+	}
+
+	if ms.HasMax() {
+		dest.SetMax(ms.Max())
+	}
+
 }
 
 // Buckets are a set of bucket counts, encoded in a contiguous array of counts.
@@ -1811,19 +1912,25 @@ func (ms Buckets) SetOffset(v int32) {
 }
 
 // BucketCounts returns the bucketcounts associated with this Buckets.
-func (ms Buckets) BucketCounts() []uint64 {
-	return (*ms.orig).BucketCounts
+func (ms Buckets) BucketCounts() ImmutableUInt64Slice {
+	return ImmutableUInt64Slice{value: (*ms.orig).BucketCounts}
 }
 
 // SetBucketCounts replaces the bucketcounts associated with this Buckets.
-func (ms Buckets) SetBucketCounts(v []uint64) {
-	(*ms.orig).BucketCounts = v
+func (ms Buckets) SetBucketCounts(v ImmutableUInt64Slice) {
+	(*ms.orig).BucketCounts = v.value
 }
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Buckets) CopyTo(dest Buckets) {
 	dest.SetOffset(ms.Offset())
-	dest.SetBucketCounts(ms.BucketCounts())
+	if len(ms.orig.BucketCounts) == 0 {
+		dest.orig.BucketCounts = nil
+	} else {
+		dest.orig.BucketCounts = make([]uint64, len(ms.orig.BucketCounts))
+		copy(dest.orig.BucketCounts, ms.orig.BucketCounts)
+	}
+
 }
 
 // SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
@@ -2420,14 +2527,14 @@ func (ms Exemplar) SetTimestamp(v Timestamp) {
 
 // ValueType returns the type of the value for this Exemplar.
 // Calling this function on zero-initialized Exemplar will cause a panic.
-func (ms Exemplar) ValueType() MetricValueType {
+func (ms Exemplar) ValueType() ExemplarValueType {
 	switch ms.orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
-		return MetricValueTypeDouble
+		return ExemplarValueTypeDouble
 	case *otlpmetrics.Exemplar_AsInt:
-		return MetricValueTypeInt
+		return ExemplarValueTypeInt
 	}
-	return MetricValueTypeNone
+	return ExemplarValueTypeNone
 }
 
 // DoubleVal returns the doubleval associated with this Exemplar.
@@ -2483,9 +2590,9 @@ func (ms Exemplar) SetSpanID(v SpanID) {
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
-	case MetricValueTypeDouble:
+	case ExemplarValueTypeDouble:
 		dest.SetDoubleVal(ms.DoubleVal())
-	case MetricValueTypeInt:
+	case ExemplarValueTypeInt:
 		dest.SetIntVal(ms.IntVal())
 	}
 

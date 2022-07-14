@@ -15,11 +15,13 @@
 package components // import "go.opentelemetry.io/collector/service/internal/components"
 
 const (
-	ZapKindKey         = "kind"
-	ZapKindReceiver    = "receiver"
-	ZapKindProcessor   = "processor"
-	ZapKindLogExporter = "exporter"
-	ZapKindExtension   = "extension"
-	ZapKindPipeline    = "pipeline"
-	ZapNameKey         = "name"
+	ZapKindKey       = "kind"
+	ZapKindReceiver  = "receiver"
+	ZapKindProcessor = "processor"
+	ZapKindExporter  = "exporter"
+	ZapKindExtension = "extension"
+	ZapKindPipeline  = "pipeline"
+	ZapNameKey       = "name"
+	ZapDataTypeKey   = "data_type"
+	ZapStabilityKey  = "stability"
 )

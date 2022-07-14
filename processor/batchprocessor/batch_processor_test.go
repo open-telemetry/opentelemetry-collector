@@ -17,6 +17,7 @@ package batchprocessor
 import (
 	"context"
 	"fmt"
+	"math"
 	"sync"
 	"testing"
 	"time"
@@ -49,7 +50,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	spansPerRequest := 100
 	traceDataSlice := make([]ptrace.Traces, 0, requestCount)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
@@ -90,7 +91,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	requestCount := 1000
 	spansPerRequest := 150
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
@@ -142,7 +143,7 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	start := time.Now()
 	sizeSum := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTraces(spansPerRequest)
 		sizeSum += sizer.TracesSize(td)
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
@@ -183,6 +184,55 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 	assert.Equal(t, sizeSum, int(distData.Sum()))
 }
 
+func TestBatchProcessorSentBySize_withMaxSize(t *testing.T) {
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
+	defer view.Unregister(views...)
+
+	sink := new(consumertest.TracesSink)
+	cfg := createDefaultConfig().(*Config)
+	sendBatchSize := 20
+	sendBatchMaxSize := 37
+	cfg.SendBatchSize = uint32(sendBatchSize)
+	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
+	cfg.Timeout = 500 * time.Millisecond
+	creationSet := componenttest.NewNopProcessorCreateSettings()
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
+	require.NoError(t, err)
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+
+	requestCount := 1
+	spansPerRequest := 500
+	totalSpans := requestCount * spansPerRequest
+
+	start := time.Now()
+	for requestNum := 0; requestNum < requestCount; requestNum++ {
+		td := testdata.GenerateTraces(spansPerRequest)
+		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
+	}
+
+	require.NoError(t, batcher.Shutdown(context.Background()))
+
+	elapsed := time.Since(start)
+	require.LessOrEqual(t, elapsed.Nanoseconds(), cfg.Timeout.Nanoseconds())
+
+	// The max batch size is not a divisor of the total number of spans
+	expectedBatchesNum := int(math.Ceil(float64(totalSpans) / float64(sendBatchMaxSize)))
+
+	require.Equal(t, totalSpans, sink.SpanCount())
+	receivedTraces := sink.AllTraces()
+	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
+
+	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData := viewData[0].Data.(*view.DistributionData)
+	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
+	assert.Equal(t, sink.SpanCount(), int(distData.Sum()))
+	assert.Equal(t, totalSpans%sendBatchMaxSize, int(distData.Min))
+	assert.Equal(t, sendBatchMaxSize, int(distData.Max))
+}
+
 func TestBatchProcessorSentByTimeout(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
@@ -200,7 +250,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTraces(spansPerRequest)
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -249,7 +299,7 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	requestCount := 10
 	spansPerRequest := 10
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTracesManySpansSameResource(spansPerRequest)
+		td := testdata.GenerateTraces(spansPerRequest)
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -280,7 +330,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	metricDataSlice := make([]pmetric.Metrics, 0, requestCount)
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
+		md := testdata.GenerateMetrics(metricsPerRequest)
 		metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
 			metrics.At(metricIndex).SetName(getTestMetricName(requestNum, metricIndex))
@@ -336,7 +386,7 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	start := time.Now()
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
+		md := testdata.GenerateMetrics(metricsPerRequest)
 		size += sizer.MetricsSize(md)
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
@@ -383,11 +433,13 @@ func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
 	sendBatchMaxSize := 99
 
 	batchMetrics := newBatchMetrics(sink)
-	md := testdata.GenerateMetricsManyMetricsSameResource(metricsCount)
+	md := testdata.GenerateMetrics(metricsCount)
 
 	batchMetrics.add(md)
 	require.Equal(t, dataPointsPerMetric*metricsCount, batchMetrics.dataPointCount)
-	require.NoError(t, batchMetrics.export(ctx, sendBatchMaxSize))
+	sent, _, sendErr := batchMetrics.export(ctx, sendBatchMaxSize, false)
+	require.NoError(t, sendErr)
+	require.Equal(t, sendBatchMaxSize, sent)
 	remainingDataPointCount := metricsCount*dataPointsPerMetric - sendBatchMaxSize
 	require.Equal(t, remainingDataPointCount, batchMetrics.dataPointCount)
 }
@@ -409,7 +461,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
+		md := testdata.GenerateMetrics(metricsPerRequest)
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 
@@ -457,7 +509,7 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		md := testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest)
+		md := testdata.GenerateMetrics(metricsPerRequest)
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 
@@ -513,14 +565,14 @@ func getTestMetricName(requestNum, index int) string {
 
 func BenchmarkTraceSizeBytes(b *testing.B) {
 	sizer := ptrace.NewProtoMarshaler().(ptrace.Sizer)
-	td := testdata.GenerateTracesManySpansSameResource(8192)
+	td := testdata.GenerateTraces(8192)
 	for n := 0; n < b.N; n++ {
 		fmt.Println(sizer.TracesSize(td))
 	}
 }
 
 func BenchmarkTraceSizeSpanCount(b *testing.B) {
-	td := testdata.GenerateTracesManySpansSameResource(8192)
+	td := testdata.GenerateTraces(8192)
 	for n := 0; n < b.N; n++ {
 		td.SpanCount()
 	}
@@ -545,7 +597,7 @@ func BenchmarkBatchMetricProcessor(b *testing.B) {
 	mds := make([]pmetric.Metrics, 0, b.N)
 	for n := 0; n < b.N; n++ {
 		mds = append(mds,
-			testdata.GenerateMetricsManyMetricsSameResource(metricsPerRequest),
+			testdata.GenerateMetrics(metricsPerRequest),
 		)
 	}
 	b.StartTimer()
@@ -596,7 +648,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	logDataSlice := make([]plog.Logs, 0, requestCount)
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
+		ld := testdata.GenerateLogs(logsPerRequest)
 		logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			logs.At(logIndex).SetSeverityText(getTestLogSeverityText(requestNum, logIndex))
@@ -650,7 +702,7 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	start := time.Now()
 	size := 0
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
+		ld := testdata.GenerateLogs(logsPerRequest)
 		size += sizer.LogsSize(ld)
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
@@ -706,7 +758,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 
 	start := time.Now()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
+		ld := testdata.GenerateLogs(logsPerRequest)
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 
@@ -754,7 +806,7 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		ld := testdata.GenerateLogsManyLogRecordsSameResource(logsPerRequest)
+		ld := testdata.GenerateLogs(logsPerRequest)
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 

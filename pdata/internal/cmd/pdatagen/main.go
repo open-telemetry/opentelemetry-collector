@@ -41,7 +41,7 @@ func main() {
 		check(f.Close())
 		fileName := "generated_alias.go"
 		packageName := fp.Name
-		if fp.IsCommon() {
+		if fp.IsCommon {
 			fileName = "generated_" + fp.Name + "_alias.go"
 			packageName = "pcommon"
 		}

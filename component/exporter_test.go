@@ -61,6 +61,32 @@ func TestNewExporterFactory_WithOptions(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestNewExporterFactory_WithStabilityLevel(t *testing.T) {
+	const typeStr = "test"
+	defaultCfg := config.NewExporterSettings(config.NewComponentID(typeStr))
+	factory := NewExporterFactory(
+		typeStr,
+		func() config.Exporter { return &defaultCfg },
+		WithTracesExporterAndStabilityLevel(createTracesExporter, StabilityLevelInDevelopment),
+		WithMetricsExporterAndStabilityLevel(createMetricsExporter, StabilityLevelAlpha),
+		WithLogsExporterAndStabilityLevel(createLogsExporter, StabilityLevelDeprecated))
+
+	assert.EqualValues(t, typeStr, factory.Type())
+	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+
+	assert.EqualValues(t, StabilityLevelInDevelopment, factory.StabilityLevel(config.TracesDataType))
+	_, err := factory.CreateTracesExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, StabilityLevelAlpha, factory.StabilityLevel(config.MetricsDataType))
+	_, err = factory.CreateMetricsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, StabilityLevelDeprecated, factory.StabilityLevel(config.LogsDataType))
+	_, err = factory.CreateLogsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
+	assert.NoError(t, err)
+}
+
 func createTracesExporter(context.Context, ExporterCreateSettings, config.Exporter) (TracesExporter, error) {
 	return nil, nil
 }

@@ -29,7 +29,7 @@ import (
 
 func TestTracesSink(t *testing.T) {
 	sink := new(TracesSink)
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 	want := make([]ptrace.Traces, 0, 7)
 	for i := 0; i < 7; i++ {
 		require.NoError(t, sink.ConsumeTraces(context.Background(), td))
@@ -44,7 +44,7 @@ func TestTracesSink(t *testing.T) {
 
 func TestMetricsSink(t *testing.T) {
 	sink := new(MetricsSink)
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 	want := make([]pmetric.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
 		require.NoError(t, sink.ConsumeMetrics(context.Background(), md))
@@ -59,7 +59,7 @@ func TestMetricsSink(t *testing.T) {
 
 func TestLogsSink(t *testing.T) {
 	sink := new(LogsSink)
-	md := testdata.GenerateLogsOneLogRecord()
+	md := testdata.GenerateLogs(1)
 	want := make([]plog.Logs, 0, 7)
 	for i := 0; i < 7; i++ {
 		require.NoError(t, sink.ConsumeLogs(context.Background(), md))

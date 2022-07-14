@@ -19,15 +19,13 @@ package internal
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestPersistentStorageBatch_Operations(t *testing.T) {
-	path := createTemporaryDirectory()
-	defer os.RemoveAll(path)
+	path := t.TempDir()
 
 	ext := createStorageExtension(path)
 	client := createTestClient(ext)

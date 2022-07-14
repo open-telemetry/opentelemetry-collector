@@ -649,18 +649,6 @@ func (ms LogRecord) SetSeverityNumber(v SeverityNumber) {
 	(*ms.orig).SeverityNumber = otlplogs.SeverityNumber(v)
 }
 
-// Name returns the name associated with this LogRecord.
-//
-// Deprecated: [v0.48.0] it was removed from the data model.
-func (ms LogRecord) Name() string {
-	return (*ms.orig).Name
-}
-
-// SetName replaces the name associated with this LogRecord.
-func (ms LogRecord) SetName(v string) {
-	(*ms.orig).Name = v
-}
-
 // Body returns the body associated with this LogRecord.
 func (ms LogRecord) Body() Value {
 	return newValue(&(*ms.orig).Body)
@@ -690,7 +678,6 @@ func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.SetFlags(ms.Flags())
 	dest.SetSeverityText(ms.SeverityText())
 	dest.SetSeverityNumber(ms.SeverityNumber())
-	dest.SetName(ms.Name())
 	ms.Body().CopyTo(dest.Body())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())

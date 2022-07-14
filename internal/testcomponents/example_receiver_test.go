@@ -23,15 +23,14 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func TestExampleReceiverProducer(t *testing.T) {
-	rcv := &ExampleReceiverProducer{}
+func TestExampleReceiver(t *testing.T) {
+	rcv := &ExampleReceiver{}
 	host := componenttest.NewNopHost()
 	assert.False(t, rcv.Started)
-	err := rcv.Start(context.Background(), host)
-	assert.NoError(t, err)
+	assert.NoError(t, rcv.Start(context.Background(), host))
 	assert.True(t, rcv.Started)
 
-	err = rcv.Shutdown(context.Background())
-	assert.NoError(t, err)
-	assert.True(t, rcv.Started)
+	assert.False(t, rcv.Stopped)
+	assert.NoError(t, rcv.Shutdown(context.Background()))
+	assert.True(t, rcv.Stopped)
 }

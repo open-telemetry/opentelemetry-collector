@@ -145,8 +145,12 @@ func TestResourceSpans_MoveTo(t *testing.T) {
 
 func TestResourceSpans_CopyTo(t *testing.T) {
 	ms := NewResourceSpans()
-	generateTestResourceSpans().CopyTo(ms)
-	assert.EqualValues(t, generateTestResourceSpans(), ms)
+	orig := NewResourceSpans()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestResourceSpans()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestResourceSpans_Resource(t *testing.T) {
@@ -291,8 +295,12 @@ func TestScopeSpans_MoveTo(t *testing.T) {
 
 func TestScopeSpans_CopyTo(t *testing.T) {
 	ms := NewScopeSpans()
-	generateTestScopeSpans().CopyTo(ms)
-	assert.EqualValues(t, generateTestScopeSpans(), ms)
+	orig := NewScopeSpans()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestScopeSpans()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestScopeSpans_Scope(t *testing.T) {
@@ -437,8 +445,12 @@ func TestSpan_MoveTo(t *testing.T) {
 
 func TestSpan_CopyTo(t *testing.T) {
 	ms := NewSpan()
-	generateTestSpan().CopyTo(ms)
-	assert.EqualValues(t, generateTestSpan(), ms)
+	orig := NewSpan()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestSpan()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestSpan_TraceID(t *testing.T) {
@@ -679,8 +691,12 @@ func TestSpanEvent_MoveTo(t *testing.T) {
 
 func TestSpanEvent_CopyTo(t *testing.T) {
 	ms := NewSpanEvent()
-	generateTestSpanEvent().CopyTo(ms)
-	assert.EqualValues(t, generateTestSpanEvent(), ms)
+	orig := NewSpanEvent()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestSpanEvent()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestSpanEvent_Timestamp(t *testing.T) {
@@ -835,8 +851,12 @@ func TestSpanLink_MoveTo(t *testing.T) {
 
 func TestSpanLink_CopyTo(t *testing.T) {
 	ms := NewSpanLink()
-	generateTestSpanLink().CopyTo(ms)
-	assert.EqualValues(t, generateTestSpanLink(), ms)
+	orig := NewSpanLink()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestSpanLink()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestSpanLink_TraceID(t *testing.T) {
@@ -889,8 +909,12 @@ func TestSpanStatus_MoveTo(t *testing.T) {
 
 func TestSpanStatus_CopyTo(t *testing.T) {
 	ms := NewSpanStatus()
-	generateTestSpanStatus().CopyTo(ms)
-	assert.EqualValues(t, generateTestSpanStatus(), ms)
+	orig := NewSpanStatus()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestSpanStatus()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestSpanStatus_Code(t *testing.T) {

@@ -145,8 +145,12 @@ func TestResourceMetrics_MoveTo(t *testing.T) {
 
 func TestResourceMetrics_CopyTo(t *testing.T) {
 	ms := NewResourceMetrics()
-	generateTestResourceMetrics().CopyTo(ms)
-	assert.EqualValues(t, generateTestResourceMetrics(), ms)
+	orig := NewResourceMetrics()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestResourceMetrics()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestResourceMetrics_Resource(t *testing.T) {
@@ -291,8 +295,12 @@ func TestScopeMetrics_MoveTo(t *testing.T) {
 
 func TestScopeMetrics_CopyTo(t *testing.T) {
 	ms := NewScopeMetrics()
-	generateTestScopeMetrics().CopyTo(ms)
-	assert.EqualValues(t, generateTestScopeMetrics(), ms)
+	orig := NewScopeMetrics()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestScopeMetrics()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestScopeMetrics_Scope(t *testing.T) {
@@ -437,8 +445,12 @@ func TestMetric_MoveTo(t *testing.T) {
 
 func TestMetric_CopyTo(t *testing.T) {
 	ms := NewMetric()
-	generateTestMetric().CopyTo(ms)
-	assert.EqualValues(t, generateTestMetric(), ms)
+	orig := NewMetric()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestMetric()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestMetric_Name(t *testing.T) {
@@ -581,8 +593,12 @@ func TestGauge_MoveTo(t *testing.T) {
 
 func TestGauge_CopyTo(t *testing.T) {
 	ms := NewGauge()
-	generateTestGauge().CopyTo(ms)
-	assert.EqualValues(t, generateTestGauge(), ms)
+	orig := NewGauge()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestGauge()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestGauge_DataPoints(t *testing.T) {
@@ -603,8 +619,12 @@ func TestSum_MoveTo(t *testing.T) {
 
 func TestSum_CopyTo(t *testing.T) {
 	ms := NewSum()
-	generateTestSum().CopyTo(ms)
-	assert.EqualValues(t, generateTestSum(), ms)
+	orig := NewSum()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestSum()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestSum_AggregationTemporality(t *testing.T) {
@@ -641,8 +661,12 @@ func TestHistogram_MoveTo(t *testing.T) {
 
 func TestHistogram_CopyTo(t *testing.T) {
 	ms := NewHistogram()
-	generateTestHistogram().CopyTo(ms)
-	assert.EqualValues(t, generateTestHistogram(), ms)
+	orig := NewHistogram()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestHistogram()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
@@ -671,8 +695,12 @@ func TestExponentialHistogram_MoveTo(t *testing.T) {
 
 func TestExponentialHistogram_CopyTo(t *testing.T) {
 	ms := NewExponentialHistogram()
-	generateTestExponentialHistogram().CopyTo(ms)
-	assert.EqualValues(t, generateTestExponentialHistogram(), ms)
+	orig := NewExponentialHistogram()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestExponentialHistogram()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
@@ -701,8 +729,12 @@ func TestSummary_MoveTo(t *testing.T) {
 
 func TestSummary_CopyTo(t *testing.T) {
 	ms := NewSummary()
-	generateTestSummary().CopyTo(ms)
-	assert.EqualValues(t, generateTestSummary(), ms)
+	orig := NewSummary()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestSummary()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestSummary_DataPoints(t *testing.T) {
@@ -833,8 +865,12 @@ func TestNumberDataPoint_MoveTo(t *testing.T) {
 
 func TestNumberDataPoint_CopyTo(t *testing.T) {
 	ms := NewNumberDataPoint()
-	generateTestNumberDataPoint().CopyTo(ms)
-	assert.EqualValues(t, generateTestNumberDataPoint(), ms)
+	orig := NewNumberDataPoint()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestNumberDataPoint()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestNumberDataPoint_Attributes(t *testing.T) {
@@ -863,12 +899,12 @@ func TestNumberDataPoint_Timestamp(t *testing.T) {
 
 func TestNumberDataPointValueType(t *testing.T) {
 	tv := NewNumberDataPoint()
-	assert.Equal(t, MetricValueTypeNone, tv.ValueType())
-	assert.Equal(t, "", MetricValueType(1000).String())
+	assert.Equal(t, NumberDataPointValueTypeNone, tv.ValueType())
+	assert.Equal(t, "", NumberDataPointValueType(1000).String())
 	tv.SetDoubleVal(float64(17.13))
-	assert.Equal(t, MetricValueTypeDouble, tv.ValueType())
+	assert.Equal(t, NumberDataPointValueTypeDouble, tv.ValueType())
 	tv.SetIntVal(int64(17))
-	assert.Equal(t, MetricValueTypeInt, tv.ValueType())
+	assert.Equal(t, NumberDataPointValueTypeInt, tv.ValueType())
 }
 
 func TestNumberDataPoint_DoubleVal(t *testing.T) {
@@ -1023,8 +1059,12 @@ func TestHistogramDataPoint_MoveTo(t *testing.T) {
 
 func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	generateTestHistogramDataPoint().CopyTo(ms)
-	assert.EqualValues(t, generateTestHistogramDataPoint(), ms)
+	orig := NewHistogramDataPoint()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestHistogramDataPoint()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestHistogramDataPoint_Attributes(t *testing.T) {
@@ -1069,16 +1109,16 @@ func TestHistogramDataPoint_Sum(t *testing.T) {
 
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, []uint64(nil), ms.BucketCounts())
-	testValBucketCounts := []uint64{1, 2, 3}
+	assert.EqualValues(t, ImmutableUInt64Slice{}, ms.BucketCounts())
+	testValBucketCounts := NewImmutableUInt64Slice([]uint64{1, 2, 3})
 	ms.SetBucketCounts(testValBucketCounts)
 	assert.EqualValues(t, testValBucketCounts, ms.BucketCounts())
 }
 
 func TestHistogramDataPoint_ExplicitBounds(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, []float64(nil), ms.ExplicitBounds())
-	testValExplicitBounds := []float64{1, 2, 3}
+	assert.EqualValues(t, ImmutableFloat64Slice{}, ms.ExplicitBounds())
+	testValExplicitBounds := NewImmutableFloat64Slice([]float64{1, 2, 3})
 	ms.SetExplicitBounds(testValExplicitBounds)
 	assert.EqualValues(t, testValExplicitBounds, ms.ExplicitBounds())
 }
@@ -1097,6 +1137,22 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 	testValFlags := MetricDataPointFlagsNone
 	ms.SetFlags(testValFlags)
 	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
+func TestHistogramDataPoint_Min(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.Min())
+	testValMin := float64(9.23)
+	ms.SetMin(testValMin)
+	assert.EqualValues(t, testValMin, ms.Min())
+}
+
+func TestHistogramDataPoint_Max(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.Max())
+	testValMax := float64(182.55)
+	ms.SetMax(testValMax)
+	assert.EqualValues(t, testValMax, ms.Max())
 }
 
 func TestExponentialHistogramDataPointSlice(t *testing.T) {
@@ -1219,8 +1275,12 @@ func TestExponentialHistogramDataPoint_MoveTo(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	generateTestExponentialHistogramDataPoint().CopyTo(ms)
-	assert.EqualValues(t, generateTestExponentialHistogramDataPoint(), ms)
+	orig := NewExponentialHistogramDataPoint()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestExponentialHistogramDataPoint()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestExponentialHistogramDataPoint_Attributes(t *testing.T) {
@@ -1307,6 +1367,22 @@ func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	assert.EqualValues(t, testValFlags, ms.Flags())
 }
 
+func TestExponentialHistogramDataPoint_Min(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.Min())
+	testValMin := float64(9.23)
+	ms.SetMin(testValMin)
+	assert.EqualValues(t, testValMin, ms.Min())
+}
+
+func TestExponentialHistogramDataPoint_Max(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, float64(0.0), ms.Max())
+	testValMax := float64(182.55)
+	ms.SetMax(testValMax)
+	assert.EqualValues(t, testValMax, ms.Max())
+}
+
 func TestBuckets_MoveTo(t *testing.T) {
 	ms := generateTestBuckets()
 	dest := NewBuckets()
@@ -1317,8 +1393,12 @@ func TestBuckets_MoveTo(t *testing.T) {
 
 func TestBuckets_CopyTo(t *testing.T) {
 	ms := NewBuckets()
-	generateTestBuckets().CopyTo(ms)
-	assert.EqualValues(t, generateTestBuckets(), ms)
+	orig := NewBuckets()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestBuckets()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestBuckets_Offset(t *testing.T) {
@@ -1331,8 +1411,8 @@ func TestBuckets_Offset(t *testing.T) {
 
 func TestBuckets_BucketCounts(t *testing.T) {
 	ms := NewBuckets()
-	assert.EqualValues(t, []uint64(nil), ms.BucketCounts())
-	testValBucketCounts := []uint64{1, 2, 3}
+	assert.EqualValues(t, ImmutableUInt64Slice{}, ms.BucketCounts())
+	testValBucketCounts := NewImmutableUInt64Slice([]uint64{1, 2, 3})
 	ms.SetBucketCounts(testValBucketCounts)
 	assert.EqualValues(t, testValBucketCounts, ms.BucketCounts())
 }
@@ -1457,8 +1537,12 @@ func TestSummaryDataPoint_MoveTo(t *testing.T) {
 
 func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	generateTestSummaryDataPoint().CopyTo(ms)
-	assert.EqualValues(t, generateTestSummaryDataPoint(), ms)
+	orig := NewSummaryDataPoint()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestSummaryDataPoint()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestSummaryDataPoint_Attributes(t *testing.T) {
@@ -1637,8 +1721,12 @@ func TestValueAtQuantile_MoveTo(t *testing.T) {
 
 func TestValueAtQuantile_CopyTo(t *testing.T) {
 	ms := NewValueAtQuantile()
-	generateTestValueAtQuantile().CopyTo(ms)
-	assert.EqualValues(t, generateTestValueAtQuantile(), ms)
+	orig := NewValueAtQuantile()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestValueAtQuantile()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestValueAtQuantile_Quantile(t *testing.T) {
@@ -1768,8 +1856,12 @@ func TestExemplar_MoveTo(t *testing.T) {
 
 func TestExemplar_CopyTo(t *testing.T) {
 	ms := NewExemplar()
-	generateTestExemplar().CopyTo(ms)
-	assert.EqualValues(t, generateTestExemplar(), ms)
+	orig := NewExemplar()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
+	orig = generateTestExemplar()
+	orig.CopyTo(ms)
+	assert.EqualValues(t, orig, ms)
 }
 
 func TestExemplar_Timestamp(t *testing.T) {
@@ -1782,12 +1874,12 @@ func TestExemplar_Timestamp(t *testing.T) {
 
 func TestExemplarValueType(t *testing.T) {
 	tv := NewExemplar()
-	assert.Equal(t, MetricValueTypeNone, tv.ValueType())
-	assert.Equal(t, "", MetricValueType(1000).String())
+	assert.Equal(t, ExemplarValueTypeNone, tv.ValueType())
+	assert.Equal(t, "", ExemplarValueType(1000).String())
 	tv.SetDoubleVal(float64(17.13))
-	assert.Equal(t, MetricValueTypeDouble, tv.ValueType())
+	assert.Equal(t, ExemplarValueTypeDouble, tv.ValueType())
 	tv.SetIntVal(int64(17))
-	assert.Equal(t, MetricValueTypeInt, tv.ValueType())
+	assert.Equal(t, ExemplarValueTypeInt, tv.ValueType())
 }
 
 func TestExemplar_DoubleVal(t *testing.T) {
@@ -2019,10 +2111,12 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
-	tv.SetBucketCounts([]uint64{1, 2, 3})
-	tv.SetExplicitBounds([]float64{1, 2, 3})
+	tv.SetBucketCounts(NewImmutableUInt64Slice([]uint64{1, 2, 3}))
+	tv.SetExplicitBounds(NewImmutableFloat64Slice([]float64{1, 2, 3}))
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
+	tv.SetMin(float64(9.23))
+	tv.SetMax(float64(182.55))
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
@@ -2057,6 +2151,8 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	fillTestBuckets(tv.Negative())
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.SetFlags(MetricDataPointFlagsNone)
+	tv.SetMin(float64(9.23))
+	tv.SetMax(float64(182.55))
 }
 
 func generateTestBuckets() Buckets {
@@ -2067,7 +2163,7 @@ func generateTestBuckets() Buckets {
 
 func fillTestBuckets(tv Buckets) {
 	tv.SetOffset(int32(909))
-	tv.SetBucketCounts([]uint64{1, 2, 3})
+	tv.SetBucketCounts(NewImmutableUInt64Slice([]uint64{1, 2, 3}))
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {

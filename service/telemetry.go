@@ -15,7 +15,7 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -23,8 +23,11 @@ import (
 
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
+	ocmetric "go.opencensus.io/metric"
+	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
@@ -32,143 +35,141 @@ import (
 	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/internal/version"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/featuregate"
-	telemetry2 "go.opentelemetry.io/collector/service/internal/telemetry"
 )
 
-// collectorTelemetry is collector's own telemetry.
-var collectorTelemetry collectorTelemetryExporter = &colTelemetry{}
-
-// AddCollectorVersionTag indicates if the collector version tag should be added to all telemetry metrics
-const AddCollectorVersionTag = true
+// collectorTelemetry is collector's own telemetrySettings.
+var collectorTelemetry = newColTelemetry(featuregate.GetRegistry())
 
 const (
 	zapKeyTelemetryAddress = "address"
 	zapKeyTelemetryLevel   = "level"
 
 	// useOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
-	// telemetry for internal metrics.
+	// telemetrySettings for internal metrics.
 	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 )
 
-func init() {
-	//nolint:staticcheck
-	featuregate.Register(featuregate.Gate{
-		ID:          useOtelForInternalMetricsfeatureGateID,
-		Description: "controls whether the collector to uses open telemetry for internal metrics",
-		Enabled:     false,
-	})
-}
+type telemetryInitializer struct {
+	registry *featuregate.Registry
+	views    []*view.View
 
-type collectorTelemetryExporter interface {
-	init(col *Collector) error
-	shutdown() error
-}
+	ocRegistry *ocmetric.Registry
 
-type colTelemetry struct {
-	views      []*view.View
+	mp metric.MeterProvider
+
 	server     *http.Server
 	doInitOnce sync.Once
 }
 
-func (tel *colTelemetry) init(col *Collector) error {
+func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
+	registry.MustRegister(featuregate.Gate{
+		ID:          useOtelForInternalMetricsfeatureGateID,
+		Description: "controls whether the collector to uses OpenTelemetry for internal metrics",
+		Enabled:     false,
+	})
+	return &telemetryInitializer{
+		registry: registry,
+		mp:       metric.NewNoopMeterProvider(),
+	}
+}
+
+func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap.Logger, cfg ConfigServiceTelemetry, asyncErrorChannel chan error) error {
 	var err error
 	tel.doInitOnce.Do(
 		func() {
-			err = tel.initOnce(col)
+			err = tel.initOnce(buildInfo, logger, cfg, asyncErrorChannel)
 		},
 	)
-	if err != nil {
-		return fmt.Errorf("failed to initialize telemetry: %w", err)
-	}
-	return nil
+	return err
 }
 
-func (tel *colTelemetry) initOnce(col *Collector) error {
-	logger := col.logger
-	cfg := col.service.config.Telemetry
-
-	level := cfg.Metrics.Level
-	metricsAddr := cfg.Metrics.Address
-
-	if level == configtelemetry.LevelNone || metricsAddr == "" {
+func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger *zap.Logger, cfg ConfigServiceTelemetry, asyncErrorChannel chan error) error {
+	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
 		logger.Info(
 			"Skipping telemetry setup.",
-			zap.String(zapKeyTelemetryAddress, metricsAddr),
-			zap.String(zapKeyTelemetryLevel, level.String()),
+			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
+			zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
 		)
 		return nil
 	}
 
 	logger.Info("Setting up own telemetry...")
 
-	instanceUUID, _ := uuid.NewRandom()
-	instanceID := instanceUUID.String()
+	// Construct telemetry attributes from resource attributes.
+	telAttrs := map[string]string{}
+	for k, v := range cfg.Resource {
+		// nil value indicates that the attribute should not be included in the telemetry.
+		if v != nil {
+			telAttrs[k] = *v
+		}
+	}
+
+	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
+		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
+		instanceUUID, _ := uuid.NewRandom()
+		instanceID := instanceUUID.String()
+		telAttrs[semconv.AttributeServiceInstanceID] = instanceID
+	}
+
+	if _, ok := cfg.Resource[semconv.AttributeServiceVersion]; !ok {
+		// AttributeServiceVersion is not specified in the config. Use the actual
+		// build version.
+		telAttrs[semconv.AttributeServiceVersion] = buildInfo.Version
+	}
 
 	var pe http.Handler
-	if featuregate.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
-		otelHandler, err := tel.initOpenTelemetry(col)
-		if err != nil {
-			return err
-		}
-		pe = otelHandler
+	var err error
+	if tel.registry.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
+		pe, err = tel.initOpenTelemetry()
 	} else {
-		ocHandler, err := tel.initOpenCensus(col, instanceID)
-		if err != nil {
-			return err
-		}
-		pe = ocHandler
+		pe, err = tel.initOpenCensus(cfg, telAttrs)
+	}
+	if err != nil {
+		return err
 	}
 
 	logger.Info(
 		"Serving Prometheus metrics",
-		zap.String(zapKeyTelemetryAddress, metricsAddr),
-		zap.String(zapKeyTelemetryLevel, level.String()),
-		zap.String(semconv.AttributeServiceInstanceID, instanceID),
-		zap.String(semconv.AttributeServiceVersion, version.Version),
+		zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
+		zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
 	)
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", pe)
 
 	tel.server = &http.Server{
-		Addr:    metricsAddr,
+		Addr:    cfg.Metrics.Address,
 		Handler: mux,
 	}
 
 	go func() {
-		serveErr := tel.server.ListenAndServe()
-		if serveErr != nil && serveErr != http.ErrServerClosed {
-			col.asyncErrorChannel <- serveErr
+		if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			asyncErrorChannel <- serveErr
 		}
 	}()
 
 	return nil
 }
 
-func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http.Handler, error) {
-	processMetricsViews, err := telemetry2.NewProcessMetricsViews(getBallastSize(col.service))
-	if err != nil {
-		return nil, err
-	}
+func (tel *telemetryInitializer) initOpenCensus(cfg ConfigServiceTelemetry, telAttrs map[string]string) (http.Handler, error) {
+	tel.ocRegistry = ocmetric.NewRegistry()
+	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
 	var views []*view.View
-	obsMetrics := obsreportconfig.Configure(col.service.config.Telemetry.Metrics.Level)
+	obsMetrics := obsreportconfig.Configure(cfg.Metrics.Level)
 	views = append(views, batchprocessor.MetricViews()...)
 	views = append(views, obsMetrics.Views...)
-	views = append(views, processMetricsViews.Views()...)
 
 	tel.views = views
-	if err = view.Register(views...); err != nil {
+	if err := view.Register(views...); err != nil {
 		return nil, err
 	}
-
-	processMetricsViews.StartCollection()
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := prometheus.Options{
@@ -177,10 +178,8 @@ func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http
 
 	opts.ConstLabels = make(map[string]string)
 
-	opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceInstanceID)] = instanceID
-
-	if AddCollectorVersionTag {
-		opts.ConstLabels[sanitizePrometheusKey(semconv.AttributeServiceVersion)] = version.Version
+	for k, v := range telAttrs {
+		opts.ConstLabels[sanitizePrometheusKey(k)] = v
 	}
 
 	pe, err := prometheus.NewExporter(opts)
@@ -192,7 +191,9 @@ func (tel *colTelemetry) initOpenCensus(col *Collector, instanceID string) (http
 	return pe, nil
 }
 
-func (tel *colTelemetry) initOpenTelemetry(col *Collector) (http.Handler, error) {
+func (tel *telemetryInitializer) initOpenTelemetry() (http.Handler, error) {
+	// Initialize the ocRegistry, still used by the process metrics.
+	tel.ocRegistry = ocmetric.NewRegistry()
 	config := otelprometheus.Config{}
 	c := controller.New(
 		processor.NewFactory(
@@ -209,11 +210,13 @@ func (tel *colTelemetry) initOpenTelemetry(col *Collector) (http.Handler, error)
 		return nil, err
 	}
 
-	col.meterProvider = pe.MeterProvider()
+	tel.mp = pe.MeterProvider()
 	return pe, err
 }
 
-func (tel *colTelemetry) shutdown() error {
+func (tel *telemetryInitializer) shutdown() error {
+	metricproducer.GlobalManager().DeleteProducer(tel.ocRegistry)
+
 	view.Unregister(tel.views...)
 
 	if tel.server != nil {

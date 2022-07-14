@@ -13,6 +13,9 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // Exporter is the configuration of a component.Exporter. Specific extensions must implement
 // this interface and must embed ExporterSettings struct or a struct that extends it.
@@ -26,8 +29,8 @@ type Exporter interface {
 // UnmarshalExporter helper function to unmarshal an Exporter config.
 // It checks if the config implements Unmarshallable and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalExporter(cfgMap *Map, cfg Exporter) error {
-	return unmarshal(cfgMap, cfg)
+func UnmarshalExporter(conf *confmap.Conf, cfg Exporter) error {
+	return unmarshal(conf, cfg)
 }
 
 // ExporterSettings defines common settings for a component.Exporter configuration.

@@ -137,45 +137,45 @@ func setupTestPayloads() []testPayload {
 	logMarshaler := &logMarshaler{plog.NewProtoMarshaler()}
 	payloads = append(payloads, testPayload{
 		name:      "sm_log_request",
-		message:   testdata.GenerateLogsOneLogRecord(),
+		message:   testdata.GenerateLogs(1),
 		marshaler: logMarshaler})
 	payloads = append(payloads, testPayload{
 		name:      "md_log_request",
-		message:   testdata.GenerateLogsTwoLogRecordsSameResourceOneDifferent(),
+		message:   testdata.GenerateLogs(2),
 		marshaler: logMarshaler})
 	payloads = append(payloads, testPayload{
 		name:      "lg_log_request",
-		message:   testdata.GenerateLogsManyLogRecordsSameResource(50),
+		message:   testdata.GenerateLogs(50),
 		marshaler: logMarshaler})
 
 	// trace payloads
 	tracesMarshaler := &traceMarshaler{ptrace.NewProtoMarshaler()}
 	payloads = append(payloads, testPayload{
 		name:      "sm_trace_request",
-		message:   testdata.GenerateTracesOneSpan(),
+		message:   testdata.GenerateTraces(1),
 		marshaler: tracesMarshaler})
 	payloads = append(payloads, testPayload{
 		name:      "md_trace_request",
-		message:   testdata.GenerateTracesTwoSpansSameResourceOneDifferent(),
+		message:   testdata.GenerateTraces(2),
 		marshaler: tracesMarshaler})
 	payloads = append(payloads, testPayload{
 		name:      "lg_trace_request",
-		message:   testdata.GenerateTracesManySpansSameResource(50),
+		message:   testdata.GenerateTraces(50),
 		marshaler: tracesMarshaler})
 
 	// metric payloads
 	metricsMarshaler := &metricsMarshaler{pmetric.NewProtoMarshaler()}
 	payloads = append(payloads, testPayload{
 		name:      "sm_metric_request",
-		message:   testdata.GenerateMetricsOneMetric(),
+		message:   testdata.GenerateMetrics(1),
 		marshaler: metricsMarshaler})
 	payloads = append(payloads, testPayload{
 		name:      "md_metric_request",
-		message:   testdata.GenerateMetricsTwoMetrics(),
+		message:   testdata.GenerateMetrics(2),
 		marshaler: metricsMarshaler})
 	payloads = append(payloads, testPayload{
 		name:      "lg_metric_request",
-		message:   testdata.GenerateMetricsManyMetricsSameResource(50),
+		message:   testdata.GenerateMetrics(50),
 		marshaler: metricsMarshaler})
 
 	return payloads

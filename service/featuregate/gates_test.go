@@ -21,7 +21,7 @@ import (
 )
 
 func TestRegistry(t *testing.T) {
-	r := registry{gates: map[string]Gate{}}
+	r := Registry{gates: map[string]Gate{}}
 
 	gate := Gate{
 		ID:          "foo",
@@ -29,38 +29,62 @@ func TestRegistry(t *testing.T) {
 		Enabled:     true,
 	}
 
-	assert.Empty(t, r.list())
-	assert.False(t, r.isEnabled(gate.ID))
+	assert.Empty(t, r.List())
+	assert.False(t, r.IsEnabled(gate.ID))
 
-	assert.NoError(t, r.add(gate))
-	assert.Len(t, r.list(), 1)
-	assert.True(t, r.isEnabled(gate.ID))
+	assert.NoError(t, r.Register(gate))
+	assert.Len(t, r.List(), 1)
+	assert.True(t, r.IsEnabled(gate.ID))
 
-	r.apply(map[string]bool{gate.ID: false})
-	assert.False(t, r.isEnabled(gate.ID))
+	r.Apply(map[string]bool{gate.ID: false})
+	assert.False(t, r.IsEnabled(gate.ID))
 
-	assert.Error(t, r.add(gate))
+	assert.Error(t, r.Register(gate))
+	assert.Panics(t, func() {
+		r.MustRegister(gate)
+	})
 }
 
-func TestGlobalRegistry(t *testing.T) {
+func TestRegistryWithMustApply(t *testing.T) {
+	r := Registry{gates: map[string]Gate{}}
 	gate := Gate{
-		ID:          "feature_gate_test.foo",
+		ID:          "foo",
 		Description: "Test Gate",
 		Enabled:     true,
 	}
+	assert.NoError(t, r.Register(gate))
 
-	assert.NotContains(t, List(), gate)
-	assert.False(t, IsEnabled(gate.ID))
+	tests := []struct {
+		name        string
+		gate        string
+		enabled     bool
+		shouldError bool
+	}{
+		{
+			name:        "existing_gate",
+			gate:        "foo",
+			enabled:     false,
+			shouldError: false,
+		},
+		{
+			name:        "none_existing_gate",
+			gate:        "bar",
+			enabled:     false,
+			shouldError: true,
+		},
+	}
 
-	assert.NotPanics(t, func() { Register(gate) })
-	assert.Contains(t, List(), gate)
-	assert.True(t, IsEnabled(gate.ID))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.shouldError {
+				assert.Panics(t, func() {
+					r.MustApply(map[string]bool{tt.gate: tt.enabled})
+				})
+			} else {
+				r.MustApply(map[string]bool{tt.gate: tt.enabled})
+				assert.Equal(t, tt.enabled, r.IsEnabled(tt.gate))
+			}
 
-	Apply(map[string]bool{gate.ID: false})
-	assert.False(t, IsEnabled(gate.ID))
-
-	assert.Panics(t, func() { Register(gate) })
-	reg.Lock()
-	delete(reg.gates, gate.ID)
-	reg.Unlock()
+		})
+	}
 }

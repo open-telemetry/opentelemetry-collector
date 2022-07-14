@@ -242,7 +242,7 @@ var numberDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		&oneOfField{
-			typeName:         "MetricValueType",
+			typeName:         "NumberDataPointValueType",
 			originFieldName:  "Value",
 			originTypePrefix: "otlpmetrics.NumberDataPoint_",
 			testValueIdx:     0, // Double
@@ -289,6 +289,24 @@ var histogramDataPoint = &messageValueStruct{
 		explicitBoundsField,
 		exemplarsField,
 		dataPointFlagsField,
+		&optionalPrimitiveValue{
+			fieldName:        "Min",
+			fieldType:        "Double",
+			originFieldName:  "Min",
+			originTypePrefix: "otlpmetrics.HistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(9.23)",
+		},
+		&optionalPrimitiveValue{
+			fieldName:        "Max",
+			fieldType:        "Double",
+			originFieldName:  "Max",
+			originTypePrefix: "otlpmetrics.HistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(182.55)",
+		},
 	},
 }
 
@@ -309,7 +327,15 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		startTimeField,
 		timeField,
 		countField,
-		doubleSumField,
+		&optionalPrimitiveValue{
+			fieldName:        "Sum",
+			fieldType:        "Double",
+			originFieldName:  "Sum",
+			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(17.13)",
+		},
 		&primitiveTypedField{
 			fieldName:       "Scale",
 			originFieldName: "Scale",
@@ -338,6 +364,24 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		},
 		exemplarsField,
 		dataPointFlagsField,
+		&optionalPrimitiveValue{
+			fieldName:        "Min",
+			fieldType:        "Double",
+			originFieldName:  "Min",
+			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(9.23)",
+		},
+		&optionalPrimitiveValue{
+			fieldName:        "Max",
+			fieldType:        "Double",
+			originFieldName:  "Max",
+			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
+			returnType:       "float64",
+			defaultVal:       "float64(0.0)",
+			testVal:          "float64(182.55)",
+		},
 	},
 }
 
@@ -412,7 +456,7 @@ var exemplar = &messageValueStruct{
 	fields: []baseField{
 		timeField,
 		&oneOfField{
-			typeName:         "MetricValueType",
+			typeName:         "ExemplarValueType",
 			originFieldName:  "Value",
 			originTypePrefix: "otlpmetrics.Exemplar_",
 			testValueIdx:     1, // Int
@@ -475,20 +519,22 @@ var valueFloat64Field = &primitiveField{
 	testVal:         "float64(17.13)",
 }
 
-var bucketCountsField = &primitiveField{
+var bucketCountsField = &primitiveSliceField{
 	fieldName:       "BucketCounts",
 	originFieldName: "BucketCounts",
-	returnType:      "[]uint64",
-	defaultVal:      "[]uint64(nil)",
-	testVal:         "[]uint64{1, 2, 3}",
+	returnType:      "ImmutableUInt64Slice",
+	defaultVal:      "ImmutableUInt64Slice{}",
+	rawType:         "[]uint64",
+	testVal:         "NewImmutableUInt64Slice([]uint64{1, 2, 3})",
 }
 
-var explicitBoundsField = &primitiveField{
+var explicitBoundsField = &primitiveSliceField{
 	fieldName:       "ExplicitBounds",
 	originFieldName: "ExplicitBounds",
-	returnType:      "[]float64",
-	defaultVal:      "[]float64(nil)",
-	testVal:         "[]float64{1, 2, 3}",
+	returnType:      "ImmutableFloat64Slice",
+	defaultVal:      "ImmutableFloat64Slice{}",
+	rawType:         "[]float64",
+	testVal:         "NewImmutableFloat64Slice([]float64{1, 2, 3})",
 }
 
 var quantileField = &primitiveField{
