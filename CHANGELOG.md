@@ -14,6 +14,7 @@
 
 - Fix Collector panic when disabling telemetry metrics (#5642)
 - Fix Collector panic when featuregate value is empty (#5663)
+- Fix confighttp.compression panic due to nil request.Body. (#5628)
 
 ## v0.55.0 Beta
 
@@ -98,7 +99,6 @@
   - Unconfigured receivers are not identified, this was not a real problem in final binaries since the validation of the config catch this.
   - Allow configurations to contain "unused" receivers. Receivers that are configured but not used in any pipeline, this was possible already for exporters and processors.
   - Remove the enforcement/check that Receiver factories create the same instance for the same config.
-- Fix confighttp.compression panic due to nil request.Body. (#5628)
 
 ## v0.53.0 Beta
 
