@@ -19,6 +19,7 @@ TOOLS_MOD_DIR := ./internal/tools
 
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
+GH := $(shell which gh)
 
 # TODO: Find a way to configure this in the generated code, currently no effect.
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
@@ -406,4 +407,9 @@ endif
 	git add .
 	git commit -m "add multimod changes" || (echo "no multimod changes to commit")
 	git push fork opentelemetry-collector-bot/release-$(RELEASE_CANDIDATE)
+	@if [ -z "$(GH)" ]; then \
+		echo "'gh' command not found, can't submit the PR on your behalf."; \
+		exit 1; \
+	fi
 	gh pr create --title "[chore] prepare release $(RELEASE_CANDIDATE)"
+
