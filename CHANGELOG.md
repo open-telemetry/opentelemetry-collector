@@ -5,6 +5,8 @@
 ### 💡 Enhancements 💡
 
 - Add `linux-ppc64le` architecture to cross build tests in CI
+- `client`: perform case insensitive lookups in case the requested metadata value isn't found (#5646)
+- `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
 - Add support to propagate trace context of collector's internal spans if `telemetry.allowTraceContextPropagation` featuregate is enabled (#5572)
 
 ### 🧰 Bug fixes 🧰
@@ -33,6 +35,7 @@
   - `component.WithTracesProcessor` -> `component.WithTracesProcessorAndStabilityLevel`
   - `component.WithMetricsProcessor` -> `component.WithMetricsProcessorAndStabilityLevel`
   - `component.WithLogsProcessor` -> `component.WithLogsProcessorAndStabilityLevel`
+- Deprecate `Registry.Apply` in `service.featuregate` (#5660)
 
 ### 💡 Enhancements 💡
 

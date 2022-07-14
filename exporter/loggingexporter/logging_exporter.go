@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/otlptext"
@@ -33,6 +32,7 @@ import (
 )
 
 type loggingExporter struct {
+	logLevel         zapcore.Level
 	logger           *zap.Logger
 	logsMarshaler    plog.Marshaler
 	metricsMarshaler pmetric.Marshaler
@@ -41,7 +41,7 @@ type loggingExporter struct {
 
 func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
-	if !s.logger.Core().Enabled(zapcore.DebugLevel) {
+	if s.logLevel != zapcore.DebugLevel {
 		return nil
 	}
 
@@ -49,14 +49,14 @@ func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
-	s.logger.Debug(string(buf))
+	s.logger.Info(string(buf))
 	return nil
 }
 
 func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
-	if !s.logger.Core().Enabled(zapcore.DebugLevel) {
+	if s.logLevel != zapcore.DebugLevel {
 		return nil
 	}
 
@@ -64,14 +64,14 @@ func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
-	s.logger.Debug(string(buf))
+	s.logger.Info(string(buf))
 	return nil
 }
 
 func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
-	if !s.logger.Core().Enabled(zapcore.DebugLevel) {
+	if s.logLevel != zapcore.DebugLevel {
 		return nil
 	}
 
@@ -79,12 +79,13 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
-	s.logger.Debug(string(buf))
+	s.logger.Info(string(buf))
 	return nil
 }
 
-func newLoggingExporter(logger *zap.Logger) *loggingExporter {
+func newLoggingExporter(logger *zap.Logger, logLevel zapcore.Level) *loggingExporter {
 	return &loggingExporter{
+		logLevel:         logLevel,
 		logger:           logger,
 		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
 		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
@@ -94,10 +95,10 @@ func newLoggingExporter(logger *zap.Logger) *loggingExporter {
 
 // newTracesExporter creates an exporter.TracesExporter that just drops the
 // received data and logs debugging messages.
-func newTracesExporter(config config.Exporter, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-	s := newLoggingExporter(logger)
+func newTracesExporter(cfg *Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+	s := newLoggingExporter(logger, cfg.LogLevel)
 	return exporterhelper.NewTracesExporter(
-		config,
+		cfg,
 		set,
 		s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -111,10 +112,10 @@ func newTracesExporter(config config.Exporter, logger *zap.Logger, set component
 
 // newMetricsExporter creates an exporter.MetricsExporter that just drops the
 // received data and logs debugging messages.
-func newMetricsExporter(config config.Exporter, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
-	s := newLoggingExporter(logger)
+func newMetricsExporter(cfg *Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+	s := newLoggingExporter(logger, cfg.LogLevel)
 	return exporterhelper.NewMetricsExporter(
-		config,
+		cfg,
 		set,
 		s.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -128,10 +129,10 @@ func newMetricsExporter(config config.Exporter, logger *zap.Logger, set componen
 
 // newLogsExporter creates an exporter.LogsExporter that just drops the
 // received data and logs debugging messages.
-func newLogsExporter(config config.Exporter, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
-	s := newLoggingExporter(logger)
+func newLogsExporter(cfg *Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
+	s := newLoggingExporter(logger, cfg.LogLevel)
 	return exporterhelper.NewLogsExporter(
-		config,
+		cfg,
 		set,
 		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),

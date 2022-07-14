@@ -59,7 +59,7 @@ func createTracesExporter(_ context.Context, set component.ExporterCreateSetting
 		return nil, err
 	}
 
-	return newTracesExporter(config, exporterLogger, set)
+	return newTracesExporter(cfg, exporterLogger, set)
 }
 
 func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
@@ -70,7 +70,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		return nil, err
 	}
 
-	return newMetricsExporter(config, exporterLogger, set)
+	return newMetricsExporter(cfg, exporterLogger, set)
 }
 
 func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
@@ -81,7 +81,7 @@ func createLogsExporter(_ context.Context, set component.ExporterCreateSettings,
 		return nil, err
 	}
 
-	return newLogsExporter(config, exporterLogger, set)
+	return newLogsExporter(cfg, exporterLogger, set)
 }
 
 func createLogger(cfg *Config) (*zap.Logger, error) {

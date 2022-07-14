@@ -22,9 +22,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -345,36 +342,6 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
-	}
-}
-
-func TestLogStabilityLevle(t *testing.T) {
-	tests := []struct {
-		level        zapcore.Level
-		expectedLogs int
-	}{
-		{
-			level:        zapcore.DebugLevel,
-			expectedLogs: 7,
-		},
-		{
-			level:        zapcore.InfoLevel,
-			expectedLogs: 3,
-		},
-	}
-
-	for _, tt := range tests {
-		observed, logs := observer.New(tt.level)
-		logger := zap.New(observed)
-		// ensure log levels are set correctly for each stability level
-		logStabilityMessage(logger, component.StabilityLevelUndefined)
-		logStabilityMessage(logger, component.StabilityLevelUnmaintained)
-		logStabilityMessage(logger, component.StabilityLevelDeprecated)
-		logStabilityMessage(logger, component.StabilityLevelInDevelopment)
-		logStabilityMessage(logger, component.StabilityLevelAlpha)
-		logStabilityMessage(logger, component.StabilityLevelBeta)
-		logStabilityMessage(logger, component.StabilityLevelStable)
-		require.Equal(t, tt.expectedLogs, logs.Len())
 	}
 }
 
