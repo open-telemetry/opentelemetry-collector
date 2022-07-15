@@ -16,6 +16,7 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 
 import (
 	"context"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -53,50 +54,29 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
-
-	exporterLogger, err := createLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	return newTracesExporter(cfg, exporterLogger, set)
 }
 
 func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
-
-	exporterLogger, err := createLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	return newMetricsExporter(cfg, exporterLogger, set)
 }
 
 func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
-
-	exporterLogger, err := createLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	return newLogsExporter(cfg, exporterLogger, set)
 }
 
-func createLogger(cfg *Config) (*zap.Logger, error) {
-	// We take development config as the base since it matches the purpose
-	// of logging exporter being used for debugging reasons (so e.g. console encoder)
-	conf := zap.NewDevelopmentConfig()
-	conf.Level = zap.NewAtomicLevelAt(cfg.LogLevel)
-	conf.Sampling = &zap.SamplingConfig{
-		Initial:    cfg.SamplingInitial,
-		Thereafter: cfg.SamplingThereafter,
-	}
+func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
+	core := zapcore.NewSamplerWithOptions(
+		logger.Core(),
+		1*time.Second,
+		cfg.SamplingInitial,
+		cfg.SamplingThereafter,
+	)
 
-	logginglogger, err := conf.Build()
-	if err != nil {
-		return nil, err
-	}
-	return logginglogger, nil
+	return zap.New(core)
 }

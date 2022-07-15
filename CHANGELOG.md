@@ -8,6 +8,7 @@
 - `client`: perform case insensitive lookups in case the requested metadata value isn't found (#5646)
 - `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
 - Expose `pcommon.NewSliceFromRaw` function (#5679)
+- `loggingexporter`: create the exporter's logger from the service's logger (#5677)
 
 ### 🧰 Bug fixes 🧰
 
