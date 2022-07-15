@@ -8,7 +8,10 @@ builds:
   - flags:
       - -trimpath
     ldflags:
-      - -s -w -X go.opentelemetry.io/collector/cmd/builder/internal.version={{.Version}} -X go.opentelemetry.io/collector/cmd/builder/internal.date={{.Date}}
+      - -s
+      - -w
+      - -X go.opentelemetry.io/collector/cmd/builder/internal.version={{.Version}}
+      - -X go.opentelemetry.io/collector/cmd/builder/internal.date={{.Date}}
     env:
       - CGO_ENABLED=0
     goos:
@@ -23,6 +26,20 @@ builds:
       - goos: windows
         goarch: arm64
     binary: ocb
+brews:
+  - name: ocb
+    tap:
+      owner: open-telemetry
+      name: homebrew-tap
+    homepage: https://opentelemetry.io/docs/collector/custom-collector/
+    description: This program generates a custom OpenTelemetry Collector from a given configuration.
+    license: Apache-2.0
+    folder: Formula
+    dependencies:
+      - name: go
+        type: optional
+    test: |
+      system "#{bin}/ocb version"
 release:
   github:
     owner: open-telemetry
