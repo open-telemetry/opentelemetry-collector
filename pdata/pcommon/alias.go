@@ -93,3 +93,6 @@ var (
 	// NewMapFromRaw creates a Map with values from the given map[string]interface{}.
 	NewMapFromRaw = internal.NewMapFromRaw
 )
+
+// NewSliceFromRaw creates a Slice with values from the given []interface{}.
+var NewSliceFromRaw = internal.NewSliceFromRaw
