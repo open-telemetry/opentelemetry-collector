@@ -394,9 +394,21 @@ func TestErrorResponses(t *testing.T) {
 			isPermErr:      true,
 		},
 		{
+			name:           "402",
+			responseStatus: http.StatusPaymentRequired,
+			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
+			isPermErr:      true,
+		},
+		{
 			name:           "404",
 			responseStatus: http.StatusNotFound,
 			err:            errors.New(errMsgPrefix + "404"),
+		},
+		{
+			name:           "413",
+			responseStatus: http.StatusRequestEntityTooLarge,
+			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
+			isPermErr:      true,
 		},
 		{
 			name:           "419",
