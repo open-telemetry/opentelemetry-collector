@@ -145,7 +145,6 @@ func readResourceMetrics(iter *jsoniter.Iterator) *otlpmetrics.ResourceMetrics {
 
 func readInstrumentationLibraryMetrics(iter *jsoniter.Iterator) *otlpmetrics.ScopeMetrics {
 	ils := &otlpmetrics.ScopeMetrics{}
-
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "instrumentationLibrary", "instrumentation_library", "scope":
@@ -156,7 +155,7 @@ func readInstrumentationLibraryMetrics(iter *jsoniter.Iterator) *otlpmetrics.Sco
 				case "version":
 					ils.Scope.Version = iter.ReadString()
 				default:
-					iter.ReportError("readInstrumentationLibrarySpans.instrumentationLibrary", fmt.Sprintf("unknown field:%v", f))
+					iter.ReportError("instrumentationLibrary", fmt.Sprintf("unknown field:%v", f))
 				}
 				return true
 			})
@@ -168,7 +167,7 @@ func readInstrumentationLibraryMetrics(iter *jsoniter.Iterator) *otlpmetrics.Sco
 		case "schemaUrl", "schema_url":
 			ils.SchemaUrl = iter.ReadString()
 		default:
-			iter.ReportError("readInstrumentationLibrarySpans", fmt.Sprintf("unknown field:%v", f))
+			iter.ReportError("readInstrumentationLibraryMetrics", fmt.Sprintf("unknown field:%v", f))
 		}
 		return true
 	})
@@ -263,7 +262,8 @@ func readMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric {
 				case "aggregation_temporality", "aggregationTemporality":
 					data.ExponentialHistogram.AggregationTemporality = readAggregationTemporality(iter)
 				default:
-					iter.ReportError("readMetric.Histogram", fmt.Sprintf("unknown field:%v", f))
+					iter.ReportError("readMetric.ExponentialHistogram",
+						fmt.Sprintf("unknown field:%v", f))
 				}
 				sp.Data = data
 				return true

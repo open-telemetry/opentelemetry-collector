@@ -16,6 +16,7 @@ package pmetric
 
 import (
 	"fmt"
+	"github.com/gogo/protobuf/jsonpb"
 	"testing"
 	"time"
 
@@ -387,59 +388,399 @@ var metricsSummaryOTLPFull = func() Metrics {
 	return metric
 }
 
-func TestMetricsSumDataJSONFull(t *testing.T) {
-	m := metricsSumOTLPFull()
-	encoder := NewJSONMarshaler()
-	jsonBuf, err := encoder.MarshalMetrics(m)
-	assert.NoError(t, err)
-	decoder := NewJSONUnmarshaler()
-	got, err := decoder.UnmarshalMetrics(jsonBuf)
-	assert.NoError(t, err)
-	assert.EqualValues(t, m, got)
-}
+func Test_jsonUnmarshaler_UnmarshalMetrics(t *testing.T) {
+	type args struct {
+		EnumsAsInts  bool
+		EmitDefaults bool
+		OrigName     bool
+		md           func() Metrics
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "sum,default options",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsSumOTLPFull,
+			},
+		},
+		{
+			name: "sum, EnumsAsInts set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsSumOTLPFull,
+			},
+		},
+		{
+			name: "sum, EmitDefaults set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsSumOTLPFull,
+			},
+		},
+		{
+			name: "sum, OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsSumOTLPFull,
+			},
+		},
+		{
+			name: "sum, EmitDefaults and  OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsSumOTLPFull,
+			},
+		},
+		{
+			name: "sum, EnumsAsInts and OrigName options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsSumOTLPFull,
+			},
+		},
+		{
+			name: "sum, EnumsAsInts AND EmitDefaults  set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsSumOTLPFull,
+			},
+		},
+		{
+			name: "sum, all options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsSumOTLPFull,
+			},
+		},
 
-func TestMetricsGaugeDataJSONFull(t *testing.T) {
-	m := metricsGaugeOTLPFull()
-	encoder := NewJSONMarshaler()
-	jsonBuf, err := encoder.MarshalMetrics(m)
-	assert.NoError(t, err)
-	decoder := NewJSONUnmarshaler()
-	got, err := decoder.UnmarshalMetrics(jsonBuf)
-	assert.NoError(t, err)
-	assert.EqualValues(t, m, got)
-}
+		{
+			name: "gauge,default options",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsGaugeOTLPFull,
+			},
+		},
+		{
+			name: "gauge, EnumsAsInts set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsGaugeOTLPFull,
+			},
+		},
+		{
+			name: "gauge, EmitDefaults set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsGaugeOTLPFull,
+			},
+		},
+		{
+			name: "gauge, OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsGaugeOTLPFull,
+			},
+		},
+		{
+			name: "gauge, EmitDefaults and  OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsGaugeOTLPFull,
+			},
+		},
+		{
+			name: "gauge, EnumsAsInts and OrigName options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsGaugeOTLPFull,
+			},
+		},
+		{
+			name: "gauge, EnumsAsInts AND EmitDefaults  set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsGaugeOTLPFull,
+			},
+		},
+		{
+			name: "gauge, all options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsGaugeOTLPFull,
+			},
+		},
 
-func TestMetricsHistogramDataJSONFull(t *testing.T) {
-	m := metricsHistogramOTLPFull()
-	encoder := NewJSONMarshaler()
-	jsonBuf, err := encoder.MarshalMetrics(m)
-	assert.NoError(t, err)
-	decoder := NewJSONUnmarshaler()
-	got, err := decoder.UnmarshalMetrics(jsonBuf)
-	assert.NoError(t, err)
-	assert.EqualValues(t, m, got)
-}
+		{
+			name: "Histogram,default options",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsHistogramOTLPFull,
+			},
+		},
+		{
+			name: "Histogram, EnumsAsInts set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsHistogramOTLPFull,
+			},
+		},
+		{
+			name: "Histogram, EmitDefaults set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsHistogramOTLPFull,
+			},
+		},
+		{
+			name: "Histogram, OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsHistogramOTLPFull,
+			},
+		},
+		{
+			name: "Histogram, EmitDefaults and  OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsHistogramOTLPFull,
+			},
+		},
+		{
+			name: "Histogram, EnumsAsInts and OrigName options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsHistogramOTLPFull,
+			},
+		},
+		{
+			name: "Histogram, EnumsAsInts AND EmitDefaults  set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsHistogramOTLPFull,
+			},
+		},
+		{
+			name: "Histogram, all options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsHistogramOTLPFull,
+			},
+		},
 
-func TestMetricsExponentialHistogramDataJSONFull(t *testing.T) {
-	m := metricsExponentialHistogramOTLPFull()
-	encoder := NewJSONMarshaler()
-	jsonBuf, err := encoder.MarshalMetrics(m)
-	assert.NoError(t, err)
-	decoder := NewJSONUnmarshaler()
-	got, err := decoder.UnmarshalMetrics(jsonBuf)
-	assert.NoError(t, err)
-	assert.EqualValues(t, m, got)
-}
+		{
+			name: "ExponentialHistogram,default options",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsExponentialHistogramOTLPFull,
+			},
+		},
+		{
+			name: "ExponentialHistogram, EnumsAsInts set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsExponentialHistogramOTLPFull,
+			},
+		},
+		{
+			name: "ExponentialHistogram, EmitDefaults set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsExponentialHistogramOTLPFull,
+			},
+		},
+		{
+			name: "ExponentialHistogram, OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsExponentialHistogramOTLPFull,
+			},
+		},
+		{
+			name: "ExponentialHistogram, EmitDefaults and  OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsExponentialHistogramOTLPFull,
+			},
+		},
+		{
+			name: "ExponentialHistogram, EnumsAsInts and OrigName options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsExponentialHistogramOTLPFull,
+			},
+		},
+		{
+			name: "ExponentialHistogram, EnumsAsInts AND EmitDefaults  set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsExponentialHistogramOTLPFull,
+			},
+		},
+		{
+			name: "ExponentialHistogram, all options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsExponentialHistogramOTLPFull,
+			},
+		},
 
-func TestMetricsSummaryDataJSONFull(t *testing.T) {
-	m := metricsSummaryOTLPFull()
-	encoder := NewJSONMarshaler()
-	jsonBuf, err := encoder.MarshalMetrics(m)
-	assert.NoError(t, err)
-	decoder := NewJSONUnmarshaler()
-	got, err := decoder.UnmarshalMetrics(jsonBuf)
-	assert.NoError(t, err)
-	assert.EqualValues(t, m, got)
+		{
+			name: "Summary,default options",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsSummaryOTLPFull,
+			},
+		},
+		{
+			name: "Summary, EnumsAsInts set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     false,
+				md:           metricsSummaryOTLPFull,
+			},
+		},
+		{
+			name: "Summary, EmitDefaults set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsSummaryOTLPFull,
+			},
+		},
+		{
+			name: "Summary, OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsSummaryOTLPFull,
+			},
+		},
+		{
+			name: "Summary, EmitDefaults and  OrigName set true",
+			args: args{
+				EnumsAsInts:  false,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsSummaryOTLPFull,
+			},
+		},
+		{
+			name: "Summary, EnumsAsInts and OrigName options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: false,
+				OrigName:     true,
+				md:           metricsSummaryOTLPFull,
+			},
+		},
+		{
+			name: "Summary, EnumsAsInts AND EmitDefaults  set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     false,
+				md:           metricsSummaryOTLPFull,
+			},
+		},
+		{
+			name: "Summary, all options set true",
+			args: args{
+				EnumsAsInts:  true,
+				EmitDefaults: true,
+				OrigName:     true,
+				md:           metricsSummaryOTLPFull,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			marshaller := &jsonMarshaler{
+				delegate: jsonpb.Marshaler{
+					EnumsAsInts:  tt.args.EnumsAsInts,
+					EmitDefaults: tt.args.EmitDefaults,
+					OrigName:     tt.args.OrigName,
+				}}
+			m := tt.args.md()
+			jsonBuf, err := marshaller.MarshalMetrics(m)
+			assert.NoError(t, err)
+			decoder := NewJSONUnmarshaler()
+			got, err := decoder.UnmarshalMetrics(jsonBuf)
+			assert.NoError(t, err)
+			assert.EqualValues(t, m, got)
+		})
+	}
 }
 
 func TestReadAttributeUnknownField(t *testing.T) {
@@ -706,5 +1047,82 @@ func TestReadResourceMetricsUnknownField(t *testing.T) {
 	readResourceMetrics(iter)
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "unknown field")
+	}
+}
+
+func TestReadInstrumentationLibraryMetricsUnknownField(t *testing.T) {
+	jsonStr := `{"exists":"true"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	readInstrumentationLibraryMetrics(iter)
+	if assert.Error(t, iter.Error) {
+		assert.Contains(t, iter.Error.Error(), "unknown field")
+	}
+}
+
+func TestReadInstrumentationLibraryUnknownField(t *testing.T) {
+	jsonStr := `{"instrumentationLibrary":{"exists":"true"}}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	readInstrumentationLibraryMetrics(iter)
+	if assert.Error(t, iter.Error) {
+		assert.Contains(t, iter.Error.Error(), "unknown field")
+		assert.Contains(t, iter.Error.Error(), "instrumentationLibrary")
+	}
+}
+
+func TestReadMetricUnknownField(t *testing.T) {
+	type args struct {
+		wantErrorMsg string
+		jsonStr      string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "sum has unknown field",
+			args: args{
+				wantErrorMsg: "readMetric.Sum",
+				jsonStr:      `{"sum":{"exists":"true"}}`,
+			},
+		},
+		{
+			name: "gauge has unknown field",
+			args: args{
+				wantErrorMsg: "readMetric.Gauge",
+				jsonStr:      `{"gauge":{"exists":"true"}}`,
+			},
+		},
+		{
+			name: "histogram has unknown field",
+			args: args{
+				wantErrorMsg: "readMetric.Histogram",
+				jsonStr:      `{"histogram":{"exists":"true"}}`,
+			},
+		},
+		{
+			name: "exponential_histogram has unknown field",
+			args: args{
+				wantErrorMsg: "readMetric.ExponentialHistogram",
+				jsonStr:      `{"exponential_histogram":{"exists":"true"}}`,
+			},
+		},
+		{
+			name: "Summary has unknown field",
+			args: args{
+				wantErrorMsg: "readMetric.Summary",
+				jsonStr:      `{"summary":{"exists":"true"}}`,
+			},
+		},
+	}
+	for _, tt := range tests {
+		iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.args.jsonStr))
+		jsoniter.ConfigFastest.ReturnIterator(iter)
+		readMetric(iter)
+		if assert.Error(t, iter.Error) {
+			assert.Contains(t, iter.Error.Error(), "unknown field")
+			assert.Contains(t, iter.Error.Error(), tt.args.wantErrorMsg)
+		}
 	}
 }
