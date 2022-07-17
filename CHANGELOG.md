@@ -153,7 +153,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Expose `pcommon.NewSliceFromRaw` function (#5679)
 - `loggingexporter`: create the exporter's logger from the service's logger (#5677)
 - Add `otelcol_exporter_queue_capacity` metrics show the collector's exporter queue capacity (#5475)
-- Add support to handle 402, 413, 414, 431 http error code as permanent errors in OTLP exporter (#5685)
+- Add support to handle 402, 413, 414, 431 http error code as permanent errors in OTLP exporter (#5685) 
 
 ### 🧰 Bug fixes 🧰
 
