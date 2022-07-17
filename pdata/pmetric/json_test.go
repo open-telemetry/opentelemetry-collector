@@ -16,10 +16,10 @@ package pmetric
 
 import (
 	"fmt"
-	"github.com/gogo/protobuf/jsonpb"
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/jsonpb"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/internal"
