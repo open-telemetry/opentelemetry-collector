@@ -260,6 +260,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 }
 
 func TestHTTPContentCompressionCopyError(t *testing.T) {
+	testBody := bytes.NewBuffer([]byte("test"))
 	copyErrorCompressRoundTripper := &compressRoundTripper{
 		RoundTripper:    http.DefaultTransport,
 		compressionType: "copyFailed",
@@ -273,7 +274,7 @@ func TestHTTPContentCompressionCopyError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	req, err := http.NewRequest("GET", server.URL, nil)
+	req, err := http.NewRequest("GET", server.URL, testBody)
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := http.Client{}
