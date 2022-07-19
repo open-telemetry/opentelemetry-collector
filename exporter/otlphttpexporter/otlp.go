@@ -203,6 +203,16 @@ func isPermanentClientFailure(code int) bool {
 		return true
 	}
 
+	// 414 - uri is too long
+	if code == http.StatusRequestURITooLong {
+		return true
+	}
+
+	// 431 - headers too large
+	if code == http.StatusRequestHeaderFieldsTooLarge {
+		return true
+	}
+
 	return false
 }
 
