@@ -112,7 +112,7 @@ When considering making a bugfix release on the `v0.N.x` release cycle, the bug 
     - Reverting a feature gate.
     - Changing the configuration to an easy to find value.
 4. The bug happens in common setups. To gauge this, maintainers can consider the following:
-    - The bug is not specific to a platform that is not widely used
+    - The bug is not specific to an uncommon platform
     - The bug happens with the default configuration or with a commonly used one (e.g. has been reported by multiple people)
 5. The bug is sufficiently severe. For example (non-exhaustive list):
     - The bug makes the Collector crash reliably
