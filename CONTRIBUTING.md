@@ -41,7 +41,15 @@ reasonably fast reviews.
 
 ### When adding a new component
 
-Consider submitting different PRs:
+Components comprise of exporters, extensions, receivers, and processors. The key criteria to implementing a component is to:
+
+* Implement the `component.Component` interface
+* Provide a configuration structure which defines the configuration of the component
+* Provide the implementation which performs the component operation
+
+For more details on components, see the [Adding New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
+
+When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
 * First PR should include the overall structure of the new component:
   * Readme, configuration, and factory implementation usually using the helper

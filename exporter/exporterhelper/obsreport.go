@@ -40,6 +40,7 @@ func init() {
 type instruments struct {
 	registry                    *metric.Registry
 	queueSize                   *metric.Int64DerivedGauge
+	queueCapacity               *metric.Int64DerivedGauge
 	failedToEnqueueTraceSpans   *metric.Int64Cumulative
 	failedToEnqueueMetricPoints *metric.Int64Cumulative
 	failedToEnqueueLogRecords   *metric.Int64Cumulative
@@ -52,6 +53,12 @@ func newInstruments(registry *metric.Registry) *instruments {
 	insts.queueSize, _ = registry.AddInt64DerivedGauge(
 		obsmetrics.ExporterKey+"/queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches)"),
+		metric.WithLabelKeys(obsmetrics.ExporterKey),
+		metric.WithUnit(metricdata.UnitDimensionless))
+
+	insts.queueCapacity, _ = registry.AddInt64DerivedGauge(
+		obsmetrics.ExporterKey+"/queue_capacity",
+		metric.WithDescription("Fixed capacity of the retry queue (in batches)"),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
