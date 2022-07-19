@@ -82,19 +82,21 @@ func (r *compressRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	if writerErr != nil {
 		return nil, writerErr
 	}
-	_, copyErr := io.Copy(compressWriter, req.Body)
-	closeErr := req.Body.Close()
+	if req.Body != nil {
+		_, copyErr := io.Copy(compressWriter, req.Body)
+		closeErr := req.Body.Close()
+
+		if copyErr != nil {
+			return nil, copyErr
+		}
+
+		if closeErr != nil {
+			return nil, closeErr
+		}
+	}
 
 	if err := compressWriter.Close(); err != nil {
 		return nil, err
-	}
-
-	if copyErr != nil {
-		return nil, copyErr
-	}
-
-	if closeErr != nil {
-		return nil, closeErr
 	}
 
 	// Create a new request since the docs say that we cannot modify the "req"

@@ -14,6 +14,7 @@
 
 - Fix Collector panic when disabling telemetry metrics (#5642)
 - Fix Collector panic when featuregate value is empty (#5663)
+- Fix confighttp.compression panic due to nil request.Body. (#5628)
 
 ## v0.55.0 Beta
 
