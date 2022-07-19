@@ -196,9 +196,9 @@ so it is a useful habit to write good commit messages before the PR is created.
 Also, unless you actually want to tell a story with multiple commits make sure to squash
 into a single commit before creating the PR.
 
-When merging PRs with multiple commits, they will be squashed and GitHub will
+When maintainers merge PRs with multiple commits, they will be squashed and GitHub will
 concatenate all commit messages right before you hit the "Confirm squash and merge"
-button. Make sure to edit this concatenated message to make it right before merging.
+button. Maintainers must make sure to edit this concatenated message to make it right before merging.
 In some cases, if the commit messages are lacking the easiest approach to have at
 least something useful is copy/pasting the PR description into the commit message box
 before merging (but see above paragraph about writing good commit messages in the first place).
