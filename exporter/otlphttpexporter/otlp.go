@@ -178,15 +178,32 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
 	}
 
-	// do not retry these errors
-	if resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusRequestEntityTooLarge ||
-		resp.StatusCode == http.StatusPaymentRequired {
-		// Report the failure as permanent if the server thinks the request is malformed.
+	if isPermanentClientFailure(resp.StatusCode) {
+		// Do not retry; report the failure as permanent if the server thinks the request is malformed.
 		return consumererror.NewPermanent(formattedErr)
 	}
 
 	// All other errors are retryable, so don't wrap them in consumererror.NewPermanent().
 	return formattedErr
+}
+
+func isPermanentClientFailure(code int) bool {
+	// 400 - bad request
+	if code == http.StatusBadRequest {
+		return true
+	}
+
+	// 402 - payment required typically means that an auth token isn't valid anymore and as such, we deem it as permanent
+	if code == http.StatusPaymentRequired {
+		return true
+	}
+
+	// 413 - request size is too large
+	if code == http.StatusRequestEntityTooLarge {
+		return true
+	}
+
+	return false
 }
 
 // Read the response and decode the status.Status from the body.
