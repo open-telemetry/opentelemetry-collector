@@ -9,7 +9,7 @@
 - `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
 - Expose `pcommon.NewSliceFromRaw` function (#5679)
 - `loggingexporter`: create the exporter's logger from the service's logger (#5677)
-- Add support to handle 402 and 413 http error code in Otlp exporter (#5685)
+- Add support to handle 402 and 413 http error code in OTLP exporter (#5685)
 
 ### 🧰 Bug fixes 🧰
 
