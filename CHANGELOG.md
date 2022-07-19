@@ -9,6 +9,7 @@
 - `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
 - Expose `pcommon.NewSliceFromRaw` function (#5679)
 - `loggingexporter`: create the exporter's logger from the service's logger (#5677)
+- Add `otelcol_exporter_queue_capacity` metrics show the collector's exporter queue capacity (#5475)
 
 ### 🧰 Bug fixes 🧰
 
