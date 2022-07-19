@@ -106,7 +106,7 @@ Both `opentelemetry-collector` and `opentelemetry-collector-contrib` have very s
 
 When considering making a bugfix release on the `v0.N.x` release cycle, the bug in question needs to fulfill the following criteria:
 
-1. The bug was introduced on the `v0.N-1.x` release cycle.
+1. The bug was introduced on the `v0.N.x` release cycle.
 2. The bug has been reported within the first 3 working days after the official binaries were released.
 3. The bug has no workaround or the workaround is significantly harder to put in place than updating the version. Examples of simple workarounds are:
     - Reverting a feature gate.
