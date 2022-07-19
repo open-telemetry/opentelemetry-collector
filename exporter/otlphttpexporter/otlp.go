@@ -187,6 +187,35 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 	return formattedErr
 }
 
+func isPermanentClientFailure(code int) bool {
+	// 400 - bad request
+	if code == http.StatusBadRequest {
+		return true
+	}
+
+	// 402 - payment required typically means that an auth token isn't valid anymore and as such, we deem it as permanent
+	if code == http.StatusPaymentRequired {
+		return true
+	}
+
+	// 413 - request size is too large
+	if code == http.StatusRequestEntityTooLarge {
+		return true
+	}
+	
+	// 414 - URI requested by the client is longer than the server is willing to interpret 
+	if code == http.StatusRequestURITooLong {
+		return true
+	}
+	
+	// 431 - Request Header Fields Too Large
+	if code == http.StatusRequestHeaderFieldsTooLarge {
+		return true
+	}
+
+	return false
+}
+
 // Read the response and decode the status.Status from the body.
 // Returns nil if the response is empty or cannot be decoded.
 func readResponse(resp *http.Response) *status.Status {
