@@ -187,6 +187,22 @@ $ git commit
 $ git push fork feature
 ```
 
+### Commit Messages
+
+Use descriptive commit messages. Here are [some recommendations](https://cbea.ms/git-commit/)
+on how to write good commit messages.
+When creating PRs GitHub will automatically copy commit messages into the PR description,
+so it is a useful habit to write good commit messages before the PR is created.
+Also, unless you actually want to tell a story with multiple commits make sure to squash
+into a single commit before creating the PR.
+
+When maintainers merge PRs with multiple commits, they will be squashed and GitHub will
+concatenate all commit messages right before you hit the "Confirm squash and merge"
+button. Maintainers must make sure to edit this concatenated message to make it right before merging.
+In some cases, if the commit messages are lacking the easiest approach to have at
+least something useful is copy/pasting the PR description into the commit message box
+before merging (but see above paragraph about writing good commit messages in the first place).
+
 ## General Notes
 
 This project uses Go 1.17.* and [Github Actions.](https://github.com/features/actions)
