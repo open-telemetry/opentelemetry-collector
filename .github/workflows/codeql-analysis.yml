@@ -4,6 +4,10 @@ on:
     branches: [ main ]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   CodeQL-Build:
     runs-on: ubuntu-latest
