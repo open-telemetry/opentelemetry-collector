@@ -211,22 +211,12 @@ func NewMetricDataPointFlags() MetricDataPointFlags {
 // resetting the current instance to its zero value
 func (ms MetricDataPointFlags) MoveTo(dest MetricDataPointFlags) {
 	*dest.orig = *ms.orig
-	ms.Reset()
+	*ms.orig = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
 func (ms MetricDataPointFlags) CopyTo(dest MetricDataPointFlags) {
 	*dest.orig = *ms.orig
-}
-
-// None returns true if MetricDataPointFlags is FLAG_NONE.
-func (ms MetricDataPointFlags) None() bool {
-	return *ms.orig == uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
-}
-
-// Reset resets the flags to be FLAG_NONE.
-func (ms MetricDataPointFlags) Reset() {
-	*ms.orig = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
 }
 
 // NoRecordedValue returns true if the MetricDataPointFlags contains the NO_RECORDED_VALUE flag.
