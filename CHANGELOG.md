@@ -2,9 +2,19 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
 ### 💡 Enhancements 💡
 
-- Add `linux-ppc64le` architecture to cross build tests in CI
+### 🧰 Bug fixes 🧰
+
+## v0.56.0 Beta
+
+### 💡 Enhancements 💡
+
+- Add `linux-ppc64le` architecture to cross build tests in CI (#5645)
 - `client`: perform case insensitive lookups in case the requested metadata value isn't found (#5646)
 - `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
 - Expose `pcommon.NewSliceFromRaw` function (#5679)
@@ -44,9 +54,6 @@
 
 - Components stability levels are now logged. By default components which haven't defined their stability levels, or which are
   unmaintained, deprecated or in development will log a message. (#5580)
-
-### 💡 Enhancements 💡
-
 - `exporter/logging`: Skip "bad file descriptor" sync errors (#5585)
 
 ### 🧰 Bug fixes 🧰
