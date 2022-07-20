@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Add the Collector flag `--list-components` to show the available components (#5709)
 
 ## v0.60.0 Beta
 

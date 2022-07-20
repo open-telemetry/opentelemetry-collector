@@ -15,6 +15,7 @@
 package service
 
 import (
+	"bytes"
 	"path/filepath"
 	"testing"
 
@@ -47,4 +48,27 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 
 	cmd := NewCommand(CollectorSettings{Factories: factories, ConfigProvider: cfgProvider})
 	require.Error(t, cmd.Execute())
+}
+
+func TestNewCommandListComponents(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	stdout := bytes.Buffer{}
+
+	cmd := NewCommand(CollectorSettings{Factories: factories})
+	cmd.SetOut(&stdout)
+	require.NoError(t, cmd.Flags().Set("list-components", "true"))
+	require.NoError(t, cmd.Execute())
+
+	const expected = `exporters:
+	nop (traces: stable, metrics: stable, logs: stable)
+receivers:
+	nop (traces: stable, metrics: stable, logs: stable)
+processors:
+	nop (traces: stable, metrics: stable, logs: stable)
+extensions:
+	nop (stable)
+`
+	assert.Equal(t, expected, stdout.String())
 }

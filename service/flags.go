@@ -60,6 +60,9 @@ func flags() *flag.FlagSet {
 		"feature-gates",
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
+	flagSet.Bool("list-components", false,
+		"List the available components and exit.")
+
 	return flagSet
 }
 
@@ -69,4 +72,8 @@ func getConfigFlag(flagSet *flag.FlagSet) []string {
 
 func getSetFlag(flagSet *flag.FlagSet) []string {
 	return flagSet.Lookup(setFlag).Value.(*stringArrayValue).values
+}
+
+func getListComponentsFlag(flagSet *flag.FlagSet) bool {
+	return flagSet.Lookup("list-components").Value.String() == "true"
 }
