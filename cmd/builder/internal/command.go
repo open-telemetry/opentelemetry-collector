@@ -30,9 +30,11 @@ import (
 )
 
 var (
-	cfgFile string
-	cfg     = builder.NewDefaultConfig()
-	k       = koanf.New(".")
+	cfgFile      string
+	cfg          = builder.NewDefaultConfig()
+	cfgFlags     = builder.Config{}
+	skipCompFlag = new(bool)
+	k            = koanf.New(".")
 )
 
 // Command is the main entrypoint for this application
@@ -62,14 +64,14 @@ func Command() (*cobra.Command, error) {
 	cmd.Flags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.otelcol-builder.yaml)")
 
 	// the distribution parameters, which we accept as CLI flags as well
-	cmd.Flags().BoolVar(&cfg.SkipCompilation, "skip-compilation", false, "Whether builder should only generate go code with no compile of the collector (default false)")
-	cmd.Flags().StringVar(&cfg.Distribution.Name, "name", "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
-	cmd.Flags().StringVar(&cfg.Distribution.Description, "description", "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
-	cmd.Flags().StringVar(&cfg.Distribution.Version, "version", "1.0.0", "The version for the OpenTelemetry Collector distribution")
-	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, "otelcol-version", cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
-	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, "output-path", cfg.Distribution.OutputPath, "Where to write the resulting files")
-	cmd.Flags().StringVar(&cfg.Distribution.Go, "go", "", "The Go binary to use during the compilation phase. Default: go from the PATH")
-	cmd.Flags().StringVar(&cfg.Distribution.Module, "module", "go.opentelemetry.io/collector/cmd/builder", "The Go module for the new distribution")
+	cmd.Flags().BoolVar(skipCompFlag, "skip-compilation", false, "Whether builder should only generate go code with no compile of the collector (default false)")
+	cmd.Flags().StringVar(&cfgFlags.Distribution.Name, "name", "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
+	cmd.Flags().StringVar(&cfgFlags.Distribution.Description, "description", "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
+	cmd.Flags().StringVar(&cfgFlags.Distribution.Version, "version", "1.0.0", "The version for the OpenTelemetry Collector distribution")
+	cmd.Flags().StringVar(&cfgFlags.Distribution.OtelColVersion, "otelcol-version", cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
+	cmd.Flags().StringVar(&cfgFlags.Distribution.OutputPath, "output-path", cfg.Distribution.OutputPath, "Where to write the resulting files")
+	cmd.Flags().StringVar(&cfgFlags.Distribution.Go, "go", "", "The Go binary to use during the compilation phase. Default: go from the PATH")
+	cmd.Flags().StringVar(&cfgFlags.Distribution.Module, "module", "go.opentelemetry.io/collector/cmd/builder", "The Go module for the new distribution")
 
 	// version of this binary
 	cmd.AddCommand(versionCommand())
@@ -105,6 +107,35 @@ func initConfig() error {
 		return err
 	}
 
+	applyFlagOverrides()
+
 	cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
 	return nil
+}
+
+func applyFlagOverrides() {
+	if skipCompFlag != nil {
+		cfg.SkipCompilation = *skipCompFlag
+	}
+	if cfgFlags.Distribution.Name != "" {
+		cfg.Distribution.Name = cfgFlags.Distribution.Name
+	}
+	if cfgFlags.Distribution.Description != "" {
+		cfg.Distribution.Description = cfgFlags.Distribution.Description
+	}
+	if cfgFlags.Distribution.Version != "" {
+		cfg.Distribution.Version = cfgFlags.Distribution.Version
+	}
+	if cfgFlags.Distribution.OtelColVersion != "" {
+		cfg.Distribution.OtelColVersion = cfgFlags.Distribution.OtelColVersion
+	}
+	if cfgFlags.Distribution.OutputPath != "" {
+		cfg.Distribution.OutputPath = cfgFlags.Distribution.OutputPath
+	}
+	if cfgFlags.Distribution.Go != "" {
+		cfg.Distribution.Go = cfgFlags.Distribution.Go
+	}
+	if cfgFlags.Distribution.Module != "" {
+		cfg.Distribution.Module = cfgFlags.Distribution.Module
+	}
 }
