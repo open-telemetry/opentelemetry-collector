@@ -120,8 +120,7 @@ When considering making a bugfix release on the `v0.N.x` release cycle, the bug 
     - The bug produces significant data loss
     - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
 
-The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug fulfills all the necessary criteria.
-Exceptions may be granted in a case-by-case basis if there is widespread consensus that a bugfix release should be done despite the above rules.
+The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
 
 ## Release schedule
 
