@@ -48,9 +48,12 @@ func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, e
 }
 
 func TestAllHTTPClientSettings(t *testing.T) {
-	ext := map[config.ComponentID]component.Extension{
-		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+		},
 	}
+
 	maxIdleConns := 50
 	maxIdleConnsPerHost := 40
 	maxConnsPerHost := 45
@@ -133,7 +136,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(ext, tt)
+			client, err := test.settings.ToClientWithHost(host, tt)
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -155,9 +158,12 @@ func TestAllHTTPClientSettings(t *testing.T) {
 }
 
 func TestPartialHTTPClientSettings(t *testing.T) {
-	ext := map[config.ComponentID]component.Extension{
-		config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{
+			config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+		},
 	}
+
 	tests := []struct {
 		name        string
 		settings    HTTPClientSettings
@@ -182,7 +188,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClient(ext, tt)
+			client, err := test.settings.ToClientWithHost(host, tt)
 			assert.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
@@ -203,6 +209,9 @@ func TestDefaultHTTPClientSettings(t *testing.T) {
 }
 
 func TestHTTPClientSettingsError(t *testing.T) {
+	host := &mockHost{
+		ext: map[config.ComponentID]component.Extension{},
+	}
 	tests := []struct {
 		settings HTTPClientSettings
 		err      string
@@ -243,7 +252,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClient(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
+			_, err := test.settings.ToClientWithHost(host, componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -251,10 +260,10 @@ func TestHTTPClientSettingsError(t *testing.T) {
 
 func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	tests := []struct {
-		name         string
-		shouldErr    bool
-		settings     HTTPClientSettings
-		extensionMap map[config.ComponentID]component.Extension
+		name      string
+		shouldErr bool
+		settings  HTTPClientSettings
+		host      component.Host
 	}{
 		{
 			name: "no_auth_extension_enabled",
@@ -263,9 +272,11 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     nil,
 			},
 			shouldErr: false,
-			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{
-					ResultRoundTripper: &customRoundTripper{},
+			host: &mockHost{
+				ext: map[config.ComponentID]component.Extension{
+					config.NewComponentID("mock"): &configauth.MockClientAuthenticator{
+						ResultRoundTripper: &customRoundTripper{},
+					},
 				},
 			},
 		},
@@ -276,8 +287,10 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
 			},
 			shouldErr: true,
-			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+			host: &mockHost{
+				ext: map[config.ComponentID]component.Extension{
+					config.NewComponentID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+				},
 			},
 		},
 		{
@@ -287,6 +300,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
 			},
 			shouldErr: true,
+			host:      componenttest.NewNopHost(),
 		},
 		{
 			name: "with_auth_configuration_has_extension",
@@ -295,8 +309,10 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("mock")},
 			},
 			shouldErr: false,
-			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+			host: &mockHost{
+				ext: map[config.ComponentID]component.Extension{
+					config.NewComponentID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+				},
 			},
 		},
 		{
@@ -306,15 +322,17 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("mock")},
 			},
 			shouldErr: true,
-			extensionMap: map[config.ComponentID]component.Extension{
-				config.NewComponentID("mock"): &configauth.MockClientAuthenticator{
-					ResultRoundTripper: &customRoundTripper{}, MustError: true},
+			host: &mockHost{
+				ext: map[config.ComponentID]component.Extension{
+					config.NewComponentID("mock"): &configauth.MockClientAuthenticator{
+						ResultRoundTripper: &customRoundTripper{}, MustError: true},
+				},
 			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClient(test.extensionMap, componenttest.NewNopTelemetrySettings())
+			client, err := test.settings.ToClientWithHost(test.host, componenttest.NewNopTelemetrySettings())
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
@@ -540,7 +558,7 @@ func TestHttpReception(t *testing.T) {
 					return rt, nil
 				}
 			}
-			client, errClient := hcs.ToClient(map[config.ComponentID]component.Extension{}, component.TelemetrySettings{})
+			client, errClient := hcs.ToClientWithHost(componenttest.NewNopHost(), component.TelemetrySettings{})
 			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)
@@ -792,7 +810,7 @@ func TestHttpHeaders(t *testing.T) {
 					"header1": "value1",
 				},
 			}
-			client, _ := setting.ToClient(map[config.ComponentID]component.Extension{}, componenttest.NewNopTelemetrySettings())
+			client, _ := setting.ToClientWithHost(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)
@@ -1030,12 +1048,12 @@ func BenchmarkHttpRequest(b *testing.B) {
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
-				c, err = hcs.ToClient(map[config.ComponentID]component.Extension{}, component.TelemetrySettings{})
+				c, err = hcs.ToClientWithHost(componenttest.NewNopHost(), component.TelemetrySettings{})
 				require.NoError(b, err)
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = hcs.ToClient(map[config.ComponentID]component.Extension{}, component.TelemetrySettings{})
+					c, err = hcs.ToClientWithHost(componenttest.NewNopHost(), component.TelemetrySettings{})
 					require.NoError(b, err)
 				}
 				for pb.Next() {

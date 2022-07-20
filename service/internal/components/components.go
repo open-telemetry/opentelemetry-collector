@@ -14,14 +14,19 @@
 
 package components // import "go.opentelemetry.io/collector/service/internal/components"
 
-const (
-	ZapKindKey       = "kind"
-	ZapKindReceiver  = "receiver"
-	ZapKindProcessor = "processor"
-	ZapKindExporter  = "exporter"
-	ZapKindExtension = "extension"
-	ZapKindPipeline  = "pipeline"
-	ZapNameKey       = "name"
-	ZapDataTypeKey   = "data_type"
-	ZapStabilityKey  = "stability"
+import (
+	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/component"
 )
+
+// LogStabilityLevel logs the stability level of a component. The log level is set to info for
+// undefined, unmaintained, deprecated and in development. The log level is set to debug
+// for alpha, beta and stable.
+func LogStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
+	if sl >= component.StabilityLevelAlpha {
+		logger.Debug(sl.LogMessage(), zap.String(ZapStabilityKey, sl.String()))
+	} else {
+		logger.Info(sl.LogMessage(), zap.String(ZapStabilityKey, sl.String()))
+	}
+}

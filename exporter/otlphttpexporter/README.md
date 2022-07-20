@@ -8,7 +8,7 @@
 | Supported pipeline types | traces, metrics, logs |
 | Distributions            | [core], [contrib]     |
 
-Exports traces and/or metrics via HTTP using [OTLP](
+Export traces and/or metrics via HTTP using [OTLP](
 https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 format.
 

@@ -93,7 +93,13 @@ func TestBuildExtensions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Build(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), tt.extensionsConfigs, tt.serviceExtensions, tt.factories.Extensions)
+			_, err := Build(context.Background(), Settings{
+				Telemetry:         componenttest.NewNopTelemetrySettings(),
+				BuildInfo:         component.NewDefaultBuildInfo(),
+				Configs:           tt.extensionsConfigs,
+				Factories:         tt.factories.Extensions,
+				ServiceExtensions: tt.serviceExtensions,
+			})
 			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
 		})

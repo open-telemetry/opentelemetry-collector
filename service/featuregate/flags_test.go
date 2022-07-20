@@ -28,6 +28,11 @@ func TestFlagValue_basic(t *testing.T) {
 		skipString bool
 	}{
 		{
+			name:   "empty item",
+			input:  "",
+			output: FlagValue{},
+		},
+		{
 			name:   "single item",
 			input:  "foo",
 			output: FlagValue{"foo": true},

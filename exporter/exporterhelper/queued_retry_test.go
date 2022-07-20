@@ -103,7 +103,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTracesOneSpan())
+	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
 	mockR := newMockRequest(context.Background(), 2, traceErr)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
@@ -342,6 +342,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
+	checkValueForGlobalManager(t, defaultExporterTags, int64(5000), "exporter/queue_capacity")
 	for i := 0; i < 7; i++ {
 		require.NoError(t, be.sender.send(newErrorRequest(context.Background())))
 	}

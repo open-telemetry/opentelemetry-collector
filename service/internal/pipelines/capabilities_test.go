@@ -33,9 +33,9 @@ func TestWrapLogs(t *testing.T) {
 	wrap := wrapLogs(sink, consumer.Capabilities{MutatesData: true})
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())
 
-	assert.NoError(t, wrap.ConsumeLogs(context.Background(), testdata.GenerateLogsOneLogRecord()))
+	assert.NoError(t, wrap.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
 	assert.Len(t, sink.AllLogs(), 1)
-	assert.Equal(t, testdata.GenerateLogsOneLogRecord(), sink.AllLogs()[0])
+	assert.Equal(t, testdata.GenerateLogs(1), sink.AllLogs()[0])
 }
 
 func TestWrapMetrics(t *testing.T) {
@@ -45,9 +45,9 @@ func TestWrapMetrics(t *testing.T) {
 	wrap := wrapMetrics(sink, consumer.Capabilities{MutatesData: true})
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())
 
-	assert.NoError(t, wrap.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetric()))
+	assert.NoError(t, wrap.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 	assert.Len(t, sink.AllMetrics(), 1)
-	assert.Equal(t, testdata.GenerateMetricsOneMetric(), sink.AllMetrics()[0])
+	assert.Equal(t, testdata.GenerateMetrics(1), sink.AllMetrics()[0])
 }
 
 func TestWrapTraces(t *testing.T) {
@@ -57,7 +57,7 @@ func TestWrapTraces(t *testing.T) {
 	wrap := wrapTraces(sink, consumer.Capabilities{MutatesData: true})
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())
 
-	assert.NoError(t, wrap.ConsumeTraces(context.Background(), testdata.GenerateTracesOneSpan()))
+	assert.NoError(t, wrap.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 	assert.Len(t, sink.AllTraces(), 1)
-	assert.Equal(t, testdata.GenerateTracesOneSpan(), sink.AllTraces()[0])
+	assert.Equal(t, testdata.GenerateTraces(1), sink.AllTraces()[0])
 }

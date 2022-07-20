@@ -247,7 +247,7 @@ func TestSendTraces(t *testing.T) {
 	assert.EqualValues(t, 0, rcv.totalItems.Load())
 
 	// A trace with 2 spans.
-	td = testdata.GenerateTracesTwoSpansSameResource()
+	td = testdata.GenerateTraces(2)
 
 	err = exp.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
@@ -393,7 +393,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, rcv.totalItems.Load())
 
 	// Send two metrics.
-	md = testdata.GenerateMetricsTwoMetrics()
+	md = testdata.GenerateMetrics(2)
 
 	err = exp.ConsumeMetrics(context.Background(), md)
 	assert.NoError(t, err)
@@ -449,7 +449,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// A trace with 2 spans.
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
@@ -506,7 +506,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	// A trace with 2 spans.
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	done := make(chan bool, 1)
 	defer close(done)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -651,7 +651,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, 0, rcv.totalItems.Load())
 
 	// A request with 2 log entries.
-	ld = testdata.GenerateLogsTwoLogRecordsSameResource()
+	ld = testdata.GenerateLogs(2)
 
 	err = exp.ConsumeLogs(context.Background(), ld)
 	assert.NoError(t, err)

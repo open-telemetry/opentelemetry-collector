@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- Add `linux-ppc64le` architecture to cross build tests in CI
+- `client`: perform case insensitive lookups in case the requested metadata value isn't found (#5646)
+- `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
+- Expose `pcommon.NewSliceFromRaw` function (#5679)
+- `loggingexporter`: create the exporter's logger from the service's logger (#5677)
+- Add `otelcol_exporter_queue_capacity` metrics show the collector's exporter queue capacity (#5475)
+
+### 🧰 Bug fixes 🧰
+
+- Fix Collector panic when disabling telemetry metrics (#5642)
+- Fix Collector panic when featuregate value is empty (#5663)
+- Fix confighttp.compression panic due to nil request.Body. (#5628)
+
+## v0.55.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated `config.ServiceTelemetry` (#5565)
@@ -12,6 +29,31 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate `service.ConfigServiceTelemetry`, `service.ConfigServiceTelemetryLogs`, and `service.ConfigServiceTelemetryMetrics` (#5565)
+- Deprecate the following component functions to ensure a stability level is set (#5580):
+  - `component.WithTracesExporter` -> `component.WithTracesExporterAndStabilityLevel`
+  - `component.WithMetricsExporter` -> `component.WithMetricsExporterAndStabilityLevel`
+  - `component.WithLogsExporter` -> `component.WithLogsExporterAndStabilityLevel`
+  - `component.WithTracesReceiver` -> `component.WithTracesReceiverAndStabilityLevel`
+  - `component.WithMetricsReceiver` -> `component.WithMetricsReceiverAndStabilityLevel`
+  - `component.WithLogsReceiver` -> `component.WithLogsReceiverAndStabilityLevel`
+  - `component.WithTracesProcessor` -> `component.WithTracesProcessorAndStabilityLevel`
+  - `component.WithMetricsProcessor` -> `component.WithMetricsProcessorAndStabilityLevel`
+  - `component.WithLogsProcessor` -> `component.WithLogsProcessorAndStabilityLevel`
+- Deprecate `Registry.Apply` in `service.featuregate` (#5660)
+
+### 💡 Enhancements 💡
+
+- Components stability levels are now logged. By default components which haven't defined their stability levels, or which are
+  unmaintained, deprecated or in development will log a message. (#5580)
+
+### 💡 Enhancements 💡
+
+- `exporter/logging`: Skip "bad file descriptor" sync errors (#5585)
+
+### 🧰 Bug fixes 🧰
+
+- Fix initialization of the OpenTelemetry MetricProvider. (#5571)
+- Set log level for `undefined` stability level to debug. (#5635)
 
 ## v0.54.0 Beta
 
@@ -46,6 +88,7 @@
 
 ### 💡 Enhancements 💡
 
+- Deprecate `HTTPClientSettings.ToClient` in favor of `HTTPClientSettings.ToClientWithHost` (#5584)
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
 - Update OTLP to v0.18.0 (#5530)
 - Log histogram min/max fields with `logging` exporter (#5520)
@@ -167,7 +210,7 @@
 - Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
 - Remove non pdata deprecated funcs/structs (#5220)
 - `pmetric.Exemplar.ValueType()` now returns new type `ExemplarValueType` (#5233)
-- Remove deprecated `Delete` pdata func from (v0.47.0). (#5307)
+- Remove deprecated `Delete` pdata func in favor of `pdata.Remove` from (v0.47.0). (#5307)
 
 ### 🚩 Deprecations 🚩
 

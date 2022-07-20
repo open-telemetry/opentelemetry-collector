@@ -125,7 +125,7 @@ func (col *Collector) Shutdown() {
 
 // runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
 func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
-	col.service.telemetry.Logger.Info("Everything is ready. Begin running and processing data.")
+	col.service.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
 
 	col.signalsChannel = make(chan os.Signal, 1)
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
@@ -139,11 +139,11 @@ LOOP:
 		select {
 		case err := <-col.set.ConfigProvider.Watch():
 			if err != nil {
-				col.service.telemetry.Logger.Error("Config watch failed", zap.Error(err))
+				col.service.telemetrySettings.Logger.Error("Config watch failed", zap.Error(err))
 				break LOOP
 			}
 
-			col.service.telemetry.Logger.Warn("Config updated, restart service")
+			col.service.telemetrySettings.Logger.Warn("Config updated, restart service")
 			col.setCollectorState(Closing)
 
 			if err = col.service.Shutdown(ctx); err != nil {
@@ -153,16 +153,16 @@ LOOP:
 				return fmt.Errorf("failed to setup configuration components: %w", err)
 			}
 		case err := <-col.asyncErrorChannel:
-			col.service.telemetry.Logger.Error("Asynchronous error received, terminating process", zap.Error(err))
+			col.service.telemetrySettings.Logger.Error("Asynchronous error received, terminating process", zap.Error(err))
 			break LOOP
 		case s := <-col.signalsChannel:
-			col.service.telemetry.Logger.Info("Received signal from OS", zap.String("signal", s.String()))
+			col.service.telemetrySettings.Logger.Info("Received signal from OS", zap.String("signal", s.String()))
 			break LOOP
 		case <-col.shutdownChan:
-			col.service.telemetry.Logger.Info("Received shutdown request")
+			col.service.telemetrySettings.Logger.Info("Received shutdown request")
 			break LOOP
 		case <-ctx.Done():
-			col.service.telemetry.Logger.Info("Context done, terminating process", zap.Error(ctx.Err()))
+			col.service.telemetrySettings.Logger.Info("Context done, terminating process", zap.Error(ctx.Err()))
 
 			// Call shutdown with background context as the passed in context has been canceled
 			return col.shutdown(context.Background())
@@ -187,19 +187,14 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		Config:            cfg,
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
+		telemetry:         col.set.telemetry,
 	})
 	if err != nil {
 		return err
 	}
 
 	if !col.set.SkipSettingGRPCLogger {
-		telemetrylogs.SetColGRPCLogger(col.service.telemetry.Logger, cfg.Service.Telemetry.Logs.Level)
-	}
-
-	// TODO: Move this to the service initialization.
-	// It is called once because that is how it is implemented using sync.Once.
-	if err = col.set.telemetry.init(col.service); err != nil {
-		return err
+		telemetrylogs.SetColGRPCLogger(col.service.telemetrySettings.Logger, cfg.Service.Telemetry.Logs.Level)
 	}
 
 	if err = col.service.Start(ctx); err != nil {
@@ -209,7 +204,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	return nil
 }
 
-// Run starts the collector according to the given configuration given, and waits for it to complete.
+// Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
 	if err := col.setupConfigurationComponents(ctx); err != nil {
@@ -217,7 +212,7 @@ func (col *Collector) Run(ctx context.Context) error {
 		return err
 	}
 
-	col.service.telemetry.Logger.Info("Starting "+col.set.BuildInfo.Command+"...",
+	col.service.telemetrySettings.Logger.Info("Starting "+col.set.BuildInfo.Command+"...",
 		zap.String("Version", col.set.BuildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
@@ -233,7 +228,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 	var errs error
 
 	// Begin shutdown sequence.
-	col.service.telemetry.Logger.Info("Starting shutdown...")
+	col.service.telemetrySettings.Logger.Info("Starting shutdown...")
 
 	if err := col.set.ConfigProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
@@ -243,7 +238,8 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service: %w", err))
 	}
 
-	if err := col.set.telemetry.shutdown(); err != nil {
+	// TODO: Move this as part of the service shutdown.
+	if err := col.service.telemetryInitializer.shutdown(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 

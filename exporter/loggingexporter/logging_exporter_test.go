@@ -21,10 +21,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -32,44 +32,46 @@ import (
 )
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
-	lte, err := newTracesExporter(&config.ExporterSettings{}, zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	f := NewFactory()
+	lte, err := newTracesExporter(f.CreateDefaultConfig().(*Config), zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
 	assert.NoError(t, lte.ConsumeTraces(context.Background(), ptrace.NewTraces()))
-	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTracesTwoSpansSameResourceOneDifferent()))
+	assert.NoError(t, lte.ConsumeTraces(context.Background(), testdata.GenerateTraces(10)))
 
 	assert.NoError(t, lte.Shutdown(context.Background()))
 }
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
-	lme, err := newMetricsExporter(&config.ExporterSettings{}, zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	f := NewFactory()
+	lme, err := newMetricsExporter(f.CreateDefaultConfig().(*Config), zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GeneratMetricsAllTypesWithSampleDatapoints()))
-	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmptyDataPoint()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypes()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsAllTypesEmpty()))
 	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetricsMetricTypeInvalid()))
+	assert.NoError(t, lme.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(10)))
 
 	assert.NoError(t, lme.Shutdown(context.Background()))
 }
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
-	lle, err := newLogsExporter(&config.ExporterSettings{}, zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	f := NewFactory()
+	lle, err := newLogsExporter(f.CreateDefaultConfig().(*Config), zap.NewNop(), componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 
 	assert.NoError(t, lle.ConsumeLogs(context.Background(), plog.NewLogs()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyResourceLogs()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsNoLogRecords()))
-	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogsOneEmptyLogRecord()))
+	assert.NoError(t, lle.ConsumeLogs(context.Background(), testdata.GenerateLogs(10)))
 
 	assert.NoError(t, lle.Shutdown(context.Background()))
 }
 
 func TestLoggingExporterErrors(t *testing.T) {
-	le := newLoggingExporter(zaptest.NewLogger(t))
+	le := newLoggingExporter(zaptest.NewLogger(t), zapcore.DebugLevel)
 	require.NotNil(t, le)
 
 	errWant := errors.New("my error")

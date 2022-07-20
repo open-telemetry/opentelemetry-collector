@@ -91,7 +91,7 @@ func TestBuild(t *testing.T) {
 			require.NoError(t, err)
 
 			// Build the pipeline
-			pipelines, err := Build(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories)
+			pipelines, err := Build(context.Background(), toSettings(factories, cfg))
 			assert.NoError(t, err)
 
 			assert.NoError(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
@@ -135,17 +135,17 @@ func TestBuild(t *testing.T) {
 				traceReceiver := pipelines.allReceivers[config.TracesDataType][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, traceReceiver.Started)
 				// Send traces.
-				assert.NoError(t, traceReceiver.ConsumeTraces(context.Background(), testdata.GenerateTracesOneSpan()))
+				assert.NoError(t, traceReceiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 
 				metricsReceiver := pipelines.allReceivers[config.MetricsDataType][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, metricsReceiver.Started)
 				// Send metrics.
-				assert.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetric()))
+				assert.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 
 				logsReceiver := pipelines.allReceivers[config.LogsDataType][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, logsReceiver.Started)
 				// Send logs.
-				assert.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogsOneLogRecord()))
+				assert.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
 			}
 
 			assert.NoError(t, pipelines.ShutdownAll(context.Background()))
@@ -181,19 +181,19 @@ func TestBuild(t *testing.T) {
 				// Validate traces.
 				traceExporter := pipelines.GetExporters()[config.TracesDataType][expID].(*testcomponents.ExampleExporter)
 				require.Len(t, traceExporter.Traces, test.expectedRequests)
-				assert.EqualValues(t, testdata.GenerateTracesOneSpan(), traceExporter.Traces[0])
+				assert.EqualValues(t, testdata.GenerateTraces(1), traceExporter.Traces[0])
 				assert.True(t, traceExporter.Stopped)
 
 				// Validate metrics.
 				metricsExporter := pipelines.GetExporters()[config.MetricsDataType][expID].(*testcomponents.ExampleExporter)
 				require.Len(t, metricsExporter.Metrics, test.expectedRequests)
-				assert.EqualValues(t, testdata.GenerateMetricsOneMetric(), metricsExporter.Metrics[0])
+				assert.EqualValues(t, testdata.GenerateMetrics(1), metricsExporter.Metrics[0])
 				assert.True(t, metricsExporter.Stopped)
 
 				// Validate logs.
 				logsExporter := pipelines.GetExporters()[config.LogsDataType][expID].(*testcomponents.ExampleExporter)
 				require.Len(t, logsExporter.Logs, test.expectedRequests)
-				assert.EqualValues(t, testdata.GenerateLogsOneLogRecord(), logsExporter.Logs[0])
+				assert.EqualValues(t, testdata.GenerateLogs(1), logsExporter.Logs[0])
 				assert.True(t, logsExporter.Stopped)
 			}
 		})
@@ -257,7 +257,7 @@ func TestBuildErrors(t *testing.T) {
 			delete(factories.Processors, "unknown")
 			delete(factories.Receivers, "unknown")
 
-			_, err = Build(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories)
+			_, err = Build(context.Background(), toSettings(factories, cfg))
 			assert.Error(t, err)
 		})
 	}
@@ -271,80 +271,73 @@ func TestFailToStartAndShutdown(t *testing.T) {
 	nopProcessorFactory := componenttest.NewNopProcessorFactory()
 	nopExporterFactory := componenttest.NewNopExporterFactory()
 
-	factories := component.Factories{
-		Receivers: map[config.Type]component.ReceiverFactory{
+	set := Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		ReceiverFactories: map[config.Type]component.ReceiverFactory{
 			nopReceiverFactory.Type(): nopReceiverFactory,
 			errReceiverFactory.Type(): errReceiverFactory,
 		},
-		Processors: map[config.Type]component.ProcessorFactory{
-			nopProcessorFactory.Type(): nopProcessorFactory,
-			errProcessorFactory.Type(): errProcessorFactory,
-		},
-		Exporters: map[config.Type]component.ExporterFactory{
-			nopExporterFactory.Type(): nopExporterFactory,
-			errExporterFactory.Type(): errExporterFactory,
-		},
-	}
-
-	cfg := &config.Config{
-		Receivers: map[config.ComponentID]config.Receiver{
+		ReceiverConfigs: map[config.ComponentID]config.Receiver{
 			config.NewComponentID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
 			config.NewComponentID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
 		},
-		Exporters: map[config.ComponentID]config.Exporter{
-			config.NewComponentID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
-			config.NewComponentID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
+		ProcessorFactories: map[config.Type]component.ProcessorFactory{
+			nopProcessorFactory.Type(): nopProcessorFactory,
+			errProcessorFactory.Type(): errProcessorFactory,
 		},
-		Processors: map[config.ComponentID]config.Processor{
+		ProcessorConfigs: map[config.ComponentID]config.Processor{
 			config.NewComponentID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
 			config.NewComponentID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
+		},
+		ExporterFactories: map[config.Type]component.ExporterFactory{
+			nopExporterFactory.Type(): nopExporterFactory,
+			errExporterFactory.Type(): errExporterFactory,
+		},
+		ExporterConfigs: map[config.ComponentID]config.Exporter{
+			config.NewComponentID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
+			config.NewComponentID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
 		},
 	}
 
 	for _, dt := range []config.DataType{config.TracesDataType, config.MetricsDataType, config.LogsDataType} {
 		t.Run(string(dt)+"/receiver", func(t *testing.T) {
-			cfg.Service = config.Service{
-				Pipelines: map[config.ComponentID]*config.Pipeline{
-					config.NewComponentID(dt): {
-						Receivers:  []config.ComponentID{config.NewComponentID("nop"), config.NewComponentID("err")},
-						Processors: []config.ComponentID{config.NewComponentID("nop")},
-						Exporters:  []config.ComponentID{config.NewComponentID("nop")},
-					},
+			set.PipelineConfigs = map[config.ComponentID]*config.Pipeline{
+				config.NewComponentID(dt): {
+					Receivers:  []config.ComponentID{config.NewComponentID("nop"), config.NewComponentID("err")},
+					Processors: []config.ComponentID{config.NewComponentID("nop")},
+					Exporters:  []config.ComponentID{config.NewComponentID("nop")},
 				},
 			}
-			pipelines, err := Build(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories)
+			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 
 		t.Run(string(dt)+"/processor", func(t *testing.T) {
-			cfg.Service = config.Service{
-				Pipelines: map[config.ComponentID]*config.Pipeline{
-					config.NewComponentID(dt): {
-						Receivers:  []config.ComponentID{config.NewComponentID("nop")},
-						Processors: []config.ComponentID{config.NewComponentID("nop"), config.NewComponentID("err")},
-						Exporters:  []config.ComponentID{config.NewComponentID("nop")},
-					},
+			set.PipelineConfigs = map[config.ComponentID]*config.Pipeline{
+				config.NewComponentID(dt): {
+					Receivers:  []config.ComponentID{config.NewComponentID("nop")},
+					Processors: []config.ComponentID{config.NewComponentID("nop"), config.NewComponentID("err")},
+					Exporters:  []config.ComponentID{config.NewComponentID("nop")},
 				},
 			}
-			pipelines, err := Build(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories)
+			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 
 		t.Run(string(dt)+"/exporter", func(t *testing.T) {
-			cfg.Service = config.Service{
-				Pipelines: map[config.ComponentID]*config.Pipeline{
-					config.NewComponentID(dt): {
-						Receivers:  []config.ComponentID{config.NewComponentID("nop")},
-						Processors: []config.ComponentID{config.NewComponentID("nop")},
-						Exporters:  []config.ComponentID{config.NewComponentID("nop"), config.NewComponentID("err")},
-					},
+			set.PipelineConfigs = map[config.ComponentID]*config.Pipeline{
+				config.NewComponentID(dt): {
+					Receivers:  []config.ComponentID{config.NewComponentID("nop")},
+					Processors: []config.ComponentID{config.NewComponentID("nop")},
+					Exporters:  []config.ComponentID{config.NewComponentID("nop"), config.NewComponentID("err")},
 				},
 			}
-			pipelines, err := Build(context.Background(), componenttest.NewNopTelemetrySettings(), component.NewDefaultBuildInfo(), cfg, factories)
+			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
 			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
@@ -440,6 +433,20 @@ func newErrExporterFactory() component.ExporterFactory {
 			return &errComponent{}, nil
 		}),
 	)
+}
+
+func toSettings(factories component.Factories, cfg *config.Config) Settings {
+	return Settings{
+		Telemetry:          componenttest.NewNopTelemetrySettings(),
+		BuildInfo:          component.NewDefaultBuildInfo(),
+		ReceiverFactories:  factories.Receivers,
+		ReceiverConfigs:    cfg.Receivers,
+		ProcessorFactories: factories.Processors,
+		ProcessorConfigs:   cfg.Processors,
+		ExporterFactories:  factories.Exporters,
+		ExporterConfigs:    cfg.Exporters,
+		PipelineConfigs:    cfg.Service.Pipelines,
+	}
 }
 
 type errComponent struct {
