@@ -58,7 +58,7 @@ all-modules:
 
 .PHONY: gomoddownload
 gomoddownload:
-	@$(MAKE) `for-all-target` TARGET="moddownload"
+	@$(MAKE) for-all-target TARGET="moddownload"
 
 .PHONY: gotest
 gotest:
