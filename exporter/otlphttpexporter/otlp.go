@@ -188,29 +188,23 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 }
 
 func isPermanentClientFailure(code int) bool {
-	var isPermanentError bool
-
 	switch code {
 	case http.StatusBadRequest:
-		// 400 - bad request
-		isPermanentError = true
+		return true
 	case http.StatusPaymentRequired:
 		// 402 - payment required typically means that an auth token isn't valid anymore and as such, we deem it as permanent
-		isPermanentError = true
+		return true
 	case http.StatusRequestEntityTooLarge:
-		// 413 - request size is too large
-		isPermanentError = true
+		return true
 	case http.StatusRequestURITooLong:
-		// 414 - uri is too long
-		isPermanentError = true
+		return true
 	case http.StatusRequestHeaderFieldsTooLarge:
-		// 431 - headers too large
-		isPermanentError = true
+		return true
 	default:
-		isPermanentError = false
+		return false
 	}
 
-	return isPermanentError
+	return false
 }
 
 // Read the response and decode the status.Status from the body.
