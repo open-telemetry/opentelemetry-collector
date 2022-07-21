@@ -58,7 +58,7 @@ all-modules:
 
 .PHONY: gomoddownload
 gomoddownload:
-	@$(MAKE) for-all-target TARGET="moddownload"
+	@$(MAKE) `for-all-target` TARGET="moddownload"
 
 .PHONY: gotest
 gotest:
@@ -96,6 +96,10 @@ gotidy:
 .PHONY: gogenerate
 gogenerate:
 	@$(MAKE) for-all-target TARGET="generate"
+
+.PHONY: all-checklinks
+all-checklinks:
+	@$(MAKE) for-all-target TARGET="checklinks"
 
 .PHONY: addlicense
 addlicense:
@@ -412,4 +416,3 @@ endif
 		exit 1; \
 	fi
 	gh pr create --title "[chore] prepare release $(RELEASE_CANDIDATE)"
-
