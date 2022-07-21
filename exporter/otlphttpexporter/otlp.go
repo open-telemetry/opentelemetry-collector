@@ -203,8 +203,6 @@ func isPermanentClientFailure(code int) bool {
 	default:
 		return false
 	}
-
-	return false
 }
 
 // Read the response and decode the status.Status from the body.
