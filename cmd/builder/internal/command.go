@@ -30,14 +30,16 @@ import (
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 )
 
-const SkipComplicationFlag = "skip-compilation"
-const DistributionNameFlag = "name"
-const DistributionDescriptionFlag = "description"
-const DistributionVersionFlag = "version"
-const DistributionOtelColVersionFlag = "otelcol-version"
-const DistributionOutputPathFlag = "output-path"
-const DistributionGoFlag = "go"
-const DistributionModuleFlag = "module"
+const (
+	SkipCompilationFlag            = "skip-compilation"
+	DistributionNameFlag           = "name"
+	DistributionDescriptionFlag    = "description"
+	DistributionVersionFlag        = "version"
+	DistributionOtelColVersionFlag = "otelcol-version"
+	DistributionOutputPathFlag     = "output-path"
+	DistributionGoFlag             = "go"
+	DistributionModuleFlag         = "module"
+)
 
 var (
 	cfgFile string
@@ -72,7 +74,7 @@ func Command() (*cobra.Command, error) {
 	cmd.Flags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.otelcol-builder.yaml)")
 
 	// the distribution parameters, which we accept as CLI flags as well
-	cmd.Flags().BoolVar(&cfg.SkipCompilation, SkipComplicationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
+	cmd.Flags().BoolVar(&cfg.SkipCompilation, SkipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
 	cmd.Flags().StringVar(&cfg.Distribution.Name, DistributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.Description, DistributionDescriptionFlag, "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
 	cmd.Flags().StringVar(&cfg.Distribution.Version, DistributionVersionFlag, "1.0.0", "The version for the OpenTelemetry Collector distribution")
@@ -116,6 +118,13 @@ func initConfig(flags *flag.FlagSet) error {
 		return err
 	}
 
+	applyCfgFromFile(flags, cfgFromFile)
+
+	cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
+	return nil
+}
+
+func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	cfg.Exporters = cfgFromFile.Exporters
 	cfg.Extensions = cfgFromFile.Extensions
 	cfg.Receivers = cfgFromFile.Receivers
@@ -123,7 +132,7 @@ func initConfig(flags *flag.FlagSet) error {
 	cfg.Replaces = cfgFromFile.Replaces
 	cfg.Excludes = cfgFromFile.Excludes
 
-	if !flags.Changed(SkipComplicationFlag) && cfgFromFile.SkipCompilation {
+	if !flags.Changed(SkipCompilationFlag) && cfgFromFile.SkipCompilation {
 		cfg.SkipCompilation = cfgFromFile.SkipCompilation
 	}
 	if !flags.Changed(DistributionNameFlag) && cfgFromFile.Distribution.Name != "" {
@@ -147,7 +156,4 @@ func initConfig(flags *flag.FlagSet) error {
 	if !flags.Changed(DistributionModuleFlag) && cfgFromFile.Distribution.Module != "" {
 		cfg.Distribution.Module = cfgFromFile.Distribution.Module
 	}
-
-	cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
-	return nil
 }
