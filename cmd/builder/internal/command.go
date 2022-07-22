@@ -31,14 +31,14 @@ import (
 )
 
 const (
-	SkipCompilationFlag            = "skip-compilation"
-	DistributionNameFlag           = "name"
-	DistributionDescriptionFlag    = "description"
-	DistributionVersionFlag        = "version"
-	DistributionOtelColVersionFlag = "otelcol-version"
-	DistributionOutputPathFlag     = "output-path"
-	DistributionGoFlag             = "go"
-	DistributionModuleFlag         = "module"
+	skipCompilationFlag            = "skip-compilation"
+	distributionNameFlag           = "name"
+	distributionDescriptionFlag    = "description"
+	distributionVersionFlag        = "version"
+	distributionOtelColVersionFlag = "otelcol-version"
+	distributionOutputPathFlag     = "output-path"
+	distributionGoFlag             = "go"
+	distributionModuleFlag         = "module"
 )
 
 var (
@@ -74,14 +74,14 @@ func Command() (*cobra.Command, error) {
 	cmd.Flags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.otelcol-builder.yaml)")
 
 	// the distribution parameters, which we accept as CLI flags as well
-	cmd.Flags().BoolVar(&cfg.SkipCompilation, SkipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
-	cmd.Flags().StringVar(&cfg.Distribution.Name, DistributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
-	cmd.Flags().StringVar(&cfg.Distribution.Description, DistributionDescriptionFlag, "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
-	cmd.Flags().StringVar(&cfg.Distribution.Version, DistributionVersionFlag, "1.0.0", "The version for the OpenTelemetry Collector distribution")
-	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, DistributionOtelColVersionFlag, cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
-	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, DistributionOutputPathFlag, cfg.Distribution.OutputPath, "Where to write the resulting files")
-	cmd.Flags().StringVar(&cfg.Distribution.Go, DistributionGoFlag, "", "The Go binary to use during the compilation phase. Default: go from the PATH")
-	cmd.Flags().StringVar(&cfg.Distribution.Module, DistributionModuleFlag, "go.opentelemetry.io/collector/cmd/builder", "The Go module for the new distribution")
+	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
+	cmd.Flags().StringVar(&cfg.Distribution.Name, distributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
+	cmd.Flags().StringVar(&cfg.Distribution.Description, distributionDescriptionFlag, "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
+	cmd.Flags().StringVar(&cfg.Distribution.Version, distributionVersionFlag, "1.0.0", "The version for the OpenTelemetry Collector distribution")
+	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, distributionOtelColVersionFlag, cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
+	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, distributionOutputPathFlag, cfg.Distribution.OutputPath, "Where to write the resulting files")
+	cmd.Flags().StringVar(&cfg.Distribution.Go, distributionGoFlag, "", "The Go binary to use during the compilation phase. Default: go from the PATH")
+	cmd.Flags().StringVar(&cfg.Distribution.Module, distributionModuleFlag, "go.opentelemetry.io/collector/cmd/builder", "The Go module for the new distribution")
 
 	// version of this binary
 	cmd.AddCommand(versionCommand())
@@ -94,7 +94,7 @@ func Command() (*cobra.Command, error) {
 }
 
 func initConfig(flags *flag.FlagSet) error {
-	cfg.Logger.Info("OpenTelemetry Collector distribution builder", zap.String(DistributionVersionFlag, version), zap.String("date", date))
+	cfg.Logger.Info("OpenTelemetry Collector distribution builder", zap.String(distributionVersionFlag, version), zap.String("date", date))
 	// use the default path if there is no config file being specified
 	if cfgFile == "" {
 		cfgFile = "$HOME/.otelcol-builder.yaml"
@@ -132,28 +132,28 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	cfg.Replaces = cfgFromFile.Replaces
 	cfg.Excludes = cfgFromFile.Excludes
 
-	if !flags.Changed(SkipCompilationFlag) && cfgFromFile.SkipCompilation {
+	if !flags.Changed(skipCompilationFlag) && cfgFromFile.SkipCompilation {
 		cfg.SkipCompilation = cfgFromFile.SkipCompilation
 	}
-	if !flags.Changed(DistributionNameFlag) && cfgFromFile.Distribution.Name != "" {
+	if !flags.Changed(distributionNameFlag) && cfgFromFile.Distribution.Name != "" {
 		cfg.Distribution.Name = cfgFromFile.Distribution.Name
 	}
-	if !flags.Changed(DistributionDescriptionFlag) && cfgFromFile.Distribution.Description != "" {
+	if !flags.Changed(distributionDescriptionFlag) && cfgFromFile.Distribution.Description != "" {
 		cfg.Distribution.Description = cfgFromFile.Distribution.Description
 	}
-	if !flags.Changed(DistributionVersionFlag) && cfgFromFile.Distribution.Version != "" {
+	if !flags.Changed(distributionVersionFlag) && cfgFromFile.Distribution.Version != "" {
 		cfg.Distribution.Version = cfgFromFile.Distribution.Version
 	}
-	if !flags.Changed(DistributionOtelColVersionFlag) && cfgFromFile.Distribution.OtelColVersion != "" {
+	if !flags.Changed(distributionOtelColVersionFlag) && cfgFromFile.Distribution.OtelColVersion != "" {
 		cfg.Distribution.OtelColVersion = cfgFromFile.Distribution.OtelColVersion
 	}
-	if !flags.Changed(DistributionOutputPathFlag) && cfgFromFile.Distribution.OutputPath != "" {
+	if !flags.Changed(distributionOutputPathFlag) && cfgFromFile.Distribution.OutputPath != "" {
 		cfg.Distribution.OutputPath = cfgFromFile.Distribution.OutputPath
 	}
-	if !flags.Changed(DistributionGoFlag) && cfgFromFile.Distribution.Go != "" {
+	if !flags.Changed(distributionGoFlag) && cfgFromFile.Distribution.Go != "" {
 		cfg.Distribution.Go = cfgFromFile.Distribution.Go
 	}
-	if !flags.Changed(DistributionModuleFlag) && cfgFromFile.Distribution.Module != "" {
+	if !flags.Changed(distributionModuleFlag) && cfgFromFile.Distribution.Module != "" {
 		cfg.Distribution.Module = cfgFromFile.Distribution.Module
 	}
 }
