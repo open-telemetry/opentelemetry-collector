@@ -187,6 +187,7 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 	return formattedErr
 }
 
+// Does the 'code' indicate a permanent error
 func isPermanentClientFailure(code int) bool {
 	switch code {
 	case http.StatusBadRequest:
