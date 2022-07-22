@@ -38,8 +38,13 @@ var (
 // Command is the main entrypoint for this application
 func Command() (*cobra.Command, error) {
 	cmd := &cobra.Command{
-		Use:  "builder",
-		Long: fmt.Sprintf("OpenTelemetry Collector distribution builder (%s)", version),
+		Use: "ocb",
+		Long: fmt.Sprintf("OpenTelemetry Collector Builder (%s)", version) + `
+
+ocb generates a custom OpenTelemetry Collector binary using the
+build configuration given by the "--config" argument.
+`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := initConfig(); err != nil {
 				return err
@@ -58,8 +63,14 @@ func Command() (*cobra.Command, error) {
 		},
 	}
 
-	// the external config file
-	cmd.Flags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.otelcol-builder.yaml)")
+	cmd.Flags().StringVar(&cfgFile, "config", "", "build configuration file")
+
+	// A build configuration file is always required, and there's no
+	// default. We can relax this in future by embedding the default
+	// config that is used to build otelcorecol.
+	if err := cmd.MarkFlagRequired("config"); err != nil {
+		panic(err) // Only fails if the usage message is empty, which is a programmer error.
+	}
 
 	// the distribution parameters, which we accept as CLI flags as well
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, "skip-compilation", false, "Whether builder should only generate go code with no compile of the collector (default false)")
@@ -82,11 +93,7 @@ func Command() (*cobra.Command, error) {
 }
 
 func initConfig() error {
-	cfg.Logger.Info("OpenTelemetry Collector distribution builder", zap.String("version", version), zap.String("date", date))
-	// use the default path if there is no config file being specified
-	if cfgFile == "" {
-		cfgFile = "$HOME/.otelcol-builder.yaml"
-	}
+	cfg.Logger.Info("OpenTelemetry Collector Builder", zap.String("version", version), zap.String("date", date))
 
 	// load the config file
 	if err := k.Load(file.Provider(cfgFile), yaml.Parser()); err != nil {
