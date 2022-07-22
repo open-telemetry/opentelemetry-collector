@@ -28,8 +28,8 @@ var (
 func versionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Version of opentelemetry-collector-builder",
-		Long:  "Prints the version of opentelemetry-collector-builder binary",
+		Short: "Version of ocb",
+		Long:  "Prints the version of the ocb binary",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Println(fmt.Sprintf("%s version %s", cmd.Parent().Name(), version))
 		},
