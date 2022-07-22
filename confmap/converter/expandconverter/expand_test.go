@@ -24,6 +24,8 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/internal/nonfatalerror"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 func TestNewExpandConverter(t *testing.T) {
@@ -114,4 +116,73 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 		}}
 	require.NoError(t, New().Convert(context.Background(), conf))
 	assert.Equal(t, expectedMap, conf.ToStringMap())
+}
+
+func TestMissingEnvVar(t *testing.T) {
+	const receiverExtraMapValue = "some map value"
+	t.Setenv("MAP_VALUE", receiverExtraMapValue)
+	sourceMap := map[string]interface{}{
+		"test_string_map": map[string]interface{}{
+			"recv":    []interface{}{map[string]interface{}{"field": "$MAP_VALUE", "unknown": "$UNKNOWN_1"}},
+			"unknown": "$UNKNOWN_1-$UNKNOWN_2-$UNKNOWN_3",
+		},
+	}
+
+	tests := []struct {
+		name            string
+		registryBuilder func() *featuregate.Registry
+		expectedMap     map[string]interface{}
+		expectedErr     string
+		isNonFatal      bool
+	}{
+		{
+			name: "no fail on unknown environment variable",
+			registryBuilder: func() *featuregate.Registry {
+				registry := featuregate.NewRegistry()
+				registry.MustRegister(raiseErrorOnUnknownEnvVarFeatureGate)
+				registry.MustApply(map[string]bool{
+					raiseErrorOnUnknownEnvVarFeatureGateID: false,
+				})
+				return registry
+			},
+			expectedMap: map[string]interface{}{
+				"test_string_map": map[string]interface{}{
+					"recv":    []interface{}{map[string]interface{}{"field": receiverExtraMapValue, "unknown": ""}},
+					"unknown": "--",
+				},
+			},
+			expectedErr: "Non fatal error: failed to expand unknown environment variable(s): [UNKNOWN_1 UNKNOWN_2 UNKNOWN_3]. " +
+				"Use \"confmap.expandconverter.RaiseErrorOnUnknownEnvVar\" to turn this into a fatal error",
+			isNonFatal: true,
+		},
+		{
+			name: "fail on environment variable",
+			registryBuilder: func() *featuregate.Registry {
+				registry := featuregate.NewRegistry()
+				registry.MustRegister(raiseErrorOnUnknownEnvVarFeatureGate)
+				registry.MustApply(map[string]bool{
+					raiseErrorOnUnknownEnvVarFeatureGateID: true,
+				})
+				return registry
+			},
+			expectedErr: "failed to expand unknown environment variable(s): [UNKNOWN_1 UNKNOWN_2 UNKNOWN_3]",
+			isNonFatal:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registry := tt.registryBuilder()
+			converter := newWithRegistry(registry)
+			conf := confmap.NewFromStringMap(sourceMap)
+
+			err := converter.Convert(context.Background(), conf)
+			if err != nil || tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				assert.Equal(t, tt.isNonFatal, nonfatalerror.IsNonFatal(err))
+			} else {
+				assert.Equal(t, tt.expectedMap, conf.ToStringMap())
+			}
+		})
+	}
 }

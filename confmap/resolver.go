@@ -23,6 +23,8 @@ import (
 	"sync"
 
 	"go.uber.org/multierr"
+
+	"go.opentelemetry.io/collector/internal/nonfatalerror"
 )
 
 // follows drive-letter specification:
@@ -140,13 +142,18 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	}
 
 	// Apply the converters in the given order.
+	var nonFatalErr error
 	for _, confConv := range mr.converters {
 		if err := confConv.Convert(ctx, retMap); err != nil {
-			return nil, fmt.Errorf("cannot convert the confmap.Conf: %w", err)
+			if nonfatalerror.IsNonFatal(err) {
+				nonFatalErr = multierr.Append(nonFatalErr, err)
+			} else {
+				return nil, fmt.Errorf("cannot convert the confmap.Conf: %w", err)
+			}
 		}
 	}
 
-	return retMap, nil
+	return retMap, nonFatalErr
 }
 
 // Watch blocks until any configuration change was detected or an unrecoverable error

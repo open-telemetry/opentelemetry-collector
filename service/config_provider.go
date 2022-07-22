@@ -18,12 +18,15 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/internal/nonfatalerror"
 	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
 
@@ -106,8 +109,13 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*Config, error) {
 	retMap, err := cm.mapResolver.Resolve(ctx)
+	var nonFatalErr error
 	if err != nil {
-		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
+		if nonfatalerror.IsNonFatal(err) {
+			nonFatalErr = multierr.Append(nonFatalErr, err)
+		} else {
+			return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
+		}
 	}
 
 	var cfg *Config
@@ -119,7 +127,7 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	return cfg, nil
+	return cfg, nonFatalErr
 }
 
 func (cm *configProvider) Watch() <-chan error {

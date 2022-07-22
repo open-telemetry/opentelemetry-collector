@@ -8,6 +8,9 @@
 
 ### 💡 Enhancements 💡
 
+- Warn when expanding unknown environment variable (#5734)
+  - The `confmap.expandconverter.RaiseErrorOnUnknownEnvVar` feature gate will turn this into an error.
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.56.0 Beta

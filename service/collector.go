@@ -31,6 +31,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/ballastextension"
+	"go.opentelemetry.io/collector/internal/nonfatalerror"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
@@ -177,8 +178,13 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(Starting)
 
 	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
+	var nonFatalErr error
 	if err != nil {
-		return fmt.Errorf("failed to get config: %w", err)
+		if nonfatalerror.IsNonFatal(err) {
+			nonFatalErr = err
+		} else {
+			return fmt.Errorf("failed to get config: %w", err)
+		}
 	}
 
 	col.service, err = newService(&settings{
@@ -191,6 +197,13 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	if nonFatalErr != nil {
+		col.service.telemetrySettings.Logger.Warn(
+			"Got nonfatal error while getting configuration",
+			zap.Error(nonFatalErr),
+		)
 	}
 
 	if !col.set.SkipSettingGRPCLogger {
