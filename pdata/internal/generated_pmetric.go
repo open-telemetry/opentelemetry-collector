@@ -183,6 +183,10 @@ func NewResourceMetrics() ResourceMetrics {
 	return newResourceMetrics(&otlpmetrics.ResourceMetrics{})
 }
 
+func ResourceMetricsToProto(ms ResourceMetrics) *otlpmetrics.ResourceMetrics {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
@@ -375,6 +379,10 @@ func newScopeMetrics(orig *otlpmetrics.ScopeMetrics) ScopeMetrics {
 // OR directly access the member if this is embedded in another struct.
 func NewScopeMetrics() ScopeMetrics {
 	return newScopeMetrics(&otlpmetrics.ScopeMetrics{})
+}
+
+func ScopeMetricsToProto(ms ScopeMetrics) *otlpmetrics.ScopeMetrics {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -572,6 +580,10 @@ func NewMetric() Metric {
 	return newMetric(&otlpmetrics.Metric{})
 }
 
+func MetricToProto(ms Metric) *otlpmetrics.Metric {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms Metric) MoveTo(dest Metric) {
@@ -745,6 +757,10 @@ func NewGauge() Gauge {
 	return newGauge(&otlpmetrics.Gauge{})
 }
 
+func GaugeToProto(ms Gauge) *otlpmetrics.Gauge {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms Gauge) MoveTo(dest Gauge) {
@@ -783,6 +799,10 @@ func newSum(orig *otlpmetrics.Sum) Sum {
 // OR directly access the member if this is embedded in another struct.
 func NewSum() Sum {
 	return newSum(&otlpmetrics.Sum{})
+}
+
+func SumToProto(ms Sum) *otlpmetrics.Sum {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -847,6 +867,10 @@ func NewHistogram() Histogram {
 	return newHistogram(&otlpmetrics.Histogram{})
 }
 
+func HistogramToProto(ms Histogram) *otlpmetrics.Histogram {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms Histogram) MoveTo(dest Histogram) {
@@ -899,6 +923,10 @@ func NewExponentialHistogram() ExponentialHistogram {
 	return newExponentialHistogram(&otlpmetrics.ExponentialHistogram{})
 }
 
+func ExponentialHistogramToProto(ms ExponentialHistogram) *otlpmetrics.ExponentialHistogram {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
@@ -948,6 +976,10 @@ func newSummary(orig *otlpmetrics.Summary) Summary {
 // OR directly access the member if this is embedded in another struct.
 func NewSummary() Summary {
 	return newSummary(&otlpmetrics.Summary{})
+}
+
+func SummaryToProto(ms Summary) *otlpmetrics.Summary {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -1125,6 +1157,10 @@ func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
 // OR directly access the member if this is embedded in another struct.
 func NewNumberDataPoint() NumberDataPoint {
 	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
+}
+
+func NumberDataPointToProto(ms NumberDataPoint) *otlpmetrics.NumberDataPoint {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -1384,6 +1420,10 @@ func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPo
 // OR directly access the member if this is embedded in another struct.
 func NewHistogramDataPoint() HistogramDataPoint {
 	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
+}
+
+func HistogramDataPointToProto(ms HistogramDataPoint) *otlpmetrics.HistogramDataPoint {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -1710,6 +1750,10 @@ func NewExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
 	return newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{})
 }
 
+func ExponentialHistogramDataPointToProto(ms ExponentialHistogramDataPoint) *otlpmetrics.ExponentialHistogramDataPoint {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoint) {
@@ -1892,6 +1936,10 @@ func newBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) Buckets
 // OR directly access the member if this is embedded in another struct.
 func NewBuckets() Buckets {
 	return newBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
+}
+
+func BucketsToProto(ms Buckets) *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -2091,6 +2139,10 @@ func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
 // OR directly access the member if this is embedded in another struct.
 func NewSummaryDataPoint() SummaryDataPoint {
 	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
+}
+
+func SummaryDataPointToProto(ms SummaryDataPoint) *otlpmetrics.SummaryDataPoint {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -2331,6 +2383,10 @@ func NewValueAtQuantile() ValueAtQuantile {
 	return newValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 }
 
+func ValueAtQuantileToProto(ms ValueAtQuantile) *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms ValueAtQuantile) MoveTo(dest ValueAtQuantile) {
@@ -2506,6 +2562,10 @@ func newExemplar(orig *otlpmetrics.Exemplar) Exemplar {
 // OR directly access the member if this is embedded in another struct.
 func NewExemplar() Exemplar {
 	return newExemplar(&otlpmetrics.Exemplar{})
+}
+
+func ExemplarToProto(ms Exemplar) *otlpmetrics.Exemplar {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest

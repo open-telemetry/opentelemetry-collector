@@ -42,6 +42,10 @@ func New${structName}() ${structName} {
 	return new${structName}(&${originName}{})
 }
 
+func ${structName}ToProto(ms ${structName}) *${originName} {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms ${structName}) MoveTo(dest ${structName}) {

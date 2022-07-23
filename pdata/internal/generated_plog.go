@@ -183,6 +183,10 @@ func NewResourceLogs() ResourceLogs {
 	return newResourceLogs(&otlplogs.ResourceLogs{})
 }
 
+func ResourceLogsToProto(ms ResourceLogs) *otlplogs.ResourceLogs {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
@@ -375,6 +379,10 @@ func newScopeLogs(orig *otlplogs.ScopeLogs) ScopeLogs {
 // OR directly access the member if this is embedded in another struct.
 func NewScopeLogs() ScopeLogs {
 	return newScopeLogs(&otlplogs.ScopeLogs{})
+}
+
+func ScopeLogsToProto(ms ScopeLogs) *otlplogs.ScopeLogs {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -570,6 +578,10 @@ func newLogRecord(orig *otlplogs.LogRecord) LogRecord {
 // OR directly access the member if this is embedded in another struct.
 func NewLogRecord() LogRecord {
 	return newLogRecord(&otlplogs.LogRecord{})
+}
+
+func LogRecordToProto(ms LogRecord) *otlplogs.LogRecord {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest

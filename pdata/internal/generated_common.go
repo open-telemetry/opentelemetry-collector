@@ -44,6 +44,10 @@ func NewInstrumentationScope() InstrumentationScope {
 	return newInstrumentationScope(&otlpcommon.InstrumentationScope{})
 }
 
+func InstrumentationScopeToProto(ms InstrumentationScope) *otlpcommon.InstrumentationScope {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {

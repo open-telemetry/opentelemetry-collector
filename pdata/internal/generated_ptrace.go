@@ -183,6 +183,10 @@ func NewResourceSpans() ResourceSpans {
 	return newResourceSpans(&otlptrace.ResourceSpans{})
 }
 
+func ResourceSpansToProto(ms ResourceSpans) *otlptrace.ResourceSpans {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
@@ -375,6 +379,10 @@ func newScopeSpans(orig *otlptrace.ScopeSpans) ScopeSpans {
 // OR directly access the member if this is embedded in another struct.
 func NewScopeSpans() ScopeSpans {
 	return newScopeSpans(&otlptrace.ScopeSpans{})
+}
+
+func ScopeSpansToProto(ms ScopeSpans) *otlptrace.ScopeSpans {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -570,6 +578,10 @@ func newSpan(orig *otlptrace.Span) Span {
 // OR directly access the member if this is embedded in another struct.
 func NewSpan() Span {
 	return newSpan(&otlptrace.Span{})
+}
+
+func SpanToProto(ms Span) *otlptrace.Span {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest
@@ -889,6 +901,10 @@ func NewSpanEvent() SpanEvent {
 	return newSpanEvent(&otlptrace.Span_Event{})
 }
 
+func SpanEventToProto(ms SpanEvent) *otlptrace.Span_Event {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms SpanEvent) MoveTo(dest SpanEvent) {
@@ -1101,6 +1117,10 @@ func NewSpanLink() SpanLink {
 	return newSpanLink(&otlptrace.Span_Link{})
 }
 
+func SpanLinkToProto(ms SpanLink) *otlptrace.Span_Link {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms SpanLink) MoveTo(dest SpanLink) {
@@ -1184,6 +1204,10 @@ func newSpanStatus(orig *otlptrace.Status) SpanStatus {
 // OR directly access the member if this is embedded in another struct.
 func NewSpanStatus() SpanStatus {
 	return newSpanStatus(&otlptrace.Status{})
+}
+
+func SpanStatusToProto(ms SpanStatus) *otlptrace.Status {
+	return ms.orig
 }
 
 // MoveTo moves all properties from the current struct to dest

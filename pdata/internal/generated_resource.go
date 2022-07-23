@@ -44,6 +44,10 @@ func NewResource() Resource {
 	return newResource(&otlpresource.Resource{})
 }
 
+func ResourceToProto(ms Resource) *otlpresource.Resource {
+	return ms.orig
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms Resource) MoveTo(dest Resource) {
