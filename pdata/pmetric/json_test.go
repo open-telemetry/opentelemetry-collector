@@ -391,395 +391,64 @@ var metricsSummaryOTLPFull = func() Metrics {
 
 func Test_jsonUnmarshaler_UnmarshalMetrics(t *testing.T) {
 	type args struct {
-		EnumsAsInts  bool
-		EmitDefaults bool
-		OrigName     bool
-		md           func() Metrics
+		md func() Metrics
 	}
 	tests := []struct {
 		name string
 		args args
 	}{
 		{
-			name: "sum,default options",
+			name: "sum",
 			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsSumOTLPFull,
+				md: metricsSumOTLPFull,
 			},
 		},
 		{
-			name: "sum, EnumsAsInts set true",
+			name: "gauge",
 			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsSumOTLPFull,
+				md: metricsGaugeOTLPFull,
 			},
 		},
 		{
-			name: "sum, EmitDefaults set true",
+			name: "Histogram",
 			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsSumOTLPFull,
+				md: metricsHistogramOTLPFull,
 			},
 		},
 		{
-			name: "sum, OrigName set true",
+			name: "ExponentialHistogram",
 			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsSumOTLPFull,
+				md: metricsExponentialHistogramOTLPFull,
 			},
 		},
 		{
-			name: "sum, EmitDefaults and  OrigName set true",
+			name: "Summary",
 			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsSumOTLPFull,
-			},
-		},
-		{
-			name: "sum, EnumsAsInts and OrigName options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsSumOTLPFull,
-			},
-		},
-		{
-			name: "sum, EnumsAsInts AND EmitDefaults  set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsSumOTLPFull,
-			},
-		},
-		{
-			name: "sum, all options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsSumOTLPFull,
-			},
-		},
-
-		{
-			name: "gauge,default options",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsGaugeOTLPFull,
-			},
-		},
-		{
-			name: "gauge, EnumsAsInts set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsGaugeOTLPFull,
-			},
-		},
-		{
-			name: "gauge, EmitDefaults set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsGaugeOTLPFull,
-			},
-		},
-		{
-			name: "gauge, OrigName set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsGaugeOTLPFull,
-			},
-		},
-		{
-			name: "gauge, EmitDefaults and  OrigName set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsGaugeOTLPFull,
-			},
-		},
-		{
-			name: "gauge, EnumsAsInts and OrigName options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsGaugeOTLPFull,
-			},
-		},
-		{
-			name: "gauge, EnumsAsInts AND EmitDefaults  set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsGaugeOTLPFull,
-			},
-		},
-		{
-			name: "gauge, all options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsGaugeOTLPFull,
-			},
-		},
-
-		{
-			name: "Histogram,default options",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsHistogramOTLPFull,
-			},
-		},
-		{
-			name: "Histogram, EnumsAsInts set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsHistogramOTLPFull,
-			},
-		},
-		{
-			name: "Histogram, EmitDefaults set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsHistogramOTLPFull,
-			},
-		},
-		{
-			name: "Histogram, OrigName set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsHistogramOTLPFull,
-			},
-		},
-		{
-			name: "Histogram, EmitDefaults and  OrigName set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsHistogramOTLPFull,
-			},
-		},
-		{
-			name: "Histogram, EnumsAsInts and OrigName options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsHistogramOTLPFull,
-			},
-		},
-		{
-			name: "Histogram, EnumsAsInts AND EmitDefaults  set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsHistogramOTLPFull,
-			},
-		},
-		{
-			name: "Histogram, all options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsHistogramOTLPFull,
-			},
-		},
-
-		{
-			name: "ExponentialHistogram,default options",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsExponentialHistogramOTLPFull,
-			},
-		},
-		{
-			name: "ExponentialHistogram, EnumsAsInts set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsExponentialHistogramOTLPFull,
-			},
-		},
-		{
-			name: "ExponentialHistogram, EmitDefaults set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsExponentialHistogramOTLPFull,
-			},
-		},
-		{
-			name: "ExponentialHistogram, OrigName set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsExponentialHistogramOTLPFull,
-			},
-		},
-		{
-			name: "ExponentialHistogram, EmitDefaults and  OrigName set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsExponentialHistogramOTLPFull,
-			},
-		},
-		{
-			name: "ExponentialHistogram, EnumsAsInts and OrigName options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsExponentialHistogramOTLPFull,
-			},
-		},
-		{
-			name: "ExponentialHistogram, EnumsAsInts AND EmitDefaults  set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsExponentialHistogramOTLPFull,
-			},
-		},
-		{
-			name: "ExponentialHistogram, all options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsExponentialHistogramOTLPFull,
-			},
-		},
-
-		{
-			name: "Summary,default options",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsSummaryOTLPFull,
-			},
-		},
-		{
-			name: "Summary, EnumsAsInts set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     false,
-				md:           metricsSummaryOTLPFull,
-			},
-		},
-		{
-			name: "Summary, EmitDefaults set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsSummaryOTLPFull,
-			},
-		},
-		{
-			name: "Summary, OrigName set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsSummaryOTLPFull,
-			},
-		},
-		{
-			name: "Summary, EmitDefaults and  OrigName set true",
-			args: args{
-				EnumsAsInts:  false,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsSummaryOTLPFull,
-			},
-		},
-		{
-			name: "Summary, EnumsAsInts and OrigName options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: false,
-				OrigName:     true,
-				md:           metricsSummaryOTLPFull,
-			},
-		},
-		{
-			name: "Summary, EnumsAsInts AND EmitDefaults  set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     false,
-				md:           metricsSummaryOTLPFull,
-			},
-		},
-		{
-			name: "Summary, all options set true",
-			args: args{
-				EnumsAsInts:  true,
-				EmitDefaults: true,
-				OrigName:     true,
-				md:           metricsSummaryOTLPFull,
+				md: metricsSummaryOTLPFull,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			marshaller := &jsonMarshaler{
-				delegate: jsonpb.Marshaler{
-					EnumsAsInts:  tt.args.EnumsAsInts,
-					EmitDefaults: tt.args.EmitDefaults,
-					OrigName:     tt.args.OrigName,
-				}}
-			m := tt.args.md()
-			jsonBuf, err := marshaller.MarshalMetrics(m)
-			assert.NoError(t, err)
-			decoder := NewJSONUnmarshaler()
-			got, err := decoder.UnmarshalMetrics(jsonBuf)
-			assert.NoError(t, err)
-			assert.EqualValues(t, m, got)
+			for _, opEnumsAsInts := range []bool{true, false} {
+				for _, opEmitDefaults := range []bool{true, false} {
+					for _, opOrigName := range []bool{true, false} {
+						marshaller := &jsonMarshaler{
+							delegate: jsonpb.Marshaler{
+								EnumsAsInts:  opEnumsAsInts,
+								EmitDefaults: opEmitDefaults,
+								OrigName:     opOrigName,
+							}}
+						m := tt.args.md()
+						jsonBuf, err := marshaller.MarshalMetrics(m)
+						assert.NoError(t, err)
+						decoder := NewJSONUnmarshaler()
+						got, err := decoder.UnmarshalMetrics(jsonBuf)
+						assert.NoError(t, err)
+						assert.EqualValues(t, m, got)
+					}
+				}
+			}
 		})
 	}
 }
