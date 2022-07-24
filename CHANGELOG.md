@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated `confighttp.ToClient` (#5737)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
