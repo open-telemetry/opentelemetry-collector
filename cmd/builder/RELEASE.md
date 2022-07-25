@@ -9,4 +9,4 @@ git tag -a v0.1.1 -m "Release v0.1.1"
 git push upstream v0.1.1
 ```
 
-A new GitHub workflow should be started, and at the end, a GitHub release should have been created, similar with the ["Release v0.1.0"](https://github.com/open-telemetry/opentelemetry-collector-builder/releases/tag/v0.1.0).
+A new GitHub workflow should be started, and at the end, a GitHub release should have been created, similar with the ["Release v0.56.0"](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/cmd%2Fbuilder%2Fv0.56.0).
