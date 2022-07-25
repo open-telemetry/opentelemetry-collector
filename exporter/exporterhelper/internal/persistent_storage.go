@@ -37,6 +37,8 @@ type persistentStorage interface {
 	get() <-chan PersistentRequest
 	// size returns the current size of the persistent storage with items waiting for processing
 	size() uint64
+	// sizeBytes returns the sum of sizes of items waiting for processing in bytes
+	sizeBytes() uint64
 	// stop gracefully stops the storage
 	stop()
 }
@@ -71,10 +73,11 @@ type persistentContiguousStorage struct {
 	client      storage.Client
 	unmarshaler RequestUnmarshaler
 
-	putChan  chan struct{}
-	stopChan chan struct{}
-	stopOnce sync.Once
-	capacity uint64
+	putChan         chan struct{}
+	stopChan        chan struct{}
+	stopOnce        sync.Once
+	capacityBatches uint64
+	capacityBytes   uint64
 
 	reqChan chan PersistentRequest
 
@@ -84,6 +87,7 @@ type persistentContiguousStorage struct {
 	currentlyDispatchedItems []itemIndex
 
 	itemsCount *atomic.Uint64
+	bytesCount *atomic.Uint64
 }
 
 type itemIndex uint64
@@ -97,28 +101,31 @@ const (
 	readIndexKey                = "ri"
 	writeIndexKey               = "wi"
 	currentlyDispatchedItemsKey = "di"
+	bytesSizeKey                = "bs"
 )
 
 var (
 	errMaxCapacityReached   = errors.New("max capacity reached")
 	errValueNotSet          = errors.New("value not set")
-	errKeyNotPresentInBatch = errors.New("key was not present in get batchStruct")
+	errKeyNotPresentInBatch = errors.New("key was not present in batchStruct")
 )
 
 // newPersistentContiguousStorage creates a new file-storage extension backed queue;
 // queueName parameter must be a unique value that identifies the queue.
 // The queue needs to be initialized separately using initPersistentContiguousStorage.
-func newPersistentContiguousStorage(ctx context.Context, queueName string, capacity uint64, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) *persistentContiguousStorage {
+func newPersistentContiguousStorage(ctx context.Context, queueName string, capacityBatches uint64, capacityBytes uint64, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) *persistentContiguousStorage {
 	pcs := &persistentContiguousStorage{
-		logger:      logger,
-		client:      client,
-		queueName:   queueName,
-		unmarshaler: unmarshaler,
-		capacity:    capacity,
-		putChan:     make(chan struct{}, capacity),
-		reqChan:     make(chan PersistentRequest),
-		stopChan:    make(chan struct{}),
-		itemsCount:  atomic.NewUint64(0),
+		logger:          logger,
+		client:          client,
+		queueName:       queueName,
+		unmarshaler:     unmarshaler,
+		capacityBatches: capacityBatches,
+		capacityBytes:   capacityBytes,
+		putChan:         make(chan struct{}, capacityBatches),
+		reqChan:         make(chan PersistentRequest),
+		stopChan:        make(chan struct{}),
+		itemsCount:      atomic.NewUint64(0),
+		bytesCount:      atomic.NewUint64(0),
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)
@@ -142,7 +149,9 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, capac
 func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContiguousStorage) {
 	var writeIndex itemIndex
 	var readIndex itemIndex
-	batch, err := newBatch(pcs).get(readIndexKey, writeIndexKey).execute(ctx)
+	var bytesSize uint64
+
+	batch, err := newBatch(pcs).get(readIndexKey, writeIndexKey, bytesSizeKey).execute(ctx)
 
 	if err == nil {
 		readIndex, err = batch.getItemIndexResult(readIndexKey)
@@ -150,6 +159,10 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 
 	if err == nil {
 		writeIndex, err = batch.getItemIndexResult(writeIndexKey)
+	}
+
+	if err == nil {
+		bytesSize, err = batch.getUint64Result(bytesSizeKey)
 	}
 
 	if err != nil {
@@ -162,12 +175,15 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 		}
 		pcs.readIndex = 0
 		pcs.writeIndex = 0
+		bytesSize = 0
 	} else {
 		pcs.readIndex = readIndex
 		pcs.writeIndex = writeIndex
+		// bytesSize is already set
 	}
 
 	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
+	pcs.bytesCount.Store(bytesSize)
 }
 
 func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []PersistentRequest) {
@@ -217,6 +233,10 @@ func (pcs *persistentContiguousStorage) size() uint64 {
 	return pcs.itemsCount.Load()
 }
 
+func (pcs *persistentContiguousStorage) sizeBytes() uint64 {
+	return pcs.bytesCount.Load()
+}
+
 func (pcs *persistentContiguousStorage) stop() {
 	pcs.logger.Debug("Stopping persistentContiguousStorage", zap.String(zapQueueNameKey, pcs.queueName))
 	pcs.stopOnce.Do(func() {
@@ -234,17 +254,31 @@ func (pcs *persistentContiguousStorage) put(req PersistentRequest) error {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
-	if pcs.size() >= pcs.capacity {
-		pcs.logger.Warn("Maximum queue capacity reached", zap.String(zapQueueNameKey, pcs.queueName))
+	if pcs.size() >= pcs.capacityBatches {
+		pcs.logger.Warn("Maximum queue capacity reached: too many batches", zap.String(zapQueueNameKey, pcs.queueName))
 		return errMaxCapacityReached
 	}
 
+	oldBytesCount := pcs.sizeBytes()
 	itemKey := pcs.itemKey(pcs.writeIndex)
+	batch := newBatch(pcs).setRequest(itemKey, req)
+	batchSize, err := batch.getSizeByKey(itemKey)
+
+	if err != nil {
+		return err
+	}
+
+	if oldBytesCount+batchSize > pcs.capacityBytes {
+		pcs.logger.Warn("Maximum queue capacity reached: too many bytes", zap.String(zapQueueNameKey, pcs.queueName))
+		return errMaxCapacityReached
+	}
+
 	pcs.writeIndex++
 	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
+	newSize := pcs.bytesCount.Add(batchSize)
 
 	ctx := context.Background()
-	_, err := newBatch(pcs).setItemIndex(writeIndexKey, pcs.writeIndex).setRequest(itemKey, req).execute(ctx)
+	_, err = batch.setItemIndex(writeIndexKey, pcs.writeIndex).setUint64(bytesSizeKey, newSize).execute(ctx)
 
 	// Inform the loop that there's some data to process
 	pcs.putChan <- struct{}{}
@@ -267,9 +301,16 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Persis
 		pcs.itemDispatchingStart(ctx, index)
 
 		var req PersistentRequest
-		batch, err := newBatch(pcs).get(pcs.itemKey(index)).execute(ctx)
+		var bytesSize uint64
+		itemKey := pcs.itemKey(index)
+		batch, err := newBatch(pcs).get(itemKey).execute(ctx)
 		if err == nil {
-			req, err = batch.getRequestResult(pcs.itemKey(index))
+			req, err = batch.getRequestResult(itemKey)
+			if err == nil {
+				bytesSize, err = batch.getSizeByKey(itemKey)
+				pcs.bytesCount.Sub(bytesSize)
+				pcs.updateBytesSize(ctx)
+			}
 		}
 
 		if err != nil || req == nil {
@@ -401,6 +442,17 @@ func (pcs *persistentContiguousStorage) updateReadIndex(ctx context.Context) {
 
 	if err != nil {
 		pcs.logger.Debug("Failed updating read index",
+			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
+	}
+}
+
+func (pcs *persistentContiguousStorage) updateBytesSize(ctx context.Context) {
+	_, err := newBatch(pcs).
+		setUint64(bytesSizeKey, pcs.sizeBytes()).
+		execute(ctx)
+
+	if err != nil {
+		pcs.logger.Debug("Failed updating bytes size",
 			zap.String(zapQueueNameKey, pcs.queueName), zap.Error(err))
 	}
 }

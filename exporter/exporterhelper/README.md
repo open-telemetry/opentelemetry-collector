@@ -38,6 +38,8 @@ With this build tag set, additional configuration option can be enabled:
 - `sending_queue`
   - `persistent_storage_enabled` (default = false): When set, enables persistence via a file storage extension
     (note, `enable_unstable` build tag needs to be enabled first, see below for more details)
+  - `queue_size_bytes` (default = 2^63 - 1): Maximum number of bytes available for batches in the storage before dropping;
+  It is a separate limit from `queue_size`, both limits are being checked when adding to the queue.
 
 The maximum number of batches stored to disk can be controlled using `sending_queue.queue_size` parameter (which,
 similarly as for in-memory buffering, defaults to 5000 batches).

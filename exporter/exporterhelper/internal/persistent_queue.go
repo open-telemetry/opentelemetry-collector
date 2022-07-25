@@ -37,11 +37,11 @@ type persistentQueue struct {
 }
 
 // NewPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
-func NewPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
+func NewPersistentQueue(ctx context.Context, name string, capacityBatches int, capacityBytes int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
 	return &persistentQueue{
 		logger:   logger,
 		stopChan: make(chan struct{}),
-		storage:  newPersistentContiguousStorage(ctx, name, uint64(capacity), logger, client, unmarshaler),
+		storage:  newPersistentContiguousStorage(ctx, name, uint64(capacityBatches), uint64(capacityBytes), logger, client, unmarshaler),
 	}
 }
 
@@ -88,4 +88,9 @@ func (pq *persistentQueue) Stop() {
 // Size returns the current depth of the queue, excluding the item already in the storage channel (if any)
 func (pq *persistentQueue) Size() int {
 	return int(pq.storage.size())
+}
+
+// SizeBytes returns the current sum of sizes of elements in the queue in bytes, excluding the item already in the storage channel (if any)
+func (pq *persistentQueue) SizeBytes() int {
+	return int(pq.storage.sizeBytes())
 }

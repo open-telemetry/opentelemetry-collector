@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func createTestQueue(extension storage.Extension, capacity int) *persistentQueue {
+func createTestQueue(extension storage.Extension, capacityBatches int, capacityBytes int) *persistentQueue {
 	logger := zap.NewNop()
 
 	client, err := extension.GetClient(context.Background(), component.KindReceiver, config.ComponentID{}, "")
@@ -42,18 +42,18 @@ func createTestQueue(extension storage.Extension, capacity int) *persistentQueue
 		panic(err)
 	}
 
-	wq := NewPersistentQueue(context.Background(), "foo", capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
+	wq := NewPersistentQueue(context.Background(), "foo", capacityBatches, capacityBytes, logger, client, newFakeTracesRequestUnmarshalerFunc())
 	return wq.(*persistentQueue)
 }
 
-func TestPersistentQueue_Capacity(t *testing.T) {
+func TestPersistentQueue_CapacityBatches(t *testing.T) {
 	path := t.TempDir()
 
 	for i := 0; i < 100; i++ {
 		ext := createStorageExtension(path)
 		t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
 
-		wq := createTestQueue(ext, 5)
+		wq := createTestQueue(ext, 5, 100_000)
 		require.Equal(t, 0, wq.Size())
 
 		traces := newTraces(1, 10)
@@ -79,13 +79,50 @@ func TestPersistentQueue_Capacity(t *testing.T) {
 	}
 }
 
+func TestPersistentQueue_CapacityBytes(t *testing.T) {
+	path := t.TempDir()
+
+	for i := 0; i < 100; i++ {
+		ext := createStorageExtension(path)
+		t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
+
+		traces := newTraces(1, 10)
+		req := newFakeTracesRequest(traces)
+
+		requestBytes, err := req.Marshal()
+		require.NoError(t, err)
+		requestSize := len(requestBytes)
+
+		wq := createTestQueue(ext, 1000, 5*requestSize)
+		require.Equal(t, 0, wq.SizeBytes())
+
+		for i := 0; i < 10; i++ {
+			result := wq.Produce(req)
+			if i < 6 {
+				require.True(t, result)
+			} else {
+				require.False(t, result)
+			}
+
+			// Let's make sure the loop picks the first element into the channel,
+			// so the capacity could be used in full
+			if i == 0 {
+				require.Eventually(t, func() bool {
+					return wq.SizeBytes() == 0
+				}, 5*time.Second, 10*time.Millisecond)
+			}
+		}
+		require.Equal(t, 5*requestSize, wq.SizeBytes())
+	}
+}
+
 func TestPersistentQueue_Close(t *testing.T) {
 	path := t.TempDir()
 
 	ext := createStorageExtension(path)
 	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
 
-	wq := createTestQueue(ext, 1001)
+	wq := createTestQueue(ext, 1001, 1001*10000)
 	traces := newTraces(1, 10)
 	req := newFakeTracesRequest(traces)
 
@@ -141,7 +178,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			req := newFakeTracesRequest(traces)
 
 			ext := createStorageExtension(path)
-			tq := createTestQueue(ext, 5000)
+			tq := createTestQueue(ext, 5000, 5000*10000)
 
 			defer tq.Stop()
 			t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })

@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"sync"
 	"testing"
@@ -48,13 +49,13 @@ func createTestClient(extension storage.Extension) storage.Client {
 	return client
 }
 
-func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, logger *zap.Logger, capacity uint64) *persistentContiguousStorage {
-	return newPersistentContiguousStorage(context.Background(), "foo", capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
+func createTestPersistentStorageWithLoggingAndCapacity(client storage.Client, logger *zap.Logger, capacityBatches uint64, capacityBytes uint64) *persistentContiguousStorage {
+	return newPersistentContiguousStorage(context.Background(), "foo", capacityBatches, capacityBytes, logger, client, newFakeTracesRequestUnmarshalerFunc())
 }
 
 func createTestPersistentStorage(client storage.Client) *persistentContiguousStorage {
 	logger := zap.NewNop()
-	return createTestPersistentStorageWithLoggingAndCapacity(client, logger, 1000)
+	return createTestPersistentStorageWithLoggingAndCapacity(client, logger, 1000, math.MaxUint64)
 }
 
 type fakeTracesRequest struct {
@@ -317,7 +318,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 
 	// No more items
 	ext := createStorageExtension(path)
-	wq := createTestQueue(ext, 5000)
+	wq := createTestQueue(ext, 5000, 5000*10000)
 	require.Equal(t, 0, wq.Size())
 	require.NoError(t, ext.Shutdown(context.Background()))
 }
@@ -364,7 +365,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 			path := bb.TempDir()
 			ext := createStorageExtension(path)
 			client := createTestClient(ext)
-			ps := createTestPersistentStorageWithLoggingAndCapacity(client, zap.NewNop(), 10000000)
+			ps := createTestPersistentStorageWithLoggingAndCapacity(client, zap.NewNop(), 10_000_000, 10_000_000*2_000_000)
 
 			traces := newTraces(c.numTraces, c.numSpansPerTrace)
 			req := newFakeTracesRequest(traces)
