@@ -97,10 +97,6 @@ gotidy:
 gogenerate:
 	@$(MAKE) for-all-target TARGET="generate"
 
-.PHONY: all-checklinks
-all-checklinks:
-	@$(MAKE) for-all-target TARGET="checklinks"
-
 .PHONY: addlicense
 addlicense:
 	@ADDLICENSEOUT=`$(ADDLICENSE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
@@ -416,3 +412,9 @@ endif
 		exit 1; \
 	fi
 	gh pr create --title "[chore] prepare release $(RELEASE_CANDIDATE)"
+
+.PHONY: checklinks
+checklinks:
+	command -v markdown-link-check >/dev/null 2>&1 || { echo >&2 "markdown-link-check not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
+	find . -name \*.md -print0 | xargs -0 -n1 \
+		markdown-link-check -q -c ./.github/workflows/check_links_config.json || true

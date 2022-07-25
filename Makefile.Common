@@ -1,9 +1,6 @@
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
 ALL_PKGS := $(sort $(shell go list ./...))
 
-# SRC_ROOT is the top of the source tree.
-SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-
 # Use a single process (-p 1) on go test to avoid tests clashing on machine
 # wide resources, e.g. ports.
 GOTEST_OPT?= -v -p 1 -race -timeout 120s
@@ -12,7 +9,6 @@ GOTEST=$(GOCMD) test
 GO_ACC=go-acc
 LINT=golangci-lint
 IMPI=impi
-MDLINKCHECK=markdown-link-check
 
 .PHONY: test
 test:
@@ -29,12 +25,6 @@ test-with-cover:
 .PHONY: benchmark
 benchmark:
 	$(GOTEST) -bench=. -run=notests ./...
-
-.PHONY: checklinks
-checklinks:
-	command -v $(MDLINKCHECK) >/dev/null 2>&1 || { echo >&2 "$(MDLINKCHECK) not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
-	find . -name \*.md -print0 | xargs -0 -n1 \
-		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
 
 .PHONY: fmt
 fmt:
