@@ -38,28 +38,39 @@ var (
 // Command is the main entrypoint for this application
 func Command() (*cobra.Command, error) {
 	cmd := &cobra.Command{
-		Use:  "builder",
-		Long: fmt.Sprintf("OpenTelemetry Collector distribution builder (%s)", version),
+		SilenceUsage:  true, // Don't print usage on Run error.
+		SilenceErrors: true, // Don't print errors; main does it.
+		Use:           "ocb",
+		Long: fmt.Sprintf("OpenTelemetry Collector Builder (%s)", version) + `
+
+ocb generates a custom OpenTelemetry Collector binary using the
+build configuration given by the "--config" argument.
+`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := initConfig(); err != nil {
 				return err
 			}
 			if err := cfg.Validate(); err != nil {
-				cfg.Logger.Error("invalid configuration", zap.Error(err))
-				return err
+				return fmt.Errorf("invalid configuration: %w", err)
 			}
 
 			if err := cfg.ParseModules(); err != nil {
-				cfg.Logger.Error("invalid module configuration", zap.Error(err))
-				return err
+				return fmt.Errorf("invalid module configuration: %w", err)
 			}
 
 			return builder.GenerateAndCompile(cfg)
 		},
 	}
 
-	// the external config file
-	cmd.Flags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.otelcol-builder.yaml)")
+	cmd.Flags().StringVar(&cfgFile, "config", "", "build configuration file")
+
+	// A build configuration file is always required, and there's no
+	// default. We can relax this in future by embedding the default
+	// config that is used to build otelcorecol.
+	if err := cmd.MarkFlagRequired("config"); err != nil {
+		panic(err) // Only fails if the usage message is empty, which is a programmer error.
+	}
 
 	// the distribution parameters, which we accept as CLI flags as well
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, "skip-compilation", false, "Whether builder should only generate go code with no compile of the collector (default false)")
@@ -75,34 +86,30 @@ func Command() (*cobra.Command, error) {
 	cmd.AddCommand(versionCommand())
 
 	if err := k.Load(posflag.Provider(cmd.Flags(), ".", k), nil); err != nil {
-		cfg.Logger.Error("failed to load command line arguments", zap.Error(err))
+		return nil, fmt.Errorf("failed to load command line arguments: %w", err)
 	}
 
 	return cmd, nil
 }
 
 func initConfig() error {
-	cfg.Logger.Info("OpenTelemetry Collector distribution builder", zap.String("version", version), zap.String("date", date))
-	// use the default path if there is no config file being specified
-	if cfgFile == "" {
-		cfgFile = "$HOME/.otelcol-builder.yaml"
-	}
+	cfg.Logger.Info("OpenTelemetry Collector Builder",
+		zap.String("version", version), zap.String("date", date))
 
 	// load the config file
 	if err := k.Load(file.Provider(cfgFile), yaml.Parser()); err != nil {
-		cfg.Logger.Error("failed to load config file", zap.String("config-file", cfgFile), zap.Error(err))
+		return fmt.Errorf("failed to load configuration file: %w", err)
 	}
 
 	// handle env variables
 	if err := k.Load(env.Provider("", ".", func(s string) string {
 		return strings.ReplaceAll(s, ".", "_")
 	}), nil); err != nil {
-		cfg.Logger.Error("failed to load env var", zap.Error(err))
+		return fmt.Errorf("failed to load environment variables: %w", err)
 	}
 
 	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "mapstructure"}); err != nil {
-		cfg.Logger.Error("failed to unmarshal config", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
 	cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
