@@ -8,6 +8,8 @@
 
 ### 💡 Enhancements 💡
 
+- `ocb` now exits with an error if it fails to load the build configuration. (#5731)
+
 ### 🧰 Bug fixes 🧰
 
 - Fix bug in ocb where flags did not take precedence. (#5726)

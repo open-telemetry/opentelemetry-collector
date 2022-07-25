@@ -50,7 +50,9 @@ var (
 // Command is the main entrypoint for this application
 func Command() (*cobra.Command, error) {
 	cmd := &cobra.Command{
-		Use: "ocb",
+		SilenceUsage:  true, // Don't print usage on Run error.
+		SilenceErrors: true, // Don't print errors; main does it.
+		Use:           "ocb",
 		Long: fmt.Sprintf("OpenTelemetry Collector Builder (%s)", version) + `
 
 ocb generates a custom OpenTelemetry Collector binary using the
@@ -62,13 +64,11 @@ build configuration given by the "--config" argument.
 				return err
 			}
 			if err := cfg.Validate(); err != nil {
-				cfg.Logger.Error("invalid configuration", zap.Error(err))
-				return err
+				return fmt.Errorf("invalid configuration: %w", err)
 			}
 
 			if err := cfg.ParseModules(); err != nil {
-				cfg.Logger.Error("invalid module configuration", zap.Error(err))
-				return err
+				return fmt.Errorf("invalid module configuration: %w", err)
 			}
 
 			return builder.GenerateAndCompile(cfg)
@@ -98,31 +98,31 @@ build configuration given by the "--config" argument.
 	cmd.AddCommand(versionCommand())
 
 	if err := k.Load(posflag.Provider(cmd.Flags(), ".", k), nil); err != nil {
-		cfg.Logger.Error("failed to load command line arguments", zap.Error(err))
+		return nil, fmt.Errorf("failed to load command line arguments: %w", err)
 	}
 
 	return cmd, nil
 }
 
 func initConfig(flags *flag.FlagSet) error {
-	cfg.Logger.Info("OpenTelemetry Collector Builder", zap.String("version", version), zap.String("date", date))
+	cfg.Logger.Info("OpenTelemetry Collector Builder",
+		zap.String("version", version), zap.String("date", date))
 
 	// load the config file
 	if err := k.Load(file.Provider(cfgFile), yaml.Parser()); err != nil {
-		cfg.Logger.Error("failed to load config file", zap.String("config-file", cfgFile), zap.Error(err))
+		return fmt.Errorf("failed to load configuration file: %w", err)
 	}
 
 	// handle env variables
 	if err := k.Load(env.Provider("", ".", func(s string) string {
 		return strings.ReplaceAll(s, ".", "_")
 	}), nil); err != nil {
-		cfg.Logger.Error("failed to load env var", zap.Error(err))
+		return fmt.Errorf("failed to load environment variables: %w", err)
 	}
 
 	cfgFromFile := builder.Config{}
 	if err := k.UnmarshalWithConf("", &cfgFromFile, koanf.UnmarshalConf{Tag: "mapstructure"}); err != nil {
-		cfg.Logger.Error("failed to unmarshal config", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
 	applyCfgFromFile(flags, cfgFromFile)
