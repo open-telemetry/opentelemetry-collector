@@ -9,6 +9,11 @@ on:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   changelog:
     runs-on: ubuntu-latest
