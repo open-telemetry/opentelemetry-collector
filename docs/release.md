@@ -98,6 +98,30 @@ The last step of the release process creates artifacts for the new version of th
 
 1. `unknown revision internal/coreinternal/v0.55.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module. 
 
+## Bugfix releases
+
+### Bugfix release criteria
+
+Both `opentelemetry-collector` and `opentelemetry-collector-contrib` have very short 2 week release cycles. Because of this, we put a high bar when considering making a patch release, to avoid wasting engineering time unnecessarily.
+
+When considering making a bugfix release on the `v0.N.x` release cycle, the bug in question needs to fulfill the following criteria:
+
+1. The bug was introduced on the `v0.N.x` release cycle.
+2. The bug has been reported within the first 3 working days after the official binaries were released.
+3. The bug has no workaround or the workaround is significantly harder to put in place than updating the version. Examples of simple workarounds are:
+    - Reverting a feature gate.
+    - Changing the configuration to an easy to find value.
+4. The bug happens in common setups. To gauge this, maintainers can consider the following:
+    - The bug is not specific to an uncommon platform
+    - The bug happens with the default configuration or with a commonly used one (e.g. has been reported by multiple people)
+5. The bug is sufficiently severe. For example (non-exhaustive list):
+    - The bug makes the Collector crash reliably
+    - The bug makes the Collector fails to start under an accepted configuration
+    - The bug produces significant data loss
+    - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
+
+The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
+
 ## Release schedule
 
 | Date       | Version | Release manager |
