@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,26 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "go.opentelemetry.io/collector/cmd/builder/internal"
+package extensions // import "go.opentelemetry.io/collector/service/extensions"
 
 import (
-	"fmt"
-
-	"github.com/spf13/cobra"
+	"go.opentelemetry.io/collector/config"
 )
 
-var (
-	version = "dev"
-	date    = "unknown"
-)
-
-func versionCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "version",
-		Short: "Version of ocb",
-		Long:  "Prints the version of the ocb binary",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Println(fmt.Sprintf("%s version %s", cmd.Parent().Name(), version))
-		},
-	}
-}
+// Config represents the ordered list of extensions configured for the service.
+type Config []config.ComponentID

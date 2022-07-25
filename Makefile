@@ -17,10 +17,6 @@ ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 CMD?=
 TOOLS_MOD_DIR := ./internal/tools
 
-GOOS=$(shell $(GOCMD) env GOOS)
-GOARCH=$(shell $(GOCMD) env GOARCH)
-GH := $(shell which gh)
-
 # TODO: Find a way to configure this in the generated code, currently no effect.
 BUILD_INFO_IMPORT_PATH=go.opentelemetry.io/collector/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
@@ -206,6 +202,10 @@ otelcorecol:
 .PHONY: genotelcorecol
 genotelcorecol:
 	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
+
+.PHONY: ocb
+ocb:
+	$(MAKE) -C cmd/builder ocb
 
 DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: internal-gendependabot
@@ -411,5 +411,8 @@ endif
 		echo "'gh' command not found, can't submit the PR on your behalf."; \
 		exit 1; \
 	fi
-	gh pr create --title "[chore] prepare release $(RELEASE_CANDIDATE)"
+	$(GH) pr create --title "[chore] prepare release $(RELEASE_CANDIDATE)"
 
+.PHONY: clean
+clean:
+	test -d bin && $(RM) bin/*

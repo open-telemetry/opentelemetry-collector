@@ -2,14 +2,27 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
 ### 💡 Enhancements 💡
 
-- Add `linux-ppc64le` architecture to cross build tests in CI
+- `ocb` now exits with an error if it fails to load the build configuration. (#5731)
+
+### 🧰 Bug fixes 🧰
+
+## v0.56.0 Beta
+
+### 💡 Enhancements 💡
+
+- Add `linux-ppc64le` architecture to cross build tests in CI (#5645)
 - `client`: perform case insensitive lookups in case the requested metadata value isn't found (#5646)
 - `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
 - Expose `pcommon.NewSliceFromRaw` function (#5679)
 - `loggingexporter`: create the exporter's logger from the service's logger (#5677)
 - Add `otelcol_exporter_queue_capacity` metrics show the collector's exporter queue capacity (#5475)
+- Add support to handle 402, 413, 414, 431 http error code as permanent errors in OTLP exporter (#5685)
 
 ### 🧰 Bug fixes 🧰
 
@@ -45,9 +58,6 @@
 
 - Components stability levels are now logged. By default components which haven't defined their stability levels, or which are
   unmaintained, deprecated or in development will log a message. (#5580)
-
-### 💡 Enhancements 💡
-
 - `exporter/logging`: Skip "bad file descriptor" sync errors (#5585)
 
 ### 🧰 Bug fixes 🧰
