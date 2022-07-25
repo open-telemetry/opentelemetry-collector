@@ -9,7 +9,7 @@ git checkout -b $PR_NAME
 IFS=$'\n'
 requests=$(gh pr list --search "author:app/dependabot" --json number,title --template '{{range .}}{{tablerow .title}}{{end}}')
 message=""
-dirs=`find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./'`
+dirs=`find . -type f -name "go.mod" -exec dirname {} \; | sort `
 
 for line in $requests; do
     if [[ $line != Bump* ]]; then 
