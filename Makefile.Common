@@ -10,6 +10,10 @@ GO_ACC=go-acc
 LINT=golangci-lint
 IMPI=impi
 
+GOOS := $(shell $(GOCMD) env GOOS)
+GOARCH := $(shell $(GOCMD) env GOARCH)
+GH := $(shell which gh)
+
 .PHONY: test
 test:
 	$(GOTEST) $(GOTEST_OPT) ./...

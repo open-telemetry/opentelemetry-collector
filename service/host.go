@@ -17,7 +17,7 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/internal/extensions"
+	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/pipelines"
 )
 

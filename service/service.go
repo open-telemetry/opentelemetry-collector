@@ -25,8 +25,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal"
-	"go.opentelemetry.io/collector/service/internal/extensions"
 	"go.opentelemetry.io/collector/service/internal/pipelines"
 	"go.opentelemetry.io/collector/service/internal/telemetry"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
@@ -73,13 +73,12 @@ func newService(set *settings) (*service, error) {
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 
 	extensionsSettings := extensions.Settings{
-		Telemetry:         srv.telemetrySettings,
-		BuildInfo:         srv.buildInfo,
-		Configs:           srv.config.Extensions,
-		Factories:         srv.host.factories.Extensions,
-		ServiceExtensions: srv.config.Service.Extensions,
+		Telemetry: srv.telemetrySettings,
+		BuildInfo: srv.buildInfo,
+		Configs:   srv.config.Extensions,
+		Factories: srv.host.factories.Extensions,
 	}
-	if srv.host.extensions, err = extensions.Build(context.Background(), extensionsSettings); err != nil {
+	if srv.host.extensions, err = extensions.New(context.Background(), extensionsSettings, srv.config.Service.Extensions); err != nil {
 		return nil, fmt.Errorf("failed build extensions: %w", err)
 	}
 
@@ -109,7 +108,7 @@ func newService(set *settings) (*service, error) {
 }
 
 func (srv *service) Start(ctx context.Context) error {
-	if err := srv.host.extensions.StartAll(ctx, srv.host); err != nil {
+	if err := srv.host.extensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
 
@@ -132,7 +131,7 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
-	if err := srv.host.extensions.ShutdownAll(ctx); err != nil {
+	if err := srv.host.extensions.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
