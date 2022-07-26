@@ -12,6 +12,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- Fix bug in ocb where flags did not take precedence. (#5726)
+
 ## v0.56.0 Beta
 
 ### 💡 Enhancements 💡
