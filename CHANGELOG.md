@@ -11,6 +11,7 @@
 ### 💡 Enhancements 💡
 
 - `ocb` now exits with an error if it fails to load the build configuration. (#5731)
+- Deprecate `HTTPClientSettings.ToClientWithHost` (#5737)
 
 ### 🧰 Bug fixes 🧰
 

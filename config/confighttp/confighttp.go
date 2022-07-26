@@ -154,11 +154,12 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}
 
 	if hcs.Auth != nil {
-		if host.GetExtensions() == nil {
+		ext := host.GetExtensions()
+		if ext == nil {
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(host.GetExtensions())
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -180,6 +181,11 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
 	}, nil
+}
+
+// Deprecated: [v0.57.0] use ToClient.
+func (hcs *HTTPClientSettings) ToClientWithHost(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+	return hcs.ToClient(host, settings)
 }
 
 // Custom RoundTripper that adds headers.
