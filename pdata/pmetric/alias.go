@@ -50,12 +50,40 @@ const (
 	MetricAggregationTemporalityCumulative = internal.MetricAggregationTemporalityCumulative
 )
 
+// EmptyMetricDataPointFlags defines how a metric aggregator reports aggregated values.
+// It describes how those values relate to the time interval over which they are aggregated.
+type EmptyMetricDataPointFlags = internal.EmptyMetricDataPointFlags
+
+// NewEmptyMetricDataPointFlags returns a new empty EmptyMetricDataPointFlags.
+var NewEmptyMetricDataPointFlags = internal.NewEmptyMetricDataPointFlags
+
 // MetricDataPointFlags defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
+// Deprecated: [v0.57.0] Use EmptyMetricDataPointFlags instead.
 type MetricDataPointFlags = internal.MetricDataPointFlags
 
-// NewMetricDataPointFlags returns a new empty NewMetricDataPointFlags.
+const (
+	// MetricDataPointFlagsNone is the default MetricDataPointFlags.
+	// Deprecated: [v0.57.0] Use EmptyMetricDataPointFlags.NoRecordedValue instead.
+	MetricDataPointFlagsNone = internal.MetricDataPointFlagsNone
+)
+
+// NewMetricDataPointFlags returns a new MetricDataPointFlags combining the flags passed
+// in as parameters.
+// Deprecated: [v0.57.0] Use NewEmptyMetricDataPointFlags and EmptyMetricDataPointFlags.SetNoRecordedValue instead.
 var NewMetricDataPointFlags = internal.NewMetricDataPointFlags
+
+// MetricDataPointFlag allow users to configure DataPointFlags. This is achieved via NewMetricDataPointFlags.
+// The separation between MetricDataPointFlags and MetricDataPointFlag exists to prevent users accidentally
+// comparing the value of individual flags with MetricDataPointFlags. Instead, users must use the HasFlag method.
+// Deprecated: [v0.57.0] Use EmptyMetricDataPointFlags instead.
+type MetricDataPointFlag = internal.MetricDataPointFlag
+
+const (
+	// MetricDataPointFlagNoRecordedValue is flag for a metric aggregator which reports changes since last report time.
+	// Deprecated: [v0.57.0] Use EmptyMetricDataPointFlags.NoRecordedValue instead.
+	MetricDataPointFlagNoRecordedValue = internal.MetricDataPointFlagNoRecordedValue
+)
 
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType = internal.NumberDataPointValueType
