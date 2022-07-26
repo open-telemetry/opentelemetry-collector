@@ -205,6 +205,7 @@ genotelcorecol:
 
 .PHONY: ocb
 ocb:
+	$(MAKE) -C cmd/builder config
 	$(MAKE) -C cmd/builder ocb
 
 DEPENDABOT_PATH=".github/dependabot.yml"
@@ -397,6 +398,7 @@ endif
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' examples/k8s/otel-config.yaml
 	find . -name "*.bak" -type f -delete
 	# regenerate files
+	$(MAKE) -C cmd/builder config
 	$(MAKE) genotelcorecol
 	# commit changes before running multimod
 	git checkout -b opentelemetry-collector-bot/release-$(RELEASE_CANDIDATE)

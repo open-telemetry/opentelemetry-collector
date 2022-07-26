@@ -1,0 +1,22 @@
+extensions:
+  zpages:
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+processors:
+
+exporters:
+  logging:
+
+service:
+  extensions: [zpages]
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - logging
