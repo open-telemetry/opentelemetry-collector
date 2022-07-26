@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 var (
@@ -264,8 +265,8 @@ func generateConfig() *Config {
 			},
 		},
 		Service: ConfigService{
-			Telemetry: ConfigServiceTelemetry{
-				Logs: ConfigServiceTelemetryLogs{
+			Telemetry: telemetry.Config{
+				Logs: telemetry.LogsConfig{
 					Level:             zapcore.DebugLevel,
 					Development:       true,
 					Encoding:          "console",
@@ -275,7 +276,7 @@ func generateConfig() *Config {
 					ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
 					InitialFields:     map[string]interface{}{"fieldKey": "filed-value"},
 				},
-				Metrics: ConfigServiceTelemetryMetrics{
+				Metrics: telemetry.MetricsConfig{
 					Level:   configtelemetry.LevelNormal,
 					Address: ":8080",
 				},

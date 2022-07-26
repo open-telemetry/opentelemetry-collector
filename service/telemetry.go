@@ -41,6 +41,7 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 // collectorTelemetry is collector's own telemetrySettings.
@@ -79,7 +80,7 @@ func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
 	}
 }
 
-func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap.Logger, cfg ConfigServiceTelemetry, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	var err error
 	tel.doInitOnce.Do(
 		func() {
@@ -89,7 +90,7 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 	return err
 }
 
-func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger *zap.Logger, cfg ConfigServiceTelemetry, asyncErrorChannel chan error) error {
+func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
 		logger.Info(
 			"Skipping telemetry setup.",
@@ -157,7 +158,7 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 	return nil
 }
 
-func (tel *telemetryInitializer) initOpenCensus(cfg ConfigServiceTelemetry, telAttrs map[string]string) (http.Handler, error) {
+func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs map[string]string) (http.Handler, error) {
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
