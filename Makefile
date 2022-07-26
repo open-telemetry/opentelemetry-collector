@@ -416,3 +416,9 @@ endif
 .PHONY: clean
 clean:
 	test -d bin && $(RM) bin/*
+
+.PHONY: checklinks
+checklinks:
+	command -v markdown-link-check >/dev/null 2>&1 || { echo >&2 "markdown-link-check not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
+	find . -name \*.md -print0 | xargs -0 -n1 \
+		markdown-link-check -q -c ./.github/workflows/check_links_config.json || true
