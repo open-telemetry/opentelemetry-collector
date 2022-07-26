@@ -4,11 +4,14 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Change`confighttp.ToClient` to accept a `component.Host` (#5737)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
 
 - `ocb` now exits with an error if it fails to load the build configuration. (#5731)
+- Deprecate `HTTPClientSettings.ToClientWithHost` (#5737)
 
 ### 🧰 Bug fixes 🧰
 
