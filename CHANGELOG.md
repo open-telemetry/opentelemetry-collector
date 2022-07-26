@@ -4,7 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
-- Remove deprecated `confighttp.ToClient` (#5737)
+- Change`confighttp.ToClient` to accept a `component.Host` (#5737)
 
 ### 🚩 Deprecations 🚩
 
