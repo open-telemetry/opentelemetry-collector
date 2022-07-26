@@ -125,14 +125,6 @@ func NewValueSlice() Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}}
 }
 
-// NewValueMBytes creates a new Value with the given []byte value.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use NewValueBytes instead.
-func NewValueMBytes(v []byte) Value {
-	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v}}}
-}
-
 // NewValueBytes creates a new Value with the given ImmutableByteSlice value.
 func NewValueBytes(v ImmutableByteSlice) Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v.value}}}
@@ -264,15 +256,6 @@ func (v Value) SliceVal() Slice {
 	return newSlice(&arr.Values)
 }
 
-// MBytesVal returns the []byte value associated with this Value.
-// If the Type() is not ValueTypeBytes then returns an empty slice.
-// Calling this function on zero-initialized Value will cause a panic.
-// Modifying the returned []byte in-place is forbidden.
-// Deprecated: [0.54.0] Use BytesVal() instead.
-func (v Value) MBytesVal() []byte {
-	return v.orig.GetBytesValue()
-}
-
 // BytesVal returns the ImmutableByteSlice value associated with this Value.
 // If the Type() is not ValueTypeBytes then returns an empty slice.
 // Calling this function on zero-initialized Value will cause a panic.
@@ -306,16 +289,6 @@ func (v Value) SetDoubleVal(dv float64) {
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) SetBoolVal(bv bool) {
 	v.orig.Value = &otlpcommon.AnyValue_BoolValue{BoolValue: bv}
-}
-
-// SetMBytesVal replaces the []byte value associated with this Value,
-// it also changes the type to be ValueTypeBytes.
-// Calling this function on zero-initialized Value will cause a panic.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use SetBytesVal() instead.
-func (v Value) SetMBytesVal(bv []byte) {
-	v.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: bv}
 }
 
 // SetBytesVal replaces the ImmutableByteSlice value associated with this Value,
@@ -727,17 +700,6 @@ func (m Map) InsertBool(k string, v bool) {
 	}
 }
 
-// InsertMBytes adds the []byte Value to the map when the key does not exist.
-// No action is applied to the map where the key already exists.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use InsertBytes instead.
-func (m Map) InsertMBytes(k string, v []byte) {
-	if _, existing := m.Get(k); !existing {
-		*m.orig = append(*m.orig, newAttributeKeyValueBytes(k, ImmutableByteSlice{value: v}))
-	}
-}
-
 // InsertBytes adds the ImmutableByteSlice Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 func (m Map) InsertBytes(k string, v ImmutableByteSlice) {
@@ -788,17 +750,6 @@ func (m Map) UpdateDouble(k string, v float64) {
 func (m Map) UpdateBool(k string, v bool) {
 	if av, existing := m.Get(k); existing {
 		av.SetBoolVal(v)
-	}
-}
-
-// UpdateMBytes updates an existing []byte Value with a value.
-// No action is applied to the map where the key does not exist.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use UpdateBytes instead.
-func (m Map) UpdateMBytes(k string, v []byte) {
-	if av, existing := m.Get(k); existing {
-		av.SetBytesVal(ImmutableByteSlice{value: v})
 	}
 }
 
@@ -867,20 +818,6 @@ func (m Map) UpsertBool(k string, v bool) {
 		av.SetBoolVal(v)
 	} else {
 		*m.orig = append(*m.orig, newAttributeKeyValueBool(k, v))
-	}
-}
-
-// UpsertMBytes performs the Insert or Update action. The []byte Value is
-// inserted to the map that did not originally have the key. The key/value is
-// updated to the map where the key already existed.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use UpsertBytes instead.
-func (m Map) UpsertMBytes(k string, v []byte) {
-	if av, existing := m.Get(k); existing {
-		av.SetBytesVal(ImmutableByteSlice{value: v})
-	} else {
-		*m.orig = append(*m.orig, newAttributeKeyValueBytes(k, ImmutableByteSlice{value: v}))
 	}
 }
 
