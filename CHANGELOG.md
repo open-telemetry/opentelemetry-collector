@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - Change`confighttp.ToClient` to accept a `component.Host` (#5737)
+- Remove deprecated funcs from pdata related to mutable slices (#5754)
 
 ### 🚩 Deprecations 🚩
 
