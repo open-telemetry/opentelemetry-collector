@@ -17,7 +17,7 @@ The following configuration options can be modified:
 - `sending_queue`
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping; ignored if `enabled` is `false`
+  - `queue_size_batches` (default = 5000): Maximum number of batches kept in memory before dropping; ignored if `enabled` is `false`
   User should calculate this as `num_seconds * requests_per_second / requests_per_batch` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds
@@ -39,7 +39,7 @@ With this build tag set, additional configuration option can be enabled:
   - `persistent_storage_enabled` (default = false): When set, enables persistence via a file storage extension
     (note, `enable_unstable` build tag needs to be enabled first, see below for more details)
   - `queue_size_bytes` (default = 2^63 - 1): Maximum number of bytes available for batches in the storage before dropping;
-  It is a separate limit from `queue_size`, both limits are being checked when adding to the queue.
+  It is a separate limit from `queue_size_batches`, both limits are being checked when adding to the queue.
 
 The maximum number of batches stored to disk can be controlled using `sending_queue.queue_size` parameter (which,
 similarly as for in-memory buffering, defaults to 5000 batches).

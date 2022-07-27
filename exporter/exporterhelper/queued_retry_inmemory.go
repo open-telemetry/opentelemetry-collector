@@ -41,20 +41,29 @@ type QueueSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 	// NumConsumers is the number of consumers from the queue.
 	NumConsumers int `mapstructure:"num_consumers"`
-	// QueueSize is the maximum number of batches allowed in queue at a given time.
+	// QueueSize is a deprecated parameter that used to serve the same role as QueueSizeBatches.
 	QueueSize int `mapstructure:"queue_size"`
+	// QueueSizeBatches is the maximum number of batches allowed in queue at a given time.
+	QueueSizeBatches int `mapstructure:"queue_size_batches"`
 }
+
+const (
+	queueSizeDisabledValue = 0
+)
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
 func NewDefaultQueueSettings() QueueSettings {
 	return QueueSettings{
 		Enabled:      true,
 		NumConsumers: 10,
+		// QueueSize is a deprecated parameter now.
+		// If the user configurates it, use it instead of QueueSizeBatches and print a warning.
+		QueueSize: queueSizeDisabledValue,
 		// For 5000 queue elements at 100 requests/sec gives about 50 sec of survival of destination outage.
 		// This is a pretty decent value for production.
 		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
 		// multiply that by the number of requests per seconds.
-		QueueSize: 5000,
+		QueueSizeBatches: 5000,
 	}
 }
 
@@ -64,7 +73,7 @@ func (qCfg *QueueSettings) Validate() error {
 		return nil
 	}
 
-	if qCfg.QueueSize <= 0 {
+	if qCfg.QueueSizeBatches <= 0 || (qCfg.QueueSize <= 0 && qCfg.QueueSize != queueSizeDisabledValue) {
 		return errors.New("queue size must be positive")
 	}
 
@@ -85,6 +94,12 @@ func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSe
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
+	actualSizeBatches := qCfg.QueueSizeBatches
+	if qCfg.QueueSize != queueSizeDisabledValue {
+		actualSizeBatches = qCfg.QueueSize
+		logger.Warn("Configuration option queue_size is deprecated, use queue_size_batches instead")
+	}
+
 	return &queuedRetrySender{
 		fullName: id.String(),
 		cfg:      qCfg,
@@ -96,7 +111,7 @@ func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSe
 			logger:             sampledLogger,
 			onTemporaryFailure: onTemporaryFailure,
 		},
-		queue:           internal.NewBoundedMemoryQueue(qCfg.QueueSize, func(item interface{}) {}),
+		queue:           internal.NewBoundedMemoryQueue(actualSizeBatches, func(item interface{}) {}),
 		retryStopCh:     retryStopCh,
 		traceAttributes: []attribute.KeyValue{traceAttr},
 		logger:          sampledLogger,
@@ -128,11 +143,16 @@ func (qrs *queuedRetrySender) start(context.Context, component.Host) error {
 		if err != nil {
 			return fmt.Errorf("failed to create retry queue size metric: %w", err)
 		}
+
+		actualSizeBatches := qrs.cfg.QueueSizeBatches
+		if qrs.cfg.QueueSize != queueSizeDisabledValue {
+			actualSizeBatches = qrs.cfg.QueueSize
+		}
 		err = globalInstruments.queueCapacity.UpsertEntry(func() int64 {
-			return int64(qrs.cfg.QueueSize)
+			return int64(actualSizeBatches)
 		}, metricdata.NewLabelValue(qrs.fullName))
 		if err != nil {
-			return fmt.Errorf("failed to create retry queue capacity metric: %w", err)
+			return fmt.Errorf("failed to create retry queue capacity in batches metric: %w", err)
 		}
 	}
 

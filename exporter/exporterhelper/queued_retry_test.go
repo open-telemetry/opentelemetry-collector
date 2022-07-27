@@ -258,7 +258,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 func TestQueuedRetry_RetryOnError(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	qCfg.QueueSize = 1
+	qCfg.QueueSizeBatches = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = 0
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
@@ -285,7 +285,7 @@ func TestQueuedRetry_RetryOnError(t *testing.T) {
 
 func TestQueuedRetry_DropOnFull(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
-	qCfg.QueueSize = 0
+	qCfg.QueueSizeBatches = 0
 	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
@@ -372,7 +372,7 @@ func TestQueueSettings_Validate(t *testing.T) {
 	qCfg := NewDefaultQueueSettings()
 	assert.NoError(t, qCfg.Validate())
 
-	qCfg.QueueSize = 0
+	qCfg.QueueSizeBatches = 0
 	assert.EqualError(t, qCfg.Validate(), "queue size must be positive")
 
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
