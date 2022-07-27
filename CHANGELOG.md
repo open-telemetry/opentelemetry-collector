@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated funcs/types from service related to `Config` (#5755)
 - Change`confighttp.ToClient` to accept a `component.Host` (#5737)
 - Remove deprecated funcs from pdata related to mutable slices (#5754)
 
