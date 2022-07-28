@@ -77,6 +77,7 @@ func TestDecodeConfig(t *testing.T) {
 				Level:   configtelemetry.LevelNormal,
 				Address: ":8081",
 			},
+			Traces: telemetry.TracesConfig{Propagators: "tracecontext"},
 		}, cfg.Service.Telemetry)
 
 	// Verify Service Extensions

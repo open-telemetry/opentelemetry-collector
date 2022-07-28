@@ -105,7 +105,7 @@ type MetricsConfig struct {
 	Address string `mapstructure:"address"`
 }
 
-// TracesConfig exposes the common Telemetry configuration collector's internal spans.
+// TracesConfig exposes the common Telemetry configuration for collector's internal spans.
 type TracesConfig struct {
 	// Propagators is a comma separated list of TextMapPropagators from the default registered list
 	// (tracecontext, baggage, b3, b3multi, jaeger, xray, or ottrace). The default propagator used in
