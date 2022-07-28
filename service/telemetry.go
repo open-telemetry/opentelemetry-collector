@@ -54,6 +54,7 @@ const (
 	// useOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
 	// telemetrySettings for internal metrics.
 	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
+	defaultNameSpace                       = "otelcol"
 )
 
 type telemetryInitializer struct {
@@ -173,8 +174,12 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	}
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
+	namespace := defaultNameSpace
+	if cfg.Metrics.NameSpace != "" {
+		namespace = cfg.Metrics.NameSpace
+	}
 	opts := prometheus.Options{
-		Namespace: "otelcol",
+		Namespace: namespace,
 	}
 
 	opts.ConstLabels = make(map[string]string)

@@ -267,6 +267,10 @@ func ownMetricsTestCases(version string) []ownMetricsTestCase {
 }
 
 func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc ownMetricsTestCase) {
+	testCollectorStartHelperWithConfig(t, telemetry, tc, "otelcol", "otelcol-nop.yaml")
+}
+
+func testCollectorStartHelperWithConfig(t *testing.T, telemetry *telemetryInitializer, tc ownMetricsTestCase, namespace, configFile string) {
 	factories, err := componenttest.NopFactories()
 	zpagesExt := zpagesextension.NewFactory()
 	factories.Extensions[zpagesExt.Type()] = zpagesExt
@@ -294,7 +298,7 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 		extraCfgAsProps["service::telemetry::resource::"+k] = v
 	}
 
-	cfgSet := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")})
+	cfgSet := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", configFile)})
 	cfgSet.MapConverters = append([]confmap.Converter{
 		mapConverter{extraCfgAsProps}},
 		cfgSet.MapConverters...,
@@ -318,7 +322,7 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 	}, 2*time.Second, 200*time.Millisecond)
 	assert.True(t, loggingHookCalled)
 
-	assertMetrics(t, metricsAddr, tc.expectedLabels)
+	assertMetrics(t, metricsAddr, tc.expectedLabels, namespace)
 
 	assertZPages(t)
 	col.signalsChannel <- syscall.SIGTERM
@@ -331,6 +335,14 @@ func TestCollectorStartWithOpenCensusMetrics(t *testing.T) {
 	for _, tc := range ownMetricsTestCases("test version") {
 		t.Run(tc.name, func(t *testing.T) {
 			testCollectorStartHelper(t, newColTelemetry(featuregate.NewRegistry()), tc)
+		})
+	}
+}
+
+func TestCollectorStartWithMetricNamespace(t *testing.T) {
+	for _, tc := range ownMetricsTestCases("test version") {
+		t.Run(tc.name, func(t *testing.T) {
+			testCollectorStartHelperWithConfig(t, newColTelemetry(featuregate.NewRegistry()), tc, "customNamespace", "otelcol-metricnamespace.yaml")
 		})
 	}
 }
@@ -431,7 +443,7 @@ func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
-func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]labelValue) {
+func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]labelValue, namespace string) {
 	client := &http.Client{}
 	resp, err := client.Get("http://" + metricsAddr + "/metrics")
 	require.NoError(t, err)
@@ -445,7 +457,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 	parsed, err := parser.TextToMetricFamilies(reader)
 	require.NoError(t, err)
 
-	prefix := "otelcol"
+	prefix := namespace
 	for metricName, metricFamily := range parsed {
 		// require is used here so test fails with a single message.
 		require.True(
