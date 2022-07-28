@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.54.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.33.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0
-	go.opentelemetry.io/contrib/propagators/autoprop v0.33.0
+	go.opentelemetry.io/contrib/propagators/autoprop v0.33.1-0.20220726151433-758f66bb79f9
 	go.opentelemetry.io/contrib/zpages v0.33.0
 	go.opentelemetry.io/otel v1.8.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.31.0

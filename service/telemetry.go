@@ -137,10 +137,16 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 	}
 
 	if tel.registry.IsEnabled(allowTraceContextPropagationFeatureGateID) {
-		// Use OTEL_PROPAGATOR environment variable to configure propagators that are to be enabled.
-		// Once `autoprop` supports configuring the propagators via string ids, they can be enabled via
-		// collectors own telemetry configuration.
-		otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
+		props := strings.Split(cfg.Traces.Propagators, ",")
+
+		textMapPropagators, err := autoprop.TextMapPropagator(props...)
+		if err != nil {
+			return err
+		}
+
+		if textMapPropagators != nil {
+			otel.SetTextMapPropagator(textMapPropagators)
+		}
 	}
 
 	var pe http.Handler
