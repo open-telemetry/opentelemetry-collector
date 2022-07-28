@@ -46,31 +46,9 @@ func TestNewProcessorFactory_WithOptions(t *testing.T) {
 	factory := NewProcessorFactory(
 		typeStr,
 		func() config.Processor { return &defaultCfg },
-		WithTracesProcessor(createTracesProcessor),
-		WithMetricsProcessor(createMetricsProcessor),
-		WithLogsProcessor(createLogsProcessor))
-	assert.EqualValues(t, typeStr, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-
-	_, err := factory.CreateTracesProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
-	assert.NoError(t, err)
-
-	_, err = factory.CreateMetricsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
-	assert.NoError(t, err)
-
-	_, err = factory.CreateLogsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
-	assert.NoError(t, err)
-}
-
-func TestNewProcessorFactory_WithStabilityLevel(t *testing.T) {
-	const typeStr = "test"
-	defaultCfg := config.NewProcessorSettings(config.NewComponentID(typeStr))
-	factory := NewProcessorFactory(
-		typeStr,
-		func() config.Processor { return &defaultCfg },
-		WithTracesProcessorAndStabilityLevel(createTracesProcessor, StabilityLevelAlpha),
-		WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, StabilityLevelBeta),
-		WithLogsProcessorAndStabilityLevel(createLogsProcessor, StabilityLevelUnmaintained))
+		WithTracesProcessor(createTracesProcessor, StabilityLevelAlpha),
+		WithMetricsProcessor(createMetricsProcessor, StabilityLevelBeta),
+		WithLogsProcessor(createLogsProcessor, StabilityLevelUnmaintained))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 

@@ -45,32 +45,9 @@ func TestNewExporterFactory_WithOptions(t *testing.T) {
 	factory := NewExporterFactory(
 		typeStr,
 		func() config.Exporter { return &defaultCfg },
-		WithTracesExporter(createTracesExporter),
-		WithMetricsExporter(createMetricsExporter),
-		WithLogsExporter(createLogsExporter))
-	assert.EqualValues(t, typeStr, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-
-	_, err := factory.CreateTracesExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
-	assert.NoError(t, err)
-
-	_, err = factory.CreateMetricsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
-	assert.NoError(t, err)
-
-	_, err = factory.CreateLogsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
-	assert.NoError(t, err)
-}
-
-func TestNewExporterFactory_WithStabilityLevel(t *testing.T) {
-	const typeStr = "test"
-	defaultCfg := config.NewExporterSettings(config.NewComponentID(typeStr))
-	factory := NewExporterFactory(
-		typeStr,
-		func() config.Exporter { return &defaultCfg },
-		WithTracesExporterAndStabilityLevel(createTracesExporter, StabilityLevelInDevelopment),
-		WithMetricsExporterAndStabilityLevel(createMetricsExporter, StabilityLevelAlpha),
-		WithLogsExporterAndStabilityLevel(createLogsExporter, StabilityLevelDeprecated))
-
+		WithTracesExporter(createTracesExporter, StabilityLevelInDevelopment),
+		WithMetricsExporter(createMetricsExporter, StabilityLevelAlpha),
+		WithLogsExporter(createLogsExporter, StabilityLevelDeprecated))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
