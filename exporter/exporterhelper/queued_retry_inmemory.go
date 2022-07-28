@@ -43,9 +43,6 @@ type QueueSettings struct {
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue
 	StorageID *config.ComponentID `mapstructure:"storage"`
-	// StorageEnabled describes whether persistence via a file storage extension is enabled using the single
-	// default storage extension.
-	StorageEnabled bool `mapstructure:"persistent_storage_enabled"`
 }
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
@@ -57,8 +54,7 @@ func NewDefaultQueueSettings() QueueSettings {
 		// This is a pretty decent value for production.
 		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
 		// multiply that by the number of requests per seconds.
-		QueueSize:      5000,
-		StorageEnabled: false,
+		QueueSize: 5000,
 	}
 }
 
@@ -75,7 +71,7 @@ func (qCfg *QueueSettings) Validate() error {
 	return nil
 }
 
-func (qCfg *QueueSettings) getStorageExtension(logger *zap.Logger, extensions map[config.ComponentID]component.Extension) (storage.Extension, error) {
+func (qCfg *QueueSettings) getStorageExtension(extensions map[config.ComponentID]component.Extension) (storage.Extension, error) {
 	if qCfg.StorageID != nil {
 		if ext, found := extensions[*qCfg.StorageID]; found {
 			if storageExt, ok := ext.(storage.Extension); ok {
@@ -83,26 +79,13 @@ func (qCfg *QueueSettings) getStorageExtension(logger *zap.Logger, extensions ma
 			}
 			return nil, errWrongExtensionType
 		}
-	} else if qCfg.StorageEnabled {
-		var storageExtension storage.Extension
-		for _, ext := range extensions {
-			if se, ok := ext.(storage.Extension); ok {
-				if storageExtension != nil {
-					logger.Error("multiple storage extensions found, please specify which one to use using `storage: ` configuration attribute")
-					return nil, errMultipleStorageClients
-				}
-				storageExtension = se
-			}
-		}
-
-		return storageExtension, nil
 	}
 
 	return nil, nil
 }
 
-func (qCfg *QueueSettings) toStorageClient(ctx context.Context, logger *zap.Logger, host component.Host, ownerID config.ComponentID, signal config.DataType) (storage.Client, error) {
-	extension, err := qCfg.getStorageExtension(logger, host.GetExtensions())
+func (qCfg *QueueSettings) toStorageClient(ctx context.Context, host component.Host, ownerID config.ComponentID, signal config.DataType) (storage.Client, error) {
+	extension, err := qCfg.getStorageExtension(host.GetExtensions())
 	if err != nil {
 		return nil, err
 	}
@@ -119,9 +102,8 @@ func (qCfg *QueueSettings) toStorageClient(ctx context.Context, logger *zap.Logg
 }
 
 var (
-	errNoStorageClient        = errors.New("no storage client extension found")
-	errWrongExtensionType     = errors.New("requested extension is not a storage extension")
-	errMultipleStorageClients = errors.New("multiple storage extensions found while default extension expected")
+	errNoStorageClient    = errors.New("no storage client extension found")
+	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
 
 type queuedRetrySender struct {
@@ -165,7 +147,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 		onTemporaryFailure: qrs.onTemporaryFailure,
 	}
 
-	if qCfg.StorageEnabled || qCfg.StorageID != nil {
+	if qCfg.StorageID != nil {
 		qrs.queue, qrs.queueStartFunc = internal.NewPersistentQueue(qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, qrs.requestUnmarshaler)
 		// TODO: following can be further exposed as a config param rather than relying on a type of queue
 		qrs.requeuingEnabled = true
@@ -204,7 +186,7 @@ func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req request
 // start is invoked during service startup.
 func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) error {
 	if qrs.queueStartFunc != nil {
-		storageClient, err := qrs.cfg.toStorageClient(ctx, qrs.logger, host, qrs.id, qrs.signal)
+		storageClient, err := qrs.cfg.toStorageClient(ctx, host, qrs.id, qrs.signal)
 		if err != nil {
 			return err
 		}

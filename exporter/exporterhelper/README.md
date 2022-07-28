@@ -36,7 +36,6 @@ To use persistent queue, following setting needs to be enabled:
 
 - `sending_queue`
   - `storage` (default = none): When set, enables persistence and uses the component specified as a storage extension for persistent queue
-  - `persistent_storage_enabled` (default = false): When set, enables persistence using the only available storage extension (fails when no storage extension is enabled or more than one storage extension is available)
 
 The maximum number of batches stored to disk can be controlled using `sending_queue.queue_size` parameter (which, similarly as for in-memory buffering, defaults to 5000 batches).
 

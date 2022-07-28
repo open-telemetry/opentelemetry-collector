@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Require storage explicitly set for persistent queue (#5711)
 - Remove deprecated funcs/types from service related to `Config` (#5755)
 - Change`confighttp.ToClient` to accept a `component.Host` (#5737)
 - Remove deprecated funcs from pdata related to mutable slices (#5754)
@@ -12,7 +13,7 @@
 
 ### 💡 Enhancements 💡
 
-- Enable Persistent Queue by default. (#5711)
+- Enable Persistent Queue by default (#5711)
 - `ocb` now exits with an error if it fails to load the build configuration. (#5731)
 - Deprecate `HTTPClientSettings.ToClientWithHost` (#5737)
 

@@ -394,7 +394,8 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	qCfg := NewDefaultQueueSettings()
-	qCfg.StorageEnabled = true // enable persistence
+	storageID := config.NewComponentIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID
 	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 
@@ -405,7 +406,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	require.Equal(t, true, be.qrSender.requeuingEnabled)
 
 	var extensions = map[config.ComponentID]component.Extension{
-		config.NewComponentIDWithName("file_storage", "storage"): &mockStorageExtension{},
+		storageID: &mockStorageExtension{},
 	}
 	host := &mockHost{ext: extensions}
 
@@ -421,12 +422,13 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	qCfg := NewDefaultQueueSettings()
-	qCfg.StorageEnabled = true // enable persistence
+	storageID := config.NewComponentIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID
 	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 
 	var extensions = map[config.ComponentID]component.Extension{
-		config.NewComponentIDWithName("file_storage", "storage"): &mockStorageExtension{GetClientError: storageError},
+		storageID: &mockStorageExtension{GetClientError: storageError},
 	}
 	host := &mockHost{ext: extensions}
 

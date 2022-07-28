@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -64,7 +63,6 @@ func TestGetRetrySettings(t *testing.T) {
 		storage        storage.Extension
 		numStorages    int
 		storageID      string
-		storageEnabled bool
 		expectedError  error
 		getClientError error
 	}{
@@ -86,21 +84,9 @@ func TestGetRetrySettings(t *testing.T) {
 			expectedError: errNoStorageClient,
 		},
 		{
-			desc:           "obtain default storage extension",
-			numStorages:    1,
-			storageEnabled: true,
-			expectedError:  nil,
-		},
-		{
-			desc:           "fail on obtaining default storage extension",
-			numStorages:    2,
-			storageEnabled: true,
-			expectedError:  errMultipleStorageClients,
-		},
-		{
 			desc:           "fail on error getting storage client from extension",
 			numStorages:    1,
-			storageEnabled: true,
+			storageID:      "0",
 			expectedError:  getStorageClientError,
 			getClientError: getStorageClientError,
 		},
@@ -109,8 +95,7 @@ func TestGetRetrySettings(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
 			cfg := &QueueSettings{
-				Enabled:        true,
-				StorageEnabled: tC.storageEnabled,
+				Enabled: true,
 			}
 			if tC.storageID != "" {
 				compID := config.NewComponentIDWithName("file_storage", tC.storageID)
@@ -125,7 +110,7 @@ func TestGetRetrySettings(t *testing.T) {
 			ownerID := config.NewComponentID("foo_exporter")
 
 			// execute
-			client, err := cfg.toStorageClient(context.Background(), zap.NewNop(), host, ownerID, config.TracesDataType)
+			client, err := cfg.toStorageClient(context.Background(), host, ownerID, config.TracesDataType)
 
 			// verify
 			if tC.expectedError != nil {
@@ -142,8 +127,7 @@ func TestGetRetrySettings(t *testing.T) {
 func TestInvalidStorageExtensionType(t *testing.T) {
 	// prepare
 	cfg := &QueueSettings{
-		Enabled:        true,
-		StorageEnabled: true,
+		Enabled: true,
 	}
 	compID := config.NewComponentIDWithName("extension", "extension")
 	cfg.StorageID = &compID
@@ -161,7 +145,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	ownerID := config.NewComponentID("foo_exporter")
 
 	// execute
-	client, err := cfg.toStorageClient(context.Background(), zap.NewNop(), host, ownerID, config.TracesDataType)
+	client, err := cfg.toStorageClient(context.Background(), host, ownerID, config.TracesDataType)
 
 	// we should get an error about the extension type
 	assert.ErrorIs(t, err, errWrongExtensionType)
