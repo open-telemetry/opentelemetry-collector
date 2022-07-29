@@ -128,6 +128,12 @@ func (qrs *queuedRetrySender) start(context.Context, component.Host) error {
 		if err != nil {
 			return fmt.Errorf("failed to create retry queue size metric: %w", err)
 		}
+		err = globalInstruments.queueCapacity.UpsertEntry(func() int64 {
+			return int64(qrs.cfg.QueueSize)
+		}, metricdata.NewLabelValue(qrs.fullName))
+		if err != nil {
+			return fmt.Errorf("failed to create retry queue capacity metric: %w", err)
+		}
 	}
 
 	return nil

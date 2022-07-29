@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service // import "go.opentelemetry.io/collector/service"
+package extensions // import "go.opentelemetry.io/collector/service/extensions"
 
 import (
 	"go.opentelemetry.io/collector/config"
 )
 
-type Config = config.Config
-
-type ConfigService = config.Service
-
-type ConfigServicePipeline = config.Pipeline
+// Config represents the ordered list of extensions configured for the service.
+type Config []config.ComponentID

@@ -2,19 +2,41 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated funcs/types from service related to `Config` (#5755)
+- Change`confighttp.ToClient` to accept a `component.Host` (#5737)
+- Remove deprecated funcs from pdata related to mutable slices (#5754)
+
+### 🚩 Deprecations 🚩
+
 ### 💡 Enhancements 💡
 
-- Add `linux-ppc64le` architecture to cross build tests in CI
+- `ocb` now exits with an error if it fails to load the build configuration. (#5731)
+- Deprecate `HTTPClientSettings.ToClientWithHost` (#5737)
+
+### 🧰 Bug fixes 🧰
+
+- Fix bug in ocb where flags did not take precedence. (#5726)
+
+## v0.56.0 Beta
+
+### 💡 Enhancements 💡
+
+- Add `linux-ppc64le` architecture to cross build tests in CI (#5645)
 - `client`: perform case insensitive lookups in case the requested metadata value isn't found (#5646)
 - `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
 - Add support to propagate trace context of collector's internal spans if `telemetry.allowTraceContextPropagation` featuregate is enabled (#5572)
 - Expose `pcommon.NewSliceFromRaw` function (#5679)
 - `loggingexporter`: create the exporter's logger from the service's logger (#5677)
+- Add `otelcol_exporter_queue_capacity` metrics show the collector's exporter queue capacity (#5475)
+- Add support to handle 402, 413, 414, 431 http error code as permanent errors in OTLP exporter (#5685)
 
 ### 🧰 Bug fixes 🧰
 
 - Fix Collector panic when disabling telemetry metrics (#5642)
 - Fix Collector panic when featuregate value is empty (#5663)
+- Fix confighttp.compression panic due to nil request.Body. (#5628)
 
 ## v0.55.0 Beta
 
@@ -43,9 +65,6 @@
 
 - Components stability levels are now logged. By default components which haven't defined their stability levels, or which are
   unmaintained, deprecated or in development will log a message. (#5580)
-
-### 💡 Enhancements 💡
-
 - `exporter/logging`: Skip "bad file descriptor" sync errors (#5585)
 
 ### 🧰 Bug fixes 🧰
@@ -208,7 +227,7 @@
 - Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
 - Remove non pdata deprecated funcs/structs (#5220)
 - `pmetric.Exemplar.ValueType()` now returns new type `ExemplarValueType` (#5233)
-- Remove deprecated `Delete` pdata func from (v0.47.0). (#5307)
+- Remove deprecated `Delete` pdata func in favor of `pdata.Remove` from (v0.47.0). (#5307)
 
 ### 🚩 Deprecations 🚩
 

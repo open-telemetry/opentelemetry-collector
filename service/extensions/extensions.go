@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package extensions // import "go.opentelemetry.io/collector/service/internal/extensions"
+package extensions // import "go.opentelemetry.io/collector/service/extensions"
 
 import (
 	"context"
@@ -37,8 +37,8 @@ type Extensions struct {
 	extMap    map[config.ComponentID]component.Extension
 }
 
-// StartAll starts all extensions.
-func (bes *Extensions) StartAll(ctx context.Context, host component.Host) error {
+// Start starts all extensions.
+func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for extID, ext := range bes.extMap {
 		extLogger := extensionLogger(bes.telemetry.Logger, extID)
@@ -51,8 +51,8 @@ func (bes *Extensions) StartAll(ctx context.Context, host component.Host) error 
 	return nil
 }
 
-// ShutdownAll stops all extensions.
-func (bes *Extensions) ShutdownAll(ctx context.Context) error {
+// Shutdown stops all extensions.
+func (bes *Extensions) Shutdown(ctx context.Context) error {
 	bes.telemetry.Logger.Info("Stopping extensions...")
 	var errs error
 	for _, ext := range bes.extMap {
@@ -128,18 +128,15 @@ type Settings struct {
 
 	// Factories maps extension type names in the config to the respective component.ExtensionFactory.
 	Factories map[config.Type]component.ExtensionFactory
-
-	// ServiceExtensions are the ordered list of extensions configured for the service.
-	ServiceExtensions []config.ComponentID
 }
 
-// Build builds Extensions from config.
-func Build(ctx context.Context, set Settings) (*Extensions, error) {
+// New creates a new Extensions from Config.
+func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	exts := &Extensions{
 		telemetry: set.Telemetry,
 		extMap:    make(map[config.ComponentID]component.Extension),
 	}
-	for _, extID := range set.ServiceExtensions {
+	for _, extID := range cfg {
 		extCfg, existsCfg := set.Configs[extID]
 		if !existsCfg {
 			return nil, fmt.Errorf("extension %q is not configured", extID)

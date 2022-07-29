@@ -8,6 +8,10 @@ on:
     paths-ignore:
       - 'cmd/builder/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   changedfiles:
     name: changed files
@@ -22,8 +26,7 @@ jobs:
       - name: Get changed files
         id: changes
         run: |
-          echo "::set-output name=md::$(git diff --name-only --diff-filter=ACMRTUXB origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }} | grep .md$ | xargs)"
-
+          echo "::set-output name=md::$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} | grep .md$ | xargs)"
   check-links:
     runs-on: ubuntu-latest
     needs: changedfiles
@@ -42,4 +45,5 @@ jobs:
           markdown-link-check \
             --verbose \
             --config .github/workflows/check_links_config.json \
-            ${{needs.changedfiles.outputs.md}}
+            ${{needs.changedfiles.outputs.md}} \
+            || { echo "Check that anchor links are lowercase"; exit 1; }
