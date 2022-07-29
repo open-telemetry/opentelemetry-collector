@@ -52,15 +52,15 @@ func TestNewProcessorFactory_WithOptions(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.EqualValues(t, StabilityLevelAlpha, factory.StabilityLevel(config.TracesDataType))
+	assert.Equal(t, StabilityLevelAlpha, factory.StabilityLevel(config.TracesDataType))
 	_, err := factory.CreateTracesProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, StabilityLevelBeta, factory.StabilityLevel(config.MetricsDataType))
+	assert.Equal(t, StabilityLevelBeta, factory.StabilityLevel(config.MetricsDataType))
 	_, err = factory.CreateMetricsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, StabilityLevelUnmaintained, factory.StabilityLevel(config.LogsDataType))
+	assert.Equal(t, StabilityLevelUnmaintained, factory.StabilityLevel(config.LogsDataType))
 	_, err = factory.CreateLogsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }

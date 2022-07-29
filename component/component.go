@@ -111,7 +111,7 @@ const (
 type StabilityLevel int
 
 const (
-	StabilityLevelUndefined = iota // skip 0, start types from 1.
+	StabilityLevelUndefined StabilityLevel = iota // skip 0, start types from 1.
 	StabilityLevelUnmaintained
 	StabilityLevelDeprecated
 	StabilityLevelInDevelopment
@@ -172,7 +172,7 @@ type Factory interface {
 
 type baseFactory struct {
 	cfgType   config.Type
-	stability map[config.Type]StabilityLevel
+	stability map[config.DataType]StabilityLevel
 }
 
 func (baseFactory) unexportedFactoryFunc() {}
