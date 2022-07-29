@@ -103,6 +103,6 @@ type MetricsConfig struct {
 	// Address is the [address]:port that metrics exposition should be bound to.
 	Address string `mapstructure:"address"`
 
-	// NameSpace indicates the telemetry namespace the service will set.
-	NameSpace string `mapstructure:"namespace"`
+	// Namespace indicates the telemetry namespace the service will set. If nil, a default value is assigned.
+	Namespace *string `mapstructure:"namespace"`
 }

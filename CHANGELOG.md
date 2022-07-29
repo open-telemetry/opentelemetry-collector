@@ -14,7 +14,7 @@
 
 - `ocb` now exits with an error if it fails to load the build configuration. (#5731)
 - Deprecate `HTTPClientSettings.ToClientWithHost` (#5737)
-- Add a new field `namespace` in `service.telemetry.metrics.namespace` to allow user to customize metric namespace (#5692)
+- Add a new field `service.telemetry.metrics.namespace` to allow users to customize the collector's metric namespace (#5692)
 
 ### 🧰 Bug fixes 🧰
 

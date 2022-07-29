@@ -175,8 +175,8 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	namespace := defaultNameSpace
-	if cfg.Metrics.NameSpace != "" {
-		namespace = cfg.Metrics.NameSpace
+	if cfg.Metrics.Namespace != nil {
+		namespace = *cfg.Metrics.Namespace
 	}
 	opts := prometheus.Options{
 		Namespace: namespace,
