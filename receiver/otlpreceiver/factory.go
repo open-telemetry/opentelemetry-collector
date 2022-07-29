@@ -38,9 +38,9 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, component.StabilityLevelStable),
-		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, component.StabilityLevelStable),
-		component.WithLogsReceiverAndStabilityLevel(createLogReceiver, component.StabilityLevelBeta))
+		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelStable),
+		component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelStable),
+		component.WithLogsReceiver(createLogReceiver, component.StabilityLevelBeta))
 }
 
 // createDefaultConfig creates the default configuration for receiver.

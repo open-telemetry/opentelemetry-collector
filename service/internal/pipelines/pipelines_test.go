@@ -385,13 +385,13 @@ func newErrReceiverFactory() component.ReceiverFactory {
 	},
 		component.WithTracesReceiver(func(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {
 			return &errComponent{}, nil
-		}),
+		}, component.StabilityLevelUndefined),
 		component.WithLogsReceiver(func(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Logs) (component.LogsReceiver, error) {
 			return &errComponent{}, nil
-		}),
+		}, component.StabilityLevelUndefined),
 		component.WithMetricsReceiver(func(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Metrics) (component.MetricsReceiver, error) {
 			return &errComponent{}, nil
-		}),
+		}, component.StabilityLevelUndefined),
 	)
 }
 
@@ -405,13 +405,13 @@ func newErrProcessorFactory() component.ProcessorFactory {
 	},
 		component.WithTracesProcessor(func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Traces) (component.TracesProcessor, error) {
 			return &errComponent{}, nil
-		}),
+		}, component.StabilityLevelUndefined),
 		component.WithLogsProcessor(func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Logs) (component.LogsProcessor, error) {
 			return &errComponent{}, nil
-		}),
+		}, component.StabilityLevelUndefined),
 		component.WithMetricsProcessor(func(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Metrics) (component.MetricsProcessor, error) {
 			return &errComponent{}, nil
-		}),
+		}, component.StabilityLevelUndefined),
 	)
 }
 
@@ -425,13 +425,13 @@ func newErrExporterFactory() component.ExporterFactory {
 	},
 		component.WithTracesExporter(func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {
 			return &errComponent{}, nil
-		}),
+		}, component.StabilityLevelUndefined),
 		component.WithLogsExporter(func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error) {
 			return &errComponent{}, nil
-		}),
+		}, component.StabilityLevelUndefined),
 		component.WithMetricsExporter(func(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error) {
 			return &errComponent{}, nil
-		}),
+		}, component.StabilityLevelUndefined),
 	)
 }
 
