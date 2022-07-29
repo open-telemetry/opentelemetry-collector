@@ -52,15 +52,15 @@ func TestNewReceiverFactory_WithOptions(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, StabilityLevelDeprecated, factory.StabilityLevel(config.TracesDataType))
+	assert.Equal(t, StabilityLevelDeprecated, factory.TracesReceiverStability())
 	_, err := factory.CreateTracesReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	assert.Equal(t, StabilityLevelAlpha, factory.StabilityLevel(config.MetricsDataType))
+	assert.Equal(t, StabilityLevelAlpha, factory.MetricsReceiverStability())
 	_, err = factory.CreateMetricsReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	assert.Equal(t, StabilityLevelStable, factory.StabilityLevel(config.LogsDataType))
+	assert.Equal(t, StabilityLevelStable, factory.LogsReceiverStability())
 	_, err = factory.CreateLogsReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }

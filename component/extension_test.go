@@ -33,14 +33,17 @@ func TestNewExtensionFactory(t *testing.T) {
 	defaultCfg := config.NewExtensionSettings(config.NewComponentID(typeStr))
 	nopExtensionInstance := new(nopExtension)
 
-	factory := NewExtensionFactory(
+	factory := NewExtensionFactoryWithStabilityLevel(
 		typeStr,
 		func() config.Extension { return &defaultCfg },
 		func(ctx context.Context, settings ExtensionCreateSettings, extension config.Extension) (Extension, error) {
 			return nopExtensionInstance, nil
-		})
+		},
+		StabilityLevelInDevelopment)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+
+	assert.Equal(t, StabilityLevelInDevelopment, factory.ExtensionStability())
 	ext, err := factory.CreateExtension(context.Background(), ExtensionCreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
