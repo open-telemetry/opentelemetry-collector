@@ -33,6 +33,7 @@
   - 
 ### 💡 Enhancements 💡
 
+- Make the in-memory and persistent queues more consistent (#5764)ś
 - `ocb` now exits with an error if it fails to load the build configuration. (#5731)
 - Deprecate `HTTPClientSettings.ToClientWithHost` (#5737)
 
