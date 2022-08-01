@@ -51,15 +51,15 @@ func TestNewExporterFactory_WithOptions(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.EqualValues(t, StabilityLevelInDevelopment, factory.StabilityLevel(config.TracesDataType))
+	assert.Equal(t, StabilityLevelInDevelopment, factory.StabilityLevel(config.TracesDataType))
 	_, err := factory.CreateTracesExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, StabilityLevelAlpha, factory.StabilityLevel(config.MetricsDataType))
+	assert.Equal(t, StabilityLevelAlpha, factory.StabilityLevel(config.MetricsDataType))
 	_, err = factory.CreateMetricsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 
-	assert.EqualValues(t, StabilityLevelDeprecated, factory.StabilityLevel(config.LogsDataType))
+	assert.Equal(t, StabilityLevelDeprecated, factory.StabilityLevel(config.LogsDataType))
 	_, err = factory.CreateLogsExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 }
