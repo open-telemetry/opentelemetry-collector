@@ -122,9 +122,9 @@ vectors including resource exhaustion.
 
 Component developers MUST default to encrypted connections (via the `insecure:
 false` configuration setting) and SHOULD leverage
-[receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/receiverhelper)
+[gRPC](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configgrpc)
 and
-[exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper)
+[http](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp)
 helper functions.
 
 ## Processors

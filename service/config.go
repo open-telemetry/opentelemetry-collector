@@ -16,20 +16,10 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 type Config = config.Config
 
 type ConfigService = config.Service
-
-// Deprecated: [v0.54.0] use telemetry.Config
-type ConfigServiceTelemetry = telemetry.Config
-
-// Deprecated: [v0.54.0] use telemetry.Config
-type ConfigServiceTelemetryLogs = telemetry.LogsConfig
-
-// Deprecated: [v0.54.0] use telemetry.Config
-type ConfigServiceTelemetryMetrics = telemetry.MetricsConfig
 
 type ConfigServicePipeline = config.Pipeline

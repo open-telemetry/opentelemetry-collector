@@ -43,9 +43,9 @@ func NewNopReceiverFactory() component.ReceiverFactory {
 				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
 			}
 		},
-		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, component.StabilityLevelStable),
-		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, component.StabilityLevelStable),
-		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver, component.StabilityLevelStable))
+		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelStable),
+		component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelStable),
+		component.WithLogsReceiver(createLogsReceiver, component.StabilityLevelStable))
 }
 
 func createTracesReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {
