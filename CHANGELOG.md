@@ -6,6 +6,17 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecated the current Flag API.  The new API provides functions to check and set Flags:
+  - `NumberDataPoint.Flags` -> `NumberDataPoint.FlagsStruct`
+  - `HistogramDataPoint.Flags` -> `HistogramDataPoint.FlagsStruct`
+  - `ExponentialHistogramDataPoint.Flags` -> `ExponentialHistogramDataPoint.FlagsStruct`
+  - `SummaryDataPoint.Flags` -> `SummaryDataPoint.FlagsStruct`
+  - `MetricDataPointFlags` -> `EmptyMetricDataPointFlags`
+  - `NewMetricDataPointFlags` -> `NewEmptyMetricDataPointFlags`
+  - `MetricDataPointFlagsNone` -> `EmptyMetricDataPointFlags.NoRecordedValue`
+  - `MetricDataPointFlagNoRecordedValue` -> `EmptyMetricDataPointFlags.NoRecordedValue`
+  - `MetricDataPointFlag`
+
 ### 💡 Enhancements 💡
 
 - `ocb` now exits with an error if it fails to load the build configuration. (#5731)
@@ -37,7 +48,6 @@
 - Remove deprecated `config.ServiceTelemetry` (#5565)
 - Remove deprecated `config.ServiceTelemetryLogs` (#5565)
 - Remove deprecated `config.ServiceTelemetryMetrics` (#5565)
-- Removed `HasFlag`, `MetricDataPointFlagsNone`, and `MetricDataPointFlagNoRecordedValue`. Use new Flags API to check for Flags and to set and remove Flags (#5602)
 
 ### 🚩 Deprecations 🚩
 
