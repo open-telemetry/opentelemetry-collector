@@ -89,25 +89,22 @@ func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSe
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
-	qrs := &queuedRetrySender{
-		fullName:        id.String(),
-		cfg:             qCfg,
+	return &queuedRetrySender{
+		fullName: id.String(),
+		cfg:      qCfg,
+		consumerSender: &retrySender{
+			traceAttribute:     traceAttr,
+			cfg:                rCfg,
+			nextSender:         nextSender,
+			stopCh:             retryStopCh,
+			logger:             sampledLogger,
+			onTemporaryFailure: onTemporaryFailure,
+		},
 		queue:           internal.NewBoundedMemoryQueue(qCfg.QueueSize, func(item interface{}) {}),
 		retryStopCh:     retryStopCh,
 		traceAttributes: []attribute.KeyValue{traceAttr},
 		logger:          sampledLogger,
 	}
-
-	qrs.consumerSender = &retrySender{
-		traceAttribute:     traceAttr,
-		cfg:                rCfg,
-		nextSender:         nextSender,
-		stopCh:             retryStopCh,
-		logger:             sampledLogger,
-		onTemporaryFailure: qrs.onTemporaryFailure,
-	}
-
-	return qrs
 }
 
 func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req request, err error) error {
