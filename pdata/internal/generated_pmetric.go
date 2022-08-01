@@ -1211,8 +1211,8 @@ func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
 }
 
 // FlagsStruct returns the flagsstruct associated with this NumberDataPoint.
-func (ms NumberDataPoint) FlagsStruct() EmptyMetricDataPointFlags {
-	return newEmptyMetricDataPointFlags(&(*ms.orig).Flags)
+func (ms NumberDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1486,8 +1486,8 @@ func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 }
 
 // FlagsStruct returns the flagsstruct associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) FlagsStruct() EmptyMetricDataPointFlags {
-	return newEmptyMetricDataPointFlags(&(*ms.orig).Flags)
+func (ms HistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
 }
 
 // Min returns the min associated with this HistogramDataPoint.
@@ -1826,8 +1826,8 @@ func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 }
 
 // FlagsStruct returns the flagsstruct associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) FlagsStruct() EmptyMetricDataPointFlags {
-	return newEmptyMetricDataPointFlags(&(*ms.orig).Flags)
+func (ms ExponentialHistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.
@@ -2179,8 +2179,8 @@ func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
 }
 
 // FlagsStruct returns the flagsstruct associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) FlagsStruct() EmptyMetricDataPointFlags {
-	return newEmptyMetricDataPointFlags(&(*ms.orig).Flags)
+func (ms SummaryDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
 }
 
 // CopyTo copies all properties from the current struct to the dest.

@@ -1016,12 +1016,12 @@ func generateMetricsEmptyDataPoints() Metrics {
 	}}
 }
 
-func fillTestEmptyMetricDataPointFlags(tv EmptyMetricDataPointFlags) {
+func fillTestMetricDataPointFlagsStruct(tv MetricDataPointFlagsStruct) {
 	*tv.orig = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
 }
 
-func generateTestEmptyMetricDataPointFlags() EmptyMetricDataPointFlags {
-	tv := NewEmptyMetricDataPointFlags()
-	fillTestEmptyMetricDataPointFlags(tv)
+func generateTestMetricDataPointFlagsStruct() MetricDataPointFlagsStruct {
+	tv := NewMetricDataPointFlagsStruct()
+	fillTestMetricDataPointFlagsStruct(tv)
 	return tv
 }

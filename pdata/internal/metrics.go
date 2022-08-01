@@ -183,50 +183,50 @@ func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
-// EmptyMetricDataPointFlags defines how a metric aggregator reports aggregated values.
+// MetricDataPointFlagsStruct defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewEmptyMetricDataPointFlags function to create new instances.
+// Must use NewMetricDataPointFlagsStruct function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type EmptyMetricDataPointFlags struct {
+type MetricDataPointFlagsStruct struct {
 	orig *uint32
 }
 
-func newEmptyMetricDataPointFlags(orig *uint32) EmptyMetricDataPointFlags {
-	return EmptyMetricDataPointFlags{orig: orig}
+func newMetricDataPointFlagsStruct(orig *uint32) MetricDataPointFlagsStruct {
+	return MetricDataPointFlagsStruct{orig: orig}
 }
 
-// NewEmptyMetricDataPointFlags creates a new empty EmptyMetricDataPointFlags.
+// NewMetricDataPointFlagsStruct creates a new empty MetricDataPointFlagsStruct.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewEmptyMetricDataPointFlags() EmptyMetricDataPointFlags {
-	return newEmptyMetricDataPointFlags(new(uint32))
+func NewMetricDataPointFlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(new(uint32))
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
-func (ms EmptyMetricDataPointFlags) MoveTo(dest EmptyMetricDataPointFlags) {
+func (ms MetricDataPointFlagsStruct) MoveTo(dest MetricDataPointFlagsStruct) {
 	*dest.orig = *ms.orig
 	*ms.orig = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms EmptyMetricDataPointFlags) CopyTo(dest EmptyMetricDataPointFlags) {
+func (ms MetricDataPointFlagsStruct) CopyTo(dest MetricDataPointFlagsStruct) {
 	*dest.orig = *ms.orig
 }
 
 // NoRecordedValue returns true if the MetricDataPointFlags contains the NO_RECORDED_VALUE flag.
-func (ms EmptyMetricDataPointFlags) NoRecordedValue() bool {
+func (ms MetricDataPointFlagsStruct) NoRecordedValue() bool {
 	return *ms.orig&uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
 }
 
 // SetNoRecordedValue sets the FLAG_NO_RECORDED_VALUE flag if true and removes it if false.
 // Setting this Flag when it is already set will change nothing.
-func (ms EmptyMetricDataPointFlags) SetNoRecordedValue(b bool) {
+func (ms MetricDataPointFlagsStruct) SetNoRecordedValue(b bool) {
 	if b {
 		*ms.orig |= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 	} else {
@@ -235,7 +235,7 @@ func (ms EmptyMetricDataPointFlags) SetNoRecordedValue(b bool) {
 }
 
 // String returns the string representation of the MetricDataPointFlags.
-func (ms EmptyMetricDataPointFlags) String() string {
+func (ms MetricDataPointFlagsStruct) String() string {
 	return otlpmetrics.DataPointFlags(*ms.orig).String()
 }
 

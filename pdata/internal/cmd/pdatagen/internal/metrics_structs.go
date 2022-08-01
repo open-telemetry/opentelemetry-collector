@@ -497,7 +497,7 @@ var dataPointFlagsFieldStruct = &messageValueField{
 	fieldName:       "FlagsStruct",
 	originFieldName: "Flags",
 	returnMessage: &messageValueStruct{
-		structName:     "EmptyMetricDataPointFlags",
+		structName:     "MetricDataPointFlagsStruct",
 		originFullName: "uint32",
 	},
 }

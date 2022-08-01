@@ -11,10 +11,10 @@
   - `HistogramDataPoint.Flags` -> `HistogramDataPoint.FlagsStruct`
   - `ExponentialHistogramDataPoint.Flags` -> `ExponentialHistogramDataPoint.FlagsStruct`
   - `SummaryDataPoint.Flags` -> `SummaryDataPoint.FlagsStruct`
-  - `MetricDataPointFlags` -> `EmptyMetricDataPointFlags`
-  - `NewMetricDataPointFlags` -> `NewEmptyMetricDataPointFlags`
-  - `MetricDataPointFlagsNone` -> `EmptyMetricDataPointFlags.NoRecordedValue`
-  - `MetricDataPointFlagNoRecordedValue` -> `EmptyMetricDataPointFlags.NoRecordedValue`
+  - `MetricDataPointFlags` -> `MetricDataPointFlagsStruct`
+  - `NewMetricDataPointFlags` -> `NewMetricDataPointFlagsStruct`
+  - `MetricDataPointFlagsNone` -> `MetricDataPointFlagsStruct.NoRecordedValue`
+  - `MetricDataPointFlagNoRecordedValue` -> `MetricDataPointFlagsStruct.NoRecordedValue`
   - `MetricDataPointFlag`
 
 ### 💡 Enhancements 💡
