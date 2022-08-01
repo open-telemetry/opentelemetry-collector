@@ -19,10 +19,12 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -36,12 +38,18 @@ type persistentQueue struct {
 	storage    persistentStorage
 }
 
-// NewPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
-func NewPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
+// buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
+// to avoid conflicts between different signals, which require unique persistent storage name
+func buildPersistentStorageName(name string, signal config.DataType) string {
+	return fmt.Sprintf("%s-%s", name, signal)
+}
+
+// NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
+func NewPersistentQueue(ctx context.Context, name string, signal config.DataType, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
 	return &persistentQueue{
 		logger:   logger,
 		stopChan: make(chan struct{}),
-		storage:  newPersistentContiguousStorage(ctx, name, uint64(capacity), logger, client, unmarshaler),
+		storage:  newPersistentContiguousStorage(ctx, buildPersistentStorageName(name, signal), uint64(capacity), logger, client, unmarshaler),
 	}
 }
 

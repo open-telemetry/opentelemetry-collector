@@ -81,6 +81,7 @@ var (
 )
 
 type queuedRetrySender struct {
+	fullName           string
 	id                 config.ComponentID
 	signal             config.DataType
 	cfg                QueueSettings
@@ -93,19 +94,13 @@ type queuedRetrySender struct {
 	requestUnmarshaler internal.RequestUnmarshaler
 }
 
-func (qrs *queuedRetrySender) fullName() string {
-	if qrs.signal == "" {
-		return qrs.id.String()
-	}
-	return fmt.Sprintf("%s-%s", qrs.id.String(), qrs.signal)
-}
-
 func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
 	qrs := &queuedRetrySender{
+		fullName:           id.String(),
 		id:                 id,
 		signal:             signal,
 		cfg:                qCfg,
@@ -164,7 +159,7 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 			return err
 		}
 
-		qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName(), qrs.cfg.QueueSize, qrs.logger, *storageClient, qrs.requestUnmarshaler)
+		qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, *storageClient, qrs.requestUnmarshaler)
 
 		// TODO: this can be further exposed as a config param rather than relying on a type of queue
 		qrs.requeuingEnabled = true
@@ -215,13 +210,13 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 	if qrs.cfg.Enabled {
 		err := globalInstruments.queueSize.UpsertEntry(func() int64 {
 			return int64(qrs.queue.Size())
-		}, metricdata.NewLabelValue(qrs.fullName()))
+		}, metricdata.NewLabelValue(qrs.fullName))
 		if err != nil {
 			return fmt.Errorf("failed to create retry queue size metric: %w", err)
 		}
 		err = globalInstruments.queueCapacity.UpsertEntry(func() int64 {
 			return int64(qrs.cfg.QueueSize)
-		}, metricdata.NewLabelValue(qrs.fullName()))
+		}, metricdata.NewLabelValue(qrs.fullName))
 		if err != nil {
 			return fmt.Errorf("failed to create retry queue capacity metric: %w", err)
 		}
@@ -236,7 +231,7 @@ func (qrs *queuedRetrySender) shutdown() {
 	if qrs.cfg.Enabled {
 		_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
 			return int64(0)
-		}, metricdata.NewLabelValue(qrs.fullName()))
+		}, metricdata.NewLabelValue(qrs.fullName))
 	}
 
 	// First Stop the retry goroutines, so that unblocks the queue numWorkers.
