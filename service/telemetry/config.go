@@ -103,6 +103,10 @@ type MetricsConfig struct {
 	// Address is the [address]:port that metrics exposition should be bound to.
 	Address string `mapstructure:"address"`
 
-	// Namespace indicates the telemetry namespace the service will set. If nil, a default value is assigned.
+	// Namespace indicates the telemetry namespace the service will set. If nil, a default value 'otelcol' is assigned.
+	// An example of how the value of Namespace would affect metrics name:
+	// - if Namespace not set: "otelcol_process_cpu_seconds"
+	// - if Namespace set to empty string: "process_cpu_seconds"
+	// - if Namespace set to other string(e.g: "custom_namespace"): "custom_namespace_process_cpu_seconds"
 	Namespace *string `mapstructure:"namespace"`
 }
