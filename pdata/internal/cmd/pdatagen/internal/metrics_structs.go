@@ -266,7 +266,6 @@ var numberDataPoint = &messageValueStruct{
 			},
 		},
 		exemplarsField,
-		dataPointFlagsField,
 		dataPointFlagsFieldStruct,
 	},
 }
@@ -289,7 +288,6 @@ var histogramDataPoint = &messageValueStruct{
 		bucketCountsField,
 		explicitBoundsField,
 		exemplarsField,
-		dataPointFlagsField,
 		dataPointFlagsFieldStruct,
 		&optionalPrimitiveValue{
 			fieldName:        "Min",
@@ -365,7 +363,6 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 			returnMessage:   bucketsValues,
 		},
 		exemplarsField,
-		dataPointFlagsField,
 		dataPointFlagsFieldStruct,
 		&optionalPrimitiveValue{
 			fieldName:        "Min",
@@ -425,7 +422,6 @@ var summaryDataPoint = &messageValueStruct{
 			originFieldName: "QuantileValues",
 			returnSlice:     quantileValuesSlice,
 		},
-		dataPointFlagsField,
 		dataPointFlagsFieldStruct,
 	},
 }
@@ -573,15 +569,6 @@ var aggregationTemporalityField = &primitiveTypedField{
 	rawType:         "otlpmetrics.AggregationTemporality",
 	defaultVal:      "MetricAggregationTemporalityUnspecified",
 	testVal:         "MetricAggregationTemporalityCumulative",
-}
-
-var dataPointFlagsField = &primitiveTypedField{
-	fieldName:       "Flags",
-	originFieldName: "Flags",
-	returnType:      "MetricDataPointFlags",
-	rawType:         "uint32",
-	defaultVal:      "MetricDataPointFlagsNone",
-	testVal:         "MetricDataPointFlagsNone",
 }
 
 var optionalDoubleSumField = &optionalPrimitiveValue{

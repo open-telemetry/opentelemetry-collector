@@ -710,6 +710,38 @@ func TestMetricsDataPointFlags(t *testing.T) {
 	assert.True(t, gauge.DataPoints().At(1).FlagsStruct().NoRecordedValue())
 }
 
+func TestNumberDataPoint_Flags(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
+func TestHistogramDataPoint_Flags(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
+func TestSummaryDataPoint_Flags(t *testing.T) {
+	ms := NewSummaryDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
+func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
 func BenchmarkMetricsClone(b *testing.B) {
 	metrics := NewMetrics()
 	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
