@@ -21,10 +21,12 @@ import (
 
 // InstrumentationLibraryLogsToScope implements the translation of resource logs data
 // following the v0.15.0 upgrade:
-//      receivers SHOULD check if instrumentation_library_logs is set
-//      and scope_logs is not set then the value in instrumentation_library_logs
-//      SHOULD be used instead by converting InstrumentationLibraryLogs into ScopeLogs.
-//      If scope_logs is set then instrumentation_library_logs SHOULD be ignored.
+//
+//	receivers SHOULD check if instrumentation_library_logs is set
+//	and scope_logs is not set then the value in instrumentation_library_logs
+//	SHOULD be used instead by converting InstrumentationLibraryLogs into ScopeLogs.
+//	If scope_logs is set then instrumentation_library_logs SHOULD be ignored.
+//
 // https://github.com/open-telemetry/opentelemetry-proto/blob/3c2915c01a9fb37abfc0415ec71247c4978386b0/opentelemetry/proto/logs/v1/logs.proto#L58
 func InstrumentationLibraryLogsToScope(rls []*otlplogs.ResourceLogs) {
 	for _, rl := range rls {
