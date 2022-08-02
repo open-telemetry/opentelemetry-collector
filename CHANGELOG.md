@@ -20,11 +20,15 @@
 
 ### 🚩 Deprecations 🚩
 
-- Deprecated the current Flag API.  The new API provides functions to check and set Flags:
+- Deprecated the current Flag API.  The new API provides functions to check and set Flags (#5790) (#5602):
   - `NumberDataPoint.Flags` -> `NumberDataPoint.FlagsStruct`
+  - `NumberDataPoint.SetFlags` -> `NumberDataPoint.FlagsStruct`
   - `HistogramDataPoint.Flags` -> `HistogramDataPoint.FlagsStruct`
+  - `HistogramDataPoint.SetFlags` -> `HistogramDataPoint.FlagsStruct`
   - `ExponentialHistogramDataPoint.Flags` -> `ExponentialHistogramDataPoint.FlagsStruct`
+  - `ExponentialHistogramDataPoint.SetFlags` -> `ExponentialHistogramDataPoint.FlagsStruct`
   - `SummaryDataPoint.Flags` -> `SummaryDataPoint.FlagsStruct`
+  - `SummaryDataPoint.SetFlags` -> `SummaryDataPoint.FlagsStruct`
   - `MetricDataPointFlags` -> `MetricDataPointFlagsStruct`
   - `NewMetricDataPointFlags` -> `NewMetricDataPointFlagsStruct`
   - `MetricDataPointFlagsNone` -> `MetricDataPointFlagsStruct.NoRecordedValue`
