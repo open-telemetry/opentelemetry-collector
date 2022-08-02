@@ -186,49 +186,49 @@ func (at MetricAggregationTemporality) String() string {
 // Flags returns the flags associated with this NumberDataPoint.
 // Deprecated: [v0.57.0] Use FlagsStruct instead.
 func (ms NumberDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags((*ms.orig).Flags)
+	return MetricDataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this NumberDataPoint.
 // Deprecated: [v0.57.0] Use FlagsStruct instead.
 func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
-	(*ms.orig).Flags = uint32(v)
+	ms.orig.Flags = uint32(v)
 }
 
 // Flags returns the flags associated with this HistogramDataPoint.
 // Deprecated: [v0.57.0] Use FlagsStruct instead.
 func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags((*ms.orig).Flags)
+	return MetricDataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this HistogramDataPoint.
 // Deprecated: [v0.57.0] Use FlagsStruct instead.
 func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
-	(*ms.orig).Flags = uint32(v)
+	ms.orig.Flags = uint32(v)
 }
 
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
 // Deprecated: [v0.57.0] Use FlagsStruct instead.
 func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags((*ms.orig).Flags)
+	return MetricDataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
 // Deprecated: [v0.57.0] Use FlagsStruct instead.
 func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
-	(*ms.orig).Flags = uint32(v)
+	ms.orig.Flags = uint32(v)
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
 // Deprecated: [v0.57.0] Use FlagsStruct instead.
 func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags((*ms.orig).Flags)
+	return MetricDataPointFlags(ms.orig.Flags)
 }
 
 // SetFlags replaces the flags associated with this SummaryDataPoint.
 // Deprecated: [v0.57.0] Use FlagsStruct instead.
 func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
-	(*ms.orig).Flags = uint32(v)
+	ms.orig.Flags = uint32(v)
 }
 
 // MetricDataPointFlagsStruct defines how a metric aggregator reports aggregated values.
