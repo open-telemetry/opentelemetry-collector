@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Require the storage to be explicitly set for the (experimental) persistent queue (#5784)
 - Remove deprecated component stability helpers (#5802):
   - `component.WithTracesExporterAndStabilityLevel`
   - `component.WithMetricsExporterAndStabilityLevel`
