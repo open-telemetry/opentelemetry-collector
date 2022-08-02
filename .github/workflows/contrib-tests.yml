@@ -5,6 +5,8 @@ on:
     tags:
       - v[0-9]+.[0-9]+.[0-9]+.*
   pull_request:
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
+    branches: [ main ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -13,6 +15,8 @@ concurrency:
 jobs:
   contrib_tests:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'Skip Contrib Tests') }}
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
