@@ -576,6 +576,7 @@ var aggregationTemporalityField = &primitiveTypedField{
 }
 
 var dataPointFlagsField = &primitiveTypedField{
+	extraComment:    "Deprecated: [v0.57.0] use FlagsStruct",
 	fieldName:       "Flags",
 	originFieldName: "Flags",
 	returnType:      "MetricDataPointFlags",

@@ -1201,11 +1201,15 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this NumberDataPoint.
+//
+// Deprecated: [v0.57.0] use FlagsStruct
 func (ms NumberDataPoint) Flags() MetricDataPointFlags {
 	return MetricDataPointFlags((*ms.orig).Flags)
 }
 
 // SetFlags replaces the flags associated with this NumberDataPoint.
+//
+// Deprecated: [v0.57.0] use FlagsStruct
 func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
@@ -1476,11 +1480,15 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this HistogramDataPoint.
+//
+// Deprecated: [v0.57.0] use FlagsStruct
 func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
 	return MetricDataPointFlags((*ms.orig).Flags)
 }
 
 // SetFlags replaces the flags associated with this HistogramDataPoint.
+//
+// Deprecated: [v0.57.0] use FlagsStruct
 func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
@@ -1816,11 +1824,15 @@ func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
+//
+// Deprecated: [v0.57.0] use FlagsStruct
 func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
 	return MetricDataPointFlags((*ms.orig).Flags)
 }
 
 // SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
+//
+// Deprecated: [v0.57.0] use FlagsStruct
 func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
@@ -2169,11 +2181,15 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
+//
+// Deprecated: [v0.57.0] use FlagsStruct
 func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
 	return MetricDataPointFlags((*ms.orig).Flags)
 }
 
 // SetFlags replaces the flags associated with this SummaryDataPoint.
+//
+// Deprecated: [v0.57.0] use FlagsStruct
 func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
 	(*ms.orig).Flags = uint32(v)
 }
