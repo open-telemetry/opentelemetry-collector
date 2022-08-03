@@ -4,6 +4,16 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated component stability helpers (#5802):
+  - `component.WithTracesExporterAndStabilityLevel`
+  - `component.WithMetricsExporterAndStabilityLevel`
+  - `component.WithLogsExporterAndStabilityLevel`
+  - `component.WithTracesReceiverAndStabilityLevel`
+  - `component.WithMetricsReceiverAndStabilityLevel`
+  - `component.WithLogsReceiverAndStabilityLevel`
+  - `component.WithTracesProcessorAndStabilityLevel`
+  - `component.WithMetricsProcessorAndStabilityLevel`
+  - `component.WithLogsProcessorAndStabilityLevel`
 - ABI breaking change: `featuregate.Registry.Apply` returns error now.
 
 ### 🚩 Deprecations 🚩

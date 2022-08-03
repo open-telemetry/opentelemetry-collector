@@ -40,12 +40,12 @@ const (
 // value representation. For the same reason passing by value and calling setters
 // will modify the original, e.g.:
 //
-//   func f1(val Value) { val.SetIntVal(234) }
-//   func f2() {
-//       v := NewValueString("a string")
-//       f1(v)
-//       _ := v.Type() // this will return ValueTypeInt
-//   }
+//	func f1(val Value) { val.SetIntVal(234) }
+//	func f2() {
+//	    v := NewValueString("a string")
+//	    f1(v)
+//	    _ := v.Type() // this will return ValueTypeInt
+//	}
 //
 // Important: zero-initialized instance is not valid for use. All Value functions below must
 // be called only on instances that are created via NewValue+ functions.

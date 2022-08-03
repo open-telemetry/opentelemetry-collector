@@ -84,7 +84,6 @@ var NewLogRecordSlice = internal.NewLogRecordSlice
 
 // LogRecord are experimental implementation of OpenTelemetry Log Data Model.
 
-//
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
