@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated `confighttp.HTTPClientSettings.ToClientWithHost` (#5803)
+
 ### 🚩 Deprecations 🚩
 
 ### 💡 Enhancements 💡
