@@ -95,7 +95,9 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 	if err := s.flags.Parse(os.Args[1:]); err != nil {
 		return err
 	}
-	featuregate.GetRegistry().Apply(gatesList)
+	if err := featuregate.GetRegistry().Apply(gatesList); err != nil {
+		return err
+	}
 	var err error
 	s.col, err = newWithWindowsEventLogCore(s.settings, s.flags, elog)
 	if err != nil {

@@ -4,7 +4,11 @@
 
 ### 🛑 Breaking changes 🛑
 
+- ABI breaking change: `featuregate.Registry.Apply` returns error now.
+
 ### 🚩 Deprecations 🚩
+
+- Deprecate `featuregate.Registry.MustApply` in favor of `featuregate.Registry.Apply`.
 
 ### 💡 Enhancements 💡
 
