@@ -4,6 +4,16 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.57.2 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated component stability helpers (#5802):
   - `component.WithTracesExporterAndStabilityLevel`
   - `component.WithMetricsExporterAndStabilityLevel`
@@ -32,7 +42,13 @@
 
 ### 🧰 Bug fixes 🧰
 
+## v0.57.1 Beta
+
+This was a failed release.
+
 ## v0.57.0 Beta
+
+There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 ### 🛑 Breaking changes 🛑
 
