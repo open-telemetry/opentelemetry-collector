@@ -19,6 +19,16 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate `featuregate.Registry.MustApply` in favor of `featuregate.Registry.Apply`.
+- Deprecate the `component.Factory.StabilityLevel(config.DataType)` in favor of Stability per component (#5762):
+  - `component.ExporterFactory.TracesExporterStability`
+  - `component.ExporterFactory.MetricsExporterStability`
+  - `component.ExporterFactory.LogsExporterStability`
+  - `component.ProcessorFactory.TracesProcessorStability`
+  - `component.ProcessorFactory.MetricsProcessorStability`
+  - `component.ProcessorFactory.LogsProcessorStability`
+  - `component.ReceiverFactory.TracesReceiverStability`
+  - `component.ReceiverFactory.MetricsReceiverStability`
+  - `component.ReceiverFactory.LogsReceiverStability`
 
 ### 💡 Enhancements 💡
 

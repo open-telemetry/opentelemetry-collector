@@ -164,7 +164,7 @@ type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() config.Type
 
-	// StabilityLevel gets the stability level of the component.
+	// Deprecated: [v0.58.0] replaced by the more specific versions in each Factory type.
 	StabilityLevel(config.DataType) StabilityLevel
 
 	unexportedFactoryFunc()
@@ -182,6 +182,10 @@ func (bf baseFactory) Type() config.Type {
 }
 
 func (bf baseFactory) StabilityLevel(dt config.DataType) StabilityLevel {
+	return bf.getStabilityLevel(dt)
+}
+
+func (bf baseFactory) getStabilityLevel(dt config.DataType) StabilityLevel {
 	if val, ok := bf.stability[dt]; ok {
 		return val
 	}
