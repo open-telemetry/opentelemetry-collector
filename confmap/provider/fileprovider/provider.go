@@ -32,9 +32,11 @@ type provider struct{}
 // New returns a new confmap.Provider that reads the configuration from a file.
 //
 // This Provider supports "file" scheme, and can be called with a "uri" that follows:
-//   file-uri		= "file:" local-path
-//   local-path		= [ drive-letter ] file-path
-//   drive-letter	= ALPHA ":"
+//
+//	file-uri		= "file:" local-path
+//	local-path		= [ drive-letter ] file-path
+//	drive-letter	= ALPHA ":"
+//
 // The "file-path" can be relative or absolute, and it can be any OS supported format.
 //
 // Examples:

@@ -27,7 +27,7 @@ import (
 // or scrapes from a local host) and pushes the data to the pipelines it is attached
 // to by calling the nextConsumer.Consume*() function.
 //
-// Error Handling
+// # Error Handling
 //
 // The nextConsumer.Consume*() function may return an error to indicate that the data
 // was not accepted. There are 2 types of possible errors: Permanent and non-Permanent.
@@ -48,14 +48,15 @@ import (
 // retried. In case of OTLP/HTTP for example, this means that HTTP 429 or 503 response
 // is returned.
 //
-// Acknowledgment Handling
+// # Acknowledgment Handling
 //
 // The receivers that receive data via a network protocol that support acknowledgments
 // MUST follow this order of operations:
-// - Receive data from some sender (typically from a network).
-// - Push received data to the pipeline by calling nextConsumer.Consume*() function.
-// - Acknowledge successful data receipt to the sender if Consume*() succeeded or
-//   return a failure to the sender if Consume*() returned an error.
+//   - Receive data from some sender (typically from a network).
+//   - Push received data to the pipeline by calling nextConsumer.Consume*() function.
+//   - Acknowledge successful data receipt to the sender if Consume*() succeeded or
+//     return a failure to the sender if Consume*() returned an error.
+//
 // This ensures there are strong delivery guarantees once the data is acknowledged
 // by the Collector.
 type Receiver interface {
