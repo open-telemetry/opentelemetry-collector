@@ -4,6 +4,16 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.57.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated funcs/types from service related to `Config` (#5755)
 - Change`confighttp.ToClient` to accept a `component.Host` (#5737)
 - Remove deprecated funcs from pdata related to mutable slices (#5754)
