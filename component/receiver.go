@@ -114,23 +114,29 @@ type ReceiverFactory interface {
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Receiver
 
-	// CreateTracesReceiver creates a trace receiver based on this config.
+	// CreateTracesReceiver creates a TracesReceiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// an error will be returned instead.
-	CreateTracesReceiver(ctx context.Context, set ReceiverCreateSettings,
-		cfg config.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
+	CreateTracesReceiver(ctx context.Context, set ReceiverCreateSettings, cfg config.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
 
-	// CreateMetricsReceiver creates a metrics receiver based on this config.
+	// TracesReceiverStability gets the stability level of the TracesReceiver.
+	TracesReceiverStability() StabilityLevel
+
+	// CreateMetricsReceiver creates a MetricsReceiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// an error will be returned instead.
-	CreateMetricsReceiver(ctx context.Context, set ReceiverCreateSettings,
-		cfg config.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
+	CreateMetricsReceiver(ctx context.Context, set ReceiverCreateSettings, cfg config.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
 
-	// CreateLogsReceiver creates a log receiver based on this config.
+	// MetricsReceiverStability gets the stability level of the MetricsReceiver.
+	MetricsReceiverStability() StabilityLevel
+
+	// CreateLogsReceiver creates a LogsReceiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// an error will be returned instead.
-	CreateLogsReceiver(ctx context.Context, set ReceiverCreateSettings,
-		cfg config.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
+	CreateLogsReceiver(ctx context.Context, set ReceiverCreateSettings, cfg config.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
+
+	// LogsReceiverStability gets the stability level of the LogsReceiver.
+	LogsReceiverStability() StabilityLevel
 }
 
 // ReceiverFactoryOption apply changes to ReceiverOptions.
@@ -209,6 +215,18 @@ type receiverFactory struct {
 	CreateTracesReceiverFunc
 	CreateMetricsReceiverFunc
 	CreateLogsReceiverFunc
+}
+
+func (r receiverFactory) TracesReceiverStability() StabilityLevel {
+	return r.getStabilityLevel(config.TracesDataType)
+}
+
+func (r receiverFactory) MetricsReceiverStability() StabilityLevel {
+	return r.getStabilityLevel(config.MetricsDataType)
+}
+
+func (r receiverFactory) LogsReceiverStability() StabilityLevel {
+	return r.getStabilityLevel(config.LogsDataType)
 }
 
 // WithTracesReceiver overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
