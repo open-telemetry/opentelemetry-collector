@@ -31,12 +31,12 @@ import (
 //
 // The typical usage is the following:
 //
-//		cfgProvider.Get(...)
-//		cfgProvider.Watch() // wait for an event.
-//		cfgProvider.Get(...)
-//		cfgProvider.Watch() // wait for an event.
-//		// repeat Get/Watch cycle until it is time to shut down the Collector process.
-//		cfgProvider.Shutdown()
+//	cfgProvider.Get(...)
+//	cfgProvider.Watch() // wait for an event.
+//	cfgProvider.Get(...)
+//	cfgProvider.Watch() // wait for an event.
+//	// repeat Get/Watch cycle until it is time to shut down the Collector process.
+//	cfgProvider.Shutdown()
 type ConfigProvider interface {
 	// Get returns the service configuration, or error otherwise.
 	//
@@ -90,8 +90,9 @@ func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings
 
 // NewConfigProvider returns a new ConfigProvider that provides the service configuration:
 // * Initially it resolves the "configuration map":
-//	 * Retrieve the confmap.Conf by merging all retrieved maps from the given `locations` in order.
-// 	 * Then applies all the confmap.Converter in the given order.
+//   - Retrieve the confmap.Conf by merging all retrieved maps from the given `locations` in order.
+//   - Then applies all the confmap.Converter in the given order.
+//
 // * Then unmarshalls the confmap.Conf into the service Config.
 func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 	mr, err := confmap.NewResolver(confmap.ResolverSettings{URIs: set.Locations, Providers: set.MapProviders, Converters: set.MapConverters})

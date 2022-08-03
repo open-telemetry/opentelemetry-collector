@@ -186,9 +186,6 @@ func WithTracesProcessor(createTracesProcessor CreateTracesProcessorFunc, sl Sta
 	})
 }
 
-// Deprecated: [v0.57.0] Use WithTracesProcessor instead.
-var WithTracesProcessorAndStabilityLevel = WithTracesProcessor
-
 // WithMetricsProcessor overrides the default "error not supported" implementation for CreateMetricsProcessor and the default "undefined" stability level.
 func WithMetricsProcessor(createMetricsProcessor CreateMetricsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
@@ -197,9 +194,6 @@ func WithMetricsProcessor(createMetricsProcessor CreateMetricsProcessorFunc, sl 
 	})
 }
 
-// Deprecated: [v0.57.0] Use WithMetricsProcessor instead.
-var WithMetricsProcessorAndStabilityLevel = WithMetricsProcessor
-
 // WithLogsProcessor overrides the default "error not supported" implementation for CreateLogsProcessor and the default "undefined" stability level.
 func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
@@ -207,9 +201,6 @@ func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc, sl Stability
 		o.CreateLogsProcessorFunc = createLogsProcessor
 	})
 }
-
-// Deprecated: [v0.57.0] Use WithLogsProcessor instead.
-var WithLogsProcessorAndStabilityLevel = WithLogsProcessor
 
 // NewProcessorFactory returns a ProcessorFactory.
 func NewProcessorFactory(cfgType config.Type, createDefaultConfig ProcessorCreateDefaultConfigFunc, options ...ProcessorFactoryOption) ProcessorFactory {

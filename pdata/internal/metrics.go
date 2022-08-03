@@ -388,33 +388,3 @@ func (ot OptionalType) String() string {
 	}
 	return ""
 }
-
-// Deprecated: [0.54.0] Use BucketCounts instead.
-func (ms HistogramDataPoint) MBucketCounts() []uint64 {
-	return ms.BucketCounts().AsRaw()
-}
-
-// Deprecated: [0.54.0] Use SetBucketCounts instead.
-func (ms HistogramDataPoint) SetMBucketCounts(v []uint64) {
-	ms.SetBucketCounts(NewImmutableUInt64Slice(v))
-}
-
-// Deprecated: [0.54.0] Use ExplicitBounds instead.
-func (ms HistogramDataPoint) MExplicitBounds() []float64 {
-	return ms.ExplicitBounds().AsRaw()
-}
-
-// Deprecated: [0.54.0] Use SetExplicitBounds instead.
-func (ms HistogramDataPoint) SetMExplicitBounds(v []float64) {
-	ms.SetExplicitBounds(NewImmutableFloat64Slice(v))
-}
-
-// Deprecated: [0.54.0] Use BucketCounts instead.
-func (ms Buckets) MBucketCounts() []uint64 {
-	return ms.BucketCounts().AsRaw()
-}
-
-// Deprecated: [0.54.0] Use SetBucketCounts instead.
-func (ms Buckets) SetMBucketCounts(v []uint64) {
-	ms.SetBucketCounts(NewImmutableUInt64Slice(v))
-}
