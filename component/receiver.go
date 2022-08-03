@@ -219,9 +219,6 @@ func WithTracesReceiver(createTracesReceiver CreateTracesReceiverFunc, sl Stabil
 	})
 }
 
-// Deprecated: [v0.57.0] Use WithTracesReceiver instead.
-var WithTracesReceiverAndStabilityLevel = WithTracesReceiver
-
 // WithMetricsReceiver overrides the default "error not supported" implementation for CreateMetricsReceiver and the default "undefined" stability level.
 func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
@@ -230,9 +227,6 @@ func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiverFunc, sl Sta
 	})
 }
 
-// Deprecated: [v0.57.0] Use WithMetricsReceiver instead.
-var WithMetricsReceiverAndStabilityLevel = WithMetricsReceiver
-
 // WithLogsReceiver overrides the default "error not supported" implementation for CreateLogsReceiver and the default "undefined" stability level.
 func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
@@ -240,9 +234,6 @@ func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc, sl StabilityLev
 		o.CreateLogsReceiverFunc = createLogsReceiver
 	})
 }
-
-// Deprecated: [v0.57.0] Use WithLogsReceiver instead.
-var WithLogsReceiverAndStabilityLevel = WithLogsReceiver
 
 // NewReceiverFactory returns a ReceiverFactory.
 func NewReceiverFactory(cfgType config.Type, createDefaultConfig ReceiverCreateDefaultConfigFunc, options ...ReceiverFactoryOption) ReceiverFactory {
