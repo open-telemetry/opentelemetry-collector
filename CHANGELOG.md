@@ -39,6 +39,7 @@
   - `component.WithTracesProcessor`
   - `component.WithMetricsProcessor`
   - `component.WithLogsProcessor`
+- Update minimum go version to 1.18 (#5795)
 
 ### 🚩 Deprecations 🚩
 
