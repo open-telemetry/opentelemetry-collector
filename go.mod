@@ -81,4 +81,8 @@ replace go.opentelemetry.io/collector/semconv => ./semconv
 
 replace go.opentelemetry.io/collector/pdata => ./pdata
 
-retract v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
+retract (
+	v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
+	v0.57.0 // Release failed, use v0.57.2
+	v0.57.1 // Release failed, use v0.57.2
+)
