@@ -32,7 +32,17 @@
 
 ### 🧰 Bug fixes 🧰
 
+## v0.57.2 Beta
+
+See the changelog for v0.57.0.
+
+## v0.57.1 Beta
+
+This was a failed release.
+
 ## v0.57.0 Beta
+
+There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 ### 🛑 Breaking changes 🛑
 
