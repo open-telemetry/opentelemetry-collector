@@ -38,7 +38,7 @@ fmt:
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.17
+	$(GOCMD) mod tidy -compat=1.18
 
 .PHONY: lint
 lint:

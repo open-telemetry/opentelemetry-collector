@@ -50,21 +50,19 @@ type persistentStorage interface {
 // The items currently dispatched by consumers are not deleted until the processing is finished.
 // Their list is stored under a separate key.
 //
-//
-//   ┌───────file extension-backed queue───────┐
-//   │                                         │
-//   │     ┌───┐     ┌───┐ ┌───┐ ┌───┐ ┌───┐   │
-//   │ n+1 │ n │ ... │ 4 │ │ 3 │ │ 2 │ │ 1 │   │
-//   │     └───┘     └───┘ └─x─┘ └─|─┘ └─x─┘   │
-//   │                       x     |     x     │
-//   └───────────────────────x─────|─────x─────┘
-//      ▲              ▲     x     |     x
-//      │              │     x     |     xxxx deleted
-//      │              │     x     |
-//    write          read    x     └── currently dispatched item
-//    index          index   x
-//                           xxxx deleted
-//
+//	┌───────file extension-backed queue───────┐
+//	│                                         │
+//	│     ┌───┐     ┌───┐ ┌───┐ ┌───┐ ┌───┐   │
+//	│ n+1 │ n │ ... │ 4 │ │ 3 │ │ 2 │ │ 1 │   │
+//	│     └───┘     └───┘ └─x─┘ └─|─┘ └─x─┘   │
+//	│                       x     |     x     │
+//	└───────────────────────x─────|─────x─────┘
+//	   ▲              ▲     x     |     x
+//	   │              │     x     |     xxxx deleted
+//	   │              │     x     |
+//	 write          read    x     └── currently dispatched item
+//	 index          index   x
+//	                        xxxx deleted
 type persistentContiguousStorage struct {
 	logger      *zap.Logger
 	queueName   string

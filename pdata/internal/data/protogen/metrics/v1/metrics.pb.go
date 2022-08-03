@@ -125,8 +125,7 @@ func (AggregationTemporality) EnumDescriptor() ([]byte, []int) {
 // enum is a bit-mask.  To test the presence of a single flag in the flags of
 // a data point, for example, use an expression like:
 //
-//   (point.flags & FLAG_NO_RECORDED_VALUE) == FLAG_NO_RECORDED_VALUE
-//
+//	(point.flags & FLAG_NO_RECORDED_VALUE) == FLAG_NO_RECORDED_VALUE
 type DataPointFlags int32
 
 const (
@@ -456,66 +455,68 @@ func (m *InstrumentationLibraryMetrics) GetSchemaUrl() string {
 // Defines a Metric which has one or more timeseries.  The following is a
 // brief summary of the Metric data model.  For more details, see:
 //
-//   https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/datamodel.md
-//
+//	https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/datamodel.md
 //
 // The data model and relation between entities is shown in the
 // diagram below. Here, "DataPoint" is the term used to refer to any
 // one of the specific data point value types, and "points" is the term used
 // to refer to any one of the lists of points contained in the Metric.
 //
-// - Metric is composed of a metadata and data.
-// - Metadata part contains a name, description, unit.
-// - Data is one of the possible types (Sum, Gauge, Histogram, Summary).
-// - DataPoint contains timestamps, attributes, and one of the possible value type
-//   fields.
+//   - Metric is composed of a metadata and data.
+//
+//   - Metadata part contains a name, description, unit.
+//
+//   - Data is one of the possible types (Sum, Gauge, Histogram, Summary).
+//
+//   - DataPoint contains timestamps, attributes, and one of the possible value type
+//     fields.
 //
 //     Metric
-//  +------------+
-//  |name        |
-//  |description |
-//  |unit        |     +------------------------------------+
-//  |data        |---> |Gauge, Sum, Histogram, Summary, ... |
-//  +------------+     +------------------------------------+
+//     +------------+
+//     |name        |
+//     |description |
+//     |unit        |     +------------------------------------+
+//     |data        |---> |Gauge, Sum, Histogram, Summary, ... |
+//     +------------+     +------------------------------------+
 //
-//    Data [One of Gauge, Sum, Histogram, Summary, ...]
-//  +-----------+
-//  |...        |  // Metadata about the Data.
-//  |points     |--+
-//  +-----------+  |
-//                 |      +---------------------------+
-//                 |      |DataPoint 1                |
-//                 v      |+------+------+   +------+ |
-//              +-----+   ||label |label |...|label | |
-//              |  1  |-->||value1|value2|...|valueN| |
-//              +-----+   |+------+------+   +------+ |
-//              |  .  |   |+-----+                    |
-//              |  .  |   ||value|                    |
-//              |  .  |   |+-----+                    |
-//              |  .  |   +---------------------------+
-//              |  .  |                   .
-//              |  .  |                   .
-//              |  .  |                   .
-//              |  .  |   +---------------------------+
-//              |  .  |   |DataPoint M                |
-//              +-----+   |+------+------+   +------+ |
-//              |  M  |-->||label |label |...|label | |
-//              +-----+   ||value1|value2|...|valueN| |
-//                        |+------+------+   +------+ |
-//                        |+-----+                    |
-//                        ||value|                    |
-//                        |+-----+                    |
-//                        +---------------------------+
+//     Data [One of Gauge, Sum, Histogram, Summary, ...]
+//     +-----------+
+//     |...        |  // Metadata about the Data.
+//     |points     |--+
+//     +-----------+  |
+//     |      +---------------------------+
+//     |      |DataPoint 1                |
+//     v      |+------+------+   +------+ |
+//     +-----+   ||label |label |...|label | |
+//     |  1  |-->||value1|value2|...|valueN| |
+//     +-----+   |+------+------+   +------+ |
+//     |  .  |   |+-----+                    |
+//     |  .  |   ||value|                    |
+//     |  .  |   |+-----+                    |
+//     |  .  |   +---------------------------+
+//     |  .  |                   .
+//     |  .  |                   .
+//     |  .  |                   .
+//     |  .  |   +---------------------------+
+//     |  .  |   |DataPoint M                |
+//     +-----+   |+------+------+   +------+ |
+//     |  M  |-->||label |label |...|label | |
+//     +-----+   ||value1|value2|...|valueN| |
+//     |+------+------+   +------+ |
+//     |+-----+                    |
+//     ||value|                    |
+//     |+-----+                    |
+//     +---------------------------+
 //
 // Each distinct type of DataPoint represents the output of a specific
 // aggregation function, the result of applying the DataPoint's
 // associated function of to one or more measurements.
 //
 // All DataPoint types have three common fields:
-// - Attributes includes key-value pairs associated with the data point
-// - TimeUnixNano is required, set to the end time of the aggregation
-// - StartTimeUnixNano is optional, but strongly encouraged for DataPoints
-//   having an AggregationTemporality field, as discussed below.
+//   - Attributes includes key-value pairs associated with the data point
+//   - TimeUnixNano is required, set to the end time of the aggregation
+//   - StartTimeUnixNano is optional, but strongly encouraged for DataPoints
+//     having an AggregationTemporality field, as discussed below.
 //
 // Both TimeUnixNano and StartTimeUnixNano values are expressed as
 // UNIX Epoch time in nanoseconds since 00:00:00 UTC on 1 January 1970.
@@ -1376,7 +1377,6 @@ func (*HistogramDataPoint) XXX_OneofWrappers() []interface{} {
 // time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
 // summary statistics for a population of values, it may optionally contain the
 // distribution of those values across a set of buckets.
-//
 type ExponentialHistogramDataPoint struct {
 	// The set of key/value pairs that uniquely identify the timeseries from
 	// where this point belongs. The list may be empty (may contain 0 elements).

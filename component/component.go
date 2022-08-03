@@ -35,10 +35,10 @@ var (
 //
 // A component's lifecycle has the following phases:
 //
-//   1. Creation: The component is created using its respective factory, via a Create* call.
-//   2. Start: The component's Start method is called.
-//   3. Running: The component is up and running.
-//   4. Shutdown: The component's Shutdown method is called and the lifecycle is complete.
+//  1. Creation: The component is created using its respective factory, via a Create* call.
+//  2. Start: The component's Start method is called.
+//  3. Running: The component is up and running.
+//  4. Shutdown: The component's Shutdown method is called and the lifecycle is complete.
 //
 // Once the lifecycle is complete it may be repeated, in which case a new component
 // is created, starts, runs and is shutdown again.
