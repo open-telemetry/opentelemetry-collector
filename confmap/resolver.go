@@ -57,19 +57,19 @@ type ResolverSettings struct {
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
 //
 // To resolve a configuration the following steps will happen:
-//   1. Retrieves individual configurations from all given "URIs", and merge them in the retrieve order.
-//   2. Once the Conf is merged, apply the converters in the given order.
+//  1. Retrieves individual configurations from all given "URIs", and merge them in the retrieve order.
+//  2. Once the Conf is merged, apply the converters in the given order.
 //
 // After the configuration was resolved the `Resolver` can be used as a single point to watch for updates in
 // the configuration data retrieved via the config providers used to process the "initial" configuration and to generate
 // the "effective" one. The typical usage is the following:
 //
-//		Resolver.Resolve(ctx)
-//		Resolver.Watch() // wait for an event.
-//		Resolver.Resolve(ctx)
-//		Resolver.Watch() // wait for an event.
-//		// repeat Resolve/Watch cycle until it is time to shut down the Collector process.
-//		Resolver.Shutdown(ctx)
+//	Resolver.Resolve(ctx)
+//	Resolver.Watch() // wait for an event.
+//	Resolver.Resolve(ctx)
+//	Resolver.Watch() // wait for an event.
+//	// repeat Resolve/Watch cycle until it is time to shut down the Collector process.
+//	Resolver.Shutdown(ctx)
 //
 // `uri` must follow the "<scheme>:<opaque_data>" format. This format is compatible with the URI definition
 // (see https://datatracker.ietf.org/doc/html/rfc3986). An empty "<scheme>" defaults to "file" schema.

@@ -145,7 +145,8 @@ func decoderConfig(result interface{}) *mapstructure.DecoderConfig {
 //
 // and yaml of:
 // config:
-//   thing:
+//
+//	thing:
 //
 // we want an unmarshaled Config to be equivalent to
 // Config{Thing: &SomeStruct{}} instead of Config{Thing: nil}

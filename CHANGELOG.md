@@ -4,6 +4,27 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated component stability helpers (#5802):
+  - `component.WithTracesExporterAndStabilityLevel`
+  - `component.WithMetricsExporterAndStabilityLevel`
+  - `component.WithLogsExporterAndStabilityLevel`
+  - `component.WithTracesReceiverAndStabilityLevel`
+  - `component.WithMetricsReceiverAndStabilityLevel`
+  - `component.WithLogsReceiverAndStabilityLevel`
+  - `component.WithTracesProcessorAndStabilityLevel`
+  - `component.WithMetricsProcessorAndStabilityLevel`
+  - `component.WithLogsProcessorAndStabilityLevel`
+
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.57.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove deprecated funcs/types from service related to `Config` (#5755)
 - Change`confighttp.ToClient` to accept a `component.Host` (#5737)
 - Remove deprecated funcs from pdata related to mutable slices (#5754)
@@ -17,6 +38,7 @@
   - `component.WithTracesProcessor`
   - `component.WithMetricsProcessor`
   - `component.WithLogsProcessor`
+- Update minimum go version to 1.18 (#5795)
 
 ### 🚩 Deprecations 🚩
 

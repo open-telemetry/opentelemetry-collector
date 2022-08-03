@@ -24,15 +24,15 @@ import (
 //
 // The typical usage is the following:
 //
-//		r, err := provider.Retrieve("file:/path/to/config")
-//		// Use r.Map; wait for watcher to be called.
-//		r.Close()
-//		r, err = provider.Retrieve("file:/path/to/config")
-//		// Use r.Map; wait for watcher to be called.
-//		r.Close()
-//		// repeat retrieve/wait/close cycle until it is time to shut down the Collector process.
-//		// ...
-//		provider.Shutdown()
+//	r, err := provider.Retrieve("file:/path/to/config")
+//	// Use r.Map; wait for watcher to be called.
+//	r.Close()
+//	r, err = provider.Retrieve("file:/path/to/config")
+//	// Use r.Map; wait for watcher to be called.
+//	r.Close()
+//	// repeat retrieve/wait/close cycle until it is time to shut down the Collector process.
+//	// ...
+//	provider.Shutdown()
 type Provider interface {
 	// Retrieve goes to the configuration source and retrieves the selected data which
 	// contains the value to be injected in the configuration and the corresponding watcher that
