@@ -22,25 +22,25 @@
 // Receivers should use the respective start and end according to the data type
 // being received, ie.:
 //
-// 	* Traces receive operations should use the pair:
-// 		StartTracesOp/EndTracesOp
+//   - Traces receive operations should use the pair:
+//     StartTracesOp/EndTracesOp
 //
-// 	* Metrics receive operations should use the pair:
-// 		StartMetricsOp/EndMetricsOp
+//   - Metrics receive operations should use the pair:
+//     StartMetricsOp/EndMetricsOp
 //
-// 	* Logs receive operations should use the pair:
-// 		StartLogsOp/EndLogsOp
+//   - Logs receive operations should use the pair:
+//     StartLogsOp/EndLogsOp
 //
 // Similar for exporters:
 //
-// 	* Traces export operations should use the pair:
-// 		StartTracesOp/EndTracesOp
+//   - Traces export operations should use the pair:
+//     StartTracesOp/EndTracesOp
 //
-// 	* Metrics export operations should use the pair:
-// 		StartMetricsOp/EndMetricsOp
+//   - Metrics export operations should use the pair:
+//     StartMetricsOp/EndMetricsOp
 //
-// 	* Metrics export operations should use the pair:
-// 		StartLogsOp/EndLogsOp
+//   - Metrics export operations should use the pair:
+//     StartLogsOp/EndLogsOp
 //
 // The package is capable of generating legacy metrics by using the
 // observability package allowing a controlled transition from legacy to the
@@ -74,18 +74,18 @@
 // data loss when exporters with "sending_queue" are used. New metrics were renamed
 // to avoid this misunderstanding. Here are the general recommendations to report data loss:
 //
-// 		* Receivers reporting errors to clients typically result in the client
-//		  re-sending the same data so it is more correct to report "receive errors",
-//		  not actual data loss.
+//   - Receivers reporting errors to clients typically result in the client
+//     re-sending the same data so it is more correct to report "receive errors",
+//     not actual data loss.
 //
-//		* Exporters need to report individual failures to send data, but on
-//		  typical production pipelines processors usually take care of retries,
-//		  so these should be reported as "send errors".
+//   - Exporters need to report individual failures to send data, but on
+//     typical production pipelines processors usually take care of retries,
+//     so these should be reported as "send errors".
 //
-//		* Data "filtered out" should have its own metrics and not be confused
-//		  with dropped data.
+//   - Data "filtered out" should have its own metrics and not be confused
+//     with dropped data.
 //
-// Naming Convention for New Metrics
+// # Naming Convention for New Metrics
 //
 // Common Metrics:
 // Metrics shared by different components should follow the convention below:
@@ -113,5 +113,4 @@
 // different pipelines, eg.:
 //
 // `processor/batch/batch_size_trigger_send{processor="batch/dev",...}`
-//
 package obsreport // import "go.opentelemetry.io/collector/obsreport"

@@ -156,9 +156,6 @@ func WithTracesExporter(createTracesExporter CreateTracesExporterFunc, sl Stabil
 	})
 }
 
-// Deprecated: [v0.57.0] Use WithTracesExporter instead.
-var WithTracesExporterAndStabilityLevel = WithTracesExporter
-
 // WithMetricsExporter overrides the default "error not supported" implementation for CreateMetricsExporter and the default "undefined" stability level.
 func WithMetricsExporter(createMetricsExporter CreateMetricsExporterFunc, sl StabilityLevel) ExporterFactoryOption {
 	return exporterFactoryOptionFunc(func(o *exporterFactory) {
@@ -167,9 +164,6 @@ func WithMetricsExporter(createMetricsExporter CreateMetricsExporterFunc, sl Sta
 	})
 }
 
-// Deprecated: [v0.57.0] Use WithMetricsExporter instead.
-var WithMetricsExporterAndStabilityLevel = WithMetricsExporter
-
 // WithLogsExporter overrides the default "error not supported" implementation for CreateLogsExporter and the default "undefined" stability level.
 func WithLogsExporter(createLogsExporter CreateLogsExporterFunc, sl StabilityLevel) ExporterFactoryOption {
 	return exporterFactoryOptionFunc(func(o *exporterFactory) {
@@ -177,9 +171,6 @@ func WithLogsExporter(createLogsExporter CreateLogsExporterFunc, sl StabilityLev
 		o.CreateLogsExporterFunc = createLogsExporter
 	})
 }
-
-// Deprecated: [v0.57.0] Use WithLogsExporter instead.
-var WithLogsExporterAndStabilityLevel = WithLogsExporter
 
 // NewExporterFactory returns a ExporterFactory.
 func NewExporterFactory(cfgType config.Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {

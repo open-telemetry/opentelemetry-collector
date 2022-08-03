@@ -30,7 +30,8 @@ type provider struct{}
 // New returns a new confmap.Provider that allows to provide yaml bytes.
 //
 // This Provider supports "yaml" scheme, and can be called with a "uri" that follows:
-//   bytes-uri = "yaml:" yaml-bytes
+//
+//	bytes-uri = "yaml:" yaml-bytes
 //
 // Examples:
 // `yaml:processors::batch::timeout: 2s`
