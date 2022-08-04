@@ -17,6 +17,7 @@
   - `component.WithLogsProcessorAndStabilityLevel`
 - ABI breaking change: `featuregate.Registry.Apply` returns error now.
 - Update minimum go version to 1.18 (#5795)
+- Remove deprecated `Flags` API from pdata (#5814)
 
 ### 🚩 Deprecations 🚩
 
