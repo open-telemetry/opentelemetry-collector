@@ -61,6 +61,6 @@ func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), &md); err != nil {
 		return Metrics{}, err
 	}
-	otlp.InstrumentationLibraryMetricsToScope(md.ResourceMetrics)
+	otlp.MigrateMetrics(md.ResourceMetrics)
 	return internal.MetricsFromProto(md), nil
 }

@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove the InstrumentationLibrary to Scope translation (part of transition to OTLP 0.19). (#5819)
 - Require the storage to be explicitly set for the (experimental) persistent queue (#5784)
 - Remove deprecated `confighttp.HTTPClientSettings.ToClientWithHost` (#5803)
 - Remove deprecated component stability helpers (#5802):

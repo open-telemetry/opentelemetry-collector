@@ -31,8 +31,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -61,55 +59,6 @@ var metricsRequestJSON = []byte(`
 		]
 	}`)
 
-var metricsTransitionData = [][]byte{
-	[]byte(`
-		{
-		"resourceMetrics": [
-			{
-				"resource": {},
-				"instrumentationLibraryMetrics": [
-					{
-						"instrumentationLibrary": {},
-						"metrics": [
-							{
-								"name": "test_metric"
-							}
-						]
-					}
-				]
-			}
-		]
-		}`),
-	[]byte(`
-		{
-		"resourceMetrics": [
-			{
-				"resource": {},
-				"instrumentationLibraryMetrics": [
-					{
-						"instrumentationLibrary": {},
-						"metrics": [
-							{
-								"name": "test_metric"
-							}
-						]
-					}
-				],
-				"scopeMetrics": [
-					{
-						"scope": {},
-						"metrics": [
-							{
-								"name": "test_metric"
-							}
-						]
-					}
-				]
-			}
-		]
-		}`),
-}
-
 func TestRequestToPData(t *testing.T) {
 	tr := NewRequest()
 	assert.Equal(t, tr.Metrics().MetricCount(), 0)
@@ -125,18 +74,6 @@ func TestRequestJSON(t *testing.T) {
 	got, err := mr.MarshalJSON()
 	assert.NoError(t, err)
 	assert.Equal(t, strings.Join(strings.Fields(string(metricsRequestJSON)), ""), string(got))
-}
-
-func TestRequestJSONTransition(t *testing.T) {
-	for _, data := range metricsTransitionData {
-		mr := NewRequest()
-		assert.NoError(t, mr.UnmarshalJSON(data))
-		assert.Equal(t, "test_metric", mr.Metrics().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
-
-		got, err := mr.MarshalJSON()
-		assert.NoError(t, err)
-		assert.Equal(t, strings.Join(strings.Fields(string(metricsRequestJSON)), ""), string(got))
-	}
 }
 
 func TestGrpc(t *testing.T) {
@@ -168,83 +105,6 @@ func TestGrpc(t *testing.T) {
 	logClient := NewClient(cc)
 
 	resp, err := logClient.Export(context.Background(), generateMetricsRequest())
-	assert.NoError(t, err)
-	assert.Equal(t, NewResponse(), resp)
-}
-
-func TestGrpcTransition(t *testing.T) {
-	lis := bufconn.Listen(1024 * 1024)
-	s := grpc.NewServer()
-	RegisterServer(s, &fakeMetricsServer{t: t})
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.NoError(t, s.Serve(lis))
-	}()
-	t.Cleanup(func() {
-		s.Stop()
-		wg.Wait()
-	})
-
-	cc, err := grpc.Dial("bufnet",
-		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
-			return lis.Dial()
-		}),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock())
-	assert.NoError(t, err)
-	t.Cleanup(func() {
-		assert.NoError(t, cc.Close())
-	})
-
-	logClient := NewClient(cc)
-
-	req := generateMetricsRequestWithInstrumentationLibrary()
-	otlp.InstrumentationLibraryMetricsToScope(req.orig.ResourceMetrics)
-	resp, err := logClient.Export(context.Background(), req)
-	assert.NoError(t, err)
-	assert.Equal(t, NewResponse(), resp)
-}
-
-type fakeRawServer struct {
-	t *testing.T
-}
-
-func (s fakeRawServer) Export(_ context.Context, req Request) (Response, error) {
-	assert.Equal(s.t, 1, req.Metrics().DataPointCount())
-	return NewResponse(), nil
-}
-
-func TestGrpcExport(t *testing.T) {
-	lis := bufconn.Listen(1024 * 1024)
-	s := grpc.NewServer()
-	RegisterServer(s, &fakeRawServer{t: t})
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.NoError(t, s.Serve(lis))
-	}()
-	t.Cleanup(func() {
-		s.Stop()
-		wg.Wait()
-	})
-
-	cc, err := grpc.Dial("bufnet",
-		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
-			return lis.Dial()
-		}),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock())
-	assert.NoError(t, err)
-	t.Cleanup(func() {
-		assert.NoError(t, cc.Close())
-	})
-
-	metricClient := NewClient(cc)
-
-	resp, err := metricClient.Export(context.Background(), generateMetricsRequestWithInstrumentationLibrary())
 	assert.NoError(t, err)
 	assert.Equal(t, NewResponse(), resp)
 }
@@ -302,15 +162,4 @@ func generateMetricsRequest() Request {
 	m.SetDataType(pmetric.MetricDataTypeGauge)
 	m.Gauge().DataPoints().AppendEmpty()
 	return NewRequestFromMetrics(md)
-}
-
-func generateMetricsRequestWithInstrumentationLibrary() Request {
-	mr := generateMetricsRequest()
-	mr.orig.ResourceMetrics[0].InstrumentationLibraryMetrics = []*v1.InstrumentationLibraryMetrics{ //nolint:staticcheck // SA1019 ignore this!
-		{
-			Metrics: mr.orig.ResourceMetrics[0].ScopeMetrics[0].Metrics,
-		},
-	}
-	mr.orig.ResourceMetrics[0].ScopeMetrics = []*v1.ScopeMetrics{}
-	return mr
 }
