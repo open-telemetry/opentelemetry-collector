@@ -70,31 +70,32 @@ func TestGetRetrySettings(t *testing.T) {
 		desc           string
 		storage        storage.Extension
 		numStorages    int
-		storageEnabled bool
+		storageIndex   int
 		expectedError  error
 		getClientError error
 	}{
 		{
-			desc:          "no storage selected",
-			numStorages:   0,
+			desc:          "obtain storage extension by name",
+			numStorages:   2,
+			storageIndex:  0,
+			expectedError: nil,
+		},
+		{
+			desc:          "fail on not existing storage extension",
+			numStorages:   2,
+			storageIndex:  100,
 			expectedError: errNoStorageClient,
 		},
 		{
-			desc:           "obtain default storage extension",
-			numStorages:    1,
-			storageEnabled: true,
-			expectedError:  nil,
-		},
-		{
-			desc:           "fail on obtaining default storage extension",
-			numStorages:    2,
-			storageEnabled: true,
-			expectedError:  errMultipleStorageClients,
+			desc:          "invalid extension type",
+			numStorages:   2,
+			storageIndex:  100,
+			expectedError: errNoStorageClient,
 		},
 		{
 			desc:           "fail on error getting storage client from extension",
 			numStorages:    1,
-			storageEnabled: true,
+			storageIndex:   0,
 			expectedError:  getStorageClientError,
 			getClientError: getStorageClientError,
 		},
@@ -102,7 +103,8 @@ func TestGetRetrySettings(t *testing.T) {
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			// prepare
+			storageID := config.NewComponentIDWithName("file_storage", strconv.Itoa(tC.storageIndex))
+
 			var extensions = map[config.ComponentID]component.Extension{}
 			for i := 0; i < tC.numStorages; i++ {
 				extensions[config.NewComponentIDWithName("file_storage", strconv.Itoa(i))] = &mockStorageExtension{GetClientError: tC.getClientError}
@@ -111,7 +113,7 @@ func TestGetRetrySettings(t *testing.T) {
 			ownerID := config.NewComponentID("foo_exporter")
 
 			// execute
-			client, err := getStorageClient(context.Background(), host, ownerID, config.TracesDataType)
+			client, err := toStorageClient(context.Background(), storageID, host, ownerID, config.TracesDataType)
 
 			// verify
 			if tC.expectedError != nil {
@@ -123,6 +125,29 @@ func TestGetRetrySettings(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInvalidStorageExtensionType(t *testing.T) {
+	storageID := config.NewComponentIDWithName("extension", "extension")
+
+	// make a test extension
+	factory := componenttest.NewNopExtensionFactory()
+	extConfig := factory.CreateDefaultConfig()
+	settings := componenttest.NewNopExtensionCreateSettings()
+	extension, err := factory.CreateExtension(context.Background(), settings, extConfig)
+	assert.NoError(t, err)
+	var extensions = map[config.ComponentID]component.Extension{
+		storageID: extension,
+	}
+	host := &mockHost{ext: extensions}
+	ownerID := config.NewComponentID("foo_exporter")
+
+	// execute
+	client, err := toStorageClient(context.Background(), storageID, host, ownerID, config.TracesDataType)
+
+	// we should get an error about the extension type
+	assert.ErrorIs(t, err, errWrongExtensionType)
+	assert.Nil(t, client)
 }
 
 // if requeueing is enabled, we eventually retry even if we failed at first
@@ -182,12 +207,13 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	qCfg := NewDefaultQueueSettings()
-	qCfg.PersistentStorageEnabled = true // enable persistence
+	storageID := config.NewComponentIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 
 	var extensions = map[config.ComponentID]component.Extension{
-		config.NewComponentIDWithName("file_storage", "storage"): &mockStorageExtension{},
+		storageID: &mockStorageExtension{},
 	}
 	host := &mockHost{ext: extensions}
 
@@ -203,12 +229,13 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	qCfg := NewDefaultQueueSettings()
-	qCfg.PersistentStorageEnabled = true // enable persistence
+	storageID := config.NewComponentIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
 	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 
 	var extensions = map[config.ComponentID]component.Extension{
-		config.NewComponentIDWithName("file_storage", "storage"): &mockStorageExtension{GetClientError: storageError},
+		storageID: &mockStorageExtension{GetClientError: storageError},
 	}
 	host := &mockHost{ext: extensions}
 
