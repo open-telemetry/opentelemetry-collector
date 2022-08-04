@@ -34,6 +34,7 @@
   - `component.ReceiverFactory.TracesReceiverStability`
   - `component.ReceiverFactory.MetricsReceiverStability`
   - `component.ReceiverFactory.LogsReceiverStability`
+- Deprecate `obsreport.ProcessorSettings.Level` and `obsreport.ExporterSettings.Level`, use MetricsLevel from CreateSettings (#5824)
 
 ### 💡 Enhancements 💡
 
