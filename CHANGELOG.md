@@ -4,6 +4,9 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove the InstrumentationLibrary to Scope translation (part of transition to OTLP 0.19). (#5819)
+  - This has a side effect that when sending JSON encoded telemetry using OTLP proto <= 0.15.0, telemetry will be dropped.
+- Require the storage to be explicitly set for the (experimental) persistent queue (#5784)
 - Remove deprecated `confighttp.HTTPClientSettings.ToClientWithHost` (#5803)
 - Remove deprecated component stability helpers (#5802):
   - `component.WithTracesExporterAndStabilityLevel`
@@ -192,6 +195,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
 - Update OTLP to v0.18.0 (#5530)
 - Log histogram min/max fields with `logging` exporter (#5520)
+- Add support in the `confmap.Resolver` to expand embedded config URIs inside configuration (#4742)
 
 ### 🧰 Bug fixes 🧰
 

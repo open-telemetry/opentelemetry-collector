@@ -70,10 +70,10 @@ var tracesOTLPFull = func() Traces {
 	rs.Resource().Attributes().UpsertString("host.name", "testHost")
 	rs.Resource().Attributes().UpsertString("service.name", "testService")
 	rs.Resource().SetDroppedAttributesCount(1)
-	// Add InstrumentationLibrarySpans.
+	// Add ScopeSpans.
 	il := rs.ScopeSpans().AppendEmpty()
-	il.Scope().SetName("instrumentation name")
-	il.Scope().SetVersion("instrumentation version")
+	il.Scope().SetName("scope name")
+	il.Scope().SetVersion("scope version")
 	il.SetSchemaUrl("schemaURL")
 	// Add spans.
 	sp := il.Spans().AppendEmpty()
@@ -206,21 +206,21 @@ func TestReadResourceSpansUnknownResourceField(t *testing.T) {
 	}
 }
 
-func TestReadInstrumentationLibrarySpansUnknownField(t *testing.T) {
+func TestReadScopeSpansUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readInstrumentationLibrarySpans(iter)
+	readScopeSpans(iter)
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "unknown field")
 	}
 }
 
-func TestReadInstrumentationLibrarySpansUnknownInstrumentationLibraryField(t *testing.T) {
-	jsonStr := `{"instrumentationLibrary":{"extra":""}}`
+func TestReadScopeSpansUnknownScopeField(t *testing.T) {
+	jsonStr := `{"scope":{"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readInstrumentationLibrarySpans(iter)
+	readScopeSpans(iter)
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "unknown field")
 	}

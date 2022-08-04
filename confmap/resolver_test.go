@@ -27,7 +27,7 @@ import (
 
 type mockProvider struct {
 	scheme string
-	retM   map[string]interface{}
+	retM   interface{}
 	errR   error
 	errS   error
 	errW   error
@@ -41,9 +41,8 @@ func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher WatcherFunc
 	if m.retM == nil {
 		return NewRetrieved(nil)
 	}
-	if watcher != nil {
-		watcher(&ChangeEvent{Error: m.errW})
-	}
+
+	watcher(&ChangeEvent{Error: m.errW})
 	return NewRetrieved(m.retM, WithRetrievedClose(func(ctx context.Context) error { return m.errC }))
 }
 
@@ -119,6 +118,15 @@ func TestResolverErrors(t *testing.T) {
 			providers: []Provider{
 				&mockProvider{},
 				&mockProvider{scheme: "err", errR: errors.New("retrieve_err")},
+			},
+			expectResolveErr: true,
+		},
+		{
+			name:      "retrieve location not convertable to Conf",
+			locations: []string{"mock:", "err:"},
+			providers: []Provider{
+				&mockProvider{},
+				&mockProvider{scheme: "err", retM: "invalid value"},
 			},
 			expectResolveErr: true,
 		},
@@ -304,6 +312,123 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 
 	assert.NoError(t, resolver.Shutdown(context.Background()))
 	watcherWG.Wait()
+}
+
+func TestResolverExpandEnvVars(t *testing.T) {
+	var testCases = []struct {
+		name string // test case name (also file name containing config yaml)
+	}{
+		{name: "expand-with-no-env.yaml"},
+		{name: "expand-with-partial-env.yaml"},
+		{name: "expand-with-all-env.yaml"},
+		{name: "expand-with-all-env-with-source.yaml"},
+	}
+
+	envs := map[string]string{
+		"EXTRA":                  "some string",
+		"EXTRA_MAP_VALUE_1":      "some map value_1",
+		"EXTRA_MAP_VALUE_2":      "some map value_2",
+		"EXTRA_LIST_MAP_VALUE_1": "some list map value_1",
+		"EXTRA_LIST_MAP_VALUE_2": "some list map value_2",
+		"EXTRA_LIST_VALUE_1":     "some list value_1",
+		"EXTRA_LIST_VALUE_2":     "some list value_2",
+	}
+
+	expectedCfgMap := newConfFromFile(t, filepath.Join("testdata", "expand-with-no-env.yaml"))
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(newConfFromFile(t, uri[5:]))
+	})
+	envProvider := newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(envs[uri[4:]])
+	})
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			resolver, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", test.name)}, Providers: makeMapProvidersMap(fileProvider, envProvider), Converters: nil})
+			require.NoError(t, err)
+			resolver.enableExpand = true
+			// Test that expanded configs are the same with the simple config with no env vars.
+			cfgMap, err := resolver.Resolve(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, expectedCfgMap, cfgMap.ToStringMap())
+		})
+	}
+}
+
+func TestResolverExpandMapAndSliceValues(t *testing.T) {
+	provider := newFakeProvider("input", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(map[string]interface{}{
+			"test_map":   map[string]interface{}{"recv": "${test:MAP_VALUE}"},
+			"test_slice": []interface{}{"${test:MAP_VALUE}"}})
+	})
+
+	const receiverExtraMapValue = "some map value"
+	testProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(receiverExtraMapValue)
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	require.NoError(t, err)
+	resolver.enableExpand = true
+
+	cfgMap, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	expectedMap := map[string]interface{}{
+		"test_map":   map[string]interface{}{"recv": receiverExtraMapValue},
+		"test_slice": []interface{}{receiverExtraMapValue}}
+	assert.Equal(t, expectedMap, cfgMap.ToStringMap())
+}
+
+func TestResolverInfiniteExpand(t *testing.T) {
+	const receiverValue = "${test:VALUE}"
+	provider := newFakeProvider("input", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(map[string]interface{}{"test": receiverValue})
+	})
+
+	testProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(receiverValue)
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	require.NoError(t, err)
+	resolver.enableExpand = true
+
+	_, err = resolver.Resolve(context.Background())
+	assert.Error(t, err)
+}
+
+func TestResolverExpandSliceValueError(t *testing.T) {
+	provider := newFakeProvider("input", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(map[string]interface{}{"test": []interface{}{"${test:VALUE}"}})
+	})
+
+	testProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(errors.New("invalid value"))
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	require.NoError(t, err)
+	resolver.enableExpand = true
+
+	_, err = resolver.Resolve(context.Background())
+	assert.Error(t, err)
+}
+
+func TestResolverExpandMapValueError(t *testing.T) {
+	provider := newFakeProvider("input", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(map[string]interface{}{"test": []interface{}{map[string]interface{}{"test": "${test:VALUE}"}}})
+	})
+
+	testProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(errors.New("invalid value"))
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	require.NoError(t, err)
+	resolver.enableExpand = true
+
+	_, err = resolver.Resolve(context.Background())
+	assert.Error(t, err)
 }
 
 func makeMapProvidersMap(providers ...Provider) map[string]Provider {

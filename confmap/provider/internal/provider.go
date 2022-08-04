@@ -24,7 +24,7 @@ import (
 // * yamlBytes the yaml bytes that will be deserialized.
 // * opts specifies options associated with this Retrieved value, such as CloseFunc.
 func NewRetrievedFromYAML(yamlBytes []byte, opts ...confmap.RetrievedOption) (confmap.Retrieved, error) {
-	var rawConf map[string]interface{}
+	var rawConf interface{}
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
 		return confmap.Retrieved{}, err
 	}

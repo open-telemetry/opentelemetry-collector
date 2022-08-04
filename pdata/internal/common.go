@@ -180,9 +180,6 @@ func newValueFromRaw(iv interface{}) Value {
 // Type returns the type of the value for this Value.
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) Type() ValueType {
-	if v.orig.Value == nil {
-		return ValueTypeEmpty
-	}
 	switch v.orig.Value.(type) {
 	case *otlpcommon.AnyValue_StringValue:
 		return ValueTypeString

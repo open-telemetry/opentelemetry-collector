@@ -33,23 +33,35 @@ The `Resolver` receives as input a set of `Providers`, a list of `Converters`, a
 `configURI` that will be used to generate the resulting, or effective, configuration in the form of a `Conf`,
 that can be used by code that is oblivious to the usage of `Providers` and `Converters`.
 
+`Providers` are used to provide an entire configuration when the `configURI` is given directly to the `Resolver`,
+or an individual value (partial configuration) when the `configURI` is embedded into the `Conf` as a values using
+the syntax `${configURI}`.
+
 ```terminal
               Resolver                   Provider
-                 │                          │
    Resolve       │                          │
 ────────────────►│                          │
                  │                          │
               ┌─ │        Retrieve          │
               │  ├─────────────────────────►│
-              │  │                          │
+              │  │          Conf            │
               │  │◄─────────────────────────┤
-   foreach    │  │                          │
+  foreach     │  │                          │
   configURI   │  ├───┐                      │
               │  │   │Merge                 │
               │  │◄──┘                      │
               └─ │                          │
+              ┌─ │        Retrieve          │
+              │  ├─────────────────────────►│
+              │  │    Partial Conf Value    │
+              │  │◄─────────────────────────┤
+  foreach     │  │                          │
+  embedded    │  │                          │
+  configURI   │  ├───┐                      │
+              │  │   │Replace               │
+              │  │◄──┘                      │
+              └─ │                          │
                  │            Converter     │
-                 │                │         │
               ┌─ │     Convert    │         │
               │  ├───────────────►│         │
     foreach   │  │                │         │
@@ -57,15 +69,15 @@ that can be used by code that is oblivious to the usage of `Providers` and `Conv
               └─ │                          │
                  │                          │
 ◄────────────────┤                          │
-                 │                          │
 ```
 
 The `Resolve` method proceeds in the following steps:
 
 1. Start with an empty "result" of `Conf` type.
 2. For each config URI retrieves individual configurations, and merges it into the "result".
-2. For each "Converter", call "Convert" for the "result".
-4. Return the "result", aka effective, configuration.
+3. For each embedded config URI retrieves individual value, and replaces it into the "result".
+4. For each "Converter", call "Convert" for the "result".
+5. Return the "result", aka effective, configuration.
 
 ### Watching for Updates
 After the configuration was processed, the `Resolver` can be used as a single point to watch for updates in the
