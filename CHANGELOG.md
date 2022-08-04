@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated `confighttp.HTTPClientSettings.ToClientWithHost` (#5803)
 - Remove deprecated component stability helpers (#5802):
   - `component.WithTracesExporterAndStabilityLevel`
   - `component.WithMetricsExporterAndStabilityLevel`
@@ -14,10 +15,12 @@
   - `component.WithTracesProcessorAndStabilityLevel`
   - `component.WithMetricsProcessorAndStabilityLevel`
   - `component.WithLogsProcessorAndStabilityLevel`
+- ABI breaking change: `featuregate.Registry.Apply` returns error now.
 - Update minimum go version to 1.18 (#5795)
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate `featuregate.Registry.MustApply` in favor of `featuregate.Registry.Apply`.
 - Deprecate the `component.Factory.StabilityLevel(config.DataType)` in favor of Stability per component (#5762):
   - `component.ExporterFactory.TracesExporterStability`
   - `component.ExporterFactory.MetricsExporterStability`

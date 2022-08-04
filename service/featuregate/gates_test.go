@@ -36,7 +36,7 @@ func TestRegistry(t *testing.T) {
 	assert.Len(t, r.List(), 1)
 	assert.True(t, r.IsEnabled(gate.ID))
 
-	r.Apply(map[string]bool{gate.ID: false})
+	assert.NoError(t, r.Apply(map[string]bool{gate.ID: false}))
 	assert.False(t, r.IsEnabled(gate.ID))
 
 	assert.Error(t, r.Register(gate))
@@ -45,7 +45,7 @@ func TestRegistry(t *testing.T) {
 	})
 }
 
-func TestRegistryWithMustApply(t *testing.T) {
+func TestRegistryWithErrorApply(t *testing.T) {
 	r := Registry{gates: map[string]Gate{}}
 	gate := Gate{
 		ID:          "foo",
@@ -77,14 +77,11 @@ func TestRegistryWithMustApply(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldError {
-				assert.Panics(t, func() {
-					r.MustApply(map[string]bool{tt.gate: tt.enabled})
-				})
-			} else {
-				r.MustApply(map[string]bool{tt.gate: tt.enabled})
-				assert.Equal(t, tt.enabled, r.IsEnabled(tt.gate))
+				assert.Error(t, r.Apply(map[string]bool{tt.gate: tt.enabled}))
+				return
 			}
-
+			assert.NoError(t, r.Apply(map[string]bool{tt.gate: tt.enabled}))
+			assert.Equal(t, tt.enabled, r.IsEnabled(tt.gate))
 		})
 	}
 }

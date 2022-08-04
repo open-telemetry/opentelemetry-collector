@@ -183,11 +183,6 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 	}, nil
 }
 
-// Deprecated: [v0.57.0] use ToClient.
-func (hcs *HTTPClientSettings) ToClientWithHost(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	return hcs.ToClient(host, settings)
-}
-
 // Custom RoundTripper that adds headers.
 type headerRoundTripper struct {
 	transport http.RoundTripper
