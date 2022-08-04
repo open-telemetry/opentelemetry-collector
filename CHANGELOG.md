@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated `confighttp.HTTPClientSettings.ToClientWithHost` (#5803)
 - Remove deprecated component stability helpers (#5802):
   - `component.WithTracesExporterAndStabilityLevel`
   - `component.WithMetricsExporterAndStabilityLevel`
