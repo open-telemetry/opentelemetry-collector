@@ -16,6 +16,7 @@
   - `component.WithMetricsProcessorAndStabilityLevel`
   - `component.WithLogsProcessorAndStabilityLevel`
 - ABI breaking change: `featuregate.Registry.Apply` returns error now.
+- Update minimum go version to 1.18 (#5795)
 
 ### 🚩 Deprecations 🚩
 
@@ -62,7 +63,6 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
   - `component.WithTracesProcessor`
   - `component.WithMetricsProcessor`
   - `component.WithLogsProcessor`
-- Update minimum go version to 1.18 (#5795)
 
 ### 🚩 Deprecations 🚩
 
