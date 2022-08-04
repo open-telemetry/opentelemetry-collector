@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !enable_unstable
-// +build !enable_unstable
-
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
@@ -29,11 +26,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-// queued_retry_inmemory includes the code for memory-backed (original) queued retry helper only
-// enabled when "enable_unstable" build tag is not set
+// queued_retry_inmemory includes the code for both memory-backed and persistent-storage backed queued retry helpers
 
 // QueueSettings defines configuration for queueing batches before sending to the consumerSender.
 type QueueSettings struct {
@@ -43,6 +40,9 @@ type QueueSettings struct {
 	NumConsumers int `mapstructure:"num_consumers"`
 	// QueueSize is the maximum number of batches allowed in queue at a given time.
 	QueueSize int `mapstructure:"queue_size"`
+	// StorageID if not empty, enables the persistent storage and uses the component specified
+	// as a storage extension for the persistent queue
+	StorageID *config.ComponentID `mapstructure:"storage"`
 }
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
@@ -71,43 +71,98 @@ func (qCfg *QueueSettings) Validate() error {
 	return nil
 }
 
+var (
+	errNoStorageClient    = errors.New("no storage client extension found")
+	errWrongExtensionType = errors.New("requested extension is not a storage extension")
+)
+
 type queuedRetrySender struct {
-	fullName        string
-	cfg             QueueSettings
-	consumerSender  requestSender
-	queue           internal.ProducerConsumerQueue
-	retryStopCh     chan struct{}
-	traceAttributes []attribute.KeyValue
-	logger          *zap.Logger
-	// currently this is always false for the in-memory queue
-	// it's here for consistency with the persistent queue
-	requeuingEnabled bool
+	fullName           string
+	id                 config.ComponentID
+	signal             config.DataType
+	cfg                QueueSettings
+	consumerSender     requestSender
+	queue              internal.ProducerConsumerQueue
+	retryStopCh        chan struct{}
+	traceAttributes    []attribute.KeyValue
+	logger             *zap.Logger
+	requeuingEnabled   bool
+	requestUnmarshaler internal.RequestUnmarshaler
 }
 
-func newQueuedRetrySender(id config.ComponentID, _ config.DataType, qCfg QueueSettings, rCfg RetrySettings, _ internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
 
 	qrs := &queuedRetrySender{
-		fullName:        id.String(),
-		cfg:             qCfg,
-		queue:           internal.NewBoundedMemoryQueue(qCfg.QueueSize, func(item interface{}) {}),
-		retryStopCh:     retryStopCh,
-		traceAttributes: []attribute.KeyValue{traceAttr},
-		logger:          sampledLogger,
+		fullName:           id.String(),
+		id:                 id,
+		signal:             signal,
+		cfg:                qCfg,
+		retryStopCh:        retryStopCh,
+		traceAttributes:    []attribute.KeyValue{traceAttr},
+		logger:             sampledLogger,
+		requestUnmarshaler: reqUnmarshaler,
 	}
 
 	qrs.consumerSender = &retrySender{
-		traceAttribute:     traceAttr,
-		cfg:                rCfg,
-		nextSender:         nextSender,
-		stopCh:             retryStopCh,
-		logger:             sampledLogger,
+		traceAttribute: traceAttr,
+		cfg:            rCfg,
+		nextSender:     nextSender,
+		stopCh:         retryStopCh,
+		logger:         sampledLogger,
+		// Following three functions actually depend on queuedRetrySender
 		onTemporaryFailure: qrs.onTemporaryFailure,
 	}
 
+	if qCfg.StorageID == nil {
+		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize, func(item interface{}) {})
+	}
+	// The Persistent Queue is initialized separately as it needs extra information about the component
+
 	return qrs
+}
+
+func getStorageExtension(extensions map[config.ComponentID]component.Extension, storageID config.ComponentID) (storage.Extension, error) {
+	if ext, found := extensions[storageID]; found {
+		if storageExt, ok := ext.(storage.Extension); ok {
+			return storageExt, nil
+		}
+		return nil, errWrongExtensionType
+	}
+	return nil, errNoStorageClient
+}
+
+func toStorageClient(ctx context.Context, storageID config.ComponentID, host component.Host, ownerID config.ComponentID, signal config.DataType) (storage.Client, error) {
+	extension, err := getStorageExtension(host.GetExtensions(), storageID)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := extension.GetClient(ctx, component.KindExporter, ownerID, string(signal))
+	if err != nil {
+		return nil, err
+	}
+
+	return client, err
+}
+
+// initializePersistentQueue uses extra information for initialization available from component.Host
+func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, host component.Host) error {
+	if qrs.cfg.StorageID != nil {
+		storageClient, err := toStorageClient(ctx, *qrs.cfg.StorageID, host, qrs.id, qrs.signal)
+		if err != nil {
+			return err
+		}
+
+		qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, storageClient, qrs.requestUnmarshaler)
+
+		// TODO: this can be further exposed as a config param rather than relying on a type of queue
+		qrs.requeuingEnabled = true
+	}
+
+	return nil
 }
 
 func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req request, err error) error {
@@ -136,7 +191,12 @@ func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req request
 }
 
 // start is invoked during service startup.
-func (qrs *queuedRetrySender) start(context.Context, component.Host) error {
+func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) error {
+	err := qrs.initializePersistentQueue(ctx, host)
+	if err != nil {
+		return err
+	}
+
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
 		req := item.(request)
 		_ = qrs.consumerSender.send(req)
