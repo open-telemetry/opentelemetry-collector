@@ -37,6 +37,8 @@
 
 ### 💡 Enhancements 💡
 
+- Bump to opentelemetry-proto v0.19.0. (#5823)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.57.2 Beta
