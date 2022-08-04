@@ -46,10 +46,13 @@ func TestNewRetrievedFromYAMLWithOptions(t *testing.T) {
 
 func TestNewRetrievedFromYAMLInvalidYAMLBytes(t *testing.T) {
 	_, err := NewRetrievedFromYAML([]byte("[invalid:,"))
-	require.Error(t, err)
+	assert.Error(t, err)
 }
 
 func TestNewRetrievedFromYAMLInvalidAsMap(t *testing.T) {
-	_, err := NewRetrievedFromYAML([]byte("string"))
-	require.Error(t, err)
+	ret, err := NewRetrievedFromYAML([]byte("string"))
+	require.NoError(t, err)
+
+	_, err = ret.AsConf()
+	assert.Error(t, err)
 }
