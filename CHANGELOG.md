@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove the InstrumentationLibrary to Scope translation (part of transition to OTLP 0.19). (#5819)
+  - This has a side effect that when sending JSON encoded telemetry using OTLP proto <= 0.15.0, telemetry will be dropped.
 - Require the storage to be explicitly set for the (experimental) persistent queue (#5784)
 - Remove deprecated `confighttp.HTTPClientSettings.ToClientWithHost` (#5803)
 - Remove deprecated component stability helpers (#5802):

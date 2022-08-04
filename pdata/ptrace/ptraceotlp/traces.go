@@ -92,7 +92,7 @@ func (tr Request) UnmarshalProto(data []byte) error {
 	if err := tr.orig.Unmarshal(data); err != nil {
 		return err
 	}
-	otlp.InstrumentationLibrarySpansToScope(tr.orig.ResourceSpans)
+	otlp.MigrateTraces(tr.orig.ResourceSpans)
 	return nil
 }
 
@@ -110,7 +110,7 @@ func (tr Request) UnmarshalJSON(data []byte) error {
 	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig); err != nil {
 		return err
 	}
-	otlp.InstrumentationLibrarySpansToScope(tr.orig.ResourceSpans)
+	otlp.MigrateTraces(tr.orig.ResourceSpans)
 	return nil
 }
 
@@ -163,7 +163,7 @@ type rawTracesServer struct {
 }
 
 func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortrace.ExportTraceServiceRequest) (*otlpcollectortrace.ExportTraceServiceResponse, error) {
-	otlp.InstrumentationLibrarySpansToScope(request.ResourceSpans)
+	otlp.MigrateTraces(request.ResourceSpans)
 	rsp, err := s.srv.Export(ctx, Request{orig: request})
 	return rsp.orig, err
 }
