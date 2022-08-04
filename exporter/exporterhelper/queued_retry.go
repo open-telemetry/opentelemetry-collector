@@ -88,7 +88,7 @@ type queuedRetrySender struct {
 	consumerSender     requestSender
 	queue              internal.ProducerConsumerQueue
 	retryStopCh        chan struct{}
-	traceAttributes    []attribute.KeyValue
+	traceAttribute     attribute.KeyValue
 	logger             *zap.Logger
 	requeuingEnabled   bool
 	requestUnmarshaler internal.RequestUnmarshaler
@@ -105,7 +105,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 		signal:             signal,
 		cfg:                qCfg,
 		retryStopCh:        retryStopCh,
-		traceAttributes:    []attribute.KeyValue{traceAttr},
+		traceAttribute:     traceAttr,
 		logger:             sampledLogger,
 		requestUnmarshaler: reqUnmarshaler,
 	}
@@ -313,11 +313,11 @@ func (qrs *queuedRetrySender) send(req request) error {
 			"Dropping data because sending_queue is full. Try increasing queue_size.",
 			zap.Int("dropped_items", req.count()),
 		)
-		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qrs.traceAttributes...))
+		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qrs.traceAttribute))
 		return errSendingQueueIsFull
 	}
 
-	span.AddEvent("Enqueued item.", trace.WithAttributes(qrs.traceAttributes...))
+	span.AddEvent("Enqueued item.", trace.WithAttributes(qrs.traceAttribute))
 	return nil
 }
 
