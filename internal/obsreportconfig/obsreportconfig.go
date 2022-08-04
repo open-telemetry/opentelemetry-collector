@@ -39,10 +39,8 @@ func Configure(level configtelemetry.Level) *ObsMetrics {
 	globalLevel.Store(int32(level))
 
 	var views []*view.View
-
 	if Level() != configtelemetry.LevelNone {
-		obsMetricViews := allViews()
-		views = append(views, obsMetricViews.Views...)
+		views = allViews()
 	}
 
 	return &ObsMetrics{
@@ -55,7 +53,7 @@ func Level() configtelemetry.Level {
 }
 
 // allViews return the list of all views that needs to be configured.
-func allViews() *ObsMetrics {
+func allViews() []*view.View {
 	var views []*view.View
 	// Receiver views.
 	measures := []*stats.Int64Measure{
@@ -114,9 +112,7 @@ func allViews() *ObsMetrics {
 	tagKeys = []tag.Key{obsmetrics.TagKeyProcessor}
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
-	return &ObsMetrics{
-		Views: views,
-	}
+	return views
 }
 
 func genViews(
