@@ -31,7 +31,6 @@ import (
 
 // Exporter is a helper to add observability to a component.Exporter.
 type Exporter struct {
-	level          configtelemetry.Level
 	spanNamePrefix string
 	mutators       []tag.Mutator
 	tracer         trace.Tracer
@@ -39,6 +38,7 @@ type Exporter struct {
 
 // ExporterSettings are settings for creating an Exporter.
 type ExporterSettings struct {
+	// Deprecated: set the level in the ExporterSettings.ExporterCreateSettings.
 	Level                  configtelemetry.Level
 	ExporterID             config.ComponentID
 	ExporterCreateSettings component.ExporterCreateSettings
@@ -47,7 +47,6 @@ type ExporterSettings struct {
 // NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) *Exporter {
 	return &Exporter{
-		level:          cfg.Level,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),

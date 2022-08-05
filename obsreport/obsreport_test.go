@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -263,7 +262,6 @@ func TestExportTraceDataOp(t *testing.T) {
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -313,7 +311,6 @@ func TestExportMetricsOp(t *testing.T) {
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -364,7 +361,6 @@ func TestExportLogsOp(t *testing.T) {
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -469,7 +465,6 @@ func TestProcessorTraceData(t *testing.T) {
 	const droppedSpans = 13
 
 	obsrep := NewProcessor(ProcessorSettings{
-		Level:                   configtelemetry.LevelNormal,
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -490,7 +485,6 @@ func TestProcessorMetricsData(t *testing.T) {
 	const droppedPoints = 17
 
 	obsrep := NewProcessor(ProcessorSettings{
-		Level:                   configtelemetry.LevelNormal,
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -533,7 +527,6 @@ func TestProcessorLogRecords(t *testing.T) {
 	const droppedRecords = 17
 
 	obsrep := NewProcessor(ProcessorSettings{
-		Level:                   configtelemetry.LevelNormal,
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
