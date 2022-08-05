@@ -692,7 +692,7 @@ func TestMetricsDataPointFlags(t *testing.T) {
 	gauge := generateTestGauge()
 
 	assert.False(t, gauge.DataPoints().At(0).FlagsStruct().NoRecordedValue())
-	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).Flags().String())
+	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).FlagsStruct().String())
 
 	gauge.DataPoints().At(1).FlagsStruct().SetNoRecordedValue(true)
 	assert.True(t, gauge.DataPoints().At(1).FlagsStruct().NoRecordedValue())
@@ -708,38 +708,6 @@ func TestMetricsDataPointFlags(t *testing.T) {
 	gauge.DataPoints().At(0).FlagsStruct().MoveTo(gauge.DataPoints().At(1).FlagsStruct())
 	assert.False(t, gauge.DataPoints().At(0).FlagsStruct().NoRecordedValue())
 	assert.True(t, gauge.DataPoints().At(1).FlagsStruct().NoRecordedValue())
-}
-
-func TestNumberDataPoint_Flags(t *testing.T) {
-	ms := NewNumberDataPoint()
-	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNone
-	ms.SetFlags(testValFlags)
-	assert.EqualValues(t, testValFlags, ms.Flags())
-}
-
-func TestHistogramDataPoint_Flags(t *testing.T) {
-	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNone
-	ms.SetFlags(testValFlags)
-	assert.EqualValues(t, testValFlags, ms.Flags())
-}
-
-func TestSummaryDataPoint_Flags(t *testing.T) {
-	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNone
-	ms.SetFlags(testValFlags)
-	assert.EqualValues(t, testValFlags, ms.Flags())
-}
-
-func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
-	ms := NewExponentialHistogramDataPoint()
-	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNone
-	ms.SetFlags(testValFlags)
-	assert.EqualValues(t, testValFlags, ms.Flags())
 }
 
 func BenchmarkMetricsClone(b *testing.B) {
