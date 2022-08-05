@@ -150,18 +150,20 @@ func toStorageClient(ctx context.Context, storageID config.ComponentID, host com
 
 // initializePersistentQueue uses extra information for initialization available from component.Host
 func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, host component.Host) error {
-	if qrs.cfg.StorageID != nil {
-		storageClient, err := toStorageClient(ctx, *qrs.cfg.StorageID, host, qrs.id, qrs.signal)
-		if err != nil {
-			return err
-		}
-
-		qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, storageClient, qrs.requestUnmarshaler)
-
-		// TODO: this can be further exposed as a config param rather than relying on a type of queue
-		qrs.requeuingEnabled = true
+	if qrs.cfg.StorageID == nil {
+		return nil
+	}
+	
+	storageClient, err := toStorageClient(ctx, *qrs.cfg.StorageID, host, qrs.id, qrs.signal)
+	if err != nil {
+		return err
 	}
 
+	qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, storageClient, qrs.requestUnmarshaler)
+
+	// TODO: this can be further exposed as a config param rather than relying on a type of queue
+	qrs.requeuingEnabled = true
+	
 	return nil
 }
 
