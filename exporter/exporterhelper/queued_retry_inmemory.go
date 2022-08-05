@@ -192,8 +192,7 @@ func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req request
 
 // start is invoked during service startup.
 func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) error {
-	err := qrs.initializePersistentQueue(ctx, host)
-	if err != nil {
+	if err := qrs.initializePersistentQueue(ctx, host); err != nil {
 		return err
 	}
 
