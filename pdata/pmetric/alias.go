@@ -57,7 +57,7 @@ type MetricDataPointFlagsStruct = MetricDataPointFlags
 
 // NewMetricDataPointFlagsStruct returns a new empty MetricDataPointFlagsStruct.
 // Deprecated [0.58.0] Use NewMetricDataPointFlags instead
-var NewMetricDataPointFlagsStruct = internal.NewMetricDataPointFlags
+var NewMetricDataPointFlagsStruct = NewMetricDataPointFlags
 
 // MetricDataPointFlags defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
