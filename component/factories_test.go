@@ -29,8 +29,8 @@ func TestMakeExtensionFactoryMap(t *testing.T) {
 		out  map[config.Type]ExtensionFactory
 	}
 
-	p1 := NewExtensionFactory("p1", nil, nil)
-	p2 := NewExtensionFactory("p2", nil, nil)
+	p1 := NewExtensionFactoryWithStabilityLevel("p1", nil, nil, StabilityLevelAlpha)
+	p2 := NewExtensionFactoryWithStabilityLevel("p2", nil, nil, StabilityLevelAlpha)
 	testCases := []testCase{
 		{
 			name: "different names",
@@ -42,7 +42,7 @@ func TestMakeExtensionFactoryMap(t *testing.T) {
 		},
 		{
 			name: "same name",
-			in:   []ExtensionFactory{p1, p2, NewExtensionFactory("p1", nil, nil)},
+			in:   []ExtensionFactory{p1, p2, NewExtensionFactoryWithStabilityLevel("p1", nil, nil, StabilityLevelAlpha)},
 		},
 	}
 	for i := range testCases {

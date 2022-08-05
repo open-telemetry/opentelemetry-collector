@@ -92,7 +92,7 @@ func (lr Request) UnmarshalProto(data []byte) error {
 	if err := lr.orig.Unmarshal(data); err != nil {
 		return err
 	}
-	otlp.InstrumentationLibraryLogsToScope(lr.orig.ResourceLogs)
+	otlp.MigrateLogs(lr.orig.ResourceLogs)
 	return nil
 }
 
@@ -110,7 +110,7 @@ func (lr Request) UnmarshalJSON(data []byte) error {
 	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig); err != nil {
 		return err
 	}
-	otlp.InstrumentationLibraryLogsToScope(lr.orig.ResourceLogs)
+	otlp.MigrateLogs(lr.orig.ResourceLogs)
 	return nil
 }
 
@@ -162,7 +162,7 @@ type rawLogsServer struct {
 }
 
 func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlog.ExportLogsServiceRequest) (*otlpcollectorlog.ExportLogsServiceResponse, error) {
-	otlp.InstrumentationLibraryLogsToScope(request.ResourceLogs)
+	otlp.MigrateLogs(request.ResourceLogs)
 	rsp, err := s.srv.Export(ctx, Request{orig: request})
 	return rsp.orig, err
 }

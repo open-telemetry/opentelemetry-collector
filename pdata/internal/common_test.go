@@ -78,6 +78,7 @@ func TestAttributeValueType(t *testing.T) {
 	assert.EqualValues(t, "MAP", ValueTypeMap.String())
 	assert.EqualValues(t, "SLICE", ValueTypeSlice.String())
 	assert.EqualValues(t, "BYTES", ValueTypeBytes.String())
+	assert.EqualValues(t, "", ValueType(100).String())
 }
 
 func TestAttributeValueMap(t *testing.T) {
@@ -181,6 +182,7 @@ func TestNilOrigSetAttributeValue(t *testing.T) {
 
 func TestAttributeValueEqual(t *testing.T) {
 	av1 := NewValueEmpty()
+	assert.True(t, av1.Equal(av1)) // nolint:gocritic
 	av2 := NewValueEmpty()
 	assert.True(t, av1.Equal(av2))
 
@@ -662,18 +664,6 @@ func TestAttributeValue_copyTo(t *testing.T) {
 	assert.EqualValues(t, nil, destVal.Value)
 }
 
-func TestValueBytes_CopyTo_Deprecated(t *testing.T) {
-	orig := NewValueMBytes([]byte{1, 2, 3})
-	dest := NewValueEmpty()
-	orig.CopyTo(dest)
-	assert.Equal(t, orig, dest)
-
-	orig.MBytesVal()[0] = 10
-	assert.NotEqual(t, orig, dest)
-	assert.Equal(t, []byte{1, 2, 3}, dest.MBytesVal())
-	assert.Equal(t, []byte{10, 2, 3}, orig.MBytesVal())
-}
-
 func TestMap_Update(t *testing.T) {
 	origWithNil := []otlpcommon.KeyValue{
 		{
@@ -744,27 +734,29 @@ func TestMap_Clear(t *testing.T) {
 }
 
 func TestMap_RemoveIf(t *testing.T) {
-	rawMap := map[string]interface{}{
-		"k_string": "123",
-		"k_int":    int64(123),
-		"k_double": float64(1.23),
-		"k_bool":   true,
-		"k_empty":  nil,
-		"k_bytes":  []byte{},
-	}
-	am := NewMapFromRaw(rawMap)
-	assert.Equal(t, 6, am.Len())
+	am := NewMap()
+	am.UpsertString("k_string", "123")
+	am.UpsertInt("k_int", int64(123))
+	am.UpsertDouble("k_double", float64(1.23))
+	am.UpsertBool("k_bool", true)
+	am.Upsert("k_empty", NewValueEmpty())
+
+	assert.Equal(t, 5, am.Len())
 
 	am.RemoveIf(func(key string, val Value) bool {
 		return key == "k_int" || val.Type() == ValueTypeBool
 	})
-	assert.Equal(t, 4, am.Len())
+	assert.Equal(t, 3, am.Len())
 	_, exists := am.Get("k_string")
+	assert.True(t, exists)
+	_, exists = am.Get("k_int")
+	assert.False(t, exists)
+	_, exists = am.Get("k_double")
 	assert.True(t, exists)
 	_, exists = am.Get("k_bool")
 	assert.False(t, exists)
-	_, exists = am.Get("k_int")
-	assert.False(t, exists)
+	_, exists = am.Get("k_empty")
+	assert.True(t, exists)
 }
 
 func BenchmarkAttributeValue_CopyTo(b *testing.B) {
@@ -1301,12 +1293,37 @@ func TestNewValueFromRaw(t *testing.T) {
 			}(),
 		},
 		{
+			name:  "empty map",
+			input: map[string]interface{}{},
+			expected: func() Value {
+				m := NewValueMap()
+				NewMapFromRaw(map[string]interface{}{}).CopyTo(m.MapVal())
+				return m
+			}(),
+		},
+		{
 			name:  "slice",
 			input: []interface{}{"v1", "v2"},
 			expected: (func() Value {
 				s := NewValueSlice()
 				NewSliceFromRaw([]interface{}{"v1", "v2"}).CopyTo(s.SliceVal())
 				return s
+			})(),
+		},
+		{
+			name:  "empty slice",
+			input: []interface{}{},
+			expected: (func() Value {
+				s := NewValueSlice()
+				NewSliceFromRaw([]interface{}{}).CopyTo(s.SliceVal())
+				return s
+			})(),
+		},
+		{
+			name:  "invalid value",
+			input: ValueTypeDouble,
+			expected: (func() Value {
+				return NewValueString("<Invalid value type internal.ValueType>")
 			})(),
 		},
 	}

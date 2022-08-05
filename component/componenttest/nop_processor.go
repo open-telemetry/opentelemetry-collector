@@ -44,9 +44,9 @@ func NewNopProcessorFactory() component.ProcessorFactory {
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop")),
 			}
 		},
-		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, component.StabilityLevelStable),
-		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, component.StabilityLevelStable),
-		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, component.StabilityLevelStable),
+		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelStable),
+		component.WithMetricsProcessor(createMetricsProcessor, component.StabilityLevelStable),
+		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelStable),
 	)
 }
 

@@ -100,7 +100,6 @@ openssl x509 -req \
              -sha256 \
              -days 3650 \
              -in "$tmp_dir/server${suffix}.csr" \
-             -signkey "$tmp_dir/server${suffix}.key" \
              -out "$tmp_dir/server${suffix}.crt" \
              -extensions req_ext \
              -CA "$tmp_dir/ca${suffix}.crt" \
@@ -111,7 +110,6 @@ openssl x509 -req \
              -sha256 \
              -days 3650 \
              -in "$tmp_dir/client${suffix}.csr" \
-             -signkey "$tmp_dir/client${suffix}.key" \
              -out "$tmp_dir/client${suffix}.crt" \
              -extensions req_ext \
              -CA "$tmp_dir/ca${suffix}.crt" \

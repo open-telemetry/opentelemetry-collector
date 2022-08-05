@@ -35,10 +35,10 @@ var (
 //
 // A component's lifecycle has the following phases:
 //
-//   1. Creation: The component is created using its respective factory, via a Create* call.
-//   2. Start: The component's Start method is called.
-//   3. Running: The component is up and running.
-//   4. Shutdown: The component's Shutdown method is called and the lifecycle is complete.
+//  1. Creation: The component is created using its respective factory, via a Create* call.
+//  2. Start: The component's Start method is called.
+//  3. Running: The component is up and running.
+//  4. Shutdown: The component's Shutdown method is called and the lifecycle is complete.
 //
 // Once the lifecycle is complete it may be repeated, in which case a new component
 // is created, starts, runs and is shutdown again.
@@ -111,7 +111,7 @@ const (
 type StabilityLevel int
 
 const (
-	StabilityLevelUndefined = iota // skip 0, start types from 1.
+	StabilityLevelUndefined StabilityLevel = iota // skip 0, start types from 1.
 	StabilityLevelUnmaintained
 	StabilityLevelDeprecated
 	StabilityLevelInDevelopment
@@ -164,7 +164,7 @@ type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() config.Type
 
-	// StabilityLevel gets the stability level of the component.
+	// Deprecated: [v0.58.0] replaced by the more specific versions in each Factory type.
 	StabilityLevel(config.DataType) StabilityLevel
 
 	unexportedFactoryFunc()
@@ -172,7 +172,7 @@ type Factory interface {
 
 type baseFactory struct {
 	cfgType   config.Type
-	stability map[config.Type]StabilityLevel
+	stability map[config.DataType]StabilityLevel
 }
 
 func (baseFactory) unexportedFactoryFunc() {}
@@ -182,6 +182,10 @@ func (bf baseFactory) Type() config.Type {
 }
 
 func (bf baseFactory) StabilityLevel(dt config.DataType) StabilityLevel {
+	return bf.getStabilityLevel(dt)
+}
+
+func (bf baseFactory) getStabilityLevel(dt config.DataType) StabilityLevel {
 	if val, ok := bf.stability[dt]; ok {
 		return val
 	}

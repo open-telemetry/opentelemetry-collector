@@ -38,6 +38,8 @@ type Resolver struct {
 	sync.Mutex
 	closers []CloseFunc
 	watcher chan error
+
+	enableExpand bool
 }
 
 // ResolverSettings are the settings to configure the behavior of the Resolver.
@@ -57,19 +59,19 @@ type ResolverSettings struct {
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
 //
 // To resolve a configuration the following steps will happen:
-//   1. Retrieves individual configurations from all given "URIs", and merge them in the retrieve order.
-//   2. Once the Conf is merged, apply the converters in the given order.
+//  1. Retrieves individual configurations from all given "URIs", and merge them in the retrieve order.
+//  2. Once the Conf is merged, apply the converters in the given order.
 //
 // After the configuration was resolved the `Resolver` can be used as a single point to watch for updates in
 // the configuration data retrieved via the config providers used to process the "initial" configuration and to generate
 // the "effective" one. The typical usage is the following:
 //
-//		Resolver.Resolve(ctx)
-//		Resolver.Watch() // wait for an event.
-//		Resolver.Resolve(ctx)
-//		Resolver.Watch() // wait for an event.
-//		// repeat Resolve/Watch cycle until it is time to shut down the Collector process.
-//		Resolver.Shutdown(ctx)
+//	Resolver.Resolve(ctx)
+//	Resolver.Watch() // wait for an event.
+//	Resolver.Resolve(ctx)
+//	Resolver.Watch() // wait for an event.
+//	// repeat Resolve/Watch cycle until it is time to shut down the Collector process.
+//	Resolver.Shutdown(ctx)
 //
 // `uri` must follow the "<scheme>:<opaque_data>" format. This format is compatible with the URI definition
 // (see https://datatracker.ietf.org/doc/html/rfc3986). An empty "<scheme>" defaults to "file" schema.
@@ -115,20 +117,14 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		// For backwards compatibility:
 		// - empty url scheme means "file".
 		// - "^[A-z]:" also means "file"
-		scheme := "file"
-		if idx := strings.Index(uri, ":"); idx != -1 && !driverLetterRegexp.MatchString(uri) {
-			scheme = uri[:idx]
-		} else {
-			uri = scheme + ":" + uri
+		if driverLetterRegexp.MatchString(uri) {
+			uri = "file:" + uri
 		}
-		p, ok := mr.providers[scheme]
-		if !ok {
-			return nil, fmt.Errorf("scheme %q is not supported for uri %q", scheme, uri)
-		}
-		ret, err := p.Retrieve(ctx, uri, mr.onChange)
+		ret, err := mr.retrieveValue(ctx, location{uri: uri, defaultScheme: "file"})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
 		}
+		mr.closers = append(mr.closers, ret.Close)
 		retCfgMap, err := ret.AsConf()
 		if err != nil {
 			return nil, err
@@ -136,7 +132,18 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err = retMap.Merge(retCfgMap); err != nil {
 			return nil, err
 		}
-		mr.closers = append(mr.closers, ret.Close)
+	}
+
+	if mr.enableExpand {
+		cfgMap := make(map[string]interface{})
+		for _, k := range retMap.AllKeys() {
+			val, err := mr.expandValueRecursively(ctx, retMap.Get(k))
+			if err != nil {
+				return nil, err
+			}
+			cfgMap[k] = val
+		}
+		retMap = NewFromStringMap(cfgMap)
 	}
 
 	// Apply the converters in the given order.
@@ -186,4 +193,83 @@ func (mr *Resolver) closeIfNeeded(ctx context.Context) error {
 		err = multierr.Append(err, ret(ctx))
 	}
 	return err
+}
+
+func (mr *Resolver) expandValueRecursively(ctx context.Context, value interface{}) (interface{}, error) {
+	for i := 0; i < 100; i++ {
+		val, changed, err := mr.expandValue(ctx, value)
+		if err != nil {
+			return nil, err
+		}
+		if !changed {
+			return val, nil
+		}
+		value = val
+	}
+	return nil, errors.New("too many recursive expansions")
+}
+
+func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interface{}, bool, error) {
+	switch v := value.(type) {
+	case string:
+		// If it doesn't have the format "${scheme:opaque}" no need to expand.
+		if !strings.HasPrefix(v, "${") || !strings.HasSuffix(v, "}") {
+			return value, false, nil
+		}
+		uri := v[2 : len(v)-1]
+		// For backwards compatibility:
+		// - empty scheme means "env".
+		ret, err := mr.retrieveValue(ctx, location{uri: uri, defaultScheme: "env"})
+		if err != nil {
+			return nil, false, err
+		}
+		mr.closers = append(mr.closers, ret.Close)
+		val, err := ret.AsRaw()
+		return val, true, err
+	case []interface{}:
+		nslice := make([]interface{}, 0, len(v))
+		nchanged := false
+		for _, vint := range v {
+			val, changed, err := mr.expandValue(ctx, vint)
+			if err != nil {
+				return nil, false, err
+			}
+			nslice = append(nslice, val)
+			nchanged = nchanged || changed
+		}
+		return nslice, nchanged, nil
+	case map[string]interface{}:
+		nmap := map[string]interface{}{}
+		nchanged := false
+		for mk, mv := range v {
+			val, changed, err := mr.expandValue(ctx, mv)
+			if err != nil {
+				return nil, false, err
+			}
+			nmap[mk] = val
+			nchanged = nchanged || changed
+		}
+		return nmap, nchanged, nil
+	}
+	return value, false, nil
+}
+
+type location struct {
+	uri           string
+	defaultScheme string
+}
+
+func (mr *Resolver) retrieveValue(ctx context.Context, l location) (Retrieved, error) {
+	uri := l.uri
+	scheme := l.defaultScheme
+	if idx := strings.Index(uri, ":"); idx != -1 {
+		scheme = uri[:idx]
+	} else {
+		uri = scheme + ":" + uri
+	}
+	p, ok := mr.providers[scheme]
+	if !ok {
+		return Retrieved{}, fmt.Errorf("scheme %q is not supported for uri %q", scheme, uri)
+	}
+	return p.Retrieve(ctx, uri, mr.onChange)
 }

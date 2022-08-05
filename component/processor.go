@@ -69,35 +69,29 @@ type ProcessorFactory interface {
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Processor
 
-	// CreateTracesProcessor creates a trace processor based on this config.
+	// CreateTracesProcessor creates a TracesProcessor based on this config.
 	// If the processor type does not support tracing or if the config is not valid,
 	// an error will be returned instead.
-	CreateTracesProcessor(
-		ctx context.Context,
-		set ProcessorCreateSettings,
-		cfg config.Processor,
-		nextConsumer consumer.Traces,
-	) (TracesProcessor, error)
+	CreateTracesProcessor(ctx context.Context, set ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (TracesProcessor, error)
 
-	// CreateMetricsProcessor creates a metrics processor based on this config.
+	// TracesProcessorStability gets the stability level of the TracesProcessor.
+	TracesProcessorStability() StabilityLevel
+
+	// CreateMetricsProcessor creates a MetricsProcessor based on this config.
 	// If the processor type does not support metrics or if the config is not valid,
 	// an error will be returned instead.
-	CreateMetricsProcessor(
-		ctx context.Context,
-		set ProcessorCreateSettings,
-		cfg config.Processor,
-		nextConsumer consumer.Metrics,
-	) (MetricsProcessor, error)
+	CreateMetricsProcessor(ctx context.Context, set ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Metrics) (MetricsProcessor, error)
 
-	// CreateLogsProcessor creates a processor based on the config.
+	// MetricsProcessorStability gets the stability level of the MetricsProcessor.
+	MetricsProcessorStability() StabilityLevel
+
+	// CreateLogsProcessor creates a LogsProcessor based on the config.
 	// If the processor type does not support logs or if the config is not valid,
 	// an error will be returned instead.
-	CreateLogsProcessor(
-		ctx context.Context,
-		set ProcessorCreateSettings,
-		cfg config.Processor,
-		nextConsumer consumer.Logs,
-	) (LogsProcessor, error)
+	CreateLogsProcessor(ctx context.Context, set ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Logs) (LogsProcessor, error)
+
+	// LogsProcessorStability gets the stability level of the LogsProcessor.
+	LogsProcessorStability() StabilityLevel
 }
 
 // ProcessorCreateDefaultConfigFunc is the equivalent of ProcessorFactory.CreateDefaultConfig().
@@ -178,42 +172,36 @@ type processorFactory struct {
 	CreateLogsProcessorFunc
 }
 
-// WithTracesProcessor overrides the default "error not supported" implementation for CreateTracesProcessor.
-// Deprecated: [v0.55.0] Use WithTracesProcessorAndStabilityLevel instead.
-func WithTracesProcessor(createTracesProcessor CreateTracesProcessorFunc) ProcessorFactoryOption {
-	return WithTracesProcessorAndStabilityLevel(createTracesProcessor, StabilityLevelUndefined)
+func (p processorFactory) TracesProcessorStability() StabilityLevel {
+	return p.getStabilityLevel(config.TracesDataType)
 }
 
-// WithTracesProcessorAndStabilityLevel overrides the default "error not supported" implementation for CreateTracesProcessor and the default "undefined" stability level.
-func WithTracesProcessorAndStabilityLevel(createTracesProcessor CreateTracesProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
+func (p processorFactory) MetricsProcessorStability() StabilityLevel {
+	return p.getStabilityLevel(config.MetricsDataType)
+}
+
+func (p processorFactory) LogsProcessorStability() StabilityLevel {
+	return p.getStabilityLevel(config.LogsDataType)
+}
+
+// WithTracesProcessor overrides the default "error not supported" implementation for CreateTracesProcessor and the default "undefined" stability level.
+func WithTracesProcessor(createTracesProcessor CreateTracesProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
 		o.stability[config.TracesDataType] = sl
 		o.CreateTracesProcessorFunc = createTracesProcessor
 	})
 }
 
-// WithMetricsProcessor overrides the default "error not supported" implementation for CreateMetricsProcessor.
-// Deprecated: [v0.55.0] Use WithMetricsProcessorAndStabilityLevel instead.
-func WithMetricsProcessor(createMetricsProcessor CreateMetricsProcessorFunc) ProcessorFactoryOption {
-	return WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, StabilityLevelUndefined)
-}
-
-// WithMetricsProcessorAndStabilityLevel overrides the default "error not supported" implementation for CreateMetricsProcessor and the default "undefined" stability level.
-func WithMetricsProcessorAndStabilityLevel(createMetricsProcessor CreateMetricsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
+// WithMetricsProcessor overrides the default "error not supported" implementation for CreateMetricsProcessor and the default "undefined" stability level.
+func WithMetricsProcessor(createMetricsProcessor CreateMetricsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
 		o.stability[config.MetricsDataType] = sl
 		o.CreateMetricsProcessorFunc = createMetricsProcessor
 	})
 }
 
-// WithLogsProcessor overrides the default "error not supported" implementation for CreateLogsProcessor.
-// Deprecated: [v0.55.0] Use WithLogsProcessorAndStabilityLevel instead.
-func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc) ProcessorFactoryOption {
-	return WithLogsProcessorAndStabilityLevel(createLogsProcessor, StabilityLevelUndefined)
-}
-
-// WithLogsProcessorAndStabilityLevel overrides the default "error not supported" implementation for CreateLogsProcessor and the default "undefined" stability level.
-func WithLogsProcessorAndStabilityLevel(createLogsProcessor CreateLogsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
+// WithLogsProcessor overrides the default "error not supported" implementation for CreateLogsProcessor and the default "undefined" stability level.
+func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
 		o.stability[config.LogsDataType] = sl
 		o.CreateLogsProcessorFunc = createLogsProcessor

@@ -100,10 +100,10 @@ func readResourceSpans(iter *jsoniter.Iterator) *otlptrace.ResourceSpans {
 				}
 				return true
 			})
-		case "instrumentationLibrarySpans", "instrumentation_library_spans", "scopeSpans", "scope_spans":
+		case "scopeSpans", "scope_spans":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				rs.ScopeSpans = append(rs.ScopeSpans,
-					readInstrumentationLibrarySpans(iter))
+					readScopeSpans(iter))
 				return true
 			})
 		case "schemaUrl", "schema_url":
@@ -116,12 +116,12 @@ func readResourceSpans(iter *jsoniter.Iterator) *otlptrace.ResourceSpans {
 	return rs
 }
 
-func readInstrumentationLibrarySpans(iter *jsoniter.Iterator) *otlptrace.ScopeSpans {
+func readScopeSpans(iter *jsoniter.Iterator) *otlptrace.ScopeSpans {
 	ils := &otlptrace.ScopeSpans{}
 
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
-		case "instrumentationLibrary", "instrumentation_library", "scope":
+		case "scope":
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "name":
@@ -129,7 +129,7 @@ func readInstrumentationLibrarySpans(iter *jsoniter.Iterator) *otlptrace.ScopeSp
 				case "version":
 					ils.Scope.Version = iter.ReadString()
 				default:
-					iter.ReportError("readInstrumentationLibrarySpans.instrumentationLibrary", fmt.Sprintf("unknown field:%v", f))
+					iter.ReportError("readScopeSpans.instrumentationLibrary", fmt.Sprintf("unknown field:%v", f))
 				}
 				return true
 			})
@@ -141,7 +141,7 @@ func readInstrumentationLibrarySpans(iter *jsoniter.Iterator) *otlptrace.ScopeSp
 		case "schemaUrl", "schema_url":
 			ils.SchemaUrl = iter.ReadString()
 		default:
-			iter.ReportError("readInstrumentationLibrarySpans", fmt.Sprintf("unknown field:%v", f))
+			iter.ReportError("readScopeSpans", fmt.Sprintf("unknown field:%v", f))
 		}
 		return true
 	})

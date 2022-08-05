@@ -73,12 +73,12 @@ func (avt ValueType) String() string {
 // value representation. For the same reason passing by value and calling setters
 // will modify the original, e.g.:
 //
-//   func f1(val Value) { val.SetIntVal(234) }
-//   func f2() {
-//       v := NewValueString("a string")
-//       f1(v)
-//       _ := v.Type() // this will return ValueTypeInt
-//   }
+//	func f1(val Value) { val.SetIntVal(234) }
+//	func f2() {
+//	    v := NewValueString("a string")
+//	    f1(v)
+//	    _ := v.Type() // this will return ValueTypeInt
+//	}
 //
 // Important: zero-initialized instance is not valid for use. All Value functions below must
 // be called only on instances that are created via NewValue+ functions.
@@ -123,14 +123,6 @@ func NewValueMap() Value {
 // NewValueSlice creates a new Value of array type.
 func NewValueSlice() Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}}
-}
-
-// NewValueMBytes creates a new Value with the given []byte value.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use NewValueBytes instead.
-func NewValueMBytes(v []byte) Value {
-	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v}}}
 }
 
 // NewValueBytes creates a new Value with the given ImmutableByteSlice value.
@@ -188,9 +180,6 @@ func newValueFromRaw(iv interface{}) Value {
 // Type returns the type of the value for this Value.
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) Type() ValueType {
-	if v.orig.Value == nil {
-		return ValueTypeEmpty
-	}
 	switch v.orig.Value.(type) {
 	case *otlpcommon.AnyValue_StringValue:
 		return ValueTypeString
@@ -264,15 +253,6 @@ func (v Value) SliceVal() Slice {
 	return newSlice(&arr.Values)
 }
 
-// MBytesVal returns the []byte value associated with this Value.
-// If the Type() is not ValueTypeBytes then returns an empty slice.
-// Calling this function on zero-initialized Value will cause a panic.
-// Modifying the returned []byte in-place is forbidden.
-// Deprecated: [0.54.0] Use BytesVal() instead.
-func (v Value) MBytesVal() []byte {
-	return v.orig.GetBytesValue()
-}
-
 // BytesVal returns the ImmutableByteSlice value associated with this Value.
 // If the Type() is not ValueTypeBytes then returns an empty slice.
 // Calling this function on zero-initialized Value will cause a panic.
@@ -306,16 +286,6 @@ func (v Value) SetDoubleVal(dv float64) {
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) SetBoolVal(bv bool) {
 	v.orig.Value = &otlpcommon.AnyValue_BoolValue{BoolValue: bv}
-}
-
-// SetMBytesVal replaces the []byte value associated with this Value,
-// it also changes the type to be ValueTypeBytes.
-// Calling this function on zero-initialized Value will cause a panic.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use SetBytesVal() instead.
-func (v Value) SetMBytesVal(bv []byte) {
-	v.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: bv}
 }
 
 // SetBytesVal replaces the ImmutableByteSlice value associated with this Value,
@@ -727,17 +697,6 @@ func (m Map) InsertBool(k string, v bool) {
 	}
 }
 
-// InsertMBytes adds the []byte Value to the map when the key does not exist.
-// No action is applied to the map where the key already exists.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use InsertBytes instead.
-func (m Map) InsertMBytes(k string, v []byte) {
-	if _, existing := m.Get(k); !existing {
-		*m.orig = append(*m.orig, newAttributeKeyValueBytes(k, ImmutableByteSlice{value: v}))
-	}
-}
-
 // InsertBytes adds the ImmutableByteSlice Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 func (m Map) InsertBytes(k string, v ImmutableByteSlice) {
@@ -788,17 +747,6 @@ func (m Map) UpdateDouble(k string, v float64) {
 func (m Map) UpdateBool(k string, v bool) {
 	if av, existing := m.Get(k); existing {
 		av.SetBoolVal(v)
-	}
-}
-
-// UpdateMBytes updates an existing []byte Value with a value.
-// No action is applied to the map where the key does not exist.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use UpdateBytes instead.
-func (m Map) UpdateMBytes(k string, v []byte) {
-	if av, existing := m.Get(k); existing {
-		av.SetBytesVal(ImmutableByteSlice{value: v})
 	}
 }
 
@@ -870,20 +818,6 @@ func (m Map) UpsertBool(k string, v bool) {
 	}
 }
 
-// UpsertMBytes performs the Insert or Update action. The []byte Value is
-// inserted to the map that did not originally have the key. The key/value is
-// updated to the map where the key already existed.
-// The caller must ensure the []byte passed in is not modified after the call is made, sharing the data
-// across multiple attributes is forbidden.
-// Deprecated: [0.54.0] Use UpsertBytes instead.
-func (m Map) UpsertMBytes(k string, v []byte) {
-	if av, existing := m.Get(k); existing {
-		av.SetBytesVal(ImmutableByteSlice{value: v})
-	} else {
-		*m.orig = append(*m.orig, newAttributeKeyValueBytes(k, ImmutableByteSlice{value: v}))
-	}
-}
-
 // UpsertBytes performs the Insert or Update action. The ImmutableByteSlice Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
@@ -897,7 +831,8 @@ func (m Map) UpsertBytes(k string, v ImmutableByteSlice) {
 
 // Sort sorts the entries in the Map so two instances can be compared.
 // Returns the same instance to allow nicer code like:
-//   assert.EqualValues(t, expected.Sort(), actual.Sort())
+//
+//	assert.EqualValues(t, expected.Sort(), actual.Sort())
 func (m Map) Sort() Map {
 	// Intention is to move the nil values at the end.
 	sort.SliceStable(*m.orig, func(i, j int) bool {
@@ -918,9 +853,9 @@ func (m Map) Len() int {
 //
 // Example:
 //
-//   sm.Range(func(k string, v Value) bool {
-//       ...
-//   })
+//	sm.Range(func(k string, v Value) bool {
+//	    ...
+//	})
 func (m Map) Range(f func(k string, v Value) bool) {
 	for i := range *m.orig {
 		kv := &(*m.orig)[i]

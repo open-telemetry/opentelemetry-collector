@@ -1,13 +1,13 @@
 module go.opentelemetry.io/collector/pdata
 
-go 1.17
+go 1.18
 
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.8.0
-	google.golang.org/grpc v1.47.0
-	google.golang.org/protobuf v1.28.0
+	google.golang.org/grpc v1.48.0
+	google.golang.org/protobuf v1.28.1
 )
 
 require (
@@ -21,4 +21,9 @@ require (
 	golang.org/x/text v0.3.3 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
+
+retract (
+	v0.57.0 // Release failed, use v0.57.2
+	v0.57.1 // Release failed, use v0.57.2
 )

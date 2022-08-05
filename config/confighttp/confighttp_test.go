@@ -136,7 +136,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClientWithHost(host, tt)
+			client, err := test.settings.ToClient(host, tt)
 			if test.shouldError {
 				assert.Error(t, err)
 				return
@@ -188,7 +188,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tt := componenttest.NewNopTelemetrySettings()
 			tt.TracerProvider = nil
-			client, err := test.settings.ToClientWithHost(host, tt)
+			client, err := test.settings.ToClient(host, tt)
 			assert.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
@@ -252,7 +252,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			_, err := test.settings.ToClientWithHost(host, componenttest.NewNopTelemetrySettings())
+			_, err := test.settings.ToClient(host, componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -332,7 +332,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, err := test.settings.ToClientWithHost(test.host, componenttest.NewNopTelemetrySettings())
+			client, err := test.settings.ToClient(test.host, componenttest.NewNopTelemetrySettings())
 			if test.shouldErr {
 				assert.Error(t, err)
 				return
@@ -558,7 +558,7 @@ func TestHttpReception(t *testing.T) {
 					return rt, nil
 				}
 			}
-			client, errClient := hcs.ToClientWithHost(componenttest.NewNopHost(), component.TelemetrySettings{})
+			client, errClient := hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
 			require.NoError(t, errClient)
 
 			resp, errResp := client.Get(hcs.Endpoint)
@@ -810,7 +810,7 @@ func TestHttpHeaders(t *testing.T) {
 					"header1": "value1",
 				},
 			}
-			client, _ := setting.ToClientWithHost(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)
@@ -1048,12 +1048,12 @@ func BenchmarkHttpRequest(b *testing.B) {
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
-				c, err = hcs.ToClientWithHost(componenttest.NewNopHost(), component.TelemetrySettings{})
+				c, err = hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
 				require.NoError(b, err)
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = hcs.ToClientWithHost(componenttest.NewNopHost(), component.TelemetrySettings{})
+					c, err = hcs.ToClient(componenttest.NewNopHost(), component.TelemetrySettings{})
 					require.NoError(b, err)
 				}
 				for pb.Next() {

@@ -27,7 +27,7 @@ import (
 // or scrapes from a local host) and pushes the data to the pipelines it is attached
 // to by calling the nextConsumer.Consume*() function.
 //
-// Error Handling
+// # Error Handling
 //
 // The nextConsumer.Consume*() function may return an error to indicate that the data
 // was not accepted. There are 2 types of possible errors: Permanent and non-Permanent.
@@ -48,14 +48,15 @@ import (
 // retried. In case of OTLP/HTTP for example, this means that HTTP 429 or 503 response
 // is returned.
 //
-// Acknowledgment Handling
+// # Acknowledgment Handling
 //
 // The receivers that receive data via a network protocol that support acknowledgments
 // MUST follow this order of operations:
-// - Receive data from some sender (typically from a network).
-// - Push received data to the pipeline by calling nextConsumer.Consume*() function.
-// - Acknowledge successful data receipt to the sender if Consume*() succeeded or
-//   return a failure to the sender if Consume*() returned an error.
+//   - Receive data from some sender (typically from a network).
+//   - Push received data to the pipeline by calling nextConsumer.Consume*() function.
+//   - Acknowledge successful data receipt to the sender if Consume*() succeeded or
+//     return a failure to the sender if Consume*() returned an error.
+//
 // This ensures there are strong delivery guarantees once the data is acknowledged
 // by the Collector.
 type Receiver interface {
@@ -113,23 +114,29 @@ type ReceiverFactory interface {
 	// tests of any implementation of the Factory interface.
 	CreateDefaultConfig() config.Receiver
 
-	// CreateTracesReceiver creates a trace receiver based on this config.
+	// CreateTracesReceiver creates a TracesReceiver based on this config.
 	// If the receiver type does not support tracing or if the config is not valid
 	// an error will be returned instead.
-	CreateTracesReceiver(ctx context.Context, set ReceiverCreateSettings,
-		cfg config.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
+	CreateTracesReceiver(ctx context.Context, set ReceiverCreateSettings, cfg config.Receiver, nextConsumer consumer.Traces) (TracesReceiver, error)
 
-	// CreateMetricsReceiver creates a metrics receiver based on this config.
+	// TracesReceiverStability gets the stability level of the TracesReceiver.
+	TracesReceiverStability() StabilityLevel
+
+	// CreateMetricsReceiver creates a MetricsReceiver based on this config.
 	// If the receiver type does not support metrics or if the config is not valid
 	// an error will be returned instead.
-	CreateMetricsReceiver(ctx context.Context, set ReceiverCreateSettings,
-		cfg config.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
+	CreateMetricsReceiver(ctx context.Context, set ReceiverCreateSettings, cfg config.Receiver, nextConsumer consumer.Metrics) (MetricsReceiver, error)
 
-	// CreateLogsReceiver creates a log receiver based on this config.
+	// MetricsReceiverStability gets the stability level of the MetricsReceiver.
+	MetricsReceiverStability() StabilityLevel
+
+	// CreateLogsReceiver creates a LogsReceiver based on this config.
 	// If the receiver type does not support the data type or if the config is not valid
 	// an error will be returned instead.
-	CreateLogsReceiver(ctx context.Context, set ReceiverCreateSettings,
-		cfg config.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
+	CreateLogsReceiver(ctx context.Context, set ReceiverCreateSettings, cfg config.Receiver, nextConsumer consumer.Logs) (LogsReceiver, error)
+
+	// LogsReceiverStability gets the stability level of the LogsReceiver.
+	LogsReceiverStability() StabilityLevel
 }
 
 // ReceiverFactoryOption apply changes to ReceiverOptions.
@@ -210,42 +217,36 @@ type receiverFactory struct {
 	CreateLogsReceiverFunc
 }
 
-// WithTracesReceiver overrides the default "error not supported" implementation for CreateTracesReceiver.
-// Deprecated: [v0.55.0] Use WithTracesReceiverAndStabilityLevel instead.
-func WithTracesReceiver(createTracesReceiver CreateTracesReceiverFunc) ReceiverFactoryOption {
-	return WithTracesReceiverAndStabilityLevel(createTracesReceiver, StabilityLevelUndefined)
+func (r receiverFactory) TracesReceiverStability() StabilityLevel {
+	return r.getStabilityLevel(config.TracesDataType)
 }
 
-// WithTracesReceiverAndStabilityLevel overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
-func WithTracesReceiverAndStabilityLevel(createTracesReceiver CreateTracesReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
+func (r receiverFactory) MetricsReceiverStability() StabilityLevel {
+	return r.getStabilityLevel(config.MetricsDataType)
+}
+
+func (r receiverFactory) LogsReceiverStability() StabilityLevel {
+	return r.getStabilityLevel(config.LogsDataType)
+}
+
+// WithTracesReceiver overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
+func WithTracesReceiver(createTracesReceiver CreateTracesReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
 		o.stability[config.TracesDataType] = sl
 		o.CreateTracesReceiverFunc = createTracesReceiver
 	})
 }
 
-// WithMetricsReceiver overrides the default "error not supported" implementation for CreateMetricsReceiver.
-// Deprecated: [v0.55.0] Use WithMetricsReceiverAndStabilityLevel instead.
-func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiverFunc) ReceiverFactoryOption {
-	return WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, StabilityLevelUndefined)
-}
-
-// WithMetricsReceiverAndStabilityLevel overrides the default "error not supported" implementation for CreateMetricsReceiver and the default "undefined" stability level.
-func WithMetricsReceiverAndStabilityLevel(createMetricsReceiver CreateMetricsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
+// WithMetricsReceiver overrides the default "error not supported" implementation for CreateMetricsReceiver and the default "undefined" stability level.
+func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
 		o.stability[config.MetricsDataType] = sl
 		o.CreateMetricsReceiverFunc = createMetricsReceiver
 	})
 }
 
-// WithLogsReceiver overrides the default "error not supported" implementation for CreateLogsReceiver.
-// Deprecated: [v0.55.0] Use WithLogsReceiverAndStabilityLevel instead.
-func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc) ReceiverFactoryOption {
-	return WithLogsReceiverAndStabilityLevel(createLogsReceiver, StabilityLevelUndefined)
-}
-
-// WithLogsReceiverAndStabilityLevel overrides the default "error not supported" implementation for CreateLogsReceiver and the default "undefined" stability level.
-func WithLogsReceiverAndStabilityLevel(createLogsReceiver CreateLogsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
+// WithLogsReceiver overrides the default "error not supported" implementation for CreateLogsReceiver and the default "undefined" stability level.
+func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
 		o.stability[config.LogsDataType] = sl
 		o.CreateLogsReceiverFunc = createLogsReceiver

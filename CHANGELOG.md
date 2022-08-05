@@ -2,20 +2,130 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Remove the InstrumentationLibrary to Scope translation (part of transition to OTLP 0.19). (#5819)
+  - This has a side effect that when sending JSON encoded telemetry using OTLP proto <= 0.15.0, telemetry will be dropped.
+- Require the storage to be explicitly set for the (experimental) persistent queue (#5784)
+- Remove deprecated `confighttp.HTTPClientSettings.ToClientWithHost` (#5803)
+- Remove deprecated component stability helpers (#5802):
+  - `component.WithTracesExporterAndStabilityLevel`
+  - `component.WithMetricsExporterAndStabilityLevel`
+  - `component.WithLogsExporterAndStabilityLevel`
+  - `component.WithTracesReceiverAndStabilityLevel`
+  - `component.WithMetricsReceiverAndStabilityLevel`
+  - `component.WithLogsReceiverAndStabilityLevel`
+  - `component.WithTracesProcessorAndStabilityLevel`
+  - `component.WithMetricsProcessorAndStabilityLevel`
+  - `component.WithLogsProcessorAndStabilityLevel`
+- ABI breaking change: `featuregate.Registry.Apply` returns error now.
+- Update minimum go version to 1.18 (#5795)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `featuregate.Registry.MustApply` in favor of `featuregate.Registry.Apply`.
+- Deprecate the `component.Factory.StabilityLevel(config.DataType)` in favor of Stability per component (#5762):
+  - `component.ExporterFactory.TracesExporterStability`
+  - `component.ExporterFactory.MetricsExporterStability`
+  - `component.ExporterFactory.LogsExporterStability`
+  - `component.ProcessorFactory.TracesProcessorStability`
+  - `component.ProcessorFactory.MetricsProcessorStability`
+  - `component.ProcessorFactory.LogsProcessorStability`
+  - `component.ReceiverFactory.TracesReceiverStability`
+  - `component.ReceiverFactory.MetricsReceiverStability`
+  - `component.ReceiverFactory.LogsReceiverStability`
+
+### 💡 Enhancements 💡
+
+- Bump to opentelemetry-proto v0.19.0. (#5823)
+
 ### 🧰 Bug fixes 🧰
 
 - Fix undefined cgroupv1 memroy limit with HierarchyMemoryQuota (#4972)
 
+## v0.57.2 Beta
+
+See the changelog for v0.57.0.
+
+## v0.57.1 Beta
+
+This was a failed release.
+
+## v0.57.0 Beta
+
+There isn't a valid core binary for this release. Use v0.57.2 instead.
+
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated funcs/types from service related to `Config` (#5755)
+- Change`confighttp.ToClient` to accept a `component.Host` (#5737)
+- Remove deprecated funcs from pdata related to mutable slices (#5754)
+- Change the following deprecated component functions to ensure a stability level is set:
+  - `component.WithTracesExporter`
+  - `component.WithMetricsExporter`
+  - `component.WithLogsExporter`
+  - `component.WithTracesReceiver`
+  - `component.WithMetricsReceiver`
+  - `component.WithLogsReceiver`
+  - `component.WithTracesProcessor`
+  - `component.WithMetricsProcessor`
+  - `component.WithLogsProcessor`
+
+### 🚩 Deprecations 🚩
+
+- Deprecated the current Flag API.  The new API provides functions to check and set Flags (#5790) (#5602):
+  - `NumberDataPoint.Flags` -> `NumberDataPoint.FlagsStruct`
+  - `NumberDataPoint.SetFlags` -> `NumberDataPoint.FlagsStruct`
+  - `HistogramDataPoint.Flags` -> `HistogramDataPoint.FlagsStruct`
+  - `HistogramDataPoint.SetFlags` -> `HistogramDataPoint.FlagsStruct`
+  - `ExponentialHistogramDataPoint.Flags` -> `ExponentialHistogramDataPoint.FlagsStruct`
+  - `ExponentialHistogramDataPoint.SetFlags` -> `ExponentialHistogramDataPoint.FlagsStruct`
+  - `SummaryDataPoint.Flags` -> `SummaryDataPoint.FlagsStruct`
+  - `SummaryDataPoint.SetFlags` -> `SummaryDataPoint.FlagsStruct`
+  - `MetricDataPointFlags` -> `MetricDataPointFlagsStruct`
+  - `NewMetricDataPointFlags` -> `NewMetricDataPointFlagsStruct`
+  - `MetricDataPointFlagsNone` -> `MetricDataPointFlagsStruct.NoRecordedValue`
+  - `MetricDataPointFlagNoRecordedValue` -> `MetricDataPointFlagsStruct.NoRecordedValue`
+  - `MetricDataPointFlag`
+- Deprecate the following component functions added to ensure a stability level is set:
+  - `component.WithTracesExporterAndStabilityLevel` -> `component.WithTracesExporter`
+  - `component.WithMetricsExporterAndStabilityLevel` -> `component.WithMetricsExporter`
+  - `component.WithLogsExporterAndStabilityLevel` -> `component.WithLogsExporter`
+  - `component.WithTracesReceiverAndStabilityLevel` -> `component.WithTracesReceiver`
+  - `component.WithMetricsReceiverAndStabilityLevel` -> `component.WithMetricsReceiver`
+  - `component.WithLogsReceiverAndStabilityLevel` -> `component.WithLogsReceiver`
+  - `component.WithTracesProcessorAndStabilityLevel` -> `component.WithTracesProcessor`
+  - `component.WithMetricsProcessorAndStabilityLevel` -> `component.WithMetricsProcessor`
+  - `component.WithLogsProcessorAndStabilityLevel` -> `component.WithLogsProcessor`
+  - 
+
 ### 💡 Enhancements 💡
 
-- Add `linux-ppc64le` architecture to cross build tests in CI
+- Make the in-memory and persistent queues more consistent (#5764)ś
+- `ocb` now exits with an error if it fails to load the build configuration. (#5731)
+- Deprecate `HTTPClientSettings.ToClientWithHost` (#5737)
+
+### 🧰 Bug fixes 🧰
+
+- Fix bug in ocb where flags did not take precedence. (#5726)
+
+## v0.56.0 Beta
+
+### 💡 Enhancements 💡
+
+- Add `linux-ppc64le` architecture to cross build tests in CI (#5645)
 - `client`: perform case insensitive lookups in case the requested metadata value isn't found (#5646)
 - `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
+- Expose `pcommon.NewSliceFromRaw` function (#5679)
+- `loggingexporter`: create the exporter's logger from the service's logger (#5677)
+- Add `otelcol_exporter_queue_capacity` metrics show the collector's exporter queue capacity (#5475)
+- Add support to handle 402, 413, 414, 431 http error code as permanent errors in OTLP exporter (#5685)
 
 ### 🧰 Bug fixes 🧰
 
 - Fix Collector panic when disabling telemetry metrics (#5642)
 - Fix Collector panic when featuregate value is empty (#5663)
+- Fix confighttp.compression panic due to nil request.Body. (#5628)
 
 ## v0.55.0 Beta
 
@@ -44,9 +154,6 @@
 
 - Components stability levels are now logged. By default components which haven't defined their stability levels, or which are
   unmaintained, deprecated or in development will log a message. (#5580)
-
-### 💡 Enhancements 💡
-
 - `exporter/logging`: Skip "bad file descriptor" sync errors (#5585)
 
 ### 🧰 Bug fixes 🧰
@@ -91,6 +198,7 @@
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
 - Update OTLP to v0.18.0 (#5530)
 - Log histogram min/max fields with `logging` exporter (#5520)
+- Add support in the `confmap.Resolver` to expand embedded config URIs inside configuration (#4742)
 
 ### 🧰 Bug fixes 🧰
 
@@ -209,7 +317,7 @@
 - Remove pdata deprecated funcs from 2 versions (v0.48.0) ago. (#5219)
 - Remove non pdata deprecated funcs/structs (#5220)
 - `pmetric.Exemplar.ValueType()` now returns new type `ExemplarValueType` (#5233)
-- Remove deprecated `Delete` pdata func from (v0.47.0). (#5307)
+- Remove deprecated `Delete` pdata func in favor of `pdata.Remove` from (v0.47.0). (#5307)
 
 ### 🚩 Deprecations 🚩
 

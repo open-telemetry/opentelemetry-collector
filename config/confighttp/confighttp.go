@@ -27,7 +27,6 @@ import (
 	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -99,8 +98,7 @@ func NewDefaultHTTPClientSettings() HTTPClientSettings {
 }
 
 // ToClient creates an HTTP client.
-// Deprecated: [v0.55.0] Use ToClientWithHost instead.
-func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Extension, settings component.TelemetrySettings) (*http.Client, error) {
+func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
@@ -156,6 +154,7 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 	}
 
 	if hcs.Auth != nil {
+		ext := host.GetExtensions()
 		if ext == nil {
 			return nil, errors.New("extensions configuration not found")
 		}
@@ -182,11 +181,6 @@ func (hcs *HTTPClientSettings) ToClient(ext map[config.ComponentID]component.Ext
 		Transport: clientTransport,
 		Timeout:   hcs.Timeout,
 	}, nil
-}
-
-// ToClientWithHost creates an HTTP client.
-func (hcs *HTTPClientSettings) ToClientWithHost(host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
-	return hcs.ToClient(host.GetExtensions(), settings)
 }
 
 // Custom RoundTripper that adds headers.

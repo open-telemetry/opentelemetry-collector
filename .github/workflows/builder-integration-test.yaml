@@ -20,6 +20,10 @@ on:
   # manual execution
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   integration-test:
     name: Integration test

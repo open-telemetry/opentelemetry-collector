@@ -37,9 +37,6 @@ s+repeated opentelemetry.proto.common.v1.StringKeyValue \([^]]*\);+repeated open
 s+opentelemetry.proto.resource.v1.Resource resource = \(.*\);+opentelemetry.proto.resource.v1.Resource resource = \1\
   [ (gogoproto.nullable) = false ];+g
 
-s+opentelemetry.proto.common.v1.InstrumentationLibrary instrumentation_library = \(.*\);+opentelemetry.proto.common.v1.InstrumentationLibrary instrumentation_library = \1\
-  [ (gogoproto.nullable) = false ];+g
-
 s+opentelemetry.proto.common.v1.InstrumentationScope scope = \(.*\);+opentelemetry.proto.common.v1.InstrumentationScope scope = \1\
   [ (gogoproto.nullable) = false ];+g
 

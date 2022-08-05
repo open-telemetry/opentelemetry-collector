@@ -93,13 +93,12 @@ func TestBuildExtensions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Build(context.Background(), Settings{
-				Telemetry:         componenttest.NewNopTelemetrySettings(),
-				BuildInfo:         component.NewDefaultBuildInfo(),
-				Configs:           tt.extensionsConfigs,
-				Factories:         tt.factories.Extensions,
-				ServiceExtensions: tt.serviceExtensions,
-			})
+			_, err := New(context.Background(), Settings{
+				Telemetry: componenttest.NewNopTelemetrySettings(),
+				BuildInfo: component.NewDefaultBuildInfo(),
+				Configs:   tt.extensionsConfigs,
+				Factories: tt.factories.Extensions,
+			}, tt.serviceExtensions)
 			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
 		})
@@ -107,7 +106,7 @@ func TestBuildExtensions(t *testing.T) {
 }
 
 func newBadExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		"bf",
 		func() config.Extension {
 			return &struct {
@@ -119,11 +118,12 @@ func newBadExtensionFactory() component.ExtensionFactory {
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
 			return nil, nil
 		},
+		component.StabilityLevelInDevelopment,
 	)
 }
 
 func newCreateErrorExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		"err",
 		func() config.Extension {
 			return &struct {
@@ -135,5 +135,6 @@ func newCreateErrorExtensionFactory() component.ExtensionFactory {
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
+		component.StabilityLevelInDevelopment,
 	)
 }

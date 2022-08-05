@@ -183,6 +183,110 @@ func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
+// Flags returns the flags associated with this NumberDataPoint.
+// Deprecated: [v0.57.0] Use FlagsStruct instead.
+func (ms NumberDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags(ms.orig.Flags)
+}
+
+// SetFlags replaces the flags associated with this NumberDataPoint.
+// Deprecated: [v0.57.0] Use FlagsStruct instead.
+func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
+	ms.orig.Flags = uint32(v)
+}
+
+// Flags returns the flags associated with this HistogramDataPoint.
+// Deprecated: [v0.57.0] Use FlagsStruct instead.
+func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags(ms.orig.Flags)
+}
+
+// SetFlags replaces the flags associated with this HistogramDataPoint.
+// Deprecated: [v0.57.0] Use FlagsStruct instead.
+func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
+	ms.orig.Flags = uint32(v)
+}
+
+// Flags returns the flags associated with this ExponentialHistogramDataPoint.
+// Deprecated: [v0.57.0] Use FlagsStruct instead.
+func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags(ms.orig.Flags)
+}
+
+// SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
+// Deprecated: [v0.57.0] Use FlagsStruct instead.
+func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
+	ms.orig.Flags = uint32(v)
+}
+
+// Flags returns the flags associated with this SummaryDataPoint.
+// Deprecated: [v0.57.0] Use FlagsStruct instead.
+func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags(ms.orig.Flags)
+}
+
+// SetFlags replaces the flags associated with this SummaryDataPoint.
+// Deprecated: [v0.57.0] Use FlagsStruct instead.
+func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
+	ms.orig.Flags = uint32(v)
+}
+
+// MetricDataPointFlagsStruct defines how a metric aggregator reports aggregated values.
+// It describes how those values relate to the time interval over which they are aggregated.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewMetricDataPointFlagsStruct function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type MetricDataPointFlagsStruct struct {
+	orig *uint32
+}
+
+func newMetricDataPointFlagsStruct(orig *uint32) MetricDataPointFlagsStruct {
+	return MetricDataPointFlagsStruct{orig: orig}
+}
+
+// NewMetricDataPointFlagsStruct creates a new empty MetricDataPointFlagsStruct.
+//
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
+func NewMetricDataPointFlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(new(uint32))
+}
+
+// MoveTo moves all properties from the current struct to dest
+// resetting the current instance to its zero value
+func (ms MetricDataPointFlagsStruct) MoveTo(dest MetricDataPointFlagsStruct) {
+	*dest.orig = *ms.orig
+	*ms.orig = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms MetricDataPointFlagsStruct) CopyTo(dest MetricDataPointFlagsStruct) {
+	*dest.orig = *ms.orig
+}
+
+// NoRecordedValue returns true if the MetricDataPointFlags contains the NO_RECORDED_VALUE flag.
+func (ms MetricDataPointFlagsStruct) NoRecordedValue() bool {
+	return *ms.orig&uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
+}
+
+// SetNoRecordedValue sets the FLAG_NO_RECORDED_VALUE flag if true and removes it if false.
+// Setting this Flag when it is already set will change nothing.
+func (ms MetricDataPointFlagsStruct) SetNoRecordedValue(b bool) {
+	if b {
+		*ms.orig |= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+	} else {
+		*ms.orig &^= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+	}
+}
+
+// String returns the string representation of the MetricDataPointFlags.
+func (ms MetricDataPointFlagsStruct) String() string {
+	return otlpmetrics.DataPointFlags(*ms.orig).String()
+}
+
 // MetricDataPointFlags defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
 type MetricDataPointFlags uint32
@@ -283,40 +387,4 @@ func (ot OptionalType) String() string {
 		return "Double"
 	}
 	return ""
-}
-
-// MBucketCounts returns the bucketcounts associated with this HistogramDataPoint.
-// Deprecated: [0.54.0] Use BucketCounts instead.
-func (ms HistogramDataPoint) MBucketCounts() []uint64 {
-	return ms.orig.BucketCounts
-}
-
-// SetMBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
-// Deprecated: [0.54.0] Use SetBucketCounts instead.
-func (ms HistogramDataPoint) SetMBucketCounts(v []uint64) {
-	ms.orig.BucketCounts = v
-}
-
-// MExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
-// Deprecated: [0.54.0] Use ExplicitBounds instead.
-func (ms HistogramDataPoint) MExplicitBounds() []float64 {
-	return ms.orig.ExplicitBounds
-}
-
-// SetMExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
-// Deprecated: [0.54.0] Use SetExplicitBounds instead.
-func (ms HistogramDataPoint) SetMExplicitBounds(v []float64) {
-	ms.orig.ExplicitBounds = v
-}
-
-// MBucketCounts returns the bucketcounts associated with this Buckets.
-// Deprecated: [0.54.0] Use BucketCounts instead.
-func (ms Buckets) MBucketCounts() []uint64 {
-	return ms.orig.BucketCounts
-}
-
-// SetMBucketCounts replaces the bucketcounts associated with this Buckets.
-// Deprecated: [0.54.0] Use SetBucketCounts instead.
-func (ms Buckets) SetMBucketCounts(v []uint64) {
-	ms.orig.BucketCounts = v
 }

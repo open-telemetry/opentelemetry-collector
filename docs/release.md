@@ -39,17 +39,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
     * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.44.0...main.
 
-    * Use multimod to update the version of the collector package
-      * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/versions.yaml) and commit it locally
-      * Run `make multimod-prerelease` (it might fail if you didn't commit the change above)
-
-    * Update the collector version in the collector builder to the new release in `./cmd/builder/internal/builder/config.go`.
-
-    * Update the collector version in the manifest used by `make run` to the new release in `./cmd/otelcorecol/builder-config.yaml` and run `make genotelcorecol`.
-
-    * Update the collector version in the `examples/k8s/otel-config.yaml` 
-
-    * Submit a PR with the changes and get the PR approved and merged.
+    * Run `make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0`
 
     * Ensure the `main` branch builds successfully.
 
@@ -108,14 +98,38 @@ The last step of the release process creates artifacts for the new version of th
 
 1. `unknown revision internal/coreinternal/v0.55.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module. 
 
+## Bugfix releases
+
+### Bugfix release criteria
+
+Both `opentelemetry-collector` and `opentelemetry-collector-contrib` have very short 2 week release cycles. Because of this, we put a high bar when considering making a patch release, to avoid wasting engineering time unnecessarily.
+
+When considering making a bugfix release on the `v0.N.x` release cycle, the bug in question needs to fulfill the following criteria:
+
+1. The bug was introduced on the `v0.N.x` release cycle.
+2. The bug has been reported within the first 3 working days after the official binaries were released.
+3. The bug has no workaround or the workaround is significantly harder to put in place than updating the version. Examples of simple workarounds are:
+    - Reverting a feature gate.
+    - Changing the configuration to an easy to find value.
+4. The bug happens in common setups. To gauge this, maintainers can consider the following:
+    - The bug is not specific to an uncommon platform
+    - The bug happens with the default configuration or with a commonly used one (e.g. has been reported by multiple people)
+5. The bug is sufficiently severe. For example (non-exhaustive list):
+    - The bug makes the Collector crash reliably
+    - The bug makes the Collector fails to start under an accepted configuration
+    - The bug produces significant data loss
+    - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
+
+The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
+
 ## Release schedule
 
 | Date       | Version | Release manager |
 | ---------- | ------- | --------------- |
-| 2022-06-22 | v0.54.0 | @Aneurysm9      |
-| 2022-07-06 | v0.55.0 | @tigrannajaryan |
-| 2022-07-20 | v0.56.0 | @dmitryax       |
 | 2022-08-03 | v0.57.0 | @jpkrohling     |
 | 2022-08-17 | v0.58.0 | @bogdandrutu    |
 | 2022-08-31 | v0.59.0 | @codeboten      |
 | 2022-09-14 | v0.60.0 | @mx-psi         |
+| 2022-09-28 | v0.61.0 | @Aneurysm9      |
+| 2022-10-12 | v0.62.0 | @tigrannajaryan |
+| 2022-10-26 | v0.63.0 | @dmitryax       |

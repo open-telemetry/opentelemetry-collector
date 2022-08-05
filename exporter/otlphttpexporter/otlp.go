@@ -87,7 +87,7 @@ func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*ex
 // start actually creates the HTTP client. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporter) start(_ context.Context, host component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
+	client, err := e.config.HTTPClientSettings.ToClient(host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -178,13 +178,32 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
 	}
 
-	if resp.StatusCode == http.StatusBadRequest {
-		// Report the failure as permanent if the server thinks the request is malformed.
+	if isPermanentClientFailure(resp.StatusCode) {
+		// Do not retry; report the failure as permanent if the server thinks the request is malformed.
 		return consumererror.NewPermanent(formattedErr)
 	}
 
 	// All other errors are retryable, so don't wrap them in consumererror.NewPermanent().
 	return formattedErr
+}
+
+// Does the 'code' indicate a permanent error
+func isPermanentClientFailure(code int) bool {
+	switch code {
+	case http.StatusBadRequest:
+		return true
+	case http.StatusPaymentRequired:
+		// 402 - payment required typically means that an auth token isn't valid anymore and as such, we deem it as permanent
+		return true
+	case http.StatusRequestEntityTooLarge:
+		return true
+	case http.StatusRequestURITooLong:
+		return true
+	case http.StatusRequestHeaderFieldsTooLarge:
+		return true
+	default:
+		return false
+	}
 }
 
 // Read the response and decode the status.Status from the body.

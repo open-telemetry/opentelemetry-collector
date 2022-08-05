@@ -6,13 +6,18 @@ name: changelog
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   changelog:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog')}}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
 
     steps:
       - uses: actions/checkout@v3
@@ -28,6 +33,6 @@ jobs:
             echo "A CHANGELOG was modified. Looks good!"
           else
             echo "No CHANGELOG was modified."
-            echo "Please add a CHANGELOG entry, or add the \"Skip Changelog\" label if not required."
+            echo "Please add a CHANGELOG entry, or add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if not required."
             false
           fi

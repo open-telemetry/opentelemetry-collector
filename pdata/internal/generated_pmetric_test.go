@@ -931,12 +931,10 @@ func TestNumberDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
-func TestNumberDataPoint_Flags(t *testing.T) {
+func TestNumberDataPoint_FlagsStruct(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNone
-	ms.SetFlags(testValFlags)
-	assert.EqualValues(t, testValFlags, ms.Flags())
+	fillTestMetricDataPointFlagsStruct(ms.FlagsStruct())
+	assert.EqualValues(t, generateTestMetricDataPointFlagsStruct(), ms.FlagsStruct())
 }
 
 func TestHistogramDataPointSlice(t *testing.T) {
@@ -1131,12 +1129,10 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
-func TestHistogramDataPoint_Flags(t *testing.T) {
+func TestHistogramDataPoint_FlagsStruct(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNone
-	ms.SetFlags(testValFlags)
-	assert.EqualValues(t, testValFlags, ms.Flags())
+	fillTestMetricDataPointFlagsStruct(ms.FlagsStruct())
+	assert.EqualValues(t, generateTestMetricDataPointFlagsStruct(), ms.FlagsStruct())
 }
 
 func TestHistogramDataPoint_Min(t *testing.T) {
@@ -1359,12 +1355,10 @@ func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
-func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
+func TestExponentialHistogramDataPoint_FlagsStruct(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNone
-	ms.SetFlags(testValFlags)
-	assert.EqualValues(t, testValFlags, ms.Flags())
+	fillTestMetricDataPointFlagsStruct(ms.FlagsStruct())
+	assert.EqualValues(t, generateTestMetricDataPointFlagsStruct(), ms.FlagsStruct())
 }
 
 func TestExponentialHistogramDataPoint_Min(t *testing.T) {
@@ -1593,12 +1587,10 @@ func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	assert.EqualValues(t, testValQuantileValues, ms.QuantileValues())
 }
 
-func TestSummaryDataPoint_Flags(t *testing.T) {
+func TestSummaryDataPoint_FlagsStruct(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
-	testValFlags := MetricDataPointFlagsNone
-	ms.SetFlags(testValFlags)
-	assert.EqualValues(t, testValFlags, ms.Flags())
+	fillTestMetricDataPointFlagsStruct(ms.FlagsStruct())
+	assert.EqualValues(t, generateTestMetricDataPointFlagsStruct(), ms.FlagsStruct())
 }
 
 func TestValueAtQuantileSlice(t *testing.T) {
@@ -2082,7 +2074,7 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetDoubleVal(float64(17.13))
 	fillTestExemplarSlice(tv.Exemplars())
-	tv.SetFlags(MetricDataPointFlagsNone)
+	fillTestMetricDataPointFlagsStruct(tv.FlagsStruct())
 }
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
@@ -2114,7 +2106,7 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetBucketCounts(NewImmutableUInt64Slice([]uint64{1, 2, 3}))
 	tv.SetExplicitBounds(NewImmutableFloat64Slice([]float64{1, 2, 3}))
 	fillTestExemplarSlice(tv.Exemplars())
-	tv.SetFlags(MetricDataPointFlagsNone)
+	fillTestMetricDataPointFlagsStruct(tv.FlagsStruct())
 	tv.SetMin(float64(9.23))
 	tv.SetMax(float64(182.55))
 }
@@ -2150,7 +2142,7 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	fillTestBuckets(tv.Positive())
 	fillTestBuckets(tv.Negative())
 	fillTestExemplarSlice(tv.Exemplars())
-	tv.SetFlags(MetricDataPointFlagsNone)
+	fillTestMetricDataPointFlagsStruct(tv.FlagsStruct())
 	tv.SetMin(float64(9.23))
 	tv.SetMax(float64(182.55))
 }
@@ -2193,7 +2185,7 @@ func fillTestSummaryDataPoint(tv SummaryDataPoint) {
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
 	fillTestValueAtQuantileSlice(tv.QuantileValues())
-	tv.SetFlags(MetricDataPointFlagsNone)
+	fillTestMetricDataPointFlagsStruct(tv.FlagsStruct())
 }
 
 func generateTestValueAtQuantileSlice() ValueAtQuantileSlice {

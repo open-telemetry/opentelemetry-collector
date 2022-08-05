@@ -1,4 +1,4 @@
-# OpenTelemetry Collector builder
+# OpenTelemetry Collector Builder (ocb)
 [![CI](https://github.com/open-telemetry/opentelemetry-collector-builder/actions/workflows/go.yaml/badge.svg)](https://github.com/open-telemetry/opentelemetry-collector-builder/actions/workflows/go.yaml?query=branch%3Amain)
 
 This program generates a custom OpenTelemetry Collector binary based on a given configuration.
@@ -7,7 +7,7 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 
 ```console
 $ GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@latest
-$ cat > ~/.otelcol-builder.yaml <<EOF
+$ cat > otelcol-builder.yaml <<EOF
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.40.0"
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
@@ -21,7 +21,7 @@ processors:
   - import: go.opentelemetry.io/collector/processor/batchprocessor
     gomod: go.opentelemetry.io/collector v0.40.0
 EOF
-$ builder --output-path=/tmp/dist
+$ builder --config=otelcol-builder.yaml --output-path=/tmp/dist
 $ cat > /tmp/otelcol.yaml <<EOF
 receivers:
   otlp:
@@ -51,23 +51,26 @@ $ /tmp/dist/otelcol-custom --config=/tmp/otelcol.yaml
 ## Installation
 
 Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector/releases/latest) page.
+If install an official release build, the binary is named `ocb`, but if you installed by using `go install`, it will be called `builder`.
 
 ## Running
 
-A configuration file isn't strictly required, but the final artifact won't be different than a regular OpenTelemetry Collector. You probably want to specify at least one module (extension, exporter, receiver, processor) to add to your distribution. You can specify them via a configuration file. When no `--config` flag is provided with the location for the configuration file, `${HOME}/.otelcol-builder.yaml` will be used, if available.
+A build configuration file must be provided with the `--config` flag.
+You will need to specify at least one module (extension, exporter, receiver, processor) to add to your distribution.
+To build a default collector configuration, you can use [this](../otelcorecol/builder-config.yaml) build configuration.
 
 ```console
-$ builder --config config.yaml
+$ ocb --config=builder-config.yaml
 ```
 
-Use `builder --help` to learn about which flags are available.
+Use `ocb --help` to learn about which flags are available.
 
 ## Configuration
 
 The configuration file is composed of two main parts: `dist` and module types. All `dist` options can be specified via command line flags:
 
 ```console
-$ builder --name="my-otelcol"
+$ ocb --config=config.yaml --name="my-otelcol"
 ```
 
 The module types are specified at the top-level, and might be: `extensions`, `exporters`, `receivers` and `processors`. They all accept a list of components, and each component is required to have at least the `gomod` entry. When not specified, the `import` value is inferred from the `gomod`. When not specified, the `name` is inferred from the `import`.

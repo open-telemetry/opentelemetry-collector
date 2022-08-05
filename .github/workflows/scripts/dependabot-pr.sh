@@ -9,7 +9,7 @@ git checkout -b $PR_NAME
 IFS=$'\n'
 requests=$(gh pr list --search "author:app/dependabot" --json number,title --template '{{range .}}{{tablerow .title}}{{end}}')
 message=""
-dirs=`find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./'`
+dirs=`find . -type f -name "go.mod" -exec dirname {} \; | sort `
 
 for line in $requests; do
     if [[ $line != Bump* ]]; then 
@@ -33,12 +33,11 @@ for line in $requests; do
 done
 
 make gotidy
-make otelcorecol
+make genotelcorecol
 
-git add go.sum go.mod
-git add "**/go.sum" "**/go.mod"
+git add --all
 git commit -m "dependabot updates `date`
 $message"
 git push origin $PR_NAME
 
-gh pr create --title "dependabot updates `date`" --body "$message" -l "Skip Changelog"
+gh pr create --title "[chore] dependabot updates `date`" --body "$message" -l "dependencies"
