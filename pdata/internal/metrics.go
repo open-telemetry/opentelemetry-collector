@@ -183,6 +183,30 @@ func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
+// FlagsStruct returns the flagsstruct associated with this NumberDataPoint.
+// Deprecated [0.58.0] Use Flags() instead
+func (ms NumberDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
+}
+
+// FlagsStruct returns the flagsstruct associated with this HistogramDataPoint.
+// Deprecated [0.58.0] Use Flags() instead
+func (ms HistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
+}
+
+// FlagsStruct returns the flagsstruct associated with this ExponentialHistogramDataPoint.
+// Deprecated [0.58.0] Use Flags() instead
+func (ms ExponentialHistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
+}
+
+// FlagsStruct returns the flagsstruct associated with this SummaryDataPoint.
+// Deprecated [0.58.0] Use Flags() instead
+func (ms SummaryDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
+}
+
 // MetricDataPointFlagsStruct defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
 //
@@ -191,9 +215,7 @@ func (at MetricAggregationTemporality) String() string {
 //
 // Must use NewMetricDataPointFlagsStruct function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type MetricDataPointFlagsStruct struct {
-	orig *uint32
-}
+type MetricDataPointFlagsStruct = MetricDataPointFlags
 
 func newMetricDataPointFlagsStruct(orig *uint32) MetricDataPointFlagsStruct {
 	return MetricDataPointFlagsStruct{orig: orig}
@@ -207,26 +229,50 @@ func NewMetricDataPointFlagsStruct() MetricDataPointFlagsStruct {
 	return newMetricDataPointFlagsStruct(new(uint32))
 }
 
+// MetricDataPointFlags defines how a metric aggregator reports aggregated values.
+// It describes how those values relate to the time interval over which they are aggregated.
+//
+// This is a reference type, if passed by value and callee modifies it the
+// caller will see the modification.
+//
+// Must use NewMetricDataPointFlagsStruct function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type MetricDataPointFlags struct {
+	orig *uint32
+}
+
+func newMetricDataPointFlags(orig *uint32) MetricDataPointFlags {
+	return MetricDataPointFlags{orig: orig}
+}
+
+// NewMetricDataPointFlags creates a new empty MetricDataPointFlags.
+//
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
+func NewMetricDataPointFlags() MetricDataPointFlags {
+	return newMetricDataPointFlags(new(uint32))
+}
+
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
-func (ms MetricDataPointFlagsStruct) MoveTo(dest MetricDataPointFlagsStruct) {
+func (ms MetricDataPointFlags) MoveTo(dest MetricDataPointFlags) {
 	*dest.orig = *ms.orig
 	*ms.orig = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms MetricDataPointFlagsStruct) CopyTo(dest MetricDataPointFlagsStruct) {
+func (ms MetricDataPointFlags) CopyTo(dest MetricDataPointFlags) {
 	*dest.orig = *ms.orig
 }
 
 // NoRecordedValue returns true if the MetricDataPointFlags contains the NO_RECORDED_VALUE flag.
-func (ms MetricDataPointFlagsStruct) NoRecordedValue() bool {
+func (ms MetricDataPointFlags) NoRecordedValue() bool {
 	return *ms.orig&uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
 }
 
 // SetNoRecordedValue sets the FLAG_NO_RECORDED_VALUE flag if true and removes it if false.
 // Setting this Flag when it is already set will change nothing.
-func (ms MetricDataPointFlagsStruct) SetNoRecordedValue(b bool) {
+func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
 	if b {
 		*ms.orig |= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 	} else {
@@ -235,7 +281,7 @@ func (ms MetricDataPointFlagsStruct) SetNoRecordedValue(b bool) {
 }
 
 // String returns the string representation of the MetricDataPointFlags.
-func (ms MetricDataPointFlagsStruct) String() string {
+func (ms MetricDataPointFlags) String() string {
 	return otlpmetrics.DataPointFlags(*ms.orig).String()
 }
 

@@ -931,10 +931,10 @@ func TestNumberDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
-func TestNumberDataPoint_FlagsStruct(t *testing.T) {
+func TestNumberDataPoint_Flags(t *testing.T) {
 	ms := NewNumberDataPoint()
-	fillTestMetricDataPointFlagsStruct(ms.FlagsStruct())
-	assert.EqualValues(t, generateTestMetricDataPointFlagsStruct(), ms.FlagsStruct())
+	fillTestMetricDataPointFlags(ms.Flags())
+	assert.EqualValues(t, generateTestMetricDataPointFlags(), ms.Flags())
 }
 
 func TestHistogramDataPointSlice(t *testing.T) {
@@ -1129,10 +1129,10 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
-func TestHistogramDataPoint_FlagsStruct(t *testing.T) {
+func TestHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	fillTestMetricDataPointFlagsStruct(ms.FlagsStruct())
-	assert.EqualValues(t, generateTestMetricDataPointFlagsStruct(), ms.FlagsStruct())
+	fillTestMetricDataPointFlags(ms.Flags())
+	assert.EqualValues(t, generateTestMetricDataPointFlags(), ms.Flags())
 }
 
 func TestHistogramDataPoint_Min(t *testing.T) {
@@ -1355,10 +1355,10 @@ func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
 	assert.EqualValues(t, testValExemplars, ms.Exemplars())
 }
 
-func TestExponentialHistogramDataPoint_FlagsStruct(t *testing.T) {
+func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	fillTestMetricDataPointFlagsStruct(ms.FlagsStruct())
-	assert.EqualValues(t, generateTestMetricDataPointFlagsStruct(), ms.FlagsStruct())
+	fillTestMetricDataPointFlags(ms.Flags())
+	assert.EqualValues(t, generateTestMetricDataPointFlags(), ms.Flags())
 }
 
 func TestExponentialHistogramDataPoint_Min(t *testing.T) {
@@ -1587,10 +1587,10 @@ func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	assert.EqualValues(t, testValQuantileValues, ms.QuantileValues())
 }
 
-func TestSummaryDataPoint_FlagsStruct(t *testing.T) {
+func TestSummaryDataPoint_Flags(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	fillTestMetricDataPointFlagsStruct(ms.FlagsStruct())
-	assert.EqualValues(t, generateTestMetricDataPointFlagsStruct(), ms.FlagsStruct())
+	fillTestMetricDataPointFlags(ms.Flags())
+	assert.EqualValues(t, generateTestMetricDataPointFlags(), ms.Flags())
 }
 
 func TestValueAtQuantileSlice(t *testing.T) {
@@ -2074,7 +2074,7 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetDoubleVal(float64(17.13))
 	fillTestExemplarSlice(tv.Exemplars())
-	fillTestMetricDataPointFlagsStruct(tv.FlagsStruct())
+	fillTestMetricDataPointFlags(tv.Flags())
 }
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
@@ -2106,7 +2106,7 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetBucketCounts(NewImmutableUInt64Slice([]uint64{1, 2, 3}))
 	tv.SetExplicitBounds(NewImmutableFloat64Slice([]float64{1, 2, 3}))
 	fillTestExemplarSlice(tv.Exemplars())
-	fillTestMetricDataPointFlagsStruct(tv.FlagsStruct())
+	fillTestMetricDataPointFlags(tv.Flags())
 	tv.SetMin(float64(9.23))
 	tv.SetMax(float64(182.55))
 }
@@ -2142,7 +2142,7 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	fillTestBuckets(tv.Positive())
 	fillTestBuckets(tv.Negative())
 	fillTestExemplarSlice(tv.Exemplars())
-	fillTestMetricDataPointFlagsStruct(tv.FlagsStruct())
+	fillTestMetricDataPointFlags(tv.Flags())
 	tv.SetMin(float64(9.23))
 	tv.SetMax(float64(182.55))
 }
@@ -2185,7 +2185,7 @@ func fillTestSummaryDataPoint(tv SummaryDataPoint) {
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
 	fillTestValueAtQuantileSlice(tv.QuantileValues())
-	fillTestMetricDataPointFlagsStruct(tv.FlagsStruct())
+	fillTestMetricDataPointFlags(tv.Flags())
 }
 
 func generateTestValueAtQuantileSlice() ValueAtQuantileSlice {
