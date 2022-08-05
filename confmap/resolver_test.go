@@ -34,9 +34,9 @@ type mockProvider struct {
 	errC   error
 }
 
-func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher WatcherFunc) (Retrieved, error) {
+func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher WatcherFunc) (*Retrieved, error) {
 	if m.errR != nil {
-		return Retrieved{}, m.errR
+		return nil, m.errR
 	}
 	if m.retM == nil {
 		return NewRetrieved(nil)
@@ -59,23 +59,23 @@ func (m *mockProvider) Shutdown(context.Context) error {
 
 type fakeProvider struct {
 	scheme string
-	ret    func(ctx context.Context, uri string, watcher WatcherFunc) (Retrieved, error)
+	ret    func(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error)
 }
 
 func newFileProvider(t testing.TB) Provider {
-	return newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	return newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(newConfFromFile(t, uri[5:]))
 	})
 }
 
-func newFakeProvider(scheme string, ret func(ctx context.Context, uri string, watcher WatcherFunc) (Retrieved, error)) Provider {
+func newFakeProvider(scheme string, ret func(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error)) Provider {
 	return &fakeProvider{
 		scheme: scheme,
 		ret:    ret,
 	}
 }
 
-func (f *fakeProvider) Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (Retrieved, error) {
+func (f *fakeProvider) Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error) {
 	return f.ret(ctx, uri, watcher)
 }
 
@@ -241,8 +241,8 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 	for _, tt := range tests {
 		resolver, err := NewResolver(ResolverSettings{
 			URIs: []string{tt.location},
-			Providers: makeMapProvidersMap(newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
-				return Retrieved{}, errors.New(uri)
+			Providers: makeMapProvidersMap(newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
+				return nil, errors.New(uri)
 			})),
 			Converters: nil})
 		assert.NoError(t, err)
@@ -335,10 +335,10 @@ func TestResolverExpandEnvVars(t *testing.T) {
 	}
 
 	expectedCfgMap := newConfFromFile(t, filepath.Join("testdata", "expand-with-no-env.yaml"))
-	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(newConfFromFile(t, uri[5:]))
 	})
-	envProvider := newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	envProvider := newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(envs[uri[4:]])
 	})
 
@@ -356,14 +356,14 @@ func TestResolverExpandEnvVars(t *testing.T) {
 }
 
 func TestResolverExpandMapAndSliceValues(t *testing.T) {
-	provider := newFakeProvider("input", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(map[string]interface{}{
 			"test_map":   map[string]interface{}{"recv": "${test:MAP_VALUE}"},
 			"test_slice": []interface{}{"${test:MAP_VALUE}"}})
 	})
 
 	const receiverExtraMapValue = "some map value"
-	testProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(receiverExtraMapValue)
 	})
 
@@ -381,11 +381,11 @@ func TestResolverExpandMapAndSliceValues(t *testing.T) {
 
 func TestResolverInfiniteExpand(t *testing.T) {
 	const receiverValue = "${test:VALUE}"
-	provider := newFakeProvider("input", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(map[string]interface{}{"test": receiverValue})
 	})
 
-	testProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(receiverValue)
 	})
 
@@ -398,11 +398,11 @@ func TestResolverInfiniteExpand(t *testing.T) {
 }
 
 func TestResolverExpandSliceValueError(t *testing.T) {
-	provider := newFakeProvider("input", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(map[string]interface{}{"test": []interface{}{"${test:VALUE}"}})
 	})
 
-	testProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(errors.New("invalid value"))
 	})
 
@@ -415,11 +415,11 @@ func TestResolverExpandSliceValueError(t *testing.T) {
 }
 
 func TestResolverExpandMapValueError(t *testing.T) {
-	provider := newFakeProvider("input", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(map[string]interface{}{"test": []interface{}{map[string]interface{}{"test": "${test:VALUE}"}}})
 	})
 
-	testProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(errors.New("invalid value"))
 	})
 
