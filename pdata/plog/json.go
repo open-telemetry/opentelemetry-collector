@@ -62,6 +62,6 @@ func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	if err := d.delegate.Unmarshal(bytes.NewReader(buf), &ld); err != nil {
 		return Logs{}, err
 	}
-	otlp.InstrumentationLibraryLogsToScope(ld.ResourceLogs)
+	otlp.MigrateLogs(ld.ResourceLogs)
 	return internal.LogsFromProto(ld), nil
 }

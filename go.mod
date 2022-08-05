@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector
 
-go 1.17
+go 1.18
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.1
@@ -12,7 +12,7 @@ require (
 	github.com/knadh/koanf v1.4.2
 	github.com/magiconair/properties v1.8.6
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/mostynb/go-grpc-compression v1.1.16
+	github.com/mostynb/go-grpc-compression v1.1.17
 	github.com/prometheus/common v0.37.0
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil/v3 v3.22.6
@@ -39,7 +39,7 @@ require (
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
 	google.golang.org/grpc v1.48.0
-	google.golang.org/protobuf v1.28.0
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -86,4 +86,8 @@ replace go.opentelemetry.io/collector/semconv => ./semconv
 
 replace go.opentelemetry.io/collector/pdata => ./pdata
 
-retract v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
+retract (
+	v0.57.1 // Release failed, use v0.57.2
+	v0.57.0 // Release failed, use v0.57.2
+	v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
+)

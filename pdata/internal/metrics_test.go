@@ -691,15 +691,55 @@ func TestMetricsClone(t *testing.T) {
 func TestMetricsDataPointFlags(t *testing.T) {
 	gauge := generateTestGauge()
 
-	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags())
-	assert.True(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
-	assert.False(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
+	assert.False(t, gauge.DataPoints().At(0).FlagsStruct().NoRecordedValue())
 	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).Flags().String())
 
-	gauge.DataPoints().At(0).SetFlags(NewMetricDataPointFlags(MetricDataPointFlagNoRecordedValue))
-	assert.False(t, gauge.DataPoints().At(0).Flags() == MetricDataPointFlagsNone)
-	assert.True(t, gauge.DataPoints().At(0).Flags().HasFlag(MetricDataPointFlagNoRecordedValue))
-	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(0).Flags().String())
+	gauge.DataPoints().At(1).FlagsStruct().SetNoRecordedValue(true)
+	assert.True(t, gauge.DataPoints().At(1).FlagsStruct().NoRecordedValue())
+	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(1).FlagsStruct().String())
+	gauge.DataPoints().At(1).FlagsStruct().SetNoRecordedValue(false)
+	assert.False(t, gauge.DataPoints().At(1).FlagsStruct().NoRecordedValue())
+
+	gauge.DataPoints().At(1).FlagsStruct().SetNoRecordedValue(true)
+	gauge.DataPoints().At(1).FlagsStruct().SetNoRecordedValue(true)
+	assert.True(t, gauge.DataPoints().At(1).FlagsStruct().NoRecordedValue())
+
+	gauge.DataPoints().At(0).FlagsStruct().SetNoRecordedValue(true)
+	gauge.DataPoints().At(0).FlagsStruct().MoveTo(gauge.DataPoints().At(1).FlagsStruct())
+	assert.False(t, gauge.DataPoints().At(0).FlagsStruct().NoRecordedValue())
+	assert.True(t, gauge.DataPoints().At(1).FlagsStruct().NoRecordedValue())
+}
+
+func TestNumberDataPoint_Flags(t *testing.T) {
+	ms := NewNumberDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
+func TestHistogramDataPoint_Flags(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
+func TestSummaryDataPoint_Flags(t *testing.T) {
+	ms := NewSummaryDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
+}
+
+func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.EqualValues(t, MetricDataPointFlagsNone, ms.Flags())
+	testValFlags := MetricDataPointFlagsNone
+	ms.SetFlags(testValFlags)
+	assert.EqualValues(t, testValFlags, ms.Flags())
 }
 
 func BenchmarkMetricsClone(b *testing.B) {
@@ -1006,4 +1046,14 @@ func generateMetricsEmptyDataPoints() Metrics {
 			},
 		},
 	}}
+}
+
+func fillTestMetricDataPointFlagsStruct(tv MetricDataPointFlagsStruct) {
+	*tv.orig = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
+}
+
+func generateTestMetricDataPointFlagsStruct() MetricDataPointFlagsStruct {
+	tv := NewMetricDataPointFlagsStruct()
+	fillTestMetricDataPointFlagsStruct(tv)
+	return tv
 }

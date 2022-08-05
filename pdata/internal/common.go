@@ -73,12 +73,12 @@ func (avt ValueType) String() string {
 // value representation. For the same reason passing by value and calling setters
 // will modify the original, e.g.:
 //
-//   func f1(val Value) { val.SetIntVal(234) }
-//   func f2() {
-//       v := NewValueString("a string")
-//       f1(v)
-//       _ := v.Type() // this will return ValueTypeInt
-//   }
+//	func f1(val Value) { val.SetIntVal(234) }
+//	func f2() {
+//	    v := NewValueString("a string")
+//	    f1(v)
+//	    _ := v.Type() // this will return ValueTypeInt
+//	}
 //
 // Important: zero-initialized instance is not valid for use. All Value functions below must
 // be called only on instances that are created via NewValue+ functions.
@@ -180,9 +180,6 @@ func newValueFromRaw(iv interface{}) Value {
 // Type returns the type of the value for this Value.
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) Type() ValueType {
-	if v.orig.Value == nil {
-		return ValueTypeEmpty
-	}
 	switch v.orig.Value.(type) {
 	case *otlpcommon.AnyValue_StringValue:
 		return ValueTypeString
@@ -834,7 +831,8 @@ func (m Map) UpsertBytes(k string, v ImmutableByteSlice) {
 
 // Sort sorts the entries in the Map so two instances can be compared.
 // Returns the same instance to allow nicer code like:
-//   assert.EqualValues(t, expected.Sort(), actual.Sort())
+//
+//	assert.EqualValues(t, expected.Sort(), actual.Sort())
 func (m Map) Sort() Map {
 	// Intention is to move the nil values at the end.
 	sort.SliceStable(*m.orig, func(i, j int) bool {
@@ -855,9 +853,9 @@ func (m Map) Len() int {
 //
 // Example:
 //
-//   sm.Range(func(k string, v Value) bool {
-//       ...
-//   })
+//	sm.Range(func(k string, v Value) bool {
+//	    ...
+//	})
 func (m Map) Range(f func(k string, v Value) bool) {
 	for i := range *m.orig {
 		kv := &(*m.orig)[i]

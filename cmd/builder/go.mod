@@ -14,7 +14,7 @@
 
 module go.opentelemetry.io/collector/cmd/builder
 
-go 1.17
+go 1.18
 
 require (
 	github.com/knadh/koanf v1.4.2
@@ -36,4 +36,9 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
+
+retract (
+	v0.57.1 // Release failed, use v0.57.2
+	v0.57.0 // Release failed, use v0.57.2
 )

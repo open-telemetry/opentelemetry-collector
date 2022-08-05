@@ -35,7 +35,7 @@ type nopExtensionConfig struct {
 
 // NewNopExtensionFactory returns a component.ExtensionFactory that constructs nop extensions.
 func NewNopExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		"nop",
 		func() config.Extension {
 			return &nopExtensionConfig{
@@ -44,7 +44,8 @@ func NewNopExtensionFactory() component.ExtensionFactory {
 		},
 		func(context.Context, component.ExtensionCreateSettings, config.Extension) (component.Extension, error) {
 			return nopExtensionInstance, nil
-		})
+		},
+		component.StabilityLevelStable)
 }
 
 var nopExtensionInstance = &nopExtension{}

@@ -39,9 +39,9 @@ type ExampleExporterConfig struct {
 var ExampleExporterFactory = component.NewExporterFactory(
 	typeStr,
 	createExporterDefaultConfig,
-	component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
-	component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
-	component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
+	component.WithTracesExporter(createTracesExporter, stability),
+	component.WithMetricsExporter(createMetricsExporter, stability),
+	component.WithLogsExporter(createLogsExporter, stability),
 )
 
 func createExporterDefaultConfig() config.Exporter {

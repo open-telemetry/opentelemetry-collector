@@ -106,7 +106,7 @@ func TestBuildExtensions(t *testing.T) {
 }
 
 func newBadExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		"bf",
 		func() config.Extension {
 			return &struct {
@@ -118,11 +118,12 @@ func newBadExtensionFactory() component.ExtensionFactory {
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
 			return nil, nil
 		},
+		component.StabilityLevelInDevelopment,
 	)
 }
 
 func newCreateErrorExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		"err",
 		func() config.Extension {
 			return &struct {
@@ -134,5 +135,6 @@ func newCreateErrorExtensionFactory() component.ExtensionFactory {
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
+		component.StabilityLevelInDevelopment,
 	)
 }

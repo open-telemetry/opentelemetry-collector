@@ -15,32 +15,9 @@
 package otlp // import "go.opentelemetry.io/collector/pdata/internal/otlp"
 
 import (
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-// InstrumentationLibraryToScope implements the translation of resource span data
-// following the v0.15.0 upgrade:
-//      receivers SHOULD check if instrumentation_library_spans is set
-//      and scope_spans is not set then the value in instrumentation_library_spans
-//      SHOULD be used instead by converting InstrumentationLibrarySpans into ScopeSpans.
-//      If scope_spans is set then instrumentation_library_spans SHOULD be ignored.
-// https://github.com/open-telemetry/opentelemetry-proto/blob/3c2915c01a9fb37abfc0415ec71247c4978386b0/opentelemetry/proto/trace/v1/trace.proto#L58
-func InstrumentationLibrarySpansToScope(rss []*otlptrace.ResourceSpans) {
-	for _, rs := range rss {
-		if len(rs.ScopeSpans) == 0 {
-			for _, ils := range rs.InstrumentationLibrarySpans {
-				scopeSpans := otlptrace.ScopeSpans{
-					Scope: otlpcommon.InstrumentationScope{
-						Name:    ils.InstrumentationLibrary.Name,
-						Version: ils.InstrumentationLibrary.Version,
-					},
-					Spans:     ils.Spans,
-					SchemaUrl: ils.SchemaUrl,
-				}
-				rs.ScopeSpans = append(rs.ScopeSpans, &scopeSpans)
-			}
-		}
-		rs.InstrumentationLibrarySpans = nil
-	}
-}
+// MigrateTraces implements any translation needed due to deprecation in OTLP traces protocol.
+// Any ptrace.Unmarshaler implementation from OTLP (proto/json) MUST call this, and the gRPC Server implementation.
+func MigrateTraces(_ []*otlptrace.ResourceSpans) {}

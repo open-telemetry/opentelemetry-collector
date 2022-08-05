@@ -44,12 +44,12 @@ const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t
 }`
 
 const accessorsPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-${extraComment}func (ms ${structName}) ${fieldName}() ${returnType} {
+func (ms ${structName}) ${fieldName}() ${returnType} {
 	return (*ms.orig).${originFieldName}
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-${extraComment}func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	(*ms.orig).${originFieldName} = v
 }`
 
@@ -278,7 +278,6 @@ func (mf *messageValueField) generateCopyToValue(sb *strings.Builder) {
 var _ baseField = (*messageValueField)(nil)
 
 type primitiveField struct {
-	extraComment    string
 	fieldName       string
 	originFieldName string
 	returnType      string
@@ -291,11 +290,6 @@ func (pf *primitiveField) generateAccessors(ms baseStruct, sb *strings.Builder) 
 		switch name {
 		case "structName":
 			return ms.getName()
-		case "extraComment":
-			if pf.extraComment != "" {
-				return "//\n// " + pf.extraComment + "\n"
-			}
-			return ""
 		case "fieldName":
 			return pf.fieldName
 		case "lowerFieldName":
@@ -348,9 +342,7 @@ type primitiveTypedField struct {
 }
 
 func (ptf *primitiveTypedField) generateAccessors(ms baseStruct, sb *strings.Builder) {
-	template := accessorsPrimitiveTypedTemplate
-
-	sb.WriteString(os.Expand(template, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveTypedTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
@@ -407,8 +399,7 @@ type primitiveStructField struct {
 }
 
 func (ptf *primitiveStructField) generateAccessors(ms baseStruct, sb *strings.Builder) {
-	template := accessorsPrimitiveStructTemplate
-	sb.WriteString(os.Expand(template, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveStructTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()

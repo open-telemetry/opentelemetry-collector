@@ -106,7 +106,7 @@ func (mr Request) UnmarshalJSON(data []byte) error {
 	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig); err != nil {
 		return err
 	}
-	otlp.InstrumentationLibraryMetricsToScope(mr.orig.ResourceMetrics)
+	otlp.MigrateMetrics(mr.orig.ResourceMetrics)
 	return nil
 }
 
@@ -158,7 +158,7 @@ type rawMetricsServer struct {
 }
 
 func (s rawMetricsServer) Export(ctx context.Context, request *otlpcollectormetrics.ExportMetricsServiceRequest) (*otlpcollectormetrics.ExportMetricsServiceResponse, error) {
-	otlp.InstrumentationLibraryMetricsToScope(request.ResourceMetrics)
+	otlp.MigrateMetrics(request.ResourceMetrics)
 	rsp, err := s.srv.Export(ctx, Request{orig: request})
 	return rsp.orig, err
 }

@@ -57,10 +57,11 @@ func (es ResourceMetricsSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
 	return newResourceMetrics((*es.orig)[ix])
 }
@@ -90,12 +91,13 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ResourceMetricsSlice can be initialized:
-//   es := NewResourceMetricsSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//
+//	es := NewResourceMetricsSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
@@ -119,10 +121,11 @@ func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b ResourceMetrics) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//
+//	lessFunc := func(a, b ResourceMetrics) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) ResourceMetricsSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -251,10 +254,11 @@ func (es ScopeMetricsSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es ScopeMetricsSlice) At(ix int) ScopeMetrics {
 	return newScopeMetrics((*es.orig)[ix])
 }
@@ -284,12 +288,13 @@ func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ScopeMetricsSlice can be initialized:
-//   es := NewScopeMetricsSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//
+//	es := NewScopeMetricsSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es ScopeMetricsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
@@ -313,10 +318,11 @@ func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b ScopeMetrics) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//
+//	lessFunc := func(a, b ScopeMetrics) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) ScopeMetricsSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -445,10 +451,11 @@ func (es MetricSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es MetricSlice) At(ix int) Metric {
 	return newMetric((*es.orig)[ix])
 }
@@ -478,12 +485,13 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new MetricSlice can be initialized:
-//   es := NewMetricSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//
+//	es := NewMetricSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es MetricSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
@@ -507,10 +515,11 @@ func (es MetricSlice) AppendEmpty() Metric {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b Metric) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//
+//	lessFunc := func(a, b Metric) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es MetricSlice) Sort(less func(a, b Metric) bool) MetricSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -1001,10 +1010,11 @@ func (es NumberDataPointSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es NumberDataPointSlice) At(ix int) NumberDataPoint {
 	return newNumberDataPoint((*es.orig)[ix])
 }
@@ -1034,12 +1044,13 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new NumberDataPointSlice can be initialized:
-//   es := NewNumberDataPointSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//
+//	es := NewNumberDataPointSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
@@ -1063,10 +1074,11 @@ func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b NumberDataPoint) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//
+//	lessFunc := func(a, b NumberDataPoint) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) NumberDataPointSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -1200,14 +1212,9 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
-// Flags returns the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags((*ms.orig).Flags)
-}
-
-// SetFlags replaces the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
-	(*ms.orig).Flags = uint32(v)
+// FlagsStruct returns the flagsstruct associated with this NumberDataPoint.
+func (ms NumberDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1223,7 +1230,7 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlags(ms.Flags())
+	ms.FlagsStruct().CopyTo(dest.FlagsStruct())
 }
 
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
@@ -1260,10 +1267,11 @@ func (es HistogramDataPointSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
 	return newHistogramDataPoint((*es.orig)[ix])
 }
@@ -1293,12 +1301,13 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new HistogramDataPointSlice can be initialized:
-//   es := NewHistogramDataPointSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//
+//	es := NewHistogramDataPointSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
@@ -1322,10 +1331,11 @@ func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b HistogramDataPoint) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//
+//	lessFunc := func(a, b HistogramDataPoint) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) HistogramDataPointSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -1469,14 +1479,9 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
-// Flags returns the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags((*ms.orig).Flags)
-}
-
-// SetFlags replaces the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
-	(*ms.orig).Flags = uint32(v)
+// FlagsStruct returns the flagsstruct associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
 }
 
 // Min returns the min associated with this HistogramDataPoint.
@@ -1536,7 +1541,7 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlags(ms.Flags())
+	ms.FlagsStruct().CopyTo(dest.FlagsStruct())
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
 	}
@@ -1581,10 +1586,11 @@ func (es ExponentialHistogramDataPointSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es ExponentialHistogramDataPointSlice) At(ix int) ExponentialHistogramDataPoint {
 	return newExponentialHistogramDataPoint((*es.orig)[ix])
 }
@@ -1614,12 +1620,13 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ExponentialHistogramDataPointSlice can be initialized:
-//   es := NewExponentialHistogramDataPointSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//
+//	es := NewExponentialHistogramDataPointSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
@@ -1643,10 +1650,11 @@ func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramD
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b ExponentialHistogramDataPoint) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//
+//	lessFunc := func(a, b ExponentialHistogramDataPoint) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es ExponentialHistogramDataPointSlice) Sort(less func(a, b ExponentialHistogramDataPoint) bool) ExponentialHistogramDataPointSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -1803,14 +1811,9 @@ func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
 	return newExemplarSlice(&(*ms.orig).Exemplars)
 }
 
-// Flags returns the flags associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags((*ms.orig).Flags)
-}
-
-// SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
-	(*ms.orig).Flags = uint32(v)
+// FlagsStruct returns the flagsstruct associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.
@@ -1860,7 +1863,7 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	ms.Positive().CopyTo(dest.Positive())
 	ms.Negative().CopyTo(dest.Negative())
 	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlags(ms.Flags())
+	ms.FlagsStruct().CopyTo(dest.FlagsStruct())
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
 	}
@@ -1967,10 +1970,11 @@ func (es SummaryDataPointSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
 	return newSummaryDataPoint((*es.orig)[ix])
 }
@@ -2000,12 +2004,13 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new SummaryDataPointSlice can be initialized:
-//   es := NewSummaryDataPointSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//
+//	es := NewSummaryDataPointSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es SummaryDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
@@ -2029,10 +2034,11 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b SummaryDataPoint) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//
+//	lessFunc := func(a, b SummaryDataPoint) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) SummaryDataPointSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -2150,14 +2156,9 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 	return newValueAtQuantileSlice(&(*ms.orig).QuantileValues)
 }
 
-// Flags returns the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags((*ms.orig).Flags)
-}
-
-// SetFlags replaces the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
-	(*ms.orig).Flags = uint32(v)
+// FlagsStruct returns the flagsstruct associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
+	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -2168,7 +2169,7 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
 	ms.QuantileValues().CopyTo(dest.QuantileValues())
-	dest.SetFlags(ms.Flags())
+	ms.FlagsStruct().CopyTo(dest.FlagsStruct())
 }
 
 // ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.
@@ -2205,10 +2206,11 @@ func (es ValueAtQuantileSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es ValueAtQuantileSlice) At(ix int) ValueAtQuantile {
 	return newValueAtQuantile((*es.orig)[ix])
 }
@@ -2238,12 +2240,13 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ValueAtQuantileSlice can be initialized:
-//   es := NewValueAtQuantileSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//
+//	es := NewValueAtQuantileSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es ValueAtQuantileSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
@@ -2267,10 +2270,11 @@ func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
-//   lessFunc := func(a, b ValueAtQuantile) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//
+//	lessFunc := func(a, b ValueAtQuantile) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.EqualValues(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es ValueAtQuantileSlice) Sort(less func(a, b ValueAtQuantile) bool) ValueAtQuantileSlice {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -2398,10 +2402,11 @@ func (es ExemplarSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es ExemplarSlice) At(ix int) Exemplar {
 	return newExemplar(&(*es.orig)[ix])
 }
@@ -2426,12 +2431,13 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ExemplarSlice can be initialized:
-//   es := NewExemplarSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//
+//	es := NewExemplarSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es ExemplarSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.orig)
 	if newCap <= oldCap {
