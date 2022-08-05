@@ -349,7 +349,6 @@ func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
 	tests := []struct {
 		file        string
 		errExpected bool
-		propagators string
 	}{
 		{file: "otelcol-prop.yaml", errExpected: true},
 		{file: "otelcol-nop.yaml", errExpected: false},
