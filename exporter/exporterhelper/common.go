@@ -176,11 +176,7 @@ type baseExporter struct {
 func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal config.DataType, reqUnmarshaler internal.RequestUnmarshaler) *baseExporter {
 	be := &baseExporter{}
 
-	be.obsrep = newObsExporter(obsreport.ExporterSettings{
-		Level:                  set.MetricsLevel,
-		ExporterID:             cfg.ID(),
-		ExporterCreateSettings: set,
-	}, globalInstruments)
+	be.obsrep = newObsExporter(obsreport.ExporterSettings{ExporterID: cfg.ID(), ExporterCreateSettings: set}, globalInstruments)
 	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
