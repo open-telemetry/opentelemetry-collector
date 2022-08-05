@@ -53,11 +53,11 @@ const (
 // MetricDataPointFlagsStruct defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
 // Deprecated [0.58.0] Use MetricDataPointFlags instead
-type MetricDataPointFlagsStruct = internal.MetricDataPointFlagsStruct
+type MetricDataPointFlagsStruct = internal.MetricDataPointFlags
 
 // NewMetricDataPointFlagsStruct returns a new empty MetricDataPointFlagsStruct.
 // Deprecated [0.58.0] Use NewMetricDataPointFlags instead
-var NewMetricDataPointFlagsStruct = internal.NewMetricDataPointFlagsStruct
+var NewMetricDataPointFlagsStruct = internal.NewMetricDataPointFlags
 
 // MetricDataPointFlags defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.

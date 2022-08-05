@@ -185,48 +185,26 @@ func (at MetricAggregationTemporality) String() string {
 
 // FlagsStruct returns the flagsstruct associated with this NumberDataPoint.
 // Deprecated [0.58.0] Use Flags() instead
-func (ms NumberDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
-	return newMetricDataPointFlagsStruct(&ms.orig.Flags)
+func (ms NumberDataPoint) FlagsStruct() MetricDataPointFlags {
+	return ms.Flags()
 }
 
 // FlagsStruct returns the flagsstruct associated with this HistogramDataPoint.
 // Deprecated [0.58.0] Use Flags() instead
-func (ms HistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
-	return newMetricDataPointFlagsStruct(&ms.orig.Flags)
+func (ms HistogramDataPoint) FlagsStruct() MetricDataPointFlags {
+	return ms.Flags()
 }
 
 // FlagsStruct returns the flagsstruct associated with this ExponentialHistogramDataPoint.
 // Deprecated [0.58.0] Use Flags() instead
-func (ms ExponentialHistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
-	return newMetricDataPointFlagsStruct(&ms.orig.Flags)
+func (ms ExponentialHistogramDataPoint) FlagsStruct() MetricDataPointFlags {
+	return ms.Flags()
 }
 
 // FlagsStruct returns the flagsstruct associated with this SummaryDataPoint.
 // Deprecated [0.58.0] Use Flags() instead
-func (ms SummaryDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
-	return newMetricDataPointFlagsStruct(&ms.orig.Flags)
-}
-
-// MetricDataPointFlagsStruct defines how a metric aggregator reports aggregated values.
-// It describes how those values relate to the time interval over which they are aggregated.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewMetricDataPointFlagsStruct function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type MetricDataPointFlagsStruct = MetricDataPointFlags
-
-func newMetricDataPointFlagsStruct(orig *uint32) MetricDataPointFlagsStruct {
-	return MetricDataPointFlagsStruct{orig: orig}
-}
-
-// NewMetricDataPointFlagsStruct creates a new empty MetricDataPointFlagsStruct.
-//
-// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
-// OR directly access the member if this is embedded in another struct.
-func NewMetricDataPointFlagsStruct() MetricDataPointFlagsStruct {
-	return newMetricDataPointFlagsStruct(new(uint32))
+func (ms SummaryDataPoint) FlagsStruct() MetricDataPointFlags {
+	return ms.Flags()
 }
 
 // MetricDataPointFlags defines how a metric aggregator reports aggregated values.
