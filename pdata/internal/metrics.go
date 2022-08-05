@@ -186,25 +186,25 @@ func (at MetricAggregationTemporality) String() string {
 // FlagsStruct returns the flagsstruct associated with this NumberDataPoint.
 // Deprecated [0.58.0] Use Flags() instead
 func (ms NumberDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
-	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
+	return newMetricDataPointFlagsStruct(&ms.orig.Flags)
 }
 
 // FlagsStruct returns the flagsstruct associated with this HistogramDataPoint.
 // Deprecated [0.58.0] Use Flags() instead
 func (ms HistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
-	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
+	return newMetricDataPointFlagsStruct(&ms.orig.Flags)
 }
 
 // FlagsStruct returns the flagsstruct associated with this ExponentialHistogramDataPoint.
 // Deprecated [0.58.0] Use Flags() instead
 func (ms ExponentialHistogramDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
-	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
+	return newMetricDataPointFlagsStruct(&ms.orig.Flags)
 }
 
 // FlagsStruct returns the flagsstruct associated with this SummaryDataPoint.
 // Deprecated [0.58.0] Use Flags() instead
 func (ms SummaryDataPoint) FlagsStruct() MetricDataPointFlagsStruct {
-	return newMetricDataPointFlagsStruct(&(*ms.orig).Flags)
+	return newMetricDataPointFlagsStruct(&ms.orig.Flags)
 }
 
 // MetricDataPointFlagsStruct defines how a metric aggregator reports aggregated values.
