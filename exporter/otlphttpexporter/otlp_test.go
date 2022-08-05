@@ -402,7 +402,14 @@ func TestErrorResponses(t *testing.T) {
 		{
 			name:           "404",
 			responseStatus: http.StatusNotFound,
-			err:            errors.New(errMsgPrefix + "404"),
+			err:            status.New(codes.InvalidArgument, "Bad field"),
+			isPermErr:      true,
+		},
+		{
+			name:           "405",
+			responseStatus: http.StatusMethodNotAllowed,
+			err:            status.New(codes.InvalidArgument, "Bad field"),
+			isPermErr:      true,
 		},
 		{
 			name:           "413",
