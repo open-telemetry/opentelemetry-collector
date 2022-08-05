@@ -143,7 +143,7 @@ func (r *Retrieved) AsRaw() (interface{}, error) {
 // going to be called after it returns except when `ctx` is cancelled.
 //
 // Should never be called concurrently with itself.
-func (r Retrieved) Close(ctx context.Context) error {
+func (r *Retrieved) Close(ctx context.Context) error {
 	if r.closeFunc == nil {
 		return nil
 	}
