@@ -90,7 +90,8 @@ func SetupTelemetry() (TestTelemetry, error) {
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		SpanRecorder:      sr,
 	}
-	settings.TracerProvider = tp
+	settings.TelemetrySettings.TracerProvider = tp
+	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 	obsMetrics := obsreportconfig.Configure(configtelemetry.LevelNormal)
 	settings.views = obsMetrics.Views
 	err := view.Register(settings.views...)

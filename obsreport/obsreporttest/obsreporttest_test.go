@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -103,7 +102,6 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -123,7 +121,6 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -143,7 +140,6 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
