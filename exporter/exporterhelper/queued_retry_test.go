@@ -42,7 +42,7 @@ import (
 )
 
 func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.PersistentRequest, error) {
+	return func(bytes []byte) (internal.Request, error) {
 		return mr, nil
 	}
 }
@@ -567,11 +567,11 @@ type mockErrorRequest struct {
 	baseRequest
 }
 
-func (mer *mockErrorRequest) export(_ context.Context) error {
+func (mer *mockErrorRequest) Export(_ context.Context) error {
 	return errors.New("transient error")
 }
 
-func (mer *mockErrorRequest) onError(error) request {
+func (mer *mockErrorRequest) OnError(error) internal.Request {
 	return mer
 }
 
@@ -579,11 +579,11 @@ func (mer *mockErrorRequest) Marshal() ([]byte, error) {
 	return nil, nil
 }
 
-func (mer *mockErrorRequest) count() int {
+func (mer *mockErrorRequest) Count() int {
 	return 7
 }
 
-func newErrorRequest(ctx context.Context) request {
+func newErrorRequest(ctx context.Context) internal.Request {
 	return &mockErrorRequest{
 		baseRequest: baseRequest{ctx: ctx},
 	}
@@ -597,7 +597,7 @@ type mockRequest struct {
 	requestCount *atomic.Int64
 }
 
-func (m *mockRequest) export(ctx context.Context) error {
+func (m *mockRequest) Export(ctx context.Context) error {
 	m.requestCount.Inc()
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -614,7 +614,7 @@ func (m *mockRequest) Marshal() ([]byte, error) {
 	return ptrace.NewProtoMarshaler().MarshalTraces(ptrace.NewTraces())
 }
 
-func (m *mockRequest) onError(error) request {
+func (m *mockRequest) OnError(error) internal.Request {
 	return &mockRequest{
 		baseRequest:  m.baseRequest,
 		cnt:          1,
@@ -629,7 +629,7 @@ func (m *mockRequest) checkNumRequests(t *testing.T, want int) {
 	}, time.Second, 1*time.Millisecond)
 }
 
-func (m *mockRequest) count() int {
+func (m *mockRequest) Count() int {
 	return m.cnt
 }
 
@@ -658,12 +658,12 @@ func newObservabilityConsumerSender(nextSender requestSender) *observabilityCons
 	}
 }
 
-func (ocs *observabilityConsumerSender) send(req request) error {
+func (ocs *observabilityConsumerSender) send(req internal.Request) error {
 	err := ocs.nextSender.send(req)
 	if err != nil {
-		ocs.droppedItemsCount.Add(int64(req.count()))
+		ocs.droppedItemsCount.Add(int64(req.Count()))
 	} else {
-		ocs.sentItemsCount.Add(int64(req.count()))
+		ocs.sentItemsCount.Add(int64(req.Count()))
 	}
 	ocs.waitGroup.Done()
 	return err
