@@ -153,7 +153,7 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 	if qrs.cfg.StorageID == nil {
 		return nil
 	}
-	
+
 	storageClient, err := toStorageClient(ctx, *qrs.cfg.StorageID, host, qrs.id, qrs.signal)
 	if err != nil {
 		return err
@@ -163,7 +163,7 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 
 	// TODO: this can be further exposed as a config param rather than relying on a type of queue
 	qrs.requeuingEnabled = true
-	
+
 	return nil
 }
 
