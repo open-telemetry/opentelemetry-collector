@@ -346,13 +346,46 @@ func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
 }
 
 func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
-	for _, tc := range ownMetricsTestCases("test version") {
-		t.Run(tc.name, func(t *testing.T) {
+	tests := []struct {
+		file        string
+		errExpected bool
+		propagators string
+	}{
+		{file: "otelcol-prop.yaml", errExpected: true},
+		{file: "otelcol-nop.yaml", errExpected: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.file, func(t *testing.T) {
+			factories, err := componenttest.NopFactories()
+			require.NoError(t, err)
+
+			cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", tt.file)}))
+			require.NoError(t, err)
+
 			colTel := newColTelemetry(featuregate.NewRegistry())
-			colTel.registry.Apply(map[string]bool{
-				allowTraceContextPropagationFeatureGateID: true,
-			})
-			testCollectorStartHelper(t, colTel, tc)
+			err = colTel.registry.Apply(map[string]bool{allowTraceContextPropagationFeatureGateID: true})
+			require.NoError(t, err)
+
+			set := CollectorSettings{
+				BuildInfo:      component.NewDefaultBuildInfo(),
+				Factories:      factories,
+				ConfigProvider: cfgProvider,
+				telemetry:      colTel,
+			}
+
+			col, err := New(set)
+			require.NoError(t, err)
+
+			if tt.errExpected {
+				require.Error(t, col.Run(context.Background()))
+				assert.Equal(t, Closed, col.GetState())
+			} else {
+				wg := startCollector(context.Background(), t, col)
+				col.Shutdown()
+				wg.Wait()
+				assert.Equal(t, Closed, col.GetState())
+			}
 		})
 	}
 }
