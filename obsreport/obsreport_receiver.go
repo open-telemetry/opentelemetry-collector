@@ -25,12 +25,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 // Receiver is a helper to add observability to a component.Receiver.
 type Receiver struct {
+	level          configtelemetry.Level
 	spanNamePrefix string
 	transport      string
 	longLivedCtx   bool
@@ -54,6 +54,7 @@ type ReceiverSettings struct {
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
 	return &Receiver{
+		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
@@ -161,7 +162,7 @@ func (rec *Receiver) endOp(
 
 	span := trace.SpanFromContext(receiverCtx)
 
-	if obsreportconfig.Level() != configtelemetry.LevelNone {
+	if rec.level != configtelemetry.LevelNone {
 		var acceptedMeasure, refusedMeasure *stats.Int64Measure
 		switch dataType {
 		case config.TracesDataType:
