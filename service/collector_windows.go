@@ -147,9 +147,9 @@ func newWithWindowsEventLogCore(set CollectorSettings, flags *flag.FlagSet, elog
 		var err error
 		cfgSet := newDefaultConfigProviderSettings(getConfigFlag(flags))
 		// Append the "overwrite properties converter" as the first converter.
-		cfgSet.MapConverters = append(
+		cfgSet.ResolverSettings.Converters = append(
 			[]confmap.Converter{overwritepropertiesconverter.New(getSetFlag(flags))},
-			cfgSet.MapConverters...)
+			cfgSet.ResolverSettings.Converters...)
 		set.ConfigProvider, err = NewConfigProvider(cfgSet)
 		if err != nil {
 			return nil, err
