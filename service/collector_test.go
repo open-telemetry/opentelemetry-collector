@@ -350,7 +350,7 @@ func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
 		file        string
 		errExpected bool
 	}{
-		{file: "otelcol-prop.yaml", errExpected: true},
+		{file: "otelcol-invalidprop.yaml", errExpected: true},
 		{file: "otelcol-nop.yaml", errExpected: false},
 	}
 
