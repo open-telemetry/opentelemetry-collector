@@ -43,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -859,6 +860,7 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 
 func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	set := componenttest.NewNopReceiverCreateSettings()
+	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 	var r component.Component
 	var err error
 	if tc != nil {

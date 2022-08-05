@@ -59,6 +59,22 @@ func TestInstrumentationScope_Version(t *testing.T) {
 	assert.EqualValues(t, testValVersion, ms.Version())
 }
 
+func TestInstrumentationScope_Attributes(t *testing.T) {
+	ms := NewInstrumentationScope()
+	assert.EqualValues(t, NewMap(), ms.Attributes())
+	fillTestMap(ms.Attributes())
+	testValAttributes := generateTestMap()
+	assert.EqualValues(t, testValAttributes, ms.Attributes())
+}
+
+func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
+	ms := NewInstrumentationScope()
+	assert.EqualValues(t, uint32(0), ms.DroppedAttributesCount())
+	testValDroppedAttributesCount := uint32(17)
+	ms.SetDroppedAttributesCount(testValDroppedAttributesCount)
+	assert.EqualValues(t, testValDroppedAttributesCount, ms.DroppedAttributesCount())
+}
+
 func TestSlice(t *testing.T) {
 	es := NewSlice()
 	assert.EqualValues(t, 0, es.Len())
@@ -169,6 +185,8 @@ func generateTestInstrumentationScope() InstrumentationScope {
 func fillTestInstrumentationScope(tv InstrumentationScope) {
 	tv.SetName("test_name")
 	tv.SetVersion("test_version")
+	fillTestMap(tv.Attributes())
+	tv.SetDroppedAttributesCount(uint32(17))
 }
 
 func generateTestSlice() Slice {

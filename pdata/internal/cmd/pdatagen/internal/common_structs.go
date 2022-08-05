@@ -46,6 +46,8 @@ var scope = &messageValueStruct{
 			defaultVal:      `""`,
 			testVal:         `"test_version"`,
 		},
+		attributes,
+		droppedAttributesCount,
 	},
 }
 

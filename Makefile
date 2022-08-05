@@ -58,7 +58,7 @@ gomoddownload:
 
 .PHONY: gotest
 gotest:
-	@$(MAKE) for-all-target TARGET="test test-unstable"
+	@$(MAKE) for-all-target TARGET="test"
 
 .PHONY: gobenchmark
 gobenchmark:
@@ -75,7 +75,7 @@ goporto:
 
 .PHONY: golint
 golint:
-	@$(MAKE) for-all-target TARGET="lint lint-unstable"
+	@$(MAKE) for-all-target TARGET="lint"
 
 .PHONY: goimpi
 goimpi:
@@ -236,7 +236,7 @@ gendependabot: $(eval SHELL:=/bin/bash)
 OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
 # The SHA matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v0.18.0
+OPENTELEMETRY_PROTO_VERSION=v0.19.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto))
