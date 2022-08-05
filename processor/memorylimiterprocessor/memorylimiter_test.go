@@ -119,7 +119,9 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		obsrep: newObsReport(),
 		logger: zap.NewNop(),
 	}
-	mp, err := processorhelper.NewMetricsProcessor(
+	mp, err := processorhelper.NewMetricsProcessorWithCreateSettings(
+		context.Background(),
+		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		},
@@ -188,7 +190,9 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		obsrep: newObsReport(),
 		logger: zap.NewNop(),
 	}
-	tp, err := processorhelper.NewTracesProcessor(
+	tp, err := processorhelper.NewTracesProcessorWithCreateSettings(
+		context.Background(),
+		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		},
@@ -257,7 +261,9 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		obsrep: newObsReport(),
 		logger: zap.NewNop(),
 	}
-	lp, err := processorhelper.NewLogsProcessor(
+	lp, err := processorhelper.NewLogsProcessorWithCreateSettings(
+		context.Background(),
+		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		},
