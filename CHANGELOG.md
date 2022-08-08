@@ -46,6 +46,7 @@
 - Enable persistent queue in the build by default (#5828)
 - Bump to opentelemetry-proto v0.19.0. (#5823)
 - Expose `Scope.Attributes` in pdata (#5826)
+- Remove unnecessary limitation on `pcommon.Value.Equal` that slices have only primitive values. (#5865)
 - Add support to handle 404, 405 http error code as permanent errors in OTLP exporter (#5827)
 
 ### 🧰 Bug fixes 🧰
