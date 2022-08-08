@@ -66,25 +66,27 @@ type configProvider struct {
 }
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
-// TODO: embed confmap.ResolverSettings into this to avoid duplicates.
 type ConfigProviderSettings struct {
-	// Locations from where the confmap.Conf is retrieved, and merged in the given order.
-	// It is required to have at least one location.
+	// ResolverSettings are the settings to configure the behavior of the confmap.Resolver.
+	ResolverSettings confmap.ResolverSettings
+
+	// Deprecated: [v0.58.0] use ConfigProviderSettings.ResolverSettings.URIs
 	Locations []string
 
-	// MapProviders is a map of pairs <scheme, confmap.Provider>.
-	// It is required to have at least one confmap.Provider.
+	// Deprecated: [v0.58.0] use ConfigProviderSettings.ResolverSettings.Providers
 	MapProviders map[string]confmap.Provider
 
-	// MapConverters is a slice of confmap.Converter.
+	// Deprecated: [v0.58.0] use ConfigProviderSettings.ResolverSettings.Converter
 	MapConverters []confmap.Converter
 }
 
-func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings {
+func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 	return ConfigProviderSettings{
-		Locations:     locations,
-		MapProviders:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New()),
-		MapConverters: []confmap.Converter{expandconverter.New()},
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:       uris,
+			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New()),
+			Converters: []confmap.Converter{expandconverter.New()},
+		},
 	}
 }
 
@@ -95,7 +97,16 @@ func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings
 //
 // * Then unmarshalls the confmap.Conf into the service Config.
 func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
-	mr, err := confmap.NewResolver(confmap.ResolverSettings{URIs: set.Locations, Providers: set.MapProviders, Converters: set.MapConverters})
+	if len(set.Locations) != 0 {
+		set.ResolverSettings.URIs = set.Locations
+	}
+	if len(set.MapProviders) != 0 {
+		set.ResolverSettings.Providers = set.MapProviders
+	}
+	if len(set.MapConverters) != 0 {
+		set.ResolverSettings.Converters = set.MapConverters
+	}
+	mr, err := confmap.NewResolver(set.ResolverSettings)
 	if err != nil {
 		return nil, err
 	}
