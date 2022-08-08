@@ -51,7 +51,7 @@ func NewPersistentQueue(ctx context.Context, name string, signal config.DataType
 }
 
 // StartConsumers starts the given number of consumers which will be consuming items
-func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{})) {
+func (pq *persistentQueue) StartConsumers(num int, callback func(item Request)) {
 	pq.numWorkers = num
 
 	for i := 0; i < pq.numWorkers; i++ {
@@ -72,8 +72,8 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 }
 
 // Produce adds an item to the queue and returns true if it was accepted
-func (pq *persistentQueue) Produce(item interface{}) bool {
-	err := pq.storage.put(item.(Request))
+func (pq *persistentQueue) Produce(item Request) bool {
+	err := pq.storage.put(item)
 	return err == nil
 }
 

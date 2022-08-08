@@ -21,10 +21,10 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 type ProducerConsumerQueue interface {
 	// StartConsumers starts a given number of goroutines consuming items from the queue
 	// and passing them into the consumer callback.
-	StartConsumers(num int, callback func(item interface{}))
+	StartConsumers(num int, callback func(item Request))
 	// Produce is used by the producer to submit new item to the queue. Returns false if the item wasn't added
 	// to the queue due to queue overflow.
-	Produce(item interface{}) bool
+	Produce(item Request) bool
 	// Size returns the current Size of the queue
 	Size() int
 	// Stop stops all consumers, as well as the length reporter if started,
