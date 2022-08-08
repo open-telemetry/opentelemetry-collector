@@ -31,7 +31,7 @@ import (
 // We want to test the overflow behavior, so we block the consumer
 // by holding a startLock before submitting items to the queue.
 func helper(t *testing.T, startConsumers func(q ProducerConsumerQueue, consumerFn func(item interface{}))) {
-	q := NewBoundedMemoryQueue(1, func(item interface{}) {})
+	q := NewBoundedMemoryQueue(1)
 
 	var startLock sync.Mutex
 
@@ -101,7 +101,7 @@ func TestBoundedQueue(t *testing.T) {
 // only after Stop will mean the consumers are still locked while
 // trying to perform the final consumptions.
 func TestShutdownWhileNotEmpty(t *testing.T) {
-	q := NewBoundedMemoryQueue(10, func(item interface{}) {})
+	q := NewBoundedMemoryQueue(10)
 
 	consumerState := newConsumerState(t)
 
@@ -185,8 +185,7 @@ func (s *consumerState) assertConsumed(expected map[string]bool) {
 }
 
 func TestZeroSize(t *testing.T) {
-	q := NewBoundedMemoryQueue(0, func(item interface{}) {
-	})
+	q := NewBoundedMemoryQueue(0)
 
 	q.StartConsumers(1, func(item interface{}) {
 	})
@@ -195,8 +194,7 @@ func TestZeroSize(t *testing.T) {
 }
 
 func BenchmarkBoundedQueue(b *testing.B) {
-	q := NewBoundedMemoryQueue(1000, func(item interface{}) {
-	})
+	q := NewBoundedMemoryQueue(1000)
 
 	q.StartConsumers(10, func(item interface{}) {
 	})
@@ -207,8 +205,7 @@ func BenchmarkBoundedQueue(b *testing.B) {
 }
 
 func BenchmarkBoundedQueueWithFactory(b *testing.B) {
-	q := NewBoundedMemoryQueue(1000, func(item interface{}) {
-	})
+	q := NewBoundedMemoryQueue(1000)
 
 	q.StartConsumers(10, func(item interface{}) {})
 

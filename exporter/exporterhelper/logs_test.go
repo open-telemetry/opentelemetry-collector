@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -107,7 +108,9 @@ func TestLogsExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(nil))
+	set := componenttest.NewNopExporterCreateSettings()
+	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, set, newPushLogsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -116,7 +119,9 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 
 func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	le, err := NewLogsExporter(&fakeLogsExporterConfig, componenttest.NewNopExporterCreateSettings(), newPushLogsData(want))
+	set := componenttest.NewNopExporterCreateSettings()
+	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
+	le, err := NewLogsExporter(&fakeLogsExporterConfig, set, newPushLogsData(want))
 	require.Nil(t, err)
 	require.NotNil(t, le)
 
