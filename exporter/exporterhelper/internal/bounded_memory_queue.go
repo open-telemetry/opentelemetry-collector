@@ -31,7 +31,7 @@ type boundedMemoryQueue struct {
 	stopWG   sync.WaitGroup
 	size     *atomic.Uint32
 	stopped  *atomic.Bool
-	items    chan interface{}
+	items    chan Request
 	capacity uint32
 }
 
@@ -39,7 +39,7 @@ type boundedMemoryQueue struct {
 // callback for dropped items (e.g. useful to emit metrics).
 func NewBoundedMemoryQueue(capacity int) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
-		items:    make(chan interface{}, capacity),
+		items:    make(chan Request, capacity),
 		stopped:  atomic.NewBool(false),
 		size:     atomic.NewUint32(0),
 		capacity: uint32(capacity),
@@ -48,7 +48,7 @@ func NewBoundedMemoryQueue(capacity int) ProducerConsumerQueue {
 
 // StartConsumers starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
-func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item interface{})) {
+func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item Request)) {
 	var startWG sync.WaitGroup
 	for i := 0; i < numWorkers; i++ {
 		q.stopWG.Add(1)
@@ -66,7 +66,7 @@ func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item i
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
-func (q *boundedMemoryQueue) Produce(item interface{}) bool {
+func (q *boundedMemoryQueue) Produce(item Request) bool {
 	if q.stopped.Load() {
 		return false
 	}
