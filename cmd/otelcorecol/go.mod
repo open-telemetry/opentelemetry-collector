@@ -7,7 +7,7 @@ go 1.18
 require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.57.2
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418
 )
 
 require (
@@ -59,18 +59,18 @@ require (
 	go.opentelemetry.io/collector/semconv v0.56.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.33.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0 // indirect
-	go.opentelemetry.io/contrib/propagators/autoprop v0.33.1-0.20220726151433-758f66bb79f9 // indirect
-	go.opentelemetry.io/contrib/propagators/aws v1.8.0 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.8.0 // indirect
-	go.opentelemetry.io/contrib/propagators/jaeger v1.8.0 // indirect
-	go.opentelemetry.io/contrib/propagators/ot v1.8.0 // indirect
+	go.opentelemetry.io/contrib/propagators/autoprop v0.34.0 // indirect
+	go.opentelemetry.io/contrib/propagators/aws v1.9.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.9.0 // indirect
+	go.opentelemetry.io/contrib/propagators/jaeger v1.9.0 // indirect
+	go.opentelemetry.io/contrib/propagators/ot v1.9.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.33.0 // indirect
-	go.opentelemetry.io/otel v1.8.0 // indirect
+	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.31.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.8.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.9.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.31.0 // indirect
-	go.opentelemetry.io/otel/trace v1.8.0 // indirect
+	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect

@@ -24,19 +24,19 @@ require (
 	go.opentelemetry.io/collector/semconv v0.56.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.33.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0
-	go.opentelemetry.io/contrib/propagators/autoprop v0.33.1-0.20220726151433-758f66bb79f9
+	go.opentelemetry.io/contrib/propagators/autoprop v0.34.0
 	go.opentelemetry.io/contrib/zpages v0.33.0
-	go.opentelemetry.io/otel v1.8.0
+	go.opentelemetry.io/otel v1.9.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.31.0
 	go.opentelemetry.io/otel/metric v0.31.0
-	go.opentelemetry.io/otel/sdk v1.8.0
+	go.opentelemetry.io/otel/sdk v1.9.0
 	go.opentelemetry.io/otel/sdk/metric v0.31.0
-	go.opentelemetry.io/otel/trace v1.8.0
+	go.opentelemetry.io/otel/trace v1.9.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
+	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
 	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.1
@@ -74,10 +74,10 @@ require (
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/contrib/propagators/aws v1.8.0 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.8.0 // indirect
-	go.opentelemetry.io/contrib/propagators/jaeger v1.8.0 // indirect
-	go.opentelemetry.io/contrib/propagators/ot v1.8.0 // indirect
+	go.opentelemetry.io/contrib/propagators/aws v1.9.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.9.0 // indirect
+	go.opentelemetry.io/contrib/propagators/jaeger v1.9.0 // indirect
+	go.opentelemetry.io/contrib/propagators/ot v1.9.0 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
