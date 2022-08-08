@@ -88,7 +88,7 @@ type queuedRetrySender struct {
 	consumerSender     requestSender
 	queue              internal.ProducerConsumerQueue
 	retryStopCh        chan struct{}
-	traceAttributes    []attribute.KeyValue
+	traceAttribute     attribute.KeyValue
 	logger             *zap.Logger
 	requeuingEnabled   bool
 	requestUnmarshaler internal.RequestUnmarshaler
@@ -105,7 +105,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 		signal:             signal,
 		cfg:                qCfg,
 		retryStopCh:        retryStopCh,
-		traceAttributes:    []attribute.KeyValue{traceAttr},
+		traceAttribute:     traceAttr,
 		logger:             sampledLogger,
 		requestUnmarshaler: reqUnmarshaler,
 	}
@@ -121,7 +121,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 	}
 
 	if qCfg.StorageID == nil {
-		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize, func(item interface{}) {})
+		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize)
 	}
 	// The Persistent Queue is initialized separately as it needs extra information about the component
 
@@ -171,12 +171,12 @@ func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, hos
 	return nil
 }
 
-func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req request, err error) error {
+func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req internal.Request, err error) error {
 	if !qrs.requeuingEnabled || qrs.queue == nil {
 		logger.Error(
 			"Exporting failed. No more retries left. Dropping data.",
 			zap.Error(err),
-			zap.Int("dropped_items", req.count()),
+			zap.Int("dropped_items", req.Count()),
 		)
 		return err
 	}
@@ -190,7 +190,7 @@ func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req request
 		logger.Error(
 			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
 			zap.Error(err),
-			zap.Int("dropped_items", req.count()),
+			zap.Int("dropped_items", req.Count()),
 		)
 	}
 	return err
@@ -203,7 +203,7 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 	}
 
 	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
-		req := item.(request)
+		req := item.(internal.Request)
 		_ = qrs.consumerSender.send(req)
 		req.OnProcessingFinished()
 	})
@@ -291,13 +291,13 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 }
 
 // send implements the requestSender interface
-func (qrs *queuedRetrySender) send(req request) error {
+func (qrs *queuedRetrySender) send(req internal.Request) error {
 	if !qrs.cfg.Enabled {
 		err := qrs.consumerSender.send(req)
 		if err != nil {
 			qrs.logger.Error(
 				"Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
-				zap.Int("dropped_items", req.count()),
+				zap.Int("dropped_items", req.Count()),
 			)
 		}
 		return err
@@ -305,19 +305,19 @@ func (qrs *queuedRetrySender) send(req request) error {
 
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
-	req.setContext(noCancellationContext{Context: req.context()})
+	req.SetContext(noCancellationContext{Context: req.Context()})
 
-	span := trace.SpanFromContext(req.context())
+	span := trace.SpanFromContext(req.Context())
 	if !qrs.queue.Produce(req) {
 		qrs.logger.Error(
 			"Dropping data because sending_queue is full. Try increasing queue_size.",
-			zap.Int("dropped_items", req.count()),
+			zap.Int("dropped_items", req.Count()),
 		)
-		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qrs.traceAttributes...))
+		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qrs.traceAttribute))
 		return errSendingQueueIsFull
 	}
 
-	span.AddEvent("Enqueued item.", trace.WithAttributes(qrs.traceAttributes...))
+	span.AddEvent("Enqueued item.", trace.WithAttributes(qrs.traceAttribute))
 	return nil
 }
 
@@ -343,7 +343,7 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 	}
 }
 
-type onRequestHandlingFinishedFunc func(*zap.Logger, request, error) error
+type onRequestHandlingFinishedFunc func(*zap.Logger, internal.Request, error) error
 
 type retrySender struct {
 	traceAttribute     attribute.KeyValue
@@ -355,7 +355,7 @@ type retrySender struct {
 }
 
 // send implements the requestSender interface
-func (rs *retrySender) send(req request) error {
+func (rs *retrySender) send(req internal.Request) error {
 	if !rs.cfg.Enabled {
 		err := rs.nextSender.send(req)
 		if err != nil {
@@ -379,7 +379,7 @@ func (rs *retrySender) send(req request) error {
 		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
-	span := trace.SpanFromContext(req.context())
+	span := trace.SpanFromContext(req.Context())
 	retryNum := int64(0)
 	for {
 		span.AddEvent(
@@ -396,14 +396,14 @@ func (rs *retrySender) send(req request) error {
 			rs.logger.Error(
 				"Exporting failed. The error is not retryable. Dropping data.",
 				zap.Error(err),
-				zap.Int("dropped_items", req.count()),
+				zap.Int("dropped_items", req.Count()),
 			)
 			return err
 		}
 
 		// Give the request a chance to extract signal data to retry if only some data
 		// failed to process.
-		req = req.onError(err)
+		req = req.OnError(err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
@@ -434,8 +434,8 @@ func (rs *retrySender) send(req request) error {
 
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
-		case <-req.context().Done():
-			return fmt.Errorf("request is cancelled or timed out %w", err)
+		case <-req.Context().Done():
+			return fmt.Errorf("Request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
 			return fmt.Errorf("interrupted due to shutdown %w", err)
 		case <-time.After(backoffDelay):

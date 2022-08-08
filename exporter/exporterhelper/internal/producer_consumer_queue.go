@@ -16,11 +16,6 @@
 
 package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
-// consumer consumes data from a bounded queue
-type consumer interface {
-	consume(item interface{})
-}
-
 // ProducerConsumerQueue defines a producer-consumer exchange which can be backed by e.g. the memory-based ring buffer queue
 // (boundedMemoryQueue) or via a disk-based queue (persistentQueue)
 type ProducerConsumerQueue interface {

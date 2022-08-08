@@ -32,7 +32,7 @@ type persistentQueue struct {
 	stopOnce   sync.Once
 	stopChan   chan struct{}
 	numWorkers int
-	storage    persistentStorage
+	storage    *persistentContiguousStorage
 }
 
 // buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
@@ -52,21 +52,17 @@ func NewPersistentQueue(ctx context.Context, name string, signal config.DataType
 
 // StartConsumers starts the given number of consumers which will be consuming items
 func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{})) {
-	factory := func() consumer {
-		return consumerFunc(callback)
-	}
 	pq.numWorkers = num
 
 	for i := 0; i < pq.numWorkers; i++ {
 		pq.stopWG.Add(1)
 		go func() {
 			defer pq.stopWG.Done()
-			itemConsumer := factory()
 
 			for {
 				select {
 				case req := <-pq.storage.get():
-					itemConsumer.consume(req)
+					callback(req)
 				case <-pq.stopChan:
 					return
 				}
@@ -77,7 +73,7 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 
 // Produce adds an item to the queue and returns true if it was accepted
 func (pq *persistentQueue) Produce(item interface{}) bool {
-	err := pq.storage.put(item.(PersistentRequest))
+	err := pq.storage.put(item.(Request))
 	return err == nil
 }
 
