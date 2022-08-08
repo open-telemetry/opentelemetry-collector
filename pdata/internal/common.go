@@ -452,7 +452,7 @@ func (v Value) AsString() string {
 // This allows us to avoid using reflection.
 func float64AsString(f float64) string {
 	if math.IsInf(f, 0) || math.IsNaN(f) {
-		return fmt.Sprintf("json: unsupported value: %s", strconv.FormatFloat(f, 'g', -1, int(64)))
+		return fmt.Sprintf("json: unsupported value: %s", strconv.FormatFloat(f, 'g', -1, 64))
 	}
 
 	// Convert as if by ES6 number to string conversion.
@@ -467,7 +467,7 @@ func float64AsString(f float64) string {
 	if abs != 0 && (abs < 1e-6 || abs >= 1e21) {
 		fmt = 'e'
 	}
-	b = strconv.AppendFloat(b, f, fmt, -1, int(64))
+	b = strconv.AppendFloat(b, f, fmt, -1, 64)
 	if fmt == 'e' {
 		// clean up e-09 to e-9
 		n := len(b)

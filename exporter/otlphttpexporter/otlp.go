@@ -201,6 +201,10 @@ func isPermanentClientFailure(code int) bool {
 		return true
 	case http.StatusRequestHeaderFieldsTooLarge:
 		return true
+	case http.StatusNotFound:
+		return true
+	case http.StatusMethodNotAllowed:
+		return true
 	default:
 		return false
 	}
