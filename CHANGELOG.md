@@ -206,7 +206,6 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
 - Update OTLP to v0.18.0 (#5530)
 - Log histogram min/max fields with `logging` exporter (#5520)
-- Add support in the `confmap.Resolver` to expand embedded config URIs inside configuration (#4742)
 
 ### 🧰 Bug fixes 🧰
 
