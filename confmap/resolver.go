@@ -209,17 +209,20 @@ func (mr *Resolver) expandValueRecursively(ctx context.Context, value interface{
 	return nil, errors.New("too many recursive expansions")
 }
 
+// Scheme name consist of a sequence of characters beginning with a letter and followed by any
+// combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
+var expandRegexp = regexp.MustCompile(`^\$\{[A-Za-z][A-Za-z0-9+.-]+:.*}$`)
+
 func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interface{}, bool, error) {
 	switch v := value.(type) {
 	case string:
 		// If it doesn't have the format "${scheme:opaque}" no need to expand.
-		if !strings.HasPrefix(v, "${") || !strings.HasSuffix(v, "}") {
+		if !expandRegexp.MatchString(v) {
 			return value, false, nil
 		}
 		uri := v[2 : len(v)-1]
-		// For backwards compatibility:
-		// - empty scheme means "env".
-		ret, err := mr.retrieveValue(ctx, location{uri: uri, defaultScheme: "env"})
+		// At this point it is guaranteed to have a valid "scheme" based on the expandRegexp, so no default.
+		ret, err := mr.retrieveValue(ctx, location{uri: uri})
 		if err != nil {
 			return nil, false, err
 		}
