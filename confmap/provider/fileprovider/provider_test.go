@@ -24,9 +24,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 const fileSchemePrefix = schemeName + ":"
+
+func TestValidateProviderScheme(t *testing.T) {
+	assert.NoError(t, confmaptest.ValidateProviderScheme(New()))
+}
 
 func TestEmptyName(t *testing.T) {
 	fp := New()
