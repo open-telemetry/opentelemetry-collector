@@ -26,18 +26,6 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-// persistentStorage provides an interface for request storage operations
-type persistentStorage interface {
-	// put appends the request to the storage
-	put(req PersistentRequest) error
-	// get returns the next available request; note that the channel is unbuffered
-	get() <-chan PersistentRequest
-	// size returns the current size of the persistent storage with items waiting for processing
-	size() uint64
-	// stop gracefully stops the storage
-	stop()
-}
-
 // persistentContiguousStorage provides a persistent queue implementation backed by file storage extension
 //
 // Write index describes the position at which next item is going to be stored.

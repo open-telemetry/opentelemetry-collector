@@ -33,7 +33,6 @@ type boundedMemoryQueue struct {
 	stopped       *atomic.Bool
 	items         chan interface{}
 	onDroppedItem func(item interface{})
-	factory       func() consumer
 	capacity      uint32
 }
 
@@ -52,10 +51,6 @@ func NewBoundedMemoryQueue(capacity int, onDroppedItem func(item interface{})) P
 // StartConsumers starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
 func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item interface{})) {
-	factory := func() consumer {
-		return consumerFunc(callback)
-	}
-	q.factory = factory
 	var startWG sync.WaitGroup
 	for i := 0; i < numWorkers; i++ {
 		q.stopWG.Add(1)
@@ -63,23 +58,13 @@ func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item i
 		go func() {
 			startWG.Done()
 			defer q.stopWG.Done()
-			itemConsumer := q.factory()
 			for item := range q.items {
 				q.size.Sub(1)
-				itemConsumer.consume(item)
+				callback(item)
 			}
 		}()
 	}
 	startWG.Wait()
-}
-
-// consumerFunc is an adapter to allow the use of
-// a consume function callback as a consumer.
-type consumerFunc func(item interface{})
-
-// Consume calls c(item)
-func (c consumerFunc) consume(item interface{}) {
-	c(item)
 }
 
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
