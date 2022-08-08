@@ -121,7 +121,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 	}
 
 	if qCfg.StorageID == nil {
-		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize, func(item interface{}) {})
+		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize)
 	}
 	// The Persistent Queue is initialized separately as it needs extra information about the component
 
