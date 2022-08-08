@@ -104,7 +104,7 @@ func (bof *batchStruct) getResult(key string, unmarshal func([]byte) (interface{
 
 // getRequestResult returns the result of a Get operation as a request
 // If the value cannot be retrieved, it returns an error
-func (bof *batchStruct) getRequestResult(key string) (PersistentRequest, error) {
+func (bof *batchStruct) getRequestResult(key string) (Request, error) {
 	reqIf, err := bof.getResult(key, bof.bytesToRequest)
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (bof *batchStruct) getRequestResult(key string) (PersistentRequest, error) 
 		return nil, errValueNotSet
 	}
 
-	return reqIf.(PersistentRequest), nil
+	return reqIf.(Request), nil
 }
 
 // getItemIndexResult returns the result of a Get operation as an itemIndex
@@ -147,7 +147,7 @@ func (bof *batchStruct) getItemIndexArrayResult(key string) ([]itemIndex, error)
 }
 
 // setRequest adds Set operation over a given request to the batch
-func (bof *batchStruct) setRequest(key string, value PersistentRequest) *batchStruct {
+func (bof *batchStruct) setRequest(key string, value Request) *batchStruct {
 	return bof.set(key, value, requestToBytes)
 }
 
@@ -218,7 +218,7 @@ func bytesToItemIndexArray(b []byte) (interface{}, error) {
 }
 
 func requestToBytes(req interface{}) ([]byte, error) {
-	return req.(PersistentRequest).Marshal()
+	return req.(Request).Marshal()
 }
 
 func (bof *batchStruct) bytesToRequest(b []byte) (interface{}, error) {

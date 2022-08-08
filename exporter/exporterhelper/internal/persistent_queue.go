@@ -73,7 +73,7 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 
 // Produce adds an item to the queue and returns true if it was accepted
 func (pq *persistentQueue) Produce(item interface{}) bool {
-	err := pq.storage.put(item.(PersistentRequest))
+	err := pq.storage.put(item.(Request))
 	return err == nil
 }
 
