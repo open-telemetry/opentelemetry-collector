@@ -17,7 +17,6 @@ package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/bu
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -70,7 +69,7 @@ func NewDefaultConfig() Config {
 		panic(fmt.Sprintf("failed to obtain a logger instance: %v", err))
 	}
 
-	outputDir, err := ioutil.TempDir("", "otelcol-distribution")
+	outputDir, err := os.MkdirTemp("", "otelcol-distribution")
 	if err != nil {
 		log.Error("failed to obtain a temporary directory", zap.Error(err))
 	}
