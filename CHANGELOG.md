@@ -6,6 +6,8 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecates `LogRecord.Flags()` and `LogRecord.SetFlags()` in favor of `LogRecord.FlagsStruct()`. (#5866)
+
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰

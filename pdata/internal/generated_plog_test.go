@@ -485,12 +485,10 @@ func TestLogRecord_SpanID(t *testing.T) {
 	assert.EqualValues(t, testValSpanID, ms.SpanID())
 }
 
-func TestLogRecord_Flags(t *testing.T) {
+func TestLogRecord_FlagsStruct(t *testing.T) {
 	ms := NewLogRecord()
-	assert.EqualValues(t, uint32(0), ms.Flags())
-	testValFlags := uint32(0x01)
-	ms.SetFlags(testValFlags)
-	assert.EqualValues(t, testValFlags, ms.Flags())
+	fillTestLogRecordFlags(ms.FlagsStruct())
+	assert.EqualValues(t, generateTestLogRecordFlags(), ms.FlagsStruct())
 }
 
 func TestLogRecord_SeverityText(t *testing.T) {
@@ -608,7 +606,7 @@ func fillTestLogRecord(tv LogRecord) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetTraceID(NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	tv.SetSpanID(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	tv.SetFlags(uint32(0x01))
+	fillTestLogRecordFlags(tv.FlagsStruct())
 	tv.SetSeverityText("INFO")
 	tv.SetSeverityNumber(SeverityNumberINFO)
 	fillTestValue(tv.Body())

@@ -121,3 +121,67 @@ const (
 
 // String returns the string representation of the SeverityNumber.
 func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }
+
+// Deprecated: [v0.59.0] use FlagsStruct().
+func (ms LogRecord) Flags() uint32 {
+	return ms.orig.Flags
+}
+
+// Deprecated: [v0.59.0] use FlagsStruct().
+func (ms LogRecord) SetFlags(v uint32) {
+	ms.orig.Flags = v
+}
+
+const (
+	traceFlagsNone = uint32(0)
+	isSampledMask  = uint32(1)
+)
+
+// LogRecordFlags defines flags for the LogRecord. 8 least significant bits are the trace flags as
+// defined in W3C Trace Context specification. 24 most significant bits are reserved and must be set to 0.
+//
+// This is a reference type, if passed by value and callee modifies it the caller will see the modification.
+//
+// Must use NewLogRecordFlags function to create new instances.
+// Important: zero-initialized instance is not valid for use.
+type LogRecordFlags struct {
+	orig *uint32
+}
+
+func newLogRecordFlags(orig *uint32) LogRecordFlags {
+	return LogRecordFlags{orig: orig}
+}
+
+// NewLogRecordFlags creates a new empty LogRecordFlags.
+//
+// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
+// OR directly access the member if this is embedded in another struct.
+func NewLogRecordFlags() LogRecordFlags {
+	return newLogRecordFlags(new(uint32))
+}
+
+// MoveTo moves all properties from the current struct to dest resetting the current instance to its zero value
+func (ms LogRecordFlags) MoveTo(dest LogRecordFlags) {
+	*dest.orig = *ms.orig
+	*ms.orig = traceFlagsNone
+}
+
+// CopyTo copies all properties from the current struct to the dest.
+func (ms LogRecordFlags) CopyTo(dest LogRecordFlags) {
+	*dest.orig = *ms.orig
+}
+
+// IsSampled returns true if the LogRecordFlags contains the IsSampled flag.
+func (ms LogRecordFlags) IsSampled() bool {
+	return *ms.orig&isSampledMask != 0
+}
+
+// SetIsSampled sets the IsSampled flag if true and removes it if false.
+// Setting this Flag when it is already set is a no-op.
+func (ms LogRecordFlags) SetIsSampled(b bool) {
+	if b {
+		*ms.orig |= isSampledMask
+	} else {
+		*ms.orig &^= isSampledMask
+	}
+}
