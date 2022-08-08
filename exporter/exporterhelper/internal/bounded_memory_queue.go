@@ -28,23 +28,21 @@ import (
 // channels, with a special Reaper goroutine that wakes up when the queue is full and consumers
 // the items from the top of the queue until its size drops back to maxSize
 type boundedMemoryQueue struct {
-	stopWG        sync.WaitGroup
-	size          *atomic.Uint32
-	stopped       *atomic.Bool
-	items         chan interface{}
-	onDroppedItem func(item interface{})
-	capacity      uint32
+	stopWG   sync.WaitGroup
+	size     *atomic.Uint32
+	stopped  *atomic.Bool
+	items    chan interface{}
+	capacity uint32
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedMemoryQueue(capacity int, onDroppedItem func(item interface{})) ProducerConsumerQueue {
+func NewBoundedMemoryQueue(capacity int) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
-		onDroppedItem: onDroppedItem,
-		items:         make(chan interface{}, capacity),
-		stopped:       atomic.NewBool(false),
-		size:          atomic.NewUint32(0),
-		capacity:      uint32(capacity),
+		items:    make(chan interface{}, capacity),
+		stopped:  atomic.NewBool(false),
+		size:     atomic.NewUint32(0),
+		capacity: uint32(capacity),
 	}
 }
 
@@ -70,7 +68,6 @@ func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item i
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
 func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 	if q.stopped.Load() {
-		q.onDroppedItem(item)
 		return false
 	}
 
@@ -78,8 +75,6 @@ func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 	// their combined size is stored in q.size, and their combined capacity
 	// should match the capacity of the new queue
 	if q.size.Load() >= q.capacity {
-		// note that all items will be dropped if the capacity is 0
-		q.onDroppedItem(item)
 		return false
 	}
 
@@ -90,9 +85,6 @@ func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 	default:
 		// should not happen, as overflows should have been captured earlier
 		q.size.Sub(1)
-		if q.onDroppedItem != nil {
-			q.onDroppedItem(item)
-		}
 		return false
 	}
 }
