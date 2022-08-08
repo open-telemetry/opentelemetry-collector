@@ -15,7 +15,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.17
 	github.com/prometheus/common v0.37.0
 	github.com/rs/cors v1.8.2
-	github.com/shirou/gopsutil/v3 v3.22.6
+	github.com/shirou/gopsutil/v3 v3.22.7
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.0
@@ -82,7 +82,7 @@ replace go.opentelemetry.io/collector/semconv => ./semconv
 replace go.opentelemetry.io/collector/pdata => ./pdata
 
 retract (
-	v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
-	v0.57.0 // Release failed, use v0.57.2
 	v0.57.1 // Release failed, use v0.57.2
+	v0.57.0 // Release failed, use v0.57.2
+	v0.32.0 // Contains incomplete metrics transition to proto 0.9.0, random components are not working.
 )
