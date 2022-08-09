@@ -44,6 +44,7 @@
 - Update minimum go version to 1.18 (#5795)
 - Remove deprecated `Flags` API from pdata (#5814)
 - Change `confmap.Provider` to return pointer to `Retrieved` (#5839)
+- Add `NewJSONITERUnmarshaler` which will return a model.Unmarshaler which use jsoniter to unmarshal metrics JSON(#5433)
 
 ### 🚩 Deprecations 🚩
 
