@@ -202,10 +202,9 @@ func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item interface{}) {
-		req := item.(internal.Request)
-		_ = qrs.consumerSender.send(req)
-		req.OnProcessingFinished()
+	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item internal.Request) {
+		_ = qrs.consumerSender.send(item)
+		item.OnProcessingFinished()
 	})
 
 	// Start reporting queue length metric

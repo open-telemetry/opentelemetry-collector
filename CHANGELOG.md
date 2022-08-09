@@ -21,6 +21,7 @@
 - ABI breaking change: `featuregate.Registry.Apply` returns error now.
 - Update minimum go version to 1.18 (#5795)
 - Remove deprecated `Flags` API from pdata (#5814)
+- Change `confmap.Provider` to return pointer to `Retrieved` (#5839)
 
 ### 🚩 Deprecations 🚩
 
@@ -48,6 +49,7 @@
 - Bump to opentelemetry-proto v0.19.0. (#5823)
 - Expose `Scope.Attributes` in pdata (#5826)
 - Add support to handle 404, 405 http error code as permanent errors in OTLP exporter (#5827)
+- Enforce scheme name restrictions to all `confmap.Provider` implementations. (#5861)
 
 ### 🧰 Bug fixes 🧰
 
@@ -206,7 +208,6 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
 - Update OTLP to v0.18.0 (#5530)
 - Log histogram min/max fields with `logging` exporter (#5520)
-- Add support in the `confmap.Resolver` to expand embedded config URIs inside configuration (#4742)
 
 ### 🧰 Bug fixes 🧰
 
