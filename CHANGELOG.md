@@ -38,6 +38,7 @@
   - `component.ReceiverFactory.MetricsReceiverStability`
   - `component.ReceiverFactory.LogsReceiverStability`
 - Deprecate `obsreport.ProcessorSettings.Level` and `obsreport.ExporterSettings.Level`, use MetricsLevel from CreateSettings (#5824)
+- Deprecate MetricDataPointFlags.String(), no other pdata flags have this method (#5868)
 - Deprecates `FlagsStruct` in favor of `Flags` (#5842)
   - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
   - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
