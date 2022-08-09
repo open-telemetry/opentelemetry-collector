@@ -34,22 +34,15 @@ import (
 )
 
 func TestExport(t *testing.T) {
-	logSink := new(consumertest.LogsSink)
-
-	addr, doneFn := otlpReceiverOnGRPCServer(t, logSink)
-	defer doneFn()
-
-	traceClient, traceClientDoneFn, err := makeLogsServiceClient(addr)
-	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
-	defer traceClientDoneFn()
-
 	ld := testdata.GenerateLogs(1)
 	// Keep log data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
 	logData := ld.Clone()
 	req := plogotlp.NewRequestFromLogs(ld)
 
-	resp, err := traceClient.Export(context.Background(), req)
+	logSink := new(consumertest.LogsSink)
+	logClient := makeLogsServiceClient(t, logSink)
+	resp, err := logClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
@@ -61,60 +54,42 @@ func TestExport(t *testing.T) {
 func TestExport_EmptyRequest(t *testing.T) {
 	logSink := new(consumertest.LogsSink)
 
-	addr, doneFn := otlpReceiverOnGRPCServer(t, logSink)
-	defer doneFn()
-
-	logClient, logClientDoneFn, err := makeLogsServiceClient(addr)
-	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
-	defer logClientDoneFn()
-
+	logClient := makeLogsServiceClient(t, logSink)
 	resp, err := logClient.Export(context.Background(), plogotlp.NewRequest())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	addr, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
-	defer doneFn()
-
-	logClient, logClientDoneFn, err := makeLogsServiceClient(addr)
-	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
-	defer logClientDoneFn()
-
 	ld := testdata.GenerateLogs(1)
 	req := plogotlp.NewRequestFromLogs(ld)
 
+	logClient := makeLogsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := logClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, plogotlp.Response{}, resp)
 }
 
-func makeLogsServiceClient(addr net.Addr) (plogotlp.Client, func(), error) {
+func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.Client {
+	addr := otlpReceiverOnGRPCServer(t, lc)
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
-	if err != nil {
-		return nil, nil, err
-	}
+	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
+	t.Cleanup(func() {
+		require.NoError(t, cc.Close())
+	})
 
-	logClient := plogotlp.NewClient(cc)
-
-	doneFn := func() { _ = cc.Close() }
-	return logClient, doneFn, nil
+	return plogotlp.NewClient(cc)
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Logs) (net.Addr, func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
-	doneFnList := []func(){func() { ln.Close() }}
-	done := func() {
-		for _, doneFn := range doneFnList {
-			doneFn()
-		}
-	}
+	t.Cleanup(func() {
+		require.NoError(t, ln.Close())
+	})
 
-	r := New(config.NewComponentIDWithName("otlp", "log"), tc, componenttest.NewNopReceiverCreateSettings())
-	require.NoError(t, err)
-
+	r := New(config.NewComponentIDWithName("otlp", "log"), lc, componenttest.NewNopReceiverCreateSettings())
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	plogotlp.RegisterServer(srv, r)
@@ -122,5 +97,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Logs) (net.Addr, func())
 		_ = srv.Serve(ln)
 	}()
 
-	return ln.Addr(), done
+	return ln.Addr()
 }
