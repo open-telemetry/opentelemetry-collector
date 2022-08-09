@@ -80,7 +80,7 @@ func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric) {
 	case pmetric.MetricDataTypeHistogram:
 		data := m.Histogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logDoubleHistogramDataPoints(data.DataPoints())
+		b.logHistogramDataPoints(data.DataPoints())
 	case pmetric.MetricDataTypeExponentialHistogram:
 		data := m.ExponentialHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
@@ -108,7 +108,7 @@ func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
 	}
 }
 
-func (b *dataBuffer) logDoubleHistogramDataPoints(ps pmetric.HistogramDataPointSlice) {
+func (b *dataBuffer) logHistogramDataPoints(ps pmetric.HistogramDataPointSlice) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)
