@@ -16,15 +16,15 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 
 	"github.com/gogo/protobuf/jsonpb"
 	jsoniter "github.com/json-iterator/go"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	commonjson "go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
 
@@ -69,47 +69,56 @@ func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	return internal.MetricsFromProto(md), nil
 }
 
+const (
+	zapUnknownField = "unknown_field"
+)
+
 type jsoniterUnmarshaler struct {
+	logger *zap.Logger
 }
 
-// NewJSONiterUnmarshaler returns a model.Unmarshaler. Unmarshals from OTLP json bytes.
-func NewJSONiterUnmarshaler() Unmarshaler {
-	return newJSONITERUnmarshaler()
+// NewJSONITERUnmarshaler returns a model.Unmarshaler. Unmarshals from OTLP json bytes.
+func NewJSONITERUnmarshaler(log *zap.Logger) Unmarshaler {
+	return newJSONITERUnmarshaler(log)
 }
 
-func newJSONITERUnmarshaler() *jsoniterUnmarshaler {
-	return &jsoniterUnmarshaler{}
+func newJSONITERUnmarshaler(log *zap.Logger) *jsoniterUnmarshaler {
+	return &jsoniterUnmarshaler{
+		logger: log,
+	}
 }
 
+// UnmarshalMetrics Unmarshals from OTLP json bytes.
 func (d *jsoniterUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	td := readMetricsData(iter)
-	err := iter.Error
-	if err != nil {
-		return Metrics{}, err
+	md := d.readMetricsData(iter)
+	if iter.Error != nil {
+		return Metrics{}, iter.Error
 	}
-	return internal.MetricsFromProto(td), err
+	return internal.MetricsFromProto(md), nil
 }
 
-func readMetricsData(iter *jsoniter.Iterator) otlpmetrics.MetricsData {
-	td := otlpmetrics.MetricsData{}
+func (d *jsoniterUnmarshaler) readMetricsData(iter *jsoniter.Iterator) otlpmetrics.MetricsData {
+	md := otlpmetrics.MetricsData{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource_metrics", "resourceMetrics":
 			iter.ReadArrayCB(func(iterator *jsoniter.Iterator) bool {
-				td.ResourceMetrics = append(td.ResourceMetrics, readResourceMetrics(iter))
+				md.ResourceMetrics = append(md.ResourceMetrics, d.readResourceMetrics(iter))
 				return true
 			})
 		default:
-			iter.ReportError("readMetricsData", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
-	return td
+	return md
 }
 
-func readResourceMetrics(iter *jsoniter.Iterator) *otlpmetrics.ResourceMetrics {
+func (d *jsoniterUnmarshaler) readResourceMetrics(iter *jsoniter.Iterator) *otlpmetrics.ResourceMetrics {
 	rs := &otlpmetrics.ResourceMetrics{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
@@ -118,64 +127,80 @@ func readResourceMetrics(iter *jsoniter.Iterator) *otlpmetrics.ResourceMetrics {
 				switch f {
 				case "attributes":
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						rs.Resource.Attributes = append(rs.Resource.Attributes, readAttribute(iter))
+						rs.Resource.Attributes = append(rs.Resource.Attributes, commonjson.ReadAttribute(iter))
 						return true
 					})
 				case "droppedAttributesCount", "dropped_attributes_count":
 					rs.Resource.DroppedAttributesCount = iter.ReadUint32()
 				default:
-					iter.ReportError("readResourceMetrics.resource", fmt.Sprintf("unknown field:%v", f))
+					d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+					iter.Skip()
+					return true
 				}
 				return true
 			})
-		case "instrumentationLibraryMetrics", "instrumentation_library_metrics", "scopeMetrics", "scope_metrics":
+		case "scopeMetrics", "scope_metrics":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				rs.ScopeMetrics = append(rs.ScopeMetrics,
-					readInstrumentationLibraryMetrics(iter))
+					d.readScopeMetrics(iter))
 				return true
 			})
 		case "schemaUrl", "schema_url":
 			rs.SchemaUrl = iter.ReadString()
 		default:
-			iter.ReportError("readResourceMetrics", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
 	return rs
 }
 
-func readInstrumentationLibraryMetrics(iter *jsoniter.Iterator) *otlpmetrics.ScopeMetrics {
+func (d *jsoniterUnmarshaler) readScopeMetrics(iter *jsoniter.Iterator) *otlpmetrics.ScopeMetrics {
 	ils := &otlpmetrics.ScopeMetrics{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
-		case "instrumentationLibrary", "instrumentation_library", "scope":
+		case "scope":
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "name":
 					ils.Scope.Name = iter.ReadString()
 				case "version":
 					ils.Scope.Version = iter.ReadString()
+				case "attributes":
+					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+						ils.Scope.Attributes = append(ils.Scope.Attributes,
+							commonjson.ReadAttribute(iter))
+						return true
+					})
+				case "droppedAttributesCount", "dropped_attributes_count":
+					ils.Scope.DroppedAttributesCount = iter.ReadUint32()
 				default:
-					iter.ReportError("instrumentationLibrary", fmt.Sprintf("unknown field:%v", f))
+					d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+					iter.Skip()
+					return true
 				}
 				return true
 			})
 		case "metrics":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ils.Metrics = append(ils.Metrics, readMetric(iter))
+				ils.Metrics = append(ils.Metrics, d.readMetric(iter))
 				return true
 			})
 		case "schemaUrl", "schema_url":
 			ils.SchemaUrl = iter.ReadString()
 		default:
-			iter.ReportError("readInstrumentationLibraryMetrics", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
 	return ils
 }
 
-func readMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric {
+func (d *jsoniterUnmarshaler) readMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric {
 	sp := &otlpmetrics.Metric{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
@@ -186,245 +211,160 @@ func readMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric {
 		case "unit":
 			sp.Unit = iter.ReadString()
 		case "sum":
-			data := &otlpmetrics.Metric_Sum{
-				Sum: &otlpmetrics.Sum{},
-			}
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "aggregation_temporality", "aggregationTemporality":
-					data.Sum.AggregationTemporality = readAggregationTemporality(iter)
-				case "is_monotonic", "isMonotonic":
-					data.Sum.IsMonotonic = iter.ReadBool()
-				case "data_points", "dataPoints":
-					var dataPoints []*otlpmetrics.NumberDataPoint
-					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						dataPoints = append(dataPoints, readNumberDataPoint(iter))
-						return true
-					})
-					data.Sum.DataPoints = dataPoints
-				default:
-					iter.ReportError("readMetric.Sum", fmt.Sprintf("unknown field:%v", f))
-				}
-				sp.Data = data
-				return true
-			})
+			sp.Data = d.readSumMetric(iter)
 		case "gauge":
-			data := &otlpmetrics.Metric_Gauge{
-				Gauge: &otlpmetrics.Gauge{},
-			}
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "data_points", "dataPoints":
-					var dataPoints []*otlpmetrics.NumberDataPoint
-					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						dataPoints = append(dataPoints, readNumberDataPoint(iter))
-						return true
-					})
-					data.Gauge.DataPoints = dataPoints
-				default:
-					iter.ReportError("readMetric.Gauge", fmt.Sprintf("unknown field:%v", f))
-				}
-				sp.Data = data
-				return true
-			})
+			sp.Data = d.readGaugeMetric(iter)
 		case "histogram":
-			data := &otlpmetrics.Metric_Histogram{
-				Histogram: &otlpmetrics.Histogram{},
-			}
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "data_points", "dataPoints":
-					var dataPoints []*otlpmetrics.HistogramDataPoint
-					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						dataPoints = append(dataPoints, readHistogramDataPoint(iter))
-						return true
-					})
-					data.Histogram.DataPoints = dataPoints
-				case "aggregation_temporality", "aggregationTemporality":
-					data.Histogram.AggregationTemporality = readAggregationTemporality(iter)
-				default:
-					iter.ReportError("readMetric.Histogram", fmt.Sprintf("unknown field:%v", f))
-				}
-				sp.Data = data
-				return true
-			})
+			sp.Data = d.readHistogramMetric(iter)
 		case "exponential_histogram", "exponentialHistogram":
-			data := &otlpmetrics.Metric_ExponentialHistogram{
-				ExponentialHistogram: &otlpmetrics.ExponentialHistogram{},
-			}
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "data_points", "dataPoints":
-					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						data.ExponentialHistogram.DataPoints = append(data.ExponentialHistogram.DataPoints,
-							readExponentialHistogramDataPoint(iter))
-						return true
-					})
-				case "aggregation_temporality", "aggregationTemporality":
-					data.ExponentialHistogram.AggregationTemporality = readAggregationTemporality(iter)
-				default:
-					iter.ReportError("readMetric.ExponentialHistogram",
-						fmt.Sprintf("unknown field:%v", f))
-				}
-				sp.Data = data
-				return true
-			})
+			sp.Data = d.readExponentialHistogramMetric(iter)
 		case "summary":
-			data := &otlpmetrics.Metric_Summary{
-				Summary: &otlpmetrics.Summary{},
-			}
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "data_points", "dataPoints":
-					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						data.Summary.DataPoints = append(data.Summary.DataPoints,
-							readSummaryDataPoint(iter))
-						return true
-					})
-				default:
-					iter.ReportError("readMetric.Summary", fmt.Sprintf("unknown field:%v", f))
-				}
-				sp.Data = data
-				return true
-			})
-
+			sp.Data = d.readSummaryMetric(iter)
 		default:
-			iter.ReportError("readMetric", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
 	return sp
 }
 
-func readAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
-	kv := otlpcommon.KeyValue{}
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "key":
-			kv.Key = iter.ReadString()
-		case "value":
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				kv.Value = readAnyValue(iter, f)
-				return true
-			})
-		default:
-			iter.ReportError("readAttribute", fmt.Sprintf("unknown field:%v", f))
-		}
-		return true
-	})
-	return kv
-}
-
-func readAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
-	switch f {
-	case "stringValue", "string_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_StringValue{
-				StringValue: iter.ReadString(),
-			},
-		}
-	case "boolValue", "bool_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_BoolValue{
-				BoolValue: iter.ReadBool(),
-			},
-		}
-	case "intValue", "int_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_IntValue{
-				IntValue: readInt64(iter),
-			},
-		}
-	case "doubleValue", "double_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_DoubleValue{
-				DoubleValue: iter.ReadFloat64(),
-			},
-		}
-	case "bytesValue", "bytes_value":
-		v, err := base64.StdEncoding.DecodeString(iter.ReadString())
-		if err != nil {
-			iter.ReportError("bytesValue", fmt.Sprintf("base64 decode:%v", err))
-			return otlpcommon.AnyValue{}
-		}
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_BytesValue{
-				BytesValue: v,
-			},
-		}
-	case "arrayValue", "array_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_ArrayValue{
-				ArrayValue: readArray(iter),
-			},
-		}
-	case "kvlistValue", "kvlist_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_KvlistValue{
-				KvlistValue: readKvlistValue(iter),
-			},
-		}
-	default:
-		iter.ReportError("readAnyValue", fmt.Sprintf("unknown field:%v", f))
-		return otlpcommon.AnyValue{}
+func (d *jsoniterUnmarshaler) readSumMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric_Sum {
+	data := &otlpmetrics.Metric_Sum{
+		Sum: &otlpmetrics.Sum{},
 	}
-}
-
-func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
-	v := &otlpcommon.ArrayValue{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
-		case "values":
+		case "aggregation_temporality", "aggregationTemporality":
+			data.Sum.AggregationTemporality = d.readAggregationTemporality(iter)
+		case "is_monotonic", "isMonotonic":
+			data.Sum.IsMonotonic = iter.ReadBool()
+		case "data_points", "dataPoints":
+			var dataPoints []*otlpmetrics.NumberDataPoint
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-					v.Values = append(v.Values, readAnyValue(iter, f))
-					return true
-				})
+				dataPoints = append(dataPoints, d.readNumberDataPoint(iter))
 				return true
 			})
+			data.Sum.DataPoints = dataPoints
 		default:
-			iter.ReportError("readArray", fmt.Sprintf("unknown field:%s", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
-	return v
+	return data
 }
 
-func readKvlistValue(iter *jsoniter.Iterator) *otlpcommon.KeyValueList {
-	v := &otlpcommon.KeyValueList{}
+func (d *jsoniterUnmarshaler) readGaugeMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric_Gauge {
+	data := &otlpmetrics.Metric_Gauge{
+		Gauge: &otlpmetrics.Gauge{},
+	}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
-		case "values":
+		case "data_points", "dataPoints":
+			var dataPoints []*otlpmetrics.NumberDataPoint
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				v.Values = append(v.Values, readAttribute(iter))
+				dataPoints = append(dataPoints, d.readNumberDataPoint(iter))
 				return true
 			})
+			data.Gauge.DataPoints = dataPoints
 		default:
-			iter.ReportError("readKvlistValue", fmt.Sprintf("unknown field:%s", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
-	return v
+	return data
 }
 
-func readInt64(iter *jsoniter.Iterator) int64 {
-	return iter.ReadAny().ToInt64()
+func (d *jsoniterUnmarshaler) readHistogramMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric_Histogram {
+	data := &otlpmetrics.Metric_Histogram{
+		Histogram: &otlpmetrics.Histogram{},
+	}
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "data_points", "dataPoints":
+			var dataPoints []*otlpmetrics.HistogramDataPoint
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				dataPoints = append(dataPoints, d.readHistogramDataPoint(iter))
+				return true
+			})
+			data.Histogram.DataPoints = dataPoints
+		case "aggregation_temporality", "aggregationTemporality":
+			data.Histogram.AggregationTemporality = d.readAggregationTemporality(iter)
+		default:
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
+		}
+		return true
+	})
+	return data
 }
 
-func readExemplar(iter *jsoniter.Iterator) otlpmetrics.Exemplar {
+func (d *jsoniterUnmarshaler) readExponentialHistogramMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric_ExponentialHistogram {
+	data := &otlpmetrics.Metric_ExponentialHistogram{
+		ExponentialHistogram: &otlpmetrics.ExponentialHistogram{},
+	}
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "data_points", "dataPoints":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				data.ExponentialHistogram.DataPoints = append(data.ExponentialHistogram.DataPoints,
+					d.readExponentialHistogramDataPoint(iter))
+				return true
+			})
+		case "aggregation_temporality", "aggregationTemporality":
+			data.ExponentialHistogram.AggregationTemporality = d.readAggregationTemporality(iter)
+		default:
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
+		}
+		return true
+	})
+	return data
+}
+
+func (d *jsoniterUnmarshaler) readSummaryMetric(iter *jsoniter.Iterator) *otlpmetrics.Metric_Summary {
+	data := &otlpmetrics.Metric_Summary{
+		Summary: &otlpmetrics.Summary{},
+	}
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "data_points", "dataPoints":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				data.Summary.DataPoints = append(data.Summary.DataPoints,
+					d.readSummaryDataPoint(iter))
+				return true
+			})
+		default:
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
+		}
+		return true
+	})
+	return data
+}
+
+func (d *jsoniterUnmarshaler) readExemplar(iter *jsoniter.Iterator) otlpmetrics.Exemplar {
 	exemplar := otlpmetrics.Exemplar{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "filtered_attributes", "filteredAttributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				exemplar.FilteredAttributes = append(exemplar.FilteredAttributes, readAttribute(iter))
+				exemplar.FilteredAttributes = append(exemplar.FilteredAttributes, commonjson.ReadAttribute(iter))
 				return true
 			})
 		case "timeUnixNano", "time_unix_nano":
-			exemplar.TimeUnixNano = uint64(readInt64(iter))
+			exemplar.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
 		case "as_int", "asInt":
 			exemplar.Value = &otlpmetrics.Exemplar_AsInt{
-				AsInt: readInt64(iter),
+				AsInt: commonjson.ReadInt64(iter),
 			}
 		case "as_double", "asDouble":
 			exemplar.Value = &otlpmetrics.Exemplar_AsDouble{
@@ -439,24 +379,26 @@ func readExemplar(iter *jsoniter.Iterator) otlpmetrics.Exemplar {
 				iter.ReportError("exemplar.spanId", fmt.Sprintf("parse span_id:%v", err))
 			}
 		default:
-			iter.ReportError("readAttribute", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
 	return exemplar
 }
 
-func readNumberDataPoint(iter *jsoniter.Iterator) *otlpmetrics.NumberDataPoint {
+func (d *jsoniterUnmarshaler) readNumberDataPoint(iter *jsoniter.Iterator) *otlpmetrics.NumberDataPoint {
 	point := &otlpmetrics.NumberDataPoint{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			point.TimeUnixNano = uint64(readInt64(iter))
+			point.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
 		case "start_time_unix_nano", "startTimeUnixNano":
-			point.StartTimeUnixNano = uint64(readInt64(iter))
+			point.StartTimeUnixNano = uint64(commonjson.ReadInt64(iter))
 		case "as_int", "asInt":
 			point.Value = &otlpmetrics.NumberDataPoint_AsInt{
-				AsInt: readInt64(iter),
+				AsInt: commonjson.ReadInt64(iter),
 			}
 		case "as_double", "asDouble":
 			point.Value = &otlpmetrics.NumberDataPoint_AsDouble{
@@ -464,44 +406,46 @@ func readNumberDataPoint(iter *jsoniter.Iterator) *otlpmetrics.NumberDataPoint {
 			}
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Attributes = append(point.Attributes, readAttribute(iter))
+				point.Attributes = append(point.Attributes, commonjson.ReadAttribute(iter))
 				return true
 			})
 		case "exemplars":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Exemplars = append(point.Exemplars, readExemplar(iter))
+				point.Exemplars = append(point.Exemplars, d.readExemplar(iter))
 				return true
 			})
 		case "flags":
 			point.Flags = iter.ReadUint32()
 		default:
-			iter.ReportError("NumberDataPoint", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
 	return point
 }
 
-func readHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.HistogramDataPoint {
+func (d *jsoniterUnmarshaler) readHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.HistogramDataPoint {
 	point := &otlpmetrics.HistogramDataPoint{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			point.TimeUnixNano = uint64(readInt64(iter))
+			point.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
 		case "start_time_unix_nano", "startTimeUnixNano":
-			point.StartTimeUnixNano = uint64(readInt64(iter))
+			point.StartTimeUnixNano = uint64(commonjson.ReadInt64(iter))
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Attributes = append(point.Attributes, readAttribute(iter))
+				point.Attributes = append(point.Attributes, commonjson.ReadAttribute(iter))
 				return true
 			})
 		case "count":
-			point.Count = uint64(readInt64(iter))
+			point.Count = uint64(commonjson.ReadInt64(iter))
 		case "sum":
 			point.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
 		case "bucket_counts", "bucketCounts":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.BucketCounts = append(point.BucketCounts, uint64(readInt64(iter)))
+				point.BucketCounts = append(point.BucketCounts, uint64(commonjson.ReadInt64(iter)))
 				return true
 			})
 		case "explicit_bounds", "explicitBounds":
@@ -511,7 +455,7 @@ func readHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.HistogramDataP
 			})
 		case "exemplars":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Exemplars = append(point.Exemplars, readExemplar(iter))
+				point.Exemplars = append(point.Exemplars, d.readExemplar(iter))
 				return true
 			})
 		case "flags":
@@ -525,28 +469,30 @@ func readHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.HistogramDataP
 				Min: iter.ReadFloat64(),
 			}
 		default:
-			iter.ReportError("HistogramDataPoint", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
 	return point
 }
 
-func readExponentialHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.ExponentialHistogramDataPoint {
+func (d *jsoniterUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.ExponentialHistogramDataPoint {
 	point := &otlpmetrics.ExponentialHistogramDataPoint{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			point.TimeUnixNano = uint64(readInt64(iter))
+			point.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
 		case "start_time_unix_nano", "startTimeUnixNano":
-			point.StartTimeUnixNano = uint64(readInt64(iter))
+			point.StartTimeUnixNano = uint64(commonjson.ReadInt64(iter))
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Attributes = append(point.Attributes, readAttribute(iter))
+				point.Attributes = append(point.Attributes, commonjson.ReadAttribute(iter))
 				return true
 			})
 		case "count":
-			point.Count = uint64(readInt64(iter))
+			point.Count = uint64(commonjson.ReadInt64(iter))
 		case "sum":
 			point.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{
 				Sum: iter.ReadFloat64(),
@@ -554,20 +500,22 @@ func readExponentialHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.Exp
 		case "scale":
 			point.Scale = iter.ReadInt32()
 		case "zero_count", "zeroCount":
-			point.ZeroCount = uint64(readInt64(iter))
+			point.ZeroCount = uint64(commonjson.ReadInt64(iter))
 		case "positive":
 			positive := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "bucket_counts", "bucketCounts":
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						positive.BucketCounts = append(positive.BucketCounts, uint64(readInt64(iter)))
+						positive.BucketCounts = append(positive.BucketCounts, uint64(commonjson.ReadInt64(iter)))
 						return true
 					})
 				case "offset":
 					positive.Offset = iter.ReadInt32()
 				default:
-					iter.ReportError("ExponentialBuckets", fmt.Sprintf("unknown field:%v", f))
+					d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+					iter.Skip()
+					return true
 				}
 				point.Positive = positive
 				return true
@@ -578,20 +526,22 @@ func readExponentialHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.Exp
 				switch f {
 				case "bucket_counts", "bucketCounts":
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						negative.BucketCounts = append(negative.BucketCounts, uint64(readInt64(iter)))
+						negative.BucketCounts = append(negative.BucketCounts, uint64(commonjson.ReadInt64(iter)))
 						return true
 					})
 				case "offset":
 					negative.Offset = iter.ReadInt32()
 				default:
-					iter.ReportError("ExponentialBuckets", fmt.Sprintf("unknown field:%v", f))
+					d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+					iter.Skip()
+					return true
 				}
 				point.Negative = negative
 				return true
 			})
 		case "exemplars":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Exemplars = append(point.Exemplars, readExemplar(iter))
+				point.Exemplars = append(point.Exemplars, d.readExemplar(iter))
 				return true
 			})
 		case "flags":
@@ -605,46 +555,50 @@ func readExponentialHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.Exp
 				Min: iter.ReadFloat64(),
 			}
 		default:
-			iter.ReportError("ExponentialHistogramDataPoint", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
 	return point
 }
 
-func readSummaryDataPoint(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint {
+func (d *jsoniterUnmarshaler) readSummaryDataPoint(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint {
 	point := &otlpmetrics.SummaryDataPoint{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			point.TimeUnixNano = uint64(readInt64(iter))
+			point.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
 		case "start_time_unix_nano", "startTimeUnixNano":
-			point.StartTimeUnixNano = uint64(readInt64(iter))
+			point.StartTimeUnixNano = uint64(commonjson.ReadInt64(iter))
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Attributes = append(point.Attributes, readAttribute(iter))
+				point.Attributes = append(point.Attributes, commonjson.ReadAttribute(iter))
 				return true
 			})
 		case "count":
-			point.Count = uint64(readInt64(iter))
+			point.Count = uint64(commonjson.ReadInt64(iter))
 		case "sum":
 			point.Sum = iter.ReadFloat64()
 		case "quantile_values", "quantileValues":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.QuantileValues = append(point.QuantileValues, readQuantileValue(iter))
+				point.QuantileValues = append(point.QuantileValues, d.readQuantileValue(iter))
 				return true
 			})
 		case "flags":
 			point.Flags = iter.ReadUint32()
 		default:
-			iter.ReportError("SummaryDataPoint", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
 	return point
 }
 
-func readQuantileValue(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+func (d *jsoniterUnmarshaler) readQuantileValue(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	point := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
@@ -653,14 +607,16 @@ func readQuantileValue(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint_Va
 		case "value":
 			point.Value = iter.ReadFloat64()
 		default:
-			iter.ReportError("ValueAtQuantile", fmt.Sprintf("unknown field:%v", f))
+			d.logger.Debug("Failed unmarshalling item", zap.String(zapUnknownField, f))
+			iter.Skip()
+			return true
 		}
 		return true
 	})
 	return point
 }
 
-func readAggregationTemporality(iter *jsoniter.Iterator) otlpmetrics.AggregationTemporality {
+func (d *jsoniterUnmarshaler) readAggregationTemporality(iter *jsoniter.Iterator) otlpmetrics.AggregationTemporality {
 	value := iter.ReadAny()
 	if v := value.ToInt(); v > 0 {
 		return otlpmetrics.AggregationTemporality(v)
