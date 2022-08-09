@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"sync"
@@ -322,7 +322,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 			resp, err2 := client.Do(req)
 			require.NoError(t, err2)
 
-			body, err2 := ioutil.ReadAll(resp.Body)
+			body, err2 := io.ReadAll(resp.Body)
 			require.NoError(t, err2)
 
 			require.Equal(t, resp.Header.Get("Content-Type"), "text/plain")
@@ -355,7 +355,7 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 	resp, err := client.Do(req)
 	require.NoError(t, err, "Error posting trace to http server: %v", err)
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Errorf("Error reading response from trace http server, %v", err)
 	}
@@ -478,7 +478,7 @@ func testHTTPProtobufRequest(
 	resp, err := client.Do(req)
 	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	require.NoError(t, err, "Error reading response from trace grpc-gateway")
 	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
@@ -571,7 +571,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			resp, err := client.Do(req)
 			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			require.NoError(t, err, "Error reading response from trace grpc-gateway")
 			exRespBytes, err := test.resBodyFunc()
 			require.NoError(t, err, "Error creating expecting response body")
@@ -832,7 +832,7 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	require.NoError(t, err)
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, expectedStatusCode, resp.StatusCode)
 

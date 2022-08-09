@@ -17,7 +17,6 @@ package configgrpc
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -1032,7 +1031,7 @@ func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.Request) (p
 
 // tempSocketName provides a temporary Unix socket name for testing.
 func tempSocketName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "sock")
+	tmpfile, err := os.CreateTemp("", "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()
