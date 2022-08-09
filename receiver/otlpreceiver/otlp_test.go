@@ -588,7 +588,9 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
-	defer ln.Close()
+	t.Cleanup(func() {
+		assert.NoError(t, ln.Close())
+	})
 
 	r := newGRPCReceiver(t, otlpReceiverName, addr, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
@@ -600,7 +602,9 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
-	defer ln.Close()
+	t.Cleanup(func() {
+		assert.NoError(t, ln.Close())
+	})
 
 	r := newHTTPReceiver(t, addr, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
@@ -676,7 +680,9 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 				require.NoError(t, err)
-				defer cc.Close()
+				defer func() {
+					assert.NoError(t, cc.Close())
+				}()
 
 				for _, ingestionState := range test.ingestionStates {
 					if ingestionState.okToIngest {
@@ -749,7 +755,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 	td := testdata.GenerateTraces(50000)
 	require.Error(t, exportTraces(cc, td))
-	cc.Close()
+	assert.NoError(t, cc.Close())
 	require.NoError(t, ocr.Shutdown(context.Background()))
 
 	cfg.GRPC.MaxRecvMsgSizeMiB = 100
@@ -761,7 +767,9 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 	cc, err = grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
-	defer cc.Close()
+	defer func() {
+		assert.NoError(t, cc.Close())
+	}()
 
 	td = testdata.GenerateTraces(50000)
 	require.NoError(t, exportTraces(cc, td))

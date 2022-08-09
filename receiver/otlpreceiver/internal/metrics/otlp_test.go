@@ -34,22 +34,14 @@ import (
 )
 
 func TestExport(t *testing.T) {
-	metricSink := new(consumertest.MetricsSink)
-
-	port, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
-	defer doneFn()
-
-	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(port)
-	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
-	defer metricsClientDoneFn()
-
 	md := testdata.GenerateMetrics(1)
-
 	// Keep metric data to compare the test result against it
 	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
 	metricData := md.Clone()
-
 	req := pmetricotlp.NewRequestFromMetrics(md)
+
+	metricSink := new(consumertest.MetricsSink)
+	metricsClient := makeMetricsServiceClient(t, metricSink)
 	resp, err := metricsClient.Export(context.Background(), req)
 
 	require.NoError(t, err, "Failed to export metrics: %v", err)
@@ -62,57 +54,41 @@ func TestExport(t *testing.T) {
 
 func TestExport_EmptyRequest(t *testing.T) {
 	metricSink := new(consumertest.MetricsSink)
-
-	addr, doneFn := otlpReceiverOnGRPCServer(t, metricSink)
-	defer doneFn()
-
-	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
-	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
-	defer metricsClientDoneFn()
-
+	metricsClient := makeMetricsServiceClient(t, metricSink)
 	resp, err := metricsClient.Export(context.Background(), pmetricotlp.NewRequest())
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
-	addr, doneFn := otlpReceiverOnGRPCServer(t, consumertest.NewErr(errors.New("my error")))
-	defer doneFn()
-
-	metricsClient, metricsClientDoneFn, err := makeMetricsServiceClient(addr)
-	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
-	defer metricsClientDoneFn()
-
 	md := testdata.GenerateMetrics(1)
 	req := pmetricotlp.NewRequestFromMetrics(md)
 
+	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, pmetricotlp.Response{}, resp)
 }
 
-func makeMetricsServiceClient(addr net.Addr) (pmetricotlp.Client, func(), error) {
+func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.Client {
+	addr := otlpReceiverOnGRPCServer(t, mc)
+
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
-	if err != nil {
-		return nil, nil, err
-	}
+	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
+	t.Cleanup(func() {
+		require.NoError(t, cc.Close())
+	})
 
-	metricsClient := pmetricotlp.NewClient(cc)
-
-	doneFn := func() { _ = cc.Close() }
-	return metricsClient, doneFn, nil
+	return pmetricotlp.NewClient(cc)
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, func()) {
+func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
-	doneFnList := []func(){func() { ln.Close() }}
-	done := func() {
-		for _, doneFn := range doneFnList {
-			doneFn()
-		}
-	}
+	t.Cleanup(func() {
+		require.NoError(t, ln.Close())
+	})
 
 	r := New(config.NewComponentIDWithName("otlp", "metrics"), mc, componenttest.NewNopReceiverCreateSettings())
 	// Now run it as a gRPC server
@@ -122,5 +98,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, func
 		_ = srv.Serve(ln)
 	}()
 
-	return ln.Addr(), done
+	return ln.Addr()
 }
