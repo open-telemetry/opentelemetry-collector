@@ -321,7 +321,6 @@ func TestResolverExpandEnvVars(t *testing.T) {
 		{name: "expand-with-no-env.yaml"},
 		{name: "expand-with-partial-env.yaml"},
 		{name: "expand-with-all-env.yaml"},
-		{name: "expand-with-all-env-with-source.yaml"},
 	}
 
 	envs := map[string]string{
@@ -353,6 +352,27 @@ func TestResolverExpandEnvVars(t *testing.T) {
 			assert.Equal(t, expectedCfgMap, cfgMap.ToStringMap())
 		})
 	}
+}
+
+func TestResolverDoneNotExpandOldEnvVars(t *testing.T) {
+	expectedCfgMap := map[string]interface{}{"test.1": "${EXTRA}", "test.2": "$EXTRA"}
+	fileProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved(expectedCfgMap)
+	})
+	envProvider := newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved("some string")
+	})
+	emptySchemeProvider := newFakeProvider("", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+		return NewRetrieved("some string")
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"test:"}, Providers: makeMapProvidersMap(fileProvider, envProvider, emptySchemeProvider), Converters: nil})
+	require.NoError(t, err)
+	resolver.enableExpand = true
+	// Test that expanded configs are the same with the simple config with no env vars.
+	cfgMap, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, expectedCfgMap, cfgMap.ToStringMap())
 }
 
 func TestResolverExpandMapAndSliceValues(t *testing.T) {
