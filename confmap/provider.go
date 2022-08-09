@@ -53,7 +53,7 @@ type Provider interface {
 	//
 	// If ctx is cancelled should return immediately with an error.
 	// Should never be called concurrently with itself or with Shutdown.
-	Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (Retrieved, error)
+	Retrieve(ctx context.Context, uri string, watcher WatcherFunc) (*Retrieved, error)
 
 	// Scheme returns the location scheme used by Retrieve.
 	Scheme() string
@@ -106,15 +106,15 @@ func WithRetrievedClose(closeFunc CloseFunc) RetrievedOption {
 //   - Primitives: int, int32, int64, float32, float64, bool, string;
 //   - []interface{};
 //   - map[string]interface{};
-func NewRetrieved(rawConf interface{}, opts ...RetrievedOption) (Retrieved, error) {
+func NewRetrieved(rawConf interface{}, opts ...RetrievedOption) (*Retrieved, error) {
 	if err := checkRawConfType(rawConf); err != nil {
-		return Retrieved{}, err
+		return nil, err
 	}
 	set := retrievedSettings{}
 	for _, opt := range opts {
 		opt(&set)
 	}
-	return Retrieved{rawConf: rawConf, closeFunc: set.closeFunc}, nil
+	return &Retrieved{rawConf: rawConf, closeFunc: set.closeFunc}, nil
 }
 
 // AsConf returns the retrieved configuration parsed as a Conf.

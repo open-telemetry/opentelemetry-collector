@@ -259,7 +259,7 @@ type location struct {
 	defaultScheme string
 }
 
-func (mr *Resolver) retrieveValue(ctx context.Context, l location) (Retrieved, error) {
+func (mr *Resolver) retrieveValue(ctx context.Context, l location) (*Retrieved, error) {
 	uri := l.uri
 	scheme := l.defaultScheme
 	if idx := strings.Index(uri, ":"); idx != -1 {
@@ -269,7 +269,7 @@ func (mr *Resolver) retrieveValue(ctx context.Context, l location) (Retrieved, e
 	}
 	p, ok := mr.providers[scheme]
 	if !ok {
-		return Retrieved{}, fmt.Errorf("scheme %q is not supported for uri %q", scheme, uri)
+		return nil, fmt.Errorf("scheme %q is not supported for uri %q", scheme, uri)
 	}
 	return p.Retrieve(ctx, uri, mr.onChange)
 }
