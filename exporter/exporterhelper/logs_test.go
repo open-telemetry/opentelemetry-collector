@@ -54,7 +54,7 @@ func TestLogsRequest(t *testing.T) {
 	assert.EqualValues(
 		t,
 		newLogsRequest(context.Background(), plog.NewLogs(), nil),
-		lr.onError(logErr),
+		lr.OnError(logErr),
 	)
 }
 

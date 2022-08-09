@@ -53,7 +53,7 @@ func TestMetricsRequest(t *testing.T) {
 	assert.EqualValues(
 		t,
 		newMetricsRequest(context.Background(), pmetric.NewMetrics(), nil),
-		mr.onError(metricsErr),
+		mr.OnError(metricsErr),
 	)
 }
 

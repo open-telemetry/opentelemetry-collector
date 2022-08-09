@@ -19,7 +19,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
+
+func TestValidateProviderScheme(t *testing.T) {
+	assert.NoError(t, confmaptest.ValidateProviderScheme(New()))
+}
 
 func TestEmpty(t *testing.T) {
 	sp := New()

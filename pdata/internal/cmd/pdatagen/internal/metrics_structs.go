@@ -266,7 +266,7 @@ var numberDataPoint = &messageValueStruct{
 			},
 		},
 		exemplarsField,
-		dataPointFlagsFieldStruct,
+		dataPointFlagsField,
 	},
 }
 
@@ -288,7 +288,7 @@ var histogramDataPoint = &messageValueStruct{
 		bucketCountsField,
 		explicitBoundsField,
 		exemplarsField,
-		dataPointFlagsFieldStruct,
+		dataPointFlagsField,
 		&optionalPrimitiveValue{
 			fieldName:        "Min",
 			fieldType:        "Double",
@@ -363,7 +363,7 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 			returnMessage:   bucketsValues,
 		},
 		exemplarsField,
-		dataPointFlagsFieldStruct,
+		dataPointFlagsField,
 		&optionalPrimitiveValue{
 			fieldName:        "Min",
 			fieldType:        "Double",
@@ -422,7 +422,7 @@ var summaryDataPoint = &messageValueStruct{
 			originFieldName: "QuantileValues",
 			returnSlice:     quantileValuesSlice,
 		},
-		dataPointFlagsFieldStruct,
+		dataPointFlagsField,
 	},
 }
 
@@ -489,11 +489,11 @@ var exemplar = &messageValueStruct{
 	},
 }
 
-var dataPointFlagsFieldStruct = &messageValueField{
-	fieldName:       "FlagsStruct",
+var dataPointFlagsField = &messageValueField{
+	fieldName:       "Flags",
 	originFieldName: "Flags",
 	returnMessage: &messageValueStruct{
-		structName:     "MetricDataPointFlagsStruct",
+		structName:     "MetricDataPointFlags",
 		originFullName: "uint32",
 	},
 }
