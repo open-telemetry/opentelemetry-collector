@@ -81,6 +81,69 @@ func TestReadKvlistValue(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "boolValue",
+			jsonStr: `{"values":[{
+"key":"testKey",
+"value":{
+"boolValue": true
+}
+}]}`,
+			want: &otlpcommon.KeyValueList{
+				Values: []otlpcommon.KeyValue{
+					{
+						Key: "testKey",
+						Value: otlpcommon.AnyValue{
+							Value: &otlpcommon.AnyValue_BoolValue{
+								BoolValue: true,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "intValue",
+			jsonStr: `{"values":[{
+"key":"testKey",
+"value":{
+"intValue": 1
+}
+}]}`,
+			want: &otlpcommon.KeyValueList{
+				Values: []otlpcommon.KeyValue{
+					{
+						Key: "testKey",
+						Value: otlpcommon.AnyValue{
+							Value: &otlpcommon.AnyValue_IntValue{
+								IntValue: 1,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "doubleValue",
+			jsonStr: `{"values":[{
+"key":"testKey",
+"value":{
+"doubleValue": 1.3
+}
+}]}`,
+			want: &otlpcommon.KeyValueList{
+				Values: []otlpcommon.KeyValue{
+					{
+						Key: "testKey",
+						Value: otlpcommon.AnyValue{
+							Value: &otlpcommon.AnyValue_DoubleValue{
+								DoubleValue: 1.3,
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
