@@ -356,13 +356,13 @@ func TestResolverExpandEnvVars(t *testing.T) {
 
 func TestResolverDoneNotExpandOldEnvVars(t *testing.T) {
 	expectedCfgMap := map[string]interface{}{"test.1": "${EXTRA}", "test.2": "$EXTRA"}
-	fileProvider := newFakeProvider("test", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	fileProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(expectedCfgMap)
 	})
-	envProvider := newFakeProvider("env", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	envProvider := newFakeProvider("env", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved("some string")
 	})
-	emptySchemeProvider := newFakeProvider("", func(_ context.Context, uri string, _ WatcherFunc) (Retrieved, error) {
+	emptySchemeProvider := newFakeProvider("", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved("some string")
 	})
 
