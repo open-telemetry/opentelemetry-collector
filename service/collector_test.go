@@ -295,9 +295,9 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 	}
 
 	cfgSet := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")})
-	cfgSet.MapConverters = append([]confmap.Converter{
+	cfgSet.ResolverSettings.Converters = append([]confmap.Converter{
 		mapConverter{extraCfgAsProps}},
-		cfgSet.MapConverters...,
+		cfgSet.ResolverSettings.Converters...,
 	)
 	cfgProvider, err := NewConfigProvider(cfgSet)
 	require.NoError(t, err)

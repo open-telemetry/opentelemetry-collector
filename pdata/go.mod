@@ -24,6 +24,6 @@ require (
 )
 
 retract (
-	v0.57.0 // Release failed, use v0.57.2
 	v0.57.1 // Release failed, use v0.57.2
+	v0.57.0 // Release failed, use v0.57.2
 )

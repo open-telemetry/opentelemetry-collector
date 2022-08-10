@@ -35,7 +35,7 @@ type metricsRequest struct {
 	pusher consumer.ConsumeMetricsFunc
 }
 
-func newMetricsRequest(ctx context.Context, md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) request {
+func newMetricsRequest(ctx context.Context, md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) internal.Request {
 	return &metricsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		md:          md,
@@ -44,7 +44,7 @@ func newMetricsRequest(ctx context.Context, md pmetric.Metrics, pusher consumer.
 }
 
 func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.PersistentRequest, error) {
+	return func(bytes []byte) (internal.Request, error) {
 		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 		if err != nil {
 			return nil, err
@@ -53,7 +53,7 @@ func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) intern
 	}
 }
 
-func (req *metricsRequest) onError(err error) request {
+func (req *metricsRequest) OnError(err error) internal.Request {
 	var metricsError consumererror.Metrics
 	if errors.As(err, &metricsError) {
 		return newMetricsRequest(req.ctx, metricsError.GetMetrics(), req.pusher)
@@ -61,7 +61,7 @@ func (req *metricsRequest) onError(err error) request {
 	return req
 }
 
-func (req *metricsRequest) export(ctx context.Context) error {
+func (req *metricsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.md)
 }
 
@@ -70,7 +70,7 @@ func (req *metricsRequest) Marshal() ([]byte, error) {
 	return metricsMarshaler.MarshalMetrics(req.md)
 }
 
-func (req *metricsRequest) count() int {
+func (req *metricsRequest) Count() int {
 	return req.md.DataPointCount()
 }
 
@@ -111,7 +111,7 @@ func NewMetricsExporter(
 		req := newMetricsRequest(ctx, md, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {
-			be.obsrep.recordMetricsEnqueueFailure(req.context(), int64(req.count()))
+			be.obsrep.recordMetricsEnqueueFailure(req.Context(), int64(req.Count()))
 		}
 		return err
 	}, bs.consumerOptions...)
@@ -127,9 +127,9 @@ type metricsSenderWithObservability struct {
 	nextSender requestSender
 }
 
-func (mewo *metricsSenderWithObservability) send(req request) error {
-	req.setContext(mewo.obsrep.StartMetricsOp(req.context()))
+func (mewo *metricsSenderWithObservability) send(req internal.Request) error {
+	req.SetContext(mewo.obsrep.StartMetricsOp(req.Context()))
 	err := mewo.nextSender.send(req)
-	mewo.obsrep.EndMetricsOp(req.context(), req.count(), err)
+	mewo.obsrep.EndMetricsOp(req.Context(), req.Count(), err)
 	return err
 }

@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -566,7 +566,7 @@ func TestHttpReception(t *testing.T) {
 				assert.Error(t, errResp)
 			} else {
 				assert.NoError(t, errResp)
-				body, errRead := ioutil.ReadAll(resp.Body)
+				body, errRead := io.ReadAll(resp.Body)
 				assert.NoError(t, errRead)
 				assert.Equal(t, "test", string(body))
 				assert.Equal(t, expectedProto, resp.Proto)
@@ -1059,7 +1059,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 				for pb.Next() {
 					resp, errResp := c.Get(hcs.Endpoint)
 					require.NoError(b, errResp)
-					body, errRead := ioutil.ReadAll(resp.Body)
+					body, errRead := io.ReadAll(resp.Body)
 					_ = resp.Body.Close()
 					require.NoError(b, errRead)
 					require.Equal(b, "test", string(body))

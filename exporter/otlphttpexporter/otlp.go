@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -140,7 +139,7 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		io.CopyN(ioutil.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
+		io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
 		resp.Body.Close()
 	}()
 
@@ -200,6 +199,10 @@ func isPermanentClientFailure(code int) bool {
 	case http.StatusRequestURITooLong:
 		return true
 	case http.StatusRequestHeaderFieldsTooLarge:
+		return true
+	case http.StatusNotFound:
+		return true
+	case http.StatusMethodNotAllowed:
 		return true
 	default:
 		return false

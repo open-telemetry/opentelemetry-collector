@@ -34,14 +34,14 @@ var processorCapabilities = consumer.Capabilities{MutatesData: false}
 type factory struct {
 	// memoryLimiters stores memoryLimiter instances with unique configs that multiple processors can reuse.
 	// This avoids running multiple memory checks (ie: GC) for every processor using the same processor config.
-	memoryLimiters map[config.ComponentID]*memoryLimiter
+	memoryLimiters map[config.Processor]*memoryLimiter
 	lock           sync.Mutex
 }
 
 // NewFactory returns a new factory for the Memory Limiter processor.
 func NewFactory() component.ProcessorFactory {
 	f := &factory{
-		memoryLimiters: map[config.ComponentID]*memoryLimiter{},
+		memoryLimiters: map[config.Processor]*memoryLimiter{},
 	}
 	return component.NewProcessorFactory(
 		typeStr,
@@ -116,7 +116,7 @@ func (f *factory) getMemoryLimiter(set component.ProcessorCreateSettings, cfg co
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	if memLimiter, ok := f.memoryLimiters[cfg.ID()]; ok {
+	if memLimiter, ok := f.memoryLimiters[cfg]; ok {
 		return memLimiter, nil
 	}
 
@@ -125,6 +125,6 @@ func (f *factory) getMemoryLimiter(set component.ProcessorCreateSettings, cfg co
 		return nil, err
 	}
 
-	f.memoryLimiters[cfg.ID()] = memLimiter
+	f.memoryLimiters[cfg] = memLimiter
 	return memLimiter, nil
 }

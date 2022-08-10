@@ -21,17 +21,229 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"go.opencensus.io/metric/metricdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 var (
 	errSendingQueueIsFull = errors.New("sending_queue is full")
+	errNoStorageClient    = errors.New("no storage client extension found")
+	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
+
+// QueueSettings defines configuration for queueing batches before sending to the consumerSender.
+type QueueSettings struct {
+	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
+	Enabled bool `mapstructure:"enabled"`
+	// NumConsumers is the number of consumers from the queue.
+	NumConsumers int `mapstructure:"num_consumers"`
+	// QueueSize is the maximum number of batches allowed in queue at a given time.
+	QueueSize int `mapstructure:"queue_size"`
+	// StorageID if not empty, enables the persistent storage and uses the component specified
+	// as a storage extension for the persistent queue
+	StorageID *config.ComponentID `mapstructure:"storage"`
+}
+
+// NewDefaultQueueSettings returns the default settings for QueueSettings.
+func NewDefaultQueueSettings() QueueSettings {
+	return QueueSettings{
+		Enabled:      true,
+		NumConsumers: 10,
+		// For 5000 queue elements at 100 requests/sec gives about 50 sec of survival of destination outage.
+		// This is a pretty decent value for production.
+		// User should calculate this from the perspective of how many seconds to buffer in case of a backend outage,
+		// multiply that by the number of requests per seconds.
+		QueueSize: 5000,
+	}
+}
+
+// Validate checks if the QueueSettings configuration is valid
+func (qCfg *QueueSettings) Validate() error {
+	if !qCfg.Enabled {
+		return nil
+	}
+
+	if qCfg.QueueSize <= 0 {
+		return errors.New("queue size must be positive")
+	}
+
+	return nil
+}
+
+type queuedRetrySender struct {
+	fullName           string
+	id                 config.ComponentID
+	signal             config.DataType
+	cfg                QueueSettings
+	consumerSender     requestSender
+	queue              internal.ProducerConsumerQueue
+	retryStopCh        chan struct{}
+	traceAttribute     attribute.KeyValue
+	logger             *zap.Logger
+	requeuingEnabled   bool
+	requestUnmarshaler internal.RequestUnmarshaler
+}
+
+func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+	retryStopCh := make(chan struct{})
+	sampledLogger := createSampledLogger(logger)
+	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
+
+	qrs := &queuedRetrySender{
+		fullName:           id.String(),
+		id:                 id,
+		signal:             signal,
+		cfg:                qCfg,
+		retryStopCh:        retryStopCh,
+		traceAttribute:     traceAttr,
+		logger:             sampledLogger,
+		requestUnmarshaler: reqUnmarshaler,
+	}
+
+	qrs.consumerSender = &retrySender{
+		traceAttribute: traceAttr,
+		cfg:            rCfg,
+		nextSender:     nextSender,
+		stopCh:         retryStopCh,
+		logger:         sampledLogger,
+		// Following three functions actually depend on queuedRetrySender
+		onTemporaryFailure: qrs.onTemporaryFailure,
+	}
+
+	if qCfg.StorageID == nil {
+		qrs.queue = internal.NewBoundedMemoryQueue(qrs.cfg.QueueSize)
+	}
+	// The Persistent Queue is initialized separately as it needs extra information about the component
+
+	return qrs
+}
+
+func getStorageExtension(extensions map[config.ComponentID]component.Extension, storageID config.ComponentID) (storage.Extension, error) {
+	if ext, found := extensions[storageID]; found {
+		if storageExt, ok := ext.(storage.Extension); ok {
+			return storageExt, nil
+		}
+		return nil, errWrongExtensionType
+	}
+	return nil, errNoStorageClient
+}
+
+func toStorageClient(ctx context.Context, storageID config.ComponentID, host component.Host, ownerID config.ComponentID, signal config.DataType) (storage.Client, error) {
+	extension, err := getStorageExtension(host.GetExtensions(), storageID)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := extension.GetClient(ctx, component.KindExporter, ownerID, string(signal))
+	if err != nil {
+		return nil, err
+	}
+
+	return client, err
+}
+
+// initializePersistentQueue uses extra information for initialization available from component.Host
+func (qrs *queuedRetrySender) initializePersistentQueue(ctx context.Context, host component.Host) error {
+	if qrs.cfg.StorageID == nil {
+		return nil
+	}
+
+	storageClient, err := toStorageClient(ctx, *qrs.cfg.StorageID, host, qrs.id, qrs.signal)
+	if err != nil {
+		return err
+	}
+
+	qrs.queue = internal.NewPersistentQueue(ctx, qrs.fullName, qrs.signal, qrs.cfg.QueueSize, qrs.logger, storageClient, qrs.requestUnmarshaler)
+
+	// TODO: this can be further exposed as a config param rather than relying on a type of queue
+	qrs.requeuingEnabled = true
+
+	return nil
+}
+
+func (qrs *queuedRetrySender) onTemporaryFailure(logger *zap.Logger, req internal.Request, err error) error {
+	if !qrs.requeuingEnabled || qrs.queue == nil {
+		logger.Error(
+			"Exporting failed. No more retries left. Dropping data.",
+			zap.Error(err),
+			zap.Int("dropped_items", req.Count()),
+		)
+		return err
+	}
+
+	if qrs.queue.Produce(req) {
+		logger.Error(
+			"Exporting failed. Putting back to the end of the queue.",
+			zap.Error(err),
+		)
+	} else {
+		logger.Error(
+			"Exporting failed. Queue did not accept requeuing request. Dropping data.",
+			zap.Error(err),
+			zap.Int("dropped_items", req.Count()),
+		)
+	}
+	return err
+}
+
+// start is invoked during service startup.
+func (qrs *queuedRetrySender) start(ctx context.Context, host component.Host) error {
+	if err := qrs.initializePersistentQueue(ctx, host); err != nil {
+		return err
+	}
+
+	qrs.queue.StartConsumers(qrs.cfg.NumConsumers, func(item internal.Request) {
+		_ = qrs.consumerSender.send(item)
+		item.OnProcessingFinished()
+	})
+
+	// Start reporting queue length metric
+	if qrs.cfg.Enabled {
+		err := globalInstruments.queueSize.UpsertEntry(func() int64 {
+			return int64(qrs.queue.Size())
+		}, metricdata.NewLabelValue(qrs.fullName))
+		if err != nil {
+			return fmt.Errorf("failed to create retry queue size metric: %w", err)
+		}
+		err = globalInstruments.queueCapacity.UpsertEntry(func() int64 {
+			return int64(qrs.cfg.QueueSize)
+		}, metricdata.NewLabelValue(qrs.fullName))
+		if err != nil {
+			return fmt.Errorf("failed to create retry queue capacity metric: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// shutdown is invoked during service shutdown.
+func (qrs *queuedRetrySender) shutdown() {
+	// Cleanup queue metrics reporting
+	if qrs.cfg.Enabled {
+		_ = globalInstruments.queueSize.UpsertEntry(func() int64 {
+			return int64(0)
+		}, metricdata.NewLabelValue(qrs.fullName))
+	}
+
+	// First Stop the retry goroutines, so that unblocks the queue numWorkers.
+	close(qrs.retryStopCh)
+
+	// Stop the queued sender, this will drain the queue and will call the retry (which is stopped) that will only
+	// try once every request.
+	if qrs.queue != nil {
+		qrs.queue.Stop()
+	}
+}
 
 // RetrySettings defines configuration for retrying batches in case of export failure.
 // The current supported strategy is exponential backoff.
@@ -78,13 +290,13 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 }
 
 // send implements the requestSender interface
-func (qrs *queuedRetrySender) send(req request) error {
+func (qrs *queuedRetrySender) send(req internal.Request) error {
 	if !qrs.cfg.Enabled {
 		err := qrs.consumerSender.send(req)
 		if err != nil {
 			qrs.logger.Error(
 				"Exporting failed. Dropping data. Try enabling sending_queue to survive temporary failures.",
-				zap.Int("dropped_items", req.count()),
+				zap.Int("dropped_items", req.Count()),
 			)
 		}
 		return err
@@ -92,19 +304,19 @@ func (qrs *queuedRetrySender) send(req request) error {
 
 	// Prevent cancellation and deadline to propagate to the context stored in the queue.
 	// The grpc/http based receivers will cancel the request context after this function returns.
-	req.setContext(noCancellationContext{Context: req.context()})
+	req.SetContext(noCancellationContext{Context: req.Context()})
 
-	span := trace.SpanFromContext(req.context())
+	span := trace.SpanFromContext(req.Context())
 	if !qrs.queue.Produce(req) {
 		qrs.logger.Error(
 			"Dropping data because sending_queue is full. Try increasing queue_size.",
-			zap.Int("dropped_items", req.count()),
+			zap.Int("dropped_items", req.Count()),
 		)
-		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qrs.traceAttributes...))
+		span.AddEvent("Dropped item, sending_queue is full.", trace.WithAttributes(qrs.traceAttribute))
 		return errSendingQueueIsFull
 	}
 
-	span.AddEvent("Enqueued item.", trace.WithAttributes(qrs.traceAttributes...))
+	span.AddEvent("Enqueued item.", trace.WithAttributes(qrs.traceAttribute))
 	return nil
 }
 
@@ -130,7 +342,7 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 	}
 }
 
-type onRequestHandlingFinishedFunc func(*zap.Logger, request, error) error
+type onRequestHandlingFinishedFunc func(*zap.Logger, internal.Request, error) error
 
 type retrySender struct {
 	traceAttribute     attribute.KeyValue
@@ -142,7 +354,7 @@ type retrySender struct {
 }
 
 // send implements the requestSender interface
-func (rs *retrySender) send(req request) error {
+func (rs *retrySender) send(req internal.Request) error {
 	if !rs.cfg.Enabled {
 		err := rs.nextSender.send(req)
 		if err != nil {
@@ -166,7 +378,7 @@ func (rs *retrySender) send(req request) error {
 		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
-	span := trace.SpanFromContext(req.context())
+	span := trace.SpanFromContext(req.Context())
 	retryNum := int64(0)
 	for {
 		span.AddEvent(
@@ -183,14 +395,14 @@ func (rs *retrySender) send(req request) error {
 			rs.logger.Error(
 				"Exporting failed. The error is not retryable. Dropping data.",
 				zap.Error(err),
-				zap.Int("dropped_items", req.count()),
+				zap.Int("dropped_items", req.Count()),
 			)
 			return err
 		}
 
 		// Give the request a chance to extract signal data to retry if only some data
 		// failed to process.
-		req = req.onError(err)
+		req = req.OnError(err)
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
@@ -221,8 +433,8 @@ func (rs *retrySender) send(req request) error {
 
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
-		case <-req.context().Done():
-			return fmt.Errorf("request is cancelled or timed out %w", err)
+		case <-req.Context().Done():
+			return fmt.Errorf("Request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
 			return fmt.Errorf("interrupted due to shutdown %w", err)
 		case <-time.After(backoffDelay):

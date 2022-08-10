@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 const envSchemePrefix = schemeName + ":"
@@ -33,6 +34,10 @@ exporters:
   otlp:
     endpoint: "localhost:4317"
 `
+
+func TestValidateProviderScheme(t *testing.T) {
+	assert.NoError(t, confmaptest.ValidateProviderScheme(New()))
+}
 
 func TestEmptyName(t *testing.T) {
 	env := New()

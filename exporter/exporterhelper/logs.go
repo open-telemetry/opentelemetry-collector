@@ -35,7 +35,7 @@ type logsRequest struct {
 	pusher consumer.ConsumeLogsFunc
 }
 
-func newLogsRequest(ctx context.Context, ld plog.Logs, pusher consumer.ConsumeLogsFunc) request {
+func newLogsRequest(ctx context.Context, ld plog.Logs, pusher consumer.ConsumeLogsFunc) internal.Request {
 	return &logsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		ld:          ld,
@@ -44,7 +44,7 @@ func newLogsRequest(ctx context.Context, ld plog.Logs, pusher consumer.ConsumeLo
 }
 
 func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.PersistentRequest, error) {
+	return func(bytes []byte) (internal.Request, error) {
 		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 		if err != nil {
 			return nil, err
@@ -53,7 +53,7 @@ func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.Req
 	}
 }
 
-func (req *logsRequest) onError(err error) request {
+func (req *logsRequest) OnError(err error) internal.Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
 		return newLogsRequest(req.ctx, logError.GetLogs(), req.pusher)
@@ -61,7 +61,7 @@ func (req *logsRequest) onError(err error) request {
 	return req
 }
 
-func (req *logsRequest) export(ctx context.Context) error {
+func (req *logsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
 }
 
@@ -69,7 +69,7 @@ func (req *logsRequest) Marshal() ([]byte, error) {
 	return logsMarshaler.MarshalLogs(req.ld)
 }
 
-func (req *logsRequest) count() int {
+func (req *logsRequest) Count() int {
 	return req.ld.LogRecordCount()
 }
 
@@ -110,7 +110,7 @@ func NewLogsExporter(
 		req := newLogsRequest(ctx, ld, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {
-			be.obsrep.recordLogsEnqueueFailure(req.context(), int64(req.count()))
+			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.Count()))
 		}
 		return err
 	}, bs.consumerOptions...)
@@ -126,9 +126,9 @@ type logsExporterWithObservability struct {
 	nextSender requestSender
 }
 
-func (lewo *logsExporterWithObservability) send(req request) error {
-	req.setContext(lewo.obsrep.StartLogsOp(req.context()))
+func (lewo *logsExporterWithObservability) send(req internal.Request) error {
+	req.SetContext(lewo.obsrep.StartLogsOp(req.Context()))
 	err := lewo.nextSender.send(req)
-	lewo.obsrep.EndLogsOp(req.context(), req.count(), err)
+	lewo.obsrep.EndLogsOp(req.Context(), req.Count(), err)
 	return err
 }

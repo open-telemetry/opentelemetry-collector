@@ -51,7 +51,7 @@ func TestTracesRequest(t *testing.T) {
 	mr := newTracesRequest(context.Background(), testdata.GenerateTraces(1), nil)
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
-	assert.EqualValues(t, newTracesRequest(context.Background(), ptrace.NewTraces(), nil), mr.onError(traceErr))
+	assert.EqualValues(t, newTracesRequest(context.Background(), ptrace.NewTraces(), nil), mr.OnError(traceErr))
 }
 
 func TestTracesExporter_InvalidName(t *testing.T) {

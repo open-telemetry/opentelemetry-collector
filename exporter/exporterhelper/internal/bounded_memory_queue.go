@@ -28,34 +28,27 @@ import (
 // channels, with a special Reaper goroutine that wakes up when the queue is full and consumers
 // the items from the top of the queue until its size drops back to maxSize
 type boundedMemoryQueue struct {
-	stopWG        sync.WaitGroup
-	size          *atomic.Uint32
-	stopped       *atomic.Bool
-	items         chan interface{}
-	onDroppedItem func(item interface{})
-	factory       func() consumer
-	capacity      uint32
+	stopWG   sync.WaitGroup
+	size     *atomic.Uint32
+	stopped  *atomic.Bool
+	items    chan Request
+	capacity uint32
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedMemoryQueue(capacity int, onDroppedItem func(item interface{})) ProducerConsumerQueue {
+func NewBoundedMemoryQueue(capacity int) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
-		onDroppedItem: onDroppedItem,
-		items:         make(chan interface{}, capacity),
-		stopped:       atomic.NewBool(false),
-		size:          atomic.NewUint32(0),
-		capacity:      uint32(capacity),
+		items:    make(chan Request, capacity),
+		stopped:  atomic.NewBool(false),
+		size:     atomic.NewUint32(0),
+		capacity: uint32(capacity),
 	}
 }
 
 // StartConsumers starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
-func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item interface{})) {
-	factory := func() consumer {
-		return consumerFunc(callback)
-	}
-	q.factory = factory
+func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item Request)) {
 	var startWG sync.WaitGroup
 	for i := 0; i < numWorkers; i++ {
 		q.stopWG.Add(1)
@@ -63,29 +56,18 @@ func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item i
 		go func() {
 			startWG.Done()
 			defer q.stopWG.Done()
-			itemConsumer := q.factory()
 			for item := range q.items {
 				q.size.Sub(1)
-				itemConsumer.consume(item)
+				callback(item)
 			}
 		}()
 	}
 	startWG.Wait()
 }
 
-// consumerFunc is an adapter to allow the use of
-// a consume function callback as a consumer.
-type consumerFunc func(item interface{})
-
-// Consume calls c(item)
-func (c consumerFunc) consume(item interface{}) {
-	c(item)
-}
-
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
-func (q *boundedMemoryQueue) Produce(item interface{}) bool {
+func (q *boundedMemoryQueue) Produce(item Request) bool {
 	if q.stopped.Load() {
-		q.onDroppedItem(item)
 		return false
 	}
 
@@ -93,8 +75,6 @@ func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 	// their combined size is stored in q.size, and their combined capacity
 	// should match the capacity of the new queue
 	if q.size.Load() >= q.capacity {
-		// note that all items will be dropped if the capacity is 0
-		q.onDroppedItem(item)
 		return false
 	}
 
@@ -105,9 +85,6 @@ func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 	default:
 		// should not happen, as overflows should have been captured earlier
 		q.size.Sub(1)
-		if q.onDroppedItem != nil {
-			q.onDroppedItem(item)
-		}
 		return false
 	}
 }

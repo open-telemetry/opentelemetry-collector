@@ -20,10 +20,13 @@
   - `component.WithLogsProcessorAndStabilityLevel`
 - ABI breaking change: `featuregate.Registry.Apply` returns error now.
 - Update minimum go version to 1.18 (#5795)
+- Remove deprecated `Flags` API from pdata (#5814)
+- Change `confmap.Provider` to return pointer to `Retrieved` (#5839)
 
 ### 🚩 Deprecations 🚩
 
-- Deprecate `featuregate.Registry.MustApply` in favor of `featuregate.Registry.Apply`.
+- Deprecate duplicate settings in service.ConfigProvider, embed ResolverSettings (#5843)
+- Deprecate `featuregate.Registry.MustApply` in favor of `featuregate.Registry.Apply`. (#5801)
 - Deprecate the `component.Factory.StabilityLevel(config.DataType)` in favor of Stability per component (#5762):
   - `component.ExporterFactory.TracesExporterStability`
   - `component.ExporterFactory.MetricsExporterStability`
@@ -36,12 +39,20 @@
   - `component.ReceiverFactory.LogsReceiverStability`
 - Deprecate `obsreport.ProcessorSettings.Level` and `obsreport.ExporterSettings.Level`, use MetricsLevel from CreateSettings (#5824)
 - Deprecate `processorhelper.New[Traces|Metrics|Logs]Processor` in favor of `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` (#5833)
+- Deprecate MetricDataPointFlags.String(), no other pdata flags have this method (#5868)
+- Deprecates `FlagsStruct` in favor of `Flags` (#5842)
+  - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
+  - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
+  - `FlagsStruct` -> `Flags`
 
 ### 💡 Enhancements 💡
 
 - Enable persistent queue in the build by default (#5828)
 - Bump to opentelemetry-proto v0.19.0. (#5823)
 - Expose `Scope.Attributes` in pdata (#5826)
+- Remove unnecessary limitation on `pcommon.Value.Equal` that slices have only primitive values. (#5865)
+- Add support to handle 404, 405 http error code as permanent errors in OTLP exporter (#5827)
+- Enforce scheme name restrictions to all `confmap.Provider` implementations. (#5861)
 
 ### 🧰 Bug fixes 🧰
 
@@ -200,7 +211,6 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Use OpenCensus `metric` package for process metrics instead of `stats` package (#5486)
 - Update OTLP to v0.18.0 (#5530)
 - Log histogram min/max fields with `logging` exporter (#5520)
-- Add support in the `confmap.Resolver` to expand embedded config URIs inside configuration (#4742)
 
 ### 🧰 Bug fixes 🧰
 
