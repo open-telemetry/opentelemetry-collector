@@ -22,13 +22,15 @@ processors:
 exporters:
   logging:
     loglevel: debug
+  jaeger:
+    endpoint: 0.0.0.0:14250
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [logging]
+      exporters: [logging,jaeger]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
