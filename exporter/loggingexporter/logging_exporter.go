@@ -22,9 +22,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -91,57 +88,6 @@ func newLoggingExporter(logger *zap.Logger, logLevel zapcore.Level) *loggingExpo
 		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
 		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
 	}
-}
-
-// newTracesExporter creates an exporter.TracesExporter that just drops the
-// received data and logs debugging messages.
-func newTracesExporter(cfg *Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-	s := newLoggingExporter(logger, cfg.LogLevel)
-	return exporterhelper.NewTracesExporter(
-		cfg,
-		set,
-		s.pushTraces,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(logger)),
-	)
-}
-
-// newMetricsExporter creates an exporter.MetricsExporter that just drops the
-// received data and logs debugging messages.
-func newMetricsExporter(cfg *Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
-	s := newLoggingExporter(logger, cfg.LogLevel)
-	return exporterhelper.NewMetricsExporter(
-		cfg,
-		set,
-		s.pushMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(logger)),
-	)
-}
-
-// newLogsExporter creates an exporter.LogsExporter that just drops the
-// received data and logs debugging messages.
-func newLogsExporter(cfg *Config, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
-	s := newLoggingExporter(logger, cfg.LogLevel)
-	return exporterhelper.NewLogsExporter(
-		cfg,
-		set,
-		s.pushLogs,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(logger)),
-	)
 }
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {
