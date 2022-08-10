@@ -22,74 +22,97 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+func TestUnmarshalDefaultConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalReceiver(cm, cfg))
+	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+}
 
-	assert.Equal(t, len(cfg.Receivers), 12)
-
-	assert.Equal(t, cfg.Receivers[config.NewComponentID(typeStr)], factory.CreateDefaultConfig())
+func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "only_grpc.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalReceiver(cm, cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyGRPC.SetIDName("only_grpc")
 	defaultOnlyGRPC.HTTP = nil
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "only_grpc")], defaultOnlyGRPC)
+	assert.Equal(t, defaultOnlyGRPC, cfg)
+}
+
+func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "only_http.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalReceiver(cm, cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.SetIDName("only_http")
 	defaultOnlyHTTP.GRPC = nil
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "only_http")], defaultOnlyHTTP)
+	assert.Equal(t, defaultOnlyHTTP, cfg)
+}
 
-	defaultOnlyHTTPNull := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTPNull.SetIDName("only_http_null")
-	defaultOnlyHTTPNull.GRPC = nil
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "only_http_null")], defaultOnlyHTTPNull)
+func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "only_http_null.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalReceiver(cm, cfg))
 
-	defaultOnlyHTTPEmptyMap := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTPEmptyMap.SetIDName("only_http_empty_map")
-	defaultOnlyHTTPEmptyMap.GRPC = nil
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "only_http_empty_map")], defaultOnlyHTTPEmptyMap)
+	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyHTTP.GRPC = nil
+	assert.Equal(t, defaultOnlyHTTP, cfg)
+}
 
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")],
+func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "only_http_empty_map.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalReceiver(cm, cfg))
+
+	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
+	defaultOnlyHTTP.GRPC = nil
+	assert.Equal(t, defaultOnlyHTTP, cfg)
+}
+
+func TestUnmarshalConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalReceiver(cm, cfg))
+	assert.Equal(t,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
-			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "localhost:9090",
-						Transport: "tcp",
-					},
-					ReadBufferSize: 512 * 1024,
-				},
-			},
-		})
-
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "keepalive")],
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "keepalive")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
-					ReadBufferSize: 512 * 1024,
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "test.crt",
+							KeyFile:  "test.key",
+						},
+					},
+					MaxRecvMsgSizeMiB:    32,
+					MaxConcurrentStreams: 16,
+					ReadBufferSize:       1024,
+					WriteBufferSize:      1024,
 					Keepalive: &configgrpc.KeepaliveServerConfig{
 						ServerParameters: &configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle:     11 * time.Second,
@@ -104,50 +127,6 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-			},
-		})
-
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "msg-size-conc-connect-max-idle")],
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "msg-size-conc-connect-max-idle")),
-			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:4317",
-						Transport: "tcp",
-					},
-					MaxRecvMsgSizeMiB:    32,
-					MaxConcurrentStreams: 16,
-					ReadBufferSize:       1024,
-					WriteBufferSize:      1024,
-					Keepalive: &configgrpc.KeepaliveServerConfig{
-						ServerParameters: &configgrpc.KeepaliveServerParameters{
-							MaxConnectionIdle: 10 * time.Second,
-						},
-					},
-				},
-			},
-		})
-
-	// NOTE: Once the config loader checks for the files existence, this test may fail and require
-	// 	use of fake cert/key for test purposes.
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "tlscredentials")],
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tlscredentials")),
-			Protocols: Protocols{
-				GRPC: &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "0.0.0.0:4317",
-						Transport: "tcp",
-					},
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
-							CertFile: "test.crt",
-							KeyFile:  "test.key",
-						},
-					},
-					ReadBufferSize: 512 * 1024,
-				},
 				HTTP: &confighttp.HTTPServerSettings{
 					Endpoint: "0.0.0.0:4318",
 					TLSSetting: &configtls.TLSServerSetting{
@@ -156,41 +135,25 @@ func TestLoadConfig(t *testing.T) {
 							KeyFile:  "test.key",
 						},
 					},
-				},
-			},
-		})
-
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "cors")],
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "cors")),
-			Protocols: Protocols{
-				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint: "0.0.0.0:4318",
 					CORS: &confighttp.CORSSettings{
 						AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 						MaxAge:         7200,
 					},
 				},
 			},
-		})
+		}, cfg)
 
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "corsheader")],
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "corsheader")),
-			Protocols: Protocols{
-				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint: "0.0.0.0:4318",
-					CORS: &confighttp.CORSSettings{
-						AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
-						AllowedHeaders: []string{"ExampleHeader"},
-					},
-				},
-			},
-		})
+}
 
-	assert.Equal(t, cfg.Receivers[config.NewComponentIDWithName(typeStr, "uds")],
+func TestUnmarshalConfigUnix(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "uds.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalReceiver(cm, cfg))
+	assert.Equal(t,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "uds")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -204,24 +167,36 @@ func TestLoadConfig(t *testing.T) {
 					// Transport: "unix",
 				},
 			},
-		})
+		}, cfg)
 }
 
-func TestFailedLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "typo_default_proto_config.yaml"))
+	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "typo_default_proto_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for \"otlp\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
+	cfg := factory.CreateDefaultConfig()
+	assert.EqualError(t, config.UnmarshalReceiver(cm, cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
+}
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_proto_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for \"otlp\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
+func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "bad_proto_config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.EqualError(t, config.UnmarshalReceiver(cm, cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
+}
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_no_proto_config.yaml"), factories)
-	assert.EqualError(t, err, "receiver \"otlp\" has invalid configuration: must specify at least one protocol when using the OTLP receiver")
+func TestUnmarshalConfigEmptyProtocols(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "bad_no_proto_config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalReceiver(cm, cfg))
+	assert.EqualError(t, cfg.Validate(), "must specify at least one protocol when using the OTLP receiver")
+}
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_empty_config.yaml"), factories)
-	assert.EqualError(t, err, "error reading receivers configuration for \"otlp\": empty config for OTLP receiver")
+func TestUnmarshalConfigEmpty(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.EqualError(t, config.UnmarshalReceiver(confmap.New(), cfg), "empty config for OTLP receiver")
 }
