@@ -1,5 +1,5 @@
 What is this new component httpprovider?
-- An implementation of ConfigMapProvider for HTTP (httpprovider) allows OTEL Collector the ability to load configuration for itself by fetching and reading config files stored in HTTP servers.
+- An implementation of ConfigProvider for HTTP (httpprovider) allows OTEL Collector the ability to load configuration for itself by fetching and reading config files stored in HTTP servers.
 
 How this new component httpprovider works?
 - It will be called by ConfigMapResolver to load configurations for OTEL Collector.
