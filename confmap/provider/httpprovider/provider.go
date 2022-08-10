@@ -17,7 +17,7 @@ package httpprovider // import "go.opentelemetry.io/collector/confmap/provider/h
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -67,7 +67,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	}
 
 	// read the response body
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("fail to read the response body from uri %q, with err: %w ", uri, err)
 	}

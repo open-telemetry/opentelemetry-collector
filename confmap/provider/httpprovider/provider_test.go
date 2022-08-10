@@ -17,9 +17,9 @@ package httpprovider
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,12 +47,12 @@ func NewTestNonExistProvider() confmap.Provider {
 func TestFunctionalityDownloadFileHTTP(t *testing.T) {
 	fp := NewTestProvider()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		f, err := ioutil.ReadFile("./testdata/otel-config.yaml")
+		f, err := os.ReadFile("./testdata/otel-config.yaml")
 		if err != nil {
 			w.WriteHeader(404)
-			_, err := w.Write([]byte("Cannot find the config file"))
-			if err != nil {
-				fmt.Println("Write failed: ", err)
+			_, innerErr := w.Write([]byte("Cannot find the config file"))
+			if innerErr != nil {
+				fmt.Println("Write failed: ", innerErr)
 			}
 			return
 		}
@@ -93,12 +93,12 @@ func TestEmptyURI(t *testing.T) {
 func TestNonExistent(t *testing.T) {
 	fp := NewTestNonExistProvider()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		f, err := ioutil.ReadFile("./testdata/nonexist-otel-config.yaml")
+		f, err := os.ReadFile("./testdata/nonexist-otel-config.yaml")
 		if err != nil {
 			w.WriteHeader(404)
-			_, err := w.Write([]byte("Cannot find the config file"))
-			if err != nil {
-				fmt.Println("Write failed: ", err)
+			_, innerErr := w.Write([]byte("Cannot find the config file"))
+			if innerErr != nil {
+				fmt.Println("Write failed: ", innerErr)
 			}
 			return
 		}
