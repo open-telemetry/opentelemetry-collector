@@ -29,12 +29,8 @@ const (
 	schemeName = "http"
 )
 
-type httpClient interface {
-	Get(url string) (resp *http.Response, err error)
-}
-
 type provider struct {
-	client httpClient
+	client http.Client
 }
 
 // New returns a new confmap.Provider that reads the configuration from a file.
@@ -46,7 +42,7 @@ type provider struct {
 // Examples:
 // `http://localhost:3333/getConfig` - (unix, windows)
 func New() confmap.Provider {
-	return &provider{client: &http.Client{}}
+	return &provider{client: http.Client{}}
 }
 
 func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {

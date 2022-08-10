@@ -31,17 +31,17 @@ import (
 
 // Create a provider mocking httpmapprovider works in normal cases
 func NewTestProvider() confmap.Provider {
-	return &provider{client: &http.Client{}}
+	return &provider{}
 }
 
 // Create a provider mocking httpmapprovider works when the returned config file is invalid
 func NewTestInvalidProvider() confmap.Provider {
-	return &provider{client: &http.Client{}}
+	return &provider{}
 }
 
 // Create a provider mocking httpmapprovider works when there is no corresponding config file according to the given http-uri
 func NewTestNonExistProvider() confmap.Provider {
-	return &provider{client: &http.Client{}}
+	return &provider{}
 }
 
 func TestFunctionalityDownloadFileHTTP(t *testing.T) {
