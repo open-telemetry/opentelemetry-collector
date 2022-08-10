@@ -60,7 +60,7 @@ func createDefaultConfig() config.Processor {
 }
 
 func (f *factory) createTracesProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
@@ -69,9 +69,7 @@ func (f *factory) createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessor(
-		cfg,
-		nextConsumer,
+	return processorhelper.NewTracesProcessorWithCreateSettings(ctx, set, cfg, nextConsumer,
 		memLimiter.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
@@ -79,7 +77,7 @@ func (f *factory) createTracesProcessor(
 }
 
 func (f *factory) createMetricsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
@@ -88,9 +86,7 @@ func (f *factory) createMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetricsProcessor(
-		cfg,
-		nextConsumer,
+	return processorhelper.NewMetricsProcessorWithCreateSettings(ctx, set, cfg, nextConsumer,
 		memLimiter.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
@@ -98,7 +94,7 @@ func (f *factory) createMetricsProcessor(
 }
 
 func (f *factory) createLogsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
@@ -107,9 +103,7 @@ func (f *factory) createLogsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogsProcessor(
-		cfg,
-		nextConsumer,
+	return processorhelper.NewLogsProcessorWithCreateSettings(ctx, set, cfg, nextConsumer,
 		memLimiter.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
