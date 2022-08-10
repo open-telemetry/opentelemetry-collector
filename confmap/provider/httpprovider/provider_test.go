@@ -16,6 +16,7 @@ package httpprovider
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -49,10 +50,17 @@ func TestFunctionalityDownloadFileHTTP(t *testing.T) {
 		f, err := ioutil.ReadFile("./testdata/otel-config.yaml")
 		if err != nil {
 			w.WriteHeader(404)
-			w.Write([]byte("Cannot find the config file"))
+			_, err := w.Write([]byte("Cannot find the config file"))
+			if err != nil {
+				fmt.Println("Write failed: ", err)
+			}
+			return
 		}
 		w.WriteHeader(200)
-		w.Write(f)
+		_, err = w.Write(f)
+		if err != nil {
+			fmt.Println("Write failed: ", err)
+		}
 	}))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -71,7 +79,10 @@ func TestEmptyURI(t *testing.T) {
 	fp := NewTestProvider()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
-		w.Write([]byte(""))
+		_, err := w.Write([]byte(""))
+		if err != nil {
+			fmt.Println("Write failed: ", err)
+		}
 	}))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -85,10 +96,17 @@ func TestNonExistent(t *testing.T) {
 		f, err := ioutil.ReadFile("./testdata/nonexist-otel-config.yaml")
 		if err != nil {
 			w.WriteHeader(404)
-			w.Write([]byte("Cannot find the config file"))
+			_, err := w.Write([]byte("Cannot find the config file"))
+			if err != nil {
+				fmt.Println("Write failed: ", err)
+			}
+			return
 		}
 		w.WriteHeader(200)
-		w.Write(f)
+		_, err = w.Write(f)
+		if err != nil {
+			fmt.Println("Write failed: ", err)
+		}
 	}))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
@@ -100,7 +118,10 @@ func TestInvalidYAML(t *testing.T) {
 	fp := NewTestInvalidProvider()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		w.Write([]byte("wrong : ["))
+		_, err := w.Write([]byte("wrong : ["))
+		if err != nil {
+			fmt.Println("Write failed: ", err)
+		}
 	}))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
