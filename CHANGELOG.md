@@ -4,6 +4,16 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.58.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove the InstrumentationLibrary to Scope translation (part of transition to OTLP 0.19). (#5819)
   - This has a side effect that when sending JSON encoded telemetry using OTLP proto <= 0.15.0, telemetry will be dropped.
 - Require the storage to be explicitly set for the (experimental) persistent queue (#5784)
@@ -54,8 +64,6 @@
 - Remove unnecessary limitation on `pcommon.Value.Equal` that slices have only primitive values. (#5865)
 - Add support to handle 404, 405 http error code as permanent errors in OTLP exporter (#5827)
 - Enforce scheme name restrictions to all `confmap.Provider` implementations. (#5861)
-
-### 🧰 Bug fixes 🧰
 
 ## v0.57.2 Beta
 
