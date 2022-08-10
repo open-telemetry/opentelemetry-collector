@@ -258,7 +258,7 @@ func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
 	}
 }
 
-// String returns the string representation of the MetricDataPointFlags.
+// Deprecated: [v0.58.0] will be soon removed, no String() on any other pdata.
 func (ms MetricDataPointFlags) String() string {
 	return otlpmetrics.DataPointFlags(*ms.orig).String()
 }

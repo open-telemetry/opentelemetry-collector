@@ -22,7 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -248,11 +248,11 @@ func TestLogsRoundTrip(t *testing.T) {
 func TestIssue_4221(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() { assert.NoError(t, r.Body.Close()) }()
-		compressedData, err := ioutil.ReadAll(r.Body)
+		compressedData, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData))
 		require.NoError(t, err)
-		data, err := ioutil.ReadAll(gzipReader)
+		data, err := io.ReadAll(gzipReader)
 		require.NoError(t, err)
 		base64Data := base64.StdEncoding.EncodeToString(data)
 		// Verify same base64 encoded string is received.

@@ -16,7 +16,7 @@ package confmap
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -220,7 +220,7 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T)
 
 // newConfFromFile creates a new Conf by reading the given file.
 func newConfFromFile(t testing.TB, fileName string) map[string]interface{} {
-	content, err := ioutil.ReadFile(filepath.Clean(fileName))
+	content, err := os.ReadFile(filepath.Clean(fileName))
 	require.NoErrorf(t, err, "unable to read the file %v", fileName)
 
 	var data map[string]interface{}
