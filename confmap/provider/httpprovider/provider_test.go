@@ -72,10 +72,8 @@ func TestEmptyURI(t *testing.T) {
 
 func TestRetrieveFromShutdownServer(t *testing.T) {
 	fp := New()
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(404)
-	}))
-	defer ts.Close()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
 	assert.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
@@ -84,16 +82,7 @@ func TestRetrieveFromShutdownServer(t *testing.T) {
 func TestNonExistent(t *testing.T) {
 	fp := New()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		f, err := os.ReadFile("./testdata/nonexist-otel-config.yaml")
-		if err != nil {
-			w.WriteHeader(404)
-			return
-		}
-		w.WriteHeader(200)
-		_, err = w.Write(f)
-		if err != nil {
-			fmt.Println("Write failed: ", err)
-		}
+		w.WriteHeader(404)
 	}))
 	defer ts.Close()
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
