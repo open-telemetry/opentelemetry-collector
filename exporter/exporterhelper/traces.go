@@ -79,14 +79,24 @@ type traceExporter struct {
 	consumer.Traces
 }
 
-// NewTracesExporter creates a TracesExporter that records observability metrics and wraps every request with a Span.
+// Deprecated: [v0.58.0] use NewTracesExporterWithContext.
 func NewTracesExporter(
 	cfg config.Exporter,
 	set component.ExporterCreateSettings,
 	pusher consumer.ConsumeTracesFunc,
 	options ...Option,
 ) (component.TracesExporter, error) {
+	return NewTracesExporterWithContext(context.Background(), set, cfg, pusher, options...)
+}
 
+// NewTracesExporterWithContext creates an TracesExporter that records observability metrics and wraps every request with a Span.
+func NewTracesExporterWithContext(
+	_ context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+	pusher consumer.ConsumeTracesFunc,
+	options ...Option,
+) (component.TracesExporter, error) {
 	if cfg == nil {
 		return nil, errNilConfig
 	}

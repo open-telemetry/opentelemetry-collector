@@ -4,6 +4,16 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🚩 Deprecations 🚩
+
+### 💡 Enhancements 💡
+
+### 🧰 Bug fixes 🧰
+
+## v0.58.0 Beta
+
+### 🛑 Breaking changes 🛑
+
 - Remove the InstrumentationLibrary to Scope translation (part of transition to OTLP 0.19). (#5819)
   - This has a side effect that when sending JSON encoded telemetry using OTLP proto <= 0.15.0, telemetry will be dropped.
 - Require the storage to be explicitly set for the (experimental) persistent queue (#5784)
@@ -38,10 +48,13 @@
   - `component.ReceiverFactory.MetricsReceiverStability`
   - `component.ReceiverFactory.LogsReceiverStability`
 - Deprecate `obsreport.ProcessorSettings.Level` and `obsreport.ExporterSettings.Level`, use MetricsLevel from CreateSettings (#5824)
+- Deprecate `processorhelper.New[Traces|Metrics|Logs]Processor` in favor of `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` (#5833)
+- Deprecate MetricDataPointFlags.String(), no other pdata flags have this method (#5868)
 - Deprecates `FlagsStruct` in favor of `Flags` (#5842)
   - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
   - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
   - `FlagsStruct` -> `Flags`
+- Deprecate `exporterhelper.New[Traces|Metrics|Logs]Exporter` in favor of `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` (#5834)
 
 ### 💡 Enhancements 💡
 
@@ -52,8 +65,6 @@
 - Add support to handle 404, 405 http error code as permanent errors in OTLP exporter (#5827)
 - Enforce scheme name restrictions to all `confmap.Provider` implementations. (#5861)
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
-
-### 🧰 Bug fixes 🧰
 
 ## v0.57.2 Beta
 

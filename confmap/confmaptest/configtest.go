@@ -16,11 +16,11 @@ package confmaptest // import "go.opentelemetry.io/collector/confmap/confmaptest
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -28,7 +28,7 @@ import (
 // LoadConf loads a confmap.Conf from file, and does NOT validate the configuration.
 func LoadConf(fileName string) (*confmap.Conf, error) {
 	// Clean the path before using it.
-	content, err := ioutil.ReadFile(filepath.Clean(fileName))
+	content, err := os.ReadFile(filepath.Clean(fileName))
 	if err != nil {
 		return nil, fmt.Errorf("unable to read the file %v: %w", fileName, err)
 	}

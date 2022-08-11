@@ -36,14 +36,26 @@ type tracesProcessor struct {
 	consumer.Traces
 }
 
-// NewTracesProcessor creates a TracesProcessor that ensure context propagation and the right tags are set.
-// TODO: Add observability metrics support
+// Deprecated: [v0.58.0] use version with NewTracesProcessorWithCreateSettings.
 func NewTracesProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 	tracesFunc ProcessTracesFunc,
 	options ...Option,
 ) (component.TracesProcessor, error) {
+	return NewTracesProcessorWithCreateSettings(context.Background(), component.ProcessorCreateSettings{}, cfg, nextConsumer, tracesFunc, options...)
+}
+
+// NewTracesProcessorWithCreateSettings creates a TracesProcessor that ensure context propagation and the right tags are set.
+func NewTracesProcessorWithCreateSettings(
+	_ context.Context,
+	_ component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
+	tracesFunc ProcessTracesFunc,
+	options ...Option,
+) (component.TracesProcessor, error) {
+	// TODO: Add observability Traces support
 	if tracesFunc == nil {
 		return nil, errors.New("nil tracesFunc")
 	}

@@ -33,7 +33,7 @@ import (
 var testLogsCfg = config.NewProcessorSettings(config.NewComponentID("test"))
 
 func TestNewLogsProcessor(t *testing.T) {
-	lp, err := NewLogsProcessor(&testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil))
+	lp, err := NewLogsProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, lp.Capabilities().MutatesData)
@@ -44,7 +44,7 @@ func TestNewLogsProcessor(t *testing.T) {
 
 func TestNewLogsProcessor_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	lp, err := NewLogsProcessor(&testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil),
+	lp, err := NewLogsProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -56,22 +56,22 @@ func TestNewLogsProcessor_WithOptions(t *testing.T) {
 }
 
 func TestNewLogsProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewLogsProcessor(&testLogsCfg, consumertest.NewNop(), nil)
+	_, err := NewLogsProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testLogsCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 
-	_, err = NewLogsProcessor(&testLogsCfg, nil, newTestLProcessor(nil))
+	_, err = NewLogsProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testLogsCfg, nil, newTestLProcessor(nil))
 	assert.Equal(t, component.ErrNilNextConsumer, err)
 }
 
 func TestNewLogsProcessor_ProcessLogError(t *testing.T) {
 	want := errors.New("my_error")
-	lp, err := NewLogsProcessor(&testLogsCfg, consumertest.NewNop(), newTestLProcessor(want))
+	lp, err := NewLogsProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
 
 func TestNewLogsProcessor_ProcessLogsErrSkipProcessingData(t *testing.T) {
-	lp, err := NewLogsProcessor(&testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
+	lp, err := NewLogsProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.Equal(t, nil, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
