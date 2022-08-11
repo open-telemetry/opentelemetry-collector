@@ -22,35 +22,29 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+func TestUnmarshalDefaultConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalProcessor(confmap.New(), cfg))
+	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+}
+
+func TestUnmarshalConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	require.NoError(t, err)
-
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	p0 := cfg.Processors[config.NewComponentID(typeStr)]
-	assert.Equal(t, p0,
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalProcessor(cm, cfg))
+	assert.Equal(t,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		})
-
-	p1 := cfg.Processors[config.NewComponentIDWithName(typeStr, "with-settings")]
-	assert.Equal(t, p1,
-		&Config{
-			ProcessorSettings:   config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "with-settings")),
+			ProcessorSettings:   config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			CheckInterval:       5 * time.Second,
 			MemoryLimitMiB:      4000,
 			MemorySpikeLimitMiB: 500,
-		})
+		}, cfg)
 }
