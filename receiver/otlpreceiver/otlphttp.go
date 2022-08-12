@@ -15,7 +15,7 @@
 package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -111,7 +111,7 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 }
 
 func readAndCloseBody(resp http.ResponseWriter, req *http.Request, encoder encoder) ([]byte, bool) {
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		writeError(resp, encoder, err, http.StatusBadRequest)
 		return nil, false

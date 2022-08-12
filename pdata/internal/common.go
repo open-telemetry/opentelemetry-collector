@@ -371,16 +371,8 @@ func (v Value) Equal(av Value) bool {
 			return false
 		}
 
-		for i, val := range avv {
-			val := val
-			newAv := newValue(&vv[i])
-
-			// According to the specification, array values must be scalar.
-			if avType := newAv.Type(); avType == ValueTypeSlice || avType == ValueTypeMap {
-				return false
-			}
-
-			if !newAv.Equal(newValue(&val)) {
+		for i := range avv {
+			if !newValue(&vv[i]).Equal(newValue(&avv[i])) {
 				return false
 			}
 		}
@@ -394,13 +386,13 @@ func (v Value) Equal(av Value) bool {
 
 		m := newMap(&avv)
 
-		for _, val := range cc {
-			newAv, ok := m.Get(val.Key)
+		for i := range cc {
+			newAv, ok := m.Get(cc[i].Key)
 			if !ok {
 				return false
 			}
 
-			if !newAv.Equal(newValue(&val.Value)) {
+			if !newAv.Equal(newValue(&cc[i].Value)) {
 				return false
 			}
 		}

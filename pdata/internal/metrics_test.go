@@ -241,7 +241,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
 						Scope:   generateTestProtoInstrumentationScope(),
-						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoHistogramMetric()},
 					},
 				},
 			},
@@ -329,7 +329,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
 						Scope:   generateTestProtoInstrumentationScope(),
-						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoHistogramMetric()},
 					},
 				},
 			},
@@ -343,7 +343,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
 						Scope:   generateTestProtoInstrumentationScope(),
-						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoHistogramMetric()},
 					},
 				},
 			},
@@ -529,7 +529,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
 						Scope:   generateTestProtoInstrumentationScope(),
-						Metrics: []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+						Metrics: []*otlpmetrics.Metric{generateTestProtoHistogramMetric()},
 					},
 				},
 			},
@@ -613,7 +613,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
 						Scope:   generateTestProtoInstrumentationScope(),
-						Metrics: []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+						Metrics: []*otlpmetrics.Metric{generateTestProtoHistogramMetric()},
 					},
 				},
 			},
@@ -690,13 +690,10 @@ func TestMetricsClone(t *testing.T) {
 
 func TestMetricsDataPointFlags(t *testing.T) {
 	gauge := generateTestGauge()
-
 	assert.False(t, gauge.DataPoints().At(0).Flags().NoRecordedValue())
-	assert.Equal(t, "FLAG_NONE", gauge.DataPoints().At(0).Flags().String())
 
 	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(true)
 	assert.True(t, gauge.DataPoints().At(1).Flags().NoRecordedValue())
-	assert.Equal(t, "FLAG_NO_RECORDED_VALUE", gauge.DataPoints().At(1).Flags().String())
 	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(false)
 	assert.False(t, gauge.DataPoints().At(1).Flags().NoRecordedValue())
 
@@ -730,7 +727,7 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
 						Scope:   generateTestProtoInstrumentationScope(),
-						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoDoubleHistogramMetric()},
+						Metrics: []*otlpmetrics.Metric{generateTestProtoGaugeMetric(), generateTestProtoSumMetric(), generateTestProtoHistogramMetric()},
 					},
 				},
 			},
@@ -807,7 +804,7 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{
 					{
 						Scope:   generateTestProtoInstrumentationScope(),
-						Metrics: []*otlpmetrics.Metric{generateTestProtoDoubleHistogramMetric()},
+						Metrics: []*otlpmetrics.Metric{generateTestProtoHistogramMetric()},
 					},
 				},
 			},
@@ -923,7 +920,7 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 	}
 }
 
-func generateTestProtoDoubleHistogramMetric() *otlpmetrics.Metric {
+func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 	return &otlpmetrics.Metric{
 		Name:        "my_metric_histogram",
 		Description: "My metric",

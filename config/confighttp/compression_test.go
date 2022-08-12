@@ -19,7 +19,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -96,7 +96,7 @@ func TestHTTPClientCompression(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				body, err := ioutil.ReadAll(r.Body)
+				body, err := io.ReadAll(r.Body)
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, tt.reqBody, body)
 				w.WriteHeader(200)
@@ -131,7 +131,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			_, err = ioutil.ReadAll(res.Body)
+			_, err = io.ReadAll(res.Body)
 			require.NoError(t, err)
 			require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
 			require.NoError(t, srv.Close())
@@ -194,7 +194,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				body, err := ioutil.ReadAll(r.Body)
+				body, err := io.ReadAll(r.Body)
 				require.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(200)
@@ -226,7 +226,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 
 			assert.Equal(t, tt.respCode, res.StatusCode, "test handler returned unexpected status code ")
 			if tt.respBody != "" {
-				body, err := ioutil.ReadAll(res.Body)
+				body, err := io.ReadAll(res.Body)
 				require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
 				assert.Equal(t, tt.respBody, string(body))
 			}
@@ -239,7 +239,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	compressedGzipBody, _ := compressGzip([]byte{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err, "failed to read request body: %v", err)
 		assert.EqualValues(t, compressedGzipBody.Bytes(), body)
 	}))
@@ -253,7 +253,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	res, err := client.Do(req)
 	require.NoError(t, err)
 
-	_, err = ioutil.ReadAll(res.Body)
+	_, err = io.ReadAll(res.Body)
 	require.NoError(t, err)
 	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
 }

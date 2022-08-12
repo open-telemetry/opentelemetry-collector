@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 
@@ -33,7 +32,7 @@ import (
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
 	f := NewFactory()
-	lte, err := newTracesExporter(f.CreateDefaultConfig().(*Config), zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	lte, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), f.CreateDefaultConfig())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -45,7 +44,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	f := NewFactory()
-	lme, err := newMetricsExporter(f.CreateDefaultConfig().(*Config), zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	lme, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), f.CreateDefaultConfig())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -60,7 +59,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
 	f := NewFactory()
-	lle, err := newLogsExporter(f.CreateDefaultConfig().(*Config), zap.NewNop(), componenttest.NewNopExporterCreateSettings())
+	lle, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), f.CreateDefaultConfig())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 

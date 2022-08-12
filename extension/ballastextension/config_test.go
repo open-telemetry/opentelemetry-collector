@@ -21,47 +21,35 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
-
-	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
-	assert.Equal(t,
-		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			SizeMiB:           123,
-			SizeInPercentage:  20,
-		},
-		ext1)
-
-	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalExtension(confmap.New(), cfg))
+	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
-func TestLoadInvalidConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+func TestUnmarshalConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_invalid.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalExtension(cm, cfg))
+	assert.Equal(t,
+		&Config{
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+			SizeMiB:           123,
+			SizeInPercentage:  20,
+		}, cfg)
+}
 
-	require.NotNil(t, err)
-	assert.Equal(t, err.Error(), "extension \"memory_ballast\" has invalid configuration: size_in_percentage is not in range 0 to 100")
-
+func TestConfigValidate(t *testing.T) {
+	cfg := &Config{SizeInPercentage: 200}
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Equal(t, "size_in_percentage is not in range 0 to 100", err.Error())
 }
