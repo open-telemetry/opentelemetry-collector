@@ -138,9 +138,7 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 	}
 
 	if tel.registry.IsEnabled(allowTraceContextPropagationFeatureGateID) {
-		props := strings.Split(cfg.Traces.Propagators, ",")
-
-		textMapPropagators, err := autoprop.TextMapPropagator(props...)
+		textMapPropagators, err := autoprop.TextMapPropagator(cfg.Traces.Propagators...)
 		if err != nil {
 			return err
 		}

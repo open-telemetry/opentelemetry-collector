@@ -207,7 +207,7 @@ func defaultServiceTelemetryMetricsSettings() telemetry.MetricsConfig {
 
 func defaultServiceTelemetryTracesSettings() telemetry.TracesConfig {
 	return telemetry.TracesConfig{
-		Propagators: "tracecontext",
+		Propagators: []string{"tracecontext"},
 	}
 }
 

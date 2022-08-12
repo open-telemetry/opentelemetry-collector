@@ -106,9 +106,10 @@ type MetricsConfig struct {
 }
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
+// Experimental: *NOTE* this structure is subject to change or removal in the future.
 type TracesConfig struct {
-	// Propagators is a comma separated list of TextMapPropagators from the default registered list
+	// Propagators is a list of TextMapPropagators from the default registered list
 	// (tracecontext, baggage, b3, b3multi, jaeger, xray, or ottrace). The default propagator used in
 	// tracecontext and setting the vale to "none" disables the context propagation altogether.
-	Propagators string `mapstructure:"propagators"`
+	Propagators []string `mapstructure:"propagators"`
 }

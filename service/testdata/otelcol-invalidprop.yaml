@@ -10,7 +10,9 @@ exporters:
 service:
   telemetry:
     traces:
-      propagators: "unknown,tracecontext"
+      propagators:
+      - "unknown"
+      - "tracecontext"
   pipelines:
     traces:
       receivers: [nop]
