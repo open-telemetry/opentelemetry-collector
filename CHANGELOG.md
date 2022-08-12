@@ -8,6 +8,8 @@
 
 ### 💡 Enhancements 💡
 
+- Add support to propagate trace context of collector's internal spans if `telemetry.allowTraceContextPropagation` featuregate is enabled (#5572)
+
 ### 🧰 Bug fixes 🧰
 
 ## v0.58.0 Beta
@@ -138,7 +140,6 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Add `linux-ppc64le` architecture to cross build tests in CI (#5645)
 - `client`: perform case insensitive lookups in case the requested metadata value isn't found (#5646)
 - `loggingexporter`: Decouple `loglevel` field from level of logged messages (#5678)
-- Add support to propagate trace context of collector's internal spans if `telemetry.allowTraceContextPropagation` featuregate is enabled (#5572)
 - Expose `pcommon.NewSliceFromRaw` function (#5679)
 - `loggingexporter`: create the exporter's logger from the service's logger (#5677)
 - Add `otelcol_exporter_queue_capacity` metrics show the collector's exporter queue capacity (#5475)
