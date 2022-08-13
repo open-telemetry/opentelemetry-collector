@@ -15,6 +15,7 @@
 - Deprecate `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` in favor of `exporterhelper.New[Traces|Metrics|Logs]Exporter` (#5914)
 
 ### 💡 Enhancements 💡
+- Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
 
@@ -76,7 +77,6 @@
 - Remove unnecessary limitation on `pcommon.Value.Equal` that slices have only primitive values. (#5865)
 - Add support to handle 404, 405 http error code as permanent errors in OTLP exporter (#5827)
 - Enforce scheme name restrictions to all `confmap.Provider` implementations. (#5861)
-- Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 
 ## v0.57.2 Beta
 
