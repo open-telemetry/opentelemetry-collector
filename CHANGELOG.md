@@ -44,7 +44,6 @@
 - Update minimum go version to 1.18 (#5795)
 - Remove deprecated `Flags` API from pdata (#5814)
 - Change `confmap.Provider` to return pointer to `Retrieved` (#5839)
-- Implementation `jsonUnmarshaler` with jsoniter to unmarshal metrics json(#5433)
 
 ### 🚩 Deprecations 🚩
 
@@ -77,6 +76,7 @@
 - Remove unnecessary limitation on `pcommon.Value.Equal` that slices have only primitive values. (#5865)
 - Add support to handle 404, 405 http error code as permanent errors in OTLP exporter (#5827)
 - Enforce scheme name restrictions to all `confmap.Provider` implementations. (#5861)
+- Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 
 ## v0.57.2 Beta
 
@@ -154,7 +154,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Expose `pcommon.NewSliceFromRaw` function (#5679)
 - `loggingexporter`: create the exporter's logger from the service's logger (#5677)
 - Add `otelcol_exporter_queue_capacity` metrics show the collector's exporter queue capacity (#5475)
-- Add support to handle 402, 413, 414, 431 http error code as permanent errors in OTLP exporter (#5685) 
+- Add support to handle 402, 413, 414, 431 http error code as permanent errors in OTLP exporter (#5685)
 
 ### 🧰 Bug fixes 🧰
 
