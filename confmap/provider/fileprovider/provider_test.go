@@ -125,6 +125,7 @@ func TestWatcherShutdownBeforeClose(t *testing.T) {
 func TestWatcherConfigChange(t *testing.T) {
 	fp := New().(*provider)
 	fp.filePollInterval = time.Millisecond
+	fp.eventGracePeriod = time.Nanosecond
 
 	events := make(chan *confmap.ChangeEvent)
 	watchFunc := func(event *confmap.ChangeEvent) {
@@ -152,6 +153,39 @@ func TestWatcherConfigChange(t *testing.T) {
 	event = getEventWithTimeout(events, fp.filePollInterval*100)
 	require.NotNil(t, event)
 	assert.Error(t, event.Error)
+
+	assert.NoError(t, ret.Close(context.Background()))
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestWatcherGracePeriod(t *testing.T) {
+	fp := New().(*provider)
+	fp.filePollInterval = time.Millisecond
+	fp.eventGracePeriod = time.Millisecond * 50
+
+	events := make(chan *confmap.ChangeEvent)
+	watchFunc := func(event *confmap.ChangeEvent) {
+		events <- event
+	}
+
+	absolutePath := absolutePath(t, filepath.Join("testdata", "default-config.yaml"))
+	testFile := copyTestFile(t, absolutePath)
+	defer testFile.Close()
+
+	ret, err := fp.Retrieve(context.Background(), fileSchemePrefix+testFile.Name(), watchFunc)
+	require.NoError(t, err)
+
+	// change the file, we should get an update event after the grace period
+	_, err = testFile.WriteString("\n")
+	require.NoError(t, err)
+
+	// no updates yet
+	event := getEventWithTimeout(events, fp.eventGracePeriod/2)
+	assert.Nil(t, event)
+
+	// update arrived
+	event = getEventWithTimeout(events, fp.eventGracePeriod)
+	assert.NotNil(t, event)
 
 	assert.NoError(t, ret.Close(context.Background()))
 	require.NoError(t, fp.Shutdown(context.Background()))

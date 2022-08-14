@@ -28,14 +28,16 @@ import (
 )
 
 const (
-	schemeName       = "file"
-	filePollInterval = time.Second
+	schemeName             = "file"
+	filePollInterval       = time.Second
+	changeEventGracePeriod = time.Second * 2
 )
 
 type provider struct {
 	eventHandlers    sync.WaitGroup
 	eventCloseCh     chan struct{}
 	filePollInterval time.Duration
+	eventGracePeriod time.Duration
 }
 
 // New returns a new confmap.Provider that reads the configuration from a file.
@@ -56,6 +58,7 @@ type provider struct {
 func New() confmap.Provider {
 	return &provider{
 		filePollInterval: filePollInterval,
+		eventGracePeriod: changeEventGracePeriod,
 		eventCloseCh:     make(chan struct{}),
 	}
 }
@@ -113,15 +116,36 @@ func (fmp *provider) startFileWatcher(path string, watcherFunc confmap.WatcherFu
 }
 
 // handleEventsFromWatcher reads change events from the file watcher's event channel and calls
-// the watchFunc on each event
+// the watchFunc on each event, while observing the grace period
+//
+// The grace period guarantees the following:
+//   - events are delivered at a rate of at most one per grace period
+//   - an event is delivered no earlier than grace period after it's been emitted
 func (fmp *provider) handleEventsFromWatcher(fileWatcher *pollingFileWatcher, watchFunc confmap.WatcherFunc) {
+	var eventToDeliver *confmap.ChangeEvent
+	var eventToDeliverArrived *time.Time
+	// we check if we should deliver every poll interval
+	// this means that in the worst case, an event will wait pollInterval + gracePeriod
+	ticker := time.NewTicker(fmp.filePollInterval)
 	for { // this loop ends when either the fileWatcher or closeCh is closed
 		select {
 		case changeEvent, ok := <-fileWatcher.Events:
 			if !ok {
 				return
 			}
-			go watchFunc(changeEvent)
+			// save the latest event, it'll be delivered on a separate schedule
+			eventToDeliver = changeEvent
+			now := time.Now()
+			eventToDeliverArrived = &now
+		case <-ticker.C:
+			if eventToDeliver == nil || eventToDeliverArrived == nil { // nothing to deliver
+				continue
+			}
+			if eventToDeliverArrived.Add(fmp.eventGracePeriod).Before(time.Now()) {
+				// if the grace period has passed for the most recent event, deliver it
+				go watchFunc(eventToDeliver)
+				eventToDeliver, eventToDeliverArrived = nil, nil
+			}
 		case _, ok := <-fmp.eventCloseCh:
 			if !ok {
 				// caller called Shutdown before all the closeFuncs, clean up anyway
