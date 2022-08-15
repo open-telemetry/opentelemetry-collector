@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -127,8 +126,7 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 }
 
 func (s *windowsService) stop(colErrorChannel chan error) error {
-	// simulate a SIGTERM signal to terminate the collector server
-	s.col.signalsChannel <- syscall.SIGTERM
+	s.col.Shutdown()
 	// return the response of col.Start
 	return <-colErrorChannel
 }
