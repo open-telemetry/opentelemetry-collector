@@ -97,13 +97,12 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	return &Collector{
+		set:               set,
+		state:             atomic.NewInt32(int32(Starting)),
+		shutdownChan:      make(chan struct{}),
+		signalsChannel:    make(chan os.Signal, 1),
 		asyncErrorChannel: make(chan error),
-
-		set:          set,
-		state:        atomic.NewInt32(int32(Starting)),
-		shutdownChan: make(chan struct{}),
 	}, nil
-
 }
 
 // GetState returns current state of the collector server.
@@ -127,7 +126,6 @@ func (col *Collector) Shutdown() {
 func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 	col.service.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
 
-	col.signalsChannel = make(chan os.Signal, 1)
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
 	if !col.set.DisableGracefulShutdown {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
