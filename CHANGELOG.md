@@ -10,6 +10,8 @@
 
 ### 💡 Enhancements 💡
 
+- Add httpprovider to allow loading config files stored in HTTP (#5810)
+
 ### 🧰 Bug fixes 🧰
 
 - Fix bug in setting the correct collector state after a configuration change event. (#5830)
