@@ -36,18 +36,20 @@ type metricsProcessor struct {
 	consumer.Metrics
 }
 
-// Deprecated: [v0.58.0] use version with NewMetricsProcessorWithCreateSettings.
-func NewMetricsProcessor(
+// Deprecated: [v0.58.0] use version with NewMetricsProcessor.
+func NewMetricsProcessorWithCreateSettings(
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 	metricsFunc ProcessMetricsFunc,
 	options ...Option,
 ) (component.MetricsProcessor, error) {
-	return NewMetricsProcessorWithCreateSettings(context.Background(), component.ProcessorCreateSettings{}, cfg, nextConsumer, metricsFunc, options...)
+	return NewMetricsProcessor(ctx, set, cfg, nextConsumer, metricsFunc, options...)
 }
 
-// NewMetricsProcessorWithCreateSettings creates a MetricsProcessor that ensure context propagation and the right tags are set.
-func NewMetricsProcessorWithCreateSettings(
+// NewMetricsProcessor creates a component.MetricsProcessor that ensure context propagation and the right tags are set.
+func NewMetricsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateSettings,
 	cfg config.Processor,

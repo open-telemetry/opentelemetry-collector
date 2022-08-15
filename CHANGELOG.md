@@ -3,9 +3,12 @@
 ## Unreleased
 
 ### 🛑 Breaking changes 🛑
+ 
+- Replace `processorhelper.New[Traces|Metrics|Logs]Exporter` with `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` definition (#5915)
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` in favor of `processorhelper.New[Traces|Metrics|Logs]Exporter` (#5915)
 - Deprecates `LogRecord.Flags()` and `LogRecord.SetFlags()` in favor of `LogRecord.FlagsStruct()`. (#5866)
 
 ### 💡 Enhancements 💡
