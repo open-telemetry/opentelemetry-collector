@@ -12,6 +12,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- Fix bug in setting the correct collector state after a configuration change event. (#5830)
+
 ## v0.58.0 Beta
 
 ### 🛑 Breaking changes 🛑

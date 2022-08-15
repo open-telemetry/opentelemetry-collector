@@ -131,7 +131,6 @@ func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
-	col.setCollectorState(Running)
 LOOP:
 	for {
 		select {
@@ -198,7 +197,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return err
 	}
-
+	col.setCollectorState(Running)
 	return nil
 }
 
