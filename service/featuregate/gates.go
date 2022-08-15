@@ -60,13 +60,6 @@ func (r *Registry) Apply(cfg map[string]bool) error {
 	return nil
 }
 
-// Deprecated: [v0.58.0] Use Apply instead.
-func (r *Registry) MustApply(cfg map[string]bool) {
-	if err := r.Apply(cfg); err != nil {
-		panic(err)
-	}
-}
-
 // IsEnabled returns true if a registered feature gate is enabled and false otherwise.
 func (r *Registry) IsEnabled(id string) bool {
 	r.mu.RLock()
