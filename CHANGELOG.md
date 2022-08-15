@@ -4,6 +4,13 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated funcs from `pdata` module. (#5911)
+  - Remove `pmetric.MetricDataPointFlags.String()`
+  - Remove `pmetric.NumberDataPoint.FlagsStruct()`
+  - Remove `pmetric.HistogramDataPoint.FlagsStruct()`
+  - Remove `pmetric.ExponentialHistogramDataPoint.FlagsStruct()`
+  - Remove `pmetric.SummaryDataPoint.FlagsStruct()`
+
 ### 🚩 Deprecations 🚩
 
 - Deprecates `LogRecord.Flags()` and `LogRecord.SetFlags()` in favor of `LogRecord.FlagsStruct()`. (#5866)
