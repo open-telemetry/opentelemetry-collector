@@ -4,9 +4,12 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Replace `exporterhelper.New[Traces|Metrics|Logs]Exporter` with `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` definition (#5914)
+
 ### 🚩 Deprecations 🚩
 
 - Deprecates `LogRecord.Flags()` and `LogRecord.SetFlags()` in favor of `LogRecord.FlagsStruct()`. (#5866)
+- Deprecate `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` in favor of `exporterhelper.New[Traces|Metrics|Logs]Exporter` (#5914)
 
 ### 💡 Enhancements 💡
 

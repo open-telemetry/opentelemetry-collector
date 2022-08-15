@@ -92,7 +92,7 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporterWithContext(ctx, set, cfg,
+	return exporterhelper.NewTracesExporter(ctx, set, cfg,
 		oce.pushTraces,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -118,7 +118,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporterWithContext(ctx, set, cfg,
+	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
 		oce.pushMetrics,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -144,7 +144,7 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporterWithContext(ctx, set, cfg,
+	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		oce.pushLogs,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
