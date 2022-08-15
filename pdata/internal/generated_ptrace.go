@@ -195,22 +195,22 @@ func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
 
 // Resource returns the resource associated with this ResourceSpans.
 func (ms ResourceSpans) Resource() Resource {
-	return newResource(&(*ms.orig).Resource)
+	return newResource(&ms.orig.Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SchemaUrl() string {
-	return (*ms.orig).SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SetSchemaUrl(v string) {
-	(*ms.orig).SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
 func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
-	return newScopeSpansSlice(&(*ms.orig).ScopeSpans)
+	return newScopeSpansSlice(&ms.orig.ScopeSpans)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -392,22 +392,22 @@ func (ms ScopeSpans) MoveTo(dest ScopeSpans) {
 
 // Scope returns the scope associated with this ScopeSpans.
 func (ms ScopeSpans) Scope() InstrumentationScope {
-	return newInstrumentationScope(&(*ms.orig).Scope)
+	return newInstrumentationScope(&ms.orig.Scope)
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeSpans.
 func (ms ScopeSpans) SchemaUrl() string {
-	return (*ms.orig).SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeSpans.
 func (ms ScopeSpans) SetSchemaUrl(v string) {
-	(*ms.orig).SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // Spans returns the Spans associated with this ScopeSpans.
 func (ms ScopeSpans) Spans() SpanSlice {
-	return newSpanSlice(&(*ms.orig).Spans)
+	return newSpanSlice(&ms.orig.Spans)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -590,132 +590,132 @@ func (ms Span) MoveTo(dest Span) {
 
 // TraceID returns the traceid associated with this Span.
 func (ms Span) TraceID() TraceID {
-	return TraceID{orig: ((*ms.orig).TraceId)}
+	return TraceID{orig: (ms.orig.TraceId)}
 }
 
 // SetTraceID replaces the traceid associated with this Span.
 func (ms Span) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = v.orig
+	ms.orig.TraceId = v.orig
 }
 
 // SpanID returns the spanid associated with this Span.
 func (ms Span) SpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).SpanId)}
+	return SpanID{orig: (ms.orig.SpanId)}
 }
 
 // SetSpanID replaces the spanid associated with this Span.
 func (ms Span) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = v.orig
+	ms.orig.SpanId = v.orig
 }
 
 // TraceState returns the tracestate associated with this Span.
 func (ms Span) TraceState() TraceState {
-	return TraceState((*ms.orig).TraceState)
+	return TraceState(ms.orig.TraceState)
 }
 
 // SetTraceState replaces the tracestate associated with this Span.
 func (ms Span) SetTraceState(v TraceState) {
-	(*ms.orig).TraceState = string(v)
+	ms.orig.TraceState = string(v)
 }
 
 // ParentSpanID returns the parentspanid associated with this Span.
 func (ms Span) ParentSpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).ParentSpanId)}
+	return SpanID{orig: (ms.orig.ParentSpanId)}
 }
 
 // SetParentSpanID replaces the parentspanid associated with this Span.
 func (ms Span) SetParentSpanID(v SpanID) {
-	(*ms.orig).ParentSpanId = v.orig
+	ms.orig.ParentSpanId = v.orig
 }
 
 // Name returns the name associated with this Span.
 func (ms Span) Name() string {
-	return (*ms.orig).Name
+	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this Span.
 func (ms Span) SetName(v string) {
-	(*ms.orig).Name = v
+	ms.orig.Name = v
 }
 
 // Kind returns the kind associated with this Span.
 func (ms Span) Kind() SpanKind {
-	return SpanKind((*ms.orig).Kind)
+	return SpanKind(ms.orig.Kind)
 }
 
 // SetKind replaces the kind associated with this Span.
 func (ms Span) SetKind(v SpanKind) {
-	(*ms.orig).Kind = otlptrace.Span_SpanKind(v)
+	ms.orig.Kind = otlptrace.Span_SpanKind(v)
 }
 
 // StartTimestamp returns the starttimestamp associated with this Span.
 func (ms Span) StartTimestamp() Timestamp {
-	return Timestamp((*ms.orig).StartTimeUnixNano)
+	return Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this Span.
 func (ms Span) SetStartTimestamp(v Timestamp) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // EndTimestamp returns the endtimestamp associated with this Span.
 func (ms Span) EndTimestamp() Timestamp {
-	return Timestamp((*ms.orig).EndTimeUnixNano)
+	return Timestamp(ms.orig.EndTimeUnixNano)
 }
 
 // SetEndTimestamp replaces the endtimestamp associated with this Span.
 func (ms Span) SetEndTimestamp(v Timestamp) {
-	(*ms.orig).EndTimeUnixNano = uint64(v)
+	ms.orig.EndTimeUnixNano = uint64(v)
 }
 
 // Attributes returns the Attributes associated with this Span.
 func (ms Span) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Span.
 func (ms Span) DroppedAttributesCount() uint32 {
-	return (*ms.orig).DroppedAttributesCount
+	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this Span.
 func (ms Span) SetDroppedAttributesCount(v uint32) {
-	(*ms.orig).DroppedAttributesCount = v
+	ms.orig.DroppedAttributesCount = v
 }
 
 // Events returns the Events associated with this Span.
 func (ms Span) Events() SpanEventSlice {
-	return newSpanEventSlice(&(*ms.orig).Events)
+	return newSpanEventSlice(&ms.orig.Events)
 }
 
 // DroppedEventsCount returns the droppedeventscount associated with this Span.
 func (ms Span) DroppedEventsCount() uint32 {
-	return (*ms.orig).DroppedEventsCount
+	return ms.orig.DroppedEventsCount
 }
 
 // SetDroppedEventsCount replaces the droppedeventscount associated with this Span.
 func (ms Span) SetDroppedEventsCount(v uint32) {
-	(*ms.orig).DroppedEventsCount = v
+	ms.orig.DroppedEventsCount = v
 }
 
 // Links returns the Links associated with this Span.
 func (ms Span) Links() SpanLinkSlice {
-	return newSpanLinkSlice(&(*ms.orig).Links)
+	return newSpanLinkSlice(&ms.orig.Links)
 }
 
 // DroppedLinksCount returns the droppedlinkscount associated with this Span.
 func (ms Span) DroppedLinksCount() uint32 {
-	return (*ms.orig).DroppedLinksCount
+	return ms.orig.DroppedLinksCount
 }
 
 // SetDroppedLinksCount replaces the droppedlinkscount associated with this Span.
 func (ms Span) SetDroppedLinksCount(v uint32) {
-	(*ms.orig).DroppedLinksCount = v
+	ms.orig.DroppedLinksCount = v
 }
 
 // Status returns the status associated with this Span.
 func (ms Span) Status() SpanStatus {
-	return newSpanStatus(&(*ms.orig).Status)
+	return newSpanStatus(&ms.orig.Status)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -910,37 +910,37 @@ func (ms SpanEvent) MoveTo(dest SpanEvent) {
 
 // Timestamp returns the timestamp associated with this SpanEvent.
 func (ms SpanEvent) Timestamp() Timestamp {
-	return Timestamp((*ms.orig).TimeUnixNano)
+	return Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SpanEvent.
 func (ms SpanEvent) SetTimestamp(v Timestamp) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Name returns the name associated with this SpanEvent.
 func (ms SpanEvent) Name() string {
-	return (*ms.orig).Name
+	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this SpanEvent.
 func (ms SpanEvent) SetName(v string) {
-	(*ms.orig).Name = v
+	ms.orig.Name = v
 }
 
 // Attributes returns the Attributes associated with this SpanEvent.
 func (ms SpanEvent) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
 func (ms SpanEvent) DroppedAttributesCount() uint32 {
-	return (*ms.orig).DroppedAttributesCount
+	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanEvent.
 func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
-	(*ms.orig).DroppedAttributesCount = v
+	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1125,47 +1125,47 @@ func (ms SpanLink) MoveTo(dest SpanLink) {
 
 // TraceID returns the traceid associated with this SpanLink.
 func (ms SpanLink) TraceID() TraceID {
-	return TraceID{orig: ((*ms.orig).TraceId)}
+	return TraceID{orig: (ms.orig.TraceId)}
 }
 
 // SetTraceID replaces the traceid associated with this SpanLink.
 func (ms SpanLink) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = v.orig
+	ms.orig.TraceId = v.orig
 }
 
 // SpanID returns the spanid associated with this SpanLink.
 func (ms SpanLink) SpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).SpanId)}
+	return SpanID{orig: (ms.orig.SpanId)}
 }
 
 // SetSpanID replaces the spanid associated with this SpanLink.
 func (ms SpanLink) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = v.orig
+	ms.orig.SpanId = v.orig
 }
 
 // TraceState returns the tracestate associated with this SpanLink.
 func (ms SpanLink) TraceState() TraceState {
-	return TraceState((*ms.orig).TraceState)
+	return TraceState(ms.orig.TraceState)
 }
 
 // SetTraceState replaces the tracestate associated with this SpanLink.
 func (ms SpanLink) SetTraceState(v TraceState) {
-	(*ms.orig).TraceState = string(v)
+	ms.orig.TraceState = string(v)
 }
 
 // Attributes returns the Attributes associated with this SpanLink.
 func (ms SpanLink) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanLink.
 func (ms SpanLink) DroppedAttributesCount() uint32 {
-	return (*ms.orig).DroppedAttributesCount
+	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanLink.
 func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
-	(*ms.orig).DroppedAttributesCount = v
+	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1210,22 +1210,22 @@ func (ms SpanStatus) MoveTo(dest SpanStatus) {
 
 // Code returns the code associated with this SpanStatus.
 func (ms SpanStatus) Code() StatusCode {
-	return StatusCode((*ms.orig).Code)
+	return StatusCode(ms.orig.Code)
 }
 
 // SetCode replaces the code associated with this SpanStatus.
 func (ms SpanStatus) SetCode(v StatusCode) {
-	(*ms.orig).Code = otlptrace.Status_StatusCode(v)
+	ms.orig.Code = otlptrace.Status_StatusCode(v)
 }
 
 // Message returns the message associated with this SpanStatus.
 func (ms SpanStatus) Message() string {
-	return (*ms.orig).Message
+	return ms.orig.Message
 }
 
 // SetMessage replaces the message associated with this SpanStatus.
 func (ms SpanStatus) SetMessage(v string) {
-	(*ms.orig).Message = v
+	ms.orig.Message = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.

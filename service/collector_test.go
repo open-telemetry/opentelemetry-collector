@@ -178,6 +178,33 @@ func TestCollectorReportError(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
+func TestCollectorSendSignal(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+
+	col, err := New(CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.signalsChannel <- syscall.SIGTERM
+
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+}
+
 func TestCollectorFailedShutdown(t *testing.T) {
 	t.Skip("This test was using telemetry shutdown failure, switch to use a component that errors on shutdown.")
 	factories, err := componenttest.NopFactories()
