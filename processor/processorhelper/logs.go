@@ -36,18 +36,20 @@ type logProcessor struct {
 	consumer.Logs
 }
 
-// Deprecated: [v0.58.0] use version with NewLogsProcessorWithCreateSettings.
-func NewLogsProcessor(
+// Deprecated: [v0.58.0] use version with NewLogsProcessor.
+func NewLogsProcessorWithCreateSettings(
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 	logsFunc ProcessLogsFunc,
 	options ...Option,
 ) (component.LogsProcessor, error) {
-	return NewLogsProcessorWithCreateSettings(context.Background(), component.ProcessorCreateSettings{}, cfg, nextConsumer, logsFunc, options...)
+	return NewLogsProcessor(ctx, set, cfg, nextConsumer, logsFunc, options...)
 }
 
-// NewLogsProcessorWithCreateSettings creates a LogsProcessor that ensure context propagation and the right tags are set.
-func NewLogsProcessorWithCreateSettings(
+// NewLogsProcessor creates a component.LogsProcessor that ensure context propagation and the right tags are set.
+func NewLogsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateSettings,
 	cfg config.Processor,

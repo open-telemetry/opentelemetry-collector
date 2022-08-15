@@ -69,7 +69,7 @@ func (f *factory) createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessorWithCreateSettings(ctx, set, cfg, nextConsumer,
+	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
@@ -86,7 +86,7 @@ func (f *factory) createMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetricsProcessorWithCreateSettings(ctx, set, cfg, nextConsumer,
+	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
@@ -103,7 +103,7 @@ func (f *factory) createLogsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogsProcessorWithCreateSettings(ctx, set, cfg, nextConsumer,
+	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
