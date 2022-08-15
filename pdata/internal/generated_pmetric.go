@@ -195,22 +195,22 @@ func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
 
 // Resource returns the resource associated with this ResourceMetrics.
 func (ms ResourceMetrics) Resource() Resource {
-	return newResource(&(*ms.orig).Resource)
+	return newResource(&ms.orig.Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceMetrics.
 func (ms ResourceMetrics) SchemaUrl() string {
-	return (*ms.orig).SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceMetrics.
 func (ms ResourceMetrics) SetSchemaUrl(v string) {
-	(*ms.orig).SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // ScopeMetrics returns the ScopeMetrics associated with this ResourceMetrics.
 func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
-	return newScopeMetricsSlice(&(*ms.orig).ScopeMetrics)
+	return newScopeMetricsSlice(&ms.orig.ScopeMetrics)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -392,22 +392,22 @@ func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
 
 // Scope returns the scope associated with this ScopeMetrics.
 func (ms ScopeMetrics) Scope() InstrumentationScope {
-	return newInstrumentationScope(&(*ms.orig).Scope)
+	return newInstrumentationScope(&ms.orig.Scope)
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeMetrics.
 func (ms ScopeMetrics) SchemaUrl() string {
-	return (*ms.orig).SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeMetrics.
 func (ms ScopeMetrics) SetSchemaUrl(v string) {
-	(*ms.orig).SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // Metrics returns the Metrics associated with this ScopeMetrics.
 func (ms ScopeMetrics) Metrics() MetricSlice {
-	return newMetricSlice(&(*ms.orig).Metrics)
+	return newMetricSlice(&ms.orig.Metrics)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -590,32 +590,32 @@ func (ms Metric) MoveTo(dest Metric) {
 
 // Name returns the name associated with this Metric.
 func (ms Metric) Name() string {
-	return (*ms.orig).Name
+	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this Metric.
 func (ms Metric) SetName(v string) {
-	(*ms.orig).Name = v
+	ms.orig.Name = v
 }
 
 // Description returns the description associated with this Metric.
 func (ms Metric) Description() string {
-	return (*ms.orig).Description
+	return ms.orig.Description
 }
 
 // SetDescription replaces the description associated with this Metric.
 func (ms Metric) SetDescription(v string) {
-	(*ms.orig).Description = v
+	ms.orig.Description = v
 }
 
 // Unit returns the unit associated with this Metric.
 func (ms Metric) Unit() string {
-	return (*ms.orig).Unit
+	return ms.orig.Unit
 }
 
 // SetUnit replaces the unit associated with this Metric.
 func (ms Metric) SetUnit(v string) {
-	(*ms.orig).Unit = v
+	ms.orig.Unit = v
 }
 
 // DataType returns the type of the data for this Metric.
@@ -763,7 +763,7 @@ func (ms Gauge) MoveTo(dest Gauge) {
 
 // DataPoints returns the DataPoints associated with this Gauge.
 func (ms Gauge) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&(*ms.orig).DataPoints)
+	return newNumberDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -803,27 +803,27 @@ func (ms Sum) MoveTo(dest Sum) {
 
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
 func (ms Sum) AggregationTemporality() MetricAggregationTemporality {
-	return MetricAggregationTemporality((*ms.orig).AggregationTemporality)
+	return MetricAggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
 func (ms Sum) SetAggregationTemporality(v MetricAggregationTemporality) {
-	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // IsMonotonic returns the ismonotonic associated with this Sum.
 func (ms Sum) IsMonotonic() bool {
-	return (*ms.orig).IsMonotonic
+	return ms.orig.IsMonotonic
 }
 
 // SetIsMonotonic replaces the ismonotonic associated with this Sum.
 func (ms Sum) SetIsMonotonic(v bool) {
-	(*ms.orig).IsMonotonic = v
+	ms.orig.IsMonotonic = v
 }
 
 // DataPoints returns the DataPoints associated with this Sum.
 func (ms Sum) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&(*ms.orig).DataPoints)
+	return newNumberDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -865,17 +865,17 @@ func (ms Histogram) MoveTo(dest Histogram) {
 
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
 func (ms Histogram) AggregationTemporality() MetricAggregationTemporality {
-	return MetricAggregationTemporality((*ms.orig).AggregationTemporality)
+	return MetricAggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
 func (ms Histogram) SetAggregationTemporality(v MetricAggregationTemporality) {
-	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // DataPoints returns the DataPoints associated with this Histogram.
 func (ms Histogram) DataPoints() HistogramDataPointSlice {
-	return newHistogramDataPointSlice(&(*ms.orig).DataPoints)
+	return newHistogramDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -917,17 +917,17 @@ func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
 
 // AggregationTemporality returns the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) AggregationTemporality() MetricAggregationTemporality {
-	return MetricAggregationTemporality((*ms.orig).AggregationTemporality)
+	return MetricAggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) SetAggregationTemporality(v MetricAggregationTemporality) {
-	(*ms.orig).AggregationTemporality = otlpmetrics.AggregationTemporality(v)
+	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
 // DataPoints returns the DataPoints associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
-	return newExponentialHistogramDataPointSlice(&(*ms.orig).DataPoints)
+	return newExponentialHistogramDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -968,7 +968,7 @@ func (ms Summary) MoveTo(dest Summary) {
 
 // DataPoints returns the DataPoints associated with this Summary.
 func (ms Summary) DataPoints() SummaryDataPointSlice {
-	return newSummaryDataPointSlice(&(*ms.orig).DataPoints)
+	return newSummaryDataPointSlice(&ms.orig.DataPoints)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1148,27 +1148,27 @@ func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
 
 // Attributes returns the Attributes associated with this NumberDataPoint.
 func (ms NumberDataPoint) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) StartTimestamp() Timestamp {
-	return Timestamp((*ms.orig).StartTimeUnixNano)
+	return Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetStartTimestamp(v Timestamp) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) Timestamp() Timestamp {
-	return Timestamp((*ms.orig).TimeUnixNano)
+	return Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetTimestamp(v Timestamp) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // ValueType returns the type of the value for this NumberDataPoint.
@@ -1185,36 +1185,36 @@ func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 
 // DoubleVal returns the doubleval associated with this NumberDataPoint.
 func (ms NumberDataPoint) DoubleVal() float64 {
-	return (*ms.orig).GetAsDouble()
+	return ms.orig.GetAsDouble()
 }
 
 // SetDoubleVal replaces the doubleval associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetDoubleVal(v float64) {
-	(*ms.orig).Value = &otlpmetrics.NumberDataPoint_AsDouble{
+	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
 	}
 }
 
 // IntVal returns the intval associated with this NumberDataPoint.
 func (ms NumberDataPoint) IntVal() int64 {
-	return (*ms.orig).GetAsInt()
+	return ms.orig.GetAsInt()
 }
 
 // SetIntVal replaces the intval associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetIntVal(v int64) {
-	(*ms.orig).Value = &otlpmetrics.NumberDataPoint_AsInt{
+	ms.orig.Value = &otlpmetrics.NumberDataPoint_AsInt{
 		AsInt: v,
 	}
 }
 
 // Exemplars returns the Exemplars associated with this NumberDataPoint.
 func (ms NumberDataPoint) Exemplars() ExemplarSlice {
-	return newExemplarSlice(&(*ms.orig).Exemplars)
+	return newExemplarSlice(&ms.orig.Exemplars)
 }
 
 // Flags returns the flags associated with this NumberDataPoint.
 func (ms NumberDataPoint) Flags() MetricDataPointFlags {
-	return newMetricDataPointFlags(&(*ms.orig).Flags)
+	return newMetricDataPointFlags(&ms.orig.Flags)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1405,42 +1405,42 @@ func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
 
 // Attributes returns the Attributes associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) StartTimestamp() Timestamp {
-	return Timestamp((*ms.orig).StartTimeUnixNano)
+	return Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetStartTimestamp(v Timestamp) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Timestamp() Timestamp {
-	return Timestamp((*ms.orig).TimeUnixNano)
+	return Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetTimestamp(v Timestamp) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Count() uint64 {
-	return (*ms.orig).Count
+	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetCount(v uint64) {
-	(*ms.orig).Count = v
+	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Sum() float64 {
-	return (*ms.orig).GetSum()
+	return ms.orig.GetSum()
 }
 
 // HasSum returns true if the HistogramDataPoint contains a
@@ -1451,42 +1451,42 @@ func (ms HistogramDataPoint) HasSum() bool {
 
 // SetSum replaces the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetSum(v float64) {
-	(*ms.orig).Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
+	ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
 
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) BucketCounts() ImmutableUInt64Slice {
-	return ImmutableUInt64Slice{value: (*ms.orig).BucketCounts}
+	return ImmutableUInt64Slice{value: ms.orig.BucketCounts}
 }
 
 // SetBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetBucketCounts(v ImmutableUInt64Slice) {
-	(*ms.orig).BucketCounts = v.value
+	ms.orig.BucketCounts = v.value
 }
 
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) ExplicitBounds() ImmutableFloat64Slice {
-	return ImmutableFloat64Slice{value: (*ms.orig).ExplicitBounds}
+	return ImmutableFloat64Slice{value: ms.orig.ExplicitBounds}
 }
 
 // SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetExplicitBounds(v ImmutableFloat64Slice) {
-	(*ms.orig).ExplicitBounds = v.value
+	ms.orig.ExplicitBounds = v.value
 }
 
 // Exemplars returns the Exemplars associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
-	return newExemplarSlice(&(*ms.orig).Exemplars)
+	return newExemplarSlice(&ms.orig.Exemplars)
 }
 
 // Flags returns the flags associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
-	return newMetricDataPointFlags(&(*ms.orig).Flags)
+	return newMetricDataPointFlags(&ms.orig.Flags)
 }
 
 // Min returns the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Min() float64 {
-	return (*ms.orig).GetMin()
+	return ms.orig.GetMin()
 }
 
 // HasMin returns true if the HistogramDataPoint contains a
@@ -1497,12 +1497,12 @@ func (ms HistogramDataPoint) HasMin() bool {
 
 // SetMin replaces the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMin(v float64) {
-	(*ms.orig).Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
+	ms.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
 }
 
 // Max returns the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Max() float64 {
-	return (*ms.orig).GetMax()
+	return ms.orig.GetMax()
 }
 
 // HasMax returns true if the HistogramDataPoint contains a
@@ -1513,7 +1513,7 @@ func (ms HistogramDataPoint) HasMax() bool {
 
 // SetMax replaces the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMax(v float64) {
-	(*ms.orig).Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
+	ms.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1727,42 +1727,42 @@ func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoin
 
 // Attributes returns the Attributes associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) StartTimestamp() Timestamp {
-	return Timestamp((*ms.orig).StartTimeUnixNano)
+	return Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetStartTimestamp(v Timestamp) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Timestamp() Timestamp {
-	return Timestamp((*ms.orig).TimeUnixNano)
+	return Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetTimestamp(v Timestamp) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Count() uint64 {
-	return (*ms.orig).Count
+	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetCount(v uint64) {
-	(*ms.orig).Count = v
+	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Sum() float64 {
-	return (*ms.orig).GetSum()
+	return ms.orig.GetSum()
 }
 
 // HasSum returns true if the ExponentialHistogramDataPoint contains a
@@ -1773,52 +1773,52 @@ func (ms ExponentialHistogramDataPoint) HasSum() bool {
 
 // SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
-	(*ms.orig).Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
+	ms.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
 }
 
 // Scale returns the scale associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Scale() int32 {
-	return int32((*ms.orig).Scale)
+	return int32(ms.orig.Scale)
 }
 
 // SetScale replaces the scale associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetScale(v int32) {
-	(*ms.orig).Scale = int32(v)
+	ms.orig.Scale = int32(v)
 }
 
 // ZeroCount returns the zerocount associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) ZeroCount() uint64 {
-	return uint64((*ms.orig).ZeroCount)
+	return uint64(ms.orig.ZeroCount)
 }
 
 // SetZeroCount replaces the zerocount associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetZeroCount(v uint64) {
-	(*ms.orig).ZeroCount = uint64(v)
+	ms.orig.ZeroCount = uint64(v)
 }
 
 // Positive returns the positive associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Positive() Buckets {
-	return newBuckets(&(*ms.orig).Positive)
+	return newBuckets(&ms.orig.Positive)
 }
 
 // Negative returns the negative associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Negative() Buckets {
-	return newBuckets(&(*ms.orig).Negative)
+	return newBuckets(&ms.orig.Negative)
 }
 
 // Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
-	return newExemplarSlice(&(*ms.orig).Exemplars)
+	return newExemplarSlice(&ms.orig.Exemplars)
 }
 
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
-	return newMetricDataPointFlags(&(*ms.orig).Flags)
+	return newMetricDataPointFlags(&ms.orig.Flags)
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Min() float64 {
-	return (*ms.orig).GetMin()
+	return ms.orig.GetMin()
 }
 
 // HasMin returns true if the ExponentialHistogramDataPoint contains a
@@ -1829,12 +1829,12 @@ func (ms ExponentialHistogramDataPoint) HasMin() bool {
 
 // SetMin replaces the min associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
-	(*ms.orig).Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
+	ms.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
 }
 
 // Max returns the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Max() float64 {
-	return (*ms.orig).GetMax()
+	return ms.orig.GetMax()
 }
 
 // HasMax returns true if the ExponentialHistogramDataPoint contains a
@@ -1845,7 +1845,7 @@ func (ms ExponentialHistogramDataPoint) HasMax() bool {
 
 // SetMax replaces the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
-	(*ms.orig).Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
+	ms.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1906,22 +1906,22 @@ func (ms Buckets) MoveTo(dest Buckets) {
 
 // Offset returns the offset associated with this Buckets.
 func (ms Buckets) Offset() int32 {
-	return int32((*ms.orig).Offset)
+	return int32(ms.orig.Offset)
 }
 
 // SetOffset replaces the offset associated with this Buckets.
 func (ms Buckets) SetOffset(v int32) {
-	(*ms.orig).Offset = int32(v)
+	ms.orig.Offset = int32(v)
 }
 
 // BucketCounts returns the bucketcounts associated with this Buckets.
 func (ms Buckets) BucketCounts() ImmutableUInt64Slice {
-	return ImmutableUInt64Slice{value: (*ms.orig).BucketCounts}
+	return ImmutableUInt64Slice{value: ms.orig.BucketCounts}
 }
 
 // SetBucketCounts replaces the bucketcounts associated with this Buckets.
 func (ms Buckets) SetBucketCounts(v ImmutableUInt64Slice) {
-	(*ms.orig).BucketCounts = v.value
+	ms.orig.BucketCounts = v.value
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -2108,57 +2108,57 @@ func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
 
 // Attributes returns the Attributes associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) StartTimestamp() Timestamp {
-	return Timestamp((*ms.orig).StartTimeUnixNano)
+	return Timestamp(ms.orig.StartTimeUnixNano)
 }
 
 // SetStartTimestamp replaces the starttimestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetStartTimestamp(v Timestamp) {
-	(*ms.orig).StartTimeUnixNano = uint64(v)
+	ms.orig.StartTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Timestamp() Timestamp {
-	return Timestamp((*ms.orig).TimeUnixNano)
+	return Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetTimestamp(v Timestamp) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // Count returns the count associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Count() uint64 {
-	return (*ms.orig).Count
+	return ms.orig.Count
 }
 
 // SetCount replaces the count associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetCount(v uint64) {
-	(*ms.orig).Count = v
+	ms.orig.Count = v
 }
 
 // Sum returns the sum associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Sum() float64 {
-	return (*ms.orig).Sum
+	return ms.orig.Sum
 }
 
 // SetSum replaces the sum associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) SetSum(v float64) {
-	(*ms.orig).Sum = v
+	ms.orig.Sum = v
 }
 
 // QuantileValues returns the QuantileValues associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
-	return newValueAtQuantileSlice(&(*ms.orig).QuantileValues)
+	return newValueAtQuantileSlice(&ms.orig.QuantileValues)
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
-	return newMetricDataPointFlags(&(*ms.orig).Flags)
+	return newMetricDataPointFlags(&ms.orig.Flags)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -2344,22 +2344,22 @@ func (ms ValueAtQuantile) MoveTo(dest ValueAtQuantile) {
 
 // Quantile returns the quantile associated with this ValueAtQuantile.
 func (ms ValueAtQuantile) Quantile() float64 {
-	return (*ms.orig).Quantile
+	return ms.orig.Quantile
 }
 
 // SetQuantile replaces the quantile associated with this ValueAtQuantile.
 func (ms ValueAtQuantile) SetQuantile(v float64) {
-	(*ms.orig).Quantile = v
+	ms.orig.Quantile = v
 }
 
 // Value returns the value associated with this ValueAtQuantile.
 func (ms ValueAtQuantile) Value() float64 {
-	return (*ms.orig).Value
+	return ms.orig.Value
 }
 
 // SetValue replaces the value associated with this ValueAtQuantile.
 func (ms ValueAtQuantile) SetValue(v float64) {
-	(*ms.orig).Value = v
+	ms.orig.Value = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -2523,12 +2523,12 @@ func (ms Exemplar) MoveTo(dest Exemplar) {
 
 // Timestamp returns the timestamp associated with this Exemplar.
 func (ms Exemplar) Timestamp() Timestamp {
-	return Timestamp((*ms.orig).TimeUnixNano)
+	return Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this Exemplar.
 func (ms Exemplar) SetTimestamp(v Timestamp) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // ValueType returns the type of the value for this Exemplar.
@@ -2545,51 +2545,51 @@ func (ms Exemplar) ValueType() ExemplarValueType {
 
 // DoubleVal returns the doubleval associated with this Exemplar.
 func (ms Exemplar) DoubleVal() float64 {
-	return (*ms.orig).GetAsDouble()
+	return ms.orig.GetAsDouble()
 }
 
 // SetDoubleVal replaces the doubleval associated with this Exemplar.
 func (ms Exemplar) SetDoubleVal(v float64) {
-	(*ms.orig).Value = &otlpmetrics.Exemplar_AsDouble{
+	ms.orig.Value = &otlpmetrics.Exemplar_AsDouble{
 		AsDouble: v,
 	}
 }
 
 // IntVal returns the intval associated with this Exemplar.
 func (ms Exemplar) IntVal() int64 {
-	return (*ms.orig).GetAsInt()
+	return ms.orig.GetAsInt()
 }
 
 // SetIntVal replaces the intval associated with this Exemplar.
 func (ms Exemplar) SetIntVal(v int64) {
-	(*ms.orig).Value = &otlpmetrics.Exemplar_AsInt{
+	ms.orig.Value = &otlpmetrics.Exemplar_AsInt{
 		AsInt: v,
 	}
 }
 
 // FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
 func (ms Exemplar) FilteredAttributes() Map {
-	return newMap(&(*ms.orig).FilteredAttributes)
+	return newMap(&ms.orig.FilteredAttributes)
 }
 
 // TraceID returns the traceid associated with this Exemplar.
 func (ms Exemplar) TraceID() TraceID {
-	return TraceID{orig: ((*ms.orig).TraceId)}
+	return TraceID{orig: (ms.orig.TraceId)}
 }
 
 // SetTraceID replaces the traceid associated with this Exemplar.
 func (ms Exemplar) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = v.orig
+	ms.orig.TraceId = v.orig
 }
 
 // SpanID returns the spanid associated with this Exemplar.
 func (ms Exemplar) SpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).SpanId)}
+	return SpanID{orig: (ms.orig.SpanId)}
 }
 
 // SetSpanID replaces the spanid associated with this Exemplar.
 func (ms Exemplar) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = v.orig
+	ms.orig.SpanId = v.orig
 }
 
 // CopyTo copies all properties from the current struct to the dest.

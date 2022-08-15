@@ -53,37 +53,37 @@ func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
 
 // Name returns the name associated with this InstrumentationScope.
 func (ms InstrumentationScope) Name() string {
-	return (*ms.orig).Name
+	return ms.orig.Name
 }
 
 // SetName replaces the name associated with this InstrumentationScope.
 func (ms InstrumentationScope) SetName(v string) {
-	(*ms.orig).Name = v
+	ms.orig.Name = v
 }
 
 // Version returns the version associated with this InstrumentationScope.
 func (ms InstrumentationScope) Version() string {
-	return (*ms.orig).Version
+	return ms.orig.Version
 }
 
 // SetVersion replaces the version associated with this InstrumentationScope.
 func (ms InstrumentationScope) SetVersion(v string) {
-	(*ms.orig).Version = v
+	ms.orig.Version = v
 }
 
 // Attributes returns the Attributes associated with this InstrumentationScope.
 func (ms InstrumentationScope) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this InstrumentationScope.
 func (ms InstrumentationScope) DroppedAttributesCount() uint32 {
-	return (*ms.orig).DroppedAttributesCount
+	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this InstrumentationScope.
 func (ms InstrumentationScope) SetDroppedAttributesCount(v uint32) {
-	(*ms.orig).DroppedAttributesCount = v
+	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.
