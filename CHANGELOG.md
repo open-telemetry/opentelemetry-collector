@@ -15,6 +15,7 @@
 - Deprecate `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` in favor of `exporterhelper.New[Traces|Metrics|Logs]Exporter` (#5914)
 
 ### 💡 Enhancements 💡
+- Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
 
