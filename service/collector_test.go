@@ -416,6 +416,47 @@ func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
 	}
 }
 
+func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
+	tests := []struct {
+		file        string
+		errExpected bool
+	}{
+		{file: "otelcol-invalidprop.yaml", errExpected: true},
+		{file: "otelcol-nop.yaml", errExpected: false},
+		{file: "otelcol-validprop.yaml", errExpected: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.file, func(t *testing.T) {
+			factories, err := componenttest.NopFactories()
+			require.NoError(t, err)
+
+			cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", tt.file)}))
+			require.NoError(t, err)
+
+			set := CollectorSettings{
+				BuildInfo:      component.NewDefaultBuildInfo(),
+				Factories:      factories,
+				ConfigProvider: cfgProvider,
+				telemetry:      newColTelemetry(featuregate.NewRegistry()),
+			}
+
+			col, err := New(set)
+			require.NoError(t, err)
+
+			if tt.errExpected {
+				require.Error(t, col.Run(context.Background()))
+				assert.Equal(t, Closed, col.GetState())
+			} else {
+				wg := startCollector(context.Background(), t, col)
+				col.Shutdown()
+				wg.Wait()
+				assert.Equal(t, Closed, col.GetState())
+			}
+		})
+	}
+}
+
 func TestCollectorRun(t *testing.T) {
 	tests := []struct {
 		file string
