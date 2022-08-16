@@ -37,7 +37,6 @@ func ReadAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
 			})
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -117,7 +116,6 @@ func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
 			})
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -135,7 +133,6 @@ func readKvlistValue(iter *jsoniter.Iterator) *otlpcommon.KeyValueList {
 			})
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
