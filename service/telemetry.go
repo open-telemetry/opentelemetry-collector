@@ -26,10 +26,11 @@ import (
 	ocmetric "go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/contrib/propagators/autoprop"
+	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
@@ -57,9 +58,13 @@ const (
 	// telemetrySettings for internal metrics.
 	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 
-	// allowTraceContextPropagationFeatureGateID is the feature gate ID to propagate trace context of collector's
-	// internal spans
-	allowTraceContextPropagationFeatureGateID = "telemetry.allowTraceContextPropagation"
+	// supported trace propagators
+	traceContextPropagator = "tracecontext"
+	b3Propagator           = "b3"
+)
+
+var (
+	errUnsupportedPropagator = errors.New("unsupported trace propagator")
 )
 
 type telemetryInitializer struct {
@@ -78,12 +83,6 @@ func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
 	registry.MustRegister(featuregate.Gate{
 		ID:          useOtelForInternalMetricsfeatureGateID,
 		Description: "controls whether the collector to uses OpenTelemetry for internal metrics",
-		Enabled:     false,
-	})
-
-	registry.MustRegister(featuregate.Gate{
-		ID:          allowTraceContextPropagationFeatureGateID,
-		Description: "controls whether to propagate trace context headers of the internal spans",
 		Enabled:     false,
 	})
 
@@ -137,15 +136,10 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 		telAttrs[semconv.AttributeServiceVersion] = buildInfo.Version
 	}
 
-	if tel.registry.IsEnabled(allowTraceContextPropagationFeatureGateID) {
-		textMapPropagators, err := autoprop.TextMapPropagator(cfg.Traces.Propagators...)
-		if err != nil {
-			return err
-		}
-
-		if textMapPropagators != nil {
-			otel.SetTextMapPropagator(textMapPropagators)
-		}
+	if tp, err := textMapPropagatorFromConfig(cfg.Traces.Propagators); err == nil {
+		otel.SetTextMapPropagator(tp)
+	} else {
+		return err
 	}
 
 	var pe http.Handler
@@ -259,4 +253,19 @@ func sanitizePrometheusKey(str string) string {
 		return '_'
 	}
 	return strings.Map(runeFilterMap, str)
+}
+
+func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator, error) {
+	var textMapPropagators []propagation.TextMapPropagator
+	for _, prop := range props {
+		switch prop {
+		case traceContextPropagator:
+			textMapPropagators = append(textMapPropagators, propagation.TraceContext{})
+		case b3Propagator:
+			textMapPropagators = append(textMapPropagators, b3.New())
+		default:
+			return nil, errUnsupportedPropagator
+		}
+	}
+	return propagation.NewCompositeTextMapPropagator(textMapPropagators...), nil
 }

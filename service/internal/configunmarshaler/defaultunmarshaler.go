@@ -182,7 +182,6 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 				InitialFields:     map[string]interface{}(nil),
 			},
 			Metrics: defaultServiceTelemetryMetricsSettings(),
-			Traces:  defaultServiceTelemetryTracesSettings(),
 		},
 	}
 
@@ -202,12 +201,6 @@ func defaultServiceTelemetryMetricsSettings() telemetry.MetricsConfig {
 	return telemetry.MetricsConfig{
 		Level:   configtelemetry.LevelBasic, //nolint:staticcheck
 		Address: ":8888",
-	}
-}
-
-func defaultServiceTelemetryTracesSettings() telemetry.TracesConfig {
-	return telemetry.TracesConfig{
-		Propagators: []string{"tracecontext"},
 	}
 }
 

@@ -352,6 +352,7 @@ func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
 	}{
 		{file: "otelcol-invalidprop.yaml", errExpected: true},
 		{file: "otelcol-nop.yaml", errExpected: false},
+		{file: "otelcol-validprop.yaml", errExpected: false},
 	}
 
 	for _, tt := range tests {
@@ -362,15 +363,11 @@ func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
 			cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", tt.file)}))
 			require.NoError(t, err)
 
-			colTel := newColTelemetry(featuregate.NewRegistry())
-			err = colTel.registry.Apply(map[string]bool{allowTraceContextPropagationFeatureGateID: true})
-			require.NoError(t, err)
-
 			set := CollectorSettings{
 				BuildInfo:      component.NewDefaultBuildInfo(),
 				Factories:      factories,
 				ConfigProvider: cfgProvider,
-				telemetry:      colTel,
+				telemetry:      newColTelemetry(featuregate.NewRegistry()),
 			}
 
 			col, err := New(set)
