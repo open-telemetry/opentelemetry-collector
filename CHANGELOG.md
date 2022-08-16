@@ -3,14 +3,25 @@
 ## Unreleased
 
 ### 🛑 Breaking changes 🛑
+ 
+- Replace `processorhelper.New[Traces|Metrics|Logs]Exporter` with `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` definition (#5915)
+
+- Replace `exporterhelper.New[Traces|Metrics|Logs]Exporter` with `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` definition (#5914)
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` in favor of `processorhelper.New[Traces|Metrics|Logs]Exporter` (#5915)
+- Deprecates `LogRecord.Flags()` and `LogRecord.SetFlags()` in favor of `LogRecord.FlagsStruct()`. (#5866)
+- Deprecate `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` in favor of `exporterhelper.New[Traces|Metrics|Logs]Exporter` (#5914)
+
 ### 💡 Enhancements 💡
 
+- Add httpprovider to allow loading config files stored in HTTP (#5810)
 - Add support to propagate trace context of collector's internal spans if `telemetry.allowTraceContextPropagation` featuregate is enabled (#5572)
 
 ### 🧰 Bug fixes 🧰
+
+- Fix bug in setting the correct collector state after a configuration change event. (#5830)
 
 ## v0.58.0 Beta
 

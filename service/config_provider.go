@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
@@ -84,7 +85,7 @@ func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 	return ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:       uris,
-			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New()),
+			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New()),
 			Converters: []confmap.Converter{expandconverter.New()},
 		},
 	}

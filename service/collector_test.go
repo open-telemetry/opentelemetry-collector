@@ -105,6 +105,53 @@ func TestCollectorCancelContext(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
+type mockCfgProvider struct {
+	watcher chan error
+}
+
+func (p mockCfgProvider) Get(_ context.Context, _ component.Factories) (*Config, error) {
+	return generateConfig(), nil
+}
+
+func (p mockCfgProvider) Watch() <-chan error {
+	return p.watcher
+}
+
+func (p mockCfgProvider) Shutdown(_ context.Context) error {
+	return nil
+}
+
+func TestCollectorStateAfterConfigChange(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	watcher := make(chan error, 1)
+	col, err := New(CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: &mockCfgProvider{watcher: watcher},
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	watcher <- nil
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.Shutdown()
+
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+}
+
 func TestCollectorReportError(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
@@ -127,6 +174,33 @@ func TestCollectorReportError(t *testing.T) {
 	}, 2*time.Second, 200*time.Millisecond)
 
 	col.service.host.ReportFatalError(errors.New("err2"))
+
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+}
+
+func TestCollectorSendSignal(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+
+	col, err := New(CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.signalsChannel <- syscall.SIGTERM
 
 	wg.Wait()
 	assert.Equal(t, Closed, col.GetState())
@@ -321,7 +395,8 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 	assertMetrics(t, metricsAddr, tc.expectedLabels)
 
 	assertZPages(t)
-	col.signalsChannel <- syscall.SIGTERM
+
+	col.Shutdown()
 
 	wg.Wait()
 	assert.Equal(t, Closed, col.GetState())
