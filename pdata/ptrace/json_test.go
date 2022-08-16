@@ -15,7 +15,6 @@
 package ptrace
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -23,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 var tracesOTLP = func() Traces {
@@ -157,23 +155,6 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 			assert.NoError(b, err)
 		}
 	})
-}
-
-func TestReadInt64(t *testing.T) {
-	var data = `{"intAsNumber":1,"intAsString":"1"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(data))
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "intAsNumber":
-			v := readInt64(iter)
-			assert.Equal(t, int64(1), v)
-		case "intAsString":
-			v := readInt64(iter)
-			assert.Equal(t, int64(1), v)
-		}
-		return true
-	})
-	assert.NoError(t, iter.Error)
 }
 
 func TestReadTraceDataUnknownField(t *testing.T) {
@@ -360,61 +341,5 @@ func TestReadKvlistValueUnknownField(t *testing.T) {
 	readKvlistValue(iter)
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
-}
-
-func TestReadSpanKind(t *testing.T) {
-	tests := []struct {
-		name    string
-		jsonStr string
-		want    otlptrace.Span_SpanKind
-	}{
-		{
-			name:    "string",
-			jsonStr: fmt.Sprintf(`"%s"`, otlptrace.Span_SPAN_KIND_INTERNAL.String()),
-			want:    otlptrace.Span_SPAN_KIND_INTERNAL,
-		},
-		{
-			name:    "int",
-			jsonStr: fmt.Sprintf("%d", otlptrace.Span_SPAN_KIND_INTERNAL),
-			want:    otlptrace.Span_SPAN_KIND_INTERNAL,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			if got := readSpanKind(iter); got != tt.want {
-				t.Errorf("readSpanKind() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestReadStatusCode(t *testing.T) {
-	tests := []struct {
-		name    string
-		jsonStr string
-		want    otlptrace.Status_StatusCode
-	}{
-		{
-			name:    "string",
-			jsonStr: fmt.Sprintf(`"%s"`, otlptrace.Status_STATUS_CODE_ERROR.String()),
-			want:    otlptrace.Status_STATUS_CODE_ERROR,
-		},
-		{
-			name:    "int",
-			jsonStr: fmt.Sprintf("%d", otlptrace.Status_STATUS_CODE_ERROR),
-			want:    otlptrace.Status_STATUS_CODE_ERROR,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			if got := readStatusCode(iter); got != tt.want {
-				t.Errorf("readStatusCode() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }

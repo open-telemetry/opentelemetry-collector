@@ -43,11 +43,6 @@ func ReadAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
 	return kv
 }
 
-// ReadInt64  Unmarshal JSON data and return int64
-func ReadInt64(iter *jsoniter.Iterator) int64 {
-	return iter.ReadAny().ToInt64()
-}
-
 func readAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
 	switch f {
 	case "stringValue", "string_value":

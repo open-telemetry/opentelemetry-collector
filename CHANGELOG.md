@@ -27,6 +27,10 @@
 - Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
 - Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
+- Fix json trace unmarshalling for numbers and enums (#5924):
+  - accept both string and number for int32/uint32.
+  - read uint64 numbers without converting from int64.
+  - avoid unnecessary allocation for reading enums.
 
 ### 🧰 Bug fixes 🧰
 

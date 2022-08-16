@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // NewJSONMarshaler returns a model.Marshaler. Marshals to OTLP json bytes.
@@ -94,7 +95,7 @@ func readResourceSpans(iter *jsoniter.Iterator) *otlptrace.ResourceSpans {
 						return true
 					})
 				case "droppedAttributesCount", "dropped_attributes_count":
-					rs.Resource.DroppedAttributesCount = iter.ReadUint32()
+					rs.Resource.DroppedAttributesCount = json.ReadUint32(iter)
 				default:
 					iter.ReportError("readResourceSpans.resource", fmt.Sprintf("unknown field:%v", f))
 				}
@@ -170,39 +171,39 @@ func readSpan(iter *jsoniter.Iterator) *otlptrace.Span {
 		case "name":
 			sp.Name = iter.ReadString()
 		case "kind":
-			sp.Kind = readSpanKind(iter)
+			sp.Kind = otlptrace.Span_SpanKind(json.ReadEnumValue(iter, otlptrace.Span_SpanKind_value))
 		case "startTimeUnixNano", "start_time_unix_nano":
-			sp.StartTimeUnixNano = uint64(readInt64(iter))
+			sp.StartTimeUnixNano = json.ReadUint64(iter)
 		case "endTimeUnixNano", "end_time_unix_nano":
-			sp.EndTimeUnixNano = uint64(readInt64(iter))
+			sp.EndTimeUnixNano = json.ReadUint64(iter)
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				sp.Attributes = append(sp.Attributes, readAttribute(iter))
 				return true
 			})
 		case "droppedAttributesCount", "dropped_attributes_count":
-			sp.DroppedAttributesCount = iter.ReadUint32()
+			sp.DroppedAttributesCount = json.ReadUint32(iter)
 		case "events":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				sp.Events = append(sp.Events, readSpanEvent(iter))
 				return true
 			})
 		case "droppedEventsCount", "dropped_events_count":
-			sp.DroppedEventsCount = iter.ReadUint32()
+			sp.DroppedEventsCount = json.ReadUint32(iter)
 		case "links":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				sp.Links = append(sp.Links, readSpanLink(iter))
 				return true
 			})
 		case "droppedLinksCount", "dropped_links_count":
-			sp.DroppedLinksCount = iter.ReadUint32()
+			sp.DroppedLinksCount = json.ReadUint32(iter)
 		case "status":
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "message":
 					sp.Status.Message = iter.ReadString()
 				case "code":
-					sp.Status.Code = readStatusCode(iter)
+					sp.Status.Code = otlptrace.Status_StatusCode(json.ReadEnumValue(iter, otlptrace.Status_StatusCode_value))
 				default:
 					iter.ReportError("readSpan.status", fmt.Sprintf("unknown field:%v", f))
 				}
@@ -237,7 +238,7 @@ func readSpanLink(iter *jsoniter.Iterator) *otlptrace.Span_Link {
 				return true
 			})
 		case "droppedAttributesCount", "dropped_attributes_count":
-			link.DroppedAttributesCount = iter.ReadUint32()
+			link.DroppedAttributesCount = json.ReadUint32(iter)
 		default:
 			iter.ReportError("readSpanLink", fmt.Sprintf("unknown field:%v", f))
 		}
@@ -252,7 +253,7 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			event.TimeUnixNano = uint64(readInt64(iter))
+			event.TimeUnixNano = json.ReadUint64(iter)
 		case "name":
 			event.Name = iter.ReadString()
 		case "attributes":
@@ -261,7 +262,7 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 				return true
 			})
 		case "droppedAttributesCount", "dropped_attributes_count":
-			event.DroppedAttributesCount = iter.ReadUint32()
+			event.DroppedAttributesCount = json.ReadUint32(iter)
 		default:
 			iter.ReportError("readSpanEvent", fmt.Sprintf("unknown field:%v", f))
 		}
@@ -306,7 +307,7 @@ func readAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
 	case "intValue", "int_value":
 		return otlpcommon.AnyValue{
 			Value: &otlpcommon.AnyValue_IntValue{
-				IntValue: readInt64(iter),
+				IntValue: json.ReadInt64(iter),
 			},
 		}
 	case "doubleValue", "double_value":
@@ -379,26 +380,4 @@ func readKvlistValue(iter *jsoniter.Iterator) *otlpcommon.KeyValueList {
 		return true
 	})
 	return v
-}
-
-func readInt64(iter *jsoniter.Iterator) int64 {
-	return iter.ReadAny().ToInt64()
-}
-
-func readSpanKind(iter *jsoniter.Iterator) otlptrace.Span_SpanKind {
-	any := iter.ReadAny()
-	if v := any.ToInt(); v > 0 {
-		return otlptrace.Span_SpanKind(v)
-	}
-	v := any.ToString()
-	return otlptrace.Span_SpanKind(otlptrace.Span_SpanKind_value[v])
-}
-
-func readStatusCode(iter *jsoniter.Iterator) otlptrace.Status_StatusCode {
-	any := iter.ReadAny()
-	if v := any.ToInt(); v > 0 {
-		return otlptrace.Status_StatusCode(v)
-	}
-	v := any.ToString()
-	return otlptrace.Status_StatusCode(otlptrace.Status_StatusCode_value[v])
 }
