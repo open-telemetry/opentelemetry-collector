@@ -4,6 +4,12 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated funcs from `pdata` module. (#5911)
+  - Remove `pmetric.MetricDataPointFlags.String()`
+  - Remove `pmetric.NumberDataPoint.FlagsStruct()`
+  - Remove `pmetric.HistogramDataPoint.FlagsStruct()`
+  - Remove `pmetric.ExponentialHistogramDataPoint.FlagsStruct()`
+  - Remove `pmetric.SummaryDataPoint.FlagsStruct()`
 - Remove deprecated settings from `obsreport`, `ProcessorSettings.Level` and `ExporterSettings.Level` (#5918)
 - Replace `processorhelper.New[Traces|Metrics|Logs]Exporter` with `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` definition (#5915)
 - Replace `exporterhelper.New[Traces|Metrics|Logs]Exporter` with `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` definition (#5914)
