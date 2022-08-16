@@ -106,30 +106,26 @@ func TestCollectorCancelContext(t *testing.T) {
 }
 
 type mockCfgProvider struct {
+	ConfigProvider
 	watcher chan error
-}
-
-func (p mockCfgProvider) Get(_ context.Context, _ component.Factories) (*Config, error) {
-	return generateConfig(), nil
 }
 
 func (p mockCfgProvider) Watch() <-chan error {
 	return p.watcher
 }
 
-func (p mockCfgProvider) Shutdown(_ context.Context) error {
-	return nil
-}
-
 func TestCollectorStateAfterConfigChange(t *testing.T) {
 	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	provider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
 
 	watcher := make(chan error, 1)
 	col, err := New(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
-		ConfigProvider: &mockCfgProvider{watcher: watcher},
+		ConfigProvider: &mockCfgProvider{ConfigProvider: provider, watcher: watcher},
 		telemetry:      newColTelemetry(featuregate.NewRegistry()),
 	})
 	require.NoError(t, err)
