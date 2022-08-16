@@ -8,6 +8,8 @@
 
 - Replace `exporterhelper.New[Traces|Metrics|Logs]Exporter` with `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` definition (#5914)
 
+- Remove deprecated `FlagsStruct`, use `Flags` instead (#5921)
+
 ### 🚩 Deprecations 🚩
 
 - Deprecate `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` in favor of `processorhelper.New[Traces|Metrics|Logs]Exporter` (#5915)
