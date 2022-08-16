@@ -49,8 +49,6 @@ type Processor struct {
 
 // ProcessorSettings are settings for creating a Processor.
 type ProcessorSettings struct {
-	// Deprecated: [v0.58.0] set the level in the ProcessorSettings.ProcessorCreateSettings.
-	Level                   configtelemetry.Level
 	ProcessorID             config.ComponentID
 	ProcessorCreateSettings component.ProcessorCreateSettings
 }

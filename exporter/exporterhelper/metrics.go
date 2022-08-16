@@ -79,18 +79,19 @@ type metricsExporter struct {
 	consumer.Metrics
 }
 
-// Deprecated: [v0.58.0] use NewMetricsExporterWithContext.
-func NewMetricsExporter(
-	cfg config.Exporter,
+// Deprecated: [v0.58.0] use NewMetricsExporter.
+func NewMetricsExporterWithContext(
+	ctx context.Context,
 	set component.ExporterCreateSettings,
+	cfg config.Exporter,
 	pusher consumer.ConsumeMetricsFunc,
 	options ...Option,
 ) (component.MetricsExporter, error) {
-	return NewMetricsExporterWithContext(context.Background(), set, cfg, pusher, options...)
+	return NewMetricsExporter(ctx, set, cfg, pusher, options...)
 }
 
-// NewMetricsExporterWithContext creates an MetricsExporter that records observability metrics and wraps every request with a Span.
-func NewMetricsExporterWithContext(
+// NewMetricsExporter creates a component.MetricsExporter that records observability metrics and wraps every request with a Span.
+func NewMetricsExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
