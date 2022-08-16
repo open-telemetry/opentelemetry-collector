@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	jsoniter "github.com/json-iterator/go"
+
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 

@@ -76,7 +76,6 @@ func (d *jsonUnmarshaler) readMetricsData(iter *jsoniter.Iterator) otlpmetrics.M
 			})
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -99,7 +98,6 @@ func (d *jsonUnmarshaler) readResourceMetrics(iter *jsoniter.Iterator) *otlpmetr
 					rs.Resource.DroppedAttributesCount = iter.ReadUint32()
 				default:
 					iter.Skip()
-					return true
 				}
 				return true
 			})
@@ -113,7 +111,6 @@ func (d *jsonUnmarshaler) readResourceMetrics(iter *jsoniter.Iterator) *otlpmetr
 			rs.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -141,7 +138,6 @@ func (d *jsonUnmarshaler) readScopeMetrics(iter *jsoniter.Iterator) *otlpmetrics
 					ils.Scope.DroppedAttributesCount = iter.ReadUint32()
 				default:
 					iter.Skip()
-					return true
 				}
 				return true
 			})
@@ -154,7 +150,6 @@ func (d *jsonUnmarshaler) readScopeMetrics(iter *jsoniter.Iterator) *otlpmetrics
 			ils.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -183,7 +178,6 @@ func (d *jsonUnmarshaler) readMetric(iter *jsoniter.Iterator) *otlpmetrics.Metri
 			sp.Data = d.readSummaryMetric(iter)
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -209,7 +203,6 @@ func (d *jsonUnmarshaler) readSumMetric(iter *jsoniter.Iterator) *otlpmetrics.Me
 			data.Sum.DataPoints = dataPoints
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -231,7 +224,6 @@ func (d *jsonUnmarshaler) readGaugeMetric(iter *jsoniter.Iterator) *otlpmetrics.
 			data.Gauge.DataPoints = dataPoints
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -255,7 +247,6 @@ func (d *jsonUnmarshaler) readHistogramMetric(iter *jsoniter.Iterator) *otlpmetr
 			data.Histogram.AggregationTemporality = d.readAggregationTemporality(iter)
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -278,7 +269,6 @@ func (d *jsonUnmarshaler) readExponentialHistogramMetric(iter *jsoniter.Iterator
 			data.ExponentialHistogram.AggregationTemporality = d.readAggregationTemporality(iter)
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -299,7 +289,6 @@ func (d *jsonUnmarshaler) readSummaryMetric(iter *jsoniter.Iterator) *otlpmetric
 			})
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -335,7 +324,6 @@ func (d *jsonUnmarshaler) readExemplar(iter *jsoniter.Iterator) otlpmetrics.Exem
 			}
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -372,7 +360,6 @@ func (d *jsonUnmarshaler) readNumberDataPoint(iter *jsoniter.Iterator) *otlpmetr
 			point.Flags = iter.ReadUint32()
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -423,7 +410,6 @@ func (d *jsonUnmarshaler) readHistogramDataPoint(iter *jsoniter.Iterator) *otlpm
 			}
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -466,7 +452,6 @@ func (d *jsonUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Itera
 					positive.Offset = iter.ReadInt32()
 				default:
 					iter.Skip()
-					return true
 				}
 				point.Positive = positive
 				return true
@@ -484,7 +469,6 @@ func (d *jsonUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Itera
 					negative.Offset = iter.ReadInt32()
 				default:
 					iter.Skip()
-					return true
 				}
 				point.Negative = negative
 				return true
@@ -506,7 +490,6 @@ func (d *jsonUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Itera
 			}
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -539,7 +522,6 @@ func (d *jsonUnmarshaler) readSummaryDataPoint(iter *jsoniter.Iterator) *otlpmet
 			point.Flags = iter.ReadUint32()
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
@@ -556,7 +538,6 @@ func (d *jsonUnmarshaler) readQuantileValue(iter *jsoniter.Iterator) *otlpmetric
 			point.Value = iter.ReadFloat64()
 		default:
 			iter.Skip()
-			return true
 		}
 		return true
 	})
