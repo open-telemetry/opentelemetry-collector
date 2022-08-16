@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	commonjson "go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
 
@@ -91,11 +91,11 @@ func (d *jsonUnmarshaler) readResourceMetrics(iter *jsoniter.Iterator) *otlpmetr
 				switch f {
 				case "attributes":
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						rs.Resource.Attributes = append(rs.Resource.Attributes, commonjson.ReadAttribute(iter))
+						rs.Resource.Attributes = append(rs.Resource.Attributes, json.ReadAttribute(iter))
 						return true
 					})
 				case "droppedAttributesCount", "dropped_attributes_count":
-					rs.Resource.DroppedAttributesCount = iter.ReadUint32()
+					rs.Resource.DroppedAttributesCount = json.ReadUint32(iter)
 				default:
 					iter.Skip()
 				}
@@ -131,11 +131,11 @@ func (d *jsonUnmarshaler) readScopeMetrics(iter *jsoniter.Iterator) *otlpmetrics
 				case "attributes":
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 						ils.Scope.Attributes = append(ils.Scope.Attributes,
-							commonjson.ReadAttribute(iter))
+							json.ReadAttribute(iter))
 						return true
 					})
 				case "droppedAttributesCount", "dropped_attributes_count":
-					ils.Scope.DroppedAttributesCount = iter.ReadUint32()
+					ils.Scope.DroppedAttributesCount = json.ReadUint32(iter)
 				default:
 					iter.Skip()
 				}
@@ -301,14 +301,14 @@ func (d *jsonUnmarshaler) readExemplar(iter *jsoniter.Iterator) otlpmetrics.Exem
 		switch f {
 		case "filtered_attributes", "filteredAttributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				exemplar.FilteredAttributes = append(exemplar.FilteredAttributes, commonjson.ReadAttribute(iter))
+				exemplar.FilteredAttributes = append(exemplar.FilteredAttributes, json.ReadAttribute(iter))
 				return true
 			})
 		case "timeUnixNano", "time_unix_nano":
-			exemplar.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
+			exemplar.TimeUnixNano = json.ReadUint64(iter)
 		case "as_int", "asInt":
 			exemplar.Value = &otlpmetrics.Exemplar_AsInt{
-				AsInt: commonjson.ReadInt64(iter),
+				AsInt: json.ReadInt64(iter),
 			}
 		case "as_double", "asDouble":
 			exemplar.Value = &otlpmetrics.Exemplar_AsDouble{
@@ -335,12 +335,12 @@ func (d *jsonUnmarshaler) readNumberDataPoint(iter *jsoniter.Iterator) *otlpmetr
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			point.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
+			point.TimeUnixNano = json.ReadUint64(iter)
 		case "start_time_unix_nano", "startTimeUnixNano":
-			point.StartTimeUnixNano = uint64(commonjson.ReadInt64(iter))
+			point.StartTimeUnixNano = json.ReadUint64(iter)
 		case "as_int", "asInt":
 			point.Value = &otlpmetrics.NumberDataPoint_AsInt{
-				AsInt: commonjson.ReadInt64(iter),
+				AsInt: json.ReadInt64(iter),
 			}
 		case "as_double", "asDouble":
 			point.Value = &otlpmetrics.NumberDataPoint_AsDouble{
@@ -348,7 +348,7 @@ func (d *jsonUnmarshaler) readNumberDataPoint(iter *jsoniter.Iterator) *otlpmetr
 			}
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Attributes = append(point.Attributes, commonjson.ReadAttribute(iter))
+				point.Attributes = append(point.Attributes, json.ReadAttribute(iter))
 				return true
 			})
 		case "exemplars":
@@ -357,7 +357,7 @@ func (d *jsonUnmarshaler) readNumberDataPoint(iter *jsoniter.Iterator) *otlpmetr
 				return true
 			})
 		case "flags":
-			point.Flags = iter.ReadUint32()
+			point.Flags = json.ReadUint32(iter)
 		default:
 			iter.Skip()
 		}
@@ -371,21 +371,21 @@ func (d *jsonUnmarshaler) readHistogramDataPoint(iter *jsoniter.Iterator) *otlpm
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			point.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
+			point.TimeUnixNano = json.ReadUint64(iter)
 		case "start_time_unix_nano", "startTimeUnixNano":
-			point.StartTimeUnixNano = uint64(commonjson.ReadInt64(iter))
+			point.StartTimeUnixNano = json.ReadUint64(iter)
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Attributes = append(point.Attributes, commonjson.ReadAttribute(iter))
+				point.Attributes = append(point.Attributes, json.ReadAttribute(iter))
 				return true
 			})
 		case "count":
-			point.Count = uint64(commonjson.ReadInt64(iter))
+			point.Count = json.ReadUint64(iter)
 		case "sum":
 			point.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
 		case "bucket_counts", "bucketCounts":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.BucketCounts = append(point.BucketCounts, uint64(commonjson.ReadInt64(iter)))
+				point.BucketCounts = append(point.BucketCounts, json.ReadUint64(iter))
 				return true
 			})
 		case "explicit_bounds", "explicitBounds":
@@ -399,7 +399,7 @@ func (d *jsonUnmarshaler) readHistogramDataPoint(iter *jsoniter.Iterator) *otlpm
 				return true
 			})
 		case "flags":
-			point.Flags = iter.ReadUint32()
+			point.Flags = json.ReadUint32(iter)
 		case "max":
 			point.Max_ = &otlpmetrics.HistogramDataPoint_Max{
 				Max: iter.ReadFloat64(),
@@ -421,16 +421,16 @@ func (d *jsonUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Itera
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			point.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
+			point.TimeUnixNano = json.ReadUint64(iter)
 		case "start_time_unix_nano", "startTimeUnixNano":
-			point.StartTimeUnixNano = uint64(commonjson.ReadInt64(iter))
+			point.StartTimeUnixNano = json.ReadUint64(iter)
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Attributes = append(point.Attributes, commonjson.ReadAttribute(iter))
+				point.Attributes = append(point.Attributes, json.ReadAttribute(iter))
 				return true
 			})
 		case "count":
-			point.Count = uint64(commonjson.ReadInt64(iter))
+			point.Count = json.ReadUint64(iter)
 		case "sum":
 			point.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{
 				Sum: iter.ReadFloat64(),
@@ -438,14 +438,14 @@ func (d *jsonUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Itera
 		case "scale":
 			point.Scale = iter.ReadInt32()
 		case "zero_count", "zeroCount":
-			point.ZeroCount = uint64(commonjson.ReadInt64(iter))
+			point.ZeroCount = json.ReadUint64(iter)
 		case "positive":
 			positive := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 				switch f {
 				case "bucket_counts", "bucketCounts":
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						positive.BucketCounts = append(positive.BucketCounts, uint64(commonjson.ReadInt64(iter)))
+						positive.BucketCounts = append(positive.BucketCounts, json.ReadUint64(iter))
 						return true
 					})
 				case "offset":
@@ -462,7 +462,7 @@ func (d *jsonUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Itera
 				switch f {
 				case "bucket_counts", "bucketCounts":
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						negative.BucketCounts = append(negative.BucketCounts, uint64(commonjson.ReadInt64(iter)))
+						negative.BucketCounts = append(negative.BucketCounts, json.ReadUint64(iter))
 						return true
 					})
 				case "offset":
@@ -479,7 +479,7 @@ func (d *jsonUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Itera
 				return true
 			})
 		case "flags":
-			point.Flags = iter.ReadUint32()
+			point.Flags = json.ReadUint32(iter)
 		case "max":
 			point.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{
 				Max: iter.ReadFloat64(),
@@ -501,16 +501,16 @@ func (d *jsonUnmarshaler) readSummaryDataPoint(iter *jsoniter.Iterator) *otlpmet
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			point.TimeUnixNano = uint64(commonjson.ReadInt64(iter))
+			point.TimeUnixNano = json.ReadUint64(iter)
 		case "start_time_unix_nano", "startTimeUnixNano":
-			point.StartTimeUnixNano = uint64(commonjson.ReadInt64(iter))
+			point.StartTimeUnixNano = json.ReadUint64(iter)
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.Attributes = append(point.Attributes, commonjson.ReadAttribute(iter))
+				point.Attributes = append(point.Attributes, json.ReadAttribute(iter))
 				return true
 			})
 		case "count":
-			point.Count = uint64(commonjson.ReadInt64(iter))
+			point.Count = json.ReadUint64(iter)
 		case "sum":
 			point.Sum = iter.ReadFloat64()
 		case "quantile_values", "quantileValues":
@@ -519,7 +519,7 @@ func (d *jsonUnmarshaler) readSummaryDataPoint(iter *jsoniter.Iterator) *otlpmet
 				return true
 			})
 		case "flags":
-			point.Flags = iter.ReadUint32()
+			point.Flags = json.ReadUint32(iter)
 		default:
 			iter.Skip()
 		}
