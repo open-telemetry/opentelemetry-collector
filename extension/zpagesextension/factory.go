@@ -31,7 +31,7 @@ const (
 
 // NewFactory creates a factory for Z-Pages extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactoryWithStabilityLevel(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
+	return component.NewExtensionFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
 }
 
 func createDefaultConfig() config.Extension {

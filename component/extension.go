@@ -99,16 +99,17 @@ func (ef *extensionFactory) ExtensionStability() StabilityLevel {
 	return ef.extensionStability
 }
 
-// Deprecated: [v0.58.0] use NewExtensionFactoryWithStabilityLevel.
-func NewExtensionFactory(
+// Deprecated: [v0.58.0] use NewExtensionFactory.
+func NewExtensionFactoryWithStabilityLevel(
 	cfgType config.Type,
 	createDefaultConfig ExtensionCreateDefaultConfigFunc,
-	createServiceExtension CreateExtensionFunc) ExtensionFactory {
-	return NewExtensionFactoryWithStabilityLevel(cfgType, createDefaultConfig, createServiceExtension, StabilityLevelUndefined)
+	createServiceExtension CreateExtensionFunc,
+	sl StabilityLevel) ExtensionFactory {
+	return NewExtensionFactory(cfgType, createDefaultConfig, createServiceExtension, sl)
 }
 
-// NewExtensionFactoryWithStabilityLevel returns a new ExtensionFactory  based on this configuration.
-func NewExtensionFactoryWithStabilityLevel(
+// NewExtensionFactory returns a new ExtensionFactory  based on this configuration.
+func NewExtensionFactory(
 	cfgType config.Type,
 	createDefaultConfig ExtensionCreateDefaultConfigFunc,
 	createServiceExtension CreateExtensionFunc,
