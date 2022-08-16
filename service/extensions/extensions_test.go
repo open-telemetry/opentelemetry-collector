@@ -106,7 +106,7 @@ func TestBuildExtensions(t *testing.T) {
 }
 
 func newBadExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactoryWithStabilityLevel(
+	return component.NewExtensionFactory(
 		"bf",
 		func() config.Extension {
 			return &struct {
@@ -123,7 +123,7 @@ func newBadExtensionFactory() component.ExtensionFactory {
 }
 
 func newCreateErrorExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactoryWithStabilityLevel(
+	return component.NewExtensionFactory(
 		"err",
 		func() config.Extension {
 			return &struct {
