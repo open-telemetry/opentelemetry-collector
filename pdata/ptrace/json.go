@@ -123,17 +123,7 @@ func readScopeSpans(iter *jsoniter.Iterator) *otlptrace.ScopeSpans {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "scope":
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "name":
-					ils.Scope.Name = iter.ReadString()
-				case "version":
-					ils.Scope.Version = iter.ReadString()
-				default:
-					iter.ReportError("readScopeSpans.instrumentationLibrary", fmt.Sprintf("unknown field:%v", f))
-				}
-				return true
-			})
+			json.ReadScope(iter, &ils.Scope)
 		case "spans":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				ils.Spans = append(ils.Spans, readSpan(iter))

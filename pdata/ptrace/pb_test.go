@@ -21,8 +21,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/internal"
 )
+
+func TestProtoEncoding(t *testing.T) {
+	tracesOTLPFull := generateTraces(2)
+	encoder := NewProtoMarshaler()
+	jsonBuf, err := encoder.MarshalTraces(tracesOTLPFull)
+	assert.NoError(t, err)
+
+	decoder := NewProtoUnmarshaler()
+	got, err := decoder.UnmarshalTraces(jsonBuf)
+	assert.NoError(t, err)
+	assert.Equal(t, tracesOTLPFull, got)
+}
 
 func TestProtoTracesUnmarshaler_error(t *testing.T) {
 	p := NewProtoUnmarshaler()
@@ -52,7 +64,7 @@ func TestProtoSizer_withNil(t *testing.T) {
 
 func BenchmarkTracesToProto(b *testing.B) {
 	marshaler := NewProtoMarshaler()
-	traces := generateBenchmarkTraces(128)
+	traces := generateBenchmarkTraces()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		buf, err := marshaler.MarshalTraces(traces)
@@ -64,7 +76,7 @@ func BenchmarkTracesToProto(b *testing.B) {
 func BenchmarkTracesFromProto(b *testing.B) {
 	marshaler := NewProtoMarshaler()
 	unmarshaler := NewProtoUnmarshaler()
-	baseTraces := generateBenchmarkTraces(128)
+	baseTraces := generateBenchmarkTraces()
 	buf, err := marshaler.MarshalTraces(baseTraces)
 	require.NoError(b, err)
 	assert.NotEqual(b, 0, len(buf))
@@ -77,19 +89,86 @@ func BenchmarkTracesFromProto(b *testing.B) {
 	}
 }
 
-func generateBenchmarkTraces(metricsCount int) Traces {
-	now := time.Now()
-	startTime := pcommon.NewTimestampFromTime(now.Add(-10 * time.Second))
-	endTime := pcommon.NewTimestampFromTime(now)
+func generateBenchmarkTraces() Traces {
+	return generateTraces(64)
+}
 
-	md := NewTraces()
-	ilm := md.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
-	ilm.Spans().EnsureCapacity(metricsCount)
-	for i := 0; i < metricsCount; i++ {
-		im := ilm.Spans().AppendEmpty()
-		im.SetName("test_name")
-		im.SetStartTimestamp(startTime)
-		im.SetEndTimestamp(endTime)
+func generateTraces(spansCount int) Traces {
+	now := time.Now()
+
+	traceID := internal.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := internal.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	td := NewTraces()
+	// Add ResourceSpans.
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.SetSchemaUrl("schemaURL")
+	// Add resource.
+	rs.Resource().Attributes().UpsertString("service.name", "testService")
+	rs.Resource().Attributes().UpsertInt("service.instance", 1234)
+	rs.Resource().SetDroppedAttributesCount(1)
+
+	// Add ScopeSpans.
+	il := rs.ScopeSpans().AppendEmpty()
+	il.SetSchemaUrl("schemaURL")
+	// Add scope.
+	il.Scope().SetName("scope name")
+	il.Scope().SetVersion("scope version")
+	il.Scope().Attributes().UpsertString("short.name", "scope")
+	il.Scope().Attributes().UpsertDouble("short.version", 1.24)
+	il.Scope().SetDroppedAttributesCount(2)
+
+	// Add spans.
+	il.Spans().EnsureCapacity(spansCount)
+	for i := 0; i < spansCount; i++ {
+		sp := il.Spans().AppendEmpty()
+		sp.SetName("testSpan")
+		sp.SetKind(internal.SpanKindClient)
+		sp.SetDroppedAttributesCount(1)
+		sp.SetStartTimestamp(internal.NewTimestampFromTime(now))
+		sp.SetTraceID(traceID)
+		sp.SetSpanID(spanID)
+		sp.SetDroppedEventsCount(1)
+		sp.SetDroppedLinksCount(1)
+		sp.SetEndTimestamp(internal.NewTimestampFromTime(now.Add(5 * time.Millisecond)))
+		sp.SetParentSpanID(spanID)
+		sp.SetTraceState("state")
+		sp.Status().SetCode(internal.StatusCodeOk)
+		sp.Status().SetMessage("message")
+		// Add attributes.
+		sp.Attributes().UpsertString("string", "value")
+		sp.Attributes().UpsertBool("bool", true)
+		sp.Attributes().UpsertInt("int", 1)
+		sp.Attributes().UpsertDouble("double", 1.1)
+		sp.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+		arr := internal.NewValueSlice()
+		arr.SliceVal().AppendEmpty().SetIntVal(1)
+		arr.SliceVal().AppendEmpty().SetStringVal("str")
+		sp.Attributes().Upsert("array", arr)
+		kvList := internal.NewValueMap()
+		kvList.MapVal().Upsert("int", internal.NewValueInt(1))
+		kvList.MapVal().Upsert("string", internal.NewValueString("string"))
+		sp.Attributes().Upsert("kvList", kvList)
+		// Add events.
+		event := sp.Events().AppendEmpty()
+		event.SetName("eventName")
+		event.SetTimestamp(internal.NewTimestampFromTime(now.Add(2 * time.Millisecond)))
+		event.SetDroppedAttributesCount(1)
+		event.Attributes().UpsertString("string", "value")
+		event.Attributes().UpsertBool("bool", true)
+		event.Attributes().UpsertInt("int", 1)
+		event.Attributes().UpsertDouble("double", 1.1)
+		event.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+		// Add links.
+		link := sp.Links().AppendEmpty()
+		link.SetTraceState("state")
+		link.SetTraceID(traceID)
+		link.SetSpanID(spanID)
+		link.SetDroppedAttributesCount(1)
+		link.Attributes().UpsertString("string", "value")
+		link.Attributes().UpsertBool("bool", true)
+		link.Attributes().UpsertInt("int", 1)
+		link.Attributes().UpsertDouble("double", 1.1)
+		link.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
 	}
-	return md
+	return td
 }

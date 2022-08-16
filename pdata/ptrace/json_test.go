@@ -16,120 +16,14 @@ package ptrace
 
 import (
 	"testing"
-	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/pdata/internal"
+	"github.com/stretchr/testify/require"
 )
 
-var tracesOTLP = func() Traces {
-	td := NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString("host.name", "testHost")
-	il := rs.ScopeSpans().AppendEmpty()
-	il.Scope().SetName("name")
-	il.Scope().SetVersion("version")
-	il.Spans().AppendEmpty().SetName("testSpan")
-	return td
-}()
-
-var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeSpans":[{"scope":{"name":"name","version":"version"},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan","status":{}}]}]}]}`
-
-func TestTracesJSON(t *testing.T) {
-	encoder := NewJSONMarshaler()
-	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
-	assert.NoError(t, err)
-
-	decoder := NewJSONUnmarshaler()
-	var got interface{}
-	got, err = decoder.UnmarshalTraces(jsonBuf)
-	assert.NoError(t, err)
-
-	assert.EqualValues(t, tracesOTLP, got)
-}
-
-func TestTracesJSON_Marshal(t *testing.T) {
-	encoder := NewJSONMarshaler()
-	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
-	assert.NoError(t, err)
-	assert.Equal(t, tracesJSON, string(jsonBuf))
-}
-
-var tracesOTLPFull = func() Traces {
-	traceID := internal.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := internal.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
-	td := NewTraces()
-	// Add ResourceSpans.
-	rs := td.ResourceSpans().AppendEmpty()
-	rs.SetSchemaUrl("schemaURL")
-	// Add resource.
-	rs.Resource().Attributes().UpsertString("host.name", "testHost")
-	rs.Resource().Attributes().UpsertString("service.name", "testService")
-	rs.Resource().SetDroppedAttributesCount(1)
-	// Add ScopeSpans.
-	il := rs.ScopeSpans().AppendEmpty()
-	il.Scope().SetName("scope name")
-	il.Scope().SetVersion("scope version")
-	il.SetSchemaUrl("schemaURL")
-	// Add spans.
-	sp := il.Spans().AppendEmpty()
-	sp.SetName("testSpan")
-	sp.SetKind(internal.SpanKindClient)
-	sp.SetDroppedAttributesCount(1)
-	sp.SetStartTimestamp(internal.NewTimestampFromTime(time.Now()))
-	sp.SetTraceID(traceID)
-	sp.SetSpanID(spanID)
-	sp.SetDroppedEventsCount(1)
-	sp.SetDroppedLinksCount(1)
-	sp.SetEndTimestamp(internal.NewTimestampFromTime(time.Now()))
-	sp.SetParentSpanID(spanID)
-	sp.SetTraceState("state")
-	sp.Status().SetCode(internal.StatusCodeOk)
-	sp.Status().SetMessage("message")
-	// Add attributes.
-	sp.Attributes().UpsertString("string", "value")
-	sp.Attributes().UpsertBool("bool", true)
-	sp.Attributes().UpsertInt("int", 1)
-	sp.Attributes().UpsertDouble("double", 1.1)
-	sp.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
-	arr := internal.NewValueSlice()
-	arr.SliceVal().AppendEmpty().SetIntVal(1)
-	arr.SliceVal().AppendEmpty().SetStringVal("str")
-	sp.Attributes().Upsert("array", arr)
-	kvList := internal.NewValueMap()
-	kvList.MapVal().Upsert("int", internal.NewValueInt(1))
-	kvList.MapVal().Upsert("string", internal.NewValueString("string"))
-	sp.Attributes().Upsert("kvList", kvList)
-	// Add events.
-	event := sp.Events().AppendEmpty()
-	event.SetName("eventName")
-	event.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
-	event.SetDroppedAttributesCount(1)
-	event.Attributes().UpsertString("string", "value")
-	event.Attributes().UpsertBool("bool", true)
-	event.Attributes().UpsertInt("int", 1)
-	event.Attributes().UpsertDouble("double", 1.1)
-	event.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
-	// Add links.
-	link := sp.Links().AppendEmpty()
-	link.SetTraceState("state")
-	link.SetTraceID(traceID)
-	link.SetSpanID(spanID)
-	link.SetDroppedAttributesCount(1)
-	link.Attributes().UpsertString("string", "value")
-	link.Attributes().UpsertBool("bool", true)
-	link.Attributes().UpsertInt("int", 1)
-	link.Attributes().UpsertDouble("double", 1.1)
-	link.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
-	// Add another span.
-	sp2 := il.Spans().AppendEmpty()
-	sp2.SetName("testSpan2")
-	return td
-}()
-
-func TestJSONFull(t *testing.T) {
+func TestJSONEncoding(t *testing.T) {
+	tracesOTLPFull := generateTraces(2)
 	encoder := NewJSONMarshaler()
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLPFull)
 	assert.NoError(t, err)
@@ -137,24 +31,7 @@ func TestJSONFull(t *testing.T) {
 	decoder := NewJSONUnmarshaler()
 	got, err := decoder.UnmarshalTraces(jsonBuf)
 	assert.NoError(t, err)
-	assert.EqualValues(t, tracesOTLPFull, got)
-}
-
-func BenchmarkJSONUnmarshal(b *testing.B) {
-	b.ReportAllocs()
-
-	encoder := NewJSONMarshaler()
-	jsonBuf, err := encoder.MarshalTraces(tracesOTLPFull)
-	assert.NoError(b, err)
-	decoder := NewJSONUnmarshaler()
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			_, err := decoder.UnmarshalTraces(jsonBuf)
-			assert.NoError(b, err)
-		}
-	})
+	assert.Equal(t, tracesOTLPFull, got)
 }
 
 func TestReadTraceDataUnknownField(t *testing.T) {
@@ -189,16 +66,6 @@ func TestReadResourceSpansUnknownResourceField(t *testing.T) {
 
 func TestReadScopeSpansUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readScopeSpans(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
-}
-
-func TestReadScopeSpansUnknownScopeField(t *testing.T) {
-	jsonStr := `{"scope":{"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	readScopeSpans(iter)
@@ -341,5 +208,32 @@ func TestReadKvlistValueUnknownField(t *testing.T) {
 	readKvlistValue(iter)
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "unknown field")
+	}
+}
+
+func BenchmarkTracesToJSON(b *testing.B) {
+	marshaler := NewJSONMarshaler()
+	traces := generateBenchmarkTraces()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		buf, err := marshaler.MarshalTraces(traces)
+		require.NoError(b, err)
+		assert.NotEqual(b, 0, len(buf))
+	}
+}
+
+func BenchmarkTracesFromJSON(b *testing.B) {
+	marshaler := NewJSONMarshaler()
+	unmarshaler := NewJSONUnmarshaler()
+	baseTraces := generateBenchmarkTraces()
+	buf, err := marshaler.MarshalTraces(baseTraces)
+	require.NoError(b, err)
+	assert.NotEqual(b, 0, len(buf))
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		traces, err := unmarshaler.UnmarshalTraces(buf)
+		require.NoError(b, err)
+		assert.Equal(b, baseTraces.ResourceSpans().Len(), traces.ResourceSpans().Len())
 	}
 }
