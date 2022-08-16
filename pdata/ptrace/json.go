@@ -16,15 +16,14 @@ package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 
 	"github.com/gogo/protobuf/jsonpb"
 	jsoniter "github.com/json-iterator/go"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // NewJSONMarshaler returns a model.Marshaler. Marshals to OTLP json bytes.
@@ -90,7 +89,7 @@ func readResourceSpans(iter *jsoniter.Iterator) *otlptrace.ResourceSpans {
 				switch f {
 				case "attributes":
 					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						rs.Resource.Attributes = append(rs.Resource.Attributes, readAttribute(iter))
+						rs.Resource.Attributes = append(rs.Resource.Attributes, json.ReadAttribute(iter))
 						return true
 					})
 				case "droppedAttributesCount", "dropped_attributes_count":
@@ -177,7 +176,7 @@ func readSpan(iter *jsoniter.Iterator) *otlptrace.Span {
 			sp.EndTimeUnixNano = uint64(readInt64(iter))
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				sp.Attributes = append(sp.Attributes, readAttribute(iter))
+				sp.Attributes = append(sp.Attributes, json.ReadAttribute(iter))
 				return true
 			})
 		case "droppedAttributesCount", "dropped_attributes_count":
@@ -233,7 +232,7 @@ func readSpanLink(iter *jsoniter.Iterator) *otlptrace.Span_Link {
 			link.TraceState = iter.ReadString()
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				link.Attributes = append(link.Attributes, readAttribute(iter))
+				link.Attributes = append(link.Attributes, json.ReadAttribute(iter))
 				return true
 			})
 		case "droppedAttributesCount", "dropped_attributes_count":
@@ -257,7 +256,7 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 			event.Name = iter.ReadString()
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				event.Attributes = append(event.Attributes, readAttribute(iter))
+				event.Attributes = append(event.Attributes, json.ReadAttribute(iter))
 				return true
 			})
 		case "droppedAttributesCount", "dropped_attributes_count":
@@ -268,117 +267,6 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 		return true
 	})
 	return event
-}
-
-func readAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
-	kv := otlpcommon.KeyValue{}
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "key":
-			kv.Key = iter.ReadString()
-		case "value":
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				kv.Value = readAnyValue(iter, f)
-				return true
-			})
-		default:
-			iter.ReportError("readAttribute", fmt.Sprintf("unknown field:%v", f))
-		}
-		return true
-	})
-	return kv
-}
-
-func readAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
-	switch f {
-	case "stringValue", "string_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_StringValue{
-				StringValue: iter.ReadString(),
-			},
-		}
-	case "boolValue", "bool_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_BoolValue{
-				BoolValue: iter.ReadBool(),
-			},
-		}
-	case "intValue", "int_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_IntValue{
-				IntValue: readInt64(iter),
-			},
-		}
-	case "doubleValue", "double_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_DoubleValue{
-				DoubleValue: iter.ReadFloat64(),
-			},
-		}
-	case "bytesValue", "bytes_value":
-		v, err := base64.StdEncoding.DecodeString(iter.ReadString())
-		if err != nil {
-			iter.ReportError("bytesValue", fmt.Sprintf("base64 decode:%v", err))
-			return otlpcommon.AnyValue{}
-		}
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_BytesValue{
-				BytesValue: v,
-			},
-		}
-	case "arrayValue", "array_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_ArrayValue{
-				ArrayValue: readArray(iter),
-			},
-		}
-	case "kvlistValue", "kvlist_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_KvlistValue{
-				KvlistValue: readKvlistValue(iter),
-			},
-		}
-	default:
-		iter.ReportError("readAnyValue", fmt.Sprintf("unknown field:%v", f))
-		return otlpcommon.AnyValue{}
-	}
-}
-
-func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
-	v := &otlpcommon.ArrayValue{}
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "values":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-					v.Values = append(v.Values, readAnyValue(iter, f))
-					return true
-				})
-				return true
-			})
-		default:
-			iter.ReportError("readArray", fmt.Sprintf("unknown field:%s", f))
-		}
-		return true
-	})
-	return v
-}
-
-func readKvlistValue(iter *jsoniter.Iterator) *otlpcommon.KeyValueList {
-	v := &otlpcommon.KeyValueList{}
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "values":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				v.Values = append(v.Values, readAttribute(iter))
-				return true
-			})
-		default:
-			iter.ReportError("readKvlistValue", fmt.Sprintf("unknown field:%s", f))
-		}
-		return true
-	})
-	return v
 }
 
 func readInt64(iter *jsoniter.Iterator) int64 {
