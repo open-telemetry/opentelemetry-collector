@@ -17,7 +17,7 @@
 ### 💡 Enhancements 💡
 
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
-- Add support to propagate trace context of collector's internal spans if `telemetry.allowTraceContextPropagation` featuregate is enabled (#5572)
+- Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
 
 ### 🧰 Bug fixes 🧰
 
