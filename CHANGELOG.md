@@ -3,7 +3,8 @@
 ## Unreleased
 
 ### 🛑 Breaking changes 🛑
- 
+
+- Remove deprecated settings from `obsreport`, `ProcessorSettings.Level` and `ExporterSettings.Level` (#5918)
 - Replace `processorhelper.New[Traces|Metrics|Logs]Exporter` with `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` definition (#5915)
 
 - Replace `exporterhelper.New[Traces|Metrics|Logs]Exporter` with `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` definition (#5914)
