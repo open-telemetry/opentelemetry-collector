@@ -17,8 +17,8 @@
 - Deprecate `component.NewExtensionFactoryWithStabilityLevel` in favor of `component.NewExtensionFactory` (#5917)
 
 ### 💡 Enhancements 💡
-- Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 
+- Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
 - Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
 
