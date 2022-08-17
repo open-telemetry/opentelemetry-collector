@@ -29,29 +29,106 @@ var NewLogs = internal.NewLogs
 type SeverityNumber = internal.SeverityNumber
 
 const (
-	SeverityNumberUNDEFINED = internal.SeverityNumberUNDEFINED
-	SeverityNumberTRACE     = internal.SeverityNumberTRACE
-	SeverityNumberTRACE2    = internal.SeverityNumberTRACE2
-	SeverityNumberTRACE3    = internal.SeverityNumberTRACE3
-	SeverityNumberTRACE4    = internal.SeverityNumberTRACE4
-	SeverityNumberDEBUG     = internal.SeverityNumberDEBUG
-	SeverityNumberDEBUG2    = internal.SeverityNumberDEBUG2
-	SeverityNumberDEBUG3    = internal.SeverityNumberDEBUG3
-	SeverityNumberDEBUG4    = internal.SeverityNumberDEBUG4
-	SeverityNumberINFO      = internal.SeverityNumberINFO
-	SeverityNumberINFO2     = internal.SeverityNumberINFO2
-	SeverityNumberINFO3     = internal.SeverityNumberINFO3
-	SeverityNumberINFO4     = internal.SeverityNumberINFO4
-	SeverityNumberWARN      = internal.SeverityNumberWARN
-	SeverityNumberWARN2     = internal.SeverityNumberWARN2
-	SeverityNumberWARN3     = internal.SeverityNumberWARN3
-	SeverityNumberWARN4     = internal.SeverityNumberWARN4
-	SeverityNumberERROR     = internal.SeverityNumberERROR
-	SeverityNumberERROR2    = internal.SeverityNumberERROR2
-	SeverityNumberERROR3    = internal.SeverityNumberERROR3
-	SeverityNumberERROR4    = internal.SeverityNumberERROR4
-	SeverityNumberFATAL     = internal.SeverityNumberFATAL
-	SeverityNumberFATAL2    = internal.SeverityNumberFATAL2
-	SeverityNumberFATAL3    = internal.SeverityNumberFATAL3
-	SeverityNumberFATAL4    = internal.SeverityNumberFATAL4
+	SeverityNumberUndefined = internal.SeverityNumberUndefined
+	SeverityNumberTrace     = internal.SeverityNumberTrace
+	SeverityNumberTrace2    = internal.SeverityNumberTrace2
+	SeverityNumberTrace3    = internal.SeverityNumberTrace3
+	SeverityNumberTrace4    = internal.SeverityNumberTrace4
+	SeverityNumberDebug     = internal.SeverityNumberDebug
+	SeverityNumberDebug2    = internal.SeverityNumberDebug2
+	SeverityNumberDebug3    = internal.SeverityNumberDebug3
+	SeverityNumberDebug4    = internal.SeverityNumberDebug4
+	SeverityNumberInfo      = internal.SeverityNumberInfo
+	SeverityNumberInfo2     = internal.SeverityNumberInfo2
+	SeverityNumberInfo3     = internal.SeverityNumberInfo3
+	SeverityNumberInfo4     = internal.SeverityNumberInfo4
+	SeverityNumberWarn      = internal.SeverityNumberWarn
+	SeverityNumberWarn2     = internal.SeverityNumberWarn2
+	SeverityNumberWarn3     = internal.SeverityNumberWarn3
+	SeverityNumberWarn4     = internal.SeverityNumberWarn4
+	SeverityNumberError     = internal.SeverityNumberError
+	SeverityNumberError2    = internal.SeverityNumberError2
+	SeverityNumberError3    = internal.SeverityNumberError3
+	SeverityNumberError4    = internal.SeverityNumberError4
+	SeverityNumberFatal     = internal.SeverityNumberFatal
+	SeverityNumberFatal2    = internal.SeverityNumberFatal2
+	SeverityNumberFatal3    = internal.SeverityNumberFatal3
+	SeverityNumberFatal4    = internal.SeverityNumberFatal4
+)
+
+const (
+	// Deprecated: [0.59.0] Use SeverityNumberUndefined instead
+	SeverityNumberUNDEFINED = SeverityNumberUndefined
+
+	// Deprecated: [0.59.0] Use SeverityNumberTrace instead
+	SeverityNumberTRACE = SeverityNumberTrace
+
+	// Deprecated: [0.59.0] Use SeverityNumberTrace2 instead
+	SeverityNumberTRACE2 = SeverityNumberTrace2
+
+	// Deprecated: [0.59.0] Use SeverityNumberTrace3 instead
+	SeverityNumberTRACE3 = SeverityNumberTrace3
+
+	// Deprecated: [0.59.0] Use SeverityNumberTrace4 instead
+	SeverityNumberTRACE4 = SeverityNumberTrace4
+
+	// Deprecated: [0.59.0] Use SeverityNumberDebug instead
+	SeverityNumberDEBUG = SeverityNumberDebug
+
+	// Deprecated: [0.59.0] Use SeverityNumberDebug2 instead
+	SeverityNumberDEBUG2 = SeverityNumberDebug2
+
+	// Deprecated: [0.59.0] Use SeverityNumberDebug3 instead
+	SeverityNumberDEBUG3 = SeverityNumberDebug3
+
+	// Deprecated: [0.59.0] Use SeverityNumberDebug4 instead
+	SeverityNumberDEBUG4 = SeverityNumberDebug4
+
+	// Deprecated: [0.59.0] Use SeverityNumberInfo instead
+	SeverityNumberINFO = SeverityNumberInfo
+
+	// Deprecated: [0.59.0] Use SeverityNumberInfo2 instead
+	SeverityNumberINFO2 = SeverityNumberInfo2
+
+	// Deprecated: [0.59.0] Use SeverityNumberInfo3 instead
+	SeverityNumberINFO3 = SeverityNumberInfo3
+
+	// Deprecated: [0.59.0] Use SeverityNumberInfo4 instead
+	SeverityNumberINFO4 = SeverityNumberInfo4
+
+	// Deprecated: [0.59.0] Use SeverityNumberWarn instead
+	SeverityNumberWARN = SeverityNumberWarn
+
+	// Deprecated: [0.59.0] Use SeverityNumberWarn2 instead
+	SeverityNumberWARN2 = SeverityNumberWarn2
+
+	// Deprecated: [0.59.0] Use SeverityNumberWarn3 instead
+	SeverityNumberWARN3 = SeverityNumberWarn3
+
+	// Deprecated: [0.59.0] Use SeverityNumberWarn4 instead
+	SeverityNumberWARN4 = SeverityNumberWarn4
+
+	// Deprecated: [0.59.0] Use SeverityNumberError instead
+	SeverityNumberERROR = SeverityNumberError
+
+	// Deprecated: [0.59.0] Use SeverityNumberError2 instead
+	SeverityNumberERROR2 = SeverityNumberError2
+
+	// Deprecated: [0.59.0] Use SeverityNumberError3 instead
+	SeverityNumberERROR3 = SeverityNumberError3
+
+	// Deprecated: [0.59.0] Use SeverityNumberError4 instead
+	SeverityNumberERROR4 = SeverityNumberError4
+
+	// Deprecated: [0.59.0] Use SeverityNumberFatal instead
+	SeverityNumberFATAL = SeverityNumberFatal
+
+	// Deprecated: [0.59.0] Use SeverityNumberFatal2 instead
+	SeverityNumberFATAL2 = SeverityNumberFatal2
+
+	// Deprecated: [0.59.0] Use SeverityNumberFatal3 instead
+	SeverityNumberFATAL3 = SeverityNumberFatal3
+
+	// Deprecated: [0.59.0] Use SeverityNumberFatal4 instead
+	SeverityNumberFATAL4 = SeverityNumberFatal4
 )
