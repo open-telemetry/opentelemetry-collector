@@ -122,25 +122,7 @@ func (d *jsonUnmarshaler) readScopeMetrics(iter *jsoniter.Iterator) *otlpmetrics
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "scope":
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "name":
-					ils.Scope.Name = iter.ReadString()
-				case "version":
-					ils.Scope.Version = iter.ReadString()
-				case "attributes":
-					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						ils.Scope.Attributes = append(ils.Scope.Attributes,
-							json.ReadAttribute(iter))
-						return true
-					})
-				case "droppedAttributesCount", "dropped_attributes_count":
-					ils.Scope.DroppedAttributesCount = json.ReadUint32(iter)
-				default:
-					iter.Skip()
-				}
-				return true
-			})
+			json.ReadScope(iter, &ils.Scope)
 		case "metrics":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				ils.Metrics = append(ils.Metrics, d.readMetric(iter))

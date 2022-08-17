@@ -199,16 +199,6 @@ func TestReadScopeSpansUnknownField(t *testing.T) {
 	}
 }
 
-func TestReadScopeSpansUnknownScopeField(t *testing.T) {
-	jsonStr := `{"scope":{"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readScopeSpans(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
-}
-
 func TestReadSpanUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
