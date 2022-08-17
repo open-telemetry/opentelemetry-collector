@@ -19,7 +19,7 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-// NewProtoMarshaler returns a Marshaler.
+// NewProtoMarshaler returns a MarshalSizer.
 // Marshals to OTLP binary protobuf bytes and calculates the size of the marshaled Metrics.
 func NewProtoMarshaler() MarshalSizer {
 	return newPbMarshaler()
