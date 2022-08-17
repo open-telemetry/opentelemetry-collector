@@ -14,6 +14,12 @@
 
 package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 
+// MarshalSizer is the interface that groups the basic Marshal and Size methods
+type MarshalSizer interface {
+	Marshaler
+	Sizer
+}
+
 // Marshaler marshals pdata.Traces into bytes.
 type Marshaler interface {
 	// MarshalTraces the given pdata.Traces into bytes.
