@@ -70,15 +70,6 @@ type configProvider struct {
 type ConfigProviderSettings struct {
 	// ResolverSettings are the settings to configure the behavior of the confmap.Resolver.
 	ResolverSettings confmap.ResolverSettings
-
-	// Deprecated: [v0.58.0] use ConfigProviderSettings.ResolverSettings.URIs
-	Locations []string
-
-	// Deprecated: [v0.58.0] use ConfigProviderSettings.ResolverSettings.Providers
-	MapProviders map[string]confmap.Provider
-
-	// Deprecated: [v0.58.0] use ConfigProviderSettings.ResolverSettings.Converter
-	MapConverters []confmap.Converter
 }
 
 func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
@@ -98,15 +89,6 @@ func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 //
 // * Then unmarshalls the confmap.Conf into the service Config.
 func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
-	if len(set.Locations) != 0 {
-		set.ResolverSettings.URIs = set.Locations
-	}
-	if len(set.MapProviders) != 0 {
-		set.ResolverSettings.Providers = set.MapProviders
-	}
-	if len(set.MapConverters) != 0 {
-		set.ResolverSettings.Converters = set.MapConverters
-	}
 	mr, err := confmap.NewResolver(set.ResolverSettings)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,11 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated fields/funcs from `service` (#5907)
+  - Remove `ConfigProviderSettings.Location`
+  - Remove `ConfigProviderSettings.MapProviders`
+  - Remove `ConfigProviderSettings.MapConverters`
+  - Remove `featuregate.Registry.MustAppy`
 - Remove deprecated funcs from `pdata` module. (#5911)
   - Remove `pmetric.MetricDataPointFlags.String()`
   - Remove `pmetric.NumberDataPoint.FlagsStruct()`
