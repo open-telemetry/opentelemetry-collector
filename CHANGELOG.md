@@ -33,7 +33,7 @@
 
 ### 💡 Enhancements 💡
 
-- Added `NewProtoSizer` method to `ptrace`, `plog`, and `pmetric` packages to directly create a `Sizer` implementation ()
+- Added `NewProtoSizer` method to `ptrace`, `plog`, and `pmetric` packages to directly create a `Sizer` implementation (#5929)
 - Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
 - Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
