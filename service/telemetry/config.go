@@ -24,6 +24,7 @@ import (
 type Config struct {
 	Logs    LogsConfig    `mapstructure:"logs"`
 	Metrics MetricsConfig `mapstructure:"metrics"`
+	Traces  TracesConfig  `mapstructure:"traces"`
 
 	// Resource specifies user-defined attributes to include with all emitted telemetry.
 	// Note that some attributes are added automatically (e.g. service.version) even
@@ -102,4 +103,13 @@ type MetricsConfig struct {
 
 	// Address is the [address]:port that metrics exposition should be bound to.
 	Address string `mapstructure:"address"`
+}
+
+// TracesConfig exposes the common Telemetry configuration for collector's internal spans.
+// Experimental: *NOTE* this structure is subject to change or removal in the future.
+type TracesConfig struct {
+	// Propagators is a list of TextMapPropagators from the supported propagators list. Currently,
+	// tracecontext and  b3 are supported. By default, the value is set to empty list and
+	// context propagation is disabled.
+	Propagators []string `mapstructure:"propagators"`
 }

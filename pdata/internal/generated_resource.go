@@ -53,17 +53,17 @@ func (ms Resource) MoveTo(dest Resource) {
 
 // Attributes returns the Attributes associated with this Resource.
 func (ms Resource) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this Resource.
 func (ms Resource) DroppedAttributesCount() uint32 {
-	return (*ms.orig).DroppedAttributesCount
+	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this Resource.
 func (ms Resource) SetDroppedAttributesCount(v uint32) {
-	(*ms.orig).DroppedAttributesCount = v
+	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.

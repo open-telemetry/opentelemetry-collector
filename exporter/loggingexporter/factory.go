@@ -58,7 +58,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
-	return exporterhelper.NewTracesExporterWithContext(ctx, set, cfg,
+	return exporterhelper.NewTracesExporter(ctx, set, cfg,
 		s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
@@ -73,7 +73,7 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
-	return exporterhelper.NewMetricsExporterWithContext(ctx, set, cfg,
+	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
 		s.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue
@@ -88,7 +88,7 @@ func createLogsExporter(ctx context.Context, set component.ExporterCreateSetting
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
-	return exporterhelper.NewLogsExporterWithContext(ctx, set, cfg,
+	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable Timeout/RetryOnFailure and SendingQueue

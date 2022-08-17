@@ -17,6 +17,7 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"go.opentelemetry.io/otel/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -108,6 +109,11 @@ func newService(set *settings) (*service, error) {
 }
 
 func (srv *service) Start(ctx context.Context) error {
+	srv.telemetrySettings.Logger.Info("Starting "+srv.buildInfo.Command+"...",
+		zap.String("Version", srv.buildInfo.Version),
+		zap.Int("NumCPU", runtime.NumCPU()),
+	)
+
 	if err := srv.host.extensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
@@ -116,12 +122,20 @@ func (srv *service) Start(ctx context.Context) error {
 		return fmt.Errorf("cannot start pipelines: %w", err)
 	}
 
-	return srv.host.extensions.NotifyPipelineReady()
+	if err := srv.host.extensions.NotifyPipelineReady(); err != nil {
+		return err
+	}
+
+	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
+	return nil
 }
 
 func (srv *service) Shutdown(ctx context.Context) error {
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
+
+	// Begin shutdown sequence.
+	srv.telemetrySettings.Logger.Info("Starting shutdown...")
 
 	if err := srv.host.extensions.NotifyPipelineNotReady(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
@@ -135,6 +149,7 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
+	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 	// TODO: Shutdown TracerProvider, MeterProvider, and Sync Logger.
 	return errs
 }

@@ -21,7 +21,7 @@ import (
 
 const accessorSliceTemplate = `// ${fieldName} returns the ${originFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(&(*ms.orig).${originFieldName})
+	return new${returnType}(&ms.orig.${originFieldName})
 }`
 
 const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
@@ -34,7 +34,7 @@ const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testi
 
 const accessorsMessageValueTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(&(*ms.orig).${originFieldName})
+	return new${returnType}(&ms.orig.${originFieldName})
 }`
 
 const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
@@ -45,12 +45,12 @@ const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t
 
 const accessorsPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return (*ms.orig).${originFieldName}
+	return ms.orig.${originFieldName}
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	(*ms.orig).${originFieldName} = v
+	ms.orig.${originFieldName} = v
 }`
 
 const copyToPrimitiveSliceTestTemplate = `	if len(ms.orig.${originFieldName}) == 0 {	
@@ -63,12 +63,12 @@ const copyToPrimitiveSliceTestTemplate = `	if len(ms.orig.${originFieldName}) ==
 
 const accessorsPrimitiveSliceTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ${returnType}{value: (*ms.orig).${originFieldName}}
+	return ${returnType}{value: ms.orig.${originFieldName}}
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	(*ms.orig).${originFieldName} = v.value
+	ms.orig.${originFieldName} = v.value
 }`
 
 const oneOfTypeAccessorHeaderTemplate = `// ${originFieldName}Type returns the type of the ${lowerOriginFieldName} for this ${structName}.
@@ -117,12 +117,12 @@ const copyToValueOneOfMessageTemplate = `	case ${typeName}:
 
 const accessorsOneOfPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return (*ms.orig).Get${originFieldName}()
+	return ms.orig.Get${originFieldName}()
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	(*ms.orig).${originOneOfFieldName} = &${originStructType}{
+	ms.orig.${originOneOfFieldName} = &${originStructType}{
 		${originFieldName}: v,
 	}
 }`
@@ -137,27 +137,27 @@ const accessorsPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *t
 
 const accessorsPrimitiveTypedTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ${returnType}((*ms.orig).${originFieldName})
+	return ${returnType}(ms.orig.${originFieldName})
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	(*ms.orig).${originFieldName} = ${rawType}(v)
+	ms.orig.${originFieldName} = ${rawType}(v)
 }`
 
 const accessorsPrimitiveStructTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ${returnType}{orig: ((*ms.orig).${originFieldName})}
+	return ${returnType}{orig: (ms.orig.${originFieldName})}
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	(*ms.orig).${originFieldName} = v.orig
+	ms.orig.${originFieldName} = v.orig
 }`
 
 const accessorsOptionalPrimitiveValueTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return (*ms.orig).Get${fieldName}()
+	return ms.orig.Get${fieldName}()
 }
 // Has${fieldName} returns true if the ${structName} contains a
 // ${fieldName} value, false otherwise.
@@ -166,7 +166,7 @@ func (ms ${structName}) Has${fieldName}() bool {
 }
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	(*ms.orig).${fieldName}_ = &${originStructType}{${fieldName}: v}
+	ms.orig.${fieldName}_ = &${originStructType}{${fieldName}: v}
 }`
 
 type baseField interface {

@@ -195,22 +195,22 @@ func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 
 // Resource returns the resource associated with this ResourceLogs.
 func (ms ResourceLogs) Resource() Resource {
-	return newResource(&(*ms.orig).Resource)
+	return newResource(&ms.orig.Resource)
 }
 
 // SchemaUrl returns the schemaurl associated with this ResourceLogs.
 func (ms ResourceLogs) SchemaUrl() string {
-	return (*ms.orig).SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ResourceLogs.
 func (ms ResourceLogs) SetSchemaUrl(v string) {
-	(*ms.orig).SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
 func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
-	return newScopeLogsSlice(&(*ms.orig).ScopeLogs)
+	return newScopeLogsSlice(&ms.orig.ScopeLogs)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -392,22 +392,22 @@ func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
 
 // Scope returns the scope associated with this ScopeLogs.
 func (ms ScopeLogs) Scope() InstrumentationScope {
-	return newInstrumentationScope(&(*ms.orig).Scope)
+	return newInstrumentationScope(&ms.orig.Scope)
 }
 
 // SchemaUrl returns the schemaurl associated with this ScopeLogs.
 func (ms ScopeLogs) SchemaUrl() string {
-	return (*ms.orig).SchemaUrl
+	return ms.orig.SchemaUrl
 }
 
 // SetSchemaUrl replaces the schemaurl associated with this ScopeLogs.
 func (ms ScopeLogs) SetSchemaUrl(v string) {
-	(*ms.orig).SchemaUrl = v
+	ms.orig.SchemaUrl = v
 }
 
 // LogRecords returns the LogRecords associated with this ScopeLogs.
 func (ms ScopeLogs) LogRecords() LogRecordSlice {
-	return newLogRecordSlice(&(*ms.orig).LogRecords)
+	return newLogRecordSlice(&ms.orig.LogRecords)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -589,87 +589,87 @@ func (ms LogRecord) MoveTo(dest LogRecord) {
 
 // ObservedTimestamp returns the observedtimestamp associated with this LogRecord.
 func (ms LogRecord) ObservedTimestamp() Timestamp {
-	return Timestamp((*ms.orig).ObservedTimeUnixNano)
+	return Timestamp(ms.orig.ObservedTimeUnixNano)
 }
 
 // SetObservedTimestamp replaces the observedtimestamp associated with this LogRecord.
 func (ms LogRecord) SetObservedTimestamp(v Timestamp) {
-	(*ms.orig).ObservedTimeUnixNano = uint64(v)
+	ms.orig.ObservedTimeUnixNano = uint64(v)
 }
 
 // Timestamp returns the timestamp associated with this LogRecord.
 func (ms LogRecord) Timestamp() Timestamp {
-	return Timestamp((*ms.orig).TimeUnixNano)
+	return Timestamp(ms.orig.TimeUnixNano)
 }
 
 // SetTimestamp replaces the timestamp associated with this LogRecord.
 func (ms LogRecord) SetTimestamp(v Timestamp) {
-	(*ms.orig).TimeUnixNano = uint64(v)
+	ms.orig.TimeUnixNano = uint64(v)
 }
 
 // TraceID returns the traceid associated with this LogRecord.
 func (ms LogRecord) TraceID() TraceID {
-	return TraceID{orig: ((*ms.orig).TraceId)}
+	return TraceID{orig: (ms.orig.TraceId)}
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
 func (ms LogRecord) SetTraceID(v TraceID) {
-	(*ms.orig).TraceId = v.orig
+	ms.orig.TraceId = v.orig
 }
 
 // SpanID returns the spanid associated with this LogRecord.
 func (ms LogRecord) SpanID() SpanID {
-	return SpanID{orig: ((*ms.orig).SpanId)}
+	return SpanID{orig: (ms.orig.SpanId)}
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
 func (ms LogRecord) SetSpanID(v SpanID) {
-	(*ms.orig).SpanId = v.orig
+	ms.orig.SpanId = v.orig
 }
 
 // FlagsStruct returns the flagsstruct associated with this LogRecord.
 func (ms LogRecord) FlagsStruct() LogRecordFlags {
-	return newLogRecordFlags(&(*ms.orig).Flags)
+	return newLogRecordFlags(&ms.orig.Flags)
 }
 
 // SeverityText returns the severitytext associated with this LogRecord.
 func (ms LogRecord) SeverityText() string {
-	return (*ms.orig).SeverityText
+	return ms.orig.SeverityText
 }
 
 // SetSeverityText replaces the severitytext associated with this LogRecord.
 func (ms LogRecord) SetSeverityText(v string) {
-	(*ms.orig).SeverityText = v
+	ms.orig.SeverityText = v
 }
 
 // SeverityNumber returns the severitynumber associated with this LogRecord.
 func (ms LogRecord) SeverityNumber() SeverityNumber {
-	return SeverityNumber((*ms.orig).SeverityNumber)
+	return SeverityNumber(ms.orig.SeverityNumber)
 }
 
 // SetSeverityNumber replaces the severitynumber associated with this LogRecord.
 func (ms LogRecord) SetSeverityNumber(v SeverityNumber) {
-	(*ms.orig).SeverityNumber = otlplogs.SeverityNumber(v)
+	ms.orig.SeverityNumber = otlplogs.SeverityNumber(v)
 }
 
 // Body returns the body associated with this LogRecord.
 func (ms LogRecord) Body() Value {
-	return newValue(&(*ms.orig).Body)
+	return newValue(&ms.orig.Body)
 }
 
 // Attributes returns the Attributes associated with this LogRecord.
 func (ms LogRecord) Attributes() Map {
-	return newMap(&(*ms.orig).Attributes)
+	return newMap(&ms.orig.Attributes)
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this LogRecord.
 func (ms LogRecord) DroppedAttributesCount() uint32 {
-	return (*ms.orig).DroppedAttributesCount
+	return ms.orig.DroppedAttributesCount
 }
 
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this LogRecord.
 func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
-	(*ms.orig).DroppedAttributesCount = v
+	ms.orig.DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.

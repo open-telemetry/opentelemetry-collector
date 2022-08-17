@@ -9,14 +9,37 @@
   - Remove `ConfigProviderSettings.MapProviders`
   - Remove `ConfigProviderSettings.MapConverters`
   - Remove `featuregate.Registry.MustAppy`
+- Remove deprecated funcs from `pdata` module. (#5911)
+  - Remove `pmetric.MetricDataPointFlags.String()`
+  - Remove `pmetric.NumberDataPoint.FlagsStruct()`
+  - Remove `pmetric.HistogramDataPoint.FlagsStruct()`
+  - Remove `pmetric.ExponentialHistogramDataPoint.FlagsStruct()`
+  - Remove `pmetric.SummaryDataPoint.FlagsStruct()`
+- Remove deprecated settings from `obsreport`, `ProcessorSettings.Level` and `ExporterSettings.Level` (#5918)
+- Replace `processorhelper.New[Traces|Metrics|Logs]Exporter` with `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` definition (#5915)
+- Replace `exporterhelper.New[Traces|Metrics|Logs]Exporter` with `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` definition (#5914)
+- Replace ``component.NewExtensionFactory`` with `component.NewExtensionFactoryWithStabilityLevel` definition (#5917)
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` in favor of `processorhelper.New[Traces|Metrics|Logs]Exporter` (#5915)
 - Deprecates `LogRecord.Flags()` and `LogRecord.SetFlags()` in favor of `LogRecord.FlagsStruct()`. (#5866)
+- Deprecate `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` in favor of `exporterhelper.New[Traces|Metrics|Logs]Exporter` (#5914)
+- Deprecate `component.NewExtensionFactoryWithStabilityLevel` in favor of `component.NewExtensionFactory` (#5917)
+- Deprecate `plog.SeverityNumber[UPPERCASE]` constants (#5927)
 
 ### 💡 Enhancements 💡
 
+- Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
+- Add httpprovider to allow loading config files stored in HTTP (#5810)
+- Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
+
 ### 🧰 Bug fixes 🧰
+
+- Fix bug in setting the correct collector state after a configuration change event. (#5830)
+- Fix json trace unmarshalling for numbers (#5924):
+  - Accept both string and number for int32/uint32.
+  - Read uint64 numbers without converting from int64.
 
 ## v0.58.0 Beta
 

@@ -33,7 +33,7 @@ func TestNewExtensionFactory(t *testing.T) {
 	defaultCfg := config.NewExtensionSettings(config.NewComponentID(typeStr))
 	nopExtensionInstance := new(nopExtension)
 
-	factory := NewExtensionFactoryWithStabilityLevel(
+	factory := NewExtensionFactory(
 		typeStr,
 		func() config.Extension { return &defaultCfg },
 		func(ctx context.Context, settings ExtensionCreateSettings, extension config.Extension) (Extension, error) {

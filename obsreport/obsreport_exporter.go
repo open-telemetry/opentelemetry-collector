@@ -38,8 +38,6 @@ type Exporter struct {
 
 // ExporterSettings are settings for creating an Exporter.
 type ExporterSettings struct {
-	// Deprecated: [v0.58.0] set the level in the ExporterSettings.ExporterCreateSettings.
-	Level                  configtelemetry.Level
 	ExporterID             config.ComponentID
 	ExporterCreateSettings component.ExporterCreateSettings
 }

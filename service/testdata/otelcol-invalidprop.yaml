@@ -1,0 +1,20 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  telemetry:
+    traces:
+      propagators:
+      - "unknown"
+      - "tracecontext"
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

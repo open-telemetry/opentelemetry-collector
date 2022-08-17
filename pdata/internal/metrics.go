@@ -183,30 +183,6 @@ func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
-// FlagsStruct returns the flagsstruct associated with this NumberDataPoint.
-// Deprecated [0.58.0] Use Flags() instead
-func (ms NumberDataPoint) FlagsStruct() MetricDataPointFlags {
-	return ms.Flags()
-}
-
-// FlagsStruct returns the flagsstruct associated with this HistogramDataPoint.
-// Deprecated [0.58.0] Use Flags() instead
-func (ms HistogramDataPoint) FlagsStruct() MetricDataPointFlags {
-	return ms.Flags()
-}
-
-// FlagsStruct returns the flagsstruct associated with this ExponentialHistogramDataPoint.
-// Deprecated [0.58.0] Use Flags() instead
-func (ms ExponentialHistogramDataPoint) FlagsStruct() MetricDataPointFlags {
-	return ms.Flags()
-}
-
-// FlagsStruct returns the flagsstruct associated with this SummaryDataPoint.
-// Deprecated [0.58.0] Use Flags() instead
-func (ms SummaryDataPoint) FlagsStruct() MetricDataPointFlags {
-	return ms.Flags()
-}
-
 // MetricDataPointFlags defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
 //
@@ -256,11 +232,6 @@ func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
 	} else {
 		*ms.orig &^= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
 	}
-}
-
-// Deprecated: [v0.58.0] will be soon removed, no String() on any other pdata.
-func (ms MetricDataPointFlags) String() string {
-	return otlpmetrics.DataPointFlags(*ms.orig).String()
 }
 
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
