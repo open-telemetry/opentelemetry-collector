@@ -234,6 +234,11 @@ func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
 	}
 }
 
+// AsRaw converts MetricDataPointFlags to the OTLP uint32 representation.
+func (ms MetricDataPointFlags) AsRaw() uint32 {
+	return *ms.orig
+}
+
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType int32
 
