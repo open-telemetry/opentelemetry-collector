@@ -527,10 +527,5 @@ func (d *jsonUnmarshaler) readQuantileValue(iter *jsoniter.Iterator) *otlpmetric
 }
 
 func (d *jsonUnmarshaler) readAggregationTemporality(iter *jsoniter.Iterator) otlpmetrics.AggregationTemporality {
-	value := iter.ReadAny()
-	if v := value.ToInt(); v > 0 {
-		return otlpmetrics.AggregationTemporality(v)
-	}
-	v := value.ToString()
-	return otlpmetrics.AggregationTemporality(otlpmetrics.AggregationTemporality_value[v])
+	return otlpmetrics.AggregationTemporality(json.ReadEnumValue(iter, otlpmetrics.AggregationTemporality_value))
 }
