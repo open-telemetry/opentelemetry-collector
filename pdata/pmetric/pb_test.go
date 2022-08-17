@@ -31,7 +31,7 @@ func TestProtoMetricsUnmarshaler_error(t *testing.T) {
 }
 
 func TestProtoSizer(t *testing.T) {
-	sizer := NewProtoMarshaler().(Sizer)
+	sizer := NewProtoSizer()
 	marshaler := NewProtoMarshaler()
 	md := NewMetrics()
 	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")

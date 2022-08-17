@@ -31,7 +31,7 @@ func TestProtoTracesUnmarshaler_error(t *testing.T) {
 }
 
 func TestProtoSizer(t *testing.T) {
-	sizer := NewProtoMarshaler().(Sizer)
+	sizer := NewProtoSizer()
 	marshaler := NewProtoMarshaler()
 	td := NewTraces()
 	rms := td.ResourceSpans()

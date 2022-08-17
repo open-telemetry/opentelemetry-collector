@@ -24,7 +24,11 @@ func NewProtoMarshaler() Marshaler {
 	return newPbMarshaler()
 }
 
-// TODO(#3842): Figure out how we want to represent/return *Sizers.
+// NewProtoSizer returns a Sizer. Calculates the size of a marshaled Traces.
+func NewProtoSizer() Sizer {
+	return newPbMarshaler()
+}
+
 type pbMarshaler struct{}
 
 func newPbMarshaler() *pbMarshaler {
