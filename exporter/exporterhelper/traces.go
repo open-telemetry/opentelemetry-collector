@@ -79,7 +79,7 @@ type traceExporter struct {
 	consumer.Traces
 }
 
-// Deprecated: [v0.58.0] use NewTracesExporter.
+// Deprecated: [v0.59.0] use NewTracesExporter.
 func NewTracesExporterWithContext(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
