@@ -313,56 +313,6 @@ func TestReadSpanEventUnknownField(t *testing.T) {
 	}
 }
 
-func TestReadAttributeUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readAttribute(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
-}
-
-func TestReadAnyValueUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readAnyValue(iter, "")
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
-}
-
-func TestReadAnyValueInvliadBytesValue(t *testing.T) {
-	jsonStr := `"--"`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readAnyValue(iter, "bytesValue")
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "base64")
-	}
-}
-
-func TestReadArrayUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readArray(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
-}
-
-func TestReadKvlistValueUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readKvlistValue(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
-}
-
 func TestReadSpanKind(t *testing.T) {
 	tests := []struct {
 		name    string
