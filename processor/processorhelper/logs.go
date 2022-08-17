@@ -36,7 +36,7 @@ type logProcessor struct {
 	consumer.Logs
 }
 
-// Deprecated: [v0.58.0] use version with NewLogsProcessor.
+// Deprecated: [v0.59.0] use version with NewLogsProcessor.
 func NewLogsProcessorWithCreateSettings(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,

@@ -79,7 +79,7 @@ type metricsExporter struct {
 	consumer.Metrics
 }
 
-// Deprecated: [v0.58.0] use NewMetricsExporter.
+// Deprecated: [v0.59.0] use NewMetricsExporter.
 func NewMetricsExporterWithContext(
 	ctx context.Context,
 	set component.ExporterCreateSettings,

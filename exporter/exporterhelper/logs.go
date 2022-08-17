@@ -78,7 +78,7 @@ type logsExporter struct {
 	consumer.Logs
 }
 
-// Deprecated: [v0.58.0] use NewLogsExporter.
+// Deprecated: [v0.59.0] use NewLogsExporter.
 func NewLogsExporterWithContext(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
