@@ -199,7 +199,7 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 
 func defaultServiceTelemetryMetricsSettings() telemetry.MetricsConfig {
 	return telemetry.MetricsConfig{
-		Level:   configtelemetry.LevelBasic, //nolint:staticcheck
+		Level:   configtelemetry.LevelBasic,
 		Address: ":8888",
 	}
 }
