@@ -15,7 +15,6 @@
 package pmetric
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -329,49 +328,6 @@ func Test_jsonUnmarshaler_UnmarshalMetrics(t *testing.T) {
 						assert.EqualValues(t, m, got)
 					}
 				}
-			}
-		})
-	}
-}
-
-func TestReadAggregationTemporality(t *testing.T) {
-	tests := []struct {
-		name    string
-		jsonStr string
-		want    otlpmetrics.AggregationTemporality
-	}{
-		{
-			name: "string",
-			jsonStr: fmt.Sprintf(`"%s"`,
-				otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE.String()),
-			want: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-		},
-		{
-			name: "string",
-			jsonStr: fmt.Sprintf(`"%s"`,
-				otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA.String()),
-			want: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
-		},
-		{
-			name: "int",
-			jsonStr: fmt.Sprintf("%d",
-				otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE),
-			want: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-		},
-		{
-			name: "int",
-			jsonStr: fmt.Sprintf("%d",
-				otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA),
-			want: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			unmarshaler := &jsonUnmarshaler{}
-			if got := unmarshaler.readAggregationTemporality(iter); got != tt.want {
-				t.Errorf("readSpanKind() = %v, want %v", got, tt.want)
 			}
 		})
 	}

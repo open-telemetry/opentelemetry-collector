@@ -158,7 +158,7 @@ func readSpan(iter *jsoniter.Iterator) *otlptrace.Span {
 		case "name":
 			sp.Name = iter.ReadString()
 		case "kind":
-			sp.Kind = readSpanKind(iter)
+			sp.Kind = otlptrace.Span_SpanKind(json.ReadEnumValue(iter, otlptrace.Span_SpanKind_value))
 		case "startTimeUnixNano", "start_time_unix_nano":
 			sp.StartTimeUnixNano = json.ReadUint64(iter)
 		case "endTimeUnixNano", "end_time_unix_nano":
@@ -190,7 +190,7 @@ func readSpan(iter *jsoniter.Iterator) *otlptrace.Span {
 				case "message":
 					sp.Status.Message = iter.ReadString()
 				case "code":
-					sp.Status.Code = readStatusCode(iter)
+					sp.Status.Code = otlptrace.Status_StatusCode(json.ReadEnumValue(iter, otlptrace.Status_StatusCode_value))
 				default:
 					iter.ReportError("readSpan.status", fmt.Sprintf("unknown field:%v", f))
 				}
@@ -256,22 +256,4 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 		return true
 	})
 	return event
-}
-
-func readSpanKind(iter *jsoniter.Iterator) otlptrace.Span_SpanKind {
-	any := iter.ReadAny()
-	if v := any.ToInt(); v > 0 {
-		return otlptrace.Span_SpanKind(v)
-	}
-	v := any.ToString()
-	return otlptrace.Span_SpanKind(otlptrace.Span_SpanKind_value[v])
-}
-
-func readStatusCode(iter *jsoniter.Iterator) otlptrace.Status_StatusCode {
-	any := iter.ReadAny()
-	if v := any.ToInt(); v > 0 {
-		return otlptrace.Status_StatusCode(v)
-	}
-	v := any.ToString()
-	return otlptrace.Status_StatusCode(otlptrace.Status_StatusCode_value[v])
 }
