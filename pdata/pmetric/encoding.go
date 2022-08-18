@@ -14,8 +14,8 @@
 
 package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
-// MarshalSizer is the interface that groups the basic Marshal and Size methods
-type MarshalSizer interface {
+// MarshalerSizer is the interface that groups the basic Marshal and Size methods
+type MarshalerSizer interface {
 	Marshaler
 	Sizer
 }
