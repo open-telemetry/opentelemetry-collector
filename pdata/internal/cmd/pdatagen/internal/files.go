@@ -14,7 +14,11 @@
 
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
-import "strings"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+)
 
 const header = `// Copyright The OpenTelemetry Authors
 //
@@ -46,7 +50,7 @@ var AllFiles = []*File{
 // File represents the struct for one generated file.
 type File struct {
 	Name        string
-	IsCommon    bool
+	PackageName string
 	imports     []string
 	testImports []string
 	// Can be any of sliceOfPtrs, sliceOfValues, messageValueStruct, or messagePtrStruct
@@ -54,10 +58,14 @@ type File struct {
 }
 
 // GenerateFile generates the configured data structures for this File.
-func (f *File) GenerateFile() string {
-	var sb strings.Builder
+func (f *File) GenerateFile() error {
+	fp, err := os.Create(filepath.Join(".", "pdata", f.PackageName, generateFileName(f.Name)))
+	if err != nil {
+		return err
+	}
 
-	generateHeader(&sb, "internal")
+	var sb strings.Builder
+	generateHeader(&sb, f.PackageName)
 
 	// Add imports
 	sb.WriteString("import (" + newLine)
@@ -76,14 +84,23 @@ func (f *File) GenerateFile() string {
 		s.generateStruct(&sb)
 	}
 	sb.WriteString(newLine)
-	return sb.String()
+
+	_, err = fp.WriteString(sb.String())
+	if err != nil {
+		return err
+	}
+	return fp.Close()
 }
 
 // GenerateTestFile generates tests for the configured data structures for this File.
-func (f *File) GenerateTestFile() string {
-	var sb strings.Builder
+func (f *File) GenerateTestFile() error {
+	fp, err := os.Create(filepath.Join(".", "pdata", f.PackageName, generateTestFileName(f.Name)))
+	if err != nil {
+		return err
+	}
 
-	generateHeader(&sb, "internal")
+	var sb strings.Builder
+	generateHeader(&sb, f.PackageName)
 
 	// Add imports
 	sb.WriteString("import (" + newLine)
@@ -102,32 +119,64 @@ func (f *File) GenerateTestFile() string {
 		s.generateTests(&sb)
 	}
 
+	_, err = fp.WriteString(sb.String())
+	if err != nil {
+		return err
+	}
+	return fp.Close()
+}
+
+// GenerateInternalFile generates the internal pdata structures for this File.
+func (f *File) GenerateInternalFile() error {
+	fp, err := os.Create(filepath.Join(".", "pdata", "internal", generateInternalFileName(f.Name)))
+	if err != nil {
+		return err
+	}
+
+	var sb strings.Builder
+	generateHeader(&sb, "internal")
+
+	// Add imports
+	sb.WriteString("import (" + newLine)
+	for _, imp := range f.imports {
+		if imp != "" {
+			sb.WriteString("\t" + imp + newLine)
+		} else {
+			sb.WriteString(newLine)
+		}
+	}
+	sb.WriteString(")")
+
+	// Write all types and funcs
+	for _, s := range f.structs {
+		s.generateInternal(&sb)
+	}
+	sb.WriteString(newLine)
+
 	// Write all tests generate value
 	for _, s := range f.structs {
 		sb.WriteString(newLine + newLine)
 		s.generateTestValueHelpers(&sb)
 	}
 	sb.WriteString(newLine)
-	return sb.String()
+
+	_, err = fp.WriteString(sb.String())
+	if err != nil {
+		return err
+	}
+	return fp.Close()
 }
 
-// GenerateFile generates the aliases for data structures for this File.
-func (f *File) GenerateAliasFile(packageName string) string {
-	var sb strings.Builder
+func generateFileName(fileName string) string {
+	return "generated_" + fileName + ".go"
+}
 
-	generateHeader(&sb, packageName)
+func generateInternalFileName(fileName string) string {
+	return "generated_wrapper_" + fileName + ".go"
+}
 
-	// Add import
-	sb.WriteString("import \"go.opentelemetry.io/collector/pdata/internal\"" + newLine + newLine)
-
-	// Write all types and funcs
-	for _, s := range f.structs {
-		if ag, ok := s.(aliasGenerator); ok {
-			ag.generateAlias(&sb)
-		}
-	}
-	sb.WriteString(newLine)
-	return sb.String()
+func generateTestFileName(fileName string) string {
+	return "generated_" + fileName + "_test.go"
 }
 
 func generateHeader(sb *strings.Builder, packageName string) {

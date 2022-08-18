@@ -42,7 +42,8 @@ func newJSONMarshaler() *jsonMarshaler {
 
 func (e *jsonMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
 	buf := bytes.Buffer{}
-	err := e.delegate.Marshal(&buf, internal.MetricsToOtlp(md))
+	pb := internal.MetricsToProto(internal.Metrics(md))
+	err := e.delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
 
@@ -62,7 +63,7 @@ func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 		return Metrics{}, iter.Error
 	}
 	otlp.MigrateMetrics(md.ResourceMetrics)
-	return internal.MetricsFromProto(md), nil
+	return Metrics(internal.MetricsFromProto(md)), nil
 }
 
 func (d *jsonUnmarshaler) readMetricsData(iter *jsoniter.Iterator) otlpmetrics.MetricsData {

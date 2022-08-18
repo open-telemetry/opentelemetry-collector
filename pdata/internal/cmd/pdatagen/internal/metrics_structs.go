@@ -15,7 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var metricsFile = &File{
-	Name: "pmetric",
+	Name:        "metrics",
+	PackageName: "pmetric",
 	imports: []string{
 		`"sort"`,
 		``,
@@ -26,7 +27,10 @@ var metricsFile = &File{
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
+		`"go.opentelemetry.io/collector/pdata/internal"`,
+		`"go.opentelemetry.io/collector/pdata/internal/data"`,
 		`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
+		`"go.opentelemetry.io/collector/pdata/pcommon"`,
 	},
 	structs: []baseStruct{
 		resourceMetricsSlice,
@@ -129,29 +133,34 @@ var metric = &messageValueStruct{
 			testValueIdx:     1, // Sum
 			values: []oneOfValue{
 				&oneOfMessageValue{
-					fieldName:       "Gauge",
-					originFieldName: "Gauge",
-					returnMessage:   gauge,
+					fieldName:              "Gauge",
+					originFieldName:        "Gauge",
+					originFieldPackageName: "otlpmetrics",
+					returnMessage:          gauge,
 				},
 				&oneOfMessageValue{
-					fieldName:       "Sum",
-					originFieldName: "Sum",
-					returnMessage:   sum,
+					fieldName:              "Sum",
+					originFieldName:        "Sum",
+					originFieldPackageName: "otlpmetrics",
+					returnMessage:          sum,
 				},
 				&oneOfMessageValue{
-					fieldName:       "Histogram",
-					originFieldName: "Histogram",
-					returnMessage:   histogram,
+					fieldName:              "Histogram",
+					originFieldName:        "Histogram",
+					originFieldPackageName: "otlpmetrics",
+					returnMessage:          histogram,
 				},
 				&oneOfMessageValue{
-					fieldName:       "ExponentialHistogram",
-					originFieldName: "ExponentialHistogram",
-					returnMessage:   exponentialHistogram,
+					fieldName:              "ExponentialHistogram",
+					originFieldName:        "ExponentialHistogram",
+					originFieldPackageName: "otlpmetrics",
+					returnMessage:          exponentialHistogram,
 				},
 				&oneOfMessageValue{
-					fieldName:       "Summary",
-					originFieldName: "Summary",
-					returnMessage:   summary,
+					fieldName:              "Summary",
+					originFieldName:        "Summary",
+					originFieldPackageName: "otlpmetrics",
+					returnMessage:          summary,
 				},
 			},
 		},
@@ -291,7 +300,6 @@ var histogramDataPoint = &messageValueStruct{
 		dataPointFlagsField,
 		&optionalPrimitiveValue{
 			fieldName:        "Min",
-			fieldType:        "Double",
 			originFieldName:  "Min",
 			originTypePrefix: "otlpmetrics.HistogramDataPoint_",
 			returnType:       "float64",
@@ -300,7 +308,6 @@ var histogramDataPoint = &messageValueStruct{
 		},
 		&optionalPrimitiveValue{
 			fieldName:        "Max",
-			fieldType:        "Double",
 			originFieldName:  "Max",
 			originTypePrefix: "otlpmetrics.HistogramDataPoint_",
 			returnType:       "float64",
@@ -329,26 +336,23 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		countField,
 		&optionalPrimitiveValue{
 			fieldName:        "Sum",
-			fieldType:        "Double",
 			originFieldName:  "Sum",
 			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
 			returnType:       "float64",
 			defaultVal:       "float64(0.0)",
 			testVal:          "float64(17.13)",
 		},
-		&primitiveTypedField{
+		&primitiveField{
 			fieldName:       "Scale",
 			originFieldName: "Scale",
 			returnType:      "int32",
-			rawType:         "int32",
 			defaultVal:      "int32(0)",
 			testVal:         "int32(4)",
 		},
-		&primitiveTypedField{
+		&primitiveField{
 			fieldName:       "ZeroCount",
 			originFieldName: "ZeroCount",
 			returnType:      "uint64",
-			rawType:         "uint64",
 			defaultVal:      "uint64(0)",
 			testVal:         "uint64(201)",
 		},
@@ -366,7 +370,6 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		dataPointFlagsField,
 		&optionalPrimitiveValue{
 			fieldName:        "Min",
-			fieldType:        "Double",
 			originFieldName:  "Min",
 			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
 			returnType:       "float64",
@@ -375,7 +378,6 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 		},
 		&optionalPrimitiveValue{
 			fieldName:        "Max",
-			fieldType:        "Double",
 			originFieldName:  "Max",
 			originTypePrefix: "otlpmetrics.ExponentialHistogramDataPoint_",
 			returnType:       "float64",
@@ -390,11 +392,10 @@ var bucketsValues = &messageValueStruct{
 	description:    "// Buckets are a set of bucket counts, encoded in a contiguous array of counts.",
 	originFullName: "otlpmetrics.ExponentialHistogramDataPoint_Buckets",
 	fields: []baseField{
-		&primitiveTypedField{
+		&primitiveField{
 			fieldName:       "Offset",
 			originFieldName: "Offset",
 			returnType:      "int32",
-			rawType:         "int32",
 			defaultVal:      "int32(0)",
 			testVal:         "int32(909)",
 		},
@@ -529,21 +530,23 @@ var valueFloat64Field = &primitiveField{
 }
 
 var bucketCountsField = &primitiveSliceField{
-	fieldName:       "BucketCounts",
-	originFieldName: "BucketCounts",
-	returnType:      "ImmutableUInt64Slice",
-	defaultVal:      "ImmutableUInt64Slice{}",
-	rawType:         "[]uint64",
-	testVal:         "NewImmutableUInt64Slice([]uint64{1, 2, 3})",
+	fieldName:         "BucketCounts",
+	originFieldName:   "BucketCounts",
+	returnType:        "ImmutableUInt64Slice",
+	returnPackageName: "pcommon",
+	defaultVal:        "[]uint64(nil)",
+	rawType:           "[]uint64",
+	testVal:           "[]uint64{1, 2, 3}",
 }
 
 var explicitBoundsField = &primitiveSliceField{
-	fieldName:       "ExplicitBounds",
-	originFieldName: "ExplicitBounds",
-	returnType:      "ImmutableFloat64Slice",
-	defaultVal:      "ImmutableFloat64Slice{}",
-	rawType:         "[]float64",
-	testVal:         "NewImmutableFloat64Slice([]float64{1, 2, 3})",
+	fieldName:         "ExplicitBounds",
+	originFieldName:   "ExplicitBounds",
+	returnType:        "ImmutableFloat64Slice",
+	returnPackageName: "pcommon",
+	defaultVal:        "[]float64(nil)",
+	rawType:           "[]float64",
+	testVal:           "[]float64{1, 2, 3}",
 }
 
 var quantileField = &primitiveField{
@@ -565,15 +568,16 @@ var isMonotonicField = &primitiveField{
 var aggregationTemporalityField = &primitiveTypedField{
 	fieldName:       "AggregationTemporality",
 	originFieldName: "AggregationTemporality",
-	returnType:      "MetricAggregationTemporality",
-	rawType:         "otlpmetrics.AggregationTemporality",
-	defaultVal:      "MetricAggregationTemporalityUnspecified",
-	testVal:         "MetricAggregationTemporalityCumulative",
+	returnType: &primitiveType{
+		structName: "MetricAggregationTemporality",
+		rawType:    "otlpmetrics.AggregationTemporality",
+		defaultVal: "otlpmetrics.AggregationTemporality(0)",
+		testVal:    "otlpmetrics.AggregationTemporality(1)",
+	},
 }
 
 var optionalDoubleSumField = &optionalPrimitiveValue{
 	fieldName:        "Sum",
-	fieldType:        "Double",
 	originFieldName:  "Sum",
 	originTypePrefix: "otlpmetrics.HistogramDataPoint_",
 	returnType:       "float64",

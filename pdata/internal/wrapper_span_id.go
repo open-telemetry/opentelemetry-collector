@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,22 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
+	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
+type SpanID struct {
+	orig data.SpanID
 }
 
-func main() {
-	for _, fp := range internal.AllFiles {
-		check(fp.GenerateFile())
-		check(fp.GenerateTestFile())
-		check(fp.GenerateInternalFile())
-	}
+func GetOrigSpanID(ms SpanID) data.SpanID {
+	return ms.orig
+}
+
+func NewSpanID(orig data.SpanID) SpanID {
+	return SpanID{orig: orig}
 }

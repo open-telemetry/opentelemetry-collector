@@ -15,7 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var traceFile = &File{
-	Name: "ptrace",
+	Name:        "traces",
+	PackageName: "ptrace",
 	imports: []string{
 		`"sort"`,
 		``,
@@ -26,7 +27,10 @@ var traceFile = &File{
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
+		`"go.opentelemetry.io/collector/pdata/internal"`,
+		`"go.opentelemetry.io/collector/pdata/internal/data"`,
 		`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
+		`"go.opentelemetry.io/collector/pdata/pcommon"`,
 	},
 	structs: []baseStruct{
 		resourceSpansSlice,
@@ -102,10 +106,12 @@ var span = &messageValueStruct{
 		&primitiveTypedField{
 			fieldName:       "Kind",
 			originFieldName: "Kind",
-			returnType:      "SpanKind",
-			rawType:         "otlptrace.Span_SpanKind",
-			defaultVal:      "SpanKindUnspecified",
-			testVal:         "SpanKindServer",
+			returnType: &primitiveType{
+				structName: "SpanKind",
+				rawType:    "otlptrace.Span_SpanKind",
+				defaultVal: "otlptrace.Span_SpanKind(0)",
+				testVal:    "otlptrace.Span_SpanKind(3)",
+			},
 		},
 		startTimeField,
 		endTimeField,
@@ -190,10 +196,12 @@ var spanStatus = &messageValueStruct{
 		&primitiveTypedField{
 			fieldName:       "Code",
 			originFieldName: "Code",
-			returnType:      "StatusCode",
-			rawType:         "otlptrace.Status_StatusCode",
-			defaultVal:      "StatusCode(0)",
-			testVal:         "StatusCode(1)",
+			returnType: &primitiveType{
+				structName: "StatusCode",
+				rawType:    "otlptrace.Status_StatusCode",
+				defaultVal: "0",
+				testVal:    "1",
+			},
 		},
 		&primitiveField{
 			fieldName:       "Message",
@@ -205,37 +213,15 @@ var spanStatus = &messageValueStruct{
 	},
 }
 
-var traceIDField = &primitiveStructField{
-	fieldName:       "TraceID",
-	originFieldName: "TraceId",
-	returnType:      "TraceID",
-	defaultVal:      "NewTraceID([16]byte{})",
-	testVal:         "NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
-}
-
-var spanIDField = &primitiveStructField{
-	fieldName:       "SpanID",
-	originFieldName: "SpanId",
-	returnType:      "SpanID",
-	defaultVal:      "NewSpanID([8]byte{})",
-	testVal:         "NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})",
-}
-
-var parentSpanIDField = &primitiveStructField{
-	fieldName:       "ParentSpanID",
-	originFieldName: "ParentSpanId",
-	returnType:      "SpanID",
-	defaultVal:      "NewSpanID([8]byte{})",
-	testVal:         "NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
-}
-
 var traceStateField = &primitiveTypedField{
 	fieldName:       "TraceState",
 	originFieldName: "TraceState",
-	returnType:      "TraceState",
-	rawType:         "string",
-	defaultVal:      `TraceState("")`,
-	testVal:         `TraceState("congo=congos")`,
+	returnType: &primitiveType{
+		structName: "TraceState",
+		rawType:    "string",
+		defaultVal: `""`,
+		testVal:    `"congo=congos"`,
+	},
 }
 
 var droppedAttributesCount = &primitiveField{

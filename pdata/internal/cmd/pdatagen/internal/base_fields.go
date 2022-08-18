@@ -20,66 +20,66 @@ import (
 )
 
 const accessorSliceTemplate = `// ${fieldName} returns the ${originFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(&ms.orig.${originFieldName})
+func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
+	return ${packageName}${returnType}(internal.New${returnType}(&ms.getOrig().${originFieldName}))
 }`
 
 const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
-	assert.EqualValues(t, New${returnType}(), ms.${fieldName}())
-	fillTest${returnType}(ms.${fieldName}())
-	testVal${fieldName} := generateTest${returnType}()
-	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())
+	assert.Equal(t, ${packageName}New${returnType}(), ms.${fieldName}())
+	internal.FillTest${returnType}(internal.${returnType}(ms.${fieldName}()))
+	assert.Equal(t, ${packageName}${returnType}(internal.GenerateTest${returnType}()), ms.${fieldName}())
 }`
 
 const accessorsMessageValueTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${returnType} {
-	return new${returnType}(&ms.orig.${originFieldName})
+func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
+	return ${packageName}${returnType}(internal.New${returnType}(&ms.getOrig().${originFieldName}))
 }`
 
 const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
-	fillTest${returnType}(ms.${fieldName}())
-	assert.EqualValues(t, generateTest${returnType}(), ms.${fieldName}())
+	internal.FillTest${returnType}(internal.${returnType}(ms.${fieldName}()))
+	assert.Equal(t, ${packageName}${returnType}(internal.GenerateTest${returnType}()), ms.${fieldName}())
 }`
 
 const accessorsPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ms.orig.${originFieldName}
+func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
+	return ms.getOrig().${originFieldName}
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originFieldName} = v
+	ms.getOrig().${originFieldName} = v
 }`
 
-const copyToPrimitiveSliceTestTemplate = `	if len(ms.orig.${originFieldName}) == 0 {	
-		dest.orig.${originFieldName} = nil
+const copyToPrimitiveSliceTestTemplate = `	if len(ms.getOrig().${originFieldName}) == 0 {	
+		dest.getOrig().${originFieldName} = nil
 	} else {
-		dest.orig.${originFieldName} = make(${rawType}, len(ms.orig.${originFieldName}))
-		copy(dest.orig.${originFieldName}, ms.orig.${originFieldName})
+		dest.getOrig().${originFieldName} = make(${rawType}, len(ms.getOrig().${originFieldName}))
+		copy(dest.getOrig().${originFieldName}, ms.getOrig().${originFieldName})
 	}
 `
 
 const accessorsPrimitiveSliceTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ${returnType}{value: ms.orig.${originFieldName}}
+func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
+	return ${packageName}${returnType}(internal.New${returnType}(ms.getOrig().${originFieldName}))
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originFieldName} = v.value
+func (ms ${structName}) Set${fieldName}(v ${packageName}${returnType}) {
+	ms.getOrig().${originFieldName} = internal.GetOrig${returnType}(internal.${returnType}(v))
 }`
 
 const oneOfTypeAccessorHeaderTemplate = `// ${originFieldName}Type returns the type of the ${lowerOriginFieldName} for this ${structName}.
 // Calling this function on zero-initialized ${structName} will cause a panic.
 func (ms ${structName}) ${originFieldName}Type() ${typeName} {
-	switch ms.orig.${originFieldName}.(type) {`
+	switch ms.getOrig().${originFieldName}.(type) {`
 
-const oneOfTypeAccessorHeaderTestTemplate = `func Test${structName}${originFieldName}Type(t *testing.T) {
+const oneOfTypeAccessorHeaderTestTemplate = `func Test${structName}_${originFieldName}Type(t *testing.T) {
 	tv := New${structName}()
 	assert.Equal(t, ${typeName}None, tv.${originFieldName}Type())
-	assert.Equal(t, "", ${typeName}(1000).String())`
+}
+`
 
 const accessorsOneOfMessageTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 //
@@ -88,7 +88,7 @@ const accessorsOneOfMessageTemplate = `// ${fieldName} returns the ${lowerFieldN
 //
 // Calling this function on zero-initialized ${structName} will cause a panic.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	v, ok := ms.orig.Get${originOneOfFieldName}().(*${originStructType})
+	v, ok := ms.getOrig().Get${originOneOfFieldName}().(*${originStructType})
 	if !ok {
 		return ${returnType}{}
 	}
@@ -98,17 +98,18 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 const accessorsOneOfMessageTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
 	ms.Set${originOneOfFieldName}Type(${typeName})
-	fillTest${returnType}(ms.${fieldName}())
-	assert.EqualValues(t, generateTest${returnType}(), ms.${fieldName}())
+	assert.Equal(t, ${typeName}, ms.${originOneOfFieldName}Type())
+	internal.FillTest${returnType}(internal.${returnType}(ms.${fieldName}()))
+	assert.Equal(t, ${returnType}(internal.GenerateTest${returnType}()), ms.${fieldName}())
 }
 
 func Test${structName}_CopyTo_${fieldName}(t *testing.T) {
 	ms := New${structName}()
 	ms.Set${originOneOfFieldName}Type(${typeName})
-	fillTest${returnType}(ms.${fieldName}())
+	internal.FillTest${returnType}(internal.${returnType}(ms.${fieldName}()))
 	dest := New${structName}()
 	ms.CopyTo(dest)
-	assert.EqualValues(t, ms, dest)
+	assert.Equal(t, ms, dest)
 }`
 
 const copyToValueOneOfMessageTemplate = `	case ${typeName}:
@@ -117,56 +118,79 @@ const copyToValueOneOfMessageTemplate = `	case ${typeName}:
 
 const accessorsOneOfPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ms.orig.Get${originFieldName}()
+	return ms.getOrig().Get${originFieldName}()
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originOneOfFieldName} = &${originStructType}{
+	ms.getOrig().${originOneOfFieldName} = &${originStructType}{
 		${originFieldName}: v,
 	}
 }`
 
+const accessorsOneOfPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	assert.Equal(t, ${defaultVal}, ms.${fieldName}())
+	ms.Set${fieldName}(${testValue})
+	assert.Equal(t, ${testValue}, ms.${fieldName}())
+	assert.Equal(t, ${typeName}, ms.${originOneOfFieldName}Type())
+}`
+
 const accessorsPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
-	assert.EqualValues(t, ${defaultVal}, ms.${fieldName}())
-	testVal${fieldName} := ${testValue}
-	ms.Set${fieldName}(testVal${fieldName})
-	assert.EqualValues(t, testVal${fieldName}, ms.${fieldName}())
+	assert.Equal(t, ${defaultVal}, ms.${fieldName}())
+	ms.Set${fieldName}(${testValue})
+	assert.Equal(t, ${testValue}, ms.${fieldName}())
 }`
 
 const accessorsPrimitiveTypedTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ${returnType}(ms.orig.${originFieldName})
+func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
+	return ${packageName}${returnType}(ms.getOrig().${originFieldName})
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originFieldName} = ${rawType}(v)
+func (ms ${structName}) Set${fieldName}(v ${packageName}${returnType}) {
+	ms.getOrig().${originFieldName} = ${rawType}(v)
+}`
+
+const accessorsPrimitiveTypedTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	assert.Equal(t, ${packageName}${returnType}(${defaultVal}), ms.${fieldName}())
+	testVal${fieldName} := ${packageName}${returnType}(${testValue})
+	ms.Set${fieldName}(testVal${fieldName})
+	assert.Equal(t, testVal${fieldName}, ms.${fieldName}())
 }`
 
 const accessorsPrimitiveStructTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ${returnType}{orig: (ms.orig.${originFieldName})}
+func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
+	return ${packageName}${returnType}(internal.New${returnType}(ms.getOrig().${originFieldName}))
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${originFieldName} = v.orig
+func (ms ${structName}) Set${fieldName}(v ${packageName}${returnType}) {
+	ms.getOrig().${originFieldName} = internal.GetOrig${returnType}(internal.${returnType}(v))
+}`
+
+const accessorsPrimitiveStructTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	assert.Equal(t, ${packageName}${returnType}(internal.New${returnType}(${defaultVal})), ms.${fieldName}())
+	testVal${fieldName} := ${packageName}${returnType}(internal.New${returnType}(${testValue}))
+	ms.Set${fieldName}(testVal${fieldName})
+	assert.Equal(t, testVal${fieldName}, ms.${fieldName}())
 }`
 
 const accessorsOptionalPrimitiveValueTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
-	return ms.orig.Get${fieldName}()
+	return ms.getOrig().Get${fieldName}()
 }
 // Has${fieldName} returns true if the ${structName} contains a
 // ${fieldName} value, false otherwise.
 func (ms ${structName}) Has${fieldName}() bool {
-	return ms.orig.${fieldName}_ != nil
+	return ms.getOrig().${fieldName}_ != nil
 }
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
-	ms.orig.${fieldName}_ = &${originStructType}{${fieldName}: v}
+	ms.getOrig().${fieldName}_ = &${originStructType}{${fieldName}: v}
 }`
 
 type baseField interface {
@@ -176,7 +200,7 @@ type baseField interface {
 
 	generateSetWithTestValue(sb *strings.Builder)
 
-	generateCopyToValue(sb *strings.Builder)
+	generateCopyToValue(ms baseStruct, sb *strings.Builder)
 }
 
 type sliceField struct {
@@ -192,6 +216,11 @@ func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 			return ms.getName()
 		case "fieldName":
 			return sf.fieldName
+		case "packageName":
+			if sf.returnSlice.getPackageName() != ms.getPackageName() {
+				return sf.returnSlice.getPackageName() + "."
+			}
+			return ""
 		case "returnType":
 			return sf.returnSlice.getName()
 		case "originFieldName":
@@ -209,6 +238,11 @@ func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) 
 			return ms.getName()
 		case "fieldName":
 			return sf.fieldName
+		case "packageName":
+			if sf.returnSlice.getPackageName() != ms.getPackageName() {
+				return sf.returnSlice.getPackageName() + "."
+			}
+			return ""
 		case "returnType":
 			return sf.returnSlice.getName()
 		default:
@@ -218,10 +252,10 @@ func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) 
 }
 
 func (sf *sliceField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\tfillTest" + sf.returnSlice.getName() + "(tv." + sf.fieldName + "())")
+	sb.WriteString("\tFillTest" + sf.returnSlice.getName() + "(New" + sf.returnSlice.getName() + "(&tv.orig." + sf.originFieldName + "))")
 }
 
-func (sf *sliceField) generateCopyToValue(sb *strings.Builder) {
+func (sf *sliceField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
 	sb.WriteString("\tms." + sf.fieldName + "().CopyTo(dest." + sf.fieldName + "())")
 }
 
@@ -230,7 +264,7 @@ var _ baseField = (*sliceField)(nil)
 type messageValueField struct {
 	fieldName       string
 	originFieldName string
-	returnMessage   *messageValueStruct
+	returnMessage   baseStruct
 }
 
 func (mf *messageValueField) generateAccessors(ms baseStruct, sb *strings.Builder) {
@@ -242,8 +276,13 @@ func (mf *messageValueField) generateAccessors(ms baseStruct, sb *strings.Builde
 			return mf.fieldName
 		case "lowerFieldName":
 			return strings.ToLower(mf.fieldName)
+		case "packageName":
+			if mf.returnMessage.getPackageName() != ms.getPackageName() {
+				return mf.returnMessage.getPackageName() + "."
+			}
+			return ""
 		case "returnType":
-			return mf.returnMessage.structName
+			return mf.returnMessage.getName()
 		case "originFieldName":
 			return mf.originFieldName
 		default:
@@ -260,7 +299,12 @@ func (mf *messageValueField) generateAccessorsTest(ms baseStruct, sb *strings.Bu
 		case "fieldName":
 			return mf.fieldName
 		case "returnType":
-			return mf.returnMessage.structName
+			return mf.returnMessage.getName()
+		case "packageName":
+			if mf.returnMessage.getPackageName() != ms.getPackageName() {
+				return mf.returnMessage.getPackageName() + "."
+			}
+			return ""
 		default:
 			panic(name)
 		}
@@ -268,10 +312,10 @@ func (mf *messageValueField) generateAccessorsTest(ms baseStruct, sb *strings.Bu
 }
 
 func (mf *messageValueField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\tfillTest" + mf.returnMessage.structName + "(tv." + mf.fieldName + "())")
+	sb.WriteString("\tFillTest" + mf.returnMessage.getName() + "(New" + mf.returnMessage.getName() + "(&tv.orig." + mf.originFieldName + "))")
 }
 
-func (mf *messageValueField) generateCopyToValue(sb *strings.Builder) {
+func (mf *messageValueField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
 	sb.WriteString("\tms." + mf.fieldName + "().CopyTo(dest." + mf.fieldName + "())")
 }
 
@@ -290,6 +334,8 @@ func (pf *primitiveField) generateAccessors(ms baseStruct, sb *strings.Builder) 
 		switch name {
 		case "structName":
 			return ms.getName()
+		case "packageName":
+			return ""
 		case "fieldName":
 			return pf.fieldName
 		case "lowerFieldName":
@@ -309,6 +355,8 @@ func (pf *primitiveField) generateAccessorsTest(ms baseStruct, sb *strings.Build
 		switch name {
 		case "structName":
 			return ms.getName()
+		case "packageName":
+			return ""
 		case "defaultVal":
 			return pf.defaultVal
 		case "fieldName":
@@ -322,23 +370,28 @@ func (pf *primitiveField) generateAccessorsTest(ms baseStruct, sb *strings.Build
 }
 
 func (pf *primitiveField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.Set" + pf.fieldName + "(" + pf.testVal + ")")
+	sb.WriteString("\ttv.orig." + pf.originFieldName + " = " + pf.testVal)
 }
 
-func (pf *primitiveField) generateCopyToValue(sb *strings.Builder) {
+func (pf *primitiveField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
 	sb.WriteString("\tdest.Set" + pf.fieldName + "(ms." + pf.fieldName + "())")
 }
 
 var _ baseField = (*primitiveField)(nil)
 
+type primitiveType struct {
+	structName  string
+	packageName string
+	rawType     string
+	defaultVal  string
+	testVal     string
+}
+
 // Types that has defined a custom type (e.g. "type Timestamp uint64")
 type primitiveTypedField struct {
 	fieldName       string
 	originFieldName string
-	returnType      string
-	defaultVal      string
-	testVal         string
-	rawType         string
+	returnType      *primitiveType
 }
 
 func (ptf *primitiveTypedField) generateAccessors(ms baseStruct, sb *strings.Builder) {
@@ -351,9 +404,14 @@ func (ptf *primitiveTypedField) generateAccessors(ms baseStruct, sb *strings.Bui
 		case "lowerFieldName":
 			return strings.ToLower(ptf.fieldName)
 		case "returnType":
-			return ptf.returnType
+			return ptf.returnType.structName
+		case "packageName":
+			if ptf.returnType.packageName != ms.getPackageName() {
+				return ptf.returnType.packageName + "."
+			}
+			return ""
 		case "rawType":
-			return ptf.rawType
+			return ptf.returnType.rawType
 		case "originFieldName":
 			return ptf.originFieldName
 		default:
@@ -363,16 +421,23 @@ func (ptf *primitiveTypedField) generateAccessors(ms baseStruct, sb *strings.Bui
 }
 
 func (ptf *primitiveTypedField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveTypedTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
 		case "defaultVal":
-			return ptf.defaultVal
+			return ptf.returnType.defaultVal
+		case "packageName":
+			if ptf.returnType.packageName != ms.getPackageName() {
+				return ptf.returnType.packageName + "."
+			}
+			return ""
+		case "returnType":
+			return ptf.returnType.structName
 		case "fieldName":
 			return ptf.fieldName
 		case "testValue":
-			return ptf.testVal
+			return ptf.returnType.testVal
 		default:
 			panic(name)
 		}
@@ -380,10 +445,10 @@ func (ptf *primitiveTypedField) generateAccessorsTest(ms baseStruct, sb *strings
 }
 
 func (ptf *primitiveTypedField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.Set" + ptf.fieldName + "(" + ptf.testVal + ")")
+	sb.WriteString("\ttv.orig." + ptf.originFieldName + " = " + ptf.returnType.testVal)
 }
 
-func (ptf *primitiveTypedField) generateCopyToValue(sb *strings.Builder) {
+func (ptf *primitiveTypedField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
 	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
 }
 
@@ -391,11 +456,12 @@ var _ baseField = (*primitiveTypedField)(nil)
 
 // Types that has defined a custom type (e.g. "type TraceID struct {}")
 type primitiveStructField struct {
-	fieldName       string
-	originFieldName string
-	returnType      string
-	defaultVal      string
-	testVal         string
+	fieldName         string
+	originFieldName   string
+	returnStructName  string
+	returnPackageName string
+	defaultVal        string
+	testVal           string
 }
 
 func (ptf *primitiveStructField) generateAccessors(ms baseStruct, sb *strings.Builder) {
@@ -408,7 +474,12 @@ func (ptf *primitiveStructField) generateAccessors(ms baseStruct, sb *strings.Bu
 		case "lowerFieldName":
 			return strings.ToLower(ptf.fieldName)
 		case "returnType":
-			return ptf.returnType
+			return ptf.returnStructName
+		case "packageName":
+			if ptf.returnPackageName != ms.getPackageName() {
+				return ptf.returnPackageName + "."
+			}
+			return ""
 		case "originFieldName":
 			return ptf.originFieldName
 		default:
@@ -418,12 +489,19 @@ func (ptf *primitiveStructField) generateAccessors(ms baseStruct, sb *strings.Bu
 }
 
 func (ptf *primitiveStructField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveStructTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
 		case "defaultVal":
 			return ptf.defaultVal
+		case "returnType":
+			return ptf.returnStructName
+		case "packageName":
+			if ptf.returnPackageName != ms.getPackageName() {
+				return ptf.returnPackageName + "."
+			}
+			return ""
 		case "fieldName":
 			return ptf.fieldName
 		case "testValue":
@@ -435,10 +513,10 @@ func (ptf *primitiveStructField) generateAccessorsTest(ms baseStruct, sb *string
 }
 
 func (ptf *primitiveStructField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.Set" + ptf.fieldName + "(" + ptf.testVal + ")")
+	sb.WriteString("\ttv.orig." + ptf.originFieldName + " = " + ptf.testVal)
 }
 
-func (ptf *primitiveStructField) generateCopyToValue(sb *strings.Builder) {
+func (ptf *primitiveStructField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
 	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
 }
 
@@ -446,12 +524,13 @@ var _ baseField = (*primitiveStructField)(nil)
 
 // primitiveSliceField is used to generate fields for slice of primitive types
 type primitiveSliceField struct {
-	fieldName       string
-	originFieldName string
-	returnType      string
-	defaultVal      string
-	rawType         string
-	testVal         string
+	fieldName         string
+	originFieldName   string
+	returnPackageName string
+	returnType        string
+	defaultVal        string
+	rawType           string
+	testVal           string
 }
 
 func (psf *primitiveSliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
@@ -465,6 +544,11 @@ func (psf *primitiveSliceField) generateAccessors(ms baseStruct, sb *strings.Bui
 			return strings.ToLower(psf.fieldName)
 		case "returnType":
 			return psf.returnType
+		case "packageName":
+			if psf.returnPackageName != ms.getPackageName() {
+				return psf.returnPackageName + "."
+			}
+			return ""
 		case "originFieldName":
 			return psf.originFieldName
 		default:
@@ -474,10 +558,17 @@ func (psf *primitiveSliceField) generateAccessors(ms baseStruct, sb *strings.Bui
 }
 
 func (psf *primitiveSliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveStructTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
+		case "packageName":
+			if psf.returnPackageName != ms.getPackageName() {
+				return psf.returnPackageName + "."
+			}
+			return ""
+		case "returnType":
+			return psf.returnType
 		case "defaultVal":
 			return psf.defaultVal
 		case "fieldName":
@@ -491,12 +582,14 @@ func (psf *primitiveSliceField) generateAccessorsTest(ms baseStruct, sb *strings
 }
 
 func (psf *primitiveSliceField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.Set" + psf.fieldName + "(" + psf.testVal + ")")
+	sb.WriteString("\ttv.orig." + psf.originFieldName + " = " + psf.testVal)
 }
 
-func (psf *primitiveSliceField) generateCopyToValue(sb *strings.Builder) {
+func (psf *primitiveSliceField) generateCopyToValue(ms baseStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(copyToPrimitiveSliceTestTemplate, func(name string) string {
 		switch name {
+		case "structName":
+			return ms.getName()
 		case "originFieldName":
 			return psf.originFieldName
 		case "rawType":
@@ -553,15 +646,6 @@ func (of *oneOfField) generateTypeAccessors(ms baseStruct, sb *strings.Builder) 
 }
 
 func (of *oneOfField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
-	of.generateTypeAccessorsTest(ms, sb)
-	sb.WriteString("\n")
-	for _, v := range of.values {
-		v.generateTests(ms.(*messageValueStruct), of, sb)
-		sb.WriteString("\n")
-	}
-}
-
-func (of *oneOfField) generateTypeAccessorsTest(ms baseStruct, sb *strings.Builder) {
 	sb.WriteString(os.Expand(oneOfTypeAccessorHeaderTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -576,23 +660,16 @@ func (of *oneOfField) generateTypeAccessorsTest(ms baseStruct, sb *strings.Build
 	}))
 	sb.WriteString("\n")
 	for _, v := range of.values {
-		if mv, ok := v.(*oneOfMessageValue); ok {
-			sb.WriteString("\tassert.Equal(t, " + mv.fieldName + "{}, tv." + mv.fieldName + "())\n")
-		}
+		v.generateTests(ms, of, sb)
+		sb.WriteString("\n")
 	}
-	for _, v := range of.values {
-		v.generateSetWithTestValue(of, sb)
-		sb.WriteString("\n\tassert.Equal(t, " + of.typeName + v.getFieldType() + ", " +
-			"tv." + of.originFieldName + "Type())\n")
-	}
-	sb.WriteString("}\n")
 }
 
 func (of *oneOfField) generateSetWithTestValue(sb *strings.Builder) {
 	of.values[of.testValueIdx].generateSetWithTestValue(of, sb)
 }
 
-func (of *oneOfField) generateCopyToValue(sb *strings.Builder) {
+func (of *oneOfField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
 	sb.WriteString("\tswitch ms." + of.originFieldName + "Type() {\n")
 	for _, v := range of.values {
 		v.generateCopyToValue(of, sb)
@@ -648,17 +725,23 @@ func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField,
 	sb.WriteString("\n")
 }
 
-func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, _ *oneOfField, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, of *oneOfField, sb *strings.Builder) {
+	sb.WriteString(os.Expand(accessorsOneOfPrimitiveTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
 		case "defaultVal":
 			return opv.defaultVal
+		case "packageName":
+			return ""
 		case "fieldName":
 			return opv.fieldName
 		case "testValue":
 			return opv.testVal
+		case "originOneOfFieldName":
+			return of.originFieldName
+		case "typeName":
+			return of.typeName + opv.fieldType
 		default:
 			panic(name)
 		}
@@ -666,13 +749,13 @@ func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, _ *oneOfField, sb *
 	sb.WriteString("\n")
 }
 
-func (opv *oneOfPrimitiveValue) generateSetWithTestValue(_ *oneOfField, sb *strings.Builder) {
-	sb.WriteString("\t tv.Set" + opv.fieldName + "(" + opv.testVal + ")")
+func (opv *oneOfPrimitiveValue) generateSetWithTestValue(of *oneOfField, sb *strings.Builder) {
+	sb.WriteString("\ttv.orig." + of.originFieldName + " = &" + of.originTypePrefix + opv.originFieldName + "{" + opv.originFieldName + ":" + opv.testVal + "}")
 }
 
 func (opv *oneOfPrimitiveValue) generateCopyToValue(of *oneOfField, sb *strings.Builder) {
 	sb.WriteString("\tcase " + of.typeName + opv.fieldType + ":\n")
-	sb.WriteString("\t dest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
+	sb.WriteString("\tdest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
 }
 
 func (opv *oneOfPrimitiveValue) generateTypeSwitchCase(of *oneOfField, sb *strings.Builder) {
@@ -683,9 +766,10 @@ func (opv *oneOfPrimitiveValue) generateTypeSwitchCase(of *oneOfField, sb *strin
 var _ oneOfValue = (*oneOfPrimitiveValue)(nil)
 
 type oneOfMessageValue struct {
-	fieldName       string
-	originFieldName string
-	returnMessage   *messageValueStruct
+	fieldName              string
+	originFieldName        string
+	originFieldPackageName string
+	returnMessage          *messageValueStruct
 }
 
 func (omv *oneOfMessageValue) getFieldType() string {
@@ -739,8 +823,8 @@ func (omv *oneOfMessageValue) generateTests(ms baseStruct, of *oneOfField, sb *s
 }
 
 func (omv *oneOfMessageValue) generateSetWithTestValue(of *oneOfField, sb *strings.Builder) {
-	sb.WriteString("tv.Set" + of.originFieldName + "Type(" + of.typeName + omv.returnMessage.structName + ")\n")
-	sb.WriteString("fillTest" + omv.returnMessage.structName + "(tv." + omv.fieldName + "())")
+	sb.WriteString("\ttv.orig." + of.originFieldName + " = &" + of.originTypePrefix + omv.originFieldName + "{" + omv.originFieldName + ": &" + omv.originFieldPackageName + "." + omv.originFieldName + "{}}\n")
+	sb.WriteString("\tFillTest" + omv.returnMessage.structName + "(New" + omv.fieldName + "(tv.orig.Get" + omv.originFieldName + "()))")
 }
 
 func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *strings.Builder) {
@@ -768,7 +852,6 @@ var _ oneOfValue = (*oneOfMessageValue)(nil)
 
 type optionalPrimitiveValue struct {
 	fieldName        string
-	fieldType        string
 	defaultVal       string
 	testVal          string
 	returnType       string
@@ -803,6 +886,8 @@ func (opv *optionalPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *stri
 		switch name {
 		case "structName":
 			return ms.getName()
+		case "packageName":
+			return ""
 		case "defaultVal":
 			return opv.defaultVal
 		case "fieldName":
@@ -817,10 +902,10 @@ func (opv *optionalPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *stri
 }
 
 func (opv *optionalPrimitiveValue) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\t tv.Set" + opv.fieldName + "(" + opv.testVal + ")")
+	sb.WriteString("\ttv.orig." + opv.originFieldName + "_ = &" + opv.originTypePrefix + opv.originFieldName + "{" + opv.originFieldName + ":" + opv.testVal + "}")
 }
 
-func (opv *optionalPrimitiveValue) generateCopyToValue(sb *strings.Builder) {
+func (opv *optionalPrimitiveValue) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
 	sb.WriteString("if ms.Has" + opv.fieldName + "(){\n")
 	sb.WriteString("\tdest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
 	sb.WriteString("}\n")

@@ -34,12 +34,12 @@ func newPbMarshaler() *pbMarshaler {
 var _ Sizer = (*pbMarshaler)(nil)
 
 func (e *pbMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
-	pb := internal.MetricsToProto(md)
+	pb := internal.MetricsToProto(internal.Metrics(md))
 	return pb.Marshal()
 }
 
 func (e *pbMarshaler) MetricsSize(md Metrics) int {
-	pb := internal.MetricsToProto(md)
+	pb := internal.MetricsToProto(internal.Metrics(md))
 	return pb.Size()
 }
 
@@ -57,5 +57,5 @@ func newPbUnmarshaler() *pbUnmarshaler {
 func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	pb := otlpmetrics.MetricsData{}
 	err := pb.Unmarshal(buf)
-	return internal.MetricsFromProto(pb), err
+	return Metrics(internal.MetricsFromProto(pb)), err
 }

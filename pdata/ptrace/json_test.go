@@ -21,8 +21,8 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var tracesOTLP = func() Traces {
@@ -59,8 +59,8 @@ func TestTracesJSON_Marshal(t *testing.T) {
 }
 
 var tracesOTLPFull = func() Traces {
-	traceID := internal.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := internal.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	traceID := pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	td := NewTraces()
 	// Add ResourceSpans.
 	rs := td.ResourceSpans().AppendEmpty()
@@ -77,42 +77,42 @@ var tracesOTLPFull = func() Traces {
 	// Add spans.
 	sp := il.Spans().AppendEmpty()
 	sp.SetName("testSpan")
-	sp.SetKind(internal.SpanKindClient)
+	sp.SetKind(SpanKindClient)
 	sp.SetDroppedAttributesCount(1)
-	sp.SetStartTimestamp(internal.NewTimestampFromTime(time.Now()))
+	sp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	sp.SetTraceID(traceID)
 	sp.SetSpanID(spanID)
 	sp.SetDroppedEventsCount(1)
 	sp.SetDroppedLinksCount(1)
-	sp.SetEndTimestamp(internal.NewTimestampFromTime(time.Now()))
+	sp.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	sp.SetParentSpanID(spanID)
 	sp.SetTraceState("state")
-	sp.Status().SetCode(internal.StatusCodeOk)
+	sp.Status().SetCode(StatusCodeOk)
 	sp.Status().SetMessage("message")
 	// Add attributes.
 	sp.Attributes().UpsertString("string", "value")
 	sp.Attributes().UpsertBool("bool", true)
 	sp.Attributes().UpsertInt("int", 1)
 	sp.Attributes().UpsertDouble("double", 1.1)
-	sp.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
-	arr := internal.NewValueSlice()
+	sp.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
+	arr := pcommon.NewValueSlice()
 	arr.SliceVal().AppendEmpty().SetIntVal(1)
 	arr.SliceVal().AppendEmpty().SetStringVal("str")
 	sp.Attributes().Upsert("array", arr)
-	kvList := internal.NewValueMap()
-	kvList.MapVal().Upsert("int", internal.NewValueInt(1))
-	kvList.MapVal().Upsert("string", internal.NewValueString("string"))
+	kvList := pcommon.NewValueMap()
+	kvList.MapVal().Upsert("int", pcommon.NewValueInt(1))
+	kvList.MapVal().Upsert("string", pcommon.NewValueString("string"))
 	sp.Attributes().Upsert("kvList", kvList)
 	// Add events.
 	event := sp.Events().AppendEmpty()
 	event.SetName("eventName")
-	event.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
+	event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	event.SetDroppedAttributesCount(1)
 	event.Attributes().UpsertString("string", "value")
 	event.Attributes().UpsertBool("bool", true)
 	event.Attributes().UpsertInt("int", 1)
 	event.Attributes().UpsertDouble("double", 1.1)
-	event.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+	event.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
 	// Add links.
 	link := sp.Links().AppendEmpty()
 	link.SetTraceState("state")
@@ -123,7 +123,7 @@ var tracesOTLPFull = func() Traces {
 	link.Attributes().UpsertBool("bool", true)
 	link.Attributes().UpsertInt("int", 1)
 	link.Attributes().UpsertDouble("double", 1.1)
-	link.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+	link.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
 	// Add another span.
 	sp2 := il.Spans().AppendEmpty()
 	sp2.SetName("testSpan2")

@@ -39,7 +39,7 @@ func newJSONMarshaler() *jsonMarshaler {
 
 func (e *jsonMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 	buf := bytes.Buffer{}
-	pb := internal.LogsToProto(ld)
+	pb := internal.LogsToProto(internal.Logs(ld))
 	err := e.delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
@@ -63,5 +63,5 @@ func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 		return Logs{}, err
 	}
 	otlp.MigrateLogs(ld.ResourceLogs)
-	return internal.LogsFromProto(ld), nil
+	return Logs(internal.LogsFromProto(ld)), nil
 }

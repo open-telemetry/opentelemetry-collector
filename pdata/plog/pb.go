@@ -34,12 +34,12 @@ func newPbMarshaler() *pbMarshaler {
 var _ Sizer = (*pbMarshaler)(nil)
 
 func (e *pbMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
-	pb := internal.LogsToProto(ld)
+	pb := internal.LogsToProto(internal.Logs(ld))
 	return pb.Marshal()
 }
 
 func (e *pbMarshaler) LogsSize(ld Logs) int {
-	pb := internal.LogsToProto(ld)
+	pb := internal.LogsToProto(internal.Logs(ld))
 	return pb.Size()
 }
 
@@ -57,5 +57,5 @@ func newPbUnmarshaler() *pbUnmarshaler {
 func (d *pbUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	pb := otlplogs.LogsData{}
 	err := pb.Unmarshal(buf)
-	return internal.LogsFromProto(pb), err
+	return Logs(internal.LogsFromProto(pb)), err
 }
