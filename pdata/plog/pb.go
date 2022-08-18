@@ -19,12 +19,12 @@ import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
-// NewProtoMarshaler returns a Marshaler. Marshals to OTLP binary protobuf bytes.
-func NewProtoMarshaler() Marshaler {
+// NewProtoMarshaler returns a MarshalerSizer.
+// Marshals to OTLP binary protobuf bytes and calculates the size of the marshaled Logs.
+func NewProtoMarshaler() MarshalerSizer {
 	return newPbMarshaler()
 }
 
-// TODO(#3842): Figure out how we want to represent/return *Sizers.
 type pbMarshaler struct{}
 
 func newPbMarshaler() *pbMarshaler {
