@@ -39,6 +39,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- Fix reading scope attributes for trace JSON, remove duplicate code. (#5930)
 - Fix bug in setting the correct collector state after a configuration change event. (#5830)
 - Fix json trace unmarshalling for numbers (#5924):
   - Accept both string and number for int32/uint32.
