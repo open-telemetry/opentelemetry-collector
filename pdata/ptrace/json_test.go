@@ -163,61 +163,56 @@ func TestReadTraceDataUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readTraceData(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readTraceData(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, otlptrace.TracesData{}, val)
 }
 
 func TestReadResourceSpansUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readResourceSpans(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readResourceSpans(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
 }
 
 func TestReadResourceSpansUnknownResourceField(t *testing.T) {
 	jsonStr := `{"resource":{"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readResourceSpans(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readResourceSpans(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
 }
 
 func TestReadScopeSpansUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readScopeSpans(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readScopeSpans(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.ScopeSpans{}, val)
 }
 
 func TestReadSpanUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readSpan(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.Span{}, val)
 }
 
 func TestReadSpanUnknownStatusField(t *testing.T) {
 	jsonStr := `{"status":{"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readSpan(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.Span{}, val)
 }
+
 func TestReadSpanInvalidTraceIDField(t *testing.T) {
 	jsonStr := `{"trace_id":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
@@ -227,6 +222,7 @@ func TestReadSpanInvalidTraceIDField(t *testing.T) {
 		assert.Contains(t, iter.Error.Error(), "parse trace_id")
 	}
 }
+
 func TestReadSpanInvalidSpanIDField(t *testing.T) {
 	jsonStr := `{"span_id":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
@@ -236,6 +232,7 @@ func TestReadSpanInvalidSpanIDField(t *testing.T) {
 		assert.Contains(t, iter.Error.Error(), "parse span_id")
 	}
 }
+
 func TestReadSpanInvalidParentSpanIDField(t *testing.T) {
 	jsonStr := `{"parent_span_id":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
@@ -250,10 +247,9 @@ func TestReadSpanLinkUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpanLink(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readSpanLink(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.Span_Link{}, val)
 }
 
 func TestReadSpanLinkInvalidTraceIDField(t *testing.T) {
@@ -280,10 +276,9 @@ func TestReadSpanEventUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpanEvent(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readSpanEvent(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.Span_Event{}, val)
 }
 
 func TestReadSpanKind(t *testing.T) {
