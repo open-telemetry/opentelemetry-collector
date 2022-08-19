@@ -33,7 +33,6 @@
 
 ### 💡 Enhancements 💡
 
-- Updated Batch Processor to remove unnecessary cast to `Sizer` interface (#5937)
 - Added `MarshalerSizer` interface to `ptrace`, `plog`, and `pmetric` packages. `NewProtoMarshaler` now returns a `MarshalerSizer` (#5929)
 - Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
