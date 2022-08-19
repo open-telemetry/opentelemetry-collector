@@ -110,6 +110,12 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 			s = "OVERFLOW"
 		}
 	} else {
+		// TODO: corner cases involving subnormal values may
+		// be handled here.  These are considered out of range
+		// by the otel-go mapping functions, which will return
+		// an underflow error for buckets that are entirely
+		// outside the normal range.  These measurements are not
+		// necessarily invalid, but they are extra work to compute.
 		s = "UNDERFLOW"
 	}
 	if neg {
