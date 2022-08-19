@@ -39,7 +39,6 @@ const (
 	distributionOutputPathFlag     = "output-path"
 	distributionGoFlag             = "go"
 	distributionModuleFlag         = "module"
-	distributionBuildTags          = "build-tags"
 )
 
 var (
@@ -94,7 +93,6 @@ build configuration given by the "--config" argument.
 	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, distributionOutputPathFlag, cfg.Distribution.OutputPath, "Where to write the resulting files")
 	cmd.Flags().StringVar(&cfg.Distribution.Go, distributionGoFlag, "", "The Go binary to use during the compilation phase. Default: go from the PATH")
 	cmd.Flags().StringVar(&cfg.Distribution.Module, distributionModuleFlag, "go.opentelemetry.io/collector/cmd/builder", "The Go module for the new distribution")
-	cmd.Flags().StringVar(&cfg.Distribution.BuildTags, distributionBuildTags, "", "A comma-separated list of build tags to consider satisfied during the build")
 
 	// version of this binary
 	cmd.AddCommand(versionCommand())
