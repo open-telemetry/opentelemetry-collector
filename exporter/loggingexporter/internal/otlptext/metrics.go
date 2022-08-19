@@ -17,10 +17,11 @@ package otlptext // import "go.opentelemetry.io/collector/exporter/loggingexport
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	expohisto "go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/exponent"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/logarithm"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // lastBoundary equals  and is the least
