@@ -17,7 +17,6 @@ package otlptext // import "go.opentelemetry.io/collector/exporter/loggingexport
 import (
 	"bytes"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
@@ -162,16 +161,7 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 			b.logEntry("Max: %f", p.Max())
 		}
 
-		scale := int(p.Scale())
-		factor := math.Ldexp(math.Ln2, -scale)
-		// Note: the equation used here, which is
-		//   math.Exp(index * factor)
-		// reports +Inf as the _lower_ boundary of the bucket nearest
-		// infinity, which is incorrect and can be addressed in various
-		// ways.  The OTel-Go implementation of this histogram pending
-		// in https://github.com/open-telemetry/opentelemetry-go/pull/2393
-		// uses a lookup table for the last finite boundary, which can be
-		// easily computed using `math/big` (for scales up to 20).
+		m := newExpoHistoMapping(p.Scale())
 
 		negB := p.Negative().BucketCounts()
 		posB := p.Positive().BucketCounts()
@@ -179,9 +169,10 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 		for i := 0; i < negB.Len(); i++ {
 			pos := negB.Len() - i - 1
 			index := p.Negative().Offset() + int32(pos)
-			lower := math.Exp(float64(index) * factor)
-			upper := math.Exp(float64(index+1) * factor)
-			b.logEntry("Bucket (%f, %f], Count: %d", -upper, -lower, negB.At(pos))
+			b.logEntry("Bucket [%s, %s), Count: %d",
+				m.stringLowerBoundary(index, true),
+				m.stringLowerBoundary(index+1, true),
+				negB.At(pos))
 		}
 
 		if p.ZeroCount() != 0 {
@@ -190,9 +181,10 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 
 		for pos := 0; pos < posB.Len(); pos++ {
 			index := p.Positive().Offset() + int32(pos)
-			lower := math.Exp(float64(index) * factor)
-			upper := math.Exp(float64(index+1) * factor)
-			b.logEntry("Bucket [%f, %f), Count: %d", lower, upper, posB.At(pos))
+			b.logEntry("Bucket (%s, %s], Count: %d",
+				m.stringLowerBoundary(index, false),
+				m.stringLowerBoundary(index+1, false),
+				posB.At(pos))
 		}
 	}
 }

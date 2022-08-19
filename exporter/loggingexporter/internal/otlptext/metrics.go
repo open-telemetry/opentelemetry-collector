@@ -14,7 +14,22 @@
 
 package otlptext // import "go.opentelemetry.io/collector/exporter/loggingexporter/internal/otlptext"
 
-import "go.opentelemetry.io/collector/pdata/pmetric"
+import (
+	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	expohisto "go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/exponent"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/logarithm"
+)
+
+// lastBoundary equals  and is the least
+// unrepresentable float64 greater than 1.
+// Can be computed using
+//   b := big.NewFloat(1)
+//   b.SetMantExp(b, 1024)
+//   return b.String()
+const lastBoundary = "1.797693135e+308"
 
 // NewTextMetricsMarshaler returns a pmetric.Marshaler to encode to OTLP text bytes.
 func NewTextMetricsMarshaler() pmetric.Marshaler {
@@ -49,4 +64,56 @@ func (textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
 	}
 
 	return buf.buf.Bytes(), nil
+}
+
+type expoHistoMapping struct {
+	scale   int32
+	mapping expohisto.Mapping
+}
+
+func newExpoHistoMapping(scale int32) expoHistoMapping {
+	m := expoHistoMapping{
+		scale: scale,
+	}
+	if scale >= exponent.MinScale && scale <= exponent.MaxScale {
+		m.mapping, _ = exponent.NewMapping(int32(scale))
+	} else if scale >= logarithm.MinScale && scale <= logarithm.MaxScale {
+		m.mapping, _ = logarithm.NewMapping(int32(scale))
+	}
+	return m
+}
+
+func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
+	// Use the otel-go mapping functions provided the scale and
+	// index are in range.
+	if ehm.mapping != nil {
+		if bound, err := ehm.mapping.LowerBoundary(idx); err == nil {
+			if neg {
+				bound = -bound
+			}
+			return fmt.Sprintf("%g", bound)
+		}
+	}
+
+	var s string
+	if idx == 0 {
+		s = "1"
+	} else if idx > 0 {
+		// Note: at scale 20, the value (1<<30) leads to exponent 1024
+		// The following expression generalizes this for valid scales.
+		if ehm.scale >= -10 && ehm.scale <= 20 && int64(idx)<<(20-ehm.scale) == 1<<30 {
+			// Important special case equal to 0x1p1024 is
+			// the upper boundary of the last valid bucket
+			// at all scales.
+			s = lastBoundary
+		} else {
+			s = "OVERFLOW"
+		}
+	} else {
+		s = "UNDERFLOW"
+	}
+	if neg {
+		s = "-" + s
+	}
+	return s
 }

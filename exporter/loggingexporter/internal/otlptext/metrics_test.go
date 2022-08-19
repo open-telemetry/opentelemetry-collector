@@ -15,12 +15,17 @@
 package otlptext
 
 import (
+	"fmt"
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/exponent"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/logarithm"
 )
 
 func TestMetricsText(t *testing.T) {
@@ -47,4 +52,71 @@ func TestMetricsText(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExpoHistoOverflowMapping(t *testing.T) {
+	// Compute the string value of 0x1p+1024
+	b := big.NewFloat(1)
+	b.SetMantExp(b, 1024)
+	expect := b.String()
+
+	// For positive scales, the +Inf threshold happens at 1024<<scale
+	for scale := logarithm.MinScale; scale <= logarithm.MaxScale; scale++ {
+		m := newExpoHistoMapping(scale)
+		threshold := int32(1024) << scale
+
+		// Check that this can't be mapped to a float64.
+		_, err := m.mapping.LowerBoundary(threshold)
+		require.Error(t, err)
+
+		// Require the special case.
+		require.Equal(t, expect, m.stringLowerBoundary(threshold, false))
+		require.Equal(t, "-"+expect, m.stringLowerBoundary(threshold, true))
+
+		require.Equal(t, "OVERFLOW", m.stringLowerBoundary(threshold+1, false))
+		require.Equal(t, "-OVERFLOW", m.stringLowerBoundary(threshold+1, true))
+	}
+	// For scales <= 0, the +Inf threshold happens at 1024>>-scale
+	for scale := exponent.MinScale; scale <= exponent.MaxScale; scale++ {
+		m := newExpoHistoMapping(scale)
+		threshold := int32(1024) >> -scale
+
+		require.Equal(t, expect, m.stringLowerBoundary(threshold, false))
+		require.Equal(t, "-"+expect, m.stringLowerBoundary(threshold, true))
+
+		require.Equal(t, "OVERFLOW", m.stringLowerBoundary(threshold+1, false))
+		require.Equal(t, "-OVERFLOW", m.stringLowerBoundary(threshold+1, true))
+	}
+
+	// For an invalid scale, any positive index overflows
+	invalid := newExpoHistoMapping(100)
+
+	require.Equal(t, "OVERFLOW", invalid.stringLowerBoundary(1, false))
+	require.Equal(t, "-OVERFLOW", invalid.stringLowerBoundary(1, true))
+
+	// But index 0 always works
+	require.Equal(t, "1", invalid.stringLowerBoundary(0, false))
+	require.Equal(t, "-1", invalid.stringLowerBoundary(0, true))
+}
+
+func TestExpoHistoUnderflowMapping(t *testing.T) {
+	// For all valid scales
+	for scale := int32(-10); scale <= 20; scale++ {
+		m := newExpoHistoMapping(scale)
+		idx := m.mapping.MapToIndex(0x1p-1022)
+		lb, err := m.mapping.LowerBoundary(idx)
+		require.NoError(t, err)
+
+		require.Equal(t, fmt.Sprintf("%g", lb), m.stringLowerBoundary(idx, false))
+		require.Equal(t, fmt.Sprintf("-%g", lb), m.stringLowerBoundary(idx, true))
+
+		require.Equal(t, "UNDERFLOW", m.stringLowerBoundary(idx-1, false))
+		require.Equal(t, "-UNDERFLOW", m.stringLowerBoundary(idx-1, true))
+	}
+
+	// For an invalid scale, any positive index overflows
+	invalid := newExpoHistoMapping(100)
+
+	require.Equal(t, "UNDERFLOW", invalid.stringLowerBoundary(-1, false))
+	require.Equal(t, "-UNDERFLOW", invalid.stringLowerBoundary(-1, true))
 }
