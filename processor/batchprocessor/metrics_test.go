@@ -29,6 +29,6 @@ func TestBatchProcessorMetrics(t *testing.T) {
 	}
 	views := MetricViews()
 	for i, viewName := range viewNames {
-		assert.Equal(t, "processor/batch/"+viewName, views[i].Name)
+		assert.Equal(t, "otelcol/processor/batch/"+viewName, views[i].Name)
 	}
 }

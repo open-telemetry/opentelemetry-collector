@@ -46,7 +46,7 @@ type ExporterSettings struct {
 func NewExporter(cfg ExporterSettings) *Exporter {
 	return &Exporter{
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
-		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
+		spanNamePrefix: obsmetrics.ExporterKey + obsmetrics.NameSep + cfg.ExporterID.String(),
 		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
 	}

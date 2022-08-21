@@ -36,7 +36,7 @@ const (
 var (
 	TagKeyProcessor, _ = tag.NewKey(ProcessorKey)
 
-	ProcessorPrefix = ProcessorKey + NameSep
+	ProcessorPrefix = Prefix + ProcessorKey + NameSep
 
 	// Processor metrics. Any count of data items below is in the internal format
 	// of the collector since processors only deal with internal format.

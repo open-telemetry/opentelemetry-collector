@@ -51,31 +51,31 @@ func newInstruments(registry *metric.Registry) *instruments {
 		registry: registry,
 	}
 	insts.queueSize, _ = registry.AddInt64DerivedGauge(
-		obsmetrics.ExporterKey+"/queue_size",
+		obsmetrics.ExporterPrefix+"queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches)"),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
 	insts.queueCapacity, _ = registry.AddInt64DerivedGauge(
-		obsmetrics.ExporterKey+"/queue_capacity",
+		obsmetrics.ExporterPrefix+"queue_capacity",
 		metric.WithDescription("Fixed capacity of the retry queue (in batches)"),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
 	insts.failedToEnqueueTraceSpans, _ = registry.AddInt64Cumulative(
-		obsmetrics.ExporterKey+"/enqueue_failed_spans",
+		obsmetrics.ExporterPrefix+"enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue."),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
 	insts.failedToEnqueueMetricPoints, _ = registry.AddInt64Cumulative(
-		obsmetrics.ExporterKey+"/enqueue_failed_metric_points",
+		obsmetrics.ExporterPrefix+"enqueue_failed_metric_points",
 		metric.WithDescription("Number of metric points failed to be added to the sending queue."),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))
 
 	insts.failedToEnqueueLogRecords, _ = registry.AddInt64Cumulative(
-		obsmetrics.ExporterKey+"/enqueue_failed_log_records",
+		obsmetrics.ExporterPrefix+"enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue."),
 		metric.WithLabelKeys(obsmetrics.ExporterKey),
 		metric.WithUnit(metricdata.UnitDimensionless))

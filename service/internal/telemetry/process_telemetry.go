@@ -23,7 +23,11 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opencensus.io/metric"
 	"go.opencensus.io/stats"
+
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
+
+const processMetricsPrefix = obsmetrics.Prefix + "process" + obsmetrics.NameSep
 
 // processMetrics is a struct that contains views related to process metrics (cpu, mem, etc)
 type processMetrics struct {
@@ -59,7 +63,7 @@ func RegisterProcessMetrics(registry *metric.Registry, ballastSizeBytes uint64) 
 	}
 
 	pm.processUptime, err = registry.AddFloat64DerivedCumulative(
-		"process/uptime",
+		processMetricsPrefix+"uptime",
 		metric.WithDescription("Uptime of the process"),
 		metric.WithUnit(stats.UnitSeconds))
 	if err != nil {
@@ -70,7 +74,7 @@ func RegisterProcessMetrics(registry *metric.Registry, ballastSizeBytes uint64) 
 	}
 
 	pm.allocMem, err = registry.AddInt64DerivedGauge(
-		"process/runtime/heap_alloc_bytes",
+		processMetricsPrefix+"runtime/heap_alloc_bytes",
 		metric.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')"),
 		metric.WithUnit(stats.UnitBytes))
 	if err != nil {
@@ -81,7 +85,7 @@ func RegisterProcessMetrics(registry *metric.Registry, ballastSizeBytes uint64) 
 	}
 
 	pm.totalAllocMem, err = registry.AddInt64DerivedCumulative(
-		"process/runtime/total_alloc_bytes",
+		processMetricsPrefix+"runtime/total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit(stats.UnitBytes))
 	if err != nil {
@@ -92,7 +96,7 @@ func RegisterProcessMetrics(registry *metric.Registry, ballastSizeBytes uint64) 
 	}
 
 	pm.sysMem, err = registry.AddInt64DerivedGauge(
-		"process/runtime/total_sys_memory_bytes",
+		processMetricsPrefix+"runtime/total_sys_memory_bytes",
 		metric.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')"),
 		metric.WithUnit(stats.UnitBytes))
 	if err != nil {
@@ -103,7 +107,7 @@ func RegisterProcessMetrics(registry *metric.Registry, ballastSizeBytes uint64) 
 	}
 
 	pm.cpuSeconds, err = registry.AddFloat64DerivedCumulative(
-		"process/cpu_seconds",
+		processMetricsPrefix+"cpu_seconds",
 		metric.WithDescription("Total CPU user and system time in seconds"),
 		metric.WithUnit(stats.UnitSeconds))
 	if err != nil {
@@ -114,7 +118,7 @@ func RegisterProcessMetrics(registry *metric.Registry, ballastSizeBytes uint64) 
 	}
 
 	pm.rssMemory, err = registry.AddInt64DerivedGauge(
-		"process/memory/rss",
+		processMetricsPrefix+"memory/rss",
 		metric.WithDescription("Total physical memory (resident set size)"),
 		metric.WithUnit(stats.UnitBytes))
 	if err != nil {

@@ -28,12 +28,12 @@ var expectedMetrics = []string{
 	// Changing a metric name is a breaking change.
 	// Adding new metrics is ok as long it follows the conventions described at
 	// https://pkg.go.dev/go.opentelemetry.io/collector/obsreport?tab=doc#hdr-Naming_Convention_for_New_Metrics
-	"process/uptime",
-	"process/runtime/heap_alloc_bytes",
-	"process/runtime/total_alloc_bytes",
-	"process/runtime/total_sys_memory_bytes",
-	"process/cpu_seconds",
-	"process/memory/rss",
+	"otelcol/process/uptime",
+	"otelcol/process/runtime/heap_alloc_bytes",
+	"otelcol/process/runtime/total_alloc_bytes",
+	"otelcol/process/runtime/total_sys_memory_bytes",
+	"otelcol/process/cpu_seconds",
+	"otelcol/process/memory/rss",
 }
 
 func TestProcessTelemetry(t *testing.T) {
@@ -54,13 +54,13 @@ func TestProcessTelemetry(t *testing.T) {
 		require.Len(t, ts.Points, 1)
 
 		var value float64
-		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
+		if metricName == "otelcol/process/uptime" || metricName == "otelcol/process/cpu_seconds" {
 			value = ts.Points[0].Value.(float64)
 		} else {
 			value = float64(ts.Points[0].Value.(int64))
 		}
 
-		if metricName == "process/uptime" || metricName == "process/cpu_seconds" {
+		if metricName == "otelcol/process/uptime" || metricName == "otelcol/process/cpu_seconds" {
 			// This likely will still be zero when running the test.
 			assert.True(t, value >= 0, metricName)
 			continue

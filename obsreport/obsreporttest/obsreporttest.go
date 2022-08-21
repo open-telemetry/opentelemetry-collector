@@ -108,10 +108,10 @@ func CheckExporterTraces(_ TestTelemetry, exporter config.ComponentID, sentSpans
 	exporterTags := tagsForExporterView(exporter)
 	if sendFailedSpans > 0 {
 		return multierr.Combine(
-			checkValueForView(exporterTags, sentSpans, "exporter/sent_spans"),
-			checkValueForView(exporterTags, sendFailedSpans, "exporter/send_failed_spans"))
+			checkValueForView(exporterTags, sentSpans, "otelcol/exporter/sent_spans"),
+			checkValueForView(exporterTags, sendFailedSpans, "otelcol/exporter/send_failed_spans"))
 	}
-	return checkValueForView(exporterTags, sentSpans, "exporter/sent_spans")
+	return checkValueForView(exporterTags, sentSpans, "otelcol/exporter/sent_spans")
 }
 
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
@@ -120,10 +120,10 @@ func CheckExporterMetrics(_ TestTelemetry, exporter config.ComponentID, sentMetr
 	exporterTags := tagsForExporterView(exporter)
 	if sendFailedMetricsPoints > 0 {
 		return multierr.Combine(
-			checkValueForView(exporterTags, sentMetricsPoints, "exporter/sent_metric_points"),
-			checkValueForView(exporterTags, sendFailedMetricsPoints, "exporter/send_failed_metric_points"))
+			checkValueForView(exporterTags, sentMetricsPoints, "otelcol/exporter/sent_metric_points"),
+			checkValueForView(exporterTags, sendFailedMetricsPoints, "otelcol/exporter/send_failed_metric_points"))
 	}
-	return checkValueForView(exporterTags, sentMetricsPoints, "exporter/sent_metric_points")
+	return checkValueForView(exporterTags, sentMetricsPoints, "otelcol/exporter/sent_metric_points")
 }
 
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
@@ -132,10 +132,10 @@ func CheckExporterLogs(_ TestTelemetry, exporter config.ComponentID, sentLogReco
 	exporterTags := tagsForExporterView(exporter)
 	if sendFailedLogRecords > 0 {
 		return multierr.Combine(
-			checkValueForView(exporterTags, sentLogRecords, "exporter/sent_log_records"),
-			checkValueForView(exporterTags, sendFailedLogRecords, "exporter/send_failed_log_records"))
+			checkValueForView(exporterTags, sentLogRecords, "otelcol/exporter/sent_log_records"),
+			checkValueForView(exporterTags, sendFailedLogRecords, "otelcol/exporter/send_failed_log_records"))
 	}
-	return checkValueForView(exporterTags, sentLogRecords, "exporter/sent_log_records")
+	return checkValueForView(exporterTags, sentLogRecords, "otelcol/exporter/sent_log_records")
 }
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
@@ -143,9 +143,9 @@ func CheckExporterLogs(_ TestTelemetry, exporter config.ComponentID, sentLogReco
 func CheckProcessorTraces(_ TestTelemetry, processor config.ComponentID, acceptedSpans, refusedSpans, droppedSpans int64) error {
 	processorTags := tagsForProcessorView(processor)
 	return multierr.Combine(
-		checkValueForView(processorTags, acceptedSpans, "processor/accepted_spans"),
-		checkValueForView(processorTags, refusedSpans, "processor/refused_spans"),
-		checkValueForView(processorTags, droppedSpans, "processor/dropped_spans"))
+		checkValueForView(processorTags, acceptedSpans, "otelcol/processor/accepted_spans"),
+		checkValueForView(processorTags, refusedSpans, "otelcol/processor/refused_spans"),
+		checkValueForView(processorTags, droppedSpans, "otelcol/processor/dropped_spans"))
 }
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
@@ -153,9 +153,9 @@ func CheckProcessorTraces(_ TestTelemetry, processor config.ComponentID, accepte
 func CheckProcessorMetrics(_ TestTelemetry, processor config.ComponentID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
 	processorTags := tagsForProcessorView(processor)
 	return multierr.Combine(
-		checkValueForView(processorTags, acceptedMetricPoints, "processor/accepted_metric_points"),
-		checkValueForView(processorTags, refusedMetricPoints, "processor/refused_metric_points"),
-		checkValueForView(processorTags, droppedMetricPoints, "processor/dropped_metric_points"))
+		checkValueForView(processorTags, acceptedMetricPoints, "otelcol/processor/accepted_metric_points"),
+		checkValueForView(processorTags, refusedMetricPoints, "otelcol/processor/refused_metric_points"),
+		checkValueForView(processorTags, droppedMetricPoints, "otelcol/processor/dropped_metric_points"))
 }
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
@@ -163,9 +163,9 @@ func CheckProcessorMetrics(_ TestTelemetry, processor config.ComponentID, accept
 func CheckProcessorLogs(_ TestTelemetry, processor config.ComponentID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
 	processorTags := tagsForProcessorView(processor)
 	return multierr.Combine(
-		checkValueForView(processorTags, acceptedLogRecords, "processor/accepted_log_records"),
-		checkValueForView(processorTags, refusedLogRecords, "processor/refused_log_records"),
-		checkValueForView(processorTags, droppedLogRecords, "processor/dropped_log_records"))
+		checkValueForView(processorTags, acceptedLogRecords, "otelcol/processor/accepted_log_records"),
+		checkValueForView(processorTags, refusedLogRecords, "otelcol/processor/refused_log_records"),
+		checkValueForView(processorTags, droppedLogRecords, "otelcol/processor/dropped_log_records"))
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
@@ -173,8 +173,8 @@ func CheckProcessorLogs(_ TestTelemetry, processor config.ComponentID, acceptedL
 func CheckReceiverTraces(_ TestTelemetry, receiver config.ComponentID, protocol string, acceptedSpans, droppedSpans int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	return multierr.Combine(
-		checkValueForView(receiverTags, acceptedSpans, "receiver/accepted_spans"),
-		checkValueForView(receiverTags, droppedSpans, "receiver/refused_spans"))
+		checkValueForView(receiverTags, acceptedSpans, "otelcol/receiver/accepted_spans"),
+		checkValueForView(receiverTags, droppedSpans, "otelcol/receiver/refused_spans"))
 }
 
 // CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
@@ -182,8 +182,8 @@ func CheckReceiverTraces(_ TestTelemetry, receiver config.ComponentID, protocol 
 func CheckReceiverLogs(_ TestTelemetry, receiver config.ComponentID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	return multierr.Combine(
-		checkValueForView(receiverTags, acceptedLogRecords, "receiver/accepted_log_records"),
-		checkValueForView(receiverTags, droppedLogRecords, "receiver/refused_log_records"))
+		checkValueForView(receiverTags, acceptedLogRecords, "otelcol/receiver/accepted_log_records"),
+		checkValueForView(receiverTags, droppedLogRecords, "otelcol/receiver/refused_log_records"))
 }
 
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
@@ -191,8 +191,8 @@ func CheckReceiverLogs(_ TestTelemetry, receiver config.ComponentID, protocol st
 func CheckReceiverMetrics(_ TestTelemetry, receiver config.ComponentID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverTags := tagsForReceiverView(receiver, protocol)
 	return multierr.Combine(
-		checkValueForView(receiverTags, acceptedMetricPoints, "receiver/accepted_metric_points"),
-		checkValueForView(receiverTags, droppedMetricPoints, "receiver/refused_metric_points"))
+		checkValueForView(receiverTags, acceptedMetricPoints, "otelcol/receiver/accepted_metric_points"),
+		checkValueForView(receiverTags, droppedMetricPoints, "otelcol/receiver/refused_metric_points"))
 }
 
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
@@ -200,8 +200,8 @@ func CheckReceiverMetrics(_ TestTelemetry, receiver config.ComponentID, protocol
 func CheckScraperMetrics(_ TestTelemetry, receiver config.ComponentID, scraper config.ComponentID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	scraperTags := tagsForScraperView(receiver, scraper)
 	return multierr.Combine(
-		checkValueForView(scraperTags, scrapedMetricPoints, "scraper/scraped_metric_points"),
-		checkValueForView(scraperTags, erroredMetricPoints, "scraper/errored_metric_points"))
+		checkValueForView(scraperTags, scrapedMetricPoints, "otelcol/scraper/scraped_metric_points"),
+		checkValueForView(scraperTags, erroredMetricPoints, "otelcol/scraper/errored_metric_points"))
 }
 
 // checkValueForView checks that for the current exported value in the view with the given name

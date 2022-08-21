@@ -191,9 +191,7 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	}
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
-	opts := prometheus.Options{
-		Namespace: "otelcol",
-	}
+	opts := prometheus.Options{}
 
 	opts.ConstLabels = make(map[string]string)
 

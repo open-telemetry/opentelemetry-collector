@@ -32,7 +32,7 @@ const (
 )
 
 const (
-	ScraperPrefix                 = ScraperKey + NameSep
+	ScraperPrefix                 = Prefix + ScraperKey + NameSep
 	ScraperMetricsOperationSuffix = NameSep + "MetricsScraped"
 )
 

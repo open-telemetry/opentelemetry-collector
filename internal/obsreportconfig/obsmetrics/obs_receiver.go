@@ -49,7 +49,7 @@ var (
 	TagKeyReceiver, _  = tag.NewKey(ReceiverKey)
 	TagKeyTransport, _ = tag.NewKey(TransportKey)
 
-	ReceiverPrefix                  = ReceiverKey + NameSep
+	ReceiverPrefix                  = Prefix + ReceiverKey + NameSep
 	ReceiveTraceDataOperationSuffix = NameSep + "TraceDataReceived"
 	ReceiverMetricsOperationSuffix  = NameSep + "MetricsReceived"
 	ReceiverLogsOperationSuffix     = NameSep + "LogsReceived"

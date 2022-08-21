@@ -42,7 +42,7 @@ const (
 var (
 	TagKeyExporter, _ = tag.NewKey(ExporterKey)
 
-	ExporterPrefix                 = ExporterKey + NameSep
+	ExporterPrefix                 = Prefix + ExporterKey + NameSep
 	ExportTraceDataOperationSuffix = NameSep + "traces"
 	ExportMetricsOperationSuffix   = NameSep + "metrics"
 	ExportLogsOperationSuffix      = NameSep + "logs"

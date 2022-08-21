@@ -55,7 +55,7 @@ type ReceiverSettings struct {
 func NewReceiver(cfg ReceiverSettings) *Receiver {
 	return &Receiver{
 		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
-		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
+		spanNamePrefix: obsmetrics.ReceiverKey + obsmetrics.NameSep + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
 		mutators: []tag.Mutator{

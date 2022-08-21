@@ -19,4 +19,5 @@ package obsmetrics // import "go.opentelemetry.io/collector/internal/obsreportco
 
 const (
 	NameSep = "/"
+	Prefix  = "otelcol" + NameSep
 )

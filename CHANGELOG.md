@@ -4,6 +4,9 @@
 
 ### 🛑 Breaking changes 🛑
 
+- "otelcol" part of the exposed metrics that is set as Prometheus namespace is replaced the same explicit metrics prefix (#5939)
+  - This is potentially a breaking change for custom distributions that expose additional OpenCensus metrics. The
+    "otelcol/" prefix must be explicitly added to those metrics to get the same names as before this change.
 - Remove deprecated fields/funcs from `service` (#5907)
   - Remove `ConfigProviderSettings.Location`
   - Remove `ConfigProviderSettings.MapProviders`

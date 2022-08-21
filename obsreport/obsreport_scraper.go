@@ -65,7 +65,7 @@ func NewScraper(cfg ScraperSettings) *Scraper {
 func (s *Scraper) StartMetricsOp(ctx context.Context) context.Context {
 	ctx, _ = tag.New(ctx, s.mutators...)
 
-	spanName := obsmetrics.ScraperPrefix + s.receiverID.String() + obsmetrics.NameSep + s.scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
+	spanName := obsmetrics.ScraperKey + obsmetrics.NameSep + s.receiverID.String() + obsmetrics.NameSep + s.scraper.String() + obsmetrics.ScraperMetricsOperationSuffix
 	ctx, _ = s.tracer.Start(ctx, spanName)
 	return ctx
 }
