@@ -38,6 +38,7 @@
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
 - Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
 - Remove unnecessary duplicate code and allocations for reading enums in JSON. (#5928)
+- Add an AsRaw func on the flags, lots of places to encode these flags. (#5934)
 
 ### 🧰 Bug fixes 🧰
 
