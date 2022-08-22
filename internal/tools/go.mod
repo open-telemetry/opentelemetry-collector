@@ -9,7 +9,7 @@ require (
 	github.com/jcchavezs/porto v0.4.0
 	github.com/ory/go-acc v0.2.8
 	github.com/pavius/impi v0.0.3
-	github.com/tcnksm/ghr v0.14.0
+	github.com/tcnksm/ghr v0.15.0
 	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad
 	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220327151007-0b1d24fa04f4
 	go.opentelemetry.io/build-tools/multimod v0.0.0-20220327151007-0b1d24fa04f4
@@ -85,6 +85,7 @@ require (
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
+	github.com/google/go-github/v39 v39.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gordonklaus/ineffassign v0.0.0-20210914165742-4cc7213b9bc8 // indirect
