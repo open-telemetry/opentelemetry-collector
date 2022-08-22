@@ -38,6 +38,7 @@
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
 - Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
 - Remove unnecessary duplicate code and allocations for reading enums in JSON. (#5928)
+- Add "dist.build_tags" configuration option to support passing go build flags to builder. (#5659)
 
 ### 🧰 Bug fixes 🧰
 
@@ -161,7 +162,6 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Make the in-memory and persistent queues more consistent (#5764)ś
 - `ocb` now exits with an error if it fails to load the build configuration. (#5731)
 - Deprecate `HTTPClientSettings.ToClientWithHost` (#5737)
-- Add --build-tags flag to support passing go build flags to builder. (#5659)
 
 ### 🧰 Bug fixes 🧰
 
