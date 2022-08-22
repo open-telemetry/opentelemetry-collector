@@ -125,8 +125,8 @@ func NewValueSlice() Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}}
 }
 
-// NewValueBytes creates a new Value with the given ImmutableByteSlice value.
-func NewValueBytes(v ImmutableByteSlice) Value {
+// NewValueBytes creates a new Value with the given ByteSlice value.
+func NewValueBytes(v ByteSlice) Value {
 	return Value{orig: &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v.value}}}
 }
 
@@ -163,7 +163,7 @@ func newValueFromRaw(iv interface{}) Value {
 	case bool:
 		return NewValueBool(tv)
 	case []byte:
-		return NewValueBytes(NewImmutableByteSlice(tv))
+		return NewValueBytes(NewByteSliceFromRaw(tv))
 	case map[string]interface{}:
 		mv := NewValueMap()
 		NewMapFromRaw(tv).CopyTo(mv.MapVal())
@@ -253,11 +253,11 @@ func (v Value) SliceVal() Slice {
 	return newSlice(&arr.Values)
 }
 
-// BytesVal returns the ImmutableByteSlice value associated with this Value.
+// BytesVal returns the ByteSlice value associated with this Value.
 // If the Type() is not ValueTypeBytes then returns an empty slice.
 // Calling this function on zero-initialized Value will cause a panic.
-func (v Value) BytesVal() ImmutableByteSlice {
-	return ImmutableByteSlice{value: v.orig.GetBytesValue()}
+func (v Value) BytesVal() ByteSlice {
+	return ByteSlice{value: v.orig.GetBytesValue()}
 }
 
 // SetStringVal replaces the string value associated with this Value,
@@ -288,10 +288,10 @@ func (v Value) SetBoolVal(bv bool) {
 	v.orig.Value = &otlpcommon.AnyValue_BoolValue{BoolValue: bv}
 }
 
-// SetBytesVal replaces the ImmutableByteSlice value associated with this Value,
+// SetBytesVal replaces the ByteSlice value associated with this Value,
 // it also changes the type to be ValueTypeBytes.
 // Calling this function on zero-initialized Value will cause a panic.
-func (v Value) SetBytesVal(bv ImmutableByteSlice) {
+func (v Value) SetBytesVal(bv ByteSlice) {
 	v.orig.Value = &otlpcommon.AnyValue_BytesValue{BytesValue: bv.value}
 }
 
@@ -532,7 +532,7 @@ func newAttributeKeyValue(k string, av Value) otlpcommon.KeyValue {
 	return orig
 }
 
-func newAttributeKeyValueBytes(k string, v ImmutableByteSlice) otlpcommon.KeyValue {
+func newAttributeKeyValueBytes(k string, v ByteSlice) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := Value{&orig.Value}
 	akv.SetBytesVal(v)
@@ -689,9 +689,9 @@ func (m Map) InsertBool(k string, v bool) {
 	}
 }
 
-// InsertBytes adds the ImmutableByteSlice Value to the map when the key does not exist.
+// InsertBytes adds the ByteSlice Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
-func (m Map) InsertBytes(k string, v ImmutableByteSlice) {
+func (m Map) InsertBytes(k string, v ByteSlice) {
 	if _, existing := m.Get(k); !existing {
 		*m.orig = append(*m.orig, newAttributeKeyValueBytes(k, v))
 	}
@@ -742,9 +742,9 @@ func (m Map) UpdateBool(k string, v bool) {
 	}
 }
 
-// UpdateBytes updates an existing ImmutableByteSlice Value with a value.
+// UpdateBytes updates an existing ByteSlice Value with a value.
 // No action is applied to the map where the key does not exist.
-func (m Map) UpdateBytes(k string, v ImmutableByteSlice) {
+func (m Map) UpdateBytes(k string, v ByteSlice) {
 	if av, existing := m.Get(k); existing {
 		av.SetBytesVal(v)
 	}
@@ -810,10 +810,10 @@ func (m Map) UpsertBool(k string, v bool) {
 	}
 }
 
-// UpsertBytes performs the Insert or Update action. The ImmutableByteSlice Value is
+// UpsertBytes performs the Insert or Update action. The ByteSlice Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) UpsertBytes(k string, v ImmutableByteSlice) {
+func (m Map) UpsertBytes(k string, v ByteSlice) {
 	if av, existing := m.Get(k); existing {
 		av.SetBytesVal(v)
 	} else {

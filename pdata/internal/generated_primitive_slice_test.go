@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewImmutableByteSlice(t *testing.T) {
+func TestNewByteSlice(t *testing.T) {
 	tests := []struct {
 		name string
 		orig []byte
@@ -48,7 +48,7 @@ func TestNewImmutableByteSlice(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewImmutableByteSlice(tt.orig)
+			s := NewByteSlice(tt.orig)
 			assert.Equal(t, tt.want, s.AsRaw())
 			assert.Equal(t, len(s.value), s.Len())
 			if len(tt.orig) > 0 {
@@ -60,7 +60,7 @@ func TestNewImmutableByteSlice(t *testing.T) {
 	}
 }
 
-func TestNewImmutableFloat64Slice(t *testing.T) {
+func TestNewFloat64Slice(t *testing.T) {
 	tests := []struct {
 		name string
 		orig []float64
@@ -85,7 +85,7 @@ func TestNewImmutableFloat64Slice(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewImmutableFloat64Slice(tt.orig)
+			s := NewFloat64Slice(tt.orig)
 			assert.Equal(t, tt.want, s.AsRaw())
 			assert.Equal(t, len(s.value), s.Len())
 			if len(tt.orig) > 0 {
@@ -97,7 +97,7 @@ func TestNewImmutableFloat64Slice(t *testing.T) {
 	}
 }
 
-func TestNewImmutableUInt64Slice(t *testing.T) {
+func TestNewUInt64Slice(t *testing.T) {
 	tests := []struct {
 		name string
 		orig []uint64
@@ -122,7 +122,7 @@ func TestNewImmutableUInt64Slice(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewImmutableUInt64Slice(tt.orig)
+			s := NewUInt64Slice(tt.orig)
 			assert.Equal(t, tt.want, s.AsRaw())
 			assert.Equal(t, len(s.value), s.Len())
 			if len(tt.orig) > 0 {

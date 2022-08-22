@@ -1107,16 +1107,16 @@ func TestHistogramDataPoint_Sum(t *testing.T) {
 
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, ImmutableUInt64Slice{}, ms.BucketCounts())
-	testValBucketCounts := NewImmutableUInt64Slice([]uint64{1, 2, 3})
+	assert.EqualValues(t, UInt64Slice{}, ms.BucketCounts())
+	testValBucketCounts := NewUInt64SliceFromRaw([]uint64{1, 2, 3})
 	ms.SetBucketCounts(testValBucketCounts)
 	assert.EqualValues(t, testValBucketCounts, ms.BucketCounts())
 }
 
 func TestHistogramDataPoint_ExplicitBounds(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.EqualValues(t, ImmutableFloat64Slice{}, ms.ExplicitBounds())
-	testValExplicitBounds := NewImmutableFloat64Slice([]float64{1, 2, 3})
+	assert.EqualValues(t, Float64Slice{}, ms.ExplicitBounds())
+	testValExplicitBounds := NewFloat64SliceFromRaw([]float64{1, 2, 3})
 	ms.SetExplicitBounds(testValExplicitBounds)
 	assert.EqualValues(t, testValExplicitBounds, ms.ExplicitBounds())
 }
@@ -1405,8 +1405,8 @@ func TestBuckets_Offset(t *testing.T) {
 
 func TestBuckets_BucketCounts(t *testing.T) {
 	ms := NewBuckets()
-	assert.EqualValues(t, ImmutableUInt64Slice{}, ms.BucketCounts())
-	testValBucketCounts := NewImmutableUInt64Slice([]uint64{1, 2, 3})
+	assert.EqualValues(t, UInt64Slice{}, ms.BucketCounts())
+	testValBucketCounts := NewUInt64SliceFromRaw([]uint64{1, 2, 3})
 	ms.SetBucketCounts(testValBucketCounts)
 	assert.EqualValues(t, testValBucketCounts, ms.BucketCounts())
 }
@@ -2103,8 +2103,8 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.SetTimestamp(Timestamp(1234567890))
 	tv.SetCount(uint64(17))
 	tv.SetSum(float64(17.13))
-	tv.SetBucketCounts(NewImmutableUInt64Slice([]uint64{1, 2, 3}))
-	tv.SetExplicitBounds(NewImmutableFloat64Slice([]float64{1, 2, 3}))
+	tv.SetBucketCounts(NewUInt64SliceFromRaw([]uint64{1, 2, 3}))
+	tv.SetExplicitBounds(NewFloat64SliceFromRaw([]float64{1, 2, 3}))
 	fillTestExemplarSlice(tv.Exemplars())
 	fillTestMetricDataPointFlags(tv.Flags())
 	tv.SetMin(float64(9.23))
@@ -2155,7 +2155,7 @@ func generateTestBuckets() Buckets {
 
 func fillTestBuckets(tv Buckets) {
 	tv.SetOffset(int32(909))
-	tv.SetBucketCounts(NewImmutableUInt64Slice([]uint64{1, 2, 3}))
+	tv.SetBucketCounts(NewUInt64SliceFromRaw([]uint64{1, 2, 3}))
 }
 
 func generateTestSummaryDataPointSlice() SummaryDataPointSlice {

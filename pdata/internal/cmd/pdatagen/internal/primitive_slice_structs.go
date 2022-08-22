@@ -25,8 +25,15 @@ type ${structName} struct {
 	value []${itemType}
 }
 
-// New${structName} creates a new ${structName} by copying the provided []${itemType} slice.
-func New${structName}(val []${itemType}) ${structName} {
+// New${structName} creates a new ${structName} with the provided length. 
+func New${structName}(len int) ${structName} {
+	is := ${structName}{}
+	is.value = make([]${itemType}, len)
+	return is
+}
+
+// New${structName}FromRaw creates a new ${structName} by copying the provided []${itemType} slice.
+func New${structName}FromRaw(val []${itemType}) ${structName} {
 	is := ${structName}{}
 	if len(val) != 0 {
 		is.value = make([]${itemType}, len(val))
@@ -53,6 +60,11 @@ func (is ${structName}) Len() int {
 // At returns an item from particular index.
 func (is ${structName}) At(i int) ${itemType} {
 	return is.value[i]
+}
+
+// At returns an item from particular index.
+func (is ${structName}) SetAt(i int, val ${itemType}) {
+	 is.value[i] = val 
 }`
 
 const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
@@ -95,8 +107,11 @@ const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
 const immutableSliceAliasTemplate = `// ${structName} represents a []${itemType} slice that cannot be mutated.
 type ${structName} = internal.${structName}
 
-// New${structName} creates a new ${structName} by copying the provided []${itemType} slice.
+// New${structName} creates a new ${structName} with the provided length.
 var New${structName} = internal.New${structName}
+
+// New${structName}FromRaw creates a new ${structName} by copying the provided []${itemType} slice.
+var New${structName}FromRaw = internal.New${structName}FromRaw
 `
 
 type immutableSliceStruct struct {
@@ -149,8 +164,8 @@ func (iss *immutableSliceStruct) generateAlias(sb *strings.Builder) {
 	}))
 }
 
-var immutableSliceFile = &File{
-	Name:     "immutable_slice",
+var primitiveSliceFile = &File{
+	Name:     "primitive_slice",
 	IsCommon: true,
 	testImports: []string{
 		`"testing"`,
@@ -158,23 +173,23 @@ var immutableSliceFile = &File{
 		`"github.com/stretchr/testify/assert"`,
 	},
 	structs: []baseStruct{
-		immutableByteSliceStruct,
-		immutableFloat64SliceStruct,
-		immutableUInt64SliceStruct,
+		byteSliceStruct,
+		float64SliceStruct,
+		uInt64SliceStruct,
 	},
 }
 
-var immutableByteSliceStruct = &immutableSliceStruct{
-	structName: "ImmutableByteSlice",
+var byteSliceStruct = &immutableSliceStruct{
+	structName: "ByteSlice",
 	itemType:   "byte",
 }
 
-var immutableFloat64SliceStruct = &immutableSliceStruct{
-	structName: "ImmutableFloat64Slice",
+var float64SliceStruct = &immutableSliceStruct{
+	structName: "Float64Slice",
 	itemType:   "float64",
 }
 
-var immutableUInt64SliceStruct = &immutableSliceStruct{
-	structName: "ImmutableUInt64Slice",
+var uInt64SliceStruct = &immutableSliceStruct{
+	structName: "UInt64Slice",
 	itemType:   "uint64",
 }

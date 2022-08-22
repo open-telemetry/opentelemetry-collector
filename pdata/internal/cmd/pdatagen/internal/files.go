@@ -38,7 +38,7 @@ var AllFiles = []*File{
 	commonFile,
 	metricsFile,
 	resourceFile,
-	immutableSliceFile,
+	primitiveSliceFile,
 	traceFile,
 	logFile,
 }

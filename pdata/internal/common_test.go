@@ -63,7 +63,7 @@ func TestAttributeValue(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, v.Type())
 	assert.True(t, v.BoolVal())
 
-	bytesValue := NewImmutableByteSlice([]byte{1, 2, 3, 4})
+	bytesValue := NewByteSliceFromRaw([]byte{1, 2, 3, 4})
 	v = NewValueBytes(bytesValue)
 	assert.EqualValues(t, ValueTypeBytes, v.Type())
 	assert.EqualValues(t, bytesValue, v.BytesVal())
@@ -176,7 +176,7 @@ func TestNilOrigSetAttributeValue(t *testing.T) {
 	assert.EqualValues(t, 1.23, av.DoubleVal())
 
 	av = NewValueEmpty()
-	av.SetBytesVal(NewImmutableByteSlice([]byte{1, 2, 3}))
+	av.SetBytesVal(NewByteSliceFromRaw([]byte{1, 2, 3}))
 	assert.Equal(t, []byte{1, 2, 3}, av.BytesVal().AsRaw())
 }
 
@@ -226,14 +226,14 @@ func TestAttributeValueEqual(t *testing.T) {
 	av1 = NewValueBool(false)
 	assert.True(t, av1.Equal(av2))
 
-	av2 = NewValueBytes(NewImmutableByteSlice([]byte{1, 2, 3}))
+	av2 = NewValueBytes(NewByteSliceFromRaw([]byte{1, 2, 3}))
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
-	av1 = NewValueBytes(NewImmutableByteSlice([]byte{1, 2, 4}))
+	av1 = NewValueBytes(NewByteSliceFromRaw([]byte{1, 2, 4}))
 	assert.False(t, av1.Equal(av2))
 
-	av1 = NewValueBytes(NewImmutableByteSlice([]byte{1, 2, 3}))
+	av1 = NewValueBytes(NewByteSliceFromRaw([]byte{1, 2, 3}))
 	assert.True(t, av1.Equal(av2))
 
 	av1 = NewValueSlice()
@@ -300,7 +300,7 @@ func TestNilMap(t *testing.T) {
 	assert.EqualValues(t, generateTestBoolMap(), insertMapBool)
 
 	insertMapBytes := NewMap()
-	insertMapBytes.InsertBytes("k", NewImmutableByteSlice([]byte{1, 2, 3, 4, 5}))
+	insertMapBytes.InsertBytes("k", NewByteSliceFromRaw([]byte{1, 2, 3, 4, 5}))
 	assert.EqualValues(t, generateTestBytesMap(), insertMapBytes)
 
 	updateMap := NewMap()
@@ -324,7 +324,7 @@ func TestNilMap(t *testing.T) {
 	assert.EqualValues(t, NewMap(), updateMapBool)
 
 	updateMapBytes := NewMap()
-	updateMapBytes.UpdateBytes("k", NewImmutableByteSlice([]byte{1, 2, 3}))
+	updateMapBytes.UpdateBytes("k", NewByteSliceFromRaw([]byte{1, 2, 3}))
 	assert.EqualValues(t, NewMap(), updateMapBytes)
 
 	upsertMap := NewMap()
@@ -348,7 +348,7 @@ func TestNilMap(t *testing.T) {
 	assert.EqualValues(t, generateTestBoolMap(), upsertMapBool)
 
 	upsertMapBytes := NewMap()
-	upsertMapBytes.UpsertBytes("k", NewImmutableByteSlice([]byte{1, 2, 3, 4, 5}))
+	upsertMapBytes.UpsertBytes("k", NewByteSliceFromRaw([]byte{1, 2, 3, 4, 5}))
 	assert.EqualValues(t, generateTestBytesMap(), upsertMapBytes)
 
 	removeMap := NewMap()
@@ -414,7 +414,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.True(t, val.BoolVal())
 
-	sm.InsertBytes("other_key_bytes", NewImmutableByteSlice([]byte{1, 2, 3}))
+	sm.InsertBytes("other_key_bytes", NewByteSliceFromRaw([]byte{1, 2, 3}))
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
@@ -450,7 +450,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.False(t, val.BoolVal())
 
-	sm.UpdateBytes("other_key_bytes", NewImmutableByteSlice([]byte{4, 5, 6}))
+	sm.UpdateBytes("other_key_bytes", NewByteSliceFromRaw([]byte{4, 5, 6}))
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
@@ -486,7 +486,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.True(t, val.BoolVal())
 
-	sm.UpsertBytes("other_key_bytes", NewImmutableByteSlice([]byte{7, 8, 9}))
+	sm.UpsertBytes("other_key_bytes", NewByteSliceFromRaw([]byte{7, 8, 9}))
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
@@ -522,7 +522,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.False(t, val.BoolVal())
 
-	sm.UpsertBytes("yet_another_key_bytes", NewImmutableByteSlice([]byte{1}))
+	sm.UpsertBytes("yet_another_key_bytes", NewByteSliceFromRaw([]byte{1}))
 	val, exist = sm.Get("yet_another_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
@@ -613,7 +613,7 @@ func TestMap_InitFromRaw(t *testing.T) {
 		newAttributeKeyValueDouble("k_double", 1.23),
 		newAttributeKeyValueBool("k_bool", true),
 		newAttributeKeyValueNull("k_null"),
-		newAttributeKeyValueBytes("k_bytes", NewImmutableByteSlice([]byte{1, 2, 3})),
+		newAttributeKeyValueBytes("k_bytes", NewByteSliceFromRaw([]byte{1, 2, 3})),
 	}
 	am = NewMapFromRaw(rawMap)
 	assert.EqualValues(t, Map{orig: &rawOrig}.Sort(), am.Sort())
@@ -1078,7 +1078,7 @@ func TestAsString(t *testing.T) {
 		},
 		{
 			name:     "bytes",
-			input:    NewValueBytes(NewImmutableByteSlice([]byte("String bytes"))),
+			input:    NewValueBytes(NewByteSliceFromRaw([]byte("String bytes"))),
 			expected: base64.StdEncoding.EncodeToString([]byte("String bytes")),
 		},
 	}
@@ -1113,12 +1113,12 @@ func TestValueAsRaw(t *testing.T) {
 		},
 		{
 			name:     "bytes",
-			input:    NewValueBytes(NewImmutableByteSlice([]byte("bytes"))),
+			input:    NewValueBytes(NewByteSliceFromRaw([]byte("bytes"))),
 			expected: []byte("bytes"),
 		},
 		{
 			name:     "bytes",
-			input:    NewValueBytes(NewImmutableByteSlice([]byte("bytes"))),
+			input:    NewValueBytes(NewByteSliceFromRaw([]byte("bytes"))),
 			expected: []byte("bytes"),
 		},
 		{
@@ -1277,7 +1277,7 @@ func TestNewValueFromRaw(t *testing.T) {
 		{
 			name:     "bytes",
 			input:    []byte{1, 2, 3},
-			expected: NewValueBytes(NewImmutableByteSlice([]byte{1, 2, 3})),
+			expected: NewValueBytes(NewByteSliceFromRaw([]byte{1, 2, 3})),
 		},
 		{
 			name: "map",

@@ -531,19 +531,19 @@ var valueFloat64Field = &primitiveField{
 var bucketCountsField = &primitiveSliceField{
 	fieldName:       "BucketCounts",
 	originFieldName: "BucketCounts",
-	returnType:      "ImmutableUInt64Slice",
-	defaultVal:      "ImmutableUInt64Slice{}",
+	returnType:      "UInt64Slice",
+	defaultVal:      "UInt64Slice{}",
 	rawType:         "[]uint64",
-	testVal:         "NewImmutableUInt64Slice([]uint64{1, 2, 3})",
+	testVal:         "NewUInt64SliceFromRaw([]uint64{1, 2, 3})",
 }
 
 var explicitBoundsField = &primitiveSliceField{
 	fieldName:       "ExplicitBounds",
 	originFieldName: "ExplicitBounds",
-	returnType:      "ImmutableFloat64Slice",
-	defaultVal:      "ImmutableFloat64Slice{}",
+	returnType:      "Float64Slice",
+	defaultVal:      "Float64Slice{}",
 	rawType:         "[]float64",
-	testVal:         "NewImmutableFloat64Slice([]float64{1, 2, 3})",
+	testVal:         "NewFloat64SliceFromRaw([]float64{1, 2, 3})",
 }
 
 var quantileField = &primitiveField{

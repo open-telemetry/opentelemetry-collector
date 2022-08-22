@@ -20,19 +20,25 @@ package pcommon
 import "go.opentelemetry.io/collector/pdata/internal"
 
 // ImmutableByteSlice represents a []byte slice that cannot be mutated.
-type ImmutableByteSlice = internal.ImmutableByteSlice
+// Deprecated: [0.59.0] Use ByteSlice instead
+type ImmutableByteSlice = internal.ByteSlice
 
 // NewImmutableByteSlice creates a new ImmutableByteSlice by copying the provided []byte slice.
-var NewImmutableByteSlice = internal.NewImmutableByteSlice
+// Deprecated: [0.59.0] Use NewByteSliceFromRaw instead
+var NewImmutableByteSlice = internal.NewByteSliceFromRaw
 
 // ImmutableFloat64Slice represents a []float64 slice that cannot be mutated.
-type ImmutableFloat64Slice = internal.ImmutableFloat64Slice
+// Deprecated: [0.59.0] Float64Slice instead
+type ImmutableFloat64Slice = internal.Float64Slice
 
 // NewImmutableFloat64Slice creates a new ImmutableFloat64Slice by copying the provided []float64 slice.
-var NewImmutableFloat64Slice = internal.NewImmutableFloat64Slice
+// Deprecated: [0.59.0] NewFloat64SliceFromRaw instead
+var NewImmutableFloat64Slice = internal.NewFloat64SliceFromRaw
 
 // ImmutableUInt64Slice represents a []uint64 slice that cannot be mutated.
-type ImmutableUInt64Slice = internal.ImmutableUInt64Slice
+// Deprecated: [0.59.0] UInt64Slice instead
+type ImmutableUInt64Slice = internal.UInt64Slice
 
 // NewImmutableUInt64Slice creates a new ImmutableUInt64Slice by copying the provided []uint64 slice.
-var NewImmutableUInt64Slice = internal.NewImmutableUInt64Slice
+// Deprecated: [0.59.0] NewUInt64SliceFromRaw instead
+var NewImmutableUInt64Slice = internal.NewUInt64SliceFromRaw

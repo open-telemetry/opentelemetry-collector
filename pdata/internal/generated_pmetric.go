@@ -1455,22 +1455,22 @@ func (ms HistogramDataPoint) SetSum(v float64) {
 }
 
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) BucketCounts() ImmutableUInt64Slice {
-	return ImmutableUInt64Slice{value: ms.orig.BucketCounts}
+func (ms HistogramDataPoint) BucketCounts() UInt64Slice {
+	return UInt64Slice{value: ms.orig.BucketCounts}
 }
 
 // SetBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetBucketCounts(v ImmutableUInt64Slice) {
+func (ms HistogramDataPoint) SetBucketCounts(v UInt64Slice) {
 	ms.orig.BucketCounts = v.value
 }
 
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) ExplicitBounds() ImmutableFloat64Slice {
-	return ImmutableFloat64Slice{value: ms.orig.ExplicitBounds}
+func (ms HistogramDataPoint) ExplicitBounds() Float64Slice {
+	return Float64Slice{value: ms.orig.ExplicitBounds}
 }
 
 // SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetExplicitBounds(v ImmutableFloat64Slice) {
+func (ms HistogramDataPoint) SetExplicitBounds(v Float64Slice) {
 	ms.orig.ExplicitBounds = v.value
 }
 
@@ -1915,12 +1915,12 @@ func (ms Buckets) SetOffset(v int32) {
 }
 
 // BucketCounts returns the bucketcounts associated with this Buckets.
-func (ms Buckets) BucketCounts() ImmutableUInt64Slice {
-	return ImmutableUInt64Slice{value: ms.orig.BucketCounts}
+func (ms Buckets) BucketCounts() UInt64Slice {
+	return UInt64Slice{value: ms.orig.BucketCounts}
 }
 
 // SetBucketCounts replaces the bucketcounts associated with this Buckets.
-func (ms Buckets) SetBucketCounts(v ImmutableUInt64Slice) {
+func (ms Buckets) SetBucketCounts(v UInt64Slice) {
 	ms.orig.BucketCounts = v.value
 }
 

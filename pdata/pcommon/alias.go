@@ -73,7 +73,7 @@ var (
 	// NewValueSlice creates a new Value of array type.
 	NewValueSlice = internal.NewValueSlice
 
-	// NewValueBytes creates a new Value with the given ImmutableByteSlice value.
+	// NewValueBytes creates a new Value with the given ByteSlice value.
 	NewValueBytes = internal.NewValueBytes
 )
 
