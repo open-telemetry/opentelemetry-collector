@@ -30,6 +30,7 @@
 - Deprecate FlagsStruct types (#5933):
   - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
   - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
+- Deprecate builder distribution flags, use configuration. (#5946)
 
 ### 💡 Enhancements 💡
 
