@@ -30,6 +30,7 @@
 - Deprecate FlagsStruct types (#5933):
   - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
   - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
+- Deprecate builder distribution flags, use configuration. (#5946)
 
 ### 💡 Enhancements 💡
 
@@ -39,10 +40,12 @@
 - Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
 - Remove unnecessary duplicate code and allocations for reading enums in JSON. (#5928)
 - Add "dist.build_tags" configuration option to support passing go build flags to builder. (#5659)
+- Add an AsRaw func on the flags, lots of places to encode these flags. (#5934)
 
 ### 🧰 Bug fixes 🧰
 
 - Fix reading scope attributes for trace JSON, remove duplicate code. (#5930)
+- otlpjson/trace: skip unknown fields instead of error. (#5931)
 - Fix bug in setting the correct collector state after a configuration change event. (#5830)
 - Fix json trace unmarshalling for numbers (#5924):
   - Accept both string and number for int32/uint32.
