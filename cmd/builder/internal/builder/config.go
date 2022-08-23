@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"go.uber.org/zap"
@@ -144,13 +145,13 @@ func parseModules(mods []Module) ([]Module, error) {
 			mod.Name = parts[len(parts)-1]
 		}
 
-		if strings.HasPrefix(mod.Path, "./") {
-			path, err := os.Getwd()
+		// Check if path is empty, otherwise filepath.Abs replaces it with current path ".".
+		if mod.Path != "" {
+			var err error
+			mod.Path, err = filepath.Abs(mod.Path)
 			if err != nil {
-				return mods, fmt.Errorf("module has a relative Path element, but we couldn't get the current working dir: %w", err)
+				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
 			}
-
-			mod.Path = fmt.Sprintf("%s/%s", path, mod.Path[2:])
 		}
 
 		parsedModules = append(parsedModules, mod)
