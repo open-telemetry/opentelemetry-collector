@@ -41,6 +41,7 @@
 - Remove unnecessary duplicate code and allocations for reading enums in JSON. (#5928)
 - Add "dist.build_tags" configuration option to support passing go build flags to builder. (#5659)
 - Add an AsRaw func on the flags, lots of places to encode these flags. (#5934)
+- Watch for config file changes in fileprovider (#5945)
 
 ### 🧰 Bug fixes 🧰
 
