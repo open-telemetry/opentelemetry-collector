@@ -27,6 +27,7 @@
 - Deprecate `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` in favor of `exporterhelper.New[Traces|Metrics|Logs]Exporter` (#5914)
 - Deprecate `component.NewExtensionFactoryWithStabilityLevel` in favor of `component.NewExtensionFactory` (#5917)
 - Deprecate `plog.SeverityNumber[UPPERCASE]` constants (#5927)
+- Deprecate `pcommon.Map.InsertNull` method (#5955)
 - Deprecate FlagsStruct types (#5933):
   - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
   - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
