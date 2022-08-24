@@ -77,9 +77,9 @@ func newExpoHistoMapping(scale int32) expoHistoMapping {
 		scale: scale,
 	}
 	if scale >= exponent.MinScale && scale <= exponent.MaxScale {
-		m.mapping, _ = exponent.NewMapping(int32(scale))
+		m.mapping, _ = exponent.NewMapping(scale)
 	} else if scale >= logarithm.MinScale && scale <= logarithm.MaxScale {
-		m.mapping, _ = logarithm.NewMapping(int32(scale))
+		m.mapping, _ = logarithm.NewMapping(scale)
 	}
 	return m
 }
@@ -97,9 +97,10 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 	}
 
 	var s string
-	if idx == 0 {
+	switch {
+	case idx == 0:
 		s = "1"
-	} else if idx > 0 {
+	case idx > 0:
 		// Note: at scale 20, the value (1<<30) leads to exponent 1024
 		// The following expression generalizes this for valid scales.
 		if ehm.scale >= -10 && ehm.scale <= 20 && int64(idx)<<(20-ehm.scale) == 1<<30 {
@@ -110,7 +111,7 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 		} else {
 			s = "OVERFLOW"
 		}
-	} else {
+	default:
 		// TODO: corner cases involving subnormal values may
 		// be handled here.  These are considered out of range
 		// by the otel-go mapping functions, which will return
