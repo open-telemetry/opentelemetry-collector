@@ -185,3 +185,8 @@ func (ms LogRecordFlags) SetIsSampled(b bool) {
 		*ms.orig &^= isSampledMask
 	}
 }
+
+// AsRaw converts LogRecordFlags to the OTLP uint32 representation.
+func (ms LogRecordFlags) AsRaw() uint32 {
+	return *ms.orig
+}

@@ -651,6 +651,7 @@ func (m Map) Insert(k string, v Value) {
 
 // InsertNull adds a null Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
+// Deprecated: [0.59.0] Use Insert(key, NewValueEmpty()) instead.
 func (m Map) InsertNull(k string) {
 	if _, existing := m.Get(k); !existing {
 		*m.orig = append(*m.orig, newAttributeKeyValueNull(k))

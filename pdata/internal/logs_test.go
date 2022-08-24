@@ -133,14 +133,17 @@ func TestLogsClone(t *testing.T) {
 func TestLogRecordFlags(t *testing.T) {
 	flags := generateTestLogRecordFlags()
 	assert.True(t, flags.IsSampled())
+	assert.Equal(t, uint32(1), flags.AsRaw())
 
 	flags.SetIsSampled(false)
 	flags.SetIsSampled(false)
 	assert.False(t, flags.IsSampled())
+	assert.Equal(t, uint32(0), flags.AsRaw())
 
 	flags.SetIsSampled(true)
 	flags.SetIsSampled(true)
 	assert.True(t, flags.IsSampled())
+	assert.Equal(t, uint32(1), flags.AsRaw())
 
 	moveFlags := NewLogRecordFlags()
 	assert.False(t, moveFlags.IsSampled())

@@ -72,7 +72,7 @@ func readTraceData(iter *jsoniter.Iterator) otlptrace.TracesData {
 				return true
 			})
 		default:
-			iter.ReportError("root", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -95,7 +95,7 @@ func readResourceSpans(iter *jsoniter.Iterator) *otlptrace.ResourceSpans {
 				case "droppedAttributesCount", "dropped_attributes_count":
 					rs.Resource.DroppedAttributesCount = json.ReadUint32(iter)
 				default:
-					iter.ReportError("readResourceSpans.resource", fmt.Sprintf("unknown field:%v", f))
+					iter.Skip()
 				}
 				return true
 			})
@@ -107,7 +107,7 @@ func readResourceSpans(iter *jsoniter.Iterator) *otlptrace.ResourceSpans {
 		case "schemaUrl", "schema_url":
 			rs.SchemaUrl = iter.ReadString()
 		default:
-			iter.ReportError("readResourceSpans", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -129,7 +129,7 @@ func readScopeSpans(iter *jsoniter.Iterator) *otlptrace.ScopeSpans {
 		case "schemaUrl", "schema_url":
 			ils.SchemaUrl = iter.ReadString()
 		default:
-			iter.ReportError("readScopeSpans", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -192,12 +192,12 @@ func readSpan(iter *jsoniter.Iterator) *otlptrace.Span {
 				case "code":
 					sp.Status.Code = otlptrace.Status_StatusCode(json.ReadEnumValue(iter, otlptrace.Status_StatusCode_value))
 				default:
-					iter.ReportError("readSpan.status", fmt.Sprintf("unknown field:%v", f))
+					iter.Skip()
 				}
 				return true
 			})
 		default:
-			iter.ReportError("readSpan", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -227,7 +227,7 @@ func readSpanLink(iter *jsoniter.Iterator) *otlptrace.Span_Link {
 		case "droppedAttributesCount", "dropped_attributes_count":
 			link.DroppedAttributesCount = json.ReadUint32(iter)
 		default:
-			iter.ReportError("readSpanLink", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -251,7 +251,7 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 		case "droppedAttributesCount", "dropped_attributes_count":
 			event.DroppedAttributesCount = json.ReadUint32(iter)
 		default:
-			iter.ReportError("readSpanEvent", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
