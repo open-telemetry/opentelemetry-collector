@@ -688,23 +688,34 @@ func TestMetricsClone(t *testing.T) {
 	assert.EqualValues(t, metrics, metrics.Clone())
 }
 
-func TestMetricsDataPointFlags(t *testing.T) {
-	gauge := generateTestGauge()
-	assert.False(t, gauge.DataPoints().At(0).Flags().NoRecordedValue())
+func TestMetricDataPointFlags(t *testing.T) {
+	flags := generateTestMetricDataPointFlags()
+	assert.False(t, flags.NoRecordedValue())
+	assert.Equal(t, uint32(0), flags.AsRaw())
+	flags.SetNoRecordedValue(true)
+	assert.True(t, flags.NoRecordedValue())
+	assert.Equal(t, uint32(1), flags.AsRaw())
 
-	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(true)
-	assert.True(t, gauge.DataPoints().At(1).Flags().NoRecordedValue())
-	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(false)
-	assert.False(t, gauge.DataPoints().At(1).Flags().NoRecordedValue())
+	flags.SetNoRecordedValue(false)
+	flags.SetNoRecordedValue(false)
+	assert.False(t, flags.NoRecordedValue())
+	assert.Equal(t, uint32(0), flags.AsRaw())
 
-	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(true)
-	gauge.DataPoints().At(1).Flags().SetNoRecordedValue(true)
-	assert.True(t, gauge.DataPoints().At(1).Flags().NoRecordedValue())
+	flags.SetNoRecordedValue(true)
+	flags.SetNoRecordedValue(true)
+	assert.True(t, flags.NoRecordedValue())
+	assert.Equal(t, uint32(1), flags.AsRaw())
 
-	gauge.DataPoints().At(0).Flags().SetNoRecordedValue(true)
-	gauge.DataPoints().At(0).Flags().MoveTo(gauge.DataPoints().At(1).Flags())
-	assert.False(t, gauge.DataPoints().At(0).Flags().NoRecordedValue())
-	assert.True(t, gauge.DataPoints().At(1).Flags().NoRecordedValue())
+	moveFlags := NewMetricDataPointFlags()
+	assert.False(t, moveFlags.NoRecordedValue())
+
+	flags.MoveTo(moveFlags)
+	assert.False(t, flags.NoRecordedValue())
+	assert.True(t, moveFlags.NoRecordedValue())
+
+	moveFlags.CopyTo(flags)
+	assert.True(t, flags.NoRecordedValue())
+	assert.True(t, moveFlags.NoRecordedValue())
 }
 
 func BenchmarkMetricsClone(b *testing.B) {
