@@ -361,8 +361,8 @@ func TestMinMaxTLSVersions(t *testing.T) {
 		outMaxVersion uint16
 		errorTxt      string
 	}{
-		{name: `TLS Config ["", ""] to give [0, 0]`, minVersion: "", maxVersion: "", outMinVersion: 0, outMaxVersion: 0},
-		{name: `TLS Config ["", "1.3"] to give [0, TLS1.3]`, minVersion: "", maxVersion: "1.3", outMinVersion: 0, outMaxVersion: tls.VersionTLS13},
+		{name: `TLS Config ["", ""] to give [TLS1.2, 0]`, minVersion: "", maxVersion: "", outMinVersion: tls.VersionTLS12, outMaxVersion: 0},
+		{name: `TLS Config ["", "1.3"] to give [TLS1.2, TLS1.3]`, minVersion: "", maxVersion: "1.3", outMinVersion: tls.VersionTLS12, outMaxVersion: tls.VersionTLS13},
 		{name: `TLS Config ["1.2", ""] to give [TLS1.2, 0]`, minVersion: "1.2", maxVersion: "", outMinVersion: tls.VersionTLS12, outMaxVersion: 0},
 		{name: `TLS Config ["1.3", "1.3"] to give [TLS1.3, TLS1.3]`, minVersion: "1.3", maxVersion: "1.3", outMinVersion: tls.VersionTLS13, outMaxVersion: tls.VersionTLS13},
 		{name: `TLS Config ["1.0", "1.1"] to give [TLS1.0, TLS1.1]`, minVersion: "1.0", maxVersion: "1.1", outMinVersion: tls.VersionTLS10, outMaxVersion: tls.VersionTLS11},
