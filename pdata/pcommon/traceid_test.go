@@ -12,22 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package pcommon
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
+func TestTraceID(t *testing.T) {
+	tid := InvalidTraceID()
+	assert.Equal(t, [16]byte{}, tid.Bytes())
+	assert.True(t, tid.IsEmpty())
+	assert.Equal(t, "", tid.HexString())
 
-func main() {
-	for _, fp := range internal.AllFiles {
-		check(fp.GenerateFile())
-		check(fp.GenerateTestFile())
-		check(fp.GenerateInternalFile())
-	}
+	tid = NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
+	assert.False(t, tid.IsEmpty())
+	assert.Equal(t, "01020304050607080807060504030201", tid.HexString())
 }

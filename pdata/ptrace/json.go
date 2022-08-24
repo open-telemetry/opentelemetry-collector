@@ -41,7 +41,7 @@ func newJSONMarshaler() *jsonMarshaler {
 
 func (e *jsonMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 	buf := bytes.Buffer{}
-	pb := internal.TracesToProto(td)
+	pb := internal.TracesToProto(internal.Traces(td))
 	err := e.delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
@@ -59,7 +59,7 @@ func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	td := readTraceData(iter)
 	err := iter.Error
-	return internal.TracesFromProto(td), err
+	return Traces(internal.TracesFromProto(td)), err
 }
 
 func readTraceData(iter *jsoniter.Iterator) otlptrace.TracesData {

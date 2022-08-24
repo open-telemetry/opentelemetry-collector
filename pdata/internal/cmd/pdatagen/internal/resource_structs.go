@@ -15,8 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var resourceFile = &File{
-	Name:     "resource",
-	IsCommon: true,
+	Name:        "resource",
+	PackageName: "pcommon",
 	imports: []string{
 		`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 	},
@@ -24,6 +24,8 @@ var resourceFile = &File{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
+		``,
+		`"go.opentelemetry.io/collector/pdata/internal"`,
 	},
 	structs: []baseStruct{
 		resource,
@@ -32,6 +34,7 @@ var resourceFile = &File{
 
 var resource = &messageValueStruct{
 	structName:     "Resource",
+	packageName:    "pcommon",
 	description:    "// Resource is a message representing the resource information.",
 	originFullName: "otlpresource.Resource",
 	fields: []baseField{

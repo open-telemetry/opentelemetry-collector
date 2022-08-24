@@ -21,38 +21,41 @@ import (
 
 const immutableSliceTemplate = `// ${structName} represents a []${itemType} slice that cannot be mutated.
 // The instance of ${structName} can be assigned to multiple objects since it's immutable.
-type ${structName} struct {
-	value []${itemType}
+type ${structName} internal.${structName}
+
+func (ms ${structName}) getOrig() []${itemType} {
+	return internal.GetOrig${structName}(internal.${structName}(ms))
 }
 
 // New${structName} creates a new ${structName} by copying the provided []${itemType} slice.
-func New${structName}(val []${itemType}) ${structName} {
-	is := ${structName}{}
-	if len(val) != 0 {
-		is.value = make([]${itemType}, len(val))
-		copy(is.value, val)
+func New${structName}(orig []${itemType}) ${structName} {
+	if len(orig) == 0 {
+		return ${structName}(internal.New${structName}(nil))
 	}
-	return is
+	copyOrig := make([]${itemType}, len(orig))
+	copy(copyOrig, orig)
+	return ${structName}(internal.New${structName}(copyOrig))
 }
 
 // AsRaw returns a copy of the []${itemType} slice.
-func (is ${structName}) AsRaw() []${itemType} {
-	if len(is.value) == 0 {
+func (ms ${structName}) AsRaw() []${itemType} {
+	orig := ms.getOrig()
+	if len(orig) == 0 {
 		return nil
 	}
-	val := make([]${itemType}, len(is.value))
-	copy(val, is.value)
-	return val
+	copyOrig := make([]${itemType}, len(orig))
+	copy(copyOrig, orig)
+	return copyOrig
 }
 
 // Len returns length of the []${itemType} slice value.
-func (is ${structName}) Len() int {
-	return len(is.value)
+func (ms ${structName}) Len() int {
+	return len(ms.getOrig())
 }
 
 // At returns an item from particular index.
-func (is ${structName}) At(i int) ${itemType} {
-	return is.value[i]
+func (ms ${structName}) At(i int) ${itemType} {
+	return ms.getOrig()[i]
 }`
 
 const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
@@ -82,7 +85,7 @@ const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := New${structName}(tt.orig)
 			assert.Equal(t, tt.want, s.AsRaw())
-			assert.Equal(t, len(s.value), s.Len())
+			assert.Equal(t, len(s.getOrig()), s.Len())
 			if len(tt.orig) > 0 {
 				// verify that orig mutation doesn't have any effect
 				tt.orig[0] = ${itemType}(0)
@@ -92,20 +95,31 @@ const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
 	}
 }`
 
-const immutableSliceAliasTemplate = `// ${structName} represents a []${itemType} slice that cannot be mutated.
-type ${structName} = internal.${structName}
+const immutableSliceInternalTemplate = `
+type ${structName} struct {
+	orig []${itemType}
+}
 
-// New${structName} creates a new ${structName} by copying the provided []${itemType} slice.
-var New${structName} = internal.New${structName}
-`
+func GetOrig${structName}(ms ${structName}) []${itemType} {
+	return ms.orig
+}
+
+func New${structName}(orig []${itemType}) ${structName} {
+	return ${structName}{orig: orig}
+}`
 
 type immutableSliceStruct struct {
-	structName string
-	itemType   string
+	structName  string
+	packageName string
+	itemType    string
 }
 
 func (iss *immutableSliceStruct) getName() string {
 	return iss.structName
+}
+
+func (iss *immutableSliceStruct) getPackageName() string {
+	return iss.packageName
 }
 
 func (iss *immutableSliceStruct) generateStruct(sb *strings.Builder) {
@@ -136,8 +150,8 @@ func (iss *immutableSliceStruct) generateTests(sb *strings.Builder) {
 
 func (iss *immutableSliceStruct) generateTestValueHelpers(*strings.Builder) {}
 
-func (iss *immutableSliceStruct) generateAlias(sb *strings.Builder) {
-	sb.WriteString(os.Expand(immutableSliceAliasTemplate, func(name string) string {
+func (iss *immutableSliceStruct) generateInternal(sb *strings.Builder) {
+	sb.WriteString(os.Expand(immutableSliceInternalTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return iss.structName
@@ -150,12 +164,14 @@ func (iss *immutableSliceStruct) generateAlias(sb *strings.Builder) {
 }
 
 var immutableSliceFile = &File{
-	Name:     "immutable_slice",
-	IsCommon: true,
+	Name:        "immutable_slice",
+	PackageName: "pcommon",
 	testImports: []string{
 		`"testing"`,
 		``,
 		`"github.com/stretchr/testify/assert"`,
+		``,
+		`"go.opentelemetry.io/collector/pdata/internal"`,
 	},
 	structs: []baseStruct{
 		immutableByteSliceStruct,
@@ -165,16 +181,19 @@ var immutableSliceFile = &File{
 }
 
 var immutableByteSliceStruct = &immutableSliceStruct{
-	structName: "ImmutableByteSlice",
-	itemType:   "byte",
+	structName:  "ImmutableByteSlice",
+	packageName: "pcommon",
+	itemType:    "byte",
 }
 
 var immutableFloat64SliceStruct = &immutableSliceStruct{
-	structName: "ImmutableFloat64Slice",
-	itemType:   "float64",
+	structName:  "ImmutableFloat64Slice",
+	packageName: "pcommon",
+	itemType:    "float64",
 }
 
 var immutableUInt64SliceStruct = &immutableSliceStruct{
-	structName: "ImmutableUInt64Slice",
-	itemType:   "uint64",
+	structName:  "ImmutableUInt64Slice",
+	packageName: "pcommon",
+	itemType:    "uint64",
 }
