@@ -27,9 +27,10 @@ import (
 // lastBoundary equals  and is the least
 // unrepresentable float64 greater than 1.
 // Can be computed using
-//   b := big.NewFloat(1)
-//   b.SetMantExp(b, 1024)
-//   return b.String()
+//
+//	b := big.NewFloat(1)
+//	b.SetMantExp(b, 1024)
+//	return b.String()
 const lastBoundary = "1.797693135e+308"
 
 // NewTextMetricsMarshaler returns a pmetric.Marshaler to encode to OTLP text bytes.
