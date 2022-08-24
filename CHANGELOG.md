@@ -19,6 +19,7 @@
 - Replace `processorhelper.New[Traces|Metrics|Logs]Exporter` with `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` definition (#5915)
 - Replace `exporterhelper.New[Traces|Metrics|Logs]Exporter` with `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` definition (#5914)
 - Replace ``component.NewExtensionFactory`` with `component.NewExtensionFactoryWithStabilityLevel` definition (#5917)
+- Set TLS 1.2 as default for `min_version` for TLS configuration in clients and servers in case this property is not defined (#5956)
 
 ### 🚩 Deprecations 🚩
 
