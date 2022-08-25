@@ -120,9 +120,16 @@ func NewValueSlice() Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}})
 }
 
-// NewValueBytes creates a new Value with the given ImmutableByteSlice value.
-func NewValueBytes(v ImmutableByteSlice) Value {
-	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: v.getOrig()}})
+// NewValueBytes creates a new Value with the given ByteSlice value.
+// Deprecated: [0.60.0] Use NewValueBytesEmpty and CopyTo.
+func NewValueBytes(v ByteSlice) Value {
+	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: *v.getOrig()}})
+}
+
+// NewValueBytesEmpty creates a new empty Value of byte type.
+// NOTE: The function will be deprecated and renamed to NewValueBytes in 0.61.0.
+func NewValueBytesEmpty() Value {
+	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: nil}})
 }
 
 func newValue(orig *otlpcommon.AnyValue) Value {
@@ -166,7 +173,9 @@ func newValueFromRaw(iv interface{}) Value {
 	case bool:
 		return NewValueBool(tv)
 	case []byte:
-		return NewValueBytes(NewImmutableByteSlice(tv))
+		bv := NewValueBytesEmpty()
+		bv.BytesVal().FromRaw(tv)
+		return bv
 	case map[string]interface{}:
 		mv := NewValueMap()
 		NewMapFromRaw(tv).CopyTo(mv.MapVal())
@@ -257,10 +266,16 @@ func (v Value) SliceVal() Slice {
 }
 
 // BytesVal returns the ImmutableByteSlice value associated with this Value.
-// If the Type() is not ValueTypeBytes then returns an empty slice.
+// If the Type() is not ValueTypeBytes then returns an invalid ByteSlice object. Note that using
+// such slice can cause panic.
+//
 // Calling this function on zero-initialized Value will cause a panic.
-func (v Value) BytesVal() ImmutableByteSlice {
-	return ImmutableByteSlice(internal.NewImmutableByteSlice(v.getOrig().GetBytesValue()))
+func (v Value) BytesVal() ByteSlice {
+	bv, ok := v.getOrig().GetValue().(*otlpcommon.AnyValue_BytesValue)
+	if !ok {
+		return ByteSlice{}
+	}
+	return ByteSlice(internal.NewByteSlice(&bv.BytesValue))
 }
 
 // SetStringVal replaces the string value associated with this Value,
@@ -291,11 +306,20 @@ func (v Value) SetBoolVal(bv bool) {
 	v.getOrig().Value = &otlpcommon.AnyValue_BoolValue{BoolValue: bv}
 }
 
-// SetBytesVal replaces the ImmutableByteSlice value associated with this Value,
+// SetBytesVal replaces the ByteSlice value associated with this Value,
 // it also changes the type to be ValueTypeBytes.
 // Calling this function on zero-initialized Value will cause a panic.
-func (v Value) SetBytesVal(bv ImmutableByteSlice) {
-	v.getOrig().Value = &otlpcommon.AnyValue_BytesValue{BytesValue: bv.getOrig()}
+// Deprecated: [0.60.0] Use SetEmptyBytesVal().FromRaw(v) instead.
+func (v Value) SetBytesVal(bv ByteSlice) {
+	v.getOrig().Value = &otlpcommon.AnyValue_BytesValue{BytesValue: *bv.getOrig()}
+}
+
+// SetEmptyBytesVal sets value to an empty byte slice and returns it.
+// Calling this function on zero-initialized Value will cause a panic.
+func (v Value) SetEmptyBytesVal() ByteSlice {
+	bv := otlpcommon.AnyValue_BytesValue{BytesValue: nil}
+	v.getOrig().Value = &bv
+	return ByteSlice(internal.NewByteSlice(&bv.BytesValue))
 }
 
 // SetEmptyMapVal sets value to an empty map and returns it.
@@ -448,7 +472,7 @@ func (v Value) AsString() string {
 		return string(jsonStr)
 
 	case ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.BytesVal().getOrig())
+		return base64.StdEncoding.EncodeToString(*v.BytesVal().getOrig())
 
 	case ValueTypeSlice:
 		jsonStr, _ := json.Marshal(v.SliceVal().AsRaw())
@@ -713,7 +737,8 @@ func (m Map) InsertBool(k string, v bool) {
 
 // InsertBytes adds the ImmutableByteSlice Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
-func (m Map) InsertBytes(k string, v ImmutableByteSlice) {
+// Deprecated: [0.60.0] Use Get(k) and SetEmptyBytesVal().FromRaw(v) instead.
+func (m Map) InsertBytes(k string, v ByteSlice) {
 	if _, existing := m.Get(k); !existing {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueBytes(k, v))
 	}
@@ -771,7 +796,7 @@ func (m Map) UpdateBool(k string, v bool) {
 //
 //	toVal, ok := m.Get(k)
 //	if ok {
-//		toVal.SetBytesVal(v)
+//		toVal.SetEmptyBytesVal().FromRaw(v)
 //	}
 func (m Map) UpdateBytes(k string, v ImmutableByteSlice) {
 	if av, existing := m.Get(k); existing {
@@ -837,12 +862,24 @@ func (m Map) UpsertBool(k string, v bool) {
 // UpsertBytes performs the Insert or Update action. The ImmutableByteSlice Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) UpsertBytes(k string, v ImmutableByteSlice) {
+// Deprecated: [0.60.0] Use UpsertEmptyBytes().FromRaw(v) instead.
+func (m Map) UpsertBytes(k string, v ByteSlice) {
 	if av, existing := m.Get(k); existing {
 		av.SetBytesVal(v)
 	} else {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueBytes(k, v))
 	}
+}
+
+// UpsertEmptyBytes inserts or updates an empty byte slice under given key and returns it.
+func (m Map) UpsertEmptyBytes(k string) ByteSlice {
+	bv := otlpcommon.AnyValue_BytesValue{}
+	if av, existing := m.Get(k); existing {
+		av.getOrig().Value = &bv
+	} else {
+		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &bv}})
+	}
+	return ByteSlice(internal.NewByteSlice(&bv.BytesValue))
 }
 
 // UpsertEmptyMap inserts or updates an empty map under given key and returns it.
@@ -959,4 +996,34 @@ func (es Slice) AsRaw() []interface{} {
 		rawSlice = append(rawSlice, es.At(i).asRaw())
 	}
 	return rawSlice
+}
+
+// Deprecated: [0.60.0] Use ByteSlice instead.
+type ImmutableByteSlice = ByteSlice
+
+// NewImmutableByteSlice creates a new ByteSlice by copying the provided []byte slice.
+// Deprecated: [0.60.0] Use New{structName}() and {structName}.FromRaw([]byte) instead
+func NewImmutableByteSlice(from []byte) ByteSlice {
+	orig := copyByteSlice(from)
+	return ByteSlice(internal.NewByteSlice(&orig))
+}
+
+// Deprecated: [0.60.0] Use Float64Slice instead.
+type ImmutableFloat64Slice = Float64Slice
+
+// NewImmutableFloat64Slice creates a new Float64Slice by copying the provided []float64 slice.
+// Deprecated: [0.60.0] Use New{structName}() and {structName}.FromRaw([]float64) instead
+func NewImmutableFloat64Slice(from []float64) Float64Slice {
+	orig := copyFloat64Slice(from)
+	return Float64Slice(internal.NewFloat64Slice(&orig))
+}
+
+// Deprecated: [0.60.0] Use UInt64Slice instead.
+type ImmutableUInt64Slice = UInt64Slice
+
+// NewImmutableUInt64Slice creates a new UInt64Slice by copying the provided []uint64 slice.
+// Deprecated: [0.60.0] Use New{structName}() and {structName}.FromRaw([]uint64) instead
+func NewImmutableUInt64Slice(from []uint64) UInt64Slice {
+	orig := copyUInt64Slice(from)
+	return UInt64Slice(internal.NewUInt64Slice(&orig))
 }

@@ -1543,23 +1543,25 @@ func (ms HistogramDataPoint) SetSum(v float64) {
 }
 
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) BucketCounts() pcommon.ImmutableUInt64Slice {
-	return pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice(ms.getOrig().BucketCounts))
+func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
+	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
 }
 
 // SetBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetBucketCounts(v pcommon.ImmutableUInt64Slice) {
-	ms.getOrig().BucketCounts = internal.GetOrigImmutableUInt64Slice(internal.ImmutableUInt64Slice(v))
+// Deprecated: [0.60.0] Use BucketCounts().FromRaw() instead
+func (ms HistogramDataPoint) SetBucketCounts(v pcommon.UInt64Slice) {
+	ms.getOrig().BucketCounts = *internal.GetOrigUInt64Slice(internal.UInt64Slice(v))
 }
 
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) ExplicitBounds() pcommon.ImmutableFloat64Slice {
-	return pcommon.ImmutableFloat64Slice(internal.NewImmutableFloat64Slice(ms.getOrig().ExplicitBounds))
+func (ms HistogramDataPoint) ExplicitBounds() pcommon.Float64Slice {
+	return pcommon.Float64Slice(internal.NewFloat64Slice(&ms.getOrig().ExplicitBounds))
 }
 
 // SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetExplicitBounds(v pcommon.ImmutableFloat64Slice) {
-	ms.getOrig().ExplicitBounds = internal.GetOrigImmutableFloat64Slice(internal.ImmutableFloat64Slice(v))
+// Deprecated: [0.60.0] Use ExplicitBounds().FromRaw() instead
+func (ms HistogramDataPoint) SetExplicitBounds(v pcommon.Float64Slice) {
+	ms.getOrig().ExplicitBounds = *internal.GetOrigFloat64Slice(internal.Float64Slice(v))
 }
 
 // Exemplars returns the Exemplars associated with this HistogramDataPoint.
@@ -2019,13 +2021,14 @@ func (ms Buckets) SetOffset(v int32) {
 }
 
 // BucketCounts returns the bucketcounts associated with this Buckets.
-func (ms Buckets) BucketCounts() pcommon.ImmutableUInt64Slice {
-	return pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice(ms.getOrig().BucketCounts))
+func (ms Buckets) BucketCounts() pcommon.UInt64Slice {
+	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
 }
 
 // SetBucketCounts replaces the bucketcounts associated with this Buckets.
-func (ms Buckets) SetBucketCounts(v pcommon.ImmutableUInt64Slice) {
-	ms.getOrig().BucketCounts = internal.GetOrigImmutableUInt64Slice(internal.ImmutableUInt64Slice(v))
+// Deprecated: [0.60.0] Use BucketCounts().FromRaw() instead
+func (ms Buckets) SetBucketCounts(v pcommon.UInt64Slice) {
+	ms.getOrig().BucketCounts = *internal.GetOrigUInt64Slice(internal.UInt64Slice(v))
 }
 
 // CopyTo copies all properties from the current struct to the dest.

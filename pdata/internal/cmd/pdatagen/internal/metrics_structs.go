@@ -534,7 +534,7 @@ var valueFloat64Field = &primitiveField{
 var bucketCountsField = &primitiveSliceField{
 	fieldName:         "BucketCounts",
 	originFieldName:   "BucketCounts",
-	returnType:        "ImmutableUInt64Slice",
+	returnType:        "UInt64Slice",
 	returnPackageName: "pcommon",
 	defaultVal:        "[]uint64(nil)",
 	rawType:           "[]uint64",
@@ -544,7 +544,7 @@ var bucketCountsField = &primitiveSliceField{
 var explicitBoundsField = &primitiveSliceField{
 	fieldName:         "ExplicitBounds",
 	originFieldName:   "ExplicitBounds",
-	returnType:        "ImmutableFloat64Slice",
+	returnType:        "Float64Slice",
 	returnPackageName: "pcommon",
 	defaultVal:        "[]float64(nil)",
 	rawType:           "[]float64",
