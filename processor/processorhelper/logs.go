@@ -36,14 +36,28 @@ type logProcessor struct {
 	consumer.Logs
 }
 
-// NewLogsProcessor creates a LogsProcessor that ensure context propagation and the right tags are set.
-// TODO: Add observability metrics support
-func NewLogsProcessor(
+// Deprecated: [v0.59.0] use version with NewLogsProcessor.
+func NewLogsProcessorWithCreateSettings(
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 	logsFunc ProcessLogsFunc,
 	options ...Option,
 ) (component.LogsProcessor, error) {
+	return NewLogsProcessor(ctx, set, cfg, nextConsumer, logsFunc, options...)
+}
+
+// NewLogsProcessor creates a component.LogsProcessor that ensure context propagation and the right tags are set.
+func NewLogsProcessor(
+	_ context.Context,
+	_ component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
+	logsFunc ProcessLogsFunc,
+	options ...Option,
+) (component.LogsProcessor, error) {
+	// TODO: Add observability metrics support
 	if logsFunc == nil {
 		return nil, errors.New("nil logsFunc")
 	}

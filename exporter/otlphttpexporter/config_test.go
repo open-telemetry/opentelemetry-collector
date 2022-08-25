@@ -22,39 +22,32 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalExporter(confmap.New(), cfg))
+	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	// Default/Empty config is invalid.
+	assert.Error(t, cfg.Validate())
+}
 
-	// Bad config
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "bad_empty_config.yaml"), factories)
-
-	require.Error(t, err)
-
-	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, e0, factory.CreateDefaultConfig())
-
-	// Good config
-	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+func TestUnmarshalConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
-	assert.Equal(t, e1,
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalExporter(cm, cfg))
+	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
@@ -86,5 +79,5 @@ func TestLoadConfig(t *testing.T) {
 				Timeout:         time.Second * 10,
 				Compression:     "gzip",
 			},
-		})
+		}, cfg)
 }

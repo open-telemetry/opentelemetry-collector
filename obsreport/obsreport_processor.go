@@ -49,7 +49,6 @@ type Processor struct {
 
 // ProcessorSettings are settings for creating a Processor.
 type ProcessorSettings struct {
-	Level                   configtelemetry.Level
 	ProcessorID             config.ComponentID
 	ProcessorCreateSettings component.ProcessorCreateSettings
 }
@@ -57,7 +56,7 @@ type ProcessorSettings struct {
 // NewProcessor creates a new Processor.
 func NewProcessor(cfg ProcessorSettings) *Processor {
 	return &Processor{
-		level:    cfg.Level,
+		level:    cfg.ProcessorCreateSettings.MetricsLevel,
 		mutators: []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 	}
 }

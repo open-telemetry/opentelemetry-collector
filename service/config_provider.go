@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
@@ -66,25 +67,18 @@ type configProvider struct {
 }
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
-// TODO: embed confmap.ResolverSettings into this to avoid duplicates.
 type ConfigProviderSettings struct {
-	// Locations from where the confmap.Conf is retrieved, and merged in the given order.
-	// It is required to have at least one location.
-	Locations []string
-
-	// MapProviders is a map of pairs <scheme, confmap.Provider>.
-	// It is required to have at least one confmap.Provider.
-	MapProviders map[string]confmap.Provider
-
-	// MapConverters is a slice of confmap.Converter.
-	MapConverters []confmap.Converter
+	// ResolverSettings are the settings to configure the behavior of the confmap.Resolver.
+	ResolverSettings confmap.ResolverSettings
 }
 
-func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings {
+func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 	return ConfigProviderSettings{
-		Locations:     locations,
-		MapProviders:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New()),
-		MapConverters: []confmap.Converter{expandconverter.New()},
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:       uris,
+			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New()),
+			Converters: []confmap.Converter{expandconverter.New()},
+		},
 	}
 }
 
@@ -95,7 +89,7 @@ func newDefaultConfigProviderSettings(locations []string) ConfigProviderSettings
 //
 // * Then unmarshalls the confmap.Conf into the service Config.
 func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
-	mr, err := confmap.NewResolver(confmap.ResolverSettings{URIs: set.Locations, Providers: set.MapProviders, Converters: set.MapConverters})
+	mr, err := confmap.NewResolver(set.ResolverSettings)
 	if err != nil {
 		return nil, err
 	}

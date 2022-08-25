@@ -22,31 +22,29 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalExporter(confmap.New(), cfg))
+	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+}
 
+func TestUnmarshalConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, e0, factory.CreateDefaultConfig())
-
-	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
-	assert.Equal(t, e1,
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalExporter(cm, cfg))
+	assert.Equal(t,
 		&Config{
-			ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+			ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 			LogLevel:           zapcore.DebugLevel,
 			SamplingInitial:    10,
 			SamplingThereafter: 50,
-		})
+		}, cfg)
 }

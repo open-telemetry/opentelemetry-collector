@@ -23,7 +23,6 @@ import (
 	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -37,7 +36,6 @@ func TestExportEnqueueFailure(t *testing.T) {
 
 	insts := newInstruments(metric.NewRegistry())
 	obsrep := newObsExporter(obsreport.ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	}, insts)

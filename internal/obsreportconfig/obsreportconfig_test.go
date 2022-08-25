@@ -36,17 +36,17 @@ func TestConfigure(t *testing.T) {
 		{
 			name:      "basic",
 			level:     configtelemetry.LevelBasic,
-			wantViews: allViews().Views,
+			wantViews: allViews(),
 		},
 		{
 			name:      "normal",
 			level:     configtelemetry.LevelNormal,
-			wantViews: allViews().Views,
+			wantViews: allViews(),
 		},
 		{
 			name:      "detailed",
 			level:     configtelemetry.LevelDetailed,
-			wantViews: allViews().Views,
+			wantViews: allViews(),
 		},
 	}
 	for _, tt := range tests {

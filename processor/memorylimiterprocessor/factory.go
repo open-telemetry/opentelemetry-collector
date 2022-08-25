@@ -34,14 +34,14 @@ var processorCapabilities = consumer.Capabilities{MutatesData: false}
 type factory struct {
 	// memoryLimiters stores memoryLimiter instances with unique configs that multiple processors can reuse.
 	// This avoids running multiple memory checks (ie: GC) for every processor using the same processor config.
-	memoryLimiters map[config.ComponentID]*memoryLimiter
+	memoryLimiters map[config.Processor]*memoryLimiter
 	lock           sync.Mutex
 }
 
 // NewFactory returns a new factory for the Memory Limiter processor.
 func NewFactory() component.ProcessorFactory {
 	f := &factory{
-		memoryLimiters: map[config.ComponentID]*memoryLimiter{},
+		memoryLimiters: map[config.Processor]*memoryLimiter{},
 	}
 	return component.NewProcessorFactory(
 		typeStr,
@@ -60,7 +60,7 @@ func createDefaultConfig() config.Processor {
 }
 
 func (f *factory) createTracesProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
@@ -69,9 +69,7 @@ func (f *factory) createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessor(
-		cfg,
-		nextConsumer,
+	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
@@ -79,7 +77,7 @@ func (f *factory) createTracesProcessor(
 }
 
 func (f *factory) createMetricsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
@@ -88,9 +86,7 @@ func (f *factory) createMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetricsProcessor(
-		cfg,
-		nextConsumer,
+	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
@@ -98,7 +94,7 @@ func (f *factory) createMetricsProcessor(
 }
 
 func (f *factory) createLogsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
@@ -107,9 +103,7 @@ func (f *factory) createLogsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogsProcessor(
-		cfg,
-		nextConsumer,
+	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),
@@ -122,7 +116,7 @@ func (f *factory) getMemoryLimiter(set component.ProcessorCreateSettings, cfg co
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	if memLimiter, ok := f.memoryLimiters[cfg.ID()]; ok {
+	if memLimiter, ok := f.memoryLimiters[cfg]; ok {
 		return memLimiter, nil
 	}
 
@@ -131,6 +125,6 @@ func (f *factory) getMemoryLimiter(set component.ProcessorCreateSettings, cfg co
 		return nil, err
 	}
 
-	f.memoryLimiters[cfg.ID()] = memLimiter
+	f.memoryLimiters[cfg] = memLimiter
 	return memLimiter, nil
 }

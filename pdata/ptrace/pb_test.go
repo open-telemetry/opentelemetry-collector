@@ -31,13 +31,12 @@ func TestProtoTracesUnmarshaler_error(t *testing.T) {
 }
 
 func TestProtoSizer(t *testing.T) {
-	sizer := NewProtoMarshaler().(Sizer)
 	marshaler := NewProtoMarshaler()
 	td := NewTraces()
 	rms := td.ResourceSpans()
 	rms.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 
-	size := sizer.TracesSize(td)
+	size := marshaler.TracesSize(td)
 
 	bytes, err := marshaler.MarshalTraces(td)
 	require.NoError(t, err)

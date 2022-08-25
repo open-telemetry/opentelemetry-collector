@@ -85,8 +85,13 @@ func Compile(cfg Config) error {
 	}
 
 	cfg.Logger.Info("Compiling")
+
+	args := []string{"build", "-ldflags=-s -w", "-trimpath", "-o", cfg.Distribution.Name}
+	if cfg.Distribution.BuildTags != "" {
+		args = append(args, "-tags", cfg.Distribution.BuildTags)
+	}
 	// #nosec G204
-	cmd := exec.Command(cfg.Distribution.Go, "build", "-ldflags=-s -w", "-trimpath", "-o", cfg.Distribution.Name)
+	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to compile the OpenTelemetry Collector distribution: %w. Output: %q", err, out)

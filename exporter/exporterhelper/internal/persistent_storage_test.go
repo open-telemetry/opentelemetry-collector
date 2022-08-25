@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build enable_unstable
-// +build enable_unstable
-
 package internal
 
 import (
@@ -60,7 +57,7 @@ func createTestPersistentStorage(client storage.Client) *persistentContiguousSto
 type fakeTracesRequest struct {
 	td                         ptrace.Traces
 	processingFinishedCallback func()
-	PersistentRequest
+	Request
 }
 
 func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
@@ -84,7 +81,7 @@ func (fd *fakeTracesRequest) SetOnProcessingFinished(callback func()) {
 }
 
 func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
-	return func(bytes []byte) (PersistentRequest, error) {
+	return func(bytes []byte) (Request, error) {
 		traces, err := ptrace.NewProtoUnmarshaler().UnmarshalTraces(bytes)
 		if err != nil {
 			return nil, err
@@ -419,8 +416,8 @@ func TestPersistentStorage_ItemIndexMarshaling(t *testing.T) {
 	}
 }
 
-func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) PersistentRequest {
-	var readReq PersistentRequest
+func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) Request {
+	var readReq Request
 	require.Eventually(t, func() bool {
 		readReq = <-pcs.get()
 		return true

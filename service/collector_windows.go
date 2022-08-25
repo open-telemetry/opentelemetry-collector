@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -127,8 +126,7 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 }
 
 func (s *windowsService) stop(colErrorChannel chan error) error {
-	// simulate a SIGTERM signal to terminate the collector server
-	s.col.signalsChannel <- syscall.SIGTERM
+	s.col.Shutdown()
 	// return the response of col.Start
 	return <-colErrorChannel
 }
@@ -147,9 +145,9 @@ func newWithWindowsEventLogCore(set CollectorSettings, flags *flag.FlagSet, elog
 		var err error
 		cfgSet := newDefaultConfigProviderSettings(getConfigFlag(flags))
 		// Append the "overwrite properties converter" as the first converter.
-		cfgSet.MapConverters = append(
+		cfgSet.ResolverSettings.Converters = append(
 			[]confmap.Converter{overwritepropertiesconverter.New(getSetFlag(flags))},
-			cfgSet.MapConverters...)
+			cfgSet.ResolverSettings.Converters...)
 		set.ConfigProvider, err = NewConfigProvider(cfgSet)
 		if err != nil {
 			return nil, err

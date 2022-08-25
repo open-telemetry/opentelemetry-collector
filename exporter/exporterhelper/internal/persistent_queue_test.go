@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build enable_unstable
-// +build enable_unstable
-
 package internal
 
 import (
@@ -89,7 +86,7 @@ func TestPersistentQueue_Close(t *testing.T) {
 	traces := newTraces(1, 10)
 	req := newFakeTracesRequest(traces)
 
-	wq.StartConsumers(100, func(item interface{}) {})
+	wq.StartConsumers(100, func(item Request) {})
 
 	for i := 0; i < 1000; i++ {
 		wq.Produce(req)
@@ -147,7 +144,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
 
 			numMessagesConsumed := atomic.NewInt32(0)
-			tq.StartConsumers(c.numConsumers, func(item interface{}) {
+			tq.StartConsumers(c.numConsumers, func(item Request) {
 				if item != nil {
 					numMessagesConsumed.Inc()
 				}

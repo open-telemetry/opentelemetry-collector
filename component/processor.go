@@ -168,26 +168,29 @@ type processorFactory struct {
 	baseFactory
 	ProcessorCreateDefaultConfigFunc
 	CreateTracesProcessorFunc
+	tracesStabilityLevel StabilityLevel
 	CreateMetricsProcessorFunc
+	metricsStabilityLevel StabilityLevel
 	CreateLogsProcessorFunc
+	logsStabilityLevel StabilityLevel
 }
 
 func (p processorFactory) TracesProcessorStability() StabilityLevel {
-	return p.getStabilityLevel(config.TracesDataType)
+	return p.tracesStabilityLevel
 }
 
 func (p processorFactory) MetricsProcessorStability() StabilityLevel {
-	return p.getStabilityLevel(config.MetricsDataType)
+	return p.metricsStabilityLevel
 }
 
 func (p processorFactory) LogsProcessorStability() StabilityLevel {
-	return p.getStabilityLevel(config.LogsDataType)
+	return p.logsStabilityLevel
 }
 
 // WithTracesProcessor overrides the default "error not supported" implementation for CreateTracesProcessor and the default "undefined" stability level.
 func WithTracesProcessor(createTracesProcessor CreateTracesProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
-		o.stability[config.TracesDataType] = sl
+		o.tracesStabilityLevel = sl
 		o.CreateTracesProcessorFunc = createTracesProcessor
 	})
 }
@@ -195,7 +198,7 @@ func WithTracesProcessor(createTracesProcessor CreateTracesProcessorFunc, sl Sta
 // WithMetricsProcessor overrides the default "error not supported" implementation for CreateMetricsProcessor and the default "undefined" stability level.
 func WithMetricsProcessor(createMetricsProcessor CreateMetricsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
-		o.stability[config.MetricsDataType] = sl
+		o.metricsStabilityLevel = sl
 		o.CreateMetricsProcessorFunc = createMetricsProcessor
 	})
 }
@@ -203,7 +206,7 @@ func WithMetricsProcessor(createMetricsProcessor CreateMetricsProcessorFunc, sl 
 // WithLogsProcessor overrides the default "error not supported" implementation for CreateLogsProcessor and the default "undefined" stability level.
 func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {
-		o.stability[config.LogsDataType] = sl
+		o.logsStabilityLevel = sl
 		o.CreateLogsProcessorFunc = createLogsProcessor
 	})
 }
@@ -211,7 +214,7 @@ func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc, sl Stability
 // NewProcessorFactory returns a ProcessorFactory.
 func NewProcessorFactory(cfgType config.Type, createDefaultConfig ProcessorCreateDefaultConfigFunc, options ...ProcessorFactoryOption) ProcessorFactory {
 	f := &processorFactory{
-		baseFactory:                      baseFactory{cfgType: cfgType, stability: make(map[config.DataType]StabilityLevel)},
+		baseFactory:                      baseFactory{cfgType: cfgType},
 		ProcessorCreateDefaultConfigFunc: createDefaultConfig,
 	}
 	for _, opt := range options {

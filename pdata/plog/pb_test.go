@@ -31,12 +31,11 @@ func TestProtoLogsUnmarshaler_error(t *testing.T) {
 }
 
 func TestProtoSizer(t *testing.T) {
-	sizer := NewProtoMarshaler().(Sizer)
 	marshaler := NewProtoMarshaler()
 	ld := NewLogs()
 	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("error")
 
-	size := sizer.LogsSize(ld)
+	size := marshaler.LogsSize(ld)
 
 	bytes, err := marshaler.MarshalLogs(ld)
 	require.NoError(t, err)

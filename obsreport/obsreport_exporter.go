@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -39,7 +38,6 @@ type Exporter struct {
 
 // ExporterSettings are settings for creating an Exporter.
 type ExporterSettings struct {
-	Level                  configtelemetry.Level
 	ExporterID             config.ComponentID
 	ExporterCreateSettings component.ExporterCreateSettings
 }
@@ -47,7 +45,7 @@ type ExporterSettings struct {
 // NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) *Exporter {
 	return &Exporter{
-		level:          cfg.Level,
+		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
@@ -106,7 +104,7 @@ func (exp *Exporter) startOp(ctx context.Context, operationSuffix string) contex
 }
 
 func (exp *Exporter) recordMetrics(ctx context.Context, numSent, numFailedToSend int64, sentMeasure, failedToSendMeasure *stats.Int64Measure) {
-	if obsreportconfig.Level() == configtelemetry.LevelNone {
+	if exp.level == configtelemetry.LevelNone {
 		return
 	}
 	// Ignore the error for now. This should not happen.

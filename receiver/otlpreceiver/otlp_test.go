@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"sync"
@@ -43,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -321,7 +322,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 			resp, err2 := client.Do(req)
 			require.NoError(t, err2)
 
-			body, err2 := ioutil.ReadAll(resp.Body)
+			body, err2 := io.ReadAll(resp.Body)
 			require.NoError(t, err2)
 
 			require.Equal(t, resp.Header.Get("Content-Type"), "text/plain")
@@ -354,7 +355,7 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 	resp, err := client.Do(req)
 	require.NoError(t, err, "Error posting trace to http server: %v", err)
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Errorf("Error reading response from trace http server, %v", err)
 	}
@@ -477,7 +478,7 @@ func testHTTPProtobufRequest(
 	resp, err := client.Do(req)
 	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	require.NoError(t, err, "Error reading response from trace grpc-gateway")
 	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
@@ -570,7 +571,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			resp, err := client.Do(req)
 			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			require.NoError(t, err, "Error reading response from trace grpc-gateway")
 			exRespBytes, err := test.resBodyFunc()
 			require.NoError(t, err, "Error creating expecting response body")
@@ -587,7 +588,9 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
-	defer ln.Close()
+	t.Cleanup(func() {
+		assert.NoError(t, ln.Close())
+	})
 
 	r := newGRPCReceiver(t, otlpReceiverName, addr, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
@@ -599,7 +602,9 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
 	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
-	defer ln.Close()
+	t.Cleanup(func() {
+		assert.NoError(t, ln.Close())
+	})
 
 	r := newHTTPReceiver(t, addr, consumertest.NewNop(), consumertest.NewNop())
 	require.NotNil(t, r)
@@ -675,7 +680,9 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 				require.NoError(t, err)
-				defer cc.Close()
+				defer func() {
+					assert.NoError(t, cc.Close())
+				}()
 
 				for _, ingestionState := range test.ingestionStates {
 					if ingestionState.okToIngest {
@@ -748,7 +755,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 	td := testdata.GenerateTraces(50000)
 	require.Error(t, exportTraces(cc, td))
-	cc.Close()
+	assert.NoError(t, cc.Close())
 	require.NoError(t, ocr.Shutdown(context.Background()))
 
 	cfg.GRPC.MaxRecvMsgSizeMiB = 100
@@ -760,7 +767,9 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 	cc, err = grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
-	defer cc.Close()
+	defer func() {
+		assert.NoError(t, cc.Close())
+	}()
 
 	td = testdata.GenerateTraces(50000)
 	require.NoError(t, exportTraces(cc, td))
@@ -823,7 +832,7 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	require.NoError(t, err)
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, expectedStatusCode, resp.StatusCode)
 
@@ -859,6 +868,7 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 
 func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, tc consumer.Traces, mc consumer.Metrics) component.Component {
 	set := componenttest.NewNopReceiverCreateSettings()
+	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 	var r component.Component
 	var err error
 	if tc != nil {

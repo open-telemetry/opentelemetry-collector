@@ -116,14 +116,12 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:       configtelemetry.LevelNone,
-			ProcessorID: config.NewComponentID(typeStr),
-		}),
-
+		obsrep: newObsReport(),
 		logger: zap.NewNop(),
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
+		context.Background(),
+		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		},
@@ -189,13 +187,12 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:       configtelemetry.LevelNone,
-			ProcessorID: config.NewComponentID(typeStr),
-		}),
+		obsrep: newObsReport(),
 		logger: zap.NewNop(),
 	}
 	tp, err := processorhelper.NewTracesProcessor(
+		context.Background(),
+		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		},
@@ -261,13 +258,12 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
-			Level:       configtelemetry.LevelNone,
-			ProcessorID: config.NewComponentID(typeStr),
-		}),
+		obsrep: newObsReport(),
 		logger: zap.NewNop(),
 	}
 	lp, err := processorhelper.NewLogsProcessor(
+		context.Background(),
+		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		},
@@ -453,4 +449,14 @@ func TestBallastSizeMiB(t *testing.T) {
 			assert.Equal(t, tt.expectResult, tt.expectedMemLimiterBallastSize*mibBytes == ballastExt.(*ballastextension.MemoryBallast).GetBallastSize())
 		})
 	}
+}
+
+func newObsReport() *obsreport.Processor {
+	set := obsreport.ProcessorSettings{
+		ProcessorID:             config.NewComponentID(typeStr),
+		ProcessorCreateSettings: componenttest.NewNopProcessorCreateSettings(),
+	}
+	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone
+
+	return obsreport.NewProcessor(set)
 }

@@ -17,7 +17,7 @@ package fileprovider // import "go.opentelemetry.io/collector/confmap/provider/f
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -48,15 +48,15 @@ func New() confmap.Provider {
 	return &provider{}
 }
 
-func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (confmap.Retrieved, error) {
+func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
-		return confmap.Retrieved{}, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
+		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
 
 	// Clean the path before using it.
-	content, err := ioutil.ReadFile(filepath.Clean(uri[len(schemeName)+1:]))
+	content, err := os.ReadFile(filepath.Clean(uri[len(schemeName)+1:]))
 	if err != nil {
-		return confmap.Retrieved{}, fmt.Errorf("unable to read the file %v: %w", uri, err)
+		return nil, fmt.Errorf("unable to read the file %v: %w", uri, err)
 	}
 
 	return internal.NewRetrievedFromYAML(content)

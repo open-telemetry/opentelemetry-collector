@@ -87,12 +87,33 @@ build configuration given by the "--config" argument.
 	// the distribution parameters, which we accept as CLI flags as well
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
 	cmd.Flags().StringVar(&cfg.Distribution.Name, distributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
+	if err := cmd.Flags().MarkDeprecated(distributionNameFlag, "use config distribution::name"); err != nil {
+		return nil, err
+	}
 	cmd.Flags().StringVar(&cfg.Distribution.Description, distributionDescriptionFlag, "Custom OpenTelemetry Collector distribution", "A descriptive name for the OpenTelemetry Collector distribution")
+	if err := cmd.Flags().MarkDeprecated(distributionDescriptionFlag, "use config distribution::description"); err != nil {
+		return nil, err
+	}
 	cmd.Flags().StringVar(&cfg.Distribution.Version, distributionVersionFlag, "1.0.0", "The version for the OpenTelemetry Collector distribution")
+	if err := cmd.Flags().MarkDeprecated(distributionVersionFlag, "use config distribution::version"); err != nil {
+		return nil, err
+	}
 	cmd.Flags().StringVar(&cfg.Distribution.OtelColVersion, distributionOtelColVersionFlag, cfg.Distribution.OtelColVersion, "Which version of OpenTelemetry Collector to use as base")
+	if err := cmd.Flags().MarkDeprecated(distributionOtelColVersionFlag, "use config distribution::otelcol_version"); err != nil {
+		return nil, err
+	}
 	cmd.Flags().StringVar(&cfg.Distribution.OutputPath, distributionOutputPathFlag, cfg.Distribution.OutputPath, "Where to write the resulting files")
+	if err := cmd.Flags().MarkDeprecated(distributionOutputPathFlag, "use config distribution::output_path"); err != nil {
+		return nil, err
+	}
 	cmd.Flags().StringVar(&cfg.Distribution.Go, distributionGoFlag, "", "The Go binary to use during the compilation phase. Default: go from the PATH")
+	if err := cmd.Flags().MarkDeprecated(distributionGoFlag, "use config distribution::go"); err != nil {
+		return nil, err
+	}
 	cmd.Flags().StringVar(&cfg.Distribution.Module, distributionModuleFlag, "go.opentelemetry.io/collector/cmd/builder", "The Go module for the new distribution")
+	if err := cmd.Flags().MarkDeprecated(distributionModuleFlag, "use config distribution::module"); err != nil {
+		return nil, err
+	}
 
 	// version of this binary
 	cmd.AddCommand(versionCommand())

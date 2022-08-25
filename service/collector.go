@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 
 	"go.uber.org/atomic"
@@ -97,13 +96,12 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	return &Collector{
+		set:               set,
+		state:             atomic.NewInt32(int32(Starting)),
+		shutdownChan:      make(chan struct{}),
+		signalsChannel:    make(chan os.Signal, 1),
 		asyncErrorChannel: make(chan error),
-
-		set:          set,
-		state:        atomic.NewInt32(int32(Starting)),
-		shutdownChan: make(chan struct{}),
 	}, nil
-
 }
 
 // GetState returns current state of the collector server.
@@ -123,17 +121,52 @@ func (col *Collector) Shutdown() {
 	}
 }
 
-// runAndWaitForShutdownEvent waits for one of the shutdown events that can happen.
-func (col *Collector) runAndWaitForShutdownEvent(ctx context.Context) error {
-	col.service.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
+// setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
+// sets the col.service with the service currently running.
+func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
+	col.setCollectorState(Starting)
 
-	col.signalsChannel = make(chan os.Signal, 1)
+	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
+
+	col.service, err = newService(&settings{
+		BuildInfo:         col.set.BuildInfo,
+		Factories:         col.set.Factories,
+		Config:            cfg,
+		AsyncErrorChannel: col.asyncErrorChannel,
+		LoggingOptions:    col.set.LoggingOptions,
+		telemetry:         col.set.telemetry,
+	})
+	if err != nil {
+		return err
+	}
+
+	if !col.set.SkipSettingGRPCLogger {
+		telemetrylogs.SetColGRPCLogger(col.service.telemetrySettings.Logger, cfg.Service.Telemetry.Logs.Level)
+	}
+
+	if err = col.service.Start(ctx); err != nil {
+		return err
+	}
+	col.setCollectorState(Running)
+	return nil
+}
+
+// Run starts the collector according to the given configuration, and waits for it to complete.
+// Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
+func (col *Collector) Run(ctx context.Context) error {
+	if err := col.setupConfigurationComponents(ctx); err != nil {
+		col.setCollectorState(Closed)
+		return err
+	}
+
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
 	if !col.set.DisableGracefulShutdown {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
-	col.setCollectorState(Running)
 LOOP:
 	for {
 		select {
@@ -171,64 +204,11 @@ LOOP:
 	return col.shutdown(ctx)
 }
 
-// setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
-// sets the col.service with the service currently running.
-func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	col.setCollectorState(Starting)
-
-	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
-	if err != nil {
-		return fmt.Errorf("failed to get config: %w", err)
-	}
-
-	col.service, err = newService(&settings{
-		BuildInfo:         col.set.BuildInfo,
-		Factories:         col.set.Factories,
-		Config:            cfg,
-		AsyncErrorChannel: col.asyncErrorChannel,
-		LoggingOptions:    col.set.LoggingOptions,
-		telemetry:         col.set.telemetry,
-	})
-	if err != nil {
-		return err
-	}
-
-	if !col.set.SkipSettingGRPCLogger {
-		telemetrylogs.SetColGRPCLogger(col.service.telemetrySettings.Logger, cfg.Service.Telemetry.Logs.Level)
-	}
-
-	if err = col.service.Start(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Run starts the collector according to the given configuration, and waits for it to complete.
-// Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
-func (col *Collector) Run(ctx context.Context) error {
-	if err := col.setupConfigurationComponents(ctx); err != nil {
-		col.setCollectorState(Closed)
-		return err
-	}
-
-	col.service.telemetrySettings.Logger.Info("Starting "+col.set.BuildInfo.Command+"...",
-		zap.String("Version", col.set.BuildInfo.Version),
-		zap.Int("NumCPU", runtime.NumCPU()),
-	)
-
-	// Everything is ready, now run until an event requiring shutdown happens.
-	return col.runAndWaitForShutdownEvent(ctx)
-}
-
 func (col *Collector) shutdown(ctx context.Context) error {
 	col.setCollectorState(Closing)
 
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
-
-	// Begin shutdown sequence.
-	col.service.telemetrySettings.Logger.Info("Starting shutdown...")
 
 	if err := col.set.ConfigProvider.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))

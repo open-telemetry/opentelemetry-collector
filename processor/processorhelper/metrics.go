@@ -36,14 +36,28 @@ type metricsProcessor struct {
 	consumer.Metrics
 }
 
-// NewMetricsProcessor creates a MetricsProcessor that ensure context propagation and the right tags are set.
-// TODO: Add observability metrics support
-func NewMetricsProcessor(
+// Deprecated: [v0.59.0] use version with NewMetricsProcessor.
+func NewMetricsProcessorWithCreateSettings(
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 	metricsFunc ProcessMetricsFunc,
 	options ...Option,
 ) (component.MetricsProcessor, error) {
+	return NewMetricsProcessor(ctx, set, cfg, nextConsumer, metricsFunc, options...)
+}
+
+// NewMetricsProcessor creates a component.MetricsProcessor that ensure context propagation and the right tags are set.
+func NewMetricsProcessor(
+	_ context.Context,
+	_ component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
+	metricsFunc ProcessMetricsFunc,
+	options ...Option,
+) (component.MetricsProcessor, error) {
+	// TODO: Add observability metrics support
 	if metricsFunc == nil {
 		return nil, errors.New("nil metricsFunc")
 	}
