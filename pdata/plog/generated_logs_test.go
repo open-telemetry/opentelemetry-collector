@@ -486,8 +486,10 @@ func TestLogRecord_SpanID(t *testing.T) {
 
 func TestLogRecord_FlagsStruct(t *testing.T) {
 	ms := NewLogRecord()
-	internal.FillTestLogRecordFlags(internal.LogRecordFlags(ms.FlagsStruct()))
-	assert.Equal(t, LogRecordFlags(internal.GenerateTestLogRecordFlags()), ms.FlagsStruct())
+	assert.Equal(t, NewLogRecordFlagsFromRaw(0), ms.FlagsStruct())
+	testValSpanID := NewLogRecordFlagsFromRaw(7)
+	ms.SetFlagsStruct(testValSpanID)
+	assert.Equal(t, testValSpanID, ms.FlagsStruct())
 }
 
 func TestLogRecord_SeverityText(t *testing.T) {
