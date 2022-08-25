@@ -95,3 +95,20 @@ func ReadUint64(iter *jsoniter.Iterator) uint64 {
 		return 0
 	}
 }
+
+func ReadFloat64(iter *jsoniter.Iterator) float64 {
+	switch iter.WhatIsNext() {
+	case jsoniter.NumberValue:
+		return iter.ReadFloat64()
+	case jsoniter.StringValue:
+		val, err := strconv.ParseFloat(iter.ReadString(), 64)
+		if err != nil {
+			iter.ReportError("ReadUint64", err.Error())
+			return 0
+		}
+		return val
+	default:
+		iter.ReportError("ReadUint64", "unsupported value type")
+		return 0
+	}
+}
