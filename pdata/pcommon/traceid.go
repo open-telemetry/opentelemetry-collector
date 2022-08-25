@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
+
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
