@@ -22,7 +22,6 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/providers/posflag"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"go.uber.org/zap"
@@ -117,10 +116,6 @@ build configuration given by the "--config" argument.
 
 	// version of this binary
 	cmd.AddCommand(versionCommand())
-
-	if err := k.Load(posflag.Provider(cmd.Flags(), ".", k), nil); err != nil {
-		return nil, fmt.Errorf("failed to load command line arguments: %w", err)
-	}
 
 	return cmd, nil
 }
