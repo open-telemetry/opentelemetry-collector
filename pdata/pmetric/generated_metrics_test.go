@@ -1071,16 +1071,16 @@ func TestHistogramDataPoint_Sum(t *testing.T) {
 
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice([]uint64(nil))), ms.BucketCounts())
-	testValBucketCounts := pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice([]uint64{1, 2, 3}))
+	assert.Equal(t, pcommon.NewImmutableUInt64Slice([]uint64(nil)), ms.BucketCounts())
+	testValBucketCounts := pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3})
 	ms.SetBucketCounts(testValBucketCounts)
 	assert.Equal(t, testValBucketCounts, ms.BucketCounts())
 }
 
 func TestHistogramDataPoint_ExplicitBounds(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, pcommon.ImmutableFloat64Slice(internal.NewImmutableFloat64Slice([]float64(nil))), ms.ExplicitBounds())
-	testValExplicitBounds := pcommon.ImmutableFloat64Slice(internal.NewImmutableFloat64Slice([]float64{1, 2, 3}))
+	assert.Equal(t, pcommon.NewImmutableFloat64Slice([]float64(nil)), ms.ExplicitBounds())
+	testValExplicitBounds := pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3})
 	ms.SetExplicitBounds(testValExplicitBounds)
 	assert.Equal(t, testValExplicitBounds, ms.ExplicitBounds())
 }
@@ -1357,8 +1357,8 @@ func TestBuckets_Offset(t *testing.T) {
 
 func TestBuckets_BucketCounts(t *testing.T) {
 	ms := NewBuckets()
-	assert.Equal(t, pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice([]uint64(nil))), ms.BucketCounts())
-	testValBucketCounts := pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice([]uint64{1, 2, 3}))
+	assert.Equal(t, pcommon.NewImmutableUInt64Slice([]uint64(nil)), ms.BucketCounts())
+	testValBucketCounts := pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3})
 	ms.SetBucketCounts(testValBucketCounts)
 	assert.Equal(t, testValBucketCounts, ms.BucketCounts())
 }
@@ -1840,16 +1840,16 @@ func TestExemplar_FilteredAttributes(t *testing.T) {
 
 func TestExemplar_TraceID(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.TraceID(internal.NewTraceID(data.NewTraceID([16]byte{}))), ms.TraceID())
-	testValTraceID := pcommon.TraceID(internal.NewTraceID(data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})))
+	assert.Equal(t, pcommon.NewTraceID(data.NewTraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.NewTraceID(data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
 func TestExemplar_SpanID(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.SpanID(internal.NewSpanID(data.NewSpanID([8]byte{}))), ms.SpanID())
-	testValSpanID := pcommon.SpanID(internal.NewSpanID(data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})))
+	assert.Equal(t, pcommon.NewSpanID(data.NewSpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.NewSpanID(data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }

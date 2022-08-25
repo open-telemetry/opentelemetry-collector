@@ -470,16 +470,16 @@ func TestLogRecord_Timestamp(t *testing.T) {
 
 func TestLogRecord_TraceID(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, pcommon.TraceID(internal.NewTraceID(data.NewTraceID([16]byte{}))), ms.TraceID())
-	testValTraceID := pcommon.TraceID(internal.NewTraceID(data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})))
+	assert.Equal(t, pcommon.NewTraceID(data.NewTraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.NewTraceID(data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
 func TestLogRecord_SpanID(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, pcommon.SpanID(internal.NewSpanID(data.NewSpanID([8]byte{}))), ms.SpanID())
-	testValSpanID := pcommon.SpanID(internal.NewSpanID(data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})))
+	assert.Equal(t, pcommon.NewSpanID(data.NewSpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.NewSpanID(data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }

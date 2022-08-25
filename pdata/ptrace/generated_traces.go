@@ -601,22 +601,22 @@ func (ms Span) MoveTo(dest Span) {
 
 // TraceID returns the traceid associated with this Span.
 func (ms Span) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(internal.NewTraceID(ms.getOrig().TraceId))
+	return pcommon.NewTraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Span.
 func (ms Span) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = internal.GetOrigTraceID(internal.TraceID(v))
+	ms.getOrig().TraceId = v.Bytes()
 }
 
 // SpanID returns the spanid associated with this Span.
 func (ms Span) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(internal.NewSpanID(ms.getOrig().SpanId))
+	return pcommon.NewSpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Span.
 func (ms Span) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = internal.GetOrigSpanID(internal.SpanID(v))
+	ms.getOrig().SpanId = v.Bytes()
 }
 
 // TraceState returns the tracestate associated with this Span.
@@ -631,12 +631,12 @@ func (ms Span) SetTraceState(v TraceState) {
 
 // ParentSpanID returns the parentspanid associated with this Span.
 func (ms Span) ParentSpanID() pcommon.SpanID {
-	return pcommon.SpanID(internal.NewSpanID(ms.getOrig().ParentSpanId))
+	return pcommon.NewSpanID(ms.getOrig().ParentSpanId)
 }
 
 // SetParentSpanID replaces the parentspanid associated with this Span.
 func (ms Span) SetParentSpanID(v pcommon.SpanID) {
-	ms.getOrig().ParentSpanId = internal.GetOrigSpanID(internal.SpanID(v))
+	ms.getOrig().ParentSpanId = v.Bytes()
 }
 
 // Name returns the name associated with this Span.
@@ -1142,22 +1142,22 @@ func (ms SpanLink) MoveTo(dest SpanLink) {
 
 // TraceID returns the traceid associated with this SpanLink.
 func (ms SpanLink) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(internal.NewTraceID(ms.getOrig().TraceId))
+	return pcommon.NewTraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this SpanLink.
 func (ms SpanLink) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = internal.GetOrigTraceID(internal.TraceID(v))
+	ms.getOrig().TraceId = v.Bytes()
 }
 
 // SpanID returns the spanid associated with this SpanLink.
 func (ms SpanLink) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(internal.NewSpanID(ms.getOrig().SpanId))
+	return pcommon.NewSpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this SpanLink.
 func (ms SpanLink) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = internal.GetOrigSpanID(internal.SpanID(v))
+	ms.getOrig().SpanId = v.Bytes()
 }
 
 // TraceState returns the tracestate associated with this SpanLink.

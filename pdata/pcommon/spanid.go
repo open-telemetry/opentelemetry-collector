@@ -13,9 +13,9 @@
 // limitations under the License.
 
 package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
-
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
+	"encoding/hex"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
@@ -23,10 +23,8 @@ import (
 var EmptySpanID = NewSpanID([8]byte{})
 
 // SpanID is span identifier.
-type SpanID internal.SpanID
-
-func (ms SpanID) getOrig() data.SpanID {
-	return internal.GetOrigSpanID(internal.SpanID(ms))
+type SpanID struct {
+	orig [8]byte
 }
 
 // Deprecated: [v0.59.0] use EmptySpanID.
@@ -36,20 +34,20 @@ func InvalidSpanID() SpanID {
 
 // NewSpanID returns a new SpanID from the given byte array.
 func NewSpanID(bytes [8]byte) SpanID {
-	return SpanID(internal.NewSpanID(data.NewSpanID(bytes)))
+	return SpanID{orig: bytes}
 }
 
 // Bytes returns the byte array representation of the SpanID.
 func (ms SpanID) Bytes() [8]byte {
-	return ms.getOrig().Bytes()
+	return ms.orig
 }
 
 // HexString returns hex representation of the SpanID.
 func (ms SpanID) HexString() string {
-	return ms.getOrig().HexString()
+	return hex.EncodeToString(ms.orig[:])
 }
 
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (ms SpanID) IsEmpty() bool {
-	return ms.getOrig().IsEmpty()
+	return data.SpanID(ms.orig).IsEmpty()
 }

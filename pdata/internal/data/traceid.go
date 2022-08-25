@@ -15,8 +15,9 @@
 package data // import "go.opentelemetry.io/collector/pdata/internal/data"
 
 import (
-	"encoding/hex"
 	"errors"
+
+	"github.com/gogo/protobuf/proto"
 )
 
 const traceIDSize = 16
@@ -25,60 +26,40 @@ var errInvalidTraceIDSize = errors.New("invalid length for TraceID")
 
 // TraceID is a custom data type that is used for all trace_id fields in OTLP
 // Protobuf messages.
-type TraceID struct {
-	id [traceIDSize]byte
-}
+type TraceID [traceIDSize]byte
+
+var _ proto.Sizer = (*SpanID)(nil)
 
 // NewTraceID creates a TraceID from a byte slice.
 func NewTraceID(bytes [16]byte) TraceID {
-	return TraceID{
-		id: bytes,
-	}
-}
-
-// HexString returns hex representation of the ID.
-func (tid TraceID) HexString() string {
-	if tid.IsEmpty() {
-		return ""
-	}
-	return hex.EncodeToString(tid.id[:])
+	return bytes
 }
 
 // Size returns the size of the data to serialize.
-func (tid *TraceID) Size() int {
+func (tid TraceID) Size() int {
 	if tid.IsEmpty() {
 		return 0
 	}
 	return traceIDSize
 }
 
-// Equal returns true if ids are equal.
-func (tid TraceID) Equal(that TraceID) bool {
-	return tid.id == that.id
-}
-
 // IsEmpty returns true if id contains at leas one non-zero byte.
 func (tid TraceID) IsEmpty() bool {
-	return tid.id == [16]byte{}
-}
-
-// Bytes returns the byte array representation of the TraceID.
-func (tid TraceID) Bytes() [16]byte {
-	return tid.id
+	return tid == [traceIDSize]byte{}
 }
 
 // MarshalTo converts trace ID into a binary representation. Called by Protobuf serialization.
-func (tid *TraceID) MarshalTo(data []byte) (n int, err error) {
+func (tid TraceID) MarshalTo(data []byte) (n int, err error) {
 	if tid.IsEmpty() {
 		return 0, nil
 	}
-	return marshalBytes(data, tid.id[:])
+	return marshalBytes(data, tid[:])
 }
 
 // Unmarshal inflates this trace ID from binary representation. Called by Protobuf serialization.
 func (tid *TraceID) Unmarshal(data []byte) error {
 	if len(data) == 0 {
-		tid.id = [16]byte{}
+		*tid = [traceIDSize]byte{}
 		return nil
 	}
 
@@ -86,7 +67,7 @@ func (tid *TraceID) Unmarshal(data []byte) error {
 		return errInvalidTraceIDSize
 	}
 
-	copy(tid.id[:], data)
+	copy(tid[:], data)
 	return nil
 }
 
@@ -95,12 +76,12 @@ func (tid TraceID) MarshalJSON() ([]byte, error) {
 	if tid.IsEmpty() {
 		return []byte(`""`), nil
 	}
-	return marshalJSON(tid.id[:])
+	return marshalJSON(tid[:])
 }
 
 // UnmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
 // Called by Protobuf JSON deserialization.
 func (tid *TraceID) UnmarshalJSON(data []byte) error {
-	tid.id = [16]byte{}
-	return unmarshalJSON(tid.id[:], data)
+	*tid = [traceIDSize]byte{}
+	return unmarshalJSON(tid[:], data)
 }
