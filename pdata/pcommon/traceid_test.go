@@ -21,7 +21,7 @@ import (
 )
 
 func TestTraceID(t *testing.T) {
-	tid := InvalidTraceID()
+	tid := EmptyTraceID
 	assert.Equal(t, [16]byte{}, tid.Bytes())
 	assert.True(t, tid.IsEmpty())
 	assert.Equal(t, "", tid.HexString())
