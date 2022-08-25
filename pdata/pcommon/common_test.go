@@ -16,9 +16,7 @@ package pcommon
 
 import (
 	"encoding/base64"
-	"fmt"
 	"math"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +26,7 @@ import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
-func TestAttributeValue(t *testing.T) {
+func TestValue(t *testing.T) {
 	v := NewValueString("abc")
 	assert.EqualValues(t, ValueTypeString, v.Type())
 	assert.EqualValues(t, "abc", v.StringVal())
@@ -45,32 +43,21 @@ func TestAttributeValue(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBool, v.Type())
 	assert.True(t, v.BoolVal())
 
+	v = NewValueBytes(NewImmutableByteSlice([]byte{1, 2, 3, 4}))
+	assert.EqualValues(t, ValueTypeBytes, v.Type())
+	assert.EqualValues(t, NewImmutableByteSlice([]byte{1, 2, 3, 4}), v.BytesVal())
+
 	v = NewValueEmpty()
 	assert.EqualValues(t, ValueTypeEmpty, v.Type())
 
-	v.SetStringVal("abc")
-	assert.EqualValues(t, ValueTypeString, v.Type())
-	assert.EqualValues(t, "abc", v.StringVal())
+	v = NewValueMap()
+	assert.EqualValues(t, ValueTypeMap, v.Type())
 
-	v.SetIntVal(123)
-	assert.EqualValues(t, ValueTypeInt, v.Type())
-	assert.EqualValues(t, 123, v.IntVal())
-
-	v.SetDoubleVal(3.4)
-	assert.EqualValues(t, ValueTypeDouble, v.Type())
-	assert.EqualValues(t, 3.4, v.DoubleVal())
-
-	v.SetBoolVal(true)
-	assert.EqualValues(t, ValueTypeBool, v.Type())
-	assert.True(t, v.BoolVal())
-
-	bytesValue := NewImmutableByteSlice([]byte{1, 2, 3, 4})
-	v = NewValueBytes(bytesValue)
-	assert.EqualValues(t, ValueTypeBytes, v.Type())
-	assert.EqualValues(t, bytesValue, v.BytesVal())
+	v = NewValueSlice()
+	assert.EqualValues(t, ValueTypeSlice, v.Type())
 }
 
-func TestAttributeValueType(t *testing.T) {
+func TestValueType(t *testing.T) {
 	assert.EqualValues(t, "EMPTY", ValueTypeEmpty.String())
 	assert.EqualValues(t, "STRING", ValueTypeString.String())
 	assert.EqualValues(t, "BOOL", ValueTypeBool.String())
@@ -82,7 +69,7 @@ func TestAttributeValueType(t *testing.T) {
 	assert.EqualValues(t, "", ValueType(100).String())
 }
 
-func TestAttributeValueMap(t *testing.T) {
+func TestValueMap(t *testing.T) {
 	m1 := NewValueMap()
 	assert.Equal(t, ValueTypeMap, m1.Type())
 	assert.Equal(t, NewMap(), m1.MapVal())
@@ -159,7 +146,7 @@ func TestAttributeValueMap(t *testing.T) {
 	assert.EqualValues(t, Map{}, m1.MapVal())
 }
 
-func TestNilOrigSetAttributeValue(t *testing.T) {
+func TestNilOrigSetValue(t *testing.T) {
 	av := NewValueEmpty()
 	av.SetStringVal("abc")
 	assert.EqualValues(t, "abc", av.StringVal())
@@ -178,10 +165,10 @@ func TestNilOrigSetAttributeValue(t *testing.T) {
 
 	av = NewValueEmpty()
 	av.SetBytesVal(NewImmutableByteSlice([]byte{1, 2, 3}))
-	assert.Equal(t, []byte{1, 2, 3}, av.BytesVal().AsRaw())
+	assert.Equal(t, NewImmutableByteSlice([]byte{1, 2, 3}), av.BytesVal())
 }
 
-func TestAttributeValueEqual(t *testing.T) {
+func TestValueEqual(t *testing.T) {
 	av1 := NewValueEmpty()
 	assert.True(t, av1.Equal(av1)) // nolint:gocritic
 	av2 := NewValueEmpty()
@@ -262,14 +249,12 @@ func TestAttributeValueEqual(t *testing.T) {
 	assert.True(t, av1.Equal(av2))
 
 	fooVal, ok := av2.MapVal().Get("foo")
-	if !ok {
-		assert.Fail(t, "expected to find value with key foo")
-	}
+	assert.True(t, ok)
 	fooVal.SetStringVal("not-bar")
 	assert.False(t, av1.Equal(av2))
 }
 
-func TestNilMap(t *testing.T) {
+func TestMap(t *testing.T) {
 	assert.EqualValues(t, 0, NewMap().Len())
 
 	val, exist := NewMap().Get("test_key")
@@ -390,7 +375,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, "other_value", val.StringVal())
 
 	sm.InsertString("other_key_string", "other_value")
-	val, exist = sm.Get("other_key")
+	val, exist = sm.Get("other_key_string")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeString, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())
@@ -618,7 +603,7 @@ func TestMap_InitFromRaw(t *testing.T) {
 	assert.EqualValues(t, newMap(&rawOrig).Sort(), am.Sort())
 }
 
-func TestAttributeValue_CopyTo(t *testing.T) {
+func TestValue_CopyTo(t *testing.T) {
 	// Test nil KvlistValue case for MapVal() func.
 	dest := NewValueEmpty()
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
@@ -657,47 +642,11 @@ func TestMap_CopyTo(t *testing.T) {
 	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
 }
 
-func TestAttributeValue_copyTo(t *testing.T) {
+func TestValue_copyTo(t *testing.T) {
 	av := NewValueEmpty()
 	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
 	av.copyTo(&destVal)
 	assert.EqualValues(t, nil, destVal.Value)
-}
-
-func TestMap_Update(t *testing.T) {
-	origWithNil := []otlpcommon.KeyValue{
-		{
-			Key:   "test_key",
-			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
-		},
-		{
-			Key:   "test_key2",
-			Value: otlpcommon.AnyValue{Value: nil},
-		},
-	}
-	sm := newMap(&origWithNil)
-
-	av, exists := sm.Get("test_key")
-	assert.True(t, exists)
-	assert.EqualValues(t, ValueTypeString, av.Type())
-	assert.EqualValues(t, "test_value", av.StringVal())
-	av.SetIntVal(123)
-
-	av2, exists := sm.Get("test_key")
-	assert.True(t, exists)
-	assert.EqualValues(t, ValueTypeInt, av2.Type())
-	assert.EqualValues(t, 123, av2.IntVal())
-
-	av, exists = sm.Get("test_key2")
-	assert.True(t, exists)
-	assert.EqualValues(t, ValueTypeEmpty, av.Type())
-	assert.EqualValues(t, "", av.StringVal())
-	av.SetIntVal(123)
-
-	av2, exists = sm.Get("test_key2")
-	assert.True(t, exists)
-	assert.EqualValues(t, ValueTypeInt, av2.Type())
-	assert.EqualValues(t, 123, av2.IntVal())
 }
 
 func TestMap_EnsureCapacity_Zero(t *testing.T) {
@@ -757,149 +706,6 @@ func TestMap_RemoveIf(t *testing.T) {
 	assert.True(t, exists)
 }
 
-func BenchmarkAttributeValue_CopyTo(b *testing.B) {
-	av := NewValueString("k")
-	c := NewValueInt(123)
-
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		c.copyTo(av.getOrig())
-	}
-	if av.IntVal() != 123 {
-		b.Fail()
-	}
-}
-
-func BenchmarkAttributeValue_SetIntVal(b *testing.B) {
-	av := NewValueString("k")
-
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		av.SetIntVal(int64(n))
-	}
-	if av.IntVal() != int64(b.N-1) {
-		b.Fail()
-	}
-}
-
-func BenchmarkAttributeValueFloat_AsString(b *testing.B) {
-	av := NewValueDouble(2359871345.583429543)
-
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		av.AsString()
-	}
-}
-
-func BenchmarkMap_Range(b *testing.B) {
-	const numElements = 20
-	rawOrig := make([]otlpcommon.KeyValue, numElements)
-	for i := 0; i < numElements; i++ {
-		rawOrig[i] = otlpcommon.KeyValue{
-			Key:   "k" + strconv.Itoa(i),
-			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v" + strconv.Itoa(i)}},
-		}
-	}
-	am := newMap(&rawOrig)
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		numEls := 0
-		am.Range(func(k string, v Value) bool {
-			numEls++
-			return true
-		})
-		if numEls != numElements {
-			b.Fail()
-		}
-	}
-}
-
-func BenchmarkMap_RangeOverMap(b *testing.B) {
-	const numElements = 20
-	rawOrig := make(map[string]Value, numElements)
-	for i := 0; i < numElements; i++ {
-		key := "k" + strconv.Itoa(i)
-		rawOrig[key] = NewValueString("v" + strconv.Itoa(i))
-	}
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		numEls := 0
-		for _, v := range rawOrig {
-			if v.getOrig() == nil {
-				continue
-			}
-			numEls++
-		}
-		if numEls != numElements {
-			b.Fail()
-		}
-	}
-}
-
-func BenchmarkMap_Remove(b *testing.B) {
-	b.StopTimer()
-	// Remove all of the even keys
-	keysToRemove := map[string]struct{}{}
-	for j := 0; j < 50; j++ {
-		keysToRemove[fmt.Sprintf("%d", j*2)] = struct{}{}
-	}
-	for i := 0; i < b.N; i++ {
-		m := NewMap()
-		for j := 0; j < 100; j++ {
-			m.InsertString(fmt.Sprintf("%d", j), "string value")
-		}
-		b.StartTimer()
-		for k := range keysToRemove {
-			m.Remove(k)
-		}
-		b.StopTimer()
-	}
-}
-
-func BenchmarkMap_RemoveIf(b *testing.B) {
-	b.StopTimer()
-	// Remove all of the even keys
-	keysToRemove := map[string]struct{}{}
-	for j := 0; j < 50; j++ {
-		keysToRemove[fmt.Sprintf("%d", j*2)] = struct{}{}
-	}
-	for i := 0; i < b.N; i++ {
-		m := NewMap()
-		for j := 0; j < 100; j++ {
-			m.InsertString(fmt.Sprintf("%d", j), "string value")
-		}
-		b.StartTimer()
-		m.RemoveIf(func(key string, _ Value) bool {
-			_, remove := keysToRemove[key]
-			return remove
-		})
-		b.StopTimer()
-	}
-}
-
-func BenchmarkStringMap_RangeOverMap(b *testing.B) {
-	const numElements = 20
-	rawOrig := make(map[string]string, numElements)
-	for i := 0; i < numElements; i++ {
-		key := "k" + strconv.Itoa(i)
-		rawOrig[key] = "v" + strconv.Itoa(i)
-	}
-
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		numEls := 0
-		for _, v := range rawOrig {
-			if v == "" {
-				continue
-			}
-			numEls++
-		}
-		if numEls != numElements {
-			b.Fail()
-		}
-	}
-}
-
 func generateTestEmptyMap() Map {
 	return NewMapFromRaw(map[string]interface{}{
 		"k": nil,
@@ -929,7 +735,7 @@ func generateTestBytesMap() Map {
 	})
 }
 
-func TestAttributeValueSlice(t *testing.T) {
+func TestValueSlice(t *testing.T) {
 	a1 := NewValueSlice()
 	assert.EqualValues(t, ValueTypeSlice, a1.Type())
 	assert.EqualValues(t, NewSlice(), a1.SliceVal())
@@ -966,7 +772,7 @@ func TestAttributeValueSlice(t *testing.T) {
 	assert.EqualValues(t, newSlice(nil), a1.SliceVal())
 }
 
-func TestAttributeSliceWithNilValues(t *testing.T) {
+func TestSliceWithNilValues(t *testing.T) {
 	origWithNil := []otlpcommon.AnyValue{
 		{},
 		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
@@ -1030,7 +836,7 @@ func TestAsString(t *testing.T) {
 		},
 		{
 			name:     "simple_map",
-			input:    simpleValueMap(),
+			input:    generateTestValueMap(),
 			expected: "{\"arrKey\":[\"strOne\",\"strTwo\"],\"boolKey\":false,\"floatKey\":18.6,\"intKey\":7,\"mapKey\":{\"keyOne\":\"valOne\",\"keyTwo\":\"valTwo\"},\"nullKey\":null,\"strKey\":\"strVal\"}",
 		},
 		{
@@ -1040,7 +846,7 @@ func TestAsString(t *testing.T) {
 		},
 		{
 			name:     "simple_array",
-			input:    simpleValueSlice(),
+			input:    generateTestValueSlice(),
 			expected: "[\"strVal\",7,18.6,false,null]",
 		},
 		{
@@ -1089,23 +895,18 @@ func TestValueAsRaw(t *testing.T) {
 			expected: []byte("bytes"),
 		},
 		{
-			name:     "bytes",
-			input:    NewValueBytes(NewImmutableByteSlice([]byte("bytes"))),
-			expected: []byte("bytes"),
-		},
-		{
 			name:     "empty",
 			input:    NewValueEmpty(),
 			expected: nil,
 		},
 		{
 			name:     "slice",
-			input:    simpleValueSlice(),
+			input:    generateTestValueSlice(),
 			expected: []interface{}{"strVal", int64(7), 18.6, false, nil},
 		},
 		{
 			name:  "map",
-			input: simpleValueMap(),
+			input: generateTestValueMap(),
 			expected: map[string]interface{}{
 				"mapKey":   map[string]interface{}{"keyOne": "valOne", "keyTwo": "valTwo"},
 				"nullKey":  nil,
@@ -1307,7 +1108,7 @@ func TestNewValueFromRaw(t *testing.T) {
 	}
 }
 
-func simpleValueMap() Value {
+func generateTestValueMap() Value {
 	ret := NewValueMap()
 	attrMap := ret.MapVal()
 	attrMap.UpsertString("strKey", "strVal")
@@ -1315,12 +1116,21 @@ func simpleValueMap() Value {
 	attrMap.UpsertDouble("floatKey", 18.6)
 	attrMap.UpsertBool("boolKey", false)
 	attrMap.Upsert("nullKey", NewValueEmpty())
-	attrMap.Upsert("mapKey", constructTestAttributeSubmap())
-	attrMap.Upsert("arrKey", constructTestAttributeSubarray())
+
+	vm := NewValueMap()
+	vm.MapVal().UpsertString("keyOne", "valOne")
+	vm.MapVal().UpsertString("keyTwo", "valTwo")
+	attrMap.Upsert("mapKey", vm)
+
+	vs := NewValueSlice()
+	vs.SliceVal().AppendEmpty().SetStringVal("strOne")
+	vs.SliceVal().AppendEmpty().SetStringVal("strTwo")
+	attrMap.Upsert("arrKey", vs)
+
 	return ret
 }
 
-func simpleValueSlice() Value {
+func generateTestValueSlice() Value {
 	ret := NewValueSlice()
 	attrArr := ret.SliceVal()
 	attrArr.AppendEmpty().SetStringVal("strVal")
@@ -1329,36 +1139,4 @@ func simpleValueSlice() Value {
 	attrArr.AppendEmpty().SetBoolVal(false)
 	attrArr.AppendEmpty()
 	return ret
-}
-
-func constructTestAttributeSubmap() Value {
-	value := NewValueMap()
-	value.MapVal().UpsertString("keyOne", "valOne")
-	value.MapVal().UpsertString("keyTwo", "valTwo")
-	return value
-}
-
-func constructTestAttributeSubarray() Value {
-	value := NewValueSlice()
-	value.SliceVal().AppendEmpty().SetStringVal("strOne")
-	value.SliceVal().AppendEmpty().SetStringVal("strTwo")
-	return value
-}
-
-func BenchmarkAttributeValueMapAccessor(b *testing.B) {
-	val := simpleValueMap()
-
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		val.MapVal()
-	}
-}
-
-func BenchmarkAttributeValueSliceAccessor(b *testing.B) {
-	val := simpleValueSlice()
-
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		val.SliceVal()
-	}
 }
