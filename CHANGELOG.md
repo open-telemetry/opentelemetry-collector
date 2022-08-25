@@ -32,6 +32,8 @@
   - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
   - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
 - Deprecate builder distribution flags, use configuration. (#5946)
+- Enforce naming conventions for Invalid[Trace|Span]ID: (#5969)
+  - Deprecate funcs `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` in favor of vars `pcommon.EmptyTraceID` and `pcommon.EmptySpanID` 
 
 ### 💡 Enhancements 💡
 
@@ -51,6 +53,7 @@
 - otlpjson/trace: skip unknown fields instead of error. (#5931)
 - Fix bug in setting the correct collector state after a configuration change event. (#5830)
 - Fix json trace unmarshalling for numbers (#5924):
+  - Accept both string and number for float64.
   - Accept both string and number for int32/uint32.
   - Read uint64 numbers without converting from int64.
 
