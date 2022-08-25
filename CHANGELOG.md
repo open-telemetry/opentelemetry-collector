@@ -32,6 +32,8 @@
   - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
   - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
 - Deprecate builder distribution flags, use configuration. (#5946)
+- Enforce naming conventions for Invalid[Trace|Span]ID: (#5969)
+  - Deprecate funcs `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` in favor of vars `pcommon.EmptyTraceID` and `pcommon.EmptySpanID` 
 
 ### 💡 Enhancements 💡
 

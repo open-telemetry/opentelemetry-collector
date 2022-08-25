@@ -21,7 +21,7 @@ import (
 )
 
 func TestSpanID(t *testing.T) {
-	sid := InvalidSpanID()
+	sid := EmptySpanID
 	assert.EqualValues(t, [8]byte{}, sid.Bytes())
 	assert.True(t, sid.IsEmpty())
 	assert.Equal(t, "", sid.HexString())
