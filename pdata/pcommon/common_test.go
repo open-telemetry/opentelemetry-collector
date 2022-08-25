@@ -270,7 +270,7 @@ func TestMap(t *testing.T) {
 	assert.EqualValues(t, Map(internal.GenerateTestMap()), insertMapString)
 
 	insertMapNull := NewMap()
-	insertMapNull.InsertNull("k")
+	insertMapNull.Insert("k", NewValueEmpty())
 	assert.EqualValues(t, generateTestEmptyMap(), insertMapNull)
 
 	insertMapInt := NewMap()
