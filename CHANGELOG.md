@@ -41,7 +41,7 @@
 - Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
 - Remove unnecessary duplicate code and allocations for reading enums in JSON. (#5928)
 - Add "dist.build_tags" configuration option to support passing go build flags to builder. (#5659)
-- Add an AsRaw func on the flags, lots of places to encode these flags. (#5934)
+- Add an AsRaw and FromRaw for Flags, lots of places to encode these flags. (#5934) (#5959)
 - Change pdata generated types to use type definition instead of aliases. (#5936)
   - Improves documentation, and makes code easier to read/understand.
 

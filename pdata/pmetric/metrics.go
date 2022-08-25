@@ -219,6 +219,11 @@ func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
 	}
 }
 
+// FromRaw converts from the OTLP uint32 representation into this LogRecordFlags.
+func (ms MetricDataPointFlags) FromRaw(val uint32) {
+	*ms.getOrig() = val
+}
+
 // AsRaw converts MetricDataPointFlags to the OTLP uint32 representation.
 func (ms MetricDataPointFlags) AsRaw() uint32 {
 	return *ms.getOrig()

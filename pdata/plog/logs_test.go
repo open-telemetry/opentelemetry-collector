@@ -157,6 +157,10 @@ func TestLogRecordFlags(t *testing.T) {
 	moveFlags.CopyTo(flags)
 	assert.True(t, flags.IsSampled())
 	assert.True(t, moveFlags.IsSampled())
+
+	flags.FromRaw(127)
+	assert.True(t, flags.IsSampled())
+	assert.Equal(t, uint32(127), flags.AsRaw())
 }
 
 func BenchmarkLogsClone(b *testing.B) {

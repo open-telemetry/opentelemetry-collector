@@ -719,6 +719,10 @@ func TestMetricDataPointFlags(t *testing.T) {
 	moveFlags.CopyTo(flags)
 	assert.True(t, flags.NoRecordedValue())
 	assert.True(t, moveFlags.NoRecordedValue())
+
+	flags.FromRaw(127)
+	assert.True(t, flags.NoRecordedValue())
+	assert.Equal(t, uint32(127), flags.AsRaw())
 }
 
 func BenchmarkMetricsClone(b *testing.B) {

@@ -248,6 +248,11 @@ func (ms LogRecordFlags) SetIsSampled(b bool) {
 	}
 }
 
+// FromRaw converts from the OTLP uint32 representation into this LogRecordFlags.
+func (ms LogRecordFlags) FromRaw(val uint32) {
+	*ms.getOrig() = val
+}
+
 // AsRaw converts LogRecordFlags to the OTLP uint32 representation.
 func (ms LogRecordFlags) AsRaw() uint32 {
 	return *ms.getOrig()
