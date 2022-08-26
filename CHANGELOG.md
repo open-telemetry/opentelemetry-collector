@@ -46,6 +46,7 @@
 - Add an AsRaw func on the flags, lots of places to encode these flags. (#5934)
 - Change pdata generated types to use type definition instead of aliases. (#5936)
   - Improves documentation, and makes code easier to read/understand.
+- Log `InstrumentationScope` attributes in `loggingexporter` (#5976)
 
 ### 🧰 Bug fixes 🧰
 
