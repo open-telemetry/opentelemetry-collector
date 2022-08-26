@@ -166,6 +166,14 @@ func TestNilOrigSetValue(t *testing.T) {
 	av = NewValueEmpty()
 	av.SetBytesVal(NewImmutableByteSlice([]byte{1, 2, 3}))
 	assert.Equal(t, NewImmutableByteSlice([]byte{1, 2, 3}), av.BytesVal())
+
+	av = NewValueEmpty()
+	av.SetEmptyMapVal().UpsertString("k", "v")
+	assert.Equal(t, NewMapFromRaw(map[string]interface{}{"k": "v"}), av.MapVal())
+
+	av = NewValueEmpty()
+	av.SetEmptySliceVal().AppendEmpty().SetIntVal(1)
+	assert.Equal(t, NewSliceFromRaw([]interface{}{1}), av.SliceVal())
 }
 
 func TestValueEqual(t *testing.T) {
@@ -343,6 +351,69 @@ func TestMap(t *testing.T) {
 
 	// Test Sort
 	assert.EqualValues(t, NewMap(), NewMap().Sort())
+}
+
+func TestMapUpsertEmpty(t *testing.T) {
+	m := NewMap()
+	v := m.UpsertEmpty("k1")
+	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
+		"k1": nil,
+	}), m)
+
+	v.SetBoolVal(true)
+	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
+		"k1": true,
+	}), m)
+
+	v = m.UpsertEmpty("k1")
+	v.SetIntVal(1)
+	v2, ok := m.Get("k1")
+	assert.True(t, ok)
+	assert.Equal(t, int64(1), v2.IntVal())
+}
+
+func TestMapUpsertEmptyMap(t *testing.T) {
+	m := NewMap()
+	childMap := m.UpsertEmptyMap("k1")
+	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
+		"k1": map[string]interface{}{},
+	}), m)
+	childMap.UpsertEmptySlice("k2").AppendEmpty().SetStringVal("val")
+	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
+		"k1": map[string]interface{}{
+			"k2": []interface{}{"val"},
+		},
+	}), m)
+
+	childMap.UpsertEmptyMap("k2").UpsertInt("k3", 1)
+	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
+		"k1": map[string]interface{}{
+			"k2": map[string]interface{}{"k3": 1},
+		},
+	}), m)
+}
+
+func TestMapUpsertEmptySlice(t *testing.T) {
+	m := NewMap()
+	childSlice := m.UpsertEmptySlice("k")
+	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
+		"k": []interface{}{},
+	}), m)
+	childSlice.AppendEmpty().SetDoubleVal(1.1)
+	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
+		"k": []interface{}{1.1},
+	}), m)
+
+	m.UpsertEmptySlice("k")
+	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
+		"k": []interface{}{},
+	}), m)
+	childSliceVal, ok := m.Get("k")
+	assert.True(t, ok)
+	childSliceVal.SliceVal().AppendEmpty().SetEmptySliceVal().AppendEmpty().SetStringVal("val")
+	assert.EqualValues(t, NewMapFromRaw(map[string]interface{}{
+		"k": []interface{}{[]interface{}{"val"}},
+	}), m)
 }
 
 func TestMapWithEmpty(t *testing.T) {
