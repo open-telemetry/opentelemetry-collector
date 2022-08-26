@@ -19,6 +19,7 @@
 - Replace `processorhelper.New[Traces|Metrics|Logs]Exporter` with `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` definition (#5915)
 - Replace `exporterhelper.New[Traces|Metrics|Logs]Exporter` with `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` definition (#5914)
 - Replace ``component.NewExtensionFactory`` with `component.NewExtensionFactoryWithStabilityLevel` definition (#5917)
+- Log `InstrumentationScope` attributes in `loggingexporter` (#5976)
 
 ### 🚩 Deprecations 🚩
 
