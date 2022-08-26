@@ -33,7 +33,7 @@ func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 		buf.logEntry("ResourceLog #%d", i)
 		rl := rls.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
-		buf.logAttributes("Resource labels", rl.Resource().Attributes())
+		buf.logAttributes("Resource attributes", rl.Resource().Attributes())
 		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
 			buf.logEntry("ScopeLogs #%d", j)
