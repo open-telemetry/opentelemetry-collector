@@ -42,7 +42,8 @@ func newJSONMarshaler() *jsonMarshaler {
 
 func (e *jsonMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
 	buf := bytes.Buffer{}
-	err := e.delegate.Marshal(&buf, internal.MetricsToOtlp(md))
+	pb := internal.MetricsToProto(internal.Metrics(md))
+	err := e.delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
 
@@ -62,7 +63,7 @@ func (d *jsonUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 		return Metrics{}, iter.Error
 	}
 	otlp.MigrateMetrics(md.ResourceMetrics)
-	return internal.MetricsFromProto(md), nil
+	return Metrics(internal.MetricsFromProto(md)), nil
 }
 
 func (d *jsonUnmarshaler) readMetricsData(iter *jsoniter.Iterator) otlpmetrics.MetricsData {
@@ -294,7 +295,7 @@ func (d *jsonUnmarshaler) readExemplar(iter *jsoniter.Iterator) otlpmetrics.Exem
 			}
 		case "as_double", "asDouble":
 			exemplar.Value = &otlpmetrics.Exemplar_AsDouble{
-				AsDouble: iter.ReadFloat64(),
+				AsDouble: json.ReadFloat64(iter),
 			}
 		case "traceId", "trace_id":
 			if err := exemplar.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
@@ -326,7 +327,7 @@ func (d *jsonUnmarshaler) readNumberDataPoint(iter *jsoniter.Iterator) *otlpmetr
 			}
 		case "as_double", "asDouble":
 			point.Value = &otlpmetrics.NumberDataPoint_AsDouble{
-				AsDouble: iter.ReadFloat64(),
+				AsDouble: json.ReadFloat64(iter),
 			}
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
@@ -364,7 +365,7 @@ func (d *jsonUnmarshaler) readHistogramDataPoint(iter *jsoniter.Iterator) *otlpm
 		case "count":
 			point.Count = json.ReadUint64(iter)
 		case "sum":
-			point.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+			point.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: json.ReadFloat64(iter)}
 		case "bucket_counts", "bucketCounts":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				point.BucketCounts = append(point.BucketCounts, json.ReadUint64(iter))
@@ -372,7 +373,7 @@ func (d *jsonUnmarshaler) readHistogramDataPoint(iter *jsoniter.Iterator) *otlpm
 			})
 		case "explicit_bounds", "explicitBounds":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				point.ExplicitBounds = append(point.ExplicitBounds, iter.ReadFloat64())
+				point.ExplicitBounds = append(point.ExplicitBounds, json.ReadFloat64(iter))
 				return true
 			})
 		case "exemplars":
@@ -384,11 +385,11 @@ func (d *jsonUnmarshaler) readHistogramDataPoint(iter *jsoniter.Iterator) *otlpm
 			point.Flags = json.ReadUint32(iter)
 		case "max":
 			point.Max_ = &otlpmetrics.HistogramDataPoint_Max{
-				Max: iter.ReadFloat64(),
+				Max: json.ReadFloat64(iter),
 			}
 		case "min":
 			point.Min_ = &otlpmetrics.HistogramDataPoint_Min{
-				Min: iter.ReadFloat64(),
+				Min: json.ReadFloat64(iter),
 			}
 		default:
 			iter.Skip()
@@ -415,7 +416,7 @@ func (d *jsonUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Itera
 			point.Count = json.ReadUint64(iter)
 		case "sum":
 			point.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{
-				Sum: iter.ReadFloat64(),
+				Sum: json.ReadFloat64(iter),
 			}
 		case "scale":
 			point.Scale = iter.ReadInt32()
@@ -464,11 +465,11 @@ func (d *jsonUnmarshaler) readExponentialHistogramDataPoint(iter *jsoniter.Itera
 			point.Flags = json.ReadUint32(iter)
 		case "max":
 			point.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{
-				Max: iter.ReadFloat64(),
+				Max: json.ReadFloat64(iter),
 			}
 		case "min":
 			point.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{
-				Min: iter.ReadFloat64(),
+				Min: json.ReadFloat64(iter),
 			}
 		default:
 			iter.Skip()
@@ -494,7 +495,7 @@ func (d *jsonUnmarshaler) readSummaryDataPoint(iter *jsoniter.Iterator) *otlpmet
 		case "count":
 			point.Count = json.ReadUint64(iter)
 		case "sum":
-			point.Sum = iter.ReadFloat64()
+			point.Sum = json.ReadFloat64(iter)
 		case "quantile_values", "quantileValues":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				point.QuantileValues = append(point.QuantileValues, d.readQuantileValue(iter))
@@ -515,9 +516,9 @@ func (d *jsonUnmarshaler) readQuantileValue(iter *jsoniter.Iterator) *otlpmetric
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "quantile":
-			point.Quantile = iter.ReadFloat64()
+			point.Quantile = json.ReadFloat64(iter)
 		case "value":
-			point.Value = iter.ReadFloat64()
+			point.Value = json.ReadFloat64(iter)
 		default:
 			iter.Skip()
 		}
@@ -527,10 +528,5 @@ func (d *jsonUnmarshaler) readQuantileValue(iter *jsoniter.Iterator) *otlpmetric
 }
 
 func (d *jsonUnmarshaler) readAggregationTemporality(iter *jsoniter.Iterator) otlpmetrics.AggregationTemporality {
-	value := iter.ReadAny()
-	if v := value.ToInt(); v > 0 {
-		return otlpmetrics.AggregationTemporality(v)
-	}
-	v := value.ToString()
-	return otlpmetrics.AggregationTemporality(otlpmetrics.AggregationTemporality_value[v])
+	return otlpmetrics.AggregationTemporality(json.ReadEnumValue(iter, otlpmetrics.AggregationTemporality_value))
 }

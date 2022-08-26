@@ -15,7 +15,6 @@
 package pmetric
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -23,8 +22,8 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var metricsOTLP = func() Metrics {
@@ -78,27 +77,27 @@ var metricsSumOTLPFull = func() Metrics {
 	sumData := m.Metrics().AppendEmpty()
 	sumData.SetName("test sum")
 	sumData.SetDescription("test sum")
-	sumData.SetDataType(internal.MetricDataTypeSum)
+	sumData.SetDataType(MetricDataTypeSum)
 	sumData.SetUnit("unit")
-	sumData.Sum().SetAggregationTemporality(internal.MetricAggregationTemporalityCumulative)
+	sumData.Sum().SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	sumData.Sum().SetIsMonotonic(true)
 	datapoint := sumData.Sum().DataPoints().AppendEmpty()
-	datapoint.SetStartTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	datapoint.SetIntVal(100)
 	datapoint.Attributes().UpsertString("string", "value")
 	datapoint.Attributes().UpsertBool("bool", true)
 	datapoint.Attributes().UpsertInt("int", 1)
 	datapoint.Attributes().UpsertDouble("double", 1.1)
-	datapoint.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+	datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
 	exemplar := datapoint.Exemplars().AppendEmpty()
 	exemplar.SetDoubleVal(99.3)
-	exemplar.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
-	traceID := internal.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := internal.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	exemplar.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	traceID := pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetSpanID(spanID)
 	exemplar.SetTraceID(traceID)
 	exemplar.FilteredAttributes().UpsertString("service.name", "testService")
-	datapoint.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return metric
 }
 
@@ -119,25 +118,25 @@ var metricsGaugeOTLPFull = func() Metrics {
 	gaugeData := m.Metrics().AppendEmpty()
 	gaugeData.SetName("test gauge")
 	gaugeData.SetDescription("test gauge")
-	gaugeData.SetDataType(internal.MetricDataTypeGauge)
+	gaugeData.SetDataType(MetricDataTypeGauge)
 	gaugeData.SetUnit("unit")
 	datapoint := gaugeData.Gauge().DataPoints().AppendEmpty()
-	datapoint.SetStartTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	datapoint.SetDoubleVal(10.2)
 	datapoint.Attributes().UpsertString("string", "value")
 	datapoint.Attributes().UpsertBool("bool", true)
 	datapoint.Attributes().UpsertInt("int", 1)
 	datapoint.Attributes().UpsertDouble("double", 1.1)
-	datapoint.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+	datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
 	exemplar := datapoint.Exemplars().AppendEmpty()
 	exemplar.SetDoubleVal(99.3)
-	exemplar.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
-	traceID := internal.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := internal.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	exemplar.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	traceID := pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetSpanID(spanID)
 	exemplar.SetTraceID(traceID)
 	exemplar.FilteredAttributes().UpsertString("service.name", "testService")
-	datapoint.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return metric
 }
 
@@ -158,31 +157,31 @@ var metricsHistogramOTLPFull = func() Metrics {
 	histogramData := m.Metrics().AppendEmpty()
 	histogramData.SetName("test Histogram")
 	histogramData.SetDescription("test Histogram")
-	histogramData.SetDataType(internal.MetricDataTypeHistogram)
+	histogramData.SetDataType(MetricDataTypeHistogram)
 	histogramData.SetUnit("unit")
 	histogramData.Histogram().SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	datapoint := histogramData.Histogram().DataPoints().AppendEmpty()
-	datapoint.SetStartTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	datapoint.Attributes().UpsertString("string", "value")
 	datapoint.Attributes().UpsertBool("bool", true)
 	datapoint.Attributes().UpsertInt("int", 1)
 	datapoint.Attributes().UpsertDouble("double", 1.1)
-	datapoint.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+	datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
 	datapoint.SetCount(4)
 	datapoint.SetSum(345)
-	datapoint.SetBucketCounts(internal.NewImmutableUInt64Slice([]uint64{1, 1, 2}))
-	datapoint.SetExplicitBounds(internal.NewImmutableFloat64Slice([]float64{10, 100}))
+	datapoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 2}))
+	datapoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 100}))
 	exemplar := datapoint.Exemplars().AppendEmpty()
 	exemplar.SetDoubleVal(99.3)
-	exemplar.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
+	exemplar.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	datapoint.SetMin(float64(time.Now().Unix()))
-	traceID := internal.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := internal.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	traceID := pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetSpanID(spanID)
 	exemplar.SetTraceID(traceID)
 	exemplar.FilteredAttributes().UpsertString("service.name", "testService")
 	datapoint.SetMax(float64(time.Now().Unix()))
-	datapoint.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return metric
 }
 
@@ -203,35 +202,35 @@ var metricsExponentialHistogramOTLPFull = func() Metrics {
 	histogramData := m.Metrics().AppendEmpty()
 	histogramData.SetName("test ExponentialHistogram")
 	histogramData.SetDescription("test ExponentialHistogram")
-	histogramData.SetDataType(internal.MetricDataTypeExponentialHistogram)
+	histogramData.SetDataType(MetricDataTypeExponentialHistogram)
 	histogramData.SetUnit("unit")
 	histogramData.ExponentialHistogram().SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	datapoint := histogramData.ExponentialHistogram().DataPoints().AppendEmpty()
 	datapoint.SetScale(1)
-	datapoint.SetStartTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	datapoint.Attributes().UpsertString("string", "value")
 	datapoint.Attributes().UpsertBool("bool", true)
 	datapoint.Attributes().UpsertInt("int", 1)
 	datapoint.Attributes().UpsertDouble("double", 1.1)
-	datapoint.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+	datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
 	datapoint.SetCount(4)
 	datapoint.SetSum(345)
-	datapoint.Positive().SetBucketCounts(internal.NewImmutableUInt64Slice([]uint64{1, 1, 2}))
+	datapoint.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 2}))
 	datapoint.Positive().SetOffset(2)
 	exemplar := datapoint.Exemplars().AppendEmpty()
 	exemplar.SetDoubleVal(99.3)
-	exemplar.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
+	exemplar.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	datapoint.SetMin(float64(time.Now().Unix()))
-	traceID := internal.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := internal.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	traceID := pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetSpanID(spanID)
 	exemplar.SetTraceID(traceID)
 	exemplar.FilteredAttributes().UpsertString("service.name", "testService")
 	datapoint.SetMax(float64(time.Now().Unix()))
-	datapoint.Negative().SetBucketCounts(internal.NewImmutableUInt64Slice([]uint64{1, 1, 2}))
+	datapoint.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 2}))
 	datapoint.Negative().SetOffset(2)
 	datapoint.SetZeroCount(5)
-	datapoint.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return metric
 }
 
@@ -252,10 +251,10 @@ var metricsSummaryOTLPFull = func() Metrics {
 	sumData := m.Metrics().AppendEmpty()
 	sumData.SetName("test summary")
 	sumData.SetDescription("test summary")
-	sumData.SetDataType(internal.MetricDataTypeSummary)
+	sumData.SetDataType(MetricDataTypeSummary)
 	sumData.SetUnit("unit")
 	datapoint := sumData.Summary().DataPoints().AppendEmpty()
-	datapoint.SetStartTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	datapoint.SetCount(100)
 	datapoint.SetSum(100)
 	quantile := datapoint.QuantileValues().AppendEmpty()
@@ -265,8 +264,8 @@ var metricsSummaryOTLPFull = func() Metrics {
 	datapoint.Attributes().UpsertBool("bool", true)
 	datapoint.Attributes().UpsertInt("int", 1)
 	datapoint.Attributes().UpsertDouble("double", 1.1)
-	datapoint.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
-	datapoint.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
+	datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
+	datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return metric
 }
 
@@ -334,49 +333,6 @@ func Test_jsonUnmarshaler_UnmarshalMetrics(t *testing.T) {
 	}
 }
 
-func TestReadAggregationTemporality(t *testing.T) {
-	tests := []struct {
-		name    string
-		jsonStr string
-		want    otlpmetrics.AggregationTemporality
-	}{
-		{
-			name: "string",
-			jsonStr: fmt.Sprintf(`"%s"`,
-				otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE.String()),
-			want: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-		},
-		{
-			name: "string",
-			jsonStr: fmt.Sprintf(`"%s"`,
-				otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA.String()),
-			want: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
-		},
-		{
-			name: "int",
-			jsonStr: fmt.Sprintf("%d",
-				otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE),
-			want: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
-		},
-		{
-			name: "int",
-			jsonStr: fmt.Sprintf("%d",
-				otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA),
-			want: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			unmarshaler := &jsonUnmarshaler{}
-			if got := unmarshaler.readAggregationTemporality(iter); got != tt.want {
-				t.Errorf("readSpanKind() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestReadMetricsDataUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
@@ -387,7 +343,7 @@ func TestReadMetricsDataUnknownField(t *testing.T) {
 	assert.EqualValues(t, otlpmetrics.MetricsData{}, value)
 }
 
-func TestExemplar_IntVal(t *testing.T) {
+func TestExemplarIntVal(t *testing.T) {
 	tests := []struct {
 		name    string
 		jsonStr string
@@ -455,6 +411,7 @@ func TestReadResourceMetricsResourceUnknown(t *testing.T) {
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpmetrics.ResourceMetrics{}, value)
 }
+
 func TestReadResourceMetricsUnknownField(t *testing.T) {
 	jsonStr := `{"exists":"true"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))

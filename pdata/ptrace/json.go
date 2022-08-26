@@ -41,7 +41,7 @@ func newJSONMarshaler() *jsonMarshaler {
 
 func (e *jsonMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 	buf := bytes.Buffer{}
-	pb := internal.TracesToProto(td)
+	pb := internal.TracesToProto(internal.Traces(td))
 	err := e.delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
@@ -59,7 +59,7 @@ func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	td := readTraceData(iter)
 	err := iter.Error
-	return internal.TracesFromProto(td), err
+	return Traces(internal.TracesFromProto(td)), err
 }
 
 func readTraceData(iter *jsoniter.Iterator) otlptrace.TracesData {
@@ -72,7 +72,7 @@ func readTraceData(iter *jsoniter.Iterator) otlptrace.TracesData {
 				return true
 			})
 		default:
-			iter.ReportError("root", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -95,7 +95,7 @@ func readResourceSpans(iter *jsoniter.Iterator) *otlptrace.ResourceSpans {
 				case "droppedAttributesCount", "dropped_attributes_count":
 					rs.Resource.DroppedAttributesCount = json.ReadUint32(iter)
 				default:
-					iter.ReportError("readResourceSpans.resource", fmt.Sprintf("unknown field:%v", f))
+					iter.Skip()
 				}
 				return true
 			})
@@ -107,7 +107,7 @@ func readResourceSpans(iter *jsoniter.Iterator) *otlptrace.ResourceSpans {
 		case "schemaUrl", "schema_url":
 			rs.SchemaUrl = iter.ReadString()
 		default:
-			iter.ReportError("readResourceSpans", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -129,7 +129,7 @@ func readScopeSpans(iter *jsoniter.Iterator) *otlptrace.ScopeSpans {
 		case "schemaUrl", "schema_url":
 			ils.SchemaUrl = iter.ReadString()
 		default:
-			iter.ReportError("readScopeSpans", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -158,7 +158,7 @@ func readSpan(iter *jsoniter.Iterator) *otlptrace.Span {
 		case "name":
 			sp.Name = iter.ReadString()
 		case "kind":
-			sp.Kind = readSpanKind(iter)
+			sp.Kind = otlptrace.Span_SpanKind(json.ReadEnumValue(iter, otlptrace.Span_SpanKind_value))
 		case "startTimeUnixNano", "start_time_unix_nano":
 			sp.StartTimeUnixNano = json.ReadUint64(iter)
 		case "endTimeUnixNano", "end_time_unix_nano":
@@ -190,14 +190,14 @@ func readSpan(iter *jsoniter.Iterator) *otlptrace.Span {
 				case "message":
 					sp.Status.Message = iter.ReadString()
 				case "code":
-					sp.Status.Code = readStatusCode(iter)
+					sp.Status.Code = otlptrace.Status_StatusCode(json.ReadEnumValue(iter, otlptrace.Status_StatusCode_value))
 				default:
-					iter.ReportError("readSpan.status", fmt.Sprintf("unknown field:%v", f))
+					iter.Skip()
 				}
 				return true
 			})
 		default:
-			iter.ReportError("readSpan", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -227,7 +227,7 @@ func readSpanLink(iter *jsoniter.Iterator) *otlptrace.Span_Link {
 		case "droppedAttributesCount", "dropped_attributes_count":
 			link.DroppedAttributesCount = json.ReadUint32(iter)
 		default:
-			iter.ReportError("readSpanLink", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
@@ -251,27 +251,9 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 		case "droppedAttributesCount", "dropped_attributes_count":
 			event.DroppedAttributesCount = json.ReadUint32(iter)
 		default:
-			iter.ReportError("readSpanEvent", fmt.Sprintf("unknown field:%v", f))
+			iter.Skip()
 		}
 		return true
 	})
 	return event
-}
-
-func readSpanKind(iter *jsoniter.Iterator) otlptrace.Span_SpanKind {
-	any := iter.ReadAny()
-	if v := any.ToInt(); v > 0 {
-		return otlptrace.Span_SpanKind(v)
-	}
-	v := any.ToString()
-	return otlptrace.Span_SpanKind(otlptrace.Span_SpanKind_value[v])
-}
-
-func readStatusCode(iter *jsoniter.Iterator) otlptrace.Status_StatusCode {
-	any := iter.ReadAny()
-	if v := any.ToInt(); v > 0 {
-		return otlptrace.Status_StatusCode(v)
-	}
-	v := any.ToString()
-	return otlptrace.Status_StatusCode(otlptrace.Status_StatusCode_value[v])
 }

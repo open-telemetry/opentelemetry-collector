@@ -36,7 +36,7 @@ type metricsProcessor struct {
 	consumer.Metrics
 }
 
-// Deprecated: [v0.58.0] use version with NewMetricsProcessor.
+// Deprecated: [v0.59.0] use version with NewMetricsProcessor.
 func NewMetricsProcessorWithCreateSettings(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,

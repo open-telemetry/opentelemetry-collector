@@ -40,46 +40,38 @@ var (
 
 type nopRecvConfig struct {
 	config.ReceiverSettings
+	validateErr error
 }
 
 func (nc *nopRecvConfig) Validate() error {
-	if nc.ID() != config.NewComponentID("nop") {
-		return errInvalidRecvConfig
-	}
-	return nil
+	return nc.validateErr
 }
 
 type nopExpConfig struct {
 	config.ExporterSettings
+	validateErr error
 }
 
 func (nc *nopExpConfig) Validate() error {
-	if nc.ID() != config.NewComponentID("nop") {
-		return errInvalidExpConfig
-	}
-	return nil
+	return nc.validateErr
 }
 
 type nopProcConfig struct {
 	config.ProcessorSettings
+	validateErr error
 }
 
 func (nc *nopProcConfig) Validate() error {
-	if nc.ID() != config.NewComponentID("nop") {
-		return errInvalidProcConfig
-	}
-	return nil
+	return nc.validateErr
 }
 
 type nopExtConfig struct {
 	config.ExtensionSettings
+	validateErr error
 }
 
 func (nc *nopExtConfig) Validate() error {
-	if nc.ID() != config.NewComponentID("nop") {
-		return errInvalidExtConfig
-	}
-	return nil
+	return nc.validateErr
 }
 
 func TestConfigValidate(t *testing.T) {
@@ -193,7 +185,8 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Receivers[config.NewComponentID("nop")] = &nopRecvConfig{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("invalid_rec_type")),
+					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
+					validateErr:      errInvalidRecvConfig,
 				}
 				return cfg
 			},
@@ -204,7 +197,8 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Exporters[config.NewComponentID("nop")] = &nopExpConfig{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID("invalid_rec_type")),
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID("nop")),
+					validateErr:      errInvalidExpConfig,
 				}
 				return cfg
 			},
@@ -215,7 +209,8 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Processors[config.NewComponentID("nop")] = &nopProcConfig{
-					ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("invalid_rec_type")),
+					ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop")),
+					validateErr:       errInvalidProcConfig,
 				}
 				return cfg
 			},
@@ -226,7 +221,8 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Extensions[config.NewComponentID("nop")] = &nopExtConfig{
-					ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("invalid_rec_type")),
+					ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("nop")),
+					validateErr:       errInvalidExtConfig,
 				}
 				return cfg
 			},

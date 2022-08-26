@@ -66,7 +66,7 @@ func readAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
 	case "doubleValue", "double_value":
 		return otlpcommon.AnyValue{
 			Value: &otlpcommon.AnyValue_DoubleValue{
-				DoubleValue: iter.ReadFloat64(),
+				DoubleValue: ReadFloat64(iter),
 			},
 		}
 	case "bytesValue", "bytes_value":

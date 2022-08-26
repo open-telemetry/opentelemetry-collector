@@ -78,8 +78,8 @@ func NewRequest() Request {
 // NewRequestFromLogs returns a Request from plog.Logs.
 // Because Request is a wrapper for plog.Logs,
 // any changes to the provided Logs struct will be reflected in the Request and vice versa.
-func NewRequestFromLogs(l plog.Logs) Request {
-	return Request{orig: internal.LogsToOtlp(l)}
+func NewRequestFromLogs(ld plog.Logs) Request {
+	return Request{orig: internal.GetOrigLogs(internal.Logs(ld))}
 }
 
 // MarshalProto marshals Request into proto bytes.
@@ -115,7 +115,7 @@ func (lr Request) UnmarshalJSON(data []byte) error {
 }
 
 func (lr Request) Logs() plog.Logs {
-	return internal.LogsFromOtlp(lr.orig)
+	return plog.Logs(internal.NewLogs(lr.orig))
 }
 
 // Client is the client API for OTLP-GRPC Logs service.

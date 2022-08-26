@@ -19,12 +19,12 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-// NewProtoMarshaler returns a Marshaler. Marshals to OTLP binary protobuf bytes.
-func NewProtoMarshaler() Marshaler {
+// NewProtoMarshaler returns a MarshalerSizer.
+// Marshals to OTLP binary protobuf bytes and calculates the size of the marshaled Metrics.
+func NewProtoMarshaler() MarshalerSizer {
 	return newPbMarshaler()
 }
 
-// TODO(#3842): Figure out how we want to represent/return *Sizers.
 type pbMarshaler struct{}
 
 func newPbMarshaler() *pbMarshaler {
@@ -34,12 +34,12 @@ func newPbMarshaler() *pbMarshaler {
 var _ Sizer = (*pbMarshaler)(nil)
 
 func (e *pbMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
-	pb := internal.MetricsToProto(md)
+	pb := internal.MetricsToProto(internal.Metrics(md))
 	return pb.Marshal()
 }
 
 func (e *pbMarshaler) MetricsSize(md Metrics) int {
-	pb := internal.MetricsToProto(md)
+	pb := internal.MetricsToProto(internal.Metrics(md))
 	return pb.Size()
 }
 
@@ -57,5 +57,5 @@ func newPbUnmarshaler() *pbUnmarshaler {
 func (d *pbUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	pb := otlpmetrics.MetricsData{}
 	err := pb.Unmarshal(buf)
-	return internal.MetricsFromProto(pb), err
+	return Metrics(internal.MetricsFromProto(pb)), err
 }

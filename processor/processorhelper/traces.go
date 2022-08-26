@@ -36,7 +36,7 @@ type tracesProcessor struct {
 	consumer.Traces
 }
 
-// Deprecated: [v0.58.0] use version with NewTracesProcessor.
+// Deprecated: [v0.59.0] use version with NewTracesProcessor.
 func NewTracesProcessorWithCreateSettings(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,

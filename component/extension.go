@@ -99,7 +99,7 @@ func (ef *extensionFactory) ExtensionStability() StabilityLevel {
 	return ef.extensionStability
 }
 
-// Deprecated: [v0.58.0] use NewExtensionFactory.
+// Deprecated: [v0.59.0] use NewExtensionFactory.
 func NewExtensionFactoryWithStabilityLevel(
 	cfgType config.Type,
 	createDefaultConfig ExtensionCreateDefaultConfigFunc,

@@ -26,12 +26,15 @@ const messageValueTemplate = `${description}
 //
 // Must use New${structName} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ${structName} struct {
-	orig *${originName}
-}
+
+type ${structName} internal.${structName}
 
 func new${structName}(orig *${originName}) ${structName} {
-	return ${structName}{orig: orig}
+	return ${structName}(internal.New${structName}(orig))
+}
+
+func (ms ${structName}) getOrig() *${originName} {
+	return internal.GetOrig${structName}(internal.${structName}(ms))
 }
 
 // New${structName} creates a new empty ${structName}.
@@ -45,8 +48,8 @@ func New${structName}() ${structName} {
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
 func (ms ${structName}) MoveTo(dest ${structName}) {
-	*dest.orig = *ms.orig
-	*ms.orig = ${originName}{}
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = ${originName}{}
 }`
 
 const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
@@ -56,62 +59,65 @@ const messageValueCopyToFooterTemplate = `}`
 
 const messageValueTestTemplate = `
 func Test${structName}_MoveTo(t *testing.T) {
-	ms := generateTest${structName}()
+	ms := ${structName}(internal.GenerateTest${structName}())
 	dest := New${structName}()
 	ms.MoveTo(dest)
-	assert.EqualValues(t, New${structName}(), ms)
-	assert.EqualValues(t, generateTest${structName}(), dest)
+	assert.Equal(t, New${structName}(), ms)
+	assert.Equal(t, ${structName}(internal.GenerateTest${structName}()), dest)
 }
 
 func Test${structName}_CopyTo(t *testing.T) {
 	ms := New${structName}()
 	orig := New${structName}()
 	orig.CopyTo(ms)
-	assert.EqualValues(t, orig, ms)
-	orig = generateTest${structName}()
+	assert.Equal(t, orig, ms)
+	orig = ${structName}(internal.GenerateTest${structName}())
 	orig.CopyTo(ms)
-	assert.EqualValues(t, orig, ms)
+	assert.Equal(t, orig, ms)
 }`
 
-const messageValueGenerateTestTemplate = `func generateTest${structName}() ${structName} {
-	tv := New${structName}()
-	fillTest${structName}(tv)
+const messageValueGenerateTestTemplate = `func GenerateTest${structName}() ${structName} {
+	orig := ${originName}{}
+	tv := New${structName}(&orig)
+	FillTest${structName}(tv)
 	return tv
 }`
 
-const messageValueFillTestHeaderTemplate = `func fillTest${structName}(tv ${structName}) {`
+const messageValueFillTestHeaderTemplate = `func FillTest${structName}(tv ${structName}) {`
 const messageValueFillTestFooterTemplate = `}`
 
-const messageValueAliasTemplate = `${description}
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use New${structName} function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type ${structName} = internal.${structName} 
+const messageValueAliasTemplate = `
+type ${structName} struct {
+	orig *${originName}
+}
 
-// New${structName} is an alias for a function to create a new empty ${structName}.
-var New${structName} = internal.New${structName}`
+func GetOrig${structName}(ms ${structName}) *${originName} {
+	return ms.orig
+}
+
+func New${structName}(orig *${originName}) ${structName} {
+	return ${structName}{orig: orig}
+}`
 
 const newLine = "\n"
 
 type baseStruct interface {
 	getName() string
 
+	getPackageName() string
+
 	generateStruct(sb *strings.Builder)
 
 	generateTests(sb *strings.Builder)
 
 	generateTestValueHelpers(sb *strings.Builder)
-}
 
-type aliasGenerator interface {
-	generateAlias(sb *strings.Builder)
+	generateInternal(sb *strings.Builder)
 }
 
 type messageValueStruct struct {
 	structName     string
+	packageName    string
 	description    string
 	originFullName string
 	fields         []baseField
@@ -119,6 +125,10 @@ type messageValueStruct struct {
 
 func (ms *messageValueStruct) getName() string {
 	return ms.structName
+}
+
+func (ms *messageValueStruct) getPackageName() string {
+	return ms.packageName
 }
 
 func (ms *messageValueStruct) generateStruct(sb *strings.Builder) {
@@ -151,7 +161,7 @@ func (ms *messageValueStruct) generateStruct(sb *strings.Builder) {
 	// Write accessors CopyTo for the struct
 	for _, f := range ms.fields {
 		sb.WriteString(newLine)
-		f.generateCopyToValue(sb)
+		f.generateCopyToValue(ms, sb)
 	}
 	sb.WriteString(newLine)
 	sb.WriteString(os.Expand(messageValueCopyToFooterTemplate, func(name string) string {
@@ -207,13 +217,13 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *strings.Builder) {
 	}))
 }
 
-func (ms *messageValueStruct) generateAlias(sb *strings.Builder) {
+func (ms *messageValueStruct) generateInternal(sb *strings.Builder) {
 	sb.WriteString(os.Expand(messageValueAliasTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
-		case "description":
-			return ms.description
+		case "originName":
+			return ms.originFullName
 		default:
 			panic(name)
 		}

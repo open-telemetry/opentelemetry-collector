@@ -78,8 +78,8 @@ func NewRequest() Request {
 // NewRequestFromMetrics returns a Request from pmetric.Metrics.
 // Because Request is a wrapper for pmetric.Metrics,
 // any changes to the provided Metrics struct will be reflected in the Request and vice versa.
-func NewRequestFromMetrics(m pmetric.Metrics) Request {
-	return Request{orig: internal.MetricsToOtlp(m)}
+func NewRequestFromMetrics(md pmetric.Metrics) Request {
+	return Request{orig: internal.GetOrigMetrics(internal.Metrics(md))}
 }
 
 // MarshalProto marshals Request into proto bytes.
@@ -111,7 +111,7 @@ func (mr Request) UnmarshalJSON(data []byte) error {
 }
 
 func (mr Request) Metrics() pmetric.Metrics {
-	return internal.MetricsFromOtlp(mr.orig)
+	return pmetric.Metrics(internal.NewMetrics(mr.orig))
 }
 
 // Client is the client API for OTLP-GRPC Metrics service.

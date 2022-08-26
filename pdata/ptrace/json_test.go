@@ -15,15 +15,14 @@
 package ptrace
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var tracesOTLP = func() Traces {
@@ -60,8 +59,8 @@ func TestTracesJSON_Marshal(t *testing.T) {
 }
 
 var tracesOTLPFull = func() Traces {
-	traceID := internal.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := internal.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	traceID := pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	td := NewTraces()
 	// Add ResourceSpans.
 	rs := td.ResourceSpans().AppendEmpty()
@@ -78,42 +77,42 @@ var tracesOTLPFull = func() Traces {
 	// Add spans.
 	sp := il.Spans().AppendEmpty()
 	sp.SetName("testSpan")
-	sp.SetKind(internal.SpanKindClient)
+	sp.SetKind(SpanKindClient)
 	sp.SetDroppedAttributesCount(1)
-	sp.SetStartTimestamp(internal.NewTimestampFromTime(time.Now()))
+	sp.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	sp.SetTraceID(traceID)
 	sp.SetSpanID(spanID)
 	sp.SetDroppedEventsCount(1)
 	sp.SetDroppedLinksCount(1)
-	sp.SetEndTimestamp(internal.NewTimestampFromTime(time.Now()))
+	sp.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	sp.SetParentSpanID(spanID)
 	sp.SetTraceState("state")
-	sp.Status().SetCode(internal.StatusCodeOk)
+	sp.Status().SetCode(StatusCodeOk)
 	sp.Status().SetMessage("message")
 	// Add attributes.
 	sp.Attributes().UpsertString("string", "value")
 	sp.Attributes().UpsertBool("bool", true)
 	sp.Attributes().UpsertInt("int", 1)
 	sp.Attributes().UpsertDouble("double", 1.1)
-	sp.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
-	arr := internal.NewValueSlice()
+	sp.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
+	arr := pcommon.NewValueSlice()
 	arr.SliceVal().AppendEmpty().SetIntVal(1)
 	arr.SliceVal().AppendEmpty().SetStringVal("str")
 	sp.Attributes().Upsert("array", arr)
-	kvList := internal.NewValueMap()
-	kvList.MapVal().Upsert("int", internal.NewValueInt(1))
-	kvList.MapVal().Upsert("string", internal.NewValueString("string"))
+	kvList := pcommon.NewValueMap()
+	kvList.MapVal().Upsert("int", pcommon.NewValueInt(1))
+	kvList.MapVal().Upsert("string", pcommon.NewValueString("string"))
 	sp.Attributes().Upsert("kvList", kvList)
 	// Add events.
 	event := sp.Events().AppendEmpty()
 	event.SetName("eventName")
-	event.SetTimestamp(internal.NewTimestampFromTime(time.Now()))
+	event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	event.SetDroppedAttributesCount(1)
 	event.Attributes().UpsertString("string", "value")
 	event.Attributes().UpsertBool("bool", true)
 	event.Attributes().UpsertInt("int", 1)
 	event.Attributes().UpsertDouble("double", 1.1)
-	event.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+	event.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
 	// Add links.
 	link := sp.Links().AppendEmpty()
 	link.SetTraceState("state")
@@ -124,7 +123,7 @@ var tracesOTLPFull = func() Traces {
 	link.Attributes().UpsertBool("bool", true)
 	link.Attributes().UpsertInt("int", 1)
 	link.Attributes().UpsertDouble("double", 1.1)
-	link.Attributes().UpsertBytes("bytes", internal.NewImmutableByteSlice([]byte("foo")))
+	link.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
 	// Add another span.
 	sp2 := il.Spans().AppendEmpty()
 	sp2.SetName("testSpan2")
@@ -163,61 +162,56 @@ func TestReadTraceDataUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readTraceData(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readTraceData(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, otlptrace.TracesData{}, val)
 }
 
 func TestReadResourceSpansUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readResourceSpans(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readResourceSpans(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
 }
 
 func TestReadResourceSpansUnknownResourceField(t *testing.T) {
 	jsonStr := `{"resource":{"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readResourceSpans(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readResourceSpans(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
 }
 
 func TestReadScopeSpansUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readScopeSpans(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readScopeSpans(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.ScopeSpans{}, val)
 }
 
 func TestReadSpanUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readSpan(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.Span{}, val)
 }
 
 func TestReadSpanUnknownStatusField(t *testing.T) {
 	jsonStr := `{"status":{"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readSpan(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.Span{}, val)
 }
+
 func TestReadSpanInvalidTraceIDField(t *testing.T) {
 	jsonStr := `{"trace_id":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
@@ -227,6 +221,7 @@ func TestReadSpanInvalidTraceIDField(t *testing.T) {
 		assert.Contains(t, iter.Error.Error(), "parse trace_id")
 	}
 }
+
 func TestReadSpanInvalidSpanIDField(t *testing.T) {
 	jsonStr := `{"span_id":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
@@ -236,6 +231,7 @@ func TestReadSpanInvalidSpanIDField(t *testing.T) {
 		assert.Contains(t, iter.Error.Error(), "parse span_id")
 	}
 }
+
 func TestReadSpanInvalidParentSpanIDField(t *testing.T) {
 	jsonStr := `{"parent_span_id":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
@@ -250,10 +246,9 @@ func TestReadSpanLinkUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpanLink(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
+	val := readSpanLink(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.Span_Link{}, val)
 }
 
 func TestReadSpanLinkInvalidTraceIDField(t *testing.T) {
@@ -280,64 +275,7 @@ func TestReadSpanEventUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpanEvent(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "unknown field")
-	}
-}
-
-func TestReadSpanKind(t *testing.T) {
-	tests := []struct {
-		name    string
-		jsonStr string
-		want    otlptrace.Span_SpanKind
-	}{
-		{
-			name:    "string",
-			jsonStr: fmt.Sprintf(`"%s"`, otlptrace.Span_SPAN_KIND_INTERNAL.String()),
-			want:    otlptrace.Span_SPAN_KIND_INTERNAL,
-		},
-		{
-			name:    "int",
-			jsonStr: fmt.Sprintf("%d", otlptrace.Span_SPAN_KIND_INTERNAL),
-			want:    otlptrace.Span_SPAN_KIND_INTERNAL,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			if got := readSpanKind(iter); got != tt.want {
-				t.Errorf("readSpanKind() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestReadStatusCode(t *testing.T) {
-	tests := []struct {
-		name    string
-		jsonStr string
-		want    otlptrace.Status_StatusCode
-	}{
-		{
-			name:    "string",
-			jsonStr: fmt.Sprintf(`"%s"`, otlptrace.Status_STATUS_CODE_ERROR.String()),
-			want:    otlptrace.Status_STATUS_CODE_ERROR,
-		},
-		{
-			name:    "int",
-			jsonStr: fmt.Sprintf("%d", otlptrace.Status_STATUS_CODE_ERROR),
-			want:    otlptrace.Status_STATUS_CODE_ERROR,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			if got := readStatusCode(iter); got != tt.want {
-				t.Errorf("readStatusCode() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	val := readSpanEvent(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, &otlptrace.Span_Event{}, val)
 }

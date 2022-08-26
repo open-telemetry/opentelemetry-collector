@@ -4,6 +4,11 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated fields/funcs from `service` (#5907)
+  - Remove `ConfigProviderSettings.Location`
+  - Remove `ConfigProviderSettings.MapProviders`
+  - Remove `ConfigProviderSettings.MapConverters`
+  - Remove `featuregate.Registry.MustAppy`
 - Remove deprecated funcs from `pdata` module. (#5911)
   - Remove `pmetric.MetricDataPointFlags.String()`
   - Remove `pmetric.NumberDataPoint.FlagsStruct()`
@@ -22,18 +27,33 @@
 - Deprecate `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` in favor of `exporterhelper.New[Traces|Metrics|Logs]Exporter` (#5914)
 - Deprecate `component.NewExtensionFactoryWithStabilityLevel` in favor of `component.NewExtensionFactory` (#5917)
 - Deprecate `plog.SeverityNumber[UPPERCASE]` constants (#5927)
+- Deprecate `pcommon.Map.InsertNull` method (#5955)
+- Deprecate FlagsStruct types (#5933):
+  - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
+  - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
+- Deprecate builder distribution flags, use configuration. (#5946)
+- Enforce naming conventions for Invalid[Trace|Span]ID: (#5969)
+  - Deprecate funcs `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` in favor of vars `pcommon.EmptyTraceID` and `pcommon.EmptySpanID` 
 
 ### 💡 Enhancements 💡
 
+- Added `MarshalerSizer` interface to `ptrace`, `plog`, and `pmetric` packages. `NewProtoMarshaler` now returns a `MarshalerSizer` (#5929)
 - Add support to unmarshalls bytes into pmetric.Metrics with `jsoniter` in jsonUnmarshaler(#5433)
 - Add httpprovider to allow loading config files stored in HTTP (#5810)
 - Added `service.telemetry.traces.propagators` configuration to set propagators for collector's internal spans. (#5572)
+- Remove unnecessary duplicate code and allocations for reading enums in JSON. (#5928)
+- Add "dist.build_tags" configuration option to support passing go build flags to builder. (#5659)
+- Add an AsRaw func on the flags, lots of places to encode these flags. (#5934)
+- Change pdata generated types to use type definition instead of aliases. (#5936)
+  - Improves documentation, and makes code easier to read/understand.
 
 ### 🧰 Bug fixes 🧰
 
 - Fix reading scope attributes for trace JSON, remove duplicate code. (#5930)
+- otlpjson/trace: skip unknown fields instead of error. (#5931)
 - Fix bug in setting the correct collector state after a configuration change event. (#5830)
 - Fix json trace unmarshalling for numbers (#5924):
+  - Accept both string and number for float64.
   - Accept both string and number for int32/uint32.
   - Read uint64 numbers without converting from int64.
 
@@ -78,8 +98,6 @@
 - Deprecate `processorhelper.New[Traces|Metrics|Logs]Processor` in favor of `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` (#5833)
 - Deprecate MetricDataPointFlags.String(), no other pdata flags have this method (#5868)
 - Deprecates `FlagsStruct` in favor of `Flags` (#5842)
-  - `MetricDataPointFlagsStruct` -> `MetricDataPointFlags`
-  - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
   - `FlagsStruct` -> `Flags`
 - Deprecate `exporterhelper.New[Traces|Metrics|Logs]Exporter` in favor of `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` (#5834)
 

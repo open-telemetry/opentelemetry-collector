@@ -78,8 +78,8 @@ func NewRequest() Request {
 // NewRequestFromTraces returns a Request from ptrace.Traces.
 // Because Request is a wrapper for ptrace.Traces,
 // any changes to the provided Traces struct will be reflected in the Request and vice versa.
-func NewRequestFromTraces(t ptrace.Traces) Request {
-	return Request{orig: internal.TracesToOtlp(t)}
+func NewRequestFromTraces(td ptrace.Traces) Request {
+	return Request{orig: internal.GetOrigTraces(internal.Traces(td))}
 }
 
 // MarshalProto marshals Request into proto bytes.
@@ -115,7 +115,7 @@ func (tr Request) UnmarshalJSON(data []byte) error {
 }
 
 func (tr Request) Traces() ptrace.Traces {
-	return internal.TracesFromOtlp(tr.orig)
+	return ptrace.Traces(internal.NewTraces(tr.orig))
 }
 
 // Client is the client API for OTLP-GRPC Traces service.
