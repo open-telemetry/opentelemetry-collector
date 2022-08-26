@@ -19,6 +19,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
+// EmptyTraceID represents the empty (all zero bytes) TraceID.
+var EmptyTraceID = NewTraceID([16]byte{})
+
 // TraceID is a trace identifier.
 type TraceID internal.TraceID
 
@@ -26,9 +29,9 @@ func (ms TraceID) getOrig() data.TraceID {
 	return internal.GetOrigTraceID(internal.TraceID(ms))
 }
 
-// InvalidTraceID returns an empty (all zero bytes) TraceID.
+// Deprecated: [v0.59.0] use EmptyTraceID.
 func InvalidTraceID() TraceID {
-	return NewTraceID([16]byte{})
+	return EmptyTraceID
 }
 
 // NewTraceID returns a new TraceID from the given byte array.

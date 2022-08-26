@@ -19,6 +19,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
+// EmptySpanID represents the empty (all zero bytes) SpanID.
+var EmptySpanID = NewSpanID([8]byte{})
+
 // SpanID is span identifier.
 type SpanID internal.SpanID
 
@@ -26,9 +29,9 @@ func (ms SpanID) getOrig() data.SpanID {
 	return internal.GetOrigSpanID(internal.SpanID(ms))
 }
 
-// InvalidSpanID returns an empty (all zero bytes) SpanID.
+// Deprecated: [v0.59.0] use EmptySpanID.
 func InvalidSpanID() SpanID {
-	return NewSpanID([8]byte{})
+	return EmptySpanID
 }
 
 // NewSpanID returns a new SpanID from the given byte array.
