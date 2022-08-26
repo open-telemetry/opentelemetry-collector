@@ -56,6 +56,7 @@ func (b *dataBuffer) logInstrumentationScope(il pcommon.InstrumentationScope) {
 		"InstrumentationScope %s %s",
 		il.Name(),
 		il.Version())
+	b.logAttributes("InstrumentationScope attributes", il.Attributes())
 }
 
 func (b *dataBuffer) logMetricDescriptor(md pmetric.Metric) {
