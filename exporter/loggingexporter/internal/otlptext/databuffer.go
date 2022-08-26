@@ -35,16 +35,16 @@ func (b *dataBuffer) logEntry(format string, a ...interface{}) {
 	b.buf.WriteString("\n")
 }
 
-func (b *dataBuffer) logAttr(label string, value string) {
-	b.logEntry("    %-15s: %s", label, value)
+func (b *dataBuffer) logAttr(attr string, value string) {
+	b.logEntry("    %-15s: %s", attr, value)
 }
 
-func (b *dataBuffer) logAttributes(label string, m pcommon.Map) {
+func (b *dataBuffer) logAttributes(attr string, m pcommon.Map) {
 	if m.Len() == 0 {
 		return
 	}
 
-	b.logEntry("%s:", label)
+	b.logEntry("%s:", attr)
 	m.Range(func(k string, v pcommon.Value) bool {
 		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
 		return true
@@ -216,8 +216,8 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice
 	}
 }
 
-func (b *dataBuffer) logDataPointAttributes(labels pcommon.Map) {
-	b.logAttributes("Data point attributes", labels)
+func (b *dataBuffer) logDataPointAttributes(attributes pcommon.Map) {
+	b.logAttributes("Data point attributes", attributes)
 }
 
 func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
