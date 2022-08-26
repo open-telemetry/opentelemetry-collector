@@ -19,6 +19,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -143,7 +144,13 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 func newWithWindowsEventLogCore(set CollectorSettings, flags *flag.FlagSet, elog *eventlog.Log) (*Collector, error) {
 	if set.ConfigProvider == nil {
 		var err error
-		cfgSet := newDefaultConfigProviderSettings(getConfigFlag(flags))
+
+		configFlags := getConfigFlag(flags)
+		if len(configFlags) == 0 {
+			return nil, errors.New("at least one config flag must be provided")
+		}
+
+		cfgSet := newDefaultConfigProviderSettings(configFlags)
 		// Append the "overwrite properties converter" as the first converter.
 		cfgSet.ResolverSettings.Converters = append(
 			[]confmap.Converter{overwritepropertiesconverter.New(getSetFlag(flags))},
