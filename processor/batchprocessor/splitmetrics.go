@@ -126,26 +126,28 @@ func metricDPC(ms pmetric.Metric) int {
 // splitMetric removes metric points from the input data and moves data of the specified size to destination.
 // Returns size of moved data and boolean describing, whether the metric should be removed from original slice.
 func splitMetric(ms, dest pmetric.Metric, size int) (int, bool) {
-	dest.SetDataType(ms.DataType())
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
 
 	switch ms.DataType() {
 	case pmetric.MetricDataTypeGauge:
-		return splitNumberDataPoints(ms.Gauge().DataPoints(), dest.Gauge().DataPoints(), size)
+		return splitNumberDataPoints(ms.Gauge().DataPoints(), dest.SetEmptyGauge().DataPoints(), size)
 	case pmetric.MetricDataTypeSum:
-		dest.Sum().SetAggregationTemporality(ms.Sum().AggregationTemporality())
-		dest.Sum().SetIsMonotonic(ms.Sum().IsMonotonic())
-		return splitNumberDataPoints(ms.Sum().DataPoints(), dest.Sum().DataPoints(), size)
+		destSum := dest.SetEmptySum()
+		destSum.SetAggregationTemporality(ms.Sum().AggregationTemporality())
+		destSum.SetIsMonotonic(ms.Sum().IsMonotonic())
+		return splitNumberDataPoints(ms.Sum().DataPoints(), destSum.DataPoints(), size)
 	case pmetric.MetricDataTypeHistogram:
-		dest.Histogram().SetAggregationTemporality(ms.Histogram().AggregationTemporality())
-		return splitHistogramDataPoints(ms.Histogram().DataPoints(), dest.Histogram().DataPoints(), size)
+		destHistogram := dest.SetEmptyHistogram()
+		destHistogram.SetAggregationTemporality(ms.Histogram().AggregationTemporality())
+		return splitHistogramDataPoints(ms.Histogram().DataPoints(), destHistogram.DataPoints(), size)
 	case pmetric.MetricDataTypeExponentialHistogram:
-		dest.ExponentialHistogram().SetAggregationTemporality(ms.ExponentialHistogram().AggregationTemporality())
-		return splitExponentialHistogramDataPoints(ms.ExponentialHistogram().DataPoints(), dest.ExponentialHistogram().DataPoints(), size)
+		destHistogram := dest.SetEmptyExponentialHistogram()
+		destHistogram.SetAggregationTemporality(ms.ExponentialHistogram().AggregationTemporality())
+		return splitExponentialHistogramDataPoints(ms.ExponentialHistogram().DataPoints(), destHistogram.DataPoints(), size)
 	case pmetric.MetricDataTypeSummary:
-		return splitSummaryDataPoints(ms.Summary().DataPoints(), dest.Summary().DataPoints(), size)
+		return splitSummaryDataPoints(ms.Summary().DataPoints(), dest.SetEmptySummary().DataPoints(), size)
 	}
 	return size, false
 }

@@ -142,8 +142,7 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	ilms.At(0).Metrics().AppendEmpty()
 	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
-	ilms.At(0).Metrics().At(0).SetDataType(MetricDataTypeSum)
-	intSum := ilms.At(0).Metrics().At(0).Sum()
+	intSum := ilms.At(0).Metrics().At(0).SetEmptySum()
 	intSum.DataPoints().AppendEmpty()
 	intSum.DataPoints().AppendEmpty()
 	intSum.DataPoints().AppendEmpty()
@@ -162,24 +161,19 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	}
 	assert.EqualValues(t, 0, md.DataPointCount())
 
-	ilm.At(0).SetDataType(MetricDataTypeGauge)
-	ilm.At(0).Gauge().DataPoints().AppendEmpty()
+	ilm.At(0).SetEmptyGauge().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 1, md.DataPointCount())
 
-	ilm.At(1).SetDataType(MetricDataTypeSum)
-	ilm.At(1).Sum().DataPoints().AppendEmpty()
+	ilm.At(1).SetEmptySum().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 2, md.DataPointCount())
 
-	ilm.At(2).SetDataType(MetricDataTypeHistogram)
-	ilm.At(2).Histogram().DataPoints().AppendEmpty()
+	ilm.At(2).SetEmptyHistogram().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 3, md.DataPointCount())
 
-	ilm.At(3).SetDataType(MetricDataTypeExponentialHistogram)
-	ilm.At(3).ExponentialHistogram().DataPoints().AppendEmpty()
+	ilm.At(3).SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 4, md.DataPointCount())
 
-	ilm.At(4).SetDataType(MetricDataTypeSummary)
-	ilm.At(4).Summary().DataPoints().AppendEmpty()
+	ilm.At(4).SetEmptySummary().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 5, md.DataPointCount())
 }
 
@@ -193,12 +187,11 @@ func TestDataPointCountWithEmpty(t *testing.T) {
 func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	metrics := NewMetrics()
 	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	doubleGauge := ilm.Metrics().AppendEmpty()
-	doubleGauge.SetDataType(MetricDataTypeGauge)
-	doubleHistogram := ilm.Metrics().AppendEmpty()
-	doubleHistogram.SetDataType(MetricDataTypeHistogram)
-	doubleSum := ilm.Metrics().AppendEmpty()
-	doubleSum.SetDataType(MetricDataTypeSum)
+	ilm.Metrics().AppendEmpty().SetEmptyGauge()
+	ilm.Metrics().AppendEmpty().SetEmptySum()
+	ilm.Metrics().AppendEmpty().SetEmptyHistogram()
+	ilm.Metrics().AppendEmpty().SetEmptyExponentialHistogram()
+	ilm.Metrics().AppendEmpty().SetEmptySummary()
 	assert.EqualValues(t, 0, metrics.DataPointCount())
 }
 
@@ -206,8 +199,7 @@ func TestHistogramWithNilSum(t *testing.T) {
 	metrics := NewMetrics()
 	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	histo := ilm.Metrics().AppendEmpty()
-	histo.SetDataType(MetricDataTypeHistogram)
-	histogramDataPoints := histo.Histogram().DataPoints()
+	histogramDataPoints := histo.SetEmptyHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	dest := ilm.Metrics().AppendEmpty()
 	histo.CopyTo(dest)
@@ -218,8 +210,7 @@ func TestHistogramWithValidSum(t *testing.T) {
 	metrics := NewMetrics()
 	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	histo := ilm.Metrics().AppendEmpty()
-	histo.SetDataType(MetricDataTypeHistogram)
-	histogramDataPoints := histo.Histogram().DataPoints()
+	histogramDataPoints := histo.SetEmptyHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	histogramDataPoints.At(0).SetSum(10)
 	dest := ilm.Metrics().AppendEmpty()
@@ -382,8 +373,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	// Mutate DataPoints
 	igd := metric.Gauge()
 	assert.EqualValues(t, 2, igd.DataPoints().Len())
-	metric.SetDataType(MetricDataTypeGauge)
-	gaugeDataPoints := metric.Gauge().DataPoints()
+	gaugeDataPoints := metric.SetEmptyGauge().DataPoints()
 	gaugeDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, gaugeDataPoints.Len())
 	gaugeDataPoints.At(0).SetStartTimestamp(pcommon.Timestamp(startTime + 1))
@@ -465,9 +455,8 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	// Mutate DataPoints
 	dsd := metric.Sum()
 	assert.EqualValues(t, 2, dsd.DataPoints().Len())
-	metric.SetDataType(MetricDataTypeSum)
+	metric.SetEmptySum().SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	doubleDataPoints := metric.Sum().DataPoints()
-	metric.Sum().SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	doubleDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, doubleDataPoints.Len())
 	doubleDataPoints.At(0).SetStartTimestamp(pcommon.Timestamp(startTime + 1))
@@ -550,8 +539,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	// Mutate DataPoints
 	dhd := metric.Histogram()
 	assert.EqualValues(t, 2, dhd.DataPoints().Len())
-	metric.SetDataType(MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
+	metric.SetEmptyHistogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
 	histogramDataPoints := metric.Histogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, histogramDataPoints.Len())
@@ -634,8 +622,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	// Mutate DataPoints
 	dhd := metric.Histogram()
 	assert.EqualValues(t, 2, dhd.DataPoints().Len())
-	metric.SetDataType(MetricDataTypeExponentialHistogram)
-	metric.ExponentialHistogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
+	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
 	histogramDataPoints := metric.ExponentialHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, histogramDataPoints.Len())

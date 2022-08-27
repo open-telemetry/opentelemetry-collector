@@ -662,6 +662,17 @@ func (ms Metric) Gauge() Gauge {
 	return newGauge(v.Gauge)
 }
 
+// SetEmptyGauge sets an empty gauge to this Metric.
+//
+// After this, DataType() function will return MetricDataTypeGauge".
+//
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetEmptyGauge() Gauge {
+	val := &otlpmetrics.Gauge{}
+	ms.getOrig().Data = &otlpmetrics.Metric_Gauge{Gauge: val}
+	return newGauge(val)
+}
+
 // Sum returns the sum associated with this Metric.
 //
 // Calling this function when DataType() != MetricDataTypeSum returns an invalid
@@ -674,6 +685,17 @@ func (ms Metric) Sum() Sum {
 		return Sum{}
 	}
 	return newSum(v.Sum)
+}
+
+// SetEmptySum sets an empty sum to this Metric.
+//
+// After this, DataType() function will return MetricDataTypeSum".
+//
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetEmptySum() Sum {
+	val := &otlpmetrics.Sum{}
+	ms.getOrig().Data = &otlpmetrics.Metric_Sum{Sum: val}
+	return newSum(val)
 }
 
 // Histogram returns the histogram associated with this Metric.
@@ -690,6 +712,17 @@ func (ms Metric) Histogram() Histogram {
 	return newHistogram(v.Histogram)
 }
 
+// SetEmptyHistogram sets an empty histogram to this Metric.
+//
+// After this, DataType() function will return MetricDataTypeHistogram".
+//
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetEmptyHistogram() Histogram {
+	val := &otlpmetrics.Histogram{}
+	ms.getOrig().Data = &otlpmetrics.Metric_Histogram{Histogram: val}
+	return newHistogram(val)
+}
+
 // ExponentialHistogram returns the exponentialhistogram associated with this Metric.
 //
 // Calling this function when DataType() != MetricDataTypeExponentialHistogram returns an invalid
@@ -702,6 +735,17 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 		return ExponentialHistogram{}
 	}
 	return newExponentialHistogram(v.ExponentialHistogram)
+}
+
+// SetEmptyExponentialHistogram sets an empty exponentialhistogram to this Metric.
+//
+// After this, DataType() function will return MetricDataTypeExponentialHistogram".
+//
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
+	val := &otlpmetrics.ExponentialHistogram{}
+	ms.getOrig().Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
+	return newExponentialHistogram(val)
 }
 
 // Summary returns the summary associated with this Metric.
@@ -718,6 +762,17 @@ func (ms Metric) Summary() Summary {
 	return newSummary(v.Summary)
 }
 
+// SetEmptySummary sets an empty summary to this Metric.
+//
+// After this, DataType() function will return MetricDataTypeSummary".
+//
+// Calling this function on zero-initialized Metric will cause a panic.
+func (ms Metric) SetEmptySummary() Summary {
+	val := &otlpmetrics.Summary{}
+	ms.getOrig().Data = &otlpmetrics.Metric_Summary{Summary: val}
+	return newSummary(val)
+}
+
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Metric) CopyTo(dest Metric) {
 	dest.SetName(ms.Name())
@@ -725,20 +780,15 @@ func (ms Metric) CopyTo(dest Metric) {
 	dest.SetUnit(ms.Unit())
 	switch ms.DataType() {
 	case MetricDataTypeGauge:
-		dest.SetDataType(MetricDataTypeGauge)
-		ms.Gauge().CopyTo(dest.Gauge())
+		ms.Gauge().CopyTo(dest.SetEmptyGauge())
 	case MetricDataTypeSum:
-		dest.SetDataType(MetricDataTypeSum)
-		ms.Sum().CopyTo(dest.Sum())
+		ms.Sum().CopyTo(dest.SetEmptySum())
 	case MetricDataTypeHistogram:
-		dest.SetDataType(MetricDataTypeHistogram)
-		ms.Histogram().CopyTo(dest.Histogram())
+		ms.Histogram().CopyTo(dest.SetEmptyHistogram())
 	case MetricDataTypeExponentialHistogram:
-		dest.SetDataType(MetricDataTypeExponentialHistogram)
-		ms.ExponentialHistogram().CopyTo(dest.ExponentialHistogram())
+		ms.ExponentialHistogram().CopyTo(dest.SetEmptyExponentialHistogram())
 	case MetricDataTypeSummary:
-		dest.SetDataType(MetricDataTypeSummary)
-		ms.Summary().CopyTo(dest.Summary())
+		ms.Summary().CopyTo(dest.SetEmptySummary())
 	}
 
 }

@@ -16,15 +16,13 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate pmetric.Metric.SetDataType, in favor of empty setters for each type. (#5979)
 - Deprecate `pcommon.Map.Update+` in favor of `pcommon.Map.Get` + `pcommon.Value.Set+` (#6013)
 - Deprecate `pcommon.Empty[Trace|Span]ID` in favor of `pcommon.New[Trace|Span]IDEmpty` (#6008)
 - Deprecate `pcommon.[Trace|Span]ID.Bytes` in favor direct conversion. (#6008)
 - Deprecate `pcommon.New[Trace|Span]ID` in favor direct conversion. (#6008)
 - Deprecate `MetricDataPointFlagsImmutable` type. (#6017)
 - Deprecate `*DataPoint.[Set]FlagsImmutable()` funcs in favor of `*DataPoint.[Set]Flags()`. (#6017)
-
-### 🚩 Deprecations 🚩
-
 - Deprecate `LogRecord.FlagsStruct()` and `LogRecord.SetFlagsStruct()` in favor of `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
 
 ### 💡 Enhancements 💡
