@@ -298,6 +298,22 @@ func (v Value) SetBytesVal(bv ImmutableByteSlice) {
 	v.getOrig().Value = &otlpcommon.AnyValue_BytesValue{BytesValue: bv.getOrig()}
 }
 
+// SetEmptyMapVal sets value to an empty map and returns it.
+// Calling this function on zero-initialized Value will cause a panic.
+func (v Value) SetEmptyMapVal() Map {
+	kv := &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}
+	v.getOrig().Value = kv
+	return newMap(&kv.KvlistValue.Values)
+}
+
+// SetEmptySliceVal sets value to an empty slice and returns it.
+// Calling this function on zero-initialized Value will cause a panic.
+func (v Value) SetEmptySliceVal() Slice {
+	av := &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}
+	v.getOrig().Value = av
+	return newSlice(&av.ArrayValue.Values)
+}
+
 // copyTo copies the value to Value. Will panic if dest is nil.
 func (v Value) copyTo(dest *otlpcommon.AnyValue) {
 	switch ov := v.getOrig().Value.(type) {
@@ -648,6 +664,15 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 //
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
+//
+// NOTE: The method will be deprecated in 0.60.0. Replace it with the following function calls:
+// For primitive types, use Insert<Type> methods, e.g. InsertString.
+// For complex and unknown types, use:
+//
+//	_, ok := m.Get(k)
+//	if !ok {
+//		v.CopyTo(m.UpsertEmpty(k)) // or use m.UpsertEmpty<Type> for complex types.
+//	}
 func (m Map) Insert(k string, v Value) {
 	if _, existing := m.Get(k); !existing {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValue(k, v))
@@ -710,6 +735,15 @@ func (m Map) InsertBytes(k string, v ImmutableByteSlice) {
 //
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
+//
+// Deprecated: [0.59.0] Replace it with the following function calls:
+// For primitive types, use Update<Type> methods, e.g. UpdateString.
+// For complex and unknown types, use:
+//
+//	toVal, ok := m.Get(k)
+//	if ok {
+//		v.CopyTo(toVal) // or use m.UpsertEmpty<Type> for complex types.
+//	}
 func (m Map) Update(k string, v Value) {
 	if av, existing := m.Get(k); existing {
 		v.copyTo(av.getOrig())
@@ -764,12 +798,28 @@ func (m Map) UpdateBytes(k string, v ImmutableByteSlice) {
 //
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
+//
+// Deprecated: [0.59.0] Replace it with the following function calls:
+// For primitive types, use Upsert<Type> methods, e.g. UpsertString.
+// For complex types, use UpsertEmpty<Type> methods, e.g. UpsertEmptyMap, and fill it with the data.
+// If you don't know the value type, replace it with v.CopyTo(m.UpsertEmpty()).
 func (m Map) Upsert(k string, v Value) {
 	if av, existing := m.Get(k); existing {
 		v.copyTo(av.getOrig())
 	} else {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValue(k, v))
 	}
+}
+
+// UpsertEmpty inserts or updates an empty value to the map under given key
+// and return the updated/inserted value.
+func (m Map) UpsertEmpty(k string) Value {
+	if av, existing := m.Get(k); existing {
+		av.getOrig().Value = nil
+		return newValue(av.getOrig())
+	}
+	*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k})
+	return newValue(&(*m.getOrig())[len(*m.getOrig())-1].Value)
 }
 
 // UpsertString performs the Insert or Update action. The Value is
@@ -825,6 +875,28 @@ func (m Map) UpsertBytes(k string, v ImmutableByteSlice) {
 	} else {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueBytes(k, v))
 	}
+}
+
+// UpsertEmptyMap inserts or updates an empty map under given key and returns it.
+func (m Map) UpsertEmptyMap(k string) Map {
+	kvl := otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: []otlpcommon.KeyValue(nil)}}
+	if av, existing := m.Get(k); existing {
+		av.getOrig().Value = &kvl
+	} else {
+		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &kvl}})
+	}
+	return Map(internal.NewMap(&kvl.KvlistValue.Values))
+}
+
+// UpsertEmptySlice inserts or updates an empty clice under given key and returns it.
+func (m Map) UpsertEmptySlice(k string) Slice {
+	vl := otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: []otlpcommon.AnyValue(nil)}}
+	if av, existing := m.Get(k); existing {
+		av.getOrig().Value = &vl
+	} else {
+		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &vl}})
+	}
+	return Slice(internal.NewSlice(&vl.ArrayValue.Values))
 }
 
 // Sort sorts the entries in the Map so two instances can be compared.

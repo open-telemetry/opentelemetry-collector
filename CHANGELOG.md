@@ -35,6 +35,7 @@
 - Deprecate builder distribution flags, use configuration. (#5946)
 - Enforce naming conventions for Invalid[Trace|Span]ID: (#5969)
   - Deprecate funcs `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` in favor of vars `pcommon.EmptyTraceID` and `pcommon.EmptySpanID` 
+- Deprecate `Update` and `Upsert` methods of `pcommon.Map` (#5975)
 
 ### 💡 Enhancements 💡
 
@@ -48,6 +49,8 @@
 - Change pdata generated types to use type definition instead of aliases. (#5936)
   - Improves documentation, and makes code easier to read/understand.
 - Log `InstrumentationScope` attributes in `loggingexporter` (#5976)
+- Add `UpsertEmpty`, `UpsertEmptyMap` and `UpsertEmptySlice` methods to `pcommon.Map` (#5975)
+- Add `SetEmptyMapVal` and `SetEmptySliceVal` methods to `pcommon.Value` (#5975)
 
 ### 🧰 Bug fixes 🧰
 
