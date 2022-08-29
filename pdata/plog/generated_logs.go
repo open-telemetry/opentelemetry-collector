@@ -621,22 +621,22 @@ func (ms LogRecord) SetTimestamp(v pcommon.Timestamp) {
 
 // TraceID returns the traceid associated with this LogRecord.
 func (ms LogRecord) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(internal.NewTraceID(ms.getOrig().TraceId))
+	return pcommon.NewTraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
 func (ms LogRecord) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = internal.GetOrigTraceID(internal.TraceID(v))
+	ms.getOrig().TraceId = v.Bytes()
 }
 
 // SpanID returns the spanid associated with this LogRecord.
 func (ms LogRecord) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(internal.NewSpanID(ms.getOrig().SpanId))
+	return pcommon.NewSpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
 func (ms LogRecord) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = internal.GetOrigSpanID(internal.SpanID(v))
+	ms.getOrig().SpanId = v.Bytes()
 }
 
 // FlagsStruct returns the flagsstruct associated with this LogRecord.

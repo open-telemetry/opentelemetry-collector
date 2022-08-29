@@ -163,18 +163,18 @@ const accessorsPrimitiveTypedTestTemplate = `func Test${structName}_${fieldName}
 
 const accessorsPrimitiveStructTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
-	return ${packageName}${returnType}(internal.New${returnType}(ms.getOrig().${originFieldName}))
+	return ${packageName}New${returnType}(ms.getOrig().${originFieldName})
 }
 
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${packageName}${returnType}) {
-	ms.getOrig().${originFieldName} = internal.GetOrig${returnType}(internal.${returnType}(v))
+	ms.getOrig().${originFieldName} = v.Bytes()
 }`
 
 const accessorsPrimitiveStructTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
-	assert.Equal(t, ${packageName}${returnType}(internal.New${returnType}(${defaultVal})), ms.${fieldName}())
-	testVal${fieldName} := ${packageName}${returnType}(internal.New${returnType}(${testValue}))
+	assert.Equal(t, ${packageName}New${returnType}(${defaultVal}), ms.${fieldName}())
+	testVal${fieldName} := ${packageName}New${returnType}(${testValue})
 	ms.Set${fieldName}(testVal${fieldName})
 	assert.Equal(t, testVal${fieldName}, ms.${fieldName}())
 }`
