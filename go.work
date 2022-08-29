@@ -1,0 +1,10 @@
+go 1.18
+
+use (
+	.
+	./cmd/builder
+	./cmd/otelcorecol
+	./internal/tools
+	./pdata
+	./semconv
+)

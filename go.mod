@@ -78,10 +78,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace go.opentelemetry.io/collector/semconv => ./semconv
-
-replace go.opentelemetry.io/collector/pdata => ./pdata
-
 retract (
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
