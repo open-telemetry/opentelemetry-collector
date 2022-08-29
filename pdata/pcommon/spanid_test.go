@@ -34,7 +34,7 @@ func TestNewSpanID(t *testing.T) {
 
 func TestSpanIDHexString(t *testing.T) {
 	sid := NewSpanID([8]byte{})
-	assert.Equal(t, "0000000000000000", sid.HexString())
+	assert.Equal(t, "", sid.HexString())
 
 	sid = NewSpanID([8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23})
 	assert.Equal(t, "1223ad1223ad1223", sid.HexString())
