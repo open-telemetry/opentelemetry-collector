@@ -44,6 +44,9 @@ func (ms SpanID) Bytes() [8]byte {
 
 // HexString returns hex representation of the SpanID.
 func (ms SpanID) HexString() string {
+	if ms.IsEmpty() {
+		return ""
+	}
 	return hex.EncodeToString(ms.orig[:])
 }
 

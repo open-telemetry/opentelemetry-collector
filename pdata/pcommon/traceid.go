@@ -45,6 +45,9 @@ func (ms TraceID) Bytes() [16]byte {
 
 // HexString returns hex representation of the TraceID.
 func (ms TraceID) HexString() string {
+	if ms.IsEmpty() {
+		return ""
+	}
 	return hex.EncodeToString(ms.orig[:])
 }
 
