@@ -2621,22 +2621,22 @@ func (ms Exemplar) FilteredAttributes() pcommon.Map {
 
 // TraceID returns the traceid associated with this Exemplar.
 func (ms Exemplar) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(internal.NewTraceID(ms.getOrig().TraceId))
+	return pcommon.NewTraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Exemplar.
 func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = internal.GetOrigTraceID(internal.TraceID(v))
+	ms.getOrig().TraceId = v.Bytes()
 }
 
 // SpanID returns the spanid associated with this Exemplar.
 func (ms Exemplar) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(internal.NewSpanID(ms.getOrig().SpanId))
+	return pcommon.NewSpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Exemplar.
 func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = internal.GetOrigSpanID(internal.SpanID(v))
+	ms.getOrig().SpanId = v.Bytes()
 }
 
 // CopyTo copies all properties from the current struct to the dest.

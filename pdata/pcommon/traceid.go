@@ -15,7 +15,8 @@
 package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
+	"encoding/hex"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
@@ -23,10 +24,8 @@ import (
 var EmptyTraceID = NewTraceID([16]byte{})
 
 // TraceID is a trace identifier.
-type TraceID internal.TraceID
-
-func (ms TraceID) getOrig() data.TraceID {
-	return internal.GetOrigTraceID(internal.TraceID(ms))
+type TraceID struct {
+	orig [16]byte
 }
 
 // Deprecated: [v0.59.0] use EmptyTraceID.
@@ -36,20 +35,20 @@ func InvalidTraceID() TraceID {
 
 // NewTraceID returns a new TraceID from the given byte array.
 func NewTraceID(bytes [16]byte) TraceID {
-	return TraceID(internal.NewTraceID(data.NewTraceID(bytes)))
+	return TraceID{orig: bytes}
 }
 
 // Bytes returns the byte array representation of the TraceID.
 func (ms TraceID) Bytes() [16]byte {
-	return ms.getOrig().Bytes()
+	return ms.orig
 }
 
 // HexString returns hex representation of the TraceID.
 func (ms TraceID) HexString() string {
-	return ms.getOrig().HexString()
+	return hex.EncodeToString(ms.orig[:])
 }
 
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (ms TraceID) IsEmpty() bool {
-	return ms.getOrig().IsEmpty()
+	return data.TraceID(ms.orig).IsEmpty()
 }
