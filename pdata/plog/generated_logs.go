@@ -641,7 +641,12 @@ func (ms LogRecord) SetSpanID(v pcommon.SpanID) {
 
 // FlagsStruct returns the flagsstruct associated with this LogRecord.
 func (ms LogRecord) FlagsStruct() LogRecordFlags {
-	return LogRecordFlags(internal.NewLogRecordFlags(&ms.getOrig().Flags))
+	return LogRecordFlags(ms.getOrig().Flags)
+}
+
+// SetFlagsStruct replaces the flagsstruct associated with this LogRecord.
+func (ms LogRecord) SetFlagsStruct(v LogRecordFlags) {
+	ms.getOrig().Flags = uint32(v)
 }
 
 // SeverityText returns the severitytext associated with this LogRecord.
@@ -690,7 +695,7 @@ func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
-	ms.FlagsStruct().CopyTo(dest.FlagsStruct())
+	dest.SetFlagsStruct(ms.FlagsStruct())
 	dest.SetSeverityText(ms.SeverityText())
 	dest.SetSeverityNumber(ms.SeverityNumber())
 	ms.Body().CopyTo(dest.Body())
