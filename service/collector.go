@@ -177,9 +177,12 @@ func (col *Collector) Run(ctx context.Context) error {
 		return err
 	}
 
+	// Always notify with SIGHUP for configuration reloading.
+	signal.Notify(col.signalsChannel, syscall.SIGHUP)
+
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
 	if !col.set.DisableGracefulShutdown {
-		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
 LOOP:
