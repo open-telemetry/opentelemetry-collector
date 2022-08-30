@@ -898,10 +898,12 @@ func TestNumberDataPoint_Exemplars(t *testing.T) {
 	assert.Equal(t, ExemplarSlice(internal.GenerateTestExemplarSlice()), ms.Exemplars())
 }
 
-func TestNumberDataPoint_Flags(t *testing.T) {
+func TestNumberDataPoint_FlagsImmutable(t *testing.T) {
 	ms := NewNumberDataPoint()
-	internal.FillTestMetricDataPointFlags(internal.MetricDataPointFlags(ms.Flags()))
-	assert.Equal(t, MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags()), ms.Flags())
+	assert.Equal(t, MetricDataPointFlagsImmutable(0), ms.FlagsImmutable())
+	testValFlagsImmutable := MetricDataPointFlagsImmutable(1)
+	ms.SetFlagsImmutable(testValFlagsImmutable)
+	assert.Equal(t, testValFlagsImmutable, ms.FlagsImmutable())
 }
 
 func TestHistogramDataPointSlice(t *testing.T) {
@@ -1092,10 +1094,12 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	assert.Equal(t, ExemplarSlice(internal.GenerateTestExemplarSlice()), ms.Exemplars())
 }
 
-func TestHistogramDataPoint_Flags(t *testing.T) {
+func TestHistogramDataPoint_FlagsImmutable(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	internal.FillTestMetricDataPointFlags(internal.MetricDataPointFlags(ms.Flags()))
-	assert.Equal(t, MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags()), ms.Flags())
+	assert.Equal(t, MetricDataPointFlagsImmutable(0), ms.FlagsImmutable())
+	testValFlagsImmutable := MetricDataPointFlagsImmutable(1)
+	ms.SetFlagsImmutable(testValFlagsImmutable)
+	assert.Equal(t, testValFlagsImmutable, ms.FlagsImmutable())
 }
 
 func TestHistogramDataPoint_Min(t *testing.T) {
@@ -1310,10 +1314,12 @@ func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
 	assert.Equal(t, ExemplarSlice(internal.GenerateTestExemplarSlice()), ms.Exemplars())
 }
 
-func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
+func TestExponentialHistogramDataPoint_FlagsImmutable(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	internal.FillTestMetricDataPointFlags(internal.MetricDataPointFlags(ms.Flags()))
-	assert.Equal(t, MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags()), ms.Flags())
+	assert.Equal(t, MetricDataPointFlagsImmutable(0), ms.FlagsImmutable())
+	testValFlagsImmutable := MetricDataPointFlagsImmutable(1)
+	ms.SetFlagsImmutable(testValFlagsImmutable)
+	assert.Equal(t, testValFlagsImmutable, ms.FlagsImmutable())
 }
 
 func TestExponentialHistogramDataPoint_Min(t *testing.T) {
@@ -1535,10 +1541,12 @@ func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	assert.Equal(t, ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice()), ms.QuantileValues())
 }
 
-func TestSummaryDataPoint_Flags(t *testing.T) {
+func TestSummaryDataPoint_FlagsImmutable(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	internal.FillTestMetricDataPointFlags(internal.MetricDataPointFlags(ms.Flags()))
-	assert.Equal(t, MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags()), ms.Flags())
+	assert.Equal(t, MetricDataPointFlagsImmutable(0), ms.FlagsImmutable())
+	testValFlagsImmutable := MetricDataPointFlagsImmutable(1)
+	ms.SetFlagsImmutable(testValFlagsImmutable)
+	assert.Equal(t, testValFlagsImmutable, ms.FlagsImmutable())
 }
 
 func TestValueAtQuantileSlice(t *testing.T) {
