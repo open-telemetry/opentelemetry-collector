@@ -286,3 +286,9 @@ func (ot OptionalType) String() string {
 	}
 	return ""
 }
+
+// Deprecated: [0.59.0] Use MetricDataPointFlagsImmutable.
+type MetricDataPointFlagsStruct = MetricDataPointFlags
+
+// Deprecated: [0.59.0] Use MetricDataPointFlagsImmutable.
+var NewMetricDataPointFlagsStruct = NewMetricDataPointFlags
