@@ -22,7 +22,7 @@ var DefaultLogRecordFlags = LogRecordFlags(0)
 // defined in W3C Trace Context specification. 24 most significant bits are reserved and must be set to 0.
 type LogRecordFlags uint32
 
-// IsSampled returns true if the LogRecordFlags contains the TraceFlags.IsSampled flag.
+// IsSampled returns true if the LogRecordFlags contains the IsSampled flag.
 func (ms LogRecordFlags) IsSampled() bool {
 	return uint32(ms)&isSampledMask != 0
 }

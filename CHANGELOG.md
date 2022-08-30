@@ -36,6 +36,13 @@
 - Enforce naming conventions for Invalid[Trace|Span]ID: (#5969)
   - Deprecate funcs `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` in favor of vars `pcommon.EmptyTraceID` and `pcommon.EmptySpanID` 
 - Deprecate `Update` and `Upsert` methods of `pcommon.Map` (#5975)
+- Deprecated the current MetricDataPointFlags API.  The new API provides functions to check and set Flags. (#5999)
+  - `NumberDataPoint.Flags` -> `NumberDataPoint.FlagsImmutable`
+  - `HistogramDataPoint.Flags` -> `HistogramDataPoint.FlagsImmutable`
+  - `ExponentialHistogramDataPoint.Flags` -> `ExponentialHistogramDataPoint.FlagsImmutable`
+  - `SummaryDataPoint.Flags` -> `SummaryDataPoint.FlagsImmutable`
+  - `MetricDataPointFlags` -> `MetricDataPointFlagsImmutable`
+  - `NewMetricDataPointFlags` -> `MetricDataPointFlagsImmutable`
 
 ### 💡 Enhancements 💡
 
