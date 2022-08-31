@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
 - Remove deprecated components helpers funcs (#6006)
   - `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext`
   - `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings`
@@ -15,6 +16,10 @@
 - Deprecate `pcommon.Empty[Trace|Span]ID` in favor of `pcommon.New[Trace|Span]IDEmpty` (#6008)
 - Deprecate `pcommon.[Trace|Span]ID.Bytes` in favor direct conversion. (#6008)
 - Deprecate `pcommon.New[Trace|Span]ID` in favor direct conversion. (#6008)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `LogRecord.FlagsStruct()` and `LogRecord.SetFlagsStruct()` in favor of `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
 
 ## v0.59.0 Beta
 

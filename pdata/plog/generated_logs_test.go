@@ -484,12 +484,12 @@ func TestLogRecord_SpanID(t *testing.T) {
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
-func TestLogRecord_FlagsStruct(t *testing.T) {
+func TestLogRecord_Flags(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, LogRecordFlags(0), ms.FlagsStruct())
-	testValFlagsStruct := LogRecordFlags(1)
-	ms.SetFlagsStruct(testValFlagsStruct)
-	assert.Equal(t, testValFlagsStruct, ms.FlagsStruct())
+	assert.Equal(t, LogRecordFlags(0), ms.Flags())
+	testValFlags := LogRecordFlags(1)
+	ms.SetFlags(testValFlags)
+	assert.Equal(t, testValFlags, ms.Flags())
 }
 
 func TestLogRecord_SeverityText(t *testing.T) {

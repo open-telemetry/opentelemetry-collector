@@ -52,7 +52,7 @@ func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 				buf.logAttributes("Attributes", lr.Attributes())
 				buf.logEntry("Trace ID: %s", lr.TraceID().HexString())
 				buf.logEntry("Span ID: %s", lr.SpanID().HexString())
-				buf.logEntry("Flags: %d", lr.FlagsStruct())
+				buf.logEntry("Flags: %d", lr.Flags())
 			}
 		}
 	}

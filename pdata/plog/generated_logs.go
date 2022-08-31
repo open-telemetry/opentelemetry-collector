@@ -640,13 +640,13 @@ func (ms LogRecord) SetSpanID(v pcommon.SpanID) {
 	ms.getOrig().SpanId = data.SpanID(v)
 }
 
-// FlagsStruct returns the flagsstruct associated with this LogRecord.
-func (ms LogRecord) FlagsStruct() LogRecordFlags {
+// Flags returns the flags associated with this LogRecord.
+func (ms LogRecord) Flags() LogRecordFlags {
 	return LogRecordFlags(ms.getOrig().Flags)
 }
 
-// SetFlagsStruct replaces the flagsstruct associated with this LogRecord.
-func (ms LogRecord) SetFlagsStruct(v LogRecordFlags) {
+// SetFlags replaces the flags associated with this LogRecord.
+func (ms LogRecord) SetFlags(v LogRecordFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -696,7 +696,7 @@ func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
-	dest.SetFlagsStruct(ms.FlagsStruct())
+	dest.SetFlags(ms.Flags())
 	dest.SetSeverityText(ms.SeverityText())
 	dest.SetSeverityNumber(ms.SeverityNumber())
 	ms.Body().CopyTo(dest.Body())
