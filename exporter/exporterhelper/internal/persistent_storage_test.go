@@ -32,6 +32,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+var (
+	mockClientCloseCounting = uint64(0)
+)
+
 func createStorageExtension(_ string) storage.Extension {
 	// After having storage moved to core, we could leverage storagetest.NewTestExtension(nil, path)
 	return newMockStorageExtension()
@@ -416,6 +420,19 @@ func TestPersistentStorage_ItemIndexMarshaling(t *testing.T) {
 	}
 }
 
+func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
+	mockClientCloseCounting = 0
+	path := t.TempDir()
+
+	ext := createStorageExtension(path)
+	client := createTestClient(ext)
+	ps := createTestPersistentStorage(client)
+
+	ps.stop()
+
+	require.Equal(t, uint64(1), mockClientCloseCounting)
+}
+
 func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) Request {
 	var readReq Request
 	require.Eventually(t, func() bool {
@@ -491,6 +508,7 @@ func (m *mockStorageClient) Delete(_ context.Context, s string) error {
 }
 
 func (m *mockStorageClient) Close(_ context.Context) error {
+	mockClientCloseCounting++
 	return nil
 }
 
