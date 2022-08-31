@@ -204,6 +204,9 @@ func (pcs *persistentContiguousStorage) stop() {
 	pcs.logger.Debug("Stopping persistentContiguousStorage", zap.String(zapQueueNameKey, pcs.queueName))
 	pcs.stopOnce.Do(func() {
 		close(pcs.stopChan)
+		if err := pcs.client.Close(context.Background()); err != nil {
+			pcs.logger.Warn("failed to close client", zap.Error(err))
+		}
 	})
 }
 
