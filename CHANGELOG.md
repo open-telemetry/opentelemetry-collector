@@ -68,6 +68,7 @@
   - Accept both string and number for float64.
   - Accept both string and number for int32/uint32.
   - Read uint64 numbers without converting from int64.
+- Fix persistent storage client not closing when shutting down (#6003)
 
 ## v0.58.0 Beta
 
