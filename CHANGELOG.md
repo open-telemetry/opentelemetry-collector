@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.59.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated fields/funcs from `service` (#5907)
