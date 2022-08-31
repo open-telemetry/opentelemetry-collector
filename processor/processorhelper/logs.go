@@ -36,18 +36,6 @@ type logProcessor struct {
 	consumer.Logs
 }
 
-// Deprecated: [v0.59.0] use version with NewLogsProcessor.
-func NewLogsProcessorWithCreateSettings(
-	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
-	nextConsumer consumer.Logs,
-	logsFunc ProcessLogsFunc,
-	options ...Option,
-) (component.LogsProcessor, error) {
-	return NewLogsProcessor(ctx, set, cfg, nextConsumer, logsFunc, options...)
-}
-
 // NewLogsProcessor creates a component.LogsProcessor that ensure context propagation and the right tags are set.
 func NewLogsProcessor(
 	_ context.Context,
