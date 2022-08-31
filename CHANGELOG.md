@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated components helpers funcs (#6006)
+  - `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext`
+  - `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings`
+  - `component.NewExtensionFactoryWithStabilityLevel`
+
 ## v0.59.0 Beta
 
 ### 🛑 Breaking changes 🛑
