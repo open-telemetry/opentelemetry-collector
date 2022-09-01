@@ -161,17 +161,7 @@ const accessorsPrimitiveTypedTestTemplate = `func Test${structName}_${fieldName}
 	assert.Equal(t, testVal${fieldName}, ms.${fieldName}())
 }`
 
-const accessorsPrimitiveStructTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
-	return ${packageName}New${returnType}(ms.getOrig().${originFieldName})
-}
-
-// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${packageName}${returnType}) {
-	ms.getOrig().${originFieldName} = v.Bytes()
-}`
-
-const accessorsPrimitiveStructTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+const accessorsPrimitiveSliceTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
 	assert.Equal(t, ${packageName}New${returnType}(${defaultVal}), ms.${fieldName}())
 	testVal${fieldName} := ${packageName}New${returnType}(${testValue})
@@ -454,74 +444,6 @@ func (ptf *primitiveTypedField) generateCopyToValue(_ baseStruct, sb *strings.Bu
 
 var _ baseField = (*primitiveTypedField)(nil)
 
-// Types that has defined a custom type (e.g. "type TraceID struct {}")
-type primitiveStructField struct {
-	fieldName         string
-	originFieldName   string
-	returnStructName  string
-	returnPackageName string
-	defaultVal        string
-	testVal           string
-}
-
-func (ptf *primitiveStructField) generateAccessors(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveStructTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "fieldName":
-			return ptf.fieldName
-		case "lowerFieldName":
-			return strings.ToLower(ptf.fieldName)
-		case "returnType":
-			return ptf.returnStructName
-		case "packageName":
-			if ptf.returnPackageName != ms.getPackageName() {
-				return ptf.returnPackageName + "."
-			}
-			return ""
-		case "originFieldName":
-			return ptf.originFieldName
-		default:
-			panic(name)
-		}
-	}))
-}
-
-func (ptf *primitiveStructField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveStructTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "defaultVal":
-			return ptf.defaultVal
-		case "returnType":
-			return ptf.returnStructName
-		case "packageName":
-			if ptf.returnPackageName != ms.getPackageName() {
-				return ptf.returnPackageName + "."
-			}
-			return ""
-		case "fieldName":
-			return ptf.fieldName
-		case "testValue":
-			return ptf.testVal
-		default:
-			panic(name)
-		}
-	}))
-}
-
-func (ptf *primitiveStructField) generateSetWithTestValue(sb *strings.Builder) {
-	sb.WriteString("\ttv.orig." + ptf.originFieldName + " = " + ptf.testVal)
-}
-
-func (ptf *primitiveStructField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
-	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
-}
-
-var _ baseField = (*primitiveStructField)(nil)
-
 // primitiveSliceField is used to generate fields for slice of primitive types
 type primitiveSliceField struct {
 	fieldName         string
@@ -558,7 +480,7 @@ func (psf *primitiveSliceField) generateAccessors(ms baseStruct, sb *strings.Bui
 }
 
 func (psf *primitiveSliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveStructTestTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsPrimitiveSliceTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
@@ -602,7 +524,7 @@ func (psf *primitiveSliceField) generateCopyToValue(ms baseStruct, sb *strings.B
 	}))
 }
 
-var _ baseField = (*primitiveStructField)(nil)
+var _ baseField = (*primitiveSliceField)(nil)
 
 type oneOfField struct {
 	originTypePrefix string

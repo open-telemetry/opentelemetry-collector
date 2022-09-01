@@ -45,7 +45,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -281,14 +280,14 @@ func TestIssue_4221(t *testing.T) {
 	traceIDBytesSlice, err := hex.DecodeString("4303853f086f4f8c86cf198b6551df84")
 	require.NoError(t, err)
 	copy(traceIDBytes[:], traceIDBytesSlice)
-	span.SetTraceID(pcommon.NewTraceID(traceIDBytes))
+	span.SetTraceID(traceIDBytes)
 	assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
 
 	var spanIDBytes [8]byte
 	spanIDBytesSlice, err := hex.DecodeString("e5513c32795c41b9")
 	require.NoError(t, err)
 	copy(spanIDBytes[:], spanIDBytesSlice)
-	span.SetSpanID(pcommon.NewSpanID(spanIDBytes))
+	span.SetSpanID(spanIDBytes)
 	assert.Equal(t, "e5513c32795c41b9", span.SpanID().HexString())
 
 	span.SetEndTimestamp(1634684637873000000)

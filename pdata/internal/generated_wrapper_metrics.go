@@ -657,5 +657,5 @@ func FillTestExemplar(tv Exemplar) {
 	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
 	FillTestMap(NewMap(&tv.orig.FilteredAttributes))
 	tv.orig.TraceId = data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	tv.orig.SpanId = data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 }
