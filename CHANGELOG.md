@@ -12,6 +12,7 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate `pcommon.Map.Update+` in favor of `pcommon.Map.Get` + `pcommon.Value.Set+` (#6013)
 - Deprecate `pcommon.Empty[Trace|Span]ID` in favor of `pcommon.New[Trace|Span]IDEmpty` (#6008)
 - Deprecate `pcommon.[Trace|Span]ID.Bytes` in favor direct conversion. (#6008)
 - Deprecate `pcommon.New[Trace|Span]ID` in favor direct conversion. (#6008)
