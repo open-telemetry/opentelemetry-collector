@@ -41,6 +41,7 @@ const (
 // that every component should generate.
 type Level int32
 
+var _ encoding.TextMarshaler = (*Level)(nil)
 var _ encoding.TextUnmarshaler = (*Level)(nil)
 
 func (l Level) String() string {
@@ -55,6 +56,11 @@ func (l Level) String() string {
 		return levelDetailedStr
 	}
 	return "unknown"
+}
+
+// MarshalText marshals Level to text.
+func (l Level) MarshalText() (text []byte, err error) {
+	return []byte(l.String()), nil
 }
 
 // UnmarshalText unmarshalls text to a Level.

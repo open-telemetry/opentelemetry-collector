@@ -76,3 +76,10 @@ func TestIDFromString(t *testing.T) {
 		})
 	}
 }
+
+func TestMarshalText(t *testing.T) {
+	id := NewComponentIDWithName("test", "name")
+	got, err := id.MarshalText()
+	assert.NoError(t, err)
+	assert.Equal(t, id.String(), string(got))
+}
