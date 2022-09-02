@@ -679,15 +679,6 @@ func (m Map) Insert(k string, v Value) {
 	}
 }
 
-// InsertNull adds a null Value to the map when the key does not exist.
-// No action is applied to the map where the key already exists.
-// Deprecated: [0.59.0] Use Get and UpsertEmpty instead.
-func (m Map) InsertNull(k string) {
-	if _, existing := m.Get(k); !existing {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueNull(k))
-	}
-}
-
 // InsertString adds the string Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
 func (m Map) InsertString(k string, v string) {
@@ -725,28 +716,6 @@ func (m Map) InsertBool(k string, v bool) {
 func (m Map) InsertBytes(k string, v ImmutableByteSlice) {
 	if _, existing := m.Get(k); !existing {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueBytes(k, v))
-	}
-}
-
-// Update updates an existing Value with a value.
-// No action is applied to the map where the key does not exist.
-//
-// Calling this function with a zero-initialized Value struct will cause a panic.
-//
-// Important: this function should not be used if the caller has access to
-// the raw value to avoid an extra allocation.
-//
-// Deprecated: [0.59.0] Replace it with the following function calls:
-// For primitive types, use Update<Type> methods, e.g. UpdateString.
-// For complex and unknown types, use:
-//
-//	toVal, ok := m.Get(k)
-//	if ok {
-//		v.CopyTo(toVal) // or use m.UpsertEmpty<Type> for complex types.
-//	}
-func (m Map) Update(k string, v Value) {
-	if av, existing := m.Get(k); existing {
-		v.copyTo(av.getOrig())
 	}
 }
 
@@ -807,27 +776,6 @@ func (m Map) UpdateBool(k string, v bool) {
 func (m Map) UpdateBytes(k string, v ImmutableByteSlice) {
 	if av, existing := m.Get(k); existing {
 		av.SetBytesVal(v)
-	}
-}
-
-// Upsert performs the Insert or Update action. The Value is
-// inserted to the map that did not originally have the key. The key/value is
-// updated to the map where the key already existed.
-//
-// Calling this function with a zero-initialized Value struct will cause a panic.
-//
-// Important: this function should not be used if the caller has access to
-// the raw value to avoid an extra allocation.
-//
-// Deprecated: [0.59.0] Replace it with the following function calls:
-// For primitive types, use Upsert<Type> methods, e.g. UpsertString.
-// For complex types, use UpsertEmpty<Type> methods, e.g. UpsertEmptyMap, and fill it with the data.
-// If you don't know the value type, replace it with v.CopyTo(m.UpsertEmpty()).
-func (m Map) Upsert(k string, v Value) {
-	if av, existing := m.Get(k); existing {
-		v.copyTo(av.getOrig())
-	} else {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValue(k, v))
 	}
 }
 
