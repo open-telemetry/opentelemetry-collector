@@ -102,92 +102,15 @@ const (
 	SeverityNumberFatal4    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL4)
 )
 
-const (
-	// Deprecated: [0.59.0] Use SeverityNumberUndefined instead
-	SeverityNumberUNDEFINED = SeverityNumberUndefined
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace instead
-	SeverityNumberTRACE = SeverityNumberTrace
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace2 instead
-	SeverityNumberTRACE2 = SeverityNumberTrace2
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace3 instead
-	SeverityNumberTRACE3 = SeverityNumberTrace3
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace4 instead
-	SeverityNumberTRACE4 = SeverityNumberTrace4
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug instead
-	SeverityNumberDEBUG = SeverityNumberDebug
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug2 instead
-	SeverityNumberDEBUG2 = SeverityNumberDebug2
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug3 instead
-	SeverityNumberDEBUG3 = SeverityNumberDebug3
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug4 instead
-	SeverityNumberDEBUG4 = SeverityNumberDebug4
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo instead
-	SeverityNumberINFO = SeverityNumberInfo
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo2 instead
-	SeverityNumberINFO2 = SeverityNumberInfo2
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo3 instead
-	SeverityNumberINFO3 = SeverityNumberInfo3
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo4 instead
-	SeverityNumberINFO4 = SeverityNumberInfo4
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn instead
-	SeverityNumberWARN = SeverityNumberWarn
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn2 instead
-	SeverityNumberWARN2 = SeverityNumberWarn2
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn3 instead
-	SeverityNumberWARN3 = SeverityNumberWarn3
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn4 instead
-	SeverityNumberWARN4 = SeverityNumberWarn4
-
-	// Deprecated: [0.59.0] Use SeverityNumberError instead
-	SeverityNumberERROR = SeverityNumberError
-
-	// Deprecated: [0.59.0] Use SeverityNumberError2 instead
-	SeverityNumberERROR2 = SeverityNumberError2
-
-	// Deprecated: [0.59.0] Use SeverityNumberError3 instead
-	SeverityNumberERROR3 = SeverityNumberError3
-
-	// Deprecated: [0.59.0] Use SeverityNumberError4 instead
-	SeverityNumberERROR4 = SeverityNumberError4
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal instead
-	SeverityNumberFATAL = SeverityNumberFatal
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal2 instead
-	SeverityNumberFATAL2 = SeverityNumberFatal2
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal3 instead
-	SeverityNumberFATAL3 = SeverityNumberFatal3
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal4 instead
-	SeverityNumberFATAL4 = SeverityNumberFatal4
-)
-
 // String returns the string representation of the SeverityNumber.
 func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }
 
-// Deprecated: [v0.59.0] use FlagsStruct().
-func (ms LogRecord) Flags() uint32 {
-	return ms.getOrig().Flags
+// Deprecated: [v0.60.0] use Flags().
+func (ms LogRecord) FlagsStruct() LogRecordFlags {
+	return ms.Flags()
 }
 
-// Deprecated: [v0.59.0] use FlagsStruct().
-func (ms LogRecord) SetFlags(v uint32) {
-	ms.getOrig().Flags = v
+// Deprecated: [v0.60.0] use SetFlags().
+func (ms LogRecord) SetFlagsStruct(v LogRecordFlags) {
+	ms.SetFlags(v)
 }
