@@ -691,36 +691,6 @@ func TestMetricsClone(t *testing.T) {
 	assert.EqualValues(t, metrics, metrics.Clone())
 }
 
-func TestMetricDataPointFlags(t *testing.T) {
-	flags := MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags())
-	assert.False(t, flags.NoRecordedValue())
-	assert.Equal(t, uint32(0), flags.AsRaw())
-	flags.SetNoRecordedValue(true)
-	assert.True(t, flags.NoRecordedValue())
-	assert.Equal(t, uint32(1), flags.AsRaw())
-
-	flags.SetNoRecordedValue(false)
-	flags.SetNoRecordedValue(false)
-	assert.False(t, flags.NoRecordedValue())
-	assert.Equal(t, uint32(0), flags.AsRaw())
-
-	flags.SetNoRecordedValue(true)
-	flags.SetNoRecordedValue(true)
-	assert.True(t, flags.NoRecordedValue())
-	assert.Equal(t, uint32(1), flags.AsRaw())
-
-	moveFlags := NewMetricDataPointFlags()
-	assert.False(t, moveFlags.NoRecordedValue())
-
-	flags.MoveTo(moveFlags)
-	assert.False(t, flags.NoRecordedValue())
-	assert.True(t, moveFlags.NoRecordedValue())
-
-	moveFlags.CopyTo(flags)
-	assert.True(t, flags.NoRecordedValue())
-	assert.True(t, moveFlags.NoRecordedValue())
-}
-
 func BenchmarkMetricsClone(b *testing.B) {
 	metrics := NewMetrics()
 	internal.FillTestResourceMetricsSlice(internal.ResourceMetricsSlice(metrics.ResourceMetrics()))

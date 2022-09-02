@@ -21,7 +21,7 @@ import (
 )
 
 func TestLogRecordFlags(t *testing.T) {
-	flags := MetricDataPointFlagsImmutable(1)
+	flags := MetricDataPointFlags(1)
 	assert.True(t, flags.NoRecordedValue())
 	assert.EqualValues(t, uint32(1), flags)
 

@@ -4,7 +4,10 @@
 
 ### 🛑 Breaking changes 🛑
 
-- Remove deprecated `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
+- Replace deprecated `*DataPoint.Flags()` with `*DataPoint.[Set]FlagsImmutable()`. (#6017)
+- Remove deprecated `MetricDataPointFlagsStruct` struct and `NewMetricDataPointFlagsStruct` func. (#6017)
+- Replace deprecated `MetricDataPointFlags` with `MetricDataPointFlagsImmutable`. (#6017)
+- Replace deprecated `LogRecord.[Set]Flags()` with `LogRecord.[Set]FlagsStruct()`. (#6007)
 - Remove deprecated components helpers funcs (#6006)
   - `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext`
   - `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings`
@@ -17,6 +20,8 @@
 - Deprecate `pcommon.Empty[Trace|Span]ID` in favor of `pcommon.New[Trace|Span]IDEmpty` (#6008)
 - Deprecate `pcommon.[Trace|Span]ID.Bytes` in favor direct conversion. (#6008)
 - Deprecate `pcommon.New[Trace|Span]ID` in favor direct conversion. (#6008)
+- Deprecate `MetricDataPointFlagsImmutable` type. (#6017)
+- Deprecate `*DataPoint.[Set]FlagsImmutable()` funcs in favor of `*DataPoint.[Set]Flags()`. (#6017)
 
 ### 🚩 Deprecations 🚩
 

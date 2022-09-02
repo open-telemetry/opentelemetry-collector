@@ -16,26 +16,29 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
 const noRecordValueMask = uint32(1)
 
-var DefaultMetricDataPointFlags = MetricDataPointFlagsImmutable(0)
+var DefaultMetricDataPointFlags = MetricDataPointFlags(0)
 
-// MetricDataPointFlagsImmutable defines how a metric aggregator reports aggregated values.
+// Deprecated: [v0.60.0] Use MetricDataPointFlags.
+type MetricDataPointFlagsImmutable = MetricDataPointFlags
+
+// MetricDataPointFlags defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
 //
 // This is a temporary name, until the current MetricDataPointFlags is deprecated and removed.
-type MetricDataPointFlagsImmutable uint32
+type MetricDataPointFlags uint32
 
-// NoRecordedValue returns true if the MetricDataPointFlagsImmutable contains the NoRecordedValue flag.
-func (ms MetricDataPointFlagsImmutable) NoRecordedValue() bool {
+// NoRecordedValue returns true if the MetricDataPointFlags contains the NoRecordedValue flag.
+func (ms MetricDataPointFlags) NoRecordedValue() bool {
 	return uint32(ms)&noRecordValueMask != 0
 }
 
-// WithNoRecordedValue returns a new MetricDataPointFlagsImmutable, with the NoRecordedValue flag set to the given value.
-func (ms MetricDataPointFlagsImmutable) WithNoRecordedValue(b bool) MetricDataPointFlagsImmutable {
+// WithNoRecordedValue returns a new MetricDataPointFlags, with the NoRecordedValue flag set to the given value.
+func (ms MetricDataPointFlags) WithNoRecordedValue(b bool) MetricDataPointFlags {
 	orig := uint32(ms)
 	if b {
 		orig |= noRecordValueMask
 	} else {
 		orig &^= noRecordValueMask
 	}
-	return MetricDataPointFlagsImmutable(orig)
+	return MetricDataPointFlags(orig)
 }
