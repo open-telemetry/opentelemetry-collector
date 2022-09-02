@@ -13,6 +13,7 @@
   - `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings`
   - `component.NewExtensionFactoryWithStabilityLevel`
 - Remove deprecated `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` funcs (#6008)
+- Remove deprecated `pcommon.Map` methods: `Update`, `Upsert`, `InsertNull` (#6019)
 
 ### 🚩 Deprecations 🚩
 
