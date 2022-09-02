@@ -750,40 +750,60 @@ func (m Map) Update(k string, v Value) {
 	}
 }
 
-// UpdateString updates an existing string Value with a value.
-// No action is applied to the map where the key does not exist.
+// Deprecated: [v0.60.0] Use:
+//
+//	toVal, ok := m.Get(k)
+//	if ok {
+//		toVal.SetStringVal(v)
+//	}
 func (m Map) UpdateString(k string, v string) {
 	if av, existing := m.Get(k); existing {
 		av.SetStringVal(v)
 	}
 }
 
-// UpdateInt updates an existing int Value with a value.
-// No action is applied to the map where the key does not exist.
+// Deprecated: [v0.60.0] Use:
+//
+//	toVal, ok := m.Get(k)
+//	if ok {
+//		toVal.SetIntVal(v)
+//	}
 func (m Map) UpdateInt(k string, v int64) {
 	if av, existing := m.Get(k); existing {
 		av.SetIntVal(v)
 	}
 }
 
-// UpdateDouble updates an existing double Value with a value.
-// No action is applied to the map where the key does not exist.
+// Deprecated: [v0.60.0] Use:
+//
+//	toVal, ok := m.Get(k)
+//	if ok {
+//		toVal.SetDoubleVal(v)
+//	}
 func (m Map) UpdateDouble(k string, v float64) {
 	if av, existing := m.Get(k); existing {
 		av.SetDoubleVal(v)
 	}
 }
 
-// UpdateBool updates an existing bool Value with a value.
-// No action is applied to the map where the key does not exist.
+// Deprecated: [v0.60.0] Use:
+//
+//	toVal, ok := m.Get(k)
+//	if ok {
+//		toVal.SetBoolVal(v)
+//	}
 func (m Map) UpdateBool(k string, v bool) {
 	if av, existing := m.Get(k); existing {
 		av.SetBoolVal(v)
 	}
 }
 
-// UpdateBytes updates an existing ImmutableByteSlice Value with a value.
-// No action is applied to the map where the key does not exist.
+// Deprecated: [v0.60.0] Use:
+//
+//	toVal, ok := m.Get(k)
+//	if ok {
+//		toVal.SetBytesVal(v)
+//	}
 func (m Map) UpdateBytes(k string, v ImmutableByteSlice) {
 	if av, existing := m.Get(k); existing {
 		av.SetBytesVal(v)
