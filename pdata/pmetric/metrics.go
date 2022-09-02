@@ -166,70 +166,44 @@ func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
-// Deprecated: [v0.59.0] use MetricDataPointFlagsImmutable
-type MetricDataPointFlags internal.MetricDataPointFlags
-
-func newMetricDataPointFlags(orig *uint32) MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(orig))
+// Deprecated: [v0.60.0] use Flags.
+func (ms NumberDataPoint) FlagsImmutable() MetricDataPointFlags {
+	return ms.Flags()
 }
 
-func (ms MetricDataPointFlags) getOrig() *uint32 {
-	return internal.GetOrigMetricDataPointFlags(internal.MetricDataPointFlags(ms))
+// Deprecated: [v0.60.0] use SetFlags.
+func (ms NumberDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
+	ms.SetFlags(v)
 }
 
-// Deprecated: [v0.59.0] use MetricDataPointFlagsImmutable
-func NewMetricDataPointFlags() MetricDataPointFlags {
-	return newMetricDataPointFlags(new(uint32))
+// Deprecated: [v0.60.0] use Flags.
+func (ms HistogramDataPoint) FlagsImmutable() MetricDataPointFlags {
+	return ms.Flags()
 }
 
-// Deprecated: [v0.59.0] use MetricDataPointFlagsImmutable
-func (ms MetricDataPointFlags) MoveTo(dest MetricDataPointFlags) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
+// Deprecated: [v0.60.0] use SetFlags.
+func (ms HistogramDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
+	ms.SetFlags(v)
 }
 
-// Deprecated: [v0.59.0] use MetricDataPointFlagsImmutable
-func (ms MetricDataPointFlags) CopyTo(dest MetricDataPointFlags) {
-	*dest.getOrig() = *ms.getOrig()
+// Deprecated: [v0.60.0] use Flags.
+func (ms ExponentialHistogramDataPoint) FlagsImmutable() MetricDataPointFlags {
+	return ms.Flags()
 }
 
-// Deprecated: [v0.59.0] use MetricDataPointFlagsImmutable
-func (ms MetricDataPointFlags) NoRecordedValue() bool {
-	return *ms.getOrig()&uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
+// Deprecated: [v0.60.0] use SetFlags.
+func (ms ExponentialHistogramDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
+	ms.SetFlags(v)
 }
 
-// Deprecated: [v0.59.0] use MetricDataPointFlagsImmutable
-func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
-	if b {
-		*ms.getOrig() |= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
-	} else {
-		*ms.getOrig() &^= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
-	}
+// Deprecated: [v0.60.0] use Flags.
+func (ms SummaryDataPoint) FlagsImmutable() MetricDataPointFlags {
+	return ms.Flags()
 }
 
-// Deprecated: [v0.59.0] use MetricDataPointFlagsImmutable
-func (ms MetricDataPointFlags) AsRaw() uint32 {
-	return *ms.getOrig()
-}
-
-// Deprecated: [v0.59.0] use FlagsImmutable
-func (ms NumberDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(&ms.getOrig().Flags))
-}
-
-// Deprecated: [v0.59.0] use FlagsImmutable
-func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(&ms.getOrig().Flags))
-}
-
-// Deprecated: [v0.59.0] use FlagsImmutable
-func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(&ms.getOrig().Flags))
-}
-
-// Deprecated: [v0.59.0] use FlagsImmutable
-func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(&ms.getOrig().Flags))
+// Deprecated: [v0.60.0] use SetFlags.
+func (ms SummaryDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
+	ms.SetFlags(v)
 }
 
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
@@ -294,9 +268,3 @@ func (ot OptionalType) String() string {
 	}
 	return ""
 }
-
-// Deprecated: [0.59.0] Use MetricDataPointFlagsImmutable.
-type MetricDataPointFlagsStruct = MetricDataPointFlags
-
-// Deprecated: [0.59.0] Use MetricDataPointFlagsImmutable.
-var NewMetricDataPointFlagsStruct = NewMetricDataPointFlags

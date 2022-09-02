@@ -491,10 +491,10 @@ var exemplar = &messageValueStruct{
 }
 
 var dataPointFlagsField = &primitiveTypedField{
-	fieldName:       "FlagsImmutable",
+	fieldName:       "Flags",
 	originFieldName: "Flags",
 	returnType: &primitiveType{
-		structName: "MetricDataPointFlagsImmutable",
+		structName: "MetricDataPointFlags",
 		rawType:    "uint32",
 		defaultVal: "0",
 		testVal:    "1",

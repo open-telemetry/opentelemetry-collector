@@ -1242,13 +1242,13 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 	return ExemplarSlice(internal.NewExemplarSlice(&ms.getOrig().Exemplars))
 }
 
-// FlagsImmutable returns the flagsimmutable associated with this NumberDataPoint.
-func (ms NumberDataPoint) FlagsImmutable() MetricDataPointFlagsImmutable {
-	return MetricDataPointFlagsImmutable(ms.getOrig().Flags)
+// Flags returns the flags associated with this NumberDataPoint.
+func (ms NumberDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags(ms.getOrig().Flags)
 }
 
-// SetFlagsImmutable replaces the flagsimmutable associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetFlagsImmutable(v MetricDataPointFlagsImmutable) {
+// SetFlags replaces the flags associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -1265,7 +1265,7 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlagsImmutable(ms.FlagsImmutable())
+	dest.SetFlags(ms.Flags())
 }
 
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
@@ -1517,13 +1517,13 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 	return ExemplarSlice(internal.NewExemplarSlice(&ms.getOrig().Exemplars))
 }
 
-// FlagsImmutable returns the flagsimmutable associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) FlagsImmutable() MetricDataPointFlagsImmutable {
-	return MetricDataPointFlagsImmutable(ms.getOrig().Flags)
+// Flags returns the flags associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags(ms.getOrig().Flags)
 }
 
-// SetFlagsImmutable replaces the flagsimmutable associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetFlagsImmutable(v MetricDataPointFlagsImmutable) {
+// SetFlags replaces the flags associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -1584,7 +1584,7 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlagsImmutable(ms.FlagsImmutable())
+	dest.SetFlags(ms.Flags())
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
 	}
@@ -1857,13 +1857,13 @@ func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
 	return ExemplarSlice(internal.NewExemplarSlice(&ms.getOrig().Exemplars))
 }
 
-// FlagsImmutable returns the flagsimmutable associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) FlagsImmutable() MetricDataPointFlagsImmutable {
-	return MetricDataPointFlagsImmutable(ms.getOrig().Flags)
+// Flags returns the flags associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags(ms.getOrig().Flags)
 }
 
-// SetFlagsImmutable replaces the flagsimmutable associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetFlagsImmutable(v MetricDataPointFlagsImmutable) {
+// SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -1914,7 +1914,7 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	ms.Positive().CopyTo(dest.Positive())
 	ms.Negative().CopyTo(dest.Negative())
 	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlagsImmutable(ms.FlagsImmutable())
+	dest.SetFlags(ms.Flags())
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
 	}
@@ -2213,13 +2213,13 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 	return ValueAtQuantileSlice(internal.NewValueAtQuantileSlice(&ms.getOrig().QuantileValues))
 }
 
-// FlagsImmutable returns the flagsimmutable associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) FlagsImmutable() MetricDataPointFlagsImmutable {
-	return MetricDataPointFlagsImmutable(ms.getOrig().Flags)
+// Flags returns the flags associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
+	return MetricDataPointFlags(ms.getOrig().Flags)
 }
 
-// SetFlagsImmutable replaces the flagsimmutable associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetFlagsImmutable(v MetricDataPointFlagsImmutable) {
+// SetFlags replaces the flags associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -2231,7 +2231,7 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
 	ms.QuantileValues().CopyTo(dest.QuantileValues())
-	dest.SetFlagsImmutable(ms.FlagsImmutable())
+	dest.SetFlags(ms.Flags())
 }
 
 // ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.
