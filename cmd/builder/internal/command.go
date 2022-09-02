@@ -31,6 +31,7 @@ import (
 
 const (
 	skipCompilationFlag            = "skip-compilation"
+	skipGetModulesFlag             = "skip-get-modules"
 	distributionNameFlag           = "name"
 	distributionDescriptionFlag    = "description"
 	distributionVersionFlag        = "version"
@@ -85,6 +86,7 @@ build configuration given by the "--config" argument.
 
 	// the distribution parameters, which we accept as CLI flags as well
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
+	cmd.Flags().BoolVar(&cfg.SkipGetModules, skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
 	cmd.Flags().StringVar(&cfg.Distribution.Name, distributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
 	if err := cmd.Flags().MarkDeprecated(distributionNameFlag, "use config distribution::name"); err != nil {
 		return nil, err
@@ -157,6 +159,9 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 
 	if !flags.Changed(skipCompilationFlag) && cfgFromFile.SkipCompilation {
 		cfg.SkipCompilation = cfgFromFile.SkipCompilation
+	}
+	if !flags.Changed(skipGetModulesFlag) && cfgFromFile.SkipGetModules {
+		cfg.SkipGetModules = cfgFromFile.SkipGetModules
 	}
 	if !flags.Changed(distributionNameFlag) && cfgFromFile.Distribution.Name != "" {
 		cfg.Distribution.Name = cfgFromFile.Distribution.Name

@@ -9,6 +9,10 @@
   - `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings`
   - `component.NewExtensionFactoryWithStabilityLevel`
 
+### 💡 Enhancements 💡
+
+- Add `skip-get-modules` builder flag to support isolated environment executions (#6009)
+
 ## v0.59.0 Beta
 
 ### 🛑 Breaking changes 🛑
