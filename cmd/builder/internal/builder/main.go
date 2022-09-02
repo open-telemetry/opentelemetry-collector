@@ -103,6 +103,11 @@ func Compile(cfg Config) error {
 
 // GetModules retrieves the go modules, updating go.mod and go.sum in the process
 func GetModules(cfg Config) error {
+	if cfg.SkipGetModules {
+		cfg.Logger.Info("Generating source codes only, will not update go.mod and retrieve Go modules.")
+		return nil
+	}
+
 	// #nosec G204
 	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.18")
 	cmd.Dir = cfg.Distribution.OutputPath

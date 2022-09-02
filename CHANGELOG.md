@@ -21,6 +21,10 @@
 
 - Deprecate `LogRecord.FlagsStruct()` and `LogRecord.SetFlagsStruct()` in favor of `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
 
+### 💡 Enhancements 💡
+
+- Add `skip-get-modules` builder flag to support isolated environment executions (#6009)
+
 ## v0.59.0 Beta
 
 ### 🛑 Breaking changes 🛑

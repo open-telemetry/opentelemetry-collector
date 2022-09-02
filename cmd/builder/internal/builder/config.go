@@ -34,6 +34,7 @@ var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 type Config struct {
 	Logger          *zap.Logger
 	SkipCompilation bool `mapstructure:"-"`
+	SkipGetModules  bool `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
