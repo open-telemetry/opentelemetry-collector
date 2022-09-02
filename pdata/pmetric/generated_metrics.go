@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -2641,22 +2642,22 @@ func (ms Exemplar) FilteredAttributes() pcommon.Map {
 
 // TraceID returns the traceid associated with this Exemplar.
 func (ms Exemplar) TraceID() pcommon.TraceID {
-	return pcommon.NewTraceID(ms.getOrig().TraceId)
+	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Exemplar.
 func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = v.Bytes()
+	ms.getOrig().TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this Exemplar.
 func (ms Exemplar) SpanID() pcommon.SpanID {
-	return pcommon.NewSpanID(ms.getOrig().SpanId)
+	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Exemplar.
 func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = v.Bytes()
+	ms.getOrig().SpanId = data.SpanID(v)
 }
 
 // CopyTo copies all properties from the current struct to the dest.

@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -621,22 +622,22 @@ func (ms LogRecord) SetTimestamp(v pcommon.Timestamp) {
 
 // TraceID returns the traceid associated with this LogRecord.
 func (ms LogRecord) TraceID() pcommon.TraceID {
-	return pcommon.NewTraceID(ms.getOrig().TraceId)
+	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
 func (ms LogRecord) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = v.Bytes()
+	ms.getOrig().TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this LogRecord.
 func (ms LogRecord) SpanID() pcommon.SpanID {
-	return pcommon.NewSpanID(ms.getOrig().SpanId)
+	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
 func (ms LogRecord) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = v.Bytes()
+	ms.getOrig().SpanId = data.SpanID(v)
 }
 
 // FlagsStruct returns the flagsstruct associated with this LogRecord.

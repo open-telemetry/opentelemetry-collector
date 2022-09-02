@@ -20,37 +20,35 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEmptyTraceID(t *testing.T) {
-	tid := EmptyTraceID
-	assert.Equal(t, [16]byte{}, tid.Bytes())
-	assert.True(t, tid.IsEmpty())
-}
-
-func TestNewTraceID(t *testing.T) {
-	tid := NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, tid.Bytes())
+func TestTraceID(t *testing.T) {
+	tid := TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, [16]byte(tid))
 	assert.False(t, tid.IsEmpty())
 	assert.Equal(t, "01020304050607080807060504030201", tid.HexString())
 }
 
+func TestNewTraceIDEmpty(t *testing.T) {
+	tid := NewTraceIDEmpty()
+	assert.Equal(t, [16]byte{}, [16]byte(tid))
+	assert.True(t, tid.IsEmpty())
+}
+
 func TestTraceIDHexString(t *testing.T) {
-	tid := NewTraceID([16]byte{})
+	tid := TraceID([16]byte{})
 	assert.Equal(t, "", tid.HexString())
 
-	tid = NewTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78})
+	tid = [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
 	assert.Equal(t, "12345678123456781234567812345678", tid.HexString())
 }
 
 func TestTraceIDImmutable(t *testing.T) {
 	initialBytes := [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
-	tid := NewTraceID(initialBytes)
-	assert.Equal(t, initialBytes, tid.Bytes())
+	tid := TraceID(initialBytes)
+	assert.Equal(t, TraceID(initialBytes), tid)
 
 	// Get the bytes and try to mutate.
-	bytes := tid.Bytes()
-	bytes[4] = 0x23
+	tid[4] = 0x23
 
 	// Does not change the already created TraceID.
-	assert.NotEqual(t, bytes, tid.Bytes())
-	assert.Equal(t, initialBytes, tid.Bytes())
+	assert.NotEqual(t, TraceID(initialBytes), tid)
 }

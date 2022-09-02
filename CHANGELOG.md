@@ -8,6 +8,13 @@
   - `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext`
   - `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings`
   - `component.NewExtensionFactoryWithStabilityLevel`
+- Remove deprecated `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` funcs (#6008)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `pcommon.Empty[Trace|Span]ID` in favor of `pcommon.New[Trace|Span]IDEmpty` (#6008)
+- Deprecate `pcommon.[Trace|Span]ID.Bytes` in favor direct conversion. (#6008)
+- Deprecate `pcommon.New[Trace|Span]ID` in favor direct conversion. (#6008)
 
 ## v0.59.0 Beta
 

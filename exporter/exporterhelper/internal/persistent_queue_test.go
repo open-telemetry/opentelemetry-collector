@@ -169,12 +169,12 @@ func newTraces(numTraces int, numSpans int) ptrace.Traces {
 	batch.Resource().Attributes().InsertInt("num-spans", int64(numSpans))
 
 	for i := 0; i < numTraces; i++ {
-		traceID := pcommon.NewTraceID([16]byte{1, 2, 3, byte(i)})
+		traceID := pcommon.TraceID([16]byte{1, 2, 3, byte(i)})
 		ils := batch.ScopeSpans().AppendEmpty()
 		for j := 0; j < numSpans; j++ {
 			span := ils.Spans().AppendEmpty()
 			span.SetTraceID(traceID)
-			span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, byte(j)}))
+			span.SetSpanID([8]byte{1, 2, 3, byte(j)})
 			span.SetName("should-not-be-changed")
 			span.Attributes().InsertInt("int-attribute", int64(j))
 			span.Attributes().InsertString("str-attribute-1", "foobar")
