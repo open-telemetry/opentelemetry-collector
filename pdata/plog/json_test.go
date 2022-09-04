@@ -15,6 +15,8 @@
 package plog
 
 import (
+	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,14 +26,22 @@ var logsOTLP = func() Logs {
 	ld := NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().UpsertString("host.name", "testHost")
+	rl.SetSchemaUrl("testSchemaURL")
 	il := rl.ScopeLogs().AppendEmpty()
 	il.Scope().SetName("name")
 	il.Scope().SetVersion("version")
-	il.LogRecords().AppendEmpty().SetSeverityText("Error")
+	il.Scope().SetDroppedAttributesCount(1)
+	lg := il.LogRecords().AppendEmpty()
+	lg.SetSeverityNumber(SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR))
+	lg.SetSeverityText("Error")
+	lg.SetDroppedAttributesCount(1)
+	lg.SetFlags(LogRecordFlags(otlplogs.LogRecordFlags_LOG_RECORD_FLAG_UNSPECIFIED))
+	traceID := pcommon.TraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	lg.SetTraceID(traceID)
+	lg.SetSpanID(spanID)
 	return ld
 }()
-
-var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":""}]}]}]}`
 
 func TestLogsJSON(t *testing.T) {
 	encoder := NewJSONMarshaler()
@@ -45,6 +55,8 @@ func TestLogsJSON(t *testing.T) {
 
 	assert.EqualValues(t, logsOTLP, got)
 }
+
+var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":""}]}]}]}`
 
 func TestLogsJSON_Marshal(t *testing.T) {
 	encoder := NewJSONMarshaler()
