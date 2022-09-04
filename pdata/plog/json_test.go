@@ -135,7 +135,7 @@ func TestLogsJSON_WithoutTraceIdAndSpanId(t *testing.T) {
 
 var logsJSONWrongTraceID = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"--","spanId":""}]}]}]}`
 
-func TestLogsJSON_WrongTraceId(t *testing.T) {
+func TestLogsJSON_WrongTraceID(t *testing.T) {
 	decoder := NewJSONUnmarshaler()
 	_, err := decoder.UnmarshalLogs([]byte(logsJSONWrongTraceID))
 	assert.Error(t, err)
@@ -144,11 +144,11 @@ func TestLogsJSON_WrongTraceId(t *testing.T) {
 	}
 }
 
-var LogsJSONWrongSpanId = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":"--"}]}]}]}`
+var LogsJSONWrongSpanID = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":"--"}]}]}]}`
 
-func TestLogsJSON_WrongSpanId(t *testing.T) {
+func TestLogsJSON_WrongSpanID(t *testing.T) {
 	decoder := NewJSONUnmarshaler()
-	_, err := decoder.UnmarshalLogs([]byte(LogsJSONWrongSpanId))
+	_, err := decoder.UnmarshalLogs([]byte(LogsJSONWrongSpanID))
 	assert.Error(t, err)
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "parse span_id")
