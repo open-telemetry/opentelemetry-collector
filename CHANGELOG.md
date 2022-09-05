@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fix reading resource attributes for trace JSON, remove duplicate code. (#6023)
 
 ### 🛑 Breaking changes 🛑
 
