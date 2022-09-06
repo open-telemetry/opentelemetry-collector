@@ -2,6 +2,8 @@
 
 ## Unreleased
 - Fix reading resource attributes for trace JSON, remove duplicate code. (#6023)
+- Add support to unmarshalls bytes into plogs.Logs with `jsoniter` in jsonUnmarshaler(#5935)
+
 
 ### 🛑 Breaking changes 🛑
 
