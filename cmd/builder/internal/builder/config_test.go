@@ -135,3 +135,14 @@ func TestNewDefaultConfig(t *testing.T) {
 	require.NoError(t, cfg.ParseModules())
 	require.NoError(t, cfg.Validate())
 }
+
+func TestSkipGoValidation(t *testing.T) {
+	cfg := Config{
+		Distribution: Distribution{
+			Go: "invalid/go/binary/path",
+		},
+		SkipCompilation: true,
+		SkipGetModules:  true,
+	}
+	require.NoError(t, cfg.Validate())
+}
