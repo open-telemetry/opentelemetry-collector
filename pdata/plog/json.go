@@ -92,20 +92,7 @@ func (d *jsonUnmarshaler) readResourceLogs(iter *jsoniter.Iterator) *otlplogs.Re
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource":
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "attributes":
-					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						rs.Resource.Attributes = append(rs.Resource.Attributes, json.ReadAttribute(iter))
-						return true
-					})
-				case "droppedAttributesCount", "dropped_attributes_count":
-					rs.Resource.DroppedAttributesCount = json.ReadUint32(iter)
-				default:
-					iter.Skip()
-				}
-				return true
-			})
+			json.ReadResource(iter, &rs.Resource)
 		case "scope_logs", "scopeLogs":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				rs.ScopeLogs = append(rs.ScopeLogs,
