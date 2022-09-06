@@ -159,10 +159,8 @@ func (pm *processMetrics) updateCPUSeconds() float64 {
 		return 0
 	}
 
-	total := times.User + times.System + times.Idle + times.Nice +
+	return times.User + times.System + times.Idle + times.Nice +
 		times.Iowait + times.Irq + times.Softirq + times.Steal
-
-	return total
 }
 
 func (pm *processMetrics) updateRSSMemory() int64 {
