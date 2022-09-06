@@ -13,43 +13,44 @@
 // limitations under the License.
 
 package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
-
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
+	"encoding/hex"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
-// EmptySpanID represents the empty (all zero bytes) SpanID.
-var EmptySpanID = NewSpanID([8]byte{})
+var emptySpanID = SpanID([8]byte{})
+
+// Deprecated: [v0.60.0] use NewSpanIDEmpty.
+var EmptySpanID = SpanID([8]byte{})
 
 // SpanID is span identifier.
-type SpanID internal.SpanID
+type SpanID [8]byte
 
-func (ms SpanID) getOrig() data.SpanID {
-	return internal.GetOrigSpanID(internal.SpanID(ms))
+// NewSpanIDEmpty returns a new empty (all zero bytes) SpanID.
+func NewSpanIDEmpty() SpanID {
+	return emptySpanID
 }
 
-// Deprecated: [v0.59.0] use EmptySpanID.
-func InvalidSpanID() SpanID {
-	return EmptySpanID
-}
-
-// NewSpanID returns a new SpanID from the given byte array.
+// Deprecated: [v0.60.0] use SpanID(bytes).
 func NewSpanID(bytes [8]byte) SpanID {
-	return SpanID(internal.NewSpanID(data.NewSpanID(bytes)))
+	return bytes
 }
 
-// Bytes returns the byte array representation of the SpanID.
+// Deprecated: [v0.60.0] use [8]byte(sid).
 func (ms SpanID) Bytes() [8]byte {
-	return ms.getOrig().Bytes()
+	return ms
 }
 
 // HexString returns hex representation of the SpanID.
 func (ms SpanID) HexString() string {
-	return ms.getOrig().HexString()
+	if ms.IsEmpty() {
+		return ""
+	}
+	return hex.EncodeToString(ms[:])
 }
 
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (ms SpanID) IsEmpty() bool {
-	return ms.getOrig().IsEmpty()
+	return data.SpanID(ms).IsEmpty()
 }

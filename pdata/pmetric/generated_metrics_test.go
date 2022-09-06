@@ -900,8 +900,10 @@ func TestNumberDataPoint_Exemplars(t *testing.T) {
 
 func TestNumberDataPoint_Flags(t *testing.T) {
 	ms := NewNumberDataPoint()
-	internal.FillTestMetricDataPointFlags(internal.MetricDataPointFlags(ms.Flags()))
-	assert.Equal(t, MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags()), ms.Flags())
+	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
+	testValFlags := MetricDataPointFlags(1)
+	ms.SetFlags(testValFlags)
+	assert.Equal(t, testValFlags, ms.Flags())
 }
 
 func TestHistogramDataPointSlice(t *testing.T) {
@@ -1071,16 +1073,16 @@ func TestHistogramDataPoint_Sum(t *testing.T) {
 
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice([]uint64(nil))), ms.BucketCounts())
-	testValBucketCounts := pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice([]uint64{1, 2, 3}))
+	assert.Equal(t, pcommon.NewImmutableUInt64Slice([]uint64(nil)), ms.BucketCounts())
+	testValBucketCounts := pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3})
 	ms.SetBucketCounts(testValBucketCounts)
 	assert.Equal(t, testValBucketCounts, ms.BucketCounts())
 }
 
 func TestHistogramDataPoint_ExplicitBounds(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, pcommon.ImmutableFloat64Slice(internal.NewImmutableFloat64Slice([]float64(nil))), ms.ExplicitBounds())
-	testValExplicitBounds := pcommon.ImmutableFloat64Slice(internal.NewImmutableFloat64Slice([]float64{1, 2, 3}))
+	assert.Equal(t, pcommon.NewImmutableFloat64Slice([]float64(nil)), ms.ExplicitBounds())
+	testValExplicitBounds := pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3})
 	ms.SetExplicitBounds(testValExplicitBounds)
 	assert.Equal(t, testValExplicitBounds, ms.ExplicitBounds())
 }
@@ -1094,8 +1096,10 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 
 func TestHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	internal.FillTestMetricDataPointFlags(internal.MetricDataPointFlags(ms.Flags()))
-	assert.Equal(t, MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags()), ms.Flags())
+	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
+	testValFlags := MetricDataPointFlags(1)
+	ms.SetFlags(testValFlags)
+	assert.Equal(t, testValFlags, ms.Flags())
 }
 
 func TestHistogramDataPoint_Min(t *testing.T) {
@@ -1312,8 +1316,10 @@ func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	internal.FillTestMetricDataPointFlags(internal.MetricDataPointFlags(ms.Flags()))
-	assert.Equal(t, MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags()), ms.Flags())
+	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
+	testValFlags := MetricDataPointFlags(1)
+	ms.SetFlags(testValFlags)
+	assert.Equal(t, testValFlags, ms.Flags())
 }
 
 func TestExponentialHistogramDataPoint_Min(t *testing.T) {
@@ -1357,8 +1363,8 @@ func TestBuckets_Offset(t *testing.T) {
 
 func TestBuckets_BucketCounts(t *testing.T) {
 	ms := NewBuckets()
-	assert.Equal(t, pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice([]uint64(nil))), ms.BucketCounts())
-	testValBucketCounts := pcommon.ImmutableUInt64Slice(internal.NewImmutableUInt64Slice([]uint64{1, 2, 3}))
+	assert.Equal(t, pcommon.NewImmutableUInt64Slice([]uint64(nil)), ms.BucketCounts())
+	testValBucketCounts := pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3})
 	ms.SetBucketCounts(testValBucketCounts)
 	assert.Equal(t, testValBucketCounts, ms.BucketCounts())
 }
@@ -1537,8 +1543,10 @@ func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 
 func TestSummaryDataPoint_Flags(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	internal.FillTestMetricDataPointFlags(internal.MetricDataPointFlags(ms.Flags()))
-	assert.Equal(t, MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags()), ms.Flags())
+	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
+	testValFlags := MetricDataPointFlags(1)
+	ms.SetFlags(testValFlags)
+	assert.Equal(t, testValFlags, ms.Flags())
 }
 
 func TestValueAtQuantileSlice(t *testing.T) {
@@ -1840,16 +1848,16 @@ func TestExemplar_FilteredAttributes(t *testing.T) {
 
 func TestExemplar_TraceID(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.TraceID(internal.NewTraceID(data.NewTraceID([16]byte{}))), ms.TraceID())
-	testValTraceID := pcommon.TraceID(internal.NewTraceID(data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})))
+	assert.Equal(t, pcommon.TraceID(data.NewTraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
 func TestExemplar_SpanID(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.SpanID(internal.NewSpanID(data.NewSpanID([8]byte{}))), ms.SpanID())
-	testValSpanID := pcommon.SpanID(internal.NewSpanID(data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})))
+	assert.Equal(t, pcommon.SpanID(data.NewSpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }

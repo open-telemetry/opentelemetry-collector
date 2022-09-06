@@ -102,153 +102,15 @@ const (
 	SeverityNumberFatal4    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL4)
 )
 
-const (
-	// Deprecated: [0.59.0] Use SeverityNumberUndefined instead
-	SeverityNumberUNDEFINED = SeverityNumberUndefined
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace instead
-	SeverityNumberTRACE = SeverityNumberTrace
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace2 instead
-	SeverityNumberTRACE2 = SeverityNumberTrace2
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace3 instead
-	SeverityNumberTRACE3 = SeverityNumberTrace3
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace4 instead
-	SeverityNumberTRACE4 = SeverityNumberTrace4
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug instead
-	SeverityNumberDEBUG = SeverityNumberDebug
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug2 instead
-	SeverityNumberDEBUG2 = SeverityNumberDebug2
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug3 instead
-	SeverityNumberDEBUG3 = SeverityNumberDebug3
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug4 instead
-	SeverityNumberDEBUG4 = SeverityNumberDebug4
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo instead
-	SeverityNumberINFO = SeverityNumberInfo
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo2 instead
-	SeverityNumberINFO2 = SeverityNumberInfo2
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo3 instead
-	SeverityNumberINFO3 = SeverityNumberInfo3
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo4 instead
-	SeverityNumberINFO4 = SeverityNumberInfo4
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn instead
-	SeverityNumberWARN = SeverityNumberWarn
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn2 instead
-	SeverityNumberWARN2 = SeverityNumberWarn2
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn3 instead
-	SeverityNumberWARN3 = SeverityNumberWarn3
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn4 instead
-	SeverityNumberWARN4 = SeverityNumberWarn4
-
-	// Deprecated: [0.59.0] Use SeverityNumberError instead
-	SeverityNumberERROR = SeverityNumberError
-
-	// Deprecated: [0.59.0] Use SeverityNumberError2 instead
-	SeverityNumberERROR2 = SeverityNumberError2
-
-	// Deprecated: [0.59.0] Use SeverityNumberError3 instead
-	SeverityNumberERROR3 = SeverityNumberError3
-
-	// Deprecated: [0.59.0] Use SeverityNumberError4 instead
-	SeverityNumberERROR4 = SeverityNumberError4
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal instead
-	SeverityNumberFATAL = SeverityNumberFatal
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal2 instead
-	SeverityNumberFATAL2 = SeverityNumberFatal2
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal3 instead
-	SeverityNumberFATAL3 = SeverityNumberFatal3
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal4 instead
-	SeverityNumberFATAL4 = SeverityNumberFatal4
-)
-
 // String returns the string representation of the SeverityNumber.
 func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }
 
-// Deprecated: [v0.59.0] use FlagsStruct().
-func (ms LogRecord) Flags() uint32 {
-	return ms.getOrig().Flags
+// Deprecated: [v0.60.0] use Flags().
+func (ms LogRecord) FlagsStruct() LogRecordFlags {
+	return ms.Flags()
 }
 
-// Deprecated: [v0.59.0] use FlagsStruct().
-func (ms LogRecord) SetFlags(v uint32) {
-	ms.getOrig().Flags = v
-}
-
-const (
-	traceFlagsNone = uint32(0)
-	isSampledMask  = uint32(1)
-)
-
-// LogRecordFlags defines flags for the LogRecord. 8 least significant bits are the trace flags as
-// defined in W3C Trace Context specification. 24 most significant bits are reserved and must be set to 0.
-//
-// This is a reference type, if passed by value and callee modifies it the caller will see the modification.
-//
-// Must use NewLogRecordFlags function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type LogRecordFlags internal.LogRecordFlags
-
-func newLogRecordFlags(orig *uint32) LogRecordFlags {
-	return LogRecordFlags(internal.NewLogRecordFlags(orig))
-}
-
-func (ms LogRecordFlags) getOrig() *uint32 {
-	return internal.GetOrigLogRecordFlags(internal.LogRecordFlags(ms))
-}
-
-// NewLogRecordFlags creates a new empty LogRecordFlags.
-//
-// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
-// OR directly access the member if this is embedded in another struct.
-func NewLogRecordFlags() LogRecordFlags {
-	return newLogRecordFlags(new(uint32))
-}
-
-// MoveTo moves all properties from the current struct to dest resetting the current instance to its zero value
-func (ms LogRecordFlags) MoveTo(dest LogRecordFlags) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = traceFlagsNone
-}
-
-// CopyTo copies all properties from the current struct to the dest.
-func (ms LogRecordFlags) CopyTo(dest LogRecordFlags) {
-	*dest.getOrig() = *ms.getOrig()
-}
-
-// IsSampled returns true if the LogRecordFlags contains the IsSampled flag.
-func (ms LogRecordFlags) IsSampled() bool {
-	return *ms.getOrig()&isSampledMask != 0
-}
-
-// SetIsSampled sets the IsSampled flag if true and removes it if false.
-// Setting this Flag when it is already set is a no-op.
-func (ms LogRecordFlags) SetIsSampled(b bool) {
-	if b {
-		*ms.getOrig() |= isSampledMask
-	} else {
-		*ms.getOrig() &^= isSampledMask
-	}
-}
-
-// AsRaw converts LogRecordFlags to the OTLP uint32 representation.
-func (ms LogRecordFlags) AsRaw() uint32 {
-	return *ms.getOrig()
+// Deprecated: [v0.60.0] use SetFlags().
+func (ms LogRecord) SetFlagsStruct(v LogRecordFlags) {
+	ms.SetFlags(v)
 }

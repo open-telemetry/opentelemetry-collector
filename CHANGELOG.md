@@ -1,6 +1,39 @@
 # Changelog
 
 ## Unreleased
+- Fix reading resource attributes for trace JSON, remove duplicate code. (#6023)
+
+### 🛑 Breaking changes 🛑
+
+- Replace deprecated `*DataPoint.Flags()` with `*DataPoint.[Set]FlagsImmutable()`. (#6017)
+- Remove deprecated `MetricDataPointFlagsStruct` struct and `NewMetricDataPointFlagsStruct` func. (#6017)
+- Replace deprecated `MetricDataPointFlags` with `MetricDataPointFlagsImmutable`. (#6017)
+- Replace deprecated `LogRecord.[Set]Flags()` with `LogRecord.[Set]FlagsStruct()`. (#6007)
+- Remove deprecated components helpers funcs (#6006)
+  - `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext`
+  - `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings`
+  - `component.NewExtensionFactoryWithStabilityLevel`
+- Remove deprecated `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` funcs (#6008)
+- Remove deprecated `pcommon.Map` methods: `Update`, `Upsert`, `InsertNull` (#6019)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `pcommon.Map.Update+` in favor of `pcommon.Map.Get` + `pcommon.Value.Set+` (#6013)
+- Deprecate `pcommon.Empty[Trace|Span]ID` in favor of `pcommon.New[Trace|Span]IDEmpty` (#6008)
+- Deprecate `pcommon.[Trace|Span]ID.Bytes` in favor direct conversion. (#6008)
+- Deprecate `pcommon.New[Trace|Span]ID` in favor direct conversion. (#6008)
+- Deprecate `MetricDataPointFlagsImmutable` type. (#6017)
+- Deprecate `*DataPoint.[Set]FlagsImmutable()` funcs in favor of `*DataPoint.[Set]Flags()`. (#6017)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `LogRecord.FlagsStruct()` and `LogRecord.SetFlagsStruct()` in favor of `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
+
+### 💡 Enhancements 💡
+
+- Add `skip-get-modules` builder flag to support isolated environment executions (#6009)
+
+## v0.59.0 Beta
 
 ### 🛑 Breaking changes 🛑
 
@@ -24,7 +57,7 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings` in favor of `processorhelper.New[Traces|Metrics|Logs]Exporter` (#5915)
-- Deprecates `LogRecord.Flags()` and `LogRecord.SetFlags()` in favor of `LogRecord.FlagsStruct()`. (#5866)
+- Deprecates `LogRecord.Flags()` and `LogRecord.SetFlags()` in favor of `LogRecord.FlagsStruct()` and `LogRecord.SetFlagsStruct()`. (#5972)
 - Deprecate `exporterhelper.New[Traces|Metrics|Logs]ExporterWithContext` in favor of `exporterhelper.New[Traces|Metrics|Logs]Exporter` (#5914)
 - Deprecate `component.NewExtensionFactoryWithStabilityLevel` in favor of `component.NewExtensionFactory` (#5917)
 - Deprecate `plog.SeverityNumber[UPPERCASE]` constants (#5927)
@@ -35,6 +68,14 @@
 - Deprecate builder distribution flags, use configuration. (#5946)
 - Enforce naming conventions for Invalid[Trace|Span]ID: (#5969)
   - Deprecate funcs `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` in favor of vars `pcommon.EmptyTraceID` and `pcommon.EmptySpanID` 
+- Deprecate `Update` and `Upsert` methods of `pcommon.Map` (#5975)
+- Deprecated the current MetricDataPointFlags API.  The new API provides functions to check and set Flags. (#5999)
+  - `NumberDataPoint.Flags` -> `NumberDataPoint.FlagsImmutable`
+  - `HistogramDataPoint.Flags` -> `HistogramDataPoint.FlagsImmutable`
+  - `ExponentialHistogramDataPoint.Flags` -> `ExponentialHistogramDataPoint.FlagsImmutable`
+  - `SummaryDataPoint.Flags` -> `SummaryDataPoint.FlagsImmutable`
+  - `MetricDataPointFlags` -> `MetricDataPointFlagsImmutable`
+  - `NewMetricDataPointFlags` -> `MetricDataPointFlagsImmutable`
 
 ### 💡 Enhancements 💡
 
@@ -48,6 +89,8 @@
 - Change pdata generated types to use type definition instead of aliases. (#5936)
   - Improves documentation, and makes code easier to read/understand.
 - Log `InstrumentationScope` attributes in `loggingexporter` (#5976)
+- Add `UpsertEmpty`, `UpsertEmptyMap` and `UpsertEmptySlice` methods to `pcommon.Map` (#5975)
+- Add `SetEmptyMapVal` and `SetEmptySliceVal` methods to `pcommon.Value` (#5975)
 
 ### 🧰 Bug fixes 🧰
 
@@ -58,6 +101,7 @@
   - Accept both string and number for float64.
   - Accept both string and number for int32/uint32.
   - Read uint64 numbers without converting from int64.
+- Fix persistent storage client not closing when shutting down (#6003)
 
 ## v0.58.0 Beta
 
@@ -170,7 +214,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 ### 💡 Enhancements 💡
 
-- Make the in-memory and persistent queues more consistent (#5764)ś
+- Make the in-memory and persistent queues more consistent (#5764)
 - `ocb` now exits with an error if it fails to load the build configuration. (#5731)
 - Deprecate `HTTPClientSettings.ToClientWithHost` (#5737)
 

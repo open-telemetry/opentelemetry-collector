@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -1243,7 +1244,12 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 
 // Flags returns the flags associated with this NumberDataPoint.
 func (ms NumberDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(&ms.getOrig().Flags))
+	return MetricDataPointFlags(ms.getOrig().Flags)
+}
+
+// SetFlags replaces the flags associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
+	ms.getOrig().Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -1259,7 +1265,7 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
-	ms.Flags().CopyTo(dest.Flags())
+	dest.SetFlags(ms.Flags())
 }
 
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
@@ -1513,7 +1519,12 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 
 // Flags returns the flags associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(&ms.getOrig().Flags))
+	return MetricDataPointFlags(ms.getOrig().Flags)
+}
+
+// SetFlags replaces the flags associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
+	ms.getOrig().Flags = uint32(v)
 }
 
 // Min returns the min associated with this HistogramDataPoint.
@@ -1573,7 +1584,7 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
-	ms.Flags().CopyTo(dest.Flags())
+	dest.SetFlags(ms.Flags())
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
 	}
@@ -1848,7 +1859,12 @@ func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
 
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(&ms.getOrig().Flags))
+	return MetricDataPointFlags(ms.getOrig().Flags)
+}
+
+// SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
+	ms.getOrig().Flags = uint32(v)
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.
@@ -1898,7 +1914,7 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	ms.Positive().CopyTo(dest.Positive())
 	ms.Negative().CopyTo(dest.Negative())
 	ms.Exemplars().CopyTo(dest.Exemplars())
-	ms.Flags().CopyTo(dest.Flags())
+	dest.SetFlags(ms.Flags())
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
 	}
@@ -2199,7 +2215,12 @@ func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
 
 // Flags returns the flags associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(&ms.getOrig().Flags))
+	return MetricDataPointFlags(ms.getOrig().Flags)
+}
+
+// SetFlags replaces the flags associated with this SummaryDataPoint.
+func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
+	ms.getOrig().Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -2210,7 +2231,7 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.SetCount(ms.Count())
 	dest.SetSum(ms.Sum())
 	ms.QuantileValues().CopyTo(dest.QuantileValues())
-	ms.Flags().CopyTo(dest.Flags())
+	dest.SetFlags(ms.Flags())
 }
 
 // ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.
@@ -2621,22 +2642,22 @@ func (ms Exemplar) FilteredAttributes() pcommon.Map {
 
 // TraceID returns the traceid associated with this Exemplar.
 func (ms Exemplar) TraceID() pcommon.TraceID {
-	return pcommon.TraceID(internal.NewTraceID(ms.getOrig().TraceId))
+	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this Exemplar.
 func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = internal.GetOrigTraceID(internal.TraceID(v))
+	ms.getOrig().TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this Exemplar.
 func (ms Exemplar) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(internal.NewSpanID(ms.getOrig().SpanId))
+	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this Exemplar.
 func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = internal.GetOrigSpanID(internal.SpanID(v))
+	ms.getOrig().SpanId = data.SpanID(v)
 }
 
 // CopyTo copies all properties from the current struct to the dest.

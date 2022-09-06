@@ -15,41 +15,43 @@
 package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
+	"encoding/hex"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
-// EmptyTraceID represents the empty (all zero bytes) TraceID.
-var EmptyTraceID = NewTraceID([16]byte{})
+var emptyTraceID = TraceID([16]byte{})
+
+// Deprecated: [v0.60.0] use NewTraceIDEmpty.
+var EmptyTraceID = TraceID([16]byte{})
 
 // TraceID is a trace identifier.
-type TraceID internal.TraceID
+type TraceID [16]byte
 
-func (ms TraceID) getOrig() data.TraceID {
-	return internal.GetOrigTraceID(internal.TraceID(ms))
+// NewTraceIDEmpty returns a new empty (all zero bytes) TraceID.
+func NewTraceIDEmpty() TraceID {
+	return emptyTraceID
 }
 
-// Deprecated: [v0.59.0] use EmptyTraceID.
-func InvalidTraceID() TraceID {
-	return EmptyTraceID
-}
-
-// NewTraceID returns a new TraceID from the given byte array.
+// Deprecated: [v0.60.0] use TraceID(bytes).
 func NewTraceID(bytes [16]byte) TraceID {
-	return TraceID(internal.NewTraceID(data.NewTraceID(bytes)))
+	return bytes
 }
 
-// Bytes returns the byte array representation of the TraceID.
+// Deprecated: [v0.60.0] use [16]byte(tid).
 func (ms TraceID) Bytes() [16]byte {
-	return ms.getOrig().Bytes()
+	return ms
 }
 
 // HexString returns hex representation of the TraceID.
 func (ms TraceID) HexString() string {
-	return ms.getOrig().HexString()
+	if ms.IsEmpty() {
+		return ""
+	}
+	return hex.EncodeToString(ms[:])
 }
 
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (ms TraceID) IsEmpty() bool {
-	return ms.getOrig().IsEmpty()
+	return data.TraceID(ms).IsEmpty()
 }

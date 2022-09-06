@@ -132,33 +132,6 @@ func TestLogsClone(t *testing.T) {
 	assert.EqualValues(t, logs, logs.Clone())
 }
 
-func TestLogRecordFlags(t *testing.T) {
-	flags := LogRecordFlags(internal.GenerateTestLogRecordFlags())
-	assert.True(t, flags.IsSampled())
-	assert.Equal(t, uint32(1), flags.AsRaw())
-
-	flags.SetIsSampled(false)
-	flags.SetIsSampled(false)
-	assert.False(t, flags.IsSampled())
-	assert.Equal(t, uint32(0), flags.AsRaw())
-
-	flags.SetIsSampled(true)
-	flags.SetIsSampled(true)
-	assert.True(t, flags.IsSampled())
-	assert.Equal(t, uint32(1), flags.AsRaw())
-
-	moveFlags := NewLogRecordFlags()
-	assert.False(t, moveFlags.IsSampled())
-
-	flags.MoveTo(moveFlags)
-	assert.False(t, flags.IsSampled())
-	assert.True(t, moveFlags.IsSampled())
-
-	moveFlags.CopyTo(flags)
-	assert.True(t, flags.IsSampled())
-	assert.True(t, moveFlags.IsSampled())
-}
-
 func BenchmarkLogsClone(b *testing.B) {
 	logs := NewLogs()
 	internal.FillTestResourceLogsSlice(internal.ResourceLogsSlice(logs.ResourceLogs()))

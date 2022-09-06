@@ -59,8 +59,8 @@ func TestTracesJSON_Marshal(t *testing.T) {
 }
 
 var tracesOTLPFull = func() Traces {
-	traceID := pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := pcommon.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	traceID := pcommon.TraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	td := NewTraces()
 	// Add ResourceSpans.
 	rs := td.ResourceSpans().AppendEmpty()
@@ -95,14 +95,12 @@ var tracesOTLPFull = func() Traces {
 	sp.Attributes().UpsertInt("int", 1)
 	sp.Attributes().UpsertDouble("double", 1.1)
 	sp.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
-	arr := pcommon.NewValueSlice()
-	arr.SliceVal().AppendEmpty().SetIntVal(1)
-	arr.SliceVal().AppendEmpty().SetStringVal("str")
-	sp.Attributes().Upsert("array", arr)
-	kvList := pcommon.NewValueMap()
-	kvList.MapVal().Upsert("int", pcommon.NewValueInt(1))
-	kvList.MapVal().Upsert("string", pcommon.NewValueString("string"))
-	sp.Attributes().Upsert("kvList", kvList)
+	arr := sp.Attributes().UpsertEmptySlice("array")
+	arr.AppendEmpty().SetIntVal(1)
+	arr.AppendEmpty().SetStringVal("str")
+	kvList := sp.Attributes().UpsertEmptyMap("kvList")
+	kvList.UpsertInt("int", 1)
+	kvList.UpsertString("string", "string")
 	// Add events.
 	event := sp.Events().AppendEmpty()
 	event.SetName("eventName")

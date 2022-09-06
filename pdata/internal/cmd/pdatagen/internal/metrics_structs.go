@@ -490,12 +490,14 @@ var exemplar = &messageValueStruct{
 	},
 }
 
-var dataPointFlagsField = &messageValueField{
+var dataPointFlagsField = &primitiveTypedField{
 	fieldName:       "Flags",
 	originFieldName: "Flags",
-	returnMessage: &messageValueStruct{
-		structName:     "MetricDataPointFlags",
-		originFullName: "uint32",
+	returnType: &primitiveType{
+		structName: "MetricDataPointFlags",
+		rawType:    "uint32",
+		defaultVal: "0",
+		testVal:    "1",
 	},
 }
 

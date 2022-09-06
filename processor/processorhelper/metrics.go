@@ -36,18 +36,6 @@ type metricsProcessor struct {
 	consumer.Metrics
 }
 
-// Deprecated: [v0.59.0] use version with NewMetricsProcessor.
-func NewMetricsProcessorWithCreateSettings(
-	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
-	nextConsumer consumer.Metrics,
-	metricsFunc ProcessMetricsFunc,
-	options ...Option,
-) (component.MetricsProcessor, error) {
-	return NewMetricsProcessor(ctx, set, cfg, nextConsumer, metricsFunc, options...)
-}
-
 // NewMetricsProcessor creates a component.MetricsProcessor that ensure context propagation and the right tags are set.
 func NewMetricsProcessor(
 	_ context.Context,

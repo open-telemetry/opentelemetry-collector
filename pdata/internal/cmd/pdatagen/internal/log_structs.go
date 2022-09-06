@@ -104,12 +104,14 @@ var logRecord = &messageValueStruct{
 		},
 		traceIDField,
 		spanIDField,
-		&messageValueField{
-			fieldName:       "FlagsStruct",
+		&primitiveTypedField{
+			fieldName:       "Flags",
 			originFieldName: "Flags",
-			returnMessage: &messageValueStruct{
-				structName:     "LogRecordFlags",
-				originFullName: "uint32",
+			returnType: &primitiveType{
+				structName: "LogRecordFlags",
+				rawType:    "uint32",
+				defaultVal: "0",
+				testVal:    "1",
 			},
 		},
 		&primitiveField{

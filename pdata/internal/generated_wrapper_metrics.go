@@ -483,7 +483,7 @@ func FillTestNumberDataPoint(tv NumberDataPoint) {
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
 	FillTestExemplarSlice(NewExemplarSlice(&tv.orig.Exemplars))
-	FillTestMetricDataPointFlags(NewMetricDataPointFlags(&tv.orig.Flags))
+	tv.orig.Flags = 1
 }
 
 func GenerateTestHistogramDataPointSlice() HistogramDataPointSlice {
@@ -517,7 +517,7 @@ func FillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.orig.BucketCounts = []uint64{1, 2, 3}
 	tv.orig.ExplicitBounds = []float64{1, 2, 3}
 	FillTestExemplarSlice(NewExemplarSlice(&tv.orig.Exemplars))
-	FillTestMetricDataPointFlags(NewMetricDataPointFlags(&tv.orig.Flags))
+	tv.orig.Flags = 1
 	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
 }
@@ -555,7 +555,7 @@ func FillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	FillTestBuckets(NewBuckets(&tv.orig.Positive))
 	FillTestBuckets(NewBuckets(&tv.orig.Negative))
 	FillTestExemplarSlice(NewExemplarSlice(&tv.orig.Exemplars))
-	FillTestMetricDataPointFlags(NewMetricDataPointFlags(&tv.orig.Flags))
+	tv.orig.Flags = 1
 	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(182.55)}
 }
@@ -601,7 +601,7 @@ func FillTestSummaryDataPoint(tv SummaryDataPoint) {
 	tv.orig.Count = uint64(17)
 	tv.orig.Sum = float64(17.13)
 	FillTestValueAtQuantileSlice(NewValueAtQuantileSlice(&tv.orig.QuantileValues))
-	FillTestMetricDataPointFlags(NewMetricDataPointFlags(&tv.orig.Flags))
+	tv.orig.Flags = 1
 }
 
 func GenerateTestValueAtQuantileSlice() ValueAtQuantileSlice {
@@ -657,5 +657,5 @@ func FillTestExemplar(tv Exemplar) {
 	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
 	FillTestMap(NewMap(&tv.orig.FilteredAttributes))
 	tv.orig.TraceId = data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	tv.orig.SpanId = data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 }

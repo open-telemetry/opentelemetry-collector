@@ -166,62 +166,44 @@ func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
-// MetricDataPointFlags defines how a metric aggregator reports aggregated values.
-// It describes how those values relate to the time interval over which they are aggregated.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewMetricDataPointFlagsStruct function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type MetricDataPointFlags internal.MetricDataPointFlags
-
-func newMetricDataPointFlags(orig *uint32) MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(orig))
+// Deprecated: [v0.60.0] use Flags.
+func (ms NumberDataPoint) FlagsImmutable() MetricDataPointFlags {
+	return ms.Flags()
 }
 
-func (ms MetricDataPointFlags) getOrig() *uint32 {
-	return internal.GetOrigMetricDataPointFlags(internal.MetricDataPointFlags(ms))
+// Deprecated: [v0.60.0] use SetFlags.
+func (ms NumberDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
+	ms.SetFlags(v)
 }
 
-// NewMetricDataPointFlags creates a new empty MetricDataPointFlags.
-//
-// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
-// OR directly access the member if this is embedded in another struct.
-func NewMetricDataPointFlags() MetricDataPointFlags {
-	return newMetricDataPointFlags(new(uint32))
+// Deprecated: [v0.60.0] use Flags.
+func (ms HistogramDataPoint) FlagsImmutable() MetricDataPointFlags {
+	return ms.Flags()
 }
 
-// MoveTo moves all properties from the current struct to dest
-// resetting the current instance to its zero value
-func (ms MetricDataPointFlags) MoveTo(dest MetricDataPointFlags) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
+// Deprecated: [v0.60.0] use SetFlags.
+func (ms HistogramDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
+	ms.SetFlags(v)
 }
 
-// CopyTo copies all properties from the current struct to the dest.
-func (ms MetricDataPointFlags) CopyTo(dest MetricDataPointFlags) {
-	*dest.getOrig() = *ms.getOrig()
+// Deprecated: [v0.60.0] use Flags.
+func (ms ExponentialHistogramDataPoint) FlagsImmutable() MetricDataPointFlags {
+	return ms.Flags()
 }
 
-// NoRecordedValue returns true if the MetricDataPointFlags contains the NO_RECORDED_VALUE flag.
-func (ms MetricDataPointFlags) NoRecordedValue() bool {
-	return *ms.getOrig()&uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
+// Deprecated: [v0.60.0] use SetFlags.
+func (ms ExponentialHistogramDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
+	ms.SetFlags(v)
 }
 
-// SetNoRecordedValue sets the FLAG_NO_RECORDED_VALUE flag if true and removes it if false.
-// Setting this Flag when it is already set will change nothing.
-func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
-	if b {
-		*ms.getOrig() |= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
-	} else {
-		*ms.getOrig() &^= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
-	}
+// Deprecated: [v0.60.0] use Flags.
+func (ms SummaryDataPoint) FlagsImmutable() MetricDataPointFlags {
+	return ms.Flags()
 }
 
-// AsRaw converts MetricDataPointFlags to the OTLP uint32 representation.
-func (ms MetricDataPointFlags) AsRaw() uint32 {
-	return *ms.getOrig()
+// Deprecated: [v0.60.0] use SetFlags.
+func (ms SummaryDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
+	ms.SetFlags(v)
 }
 
 // NumberDataPointValueType specifies the type of NumberDataPoint value.

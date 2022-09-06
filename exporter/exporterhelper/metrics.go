@@ -79,17 +79,6 @@ type metricsExporter struct {
 	consumer.Metrics
 }
 
-// Deprecated: [v0.59.0] use NewMetricsExporter.
-func NewMetricsExporterWithContext(
-	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-	pusher consumer.ConsumeMetricsFunc,
-	options ...Option,
-) (component.MetricsExporter, error) {
-	return NewMetricsExporter(ctx, set, cfg, pusher, options...)
-}
-
 // NewMetricsExporter creates a component.MetricsExporter that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(
 	_ context.Context,

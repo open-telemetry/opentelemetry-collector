@@ -123,31 +123,38 @@ var attributeValueSlice = &sliceOfValues{
 	element:    anyValue,
 }
 
-var traceIDField = &primitiveStructField{
-	fieldName:         "TraceID",
-	originFieldName:   "TraceId",
-	returnStructName:  "TraceID",
-	returnPackageName: "pcommon",
-	defaultVal:        "data.NewTraceID([16]byte{})",
-	testVal:           "data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+var traceIDField = &primitiveTypedField{
+	fieldName:       "TraceID",
+	originFieldName: "TraceId",
+	returnType:      traceIDType,
 }
 
-var spanIDField = &primitiveStructField{
-	fieldName:         "SpanID",
-	originFieldName:   "SpanId",
-	returnStructName:  "SpanID",
-	returnPackageName: "pcommon",
-	defaultVal:        "data.NewSpanID([8]byte{})",
-	testVal:           "data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})",
+var traceIDType = &primitiveType{
+	structName:  "TraceID",
+	packageName: "pcommon",
+	rawType:     "data.TraceID",
+	defaultVal:  "data.NewTraceID([16]byte{})",
+	testVal:     "data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
-var parentSpanIDField = &primitiveStructField{
-	fieldName:         "ParentSpanID",
-	originFieldName:   "ParentSpanId",
-	returnStructName:  "SpanID",
-	returnPackageName: "pcommon",
-	defaultVal:        "data.NewSpanID([8]byte{})",
-	testVal:           "data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
+var spanIDField = &primitiveTypedField{
+	fieldName:       "SpanID",
+	originFieldName: "SpanId",
+	returnType:      spanIDType,
+}
+
+var parentSpanIDField = &primitiveTypedField{
+	fieldName:       "ParentSpanID",
+	originFieldName: "ParentSpanId",
+	returnType:      spanIDType,
+}
+
+var spanIDType = &primitiveType{
+	structName:  "SpanID",
+	packageName: "pcommon",
+	rawType:     "data.SpanID",
+	defaultVal:  "data.NewSpanID([8]byte{})",
+	testVal:     "data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var schemaURLField = &primitiveField{

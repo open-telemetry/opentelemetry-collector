@@ -78,17 +78,6 @@ type logsExporter struct {
 	consumer.Logs
 }
 
-// Deprecated: [v0.59.0] use NewLogsExporter.
-func NewLogsExporterWithContext(
-	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-	pusher consumer.ConsumeLogsFunc,
-	options ...Option,
-) (component.LogsExporter, error) {
-	return NewLogsExporter(ctx, set, cfg, pusher, options...)
-}
-
 // NewLogsExporter creates a component.LogsExporter that records observability metrics and wraps every request with a Span.
 func NewLogsExporter(
 	_ context.Context,
