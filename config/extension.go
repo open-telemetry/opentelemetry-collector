@@ -27,7 +27,7 @@ type Extension interface {
 }
 
 // UnmarshalExtension helper function to unmarshal an Extension config.
-// It checks if the config implements Unmarshallable and uses that if available,
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
 func UnmarshalExtension(conf *confmap.Conf, cfg Extension) error {
 	return unmarshal(conf, cfg)

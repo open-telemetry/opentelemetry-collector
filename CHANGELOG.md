@@ -28,6 +28,7 @@
 - Deprecate `MetricDataPointFlagsImmutable` type. (#6017)
 - Deprecate `*DataPoint.[Set]FlagsImmutable()` funcs in favor of `*DataPoint.[Set]Flags()`. (#6017)
 - Deprecate `LogRecord.FlagsStruct()` and `LogRecord.SetFlagsStruct()` in favor of `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
+- Deprecate `config.Unmarshallable` in favor of `confmap.Unmarshaler`. (#6031)
 
 ### 💡 Enhancements 💡
 
