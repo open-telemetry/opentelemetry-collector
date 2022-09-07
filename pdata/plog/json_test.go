@@ -58,8 +58,7 @@ func TestReadLogsDataUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readLogsData(iter)
+	value := readLogsData(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, otlplogs.LogsData{}, value)
 }
@@ -68,8 +67,7 @@ func TestReadResourceLogsUnknownField(t *testing.T) {
 	jsonStr := `{"extra":"","resource":{"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readResourceLogs(iter)
+	value := readResourceLogs(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlplogs.ResourceLogs{}, value)
 }
@@ -78,8 +76,7 @@ func TestReadScopeLogs(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readScopeLogs(iter)
+	value := readScopeLogs(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlplogs.ScopeLogs{}, value)
 }

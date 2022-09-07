@@ -337,8 +337,7 @@ func TestReadMetricsDataUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readMetricsData(iter)
+	value := readMetricsData(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, otlpmetrics.MetricsData{}, value)
 }
@@ -363,8 +362,7 @@ func TestExemplarIntVal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
 			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			unmarshaler := &jsonUnmarshaler{}
-			got := unmarshaler.readExemplar(iter)
+			got := readExemplar(iter)
 			assert.EqualValues(t, tt.want, got)
 		})
 	}
@@ -374,8 +372,7 @@ func TestExemplarInvalidTraceID(t *testing.T) {
 	jsonStr := `{"traceId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	unmarshaler.readExemplar(iter)
+	readExemplar(iter)
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "parse trace_id")
 	}
@@ -385,8 +382,7 @@ func TestExemplarInvalidSpanID(t *testing.T) {
 	jsonStr := `{"spanId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	unmarshaler.readExemplar(iter)
+	readExemplar(iter)
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "parse span_id")
 	}
@@ -396,8 +392,7 @@ func TestExemplarUnknownField(t *testing.T) {
 	jsonStr := `{"exists":"true"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readExemplar(iter)
+	value := readExemplar(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, otlpmetrics.Exemplar{}, value)
 }
@@ -406,8 +401,7 @@ func TestReadResourceMetricsUnknownField(t *testing.T) {
 	jsonStr := `{"exists":"true"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readResourceMetrics(iter)
+	value := readResourceMetrics(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpmetrics.ResourceMetrics{}, value)
 }
@@ -416,8 +410,7 @@ func TestReadInstrumentationLibraryMetricsUnknownField(t *testing.T) {
 	jsonStr := `{"exists":"true"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readScopeMetrics(iter)
+	value := readScopeMetrics(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpmetrics.ScopeMetrics{}, value)
 }
@@ -426,8 +419,7 @@ func TestReadInstrumentationLibraryUnknownField(t *testing.T) {
 	jsonStr := `{"instrumentationLibrary":{"exists":"true"}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readScopeMetrics(iter)
+	value := readScopeMetrics(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpmetrics.ScopeMetrics{}, value)
 }
@@ -507,8 +499,7 @@ func TestReadMetricUnknownField(t *testing.T) {
 	for _, tt := range tests {
 		iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.args.jsonStr))
 		jsoniter.ConfigFastest.ReturnIterator(iter)
-		unmarshaler := &jsonUnmarshaler{}
-		value := unmarshaler.readMetric(iter)
+		value := readMetric(iter)
 		assert.NoError(t, iter.Error)
 		assert.EqualValues(t, tt.args.want, value)
 	}
@@ -518,8 +509,7 @@ func TestReadNumberDataPointUnknownField(t *testing.T) {
 	jsonStr := `{"exists":{"exists":"true"}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readNumberDataPoint(iter)
+	value := readNumberDataPoint(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpmetrics.NumberDataPoint{}, value)
 }
@@ -528,8 +518,7 @@ func TestReadHistogramDataPointUnknownField(t *testing.T) {
 	jsonStr := `{"exists":{"exists":"true"},"count":3}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readHistogramDataPoint(iter)
+	value := readHistogramDataPoint(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpmetrics.HistogramDataPoint{
 		Count: 3,
@@ -540,8 +529,7 @@ func TestReadExponentialHistogramDataPointUnknownField(t *testing.T) {
 	jsonStr := `{"exists":{"exists":"true"},"count":3}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readExponentialHistogramDataPoint(iter)
+	value := readExponentialHistogramDataPoint(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpmetrics.ExponentialHistogramDataPoint{
 		Count: 3,
@@ -552,8 +540,7 @@ func TestReadQuantileValue(t *testing.T) {
 	jsonStr := `{"exists":{"exists":"true"},"value":3}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readQuantileValue(iter)
+	value := readQuantileValue(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{
 		Value: 3,
@@ -564,8 +551,7 @@ func TestReadSummaryDataPoint(t *testing.T) {
 	jsonStr := `{"exists":{"exists":"true"},"count":3}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readSummaryDataPoint(iter)
+	value := readSummaryDataPoint(iter)
 	assert.NoError(t, iter.Error)
 	assert.EqualValues(t, &otlpmetrics.SummaryDataPoint{
 		Count: 3,

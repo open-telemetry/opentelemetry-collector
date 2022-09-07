@@ -59,10 +59,10 @@ func newJSONUnmarshaler() *jsonUnmarshaler {
 	return &jsonUnmarshaler{}
 }
 
-func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
+func (jsonUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	ld := d.readLogsData(iter)
+	ld := readLogsData(iter)
 	if iter.Error != nil {
 		return Logs{}, iter.Error
 	}
@@ -70,13 +70,13 @@ func (d *jsonUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	return Logs(internal.LogsFromProto(ld)), nil
 }
 
-func (d *jsonUnmarshaler) readLogsData(iter *jsoniter.Iterator) otlplogs.LogsData {
+func readLogsData(iter *jsoniter.Iterator) otlplogs.LogsData {
 	ld := otlplogs.LogsData{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource_logs", "resourceLogs":
 			iter.ReadArrayCB(func(iterator *jsoniter.Iterator) bool {
-				ld.ResourceLogs = append(ld.ResourceLogs, d.readResourceLogs(iter))
+				ld.ResourceLogs = append(ld.ResourceLogs, readResourceLogs(iter))
 				return true
 			})
 		default:
@@ -87,7 +87,7 @@ func (d *jsonUnmarshaler) readLogsData(iter *jsoniter.Iterator) otlplogs.LogsDat
 	return ld
 }
 
-func (d *jsonUnmarshaler) readResourceLogs(iter *jsoniter.Iterator) *otlplogs.ResourceLogs {
+func readResourceLogs(iter *jsoniter.Iterator) *otlplogs.ResourceLogs {
 	rs := &otlplogs.ResourceLogs{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
@@ -96,7 +96,7 @@ func (d *jsonUnmarshaler) readResourceLogs(iter *jsoniter.Iterator) *otlplogs.Re
 		case "scope_logs", "scopeLogs":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				rs.ScopeLogs = append(rs.ScopeLogs,
-					d.readScopeLogs(iter))
+					readScopeLogs(iter))
 				return true
 			})
 		case "schemaUrl", "schema_url":
@@ -109,7 +109,7 @@ func (d *jsonUnmarshaler) readResourceLogs(iter *jsoniter.Iterator) *otlplogs.Re
 	return rs
 }
 
-func (d *jsonUnmarshaler) readScopeLogs(iter *jsoniter.Iterator) *otlplogs.ScopeLogs {
+func readScopeLogs(iter *jsoniter.Iterator) *otlplogs.ScopeLogs {
 	ils := &otlplogs.ScopeLogs{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
@@ -117,7 +117,7 @@ func (d *jsonUnmarshaler) readScopeLogs(iter *jsoniter.Iterator) *otlplogs.Scope
 			json.ReadScope(iter, &ils.Scope)
 		case "log_records", "logRecords":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ils.LogRecords = append(ils.LogRecords, d.readLog(iter))
+				ils.LogRecords = append(ils.LogRecords, readLog(iter))
 				return true
 			})
 		case "schemaUrl", "schema_url":
@@ -130,7 +130,7 @@ func (d *jsonUnmarshaler) readScopeLogs(iter *jsoniter.Iterator) *otlplogs.Scope
 	return ils
 }
 
-func (d *jsonUnmarshaler) readLog(iter *jsoniter.Iterator) *otlplogs.LogRecord {
+func readLog(iter *jsoniter.Iterator) *otlplogs.LogRecord {
 	lr := &otlplogs.LogRecord{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
@@ -139,7 +139,7 @@ func (d *jsonUnmarshaler) readLog(iter *jsoniter.Iterator) *otlplogs.LogRecord {
 		case "observed_time_unix_nano", "observedTimeUnixNano":
 			lr.ObservedTimeUnixNano = json.ReadUint64(iter)
 		case "severity_number", "severityNumber":
-			lr.SeverityNumber = d.readSeverityNumber(iter)
+			lr.SeverityNumber = readSeverityNumber(iter)
 		case "severity_text", "severityText":
 			lr.SeverityText = iter.ReadString()
 		case "body":
@@ -172,6 +172,6 @@ func (d *jsonUnmarshaler) readLog(iter *jsoniter.Iterator) *otlplogs.LogRecord {
 	return lr
 }
 
-func (d *jsonUnmarshaler) readSeverityNumber(iter *jsoniter.Iterator) otlplogs.SeverityNumber {
+func readSeverityNumber(iter *jsoniter.Iterator) otlplogs.SeverityNumber {
 	return otlplogs.SeverityNumber(json.ReadEnumValue(iter, otlplogs.SeverityNumber_value))
 }
