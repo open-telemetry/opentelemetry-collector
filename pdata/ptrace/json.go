@@ -54,7 +54,7 @@ func NewJSONUnmarshaler() Unmarshaler {
 type jsonUnmarshaler struct {
 }
 
-func (d *jsonUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
+func (jsonUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	td := readTraceData(iter)
