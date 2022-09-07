@@ -31,10 +31,7 @@ func ReadAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
 		case "key":
 			kv.Key = iter.ReadString()
 		case "value":
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				kv.Value = ReadAnyValue(iter, f)
-				return true
-			})
+			ReadValue(iter, &kv.Value)
 		default:
 			iter.Skip()
 		}
@@ -43,59 +40,49 @@ func ReadAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
 	return kv
 }
 
-// ReadAnyValue Unmarshal JSON data and return otlpcommon.AnyValue
-func ReadAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
-	switch f {
-	case "stringValue", "string_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_StringValue{
+// ReadValue Unmarshal JSON data and return otlpcommon.AnyValue
+func ReadValue(iter *jsoniter.Iterator, val *otlpcommon.AnyValue) {
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "stringValue", "string_value":
+			val.Value = &otlpcommon.AnyValue_StringValue{
 				StringValue: iter.ReadString(),
-			},
-		}
-	case "boolValue", "bool_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_BoolValue{
+			}
+
+		case "boolValue", "bool_value":
+			val.Value = &otlpcommon.AnyValue_BoolValue{
 				BoolValue: iter.ReadBool(),
-			},
-		}
-	case "intValue", "int_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_IntValue{
+			}
+		case "intValue", "int_value":
+			val.Value = &otlpcommon.AnyValue_IntValue{
 				IntValue: ReadInt64(iter),
-			},
-		}
-	case "doubleValue", "double_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_DoubleValue{
+			}
+		case "doubleValue", "double_value":
+			val.Value = &otlpcommon.AnyValue_DoubleValue{
 				DoubleValue: ReadFloat64(iter),
-			},
-		}
-	case "bytesValue", "bytes_value":
-		v, err := base64.StdEncoding.DecodeString(iter.ReadString())
-		if err != nil {
-			iter.ReportError("bytesValue", fmt.Sprintf("base64 decode:%v", err))
-			return otlpcommon.AnyValue{}
-		}
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_BytesValue{
+			}
+		case "bytesValue", "bytes_value":
+			v, err := base64.StdEncoding.DecodeString(iter.ReadString())
+			if err != nil {
+				iter.ReportError("bytesValue", fmt.Sprintf("base64 decode:%v", err))
+				break
+			}
+			val.Value = &otlpcommon.AnyValue_BytesValue{
 				BytesValue: v,
-			},
-		}
-	case "arrayValue", "array_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_ArrayValue{
+			}
+		case "arrayValue", "array_value":
+			val.Value = &otlpcommon.AnyValue_ArrayValue{
 				ArrayValue: readArray(iter),
-			},
-		}
-	case "kvlistValue", "kvlist_value":
-		return otlpcommon.AnyValue{
-			Value: &otlpcommon.AnyValue_KvlistValue{
+			}
+		case "kvlistValue", "kvlist_value":
+			val.Value = &otlpcommon.AnyValue_KvlistValue{
 				KvlistValue: readKvlistValue(iter),
-			},
+			}
+		default:
+			iter.Skip()
 		}
-	default:
-		return otlpcommon.AnyValue{}
-	}
+		return true
+	})
 }
 
 func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
@@ -104,10 +91,8 @@ func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
 		switch f {
 		case "values":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-					v.Values = append(v.Values, ReadAnyValue(iter, f))
-					return true
-				})
+				v.Values = append(v.Values, otlpcommon.AnyValue{})
+				ReadValue(iter, &v.Values[len(v.Values)-1])
 				return true
 			})
 		default:

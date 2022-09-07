@@ -33,6 +33,10 @@
 
 - Add `skip-get-modules` builder flag to support isolated environment executions (#6009)
 
+### 🧰 Bug fixes 🧰
+
+- otlpjson: Correctly skip unknown JSON value types. (#6038)
+
 ## v0.59.0 Beta
 
 ### 🛑 Breaking changes 🛑
