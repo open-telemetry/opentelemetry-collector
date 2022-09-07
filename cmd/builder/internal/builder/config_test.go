@@ -155,4 +155,3 @@ func TestSkipGoInitialization(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 	assert.Zero(t, cfg.Distribution.Go)
 }
-
