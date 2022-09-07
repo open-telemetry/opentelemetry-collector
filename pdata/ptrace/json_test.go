@@ -174,15 +174,6 @@ func TestReadResourceSpansUnknownField(t *testing.T) {
 	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
 }
 
-func TestReadResourceSpansUnknownResourceField(t *testing.T) {
-	jsonStr := `{"resource":{"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readResourceSpans(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
-}
-
 func TestReadScopeSpansUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))

@@ -402,16 +402,6 @@ func TestExemplarUnknownField(t *testing.T) {
 	assert.EqualValues(t, otlpmetrics.Exemplar{}, value)
 }
 
-func TestReadResourceMetricsResourceUnknown(t *testing.T) {
-	jsonStr := `{"resource":{"exists":"true"}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	unmarshaler := &jsonUnmarshaler{}
-	value := unmarshaler.readResourceMetrics(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpmetrics.ResourceMetrics{}, value)
-}
-
 func TestReadResourceMetricsUnknownField(t *testing.T) {
 	jsonStr := `{"exists":"true"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
