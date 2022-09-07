@@ -209,3 +209,10 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 		return data, nil
 	}
 }
+
+// Unmarshaler interface may be implemented by types to customize their behavior when being unmarshaled from a Conf.
+type Unmarshaler interface {
+	// Unmarshal a Conf into the struct in a custom way.
+	// The Conf for this specific component may be nil or empty if no config available.
+	Unmarshal(component *Conf) error
+}

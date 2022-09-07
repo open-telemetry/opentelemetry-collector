@@ -27,7 +27,7 @@ type Processor interface {
 }
 
 // UnmarshalProcessor helper function to unmarshal a Processor config.
-// It checks if the config implements Unmarshallable and uses that if available,
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
 func UnmarshalProcessor(conf *confmap.Conf, cfg Processor) error {
 	return unmarshal(conf, cfg)
