@@ -480,16 +480,14 @@ func TestMetric_DataType(t *testing.T) {
 
 func TestMetric_Gauge(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeGauge)
+	internal.FillTestGauge(internal.Gauge(ms.SetEmptyGauge()))
 	assert.Equal(t, MetricDataTypeGauge, ms.DataType())
-	internal.FillTestGauge(internal.Gauge(ms.Gauge()))
 	assert.Equal(t, Gauge(internal.GenerateTestGauge()), ms.Gauge())
 }
 
 func TestMetric_CopyTo_Gauge(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeGauge)
-	internal.FillTestGauge(internal.Gauge(ms.Gauge()))
+	internal.FillTestGauge(internal.Gauge(ms.SetEmptyGauge()))
 	dest := NewMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
@@ -497,16 +495,14 @@ func TestMetric_CopyTo_Gauge(t *testing.T) {
 
 func TestMetric_Sum(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeSum)
+	internal.FillTestSum(internal.Sum(ms.SetEmptySum()))
 	assert.Equal(t, MetricDataTypeSum, ms.DataType())
-	internal.FillTestSum(internal.Sum(ms.Sum()))
 	assert.Equal(t, Sum(internal.GenerateTestSum()), ms.Sum())
 }
 
 func TestMetric_CopyTo_Sum(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeSum)
-	internal.FillTestSum(internal.Sum(ms.Sum()))
+	internal.FillTestSum(internal.Sum(ms.SetEmptySum()))
 	dest := NewMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
@@ -514,16 +510,14 @@ func TestMetric_CopyTo_Sum(t *testing.T) {
 
 func TestMetric_Histogram(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeHistogram)
+	internal.FillTestHistogram(internal.Histogram(ms.SetEmptyHistogram()))
 	assert.Equal(t, MetricDataTypeHistogram, ms.DataType())
-	internal.FillTestHistogram(internal.Histogram(ms.Histogram()))
 	assert.Equal(t, Histogram(internal.GenerateTestHistogram()), ms.Histogram())
 }
 
 func TestMetric_CopyTo_Histogram(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeHistogram)
-	internal.FillTestHistogram(internal.Histogram(ms.Histogram()))
+	internal.FillTestHistogram(internal.Histogram(ms.SetEmptyHistogram()))
 	dest := NewMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
@@ -531,16 +525,14 @@ func TestMetric_CopyTo_Histogram(t *testing.T) {
 
 func TestMetric_ExponentialHistogram(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeExponentialHistogram)
+	internal.FillTestExponentialHistogram(internal.ExponentialHistogram(ms.SetEmptyExponentialHistogram()))
 	assert.Equal(t, MetricDataTypeExponentialHistogram, ms.DataType())
-	internal.FillTestExponentialHistogram(internal.ExponentialHistogram(ms.ExponentialHistogram()))
 	assert.Equal(t, ExponentialHistogram(internal.GenerateTestExponentialHistogram()), ms.ExponentialHistogram())
 }
 
 func TestMetric_CopyTo_ExponentialHistogram(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeExponentialHistogram)
-	internal.FillTestExponentialHistogram(internal.ExponentialHistogram(ms.ExponentialHistogram()))
+	internal.FillTestExponentialHistogram(internal.ExponentialHistogram(ms.SetEmptyExponentialHistogram()))
 	dest := NewMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
@@ -548,16 +540,14 @@ func TestMetric_CopyTo_ExponentialHistogram(t *testing.T) {
 
 func TestMetric_Summary(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeSummary)
+	internal.FillTestSummary(internal.Summary(ms.SetEmptySummary()))
 	assert.Equal(t, MetricDataTypeSummary, ms.DataType())
-	internal.FillTestSummary(internal.Summary(ms.Summary()))
 	assert.Equal(t, Summary(internal.GenerateTestSummary()), ms.Summary())
 }
 
 func TestMetric_CopyTo_Summary(t *testing.T) {
 	ms := NewMetric()
-	ms.SetDataType(MetricDataTypeSummary)
-	internal.FillTestSummary(internal.Summary(ms.Summary()))
+	internal.FillTestSummary(internal.Summary(ms.SetEmptySummary()))
 	dest := NewMetric()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)

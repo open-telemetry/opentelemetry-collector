@@ -20,6 +20,7 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate pmetric.Metric.SetDataType, in favor of empty setters for each type. (#5979)
 - Deprecate `p[metric|log|trace].MarshalerSizer` in favor of `p[metric|log|trace].MarshalSizer`. (#6033)
 - Deprecate `pcommon.Map.Update+` in favor of `pcommon.Map.Get` + `pcommon.Value.Set+` (#6013)
 - Deprecate `pcommon.Empty[Trace|Span]ID` in favor of `pcommon.New[Trace|Span]IDEmpty` (#6008)

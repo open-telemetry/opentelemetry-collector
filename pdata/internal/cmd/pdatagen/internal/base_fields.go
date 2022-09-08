@@ -93,28 +93,36 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 		return ${returnType}{}
 	}
 	return new${returnType}(v.${originFieldName})
+}
+
+// SetEmpty${fieldName} sets an empty ${lowerFieldName} to this ${structName}.
+//
+// After this, ${originOneOfFieldName}Type() function will return ${typeName}".
+//
+// Calling this function on zero-initialized ${structName} will cause a panic.
+func (ms ${structName}) SetEmpty${fieldName}() ${returnType} {
+	val := &${originFieldPackageName}.${originFieldName}{}
+	ms.getOrig().${originOneOfFieldName} = &${originStructType}{${originFieldName}: val}
+	return new${returnType}(val)
 }`
 
 const accessorsOneOfMessageTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
 	ms := New${structName}()
-	ms.Set${originOneOfFieldName}Type(${typeName})
+	internal.FillTest${returnType}(internal.${returnType}(ms.SetEmpty${fieldName}()))
 	assert.Equal(t, ${typeName}, ms.${originOneOfFieldName}Type())
-	internal.FillTest${returnType}(internal.${returnType}(ms.${fieldName}()))
 	assert.Equal(t, ${returnType}(internal.GenerateTest${returnType}()), ms.${fieldName}())
 }
 
 func Test${structName}_CopyTo_${fieldName}(t *testing.T) {
 	ms := New${structName}()
-	ms.Set${originOneOfFieldName}Type(${typeName})
-	internal.FillTest${returnType}(internal.${returnType}(ms.${fieldName}()))
+	internal.FillTest${returnType}(internal.${returnType}(ms.SetEmpty${fieldName}()))
 	dest := New${structName}()
 	ms.CopyTo(dest)
 	assert.Equal(t, ms, dest)
 }`
 
 const copyToValueOneOfMessageTemplate = `	case ${typeName}:
-		dest.Set${originOneOfFieldName}Type(${typeName})
-		ms.${fieldName}().CopyTo(dest.${fieldName}())`
+		ms.${fieldName}().CopyTo(dest.SetEmpty${fieldName}())`
 
 const accessorsOneOfPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${returnType} {
@@ -709,6 +717,8 @@ func (omv *oneOfMessageValue) generateAccessors(ms baseStruct, of *oneOfField, s
 			return omv.originFieldName
 		case "originOneOfFieldName":
 			return of.originFieldName
+		case "originFieldPackageName":
+			return omv.originFieldPackageName
 		case "originStructType":
 			return of.originTypePrefix + omv.originFieldName
 		case "returnType":

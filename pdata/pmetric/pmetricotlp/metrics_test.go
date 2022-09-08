@@ -159,7 +159,6 @@ func generateMetricsRequest() Request {
 	md := pmetric.NewMetrics()
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("test_metric")
-	m.SetDataType(pmetric.MetricDataTypeGauge)
-	m.Gauge().DataPoints().AppendEmpty()
+	m.SetEmptyGauge().DataPoints().AppendEmpty()
 	return NewRequestFromMetrics(md)
 }

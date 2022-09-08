@@ -131,8 +131,7 @@ func (mdt MetricDataType) String() string {
 	return ""
 }
 
-// SetDataType clears any existing data and initialize it with an empty data of the given type.
-// Calling this function on zero-initialized Metric will cause a panic.
+// Deprecated: [v0.60.0] use one of SetEmptyGauge, SetEmptySum, SetEmptyHistogram, SetEmptyExponentialHistogram, or SetEmptySummary.
 func (ms Metric) SetDataType(ty MetricDataType) {
 	switch ty {
 	case MetricDataTypeGauge:
