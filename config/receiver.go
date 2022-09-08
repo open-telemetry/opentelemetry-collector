@@ -27,7 +27,7 @@ type Receiver interface {
 }
 
 // UnmarshalReceiver helper function to unmarshal a Receiver config.
-// It checks if the config implements Unmarshallable and uses that if available,
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
 func UnmarshalReceiver(conf *confmap.Conf, cfg Receiver) error {
 	return unmarshal(conf, cfg)

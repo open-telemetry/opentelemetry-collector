@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Fix reading resource attributes for trace JSON, remove duplicate code. (#6023)
+- Add support to unmarshalls bytes into plogs.Logs with `jsoniter` in jsonUnmarshaler(#5935)
+
 
 ### 🛑 Breaking changes 🛑
 
@@ -13,10 +16,12 @@
   - `processorhelper.New[Traces|Metrics|Logs]ProcessorWithCreateSettings`
   - `component.NewExtensionFactoryWithStabilityLevel`
 - Remove deprecated `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` funcs (#6008)
+- Remove deprecated `pcommon.Map` methods: `Update`, `Upsert`, `InsertNull` (#6019)
 
 ### 🚩 Deprecations 🚩
 
 - Deprecate pmetric.Metric.SetDataType, in favor of empty setters for each type. (#5979)
+- Deprecate `p[metric|log|trace].MarshalerSizer` in favor of `p[metric|log|trace].MarshalSizer`. (#6033)
 - Deprecate `pcommon.Map.Update+` in favor of `pcommon.Map.Get` + `pcommon.Value.Set+` (#6013)
 - Deprecate `pcommon.Empty[Trace|Span]ID` in favor of `pcommon.New[Trace|Span]IDEmpty` (#6008)
 - Deprecate `pcommon.[Trace|Span]ID.Bytes` in favor direct conversion. (#6008)
@@ -24,10 +29,12 @@
 - Deprecate `MetricDataPointFlagsImmutable` type. (#6017)
 - Deprecate `*DataPoint.[Set]FlagsImmutable()` funcs in favor of `*DataPoint.[Set]Flags()`. (#6017)
 - Deprecate `LogRecord.FlagsStruct()` and `LogRecord.SetFlagsStruct()` in favor of `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
+- Deprecate `config.Unmarshallable` in favor of `confmap.Unmarshaler`. (#6031)
 
 ### 💡 Enhancements 💡
 
 - Add `skip-get-modules` builder flag to support isolated environment executions (#6009)
+  - Skip unnecessary Go binary path validation when the builder is used with `skip-compilation` and `skip-get-modules` flags (#6026)
 
 ## v0.59.0 Beta
 
@@ -63,7 +70,7 @@
   - `NewMetricDataPointFlagsStruct` -> `NewMetricDataPointFlags`
 - Deprecate builder distribution flags, use configuration. (#5946)
 - Enforce naming conventions for Invalid[Trace|Span]ID: (#5969)
-  - Deprecate funcs `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` in favor of vars `pcommon.EmptyTraceID` and `pcommon.EmptySpanID` 
+  - Deprecate funcs `pcommon.InvalidTraceID` and `pcommon.InvalidSpanID` in favor of vars `pcommon.EmptyTraceID` and `pcommon.EmptySpanID`
 - Deprecate `Update` and `Upsert` methods of `pcommon.Map` (#5975)
 - Deprecated the current MetricDataPointFlags API.  The new API provides functions to check and set Flags. (#5999)
   - `NumberDataPoint.Flags` -> `NumberDataPoint.FlagsImmutable`
@@ -206,7 +213,6 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
   - `component.WithTracesProcessorAndStabilityLevel` -> `component.WithTracesProcessor`
   - `component.WithMetricsProcessorAndStabilityLevel` -> `component.WithMetricsProcessor`
   - `component.WithLogsProcessorAndStabilityLevel` -> `component.WithLogsProcessor`
-  - 
 
 ### 💡 Enhancements 💡
 
@@ -362,8 +368,8 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 - Remove `configunmarshaler.Unmarshaler` interface, per deprecation comment (#5348)
 - Remove deprecated pdata funcs/structs from v0.50.0 (#5345)
-- Remove deprecated pdata getters and setters of primitive slice values: `Value.BytesVal`, `Value.SetBytesVal`, 
-  `Value.UpdateBytes`, `Value.InsertBytes`, `Value.UpsertBytes`, `<HistogramDataPoint|Buckets>.BucketCounts`, 
+- Remove deprecated pdata getters and setters of primitive slice values: `Value.BytesVal`, `Value.SetBytesVal`,
+  `Value.UpdateBytes`, `Value.InsertBytes`, `Value.UpsertBytes`, `<HistogramDataPoint|Buckets>.BucketCounts`,
   `<HistogramDataPoint|Buckets>.SetBucketCounts`, `HistogramDataPoint.ExplicitBounds`,
   `HistogramDataPoint.SetExplicitBounds` (#5347)
 - Remove deprecated featuregate funcs/structs from v0.50.0 (#5346)
@@ -374,7 +380,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 - Deprecate `config.Config` and `config.Service`, use `service.Config*` (#4608)
 - Deprecate `componenterror` package, move everything to `component` (#5383)
-- `pcommon.Value.NewValueBytes` is deprecated in favor of `Value.NewValueMBytes` in preparation of migration to 
+- `pcommon.Value.NewValueBytes` is deprecated in favor of `Value.NewValueMBytes` in preparation of migration to
   immutable slices (#5367)
 
 ### 💡 Enhancements 💡
@@ -480,7 +486,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 ### 💡 Enhancements 💡
 
-- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5109) 
+- OTLP HTTP receiver will use HTTP/2 over TLS if client supports it (#5109)
 - Add `ObservedTimestamp` field to `pdata.LogRecord` (#5171)
 
 ### 🧰 Bug fixes 🧰
@@ -548,7 +554,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
       - NewInstrumentationLibrarySpansSlice is now NewScopeSpansSlice
       - InstrumentationLibrarySpans is now ScopeSpans
       - NewInstrumentationLibrarySpans is now NewScopeSpans
-      
+
 ### 💡 Enhancements 💡
 
 - Add semconv definitions for v1.9.0 (#5090)
@@ -601,7 +607,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 ### 🚩 Deprecations 🚩
 
-- Deprecated funcs `config.DefaultConfig`, `confighttp.DefaultHTTPSettings`, `exporterhelper.DefaultTimeoutSettings`, 
+- Deprecated funcs `config.DefaultConfig`, `confighttp.DefaultHTTPSettings`, `exporterhelper.DefaultTimeoutSettings`,
   `exporthelper.DefaultQueueSettings`, `exporterhelper.DefaultRetrySettings`, `testcomponents.DefaultFactories`, and
   `scraperhelper.DefaultScraperControllerSettings` in favour for their `NewDefault` method to adhere to contribution guidelines (#4865)
 - Deprecated funcs `componenthelper.StartFunc`, `componenthelper.ShutdownFunc` in favour of `component.StartFunc` and `component.ShutdownFunc` (#4803)
@@ -690,7 +696,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 ### 🧰 Bug fixes 🧰
 
-- ExpandStringValues function support to map[string]interface{} (#4748) 
+- ExpandStringValues function support to map[string]interface{} (#4748)
 
 ## v0.43.0 Beta
 

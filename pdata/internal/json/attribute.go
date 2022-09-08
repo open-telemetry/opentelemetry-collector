@@ -32,7 +32,7 @@ func ReadAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
 			kv.Key = iter.ReadString()
 		case "value":
 			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				kv.Value = readAnyValue(iter, f)
+				kv.Value = ReadAnyValue(iter, f)
 				return true
 			})
 		default:
@@ -43,7 +43,8 @@ func ReadAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
 	return kv
 }
 
-func readAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
+// ReadAnyValue Unmarshal JSON data and return otlpcommon.AnyValue
+func ReadAnyValue(iter *jsoniter.Iterator, f string) otlpcommon.AnyValue {
 	switch f {
 	case "stringValue", "string_value":
 		return otlpcommon.AnyValue{
@@ -104,7 +105,7 @@ func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
 		case "values":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-					v.Values = append(v.Values, readAnyValue(iter, f))
+					v.Values = append(v.Values, ReadAnyValue(iter, f))
 					return true
 				})
 				return true

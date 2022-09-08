@@ -89,16 +89,18 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	// #nosec G204
-	if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
-		path, err := exec.LookPath("go")
-		if err != nil {
-			return ErrGoNotFound
+	if !c.SkipCompilation || !c.SkipGetModules {
+		// #nosec G204
+		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
+			path, err := exec.LookPath("go")
+			if err != nil {
+				return ErrGoNotFound
+			}
+			c.Distribution.Go = path
 		}
-		c.Distribution.Go = path
-	}
 
-	c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
+		c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
+	}
 
 	return nil
 }

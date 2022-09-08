@@ -26,13 +26,8 @@ type validatable interface {
 	Validate() error
 }
 
-// Unmarshallable defines an optional interface for custom configuration unmarshalling.
-// A configuration struct can implement this interface to override the default unmarshalling.
-type Unmarshallable interface {
-	// Unmarshal is a function that unmarshalls a confmap.Conf into the unmarshable struct in a custom way.
-	// The confmap.Conf for this specific component may be nil or empty if no config available.
-	Unmarshal(component *confmap.Conf) error
-}
+// Deprecated: [v0.60.0] use confmap.Unmarshaler.
+type Unmarshallable = confmap.Unmarshaler
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
 // collecting metrics, traces and logs, this can expand in the future.
@@ -51,7 +46,7 @@ const (
 )
 
 func unmarshal(componentSection *confmap.Conf, intoCfg interface{}) error {
-	if cu, ok := intoCfg.(Unmarshallable); ok {
+	if cu, ok := intoCfg.(confmap.Unmarshaler); ok {
 		return cu.Unmarshal(componentSection)
 	}
 
