@@ -216,7 +216,7 @@ func TestReadKvlistValueUnknownField(t *testing.T) {
 	assert.EqualValues(t, &otlpcommon.KeyValueList{}, value)
 }
 
-func TestReadArrayValueeInvalidArrayValue(t *testing.T) {
+func TestReadArrayValueInvalidArrayValue(t *testing.T) {
 	jsonStr := `{"arrayValue": {"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
