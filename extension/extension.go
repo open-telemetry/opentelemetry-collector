@@ -150,6 +150,10 @@ func (b *Builder) Create(ctx context.Context, set CreateSettings) (Extension, er
 	return f.CreateExtension(ctx, set, cfg)
 }
 
+func (b *Builder) Config(componentID component.ID) component.Config {
+	return b.cfgs[componentID]
+}
+
 func (b *Builder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
 }

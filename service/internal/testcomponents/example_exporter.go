@@ -55,29 +55,28 @@ func createLogsExporter(context.Context, exporter.CreateSettings, component.Conf
 	return &ExampleExporter{}, nil
 }
 
+var _ StatefulComponent = &ExampleExporter{}
+
 // ExampleExporter stores consumed traces and metrics for testing purposes.
 type ExampleExporter struct {
 	componentState
-	Traces  []ptrace.Traces
-	Metrics []pmetric.Metrics
-	Logs    []plog.Logs
 }
 
 // ConsumeTraces receives ptrace.Traces for processing by the consumer.Traces.
 func (exp *ExampleExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	exp.Traces = append(exp.Traces, td)
+	exp.traces = append(exp.traces, td)
 	return nil
 }
 
 // ConsumeMetrics receives pmetric.Metrics for processing by the Metrics.
 func (exp *ExampleExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	exp.Metrics = append(exp.Metrics, md)
+	exp.metrics = append(exp.metrics, md)
 	return nil
 }
 
 // ConsumeLogs receives plog.Logs for processing by the Logs.
 func (exp *ExampleExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	exp.Logs = append(exp.Logs, ld)
+	exp.logs = append(exp.logs, ld)
 	return nil
 }
 

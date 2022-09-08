@@ -49,6 +49,8 @@ func createLogsProcessor(_ context.Context, _ processor.CreateSettings, _ compon
 	return &ExampleProcessor{ConsumeLogsFunc: nextConsumer.ConsumeLogs}, nil
 }
 
+var _ StatefulComponent = &ExampleProcessor{}
+
 type ExampleProcessor struct {
 	componentState
 	consumer.ConsumeTracesFunc

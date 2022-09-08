@@ -18,11 +18,26 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+type StatefulComponent interface {
+	component.Component
+	Started() bool
+	Stopped() bool
+	RecallTraces() []ptrace.Traces
+	RecallMetrics() []pmetric.Metrics
+	RecallLogs() []plog.Logs
+}
 
 type componentState struct {
 	started bool
 	stopped bool
+	traces  []ptrace.Traces
+	metrics []pmetric.Metrics
+	logs    []plog.Logs
 }
 
 func (cs *componentState) Started() bool {
@@ -31,6 +46,18 @@ func (cs *componentState) Started() bool {
 
 func (cs *componentState) Stopped() bool {
 	return cs.stopped
+}
+
+func (cs *componentState) RecallTraces() []ptrace.Traces {
+	return cs.traces
+}
+
+func (cs *componentState) RecallMetrics() []pmetric.Metrics {
+	return cs.metrics
+}
+
+func (cs *componentState) RecallLogs() []plog.Logs {
+	return cs.logs
 }
 
 func (cs *componentState) Start(_ context.Context, _ component.Host) error {

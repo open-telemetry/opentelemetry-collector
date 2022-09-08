@@ -609,6 +609,10 @@ func (b *Builder) CreateLogsToLogs(ctx context.Context, set CreateSettings, next
 	return f.CreateLogsToLogs(ctx, set, cfg, next)
 }
 
+func (b *Builder) Config(componentID component.ID) component.Config {
+	return b.cfgs[componentID]
+}
+
 func (b *Builder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
 }
