@@ -41,6 +41,7 @@ const (
 	errUnmarshalProcessor
 	errUnmarshalExporter
 	errUnmarshalService
+	errUnmarshalConnector
 )
 
 type configError struct {
@@ -65,6 +66,9 @@ const (
 	// processorsKeyName is the configuration key name for processors section.
 	processorsKeyName = "processors"
 
+	// connectorsKeyName is the configuration key name for connectors section.
+	connectorsKeyName = "connectors"
+
 	// pipelinesKeyName is the configuration key name for pipelines section.
 	pipelinesKeyName = "pipelines"
 )
@@ -73,6 +77,7 @@ type configSettings struct {
 	Receivers  map[config.ComponentID]map[string]interface{} `mapstructure:"receivers"`
 	Processors map[config.ComponentID]map[string]interface{} `mapstructure:"processors"`
 	Exporters  map[config.ComponentID]map[string]interface{} `mapstructure:"exporters"`
+	Connectors map[config.ComponentID]map[string]interface{} `mapstructure:"connectors"`
 	Extensions map[config.ComponentID]map[string]interface{} `mapstructure:"extensions"`
 	Service    map[string]interface{}                        `mapstructure:"service"`
 }
@@ -125,6 +130,13 @@ func (ConfigUnmarshaler) Unmarshal(v *confmap.Conf, factories component.Factorie
 		return nil, configError{
 			error: err,
 			code:  errUnmarshalExporter,
+		}
+	}
+
+	if cfg.Connectors, err = unmarshalConnectors(rawCfg.Connectors, factories.Connectors); err != nil {
+		return nil, configError{
+			error: err,
+			code:  errUnmarshalConnector,
 		}
 	}
 
@@ -297,6 +309,35 @@ func unmarshalProcessors(procs map[config.ComponentID]map[string]interface{}, fa
 	}
 
 	return processors, nil
+}
+
+func unmarshalConnectors(conns map[config.ComponentID]map[string]interface{}, factories map[config.Type]component.ConnectorFactory) (map[config.ComponentID]config.Connector, error) {
+	// Prepare resulting map.
+	connectors := make(map[config.ComponentID]config.Connector)
+
+	// Iterate over Exporters and create a config for each.
+	for id, value := range conns {
+
+		// Find connector factory based on "type" that we read from config source.
+		factory := factories[id.Type()]
+		if factory == nil {
+			return nil, errorUnknownType(connectorsKeyName, id, reflect.ValueOf(factories).MapKeys())
+		}
+
+		// Create the default config for this connector.
+		connectorCfg := factory.CreateDefaultConfig()
+		connectorCfg.SetIDName(id.Name())
+
+		// Now that the default config struct is created we can Unmarshal into it,
+		// and it will apply user-defined config on top of the default.
+		if err := config.UnmarshalConnector(confmap.NewFromStringMap(value), connectorCfg); err != nil {
+			return nil, errorUnmarshalError(connectorsKeyName, id, err)
+		}
+
+		connectors[id] = connectorCfg
+	}
+
+	return connectors, nil
 }
 
 func errorUnknownType(component string, id config.ComponentID, factories []reflect.Value) error {

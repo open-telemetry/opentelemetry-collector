@@ -42,6 +42,9 @@ type Config struct {
 	// Extensions is a map of ComponentID to extensions.
 	Extensions map[ComponentID]Extension
 
+	// Connectors is a map of ComponentID to connectors.
+	Connectors map[ComponentID]Connector
+
 	Service
 }
 
@@ -86,6 +89,13 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	// Validate the connector configuration.
+	for connID, connCfg := range cfg.Connectors {
+		if err := connCfg.Validate(); err != nil {
+			return fmt.Errorf("connector %q has invalid configuration: %w", connID, err)
+		}
+	}
+
 	// Validate the extension configuration.
 	for extID, extCfg := range cfg.Extensions {
 		if err := extCfg.Validate(); err != nil {
@@ -121,7 +131,7 @@ func (cfg *Config) validateService() error {
 		// Validate pipeline receiver name references.
 		for _, ref := range pipeline.Receivers {
 			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.
-			if cfg.Receivers[ref] == nil {
+			if cfg.Receivers[ref] == nil && cfg.Connectors[ref] == nil {
 				return fmt.Errorf("pipeline %q references receiver %q which does not exist", pipelineID, ref)
 			}
 		}
@@ -142,7 +152,7 @@ func (cfg *Config) validateService() error {
 		// Validate pipeline exporter name references.
 		for _, ref := range pipeline.Exporters {
 			// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters.
-			if cfg.Exporters[ref] == nil {
+			if cfg.Exporters[ref] == nil && cfg.Connectors[ref] == nil {
 				return fmt.Errorf("pipeline %q references exporter %q which does not exist", pipelineID, ref)
 			}
 		}

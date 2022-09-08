@@ -34,6 +34,9 @@ type Factories struct {
 
 	// Extensions maps extension type names in the config to the respective factory.
 	Extensions map[config.Type]ExtensionFactory
+
+	// Connectors maps connector type names in the config to the respective factory.
+	Connectors map[config.Type]ConnectorFactory
 }
 
 // MakeReceiverFactoryMap takes a list of receiver factories and returns a map
@@ -72,6 +75,20 @@ func MakeExporterFactoryMap(factories ...ExporterFactory) (map[config.Type]Expor
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate exporter factory %q", f.Type())
+		}
+		fMap[f.Type()] = f
+	}
+	return fMap, nil
+}
+
+// // MakeConnectorFactoryMap takes a list of connector factories and returns a map
+// // with factory type as keys. It returns a non-nil error when more than one factories
+// // have the same type.
+func MakeConnectorFactoryMap(factories ...ConnectorFactory) (map[config.Type]ConnectorFactory, error) {
+	fMap := map[config.Type]ConnectorFactory{}
+	for _, f := range factories {
+		if _, ok := fMap[f.Type()]; ok {
+			return fMap, fmt.Errorf("duplicate connector factory %q", f.Type())
 		}
 		fMap[f.Type()] = f
 	}

@@ -16,6 +16,9 @@ import (
 	{{- range .Receivers}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
+	{{- range .Connectors}}
+	{{.Name}} "{{.Import}}"
+	{{- end}}
 )
 
 func components() (component.Factories, error) {
@@ -31,9 +34,21 @@ func components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+	factories.Connectors, err = component.MakeConnectorFactoryMap(
+		{{- range .Connectors}}
+		{{.Name}}.NewFactory(),
+		{{- end}}
+	)
+	if err != nil {
+		return component.Factories{}, err
+	}
+
 	factories.Receivers, err = component.MakeReceiverFactoryMap(
 		{{- range .Receivers}}
 		{{.Name}}.NewFactory(),
+		{{- end}}
+		{{- range .Connectors}}
+		{{.Name}}.NewFactory().NewReceiverFactory(),
 		{{- end}}
 	)
 	if err != nil {
@@ -43,6 +58,9 @@ func components() (component.Factories, error) {
 	factories.Exporters, err = component.MakeExporterFactoryMap(
 		{{- range .Exporters}}
 		{{.Name}}.NewFactory(),
+		{{- end}}
+		{{- range .Connectors}}
+		{{.Name}}.NewFactory().NewExporterFactory(),
 		{{- end}}
 	)
 	if err != nil {

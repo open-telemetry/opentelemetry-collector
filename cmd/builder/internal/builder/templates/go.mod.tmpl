@@ -17,6 +17,9 @@ require (
 	{{- range .Processors}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
+	{{- range .Connectors}}
+	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{- end}}
 	go.opentelemetry.io/collector v{{.Distribution.OtelColVersion}}
 )
 
@@ -32,6 +35,10 @@ require (
 {{- range .Processors}}
 {{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
+{{- range .Connectors}}
+{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{- end}}
+
 {{- range .Replaces}}
 replace {{.}}
 {{- end}}

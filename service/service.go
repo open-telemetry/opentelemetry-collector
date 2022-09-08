@@ -83,6 +83,11 @@ func newService(set *settings) (*service, error) {
 		return nil, fmt.Errorf("failed build extensions: %w", err)
 	}
 
+	for connID, conn := range srv.config.Connectors {
+		srv.config.Receivers[connID] = conn
+		srv.config.Exporters[connID] = conn
+	}
+
 	pipelinesSettings := pipelines.Settings{
 		Telemetry:          srv.telemetrySettings,
 		BuildInfo:          srv.buildInfo,
