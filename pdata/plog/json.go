@@ -143,10 +143,7 @@ func readLog(iter *jsoniter.Iterator) *otlplogs.LogRecord {
 		case "severity_text", "severityText":
 			lr.SeverityText = iter.ReadString()
 		case "body":
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				lr.Body = json.ReadAnyValue(iter, f)
-				return true
-			})
+			json.ReadValue(iter, &lr.Body)
 		case "attributes":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				lr.Attributes = append(lr.Attributes, json.ReadAttribute(iter))

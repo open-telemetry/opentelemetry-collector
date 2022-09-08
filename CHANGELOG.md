@@ -36,6 +36,10 @@
 - Add `skip-get-modules` builder flag to support isolated environment executions (#6009)
   - Skip unnecessary Go binary path validation when the builder is used with `skip-compilation` and `skip-get-modules` flags (#6026)
 
+### 🧰 Bug fixes 🧰
+
+- otlpjson: Correctly skip unknown JSON value types. (#6038)
+
 ## v0.59.0 Beta
 
 ### 🛑 Breaking changes 🛑

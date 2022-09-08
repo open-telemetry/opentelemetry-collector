@@ -166,20 +166,33 @@ func TestReadAttributeUnknownField(t *testing.T) {
 	assert.EqualValues(t, otlpcommon.KeyValue{}, value)
 }
 
-func TestReadAnyValueUnknownField(t *testing.T) {
+func TestReadAttributeValueUnknownField(t *testing.T) {
+	// Key after value, to check that we correctly continue to process.
+	jsonStr := `{"value": {"unknown": {"extra":""}}, "key":"test"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := ReadAttribute(iter)
+	//  unknown fields should not be an error
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, otlpcommon.KeyValue{Key: "test"}, value)
+}
+
+func TestReadValueUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := ReadAnyValue(iter, "")
+	value := &otlpcommon.AnyValue{}
+	ReadValue(iter, value)
 	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, otlpcommon.AnyValue{}, value)
+	assert.EqualValues(t, &otlpcommon.AnyValue{}, value)
 }
 
-func TestReadAnyValueInvliadBytesValue(t *testing.T) {
-	jsonStr := `"--"`
+func TestReadValueInvliadBytesValue(t *testing.T) {
+	jsonStr := `{"bytesValue": "--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	ReadAnyValue(iter, "bytesValue")
+
+	ReadValue(iter, &otlpcommon.AnyValue{})
 	if assert.Error(t, iter.Error) {
 		assert.Contains(t, iter.Error.Error(), "base64")
 	}
@@ -203,14 +216,15 @@ func TestReadKvlistValueUnknownField(t *testing.T) {
 	assert.EqualValues(t, &otlpcommon.KeyValueList{}, value)
 }
 
-func TestReadArrayValueeInvalidArrayValue(t *testing.T) {
-	jsonStr := `{"extra":""}`
+func TestReadArrayValueInvalidArrayValue(t *testing.T) {
+	jsonStr := `{"arrayValue": {"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 
-	value := ReadAnyValue(iter, "arrayValue")
+	value := &otlpcommon.AnyValue{}
+	ReadValue(iter, value)
 	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, otlpcommon.AnyValue{
+	assert.EqualValues(t, &otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_ArrayValue{
 			ArrayValue: &otlpcommon.ArrayValue{},
 		},
@@ -218,12 +232,14 @@ func TestReadArrayValueeInvalidArrayValue(t *testing.T) {
 }
 
 func TestReadKvlistValueInvalidArrayValue(t *testing.T) {
-	jsonStr := `{"extra":""}`
+	jsonStr := `{"kvlistValue": {"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := ReadAnyValue(iter, "kvlistValue")
+
+	value := &otlpcommon.AnyValue{}
+	ReadValue(iter, value)
 	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, otlpcommon.AnyValue{
+	assert.EqualValues(t, &otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_KvlistValue{
 			KvlistValue: &otlpcommon.KeyValueList{},
 		},
