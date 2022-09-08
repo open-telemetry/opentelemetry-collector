@@ -27,6 +27,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/connector/countconnector"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/connector/nopconnector"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/consumer"
     schedule:
       interval: "weekly"

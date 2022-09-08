@@ -26,11 +26,11 @@ import (
 func TestExampleReceiver(t *testing.T) {
 	rcv := &ExampleReceiver{}
 	host := componenttest.NewNopHost()
-	assert.False(t, rcv.Started)
+	assert.False(t, rcv.Started())
 	assert.NoError(t, rcv.Start(context.Background(), host))
-	assert.True(t, rcv.Started)
+	assert.True(t, rcv.Started())
 
-	assert.False(t, rcv.Stopped)
+	assert.False(t, rcv.Stopped())
 	assert.NoError(t, rcv.Shutdown(context.Background()))
-	assert.True(t, rcv.Stopped)
+	assert.True(t, rcv.Stopped())
 }

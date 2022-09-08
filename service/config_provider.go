@@ -117,6 +117,7 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 		Receivers:  cfg.Receivers.GetReceivers(),
 		Processors: cfg.Processors.GetProcessors(),
 		Exporters:  cfg.Exporters.GetExporters(),
+		Connectors: cfg.Connectors.GetConnectors(),
 		Extensions: cfg.Extensions.GetExtensions(),
 		Service:    cfg.Service,
 	}, nil

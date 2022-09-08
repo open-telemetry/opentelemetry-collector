@@ -4,6 +4,9 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
+	{{- range .Connectors}}
+	{{.Name}} "{{.Import}}"
+	{{- end}}
 	{{- range .Exporters}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
@@ -24,6 +27,15 @@ func components() (component.Factories, error) {
 
 	factories.Extensions, err = component.MakeExtensionFactoryMap(
 		{{- range .Extensions}}
+		{{.Name}}.NewFactory(),
+		{{- end}}
+	)
+	if err != nil {
+		return component.Factories{}, err
+	}
+
+	factories.Connectors, err = component.MakeConnectorFactoryMap(
+		{{- range .Connectors}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
 	)

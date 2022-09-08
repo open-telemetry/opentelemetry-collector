@@ -63,26 +63,24 @@ func createLogsExporter(context.Context, exporter.CreateSettings, component.Conf
 	return &ExampleExporter{}, nil
 }
 
+var _ StatefulComponent = &ExampleExporter{}
+
 // ExampleExporter stores consumed traces and metrics for testing purposes.
 type ExampleExporter struct {
-	Traces  []ptrace.Traces
-	Metrics []pmetric.Metrics
-	Logs    []plog.Logs
-	Started bool
-	Stopped bool
+	componentState
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
 func (exp *ExampleExporter) Start(_ context.Context, _ component.Host) error {
-	exp.Started = true
+	exp.started = true
 	return nil
 }
 
 // ConsumeTraces receives ptrace.Traces for processing by the consumer.Traces.
 func (exp *ExampleExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	exp.Traces = append(exp.Traces, td)
+	exp.traces = append(exp.traces, td)
 	return nil
 }
 
@@ -92,17 +90,17 @@ func (exp *ExampleExporter) Capabilities() consumer.Capabilities {
 
 // ConsumeMetrics receives pmetric.Metrics for processing by the Metrics.
 func (exp *ExampleExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	exp.Metrics = append(exp.Metrics, md)
+	exp.metrics = append(exp.metrics, md)
 	return nil
 }
 
 func (exp *ExampleExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	exp.Logs = append(exp.Logs, ld)
+	exp.logs = append(exp.logs, ld)
 	return nil
 }
 
 // Shutdown is invoked during shutdown.
 func (exp *ExampleExporter) Shutdown(context.Context) error {
-	exp.Stopped = true
+	exp.stopped = true
 	return nil
 }

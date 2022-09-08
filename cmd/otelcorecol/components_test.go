@@ -26,4 +26,7 @@ func TestValidateConfigs(t *testing.T) {
 	for _, factory := range factories.Extensions {
 		assert.NoError(t, componenttest.CheckConfigStruct(factory.CreateDefaultConfig()))
 	}
+	for _, factory := range factories.Connectors {
+		assert.NoError(t, componenttest.CheckConfigStruct(factory.CreateDefaultConfig()))
+	}
 }

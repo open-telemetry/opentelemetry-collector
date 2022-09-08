@@ -26,7 +26,7 @@ type serviceHost struct {
 	factories         component.Factories
 	buildInfo         component.BuildInfo
 
-	pipelines  *builtPipelines
+	pipelines  Pipelines
 	extensions *extensions.Extensions
 }
 

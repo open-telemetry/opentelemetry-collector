@@ -17,12 +17,19 @@ extensions:
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.66.0
   - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.66.0
+connectors:
+  - import: go.opentelemetry.io/collector/connector/countconnector
+    gomod: go.opentelemetry.io/collector/connector/countconnector v0.66.0
+  - import: go.opentelemetry.io/collector/connector/nopconnector
+    gomod: go.opentelemetry.io/collector/connector/nopconnector v0.66.0
 
 replaces:
   - go.opentelemetry.io/collector => ../../
   - go.opentelemetry.io/collector/component => ../../component
   - go.opentelemetry.io/collector/confmap => ../../confmap
   - go.opentelemetry.io/collector/consumer => ../../consumer
+  - go.opentelemetry.io/collector/connector/countconnector => ../../connector/countconnector
+  - go.opentelemetry.io/collector/connector/nopconnector => ../../connector/nopconnector
   - go.opentelemetry.io/collector/exporter/loggingexporter => ../../exporter/loggingexporter
   - go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
   - go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter

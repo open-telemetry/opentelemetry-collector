@@ -41,5 +41,9 @@ func NopFactories() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+	if factories.Connectors, err = component.MakeConnectorFactoryMap(NewNopConnectorFactory()); err != nil {
+		return component.Factories{}, err
+	}
+
 	return factories, err
 }

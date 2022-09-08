@@ -42,6 +42,7 @@ type Config struct {
 	Extensions   []Module     `mapstructure:"extensions"`
 	Receivers    []Module     `mapstructure:"receivers"`
 	Processors   []Module     `mapstructure:"processors"`
+	Connectors   []Module     `mapstructure:"connectors"`
 	Replaces     []string     `mapstructure:"replaces"`
 	Excludes     []string     `mapstructure:"excludes"`
 }
@@ -90,7 +91,13 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	return multierr.Combine(validateModules(c.Extensions), validateModules(c.Receivers), validateModules(c.Exporters), validateModules(c.Processors))
+	return multierr.Combine(
+		validateModules(c.Extensions),
+		validateModules(c.Receivers),
+		validateModules(c.Exporters),
+		validateModules(c.Processors),
+		validateModules(c.Connectors),
+	)
 }
 
 // SetGoPath sets go path
@@ -129,6 +136,11 @@ func (c *Config) ParseModules() error {
 	}
 
 	c.Processors, err = parseModules(c.Processors)
+	if err != nil {
+		return err
+	}
+
+	c.Connectors, err = parseModules(c.Connectors)
 	if err != nil {
 		return err
 	}

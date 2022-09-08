@@ -95,3 +95,41 @@ func TestMakeProcessorFactoryMap(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeConnectorFactoryMap(t *testing.T) {
+	type testCase struct {
+		name string
+		in   []ConnectorFactory
+		out  map[Type]ConnectorFactory
+	}
+
+	p1 := NewConnectorFactory("p1", nil)
+	p2 := NewConnectorFactory("p2", nil)
+	testCases := []testCase{
+		{
+			name: "different names",
+			in:   []ConnectorFactory{p1, p2},
+			out: map[Type]ConnectorFactory{
+				p1.Type(): p1,
+				p2.Type(): p2,
+			},
+		},
+		{
+			name: "same name",
+			in:   []ConnectorFactory{p1, p2, NewConnectorFactory("p1", nil)},
+		},
+	}
+
+	for i := range testCases {
+		tt := testCases[i]
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := MakeConnectorFactoryMap(tt.in...)
+			if tt.out == nil {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.out, out)
+		})
+	}
+}

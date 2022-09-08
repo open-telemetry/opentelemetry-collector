@@ -29,6 +29,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 )
 
@@ -177,7 +180,7 @@ func TestBuildPipelines(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Build the pipeline
-			pipelines, err := buildPipelines(context.Background(), pipelinesSettings{
+			pipelinesInterface, err := buildPipelines(context.Background(), pipelinesSettings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				ReceiverFactories: map[component.Type]component.ReceiverFactory{
@@ -205,20 +208,23 @@ func TestBuildPipelines(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
+			pipelines, ok := pipelinesInterface.(*builtPipelines)
+			require.True(t, ok)
+
 			assert.NoError(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 
 			for dt, pipeline := range test.pipelineConfigs {
 				// Verify exporters created, started and empty.
 				for _, expID := range pipeline.Exporters {
 					exp := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
-					assert.True(t, exp.Started)
+					assert.True(t, exp.Started())
 					switch dt.Type() {
 					case component.DataTypeTraces:
-						assert.Len(t, exp.Traces, 0)
+						assert.Len(t, exp.RecallTraces(), 0)
 					case component.DataTypeMetrics:
-						assert.Len(t, exp.Metrics, 0)
+						assert.Len(t, exp.RecallMetrics(), 0)
 					case component.DataTypeLogs:
-						assert.Len(t, exp.Logs, 0)
+						assert.Len(t, exp.RecallLogs(), 0)
 					}
 				}
 
@@ -226,13 +232,13 @@ func TestBuildPipelines(t *testing.T) {
 				for i, procID := range pipeline.Processors {
 					processor := pipelines.pipelines[dt].processors[i]
 					assert.Equal(t, procID, processor.id)
-					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Started)
+					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Started())
 				}
 
 				// Verify receivers created, started and send data to confirm pipelines correctly connected.
 				for _, recvID := range pipeline.Receivers {
 					receiver := pipelines.allReceivers[dt.Type()][recvID].(*testcomponents.ExampleReceiver)
-					assert.True(t, receiver.Started)
+					assert.True(t, receiver.Started())
 				}
 			}
 
@@ -257,13 +263,13 @@ func TestBuildPipelines(t *testing.T) {
 				// Verify receivers shutdown.
 				for _, recvID := range pipeline.Receivers {
 					receiver := pipelines.allReceivers[dt.Type()][recvID].(*testcomponents.ExampleReceiver)
-					assert.True(t, receiver.Stopped)
+					assert.True(t, receiver.Stopped())
 				}
 
 				// Verify processors shutdown.
 				for i := range pipeline.Processors {
 					processor := pipelines.pipelines[dt].processors[i]
-					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Stopped)
+					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Stopped())
 				}
 
 				// Now verify that exporters received data, and are shutdown.
@@ -271,16 +277,16 @@ func TestBuildPipelines(t *testing.T) {
 					exp := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
 					switch dt.Type() {
 					case component.DataTypeTraces:
-						require.Len(t, exp.Traces, test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateTraces(1), exp.Traces[0])
+						require.Len(t, exp.RecallTraces(), test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateTraces(1), exp.RecallTraces()[0])
 					case component.DataTypeMetrics:
-						require.Len(t, exp.Metrics, test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateMetrics(1), exp.Metrics[0])
+						require.Len(t, exp.RecallMetrics(), test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateMetrics(1), exp.RecallMetrics()[0])
 					case component.DataTypeLogs:
-						require.Len(t, exp.Logs, test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateLogs(1), exp.Logs[0])
+						require.Len(t, exp.RecallLogs(), test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateLogs(1), exp.RecallLogs()[0])
 					}
-					assert.True(t, exp.Stopped)
+					assert.True(t, exp.Stopped())
 				}
 			}
 		})
@@ -360,7 +366,7 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("bf"): badProcessorFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("logs"): {
@@ -381,7 +387,7 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("bf"): badProcessorFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("metrics"): {
@@ -402,7 +408,7 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("bf"): badProcessorFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("traces"): {
@@ -420,7 +426,7 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("logs"): {
@@ -437,7 +443,7 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("metrics"): {
@@ -454,7 +460,7 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("traces"): {
@@ -471,12 +477,12 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("traces"): {
 						Receivers: []component.ID{component.NewID("nop")},
-						Exporters: []component.ID{component.NewID("nop"), component.NewID("nop/1")},
+						Exporters: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
 					},
 				},
 			},
@@ -488,7 +494,7 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("unknown"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("unknown"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("traces"): {
@@ -508,12 +514,12 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("nop"): nopProcessorFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("metrics"): {
 						Receivers:  []component.ID{component.NewID("nop")},
-						Processors: []component.ID{component.NewID("nop"), component.NewID("nop/1")},
+						Processors: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
 						Exporters:  []component.ID{component.NewID("nop")},
 					},
 				},
@@ -529,7 +535,7 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("unknown"): nopProcessorFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("metrics"): {
@@ -547,11 +553,11 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("logs"): {
-						Receivers: []component.ID{component.NewID("nop"), component.NewID("nop/1")},
+						Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
 						Exporters: []component.ID{component.NewID("nop")},
 					},
 				},
@@ -564,7 +570,7 @@ func TestBuildErrors(t *testing.T) {
 					component.NewID("unknown"): nopReceiverFactory.CreateDefaultConfig(),
 				},
 				ExporterConfigs: map[component.ID]component.Config{
-					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
+					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
 				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
 					component.NewID("logs"): {
@@ -712,6 +718,16 @@ func newBadExporterFactory() exporter.Factory {
 	})
 }
 
+func newBadConnectorFactory() component.ConnectorFactory {
+	return component.NewConnectorFactory("bf", func() component.Config {
+		return &struct {
+			config.ConnectorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+		}{
+			ConnectorSettings: config.NewConnectorSettings(component.NewID("bf")),
+		}
+	})
+}
+
 func newErrReceiverFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory("err", func() component.Config {
 		return &struct {
@@ -772,6 +788,46 @@ func newErrExporterFactory() exporter.Factory {
 	)
 }
 
+func newErrConnectorFactory() component.ConnectorFactory {
+	return component.NewConnectorFactory("err", func() component.Config {
+		return &struct {
+			config.ConnectorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+		}{
+			ConnectorSettings: config.NewConnectorSettings(component.NewID("bf")),
+		}
+	},
+		component.WithTracesToTracesConnector(func(context.Context, component.ConnectorCreateSettings, component.Config, consumer.Traces) (component.TracesToTracesConnector, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		component.WithTracesToMetricsConnector(func(context.Context, component.ConnectorCreateSettings, component.Config, consumer.Metrics) (component.TracesToMetricsConnector, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		component.WithTracesToLogsConnector(func(context.Context, component.ConnectorCreateSettings, component.Config, consumer.Logs) (component.TracesToLogsConnector, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+
+		component.WithMetricsToTracesConnector(func(context.Context, component.ConnectorCreateSettings, component.Config, consumer.Traces) (component.MetricsToTracesConnector, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		component.WithMetricsToMetricsConnector(func(context.Context, component.ConnectorCreateSettings, component.Config, consumer.Metrics) (component.MetricsToMetricsConnector, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		component.WithMetricsToLogsConnector(func(context.Context, component.ConnectorCreateSettings, component.Config, consumer.Logs) (component.MetricsToLogsConnector, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+
+		component.WithLogsToTracesConnector(func(context.Context, component.ConnectorCreateSettings, component.Config, consumer.Traces) (component.LogsToTracesConnector, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		component.WithLogsToMetricsConnector(func(context.Context, component.ConnectorCreateSettings, component.Config, consumer.Metrics) (component.LogsToMetricsConnector, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+		component.WithLogsToLogsConnector(func(context.Context, component.ConnectorCreateSettings, component.Config, consumer.Logs) (component.LogsToLogsConnector, error) {
+			return &errComponent{}, nil
+		}, component.StabilityLevelUnmaintained),
+	)
+}
+
 type errComponent struct {
 	consumertest.Consumer
 }
@@ -786,4 +842,34 @@ func (e errComponent) Start(context.Context, component.Host) error {
 
 func (e errComponent) Shutdown(context.Context) error {
 	return errors.New("my error")
+}
+
+func (e errComponent) ConsumeTracesToTraces(ctx context.Context, _ ptrace.Traces) error {
+	return e.ConsumeTraces(ctx, ptrace.NewTraces())
+}
+func (e errComponent) ConsumeTracesToMetrics(ctx context.Context, _ ptrace.Traces) error {
+	return e.ConsumeMetrics(ctx, pmetric.NewMetrics())
+}
+func (e errComponent) ConsumeTracesToLogs(ctx context.Context, _ ptrace.Traces) error {
+	return e.ConsumeLogs(ctx, plog.NewLogs())
+}
+
+func (e errComponent) ConsumeMetricsToTraces(ctx context.Context, _ pmetric.Metrics) error {
+	return e.ConsumeTraces(ctx, ptrace.NewTraces())
+}
+func (e errComponent) ConsumeMetricsToMetrics(ctx context.Context, _ pmetric.Metrics) error {
+	return e.ConsumeMetrics(ctx, pmetric.NewMetrics())
+}
+func (e errComponent) ConsumeMetricsToLogs(ctx context.Context, _ pmetric.Metrics) error {
+	return e.ConsumeLogs(ctx, plog.NewLogs())
+}
+
+func (e errComponent) ConsumeLogsToTraces(ctx context.Context, _ plog.Logs) error {
+	return e.ConsumeTraces(ctx, ptrace.NewTraces())
+}
+func (e errComponent) ConsumeLogsToMetrics(ctx context.Context, _ plog.Logs) error {
+	return e.ConsumeMetrics(ctx, pmetric.NewMetrics())
+}
+func (e errComponent) ConsumeLogsToLogs(ctx context.Context, _ plog.Logs) error {
+	return e.ConsumeLogs(ctx, plog.NewLogs())
 }

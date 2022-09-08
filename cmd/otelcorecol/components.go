@@ -4,6 +4,8 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
+	countconnector "go.opentelemetry.io/collector/connector/countconnector"
+	nopconnector "go.opentelemetry.io/collector/connector/nopconnector"
 	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -21,6 +23,14 @@ func components() (component.Factories, error) {
 	factories.Extensions, err = component.MakeExtensionFactoryMap(
 		ballastextension.NewFactory(),
 		zpagesextension.NewFactory(),
+	)
+	if err != nil {
+		return component.Factories{}, err
+	}
+
+	factories.Connectors, err = component.MakeConnectorFactoryMap(
+		countconnector.NewFactory(),
+		nopconnector.NewFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err

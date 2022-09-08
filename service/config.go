@@ -44,6 +44,9 @@ type Config struct {
 	// Extensions is a map of ComponentID to extensions.
 	Extensions map[component.ID]component.Config
 
+	// Connectors is a map of ComponentID to connectors.
+	Connectors map[component.ID]component.Config
+
 	Service ConfigService
 }
 
@@ -86,6 +89,20 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	// Validate the connector configuration.
+	for connID, connCfg := range cfg.Connectors {
+		if err := component.ValidateConfig(connCfg); err != nil {
+			return fmt.Errorf("connector %q has invalid configuration: %w", connID, err)
+		}
+
+		if _, ok := cfg.Exporters[connID]; ok {
+			return fmt.Errorf("ambiguous id: connector %q cannot have same id as exporter", connID)
+		}
+		if _, ok := cfg.Receivers[connID]; ok {
+			return fmt.Errorf("ambiguous id: connector %q cannot have same id as receiver", connID)
+		}
+	}
+
 	// Validate the extension configuration.
 	for extID, extCfg := range cfg.Extensions {
 		if err := component.ValidateConfig(extCfg); err != nil {
@@ -105,14 +122,29 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	// Check that all pipelines reference only configured components.
+	// Must have at least one pipeline.
+	if len(cfg.Service.Pipelines) == 0 {
+		return errMissingServicePipelines
+	}
+
+	// Keep track of whether connectors are used as receivers and exporters
+	connectorsAsReceivers := make(map[component.ID]struct{}, len(cfg.Connectors))
+	connectorsAsExporters := make(map[component.ID]struct{}, len(cfg.Connectors))
+
+	// Check that all pipelines have at least one receiver and one exporter, and they reference
+	// only configured components.
 	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline receiver name references.
 		for _, ref := range pipeline.Receivers {
 			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.
-			if cfg.Receivers[ref] == nil {
-				return fmt.Errorf("service::pipeline::%s: references receiver %q which is not configured", pipelineID, ref)
+			if _, ok := cfg.Receivers[ref]; ok {
+				continue
 			}
+			if _, ok := cfg.Connectors[ref]; ok {
+				connectorsAsReceivers[ref] = struct{}{}
+				continue
+			}
+			return fmt.Errorf("service::pipeline::%s: references receiver %q which is not configured", pipelineID, ref)
 		}
 
 		// Validate pipeline processor name references.
@@ -126,9 +158,26 @@ func (cfg *Config) Validate() error {
 		// Validate pipeline exporter name references.
 		for _, ref := range pipeline.Exporters {
 			// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters.
-			if cfg.Exporters[ref] == nil {
-				return fmt.Errorf("service::pipeline::%s: references exporter %q which is not configured", pipelineID, ref)
+			if _, ok := cfg.Exporters[ref]; ok {
+				continue
 			}
+			if _, ok := cfg.Connectors[ref]; ok {
+				connectorsAsExporters[ref] = struct{}{}
+				continue
+			}
+			return fmt.Errorf("service::pipeline::%s: references exporter %q which is not configured", pipelineID, ref)
+		}
+	}
+
+	// Validate that connectors are used as both receiver and exporter
+	for connID := range cfg.Connectors {
+		_, recOK := connectorsAsReceivers[connID]
+		_, expOK := connectorsAsExporters[connID]
+		if recOK && !expOK {
+			return fmt.Errorf("connector %q must be used as both receiver and exporter but is only used as receiver", connID)
+		}
+		if !recOK && expOK {
+			return fmt.Errorf("connector %q must be used as both receiver and exporter but is only used as exporter", connID)
 		}
 	}
 

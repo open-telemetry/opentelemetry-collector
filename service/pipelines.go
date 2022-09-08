@@ -56,7 +56,6 @@ type builtPipeline struct {
 	exporters  []builtComponent
 }
 
-// builtPipelines is set of all pipelines created from exporter configs.
 type builtPipelines struct {
 	telemetry component.TelemetrySettings
 
@@ -64,6 +63,13 @@ type builtPipelines struct {
 	allExporters map[component.DataType]map[component.ID]component.Component
 
 	pipelines map[component.ID]*builtPipeline
+}
+
+type Pipelines interface {
+	StartAll(ctx context.Context, host component.Host) error
+	ShutdownAll(ctx context.Context) error
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+	HandleZPages(w http.ResponseWriter, r *http.Request)
 }
 
 // StartAll starts all pipelines.
@@ -142,7 +148,6 @@ func (bps *builtPipelines) ShutdownAll(ctx context.Context) error {
 
 func (bps *builtPipelines) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	exportersMap := make(map[component.DataType]map[component.ID]component.Component)
-
 	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeTraces]))
 	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeMetrics]))
 	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeLogs]))
@@ -201,12 +206,18 @@ type pipelinesSettings struct {
 	// ExporterConfigs is a map of component.ID to component.Config.
 	ExporterConfigs map[component.ID]component.Config
 
+	// ConnectorFactories maps exporter type names in the config to the respective component.ConnectorFactory.
+	ConnectorFactories map[component.Type]component.ConnectorFactory
+
+	// ConnectorConfigs is a map of component.ID to component.Config.
+	ConnectorConfigs map[component.ID]component.Config
+
 	// PipelineConfigs is a map of component.ID to ConfigServicePipeline.
 	PipelineConfigs map[component.ID]*ConfigServicePipeline
 }
 
 // buildPipelines builds all pipelines from config.
-func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines, error) {
+func buildPipelines(ctx context.Context, set pipelinesSettings) (Pipelines, error) {
 	exps := &builtPipelines{
 		telemetry:    set.Telemetry,
 		allReceivers: make(map[component.DataType]map[component.ID]component.Component),
@@ -604,4 +615,45 @@ func (bps *builtPipelines) getPipelinesSummaryTableData() zpages.SummaryPipeline
 		return sumData.Rows[i].FullName < sumData.Rows[j].FullName
 	})
 	return sumData
+}
+
+func connectorLogger(logger *zap.Logger, connID component.ID, expPipelineType, rcvrPipelineType component.DataType) *zap.Logger {
+	return logger.With(
+		zap.String(components.ZapKindKey, components.ZapKindExporter),
+		zap.String(components.ZapNameKey, connID.String()),
+		zap.String(components.ZapRoleExporterInPipeline, string(expPipelineType)),
+		zap.String(components.ZapRoleReceiverInPipeline, string(rcvrPipelineType)))
+}
+
+func getConnectorStabilityLevel(factory component.ConnectorFactory, edt, rdt component.DataType) component.StabilityLevel {
+	switch edt {
+	case component.DataTypeTraces:
+		switch rdt {
+		case component.DataTypeTraces:
+			return factory.TracesToTracesConnectorStability()
+		case component.DataTypeMetrics:
+			return factory.TracesToMetricsConnectorStability()
+		case component.DataTypeLogs:
+			return factory.TracesToLogsConnectorStability()
+		}
+	case component.DataTypeMetrics:
+		switch rdt {
+		case component.DataTypeTraces:
+			return factory.MetricsToTracesConnectorStability()
+		case component.DataTypeMetrics:
+			return factory.MetricsToMetricsConnectorStability()
+		case component.DataTypeLogs:
+			return factory.MetricsToLogsConnectorStability()
+		}
+	case component.DataTypeLogs:
+		switch rdt {
+		case component.DataTypeTraces:
+			return factory.LogsToTracesConnectorStability()
+		case component.DataTypeMetrics:
+			return factory.LogsToMetricsConnectorStability()
+		case component.DataTypeLogs:
+			return factory.LogsToLogsConnectorStability()
+		}
+	}
+	return component.StabilityLevelUndefined
 }

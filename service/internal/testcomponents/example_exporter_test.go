@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -28,19 +29,23 @@ import (
 func TestExampleExporter(t *testing.T) {
 	exp := &ExampleExporter{}
 	host := componenttest.NewNopHost()
-	assert.False(t, exp.Started)
+	assert.False(t, exp.Started())
 	assert.NoError(t, exp.Start(context.Background(), host))
-	assert.True(t, exp.Started)
+	assert.True(t, exp.Started())
 
-	assert.Equal(t, 0, len(exp.Traces))
+	assert.Equal(t, 0, len(exp.traces))
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), ptrace.Traces{}))
-	assert.Equal(t, 1, len(exp.Traces))
+	assert.Equal(t, 1, len(exp.traces))
 
-	assert.Equal(t, 0, len(exp.Metrics))
+	assert.Equal(t, 0, len(exp.metrics))
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), pmetric.Metrics{}))
-	assert.Equal(t, 1, len(exp.Metrics))
+	assert.Equal(t, 1, len(exp.metrics))
 
-	assert.False(t, exp.Stopped)
+	assert.Equal(t, 0, len(exp.logs))
+	assert.NoError(t, exp.ConsumeLogs(context.Background(), plog.Logs{}))
+	assert.Equal(t, 1, len(exp.logs))
+
+	assert.False(t, exp.Stopped())
 	assert.NoError(t, exp.Shutdown(context.Background()))
-	assert.True(t, exp.Stopped)
+	assert.True(t, exp.Stopped())
 }

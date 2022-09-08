@@ -1,0 +1,22 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: 'enhancement'
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: connectors
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add "connectors", a new type of pipeline component
+
+# One or more tracking issues or pull requests related to the change
+issues: [2336]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  - Connectors connect pipelines. A connector acts as exporter and a receiver working together.
+  For example, a `nopconnector`` may be used to replicate signals by exporting data from one
+  pipeline and receiving the data on two other pipelines, which can each process a copy of the data
+  in different ways.
+  Connectors can also derive one signal from another. For example, a `countconnector` can be used as
+  an exporter on a logs pipeline and emit metrics, describing the number of logs, onto a metrics pipeline.

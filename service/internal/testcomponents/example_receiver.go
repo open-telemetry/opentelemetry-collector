@@ -93,24 +93,25 @@ func createReceiver(cfg component.Config) *ExampleReceiver {
 	return receiver
 }
 
+var _ StatefulComponent = &ExampleReceiver{}
+
 // ExampleReceiver allows producing traces and metrics for testing purposes.
 type ExampleReceiver struct {
 	consumer.Traces
 	consumer.Metrics
 	consumer.Logs
-	Started bool
-	Stopped bool
+	componentState
 }
 
 // Start tells the receiver to start its processing.
 func (erp *ExampleReceiver) Start(_ context.Context, _ component.Host) error {
-	erp.Started = true
+	erp.started = true
 	return nil
 }
 
 // Shutdown tells the receiver that should stop reception,
 func (erp *ExampleReceiver) Shutdown(context.Context) error {
-	erp.Stopped = true
+	erp.stopped = true
 	return nil
 }
 

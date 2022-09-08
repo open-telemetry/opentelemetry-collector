@@ -29,6 +29,7 @@ type configSettings struct {
 	Processors *configunmarshaler.Processors `mapstructure:"processors"`
 	Exporters  *configunmarshaler.Exporters  `mapstructure:"exporters"`
 	Extensions *configunmarshaler.Extensions `mapstructure:"extensions"`
+	Connectors *configunmarshaler.Connectors `mapstructure:"connectors"`
 	Service    ConfigService                 `mapstructure:"service"`
 }
 
@@ -41,6 +42,7 @@ func unmarshal(v *confmap.Conf, factories component.Factories) (*configSettings,
 		Processors: configunmarshaler.NewProcessors(factories.Processors),
 		Exporters:  configunmarshaler.NewExporters(factories.Exporters),
 		Extensions: configunmarshaler.NewExtensions(factories.Extensions),
+		Connectors: configunmarshaler.NewConnectors(factories.Connectors),
 		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
 		Service: ConfigService{
 			Telemetry: telemetry.Config{

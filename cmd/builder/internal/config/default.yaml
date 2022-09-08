@@ -17,4 +17,9 @@ extensions:
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.65.0
   - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.65.0
+connectors:
+  - import: go.opentelemetry.io/collector/connector/countconnector
+    gomod: go.opentelemetry.io/collector/connector/countconnector v0.65.0
+  - import: go.opentelemetry.io/collector/connector/nopconnector
+    gomod: go.opentelemetry.io/collector/connector/nopconnector v0.65.0
 

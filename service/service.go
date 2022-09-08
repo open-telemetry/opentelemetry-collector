@@ -25,10 +25,26 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
+
+const (
+	connectorsFeatureGateID = "service.enableConnectors"
+	connectorsFeatureStage  = featuregate.StageAlpha
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegisterID(
+		connectorsFeatureGateID,
+		connectorsFeatureStage,
+		featuregate.WithRegisterDescription("Enables 'conectors', a new type of component for transmitting signals between pipelines. "+
+			"This change includes a major rewrite of the collector's internal pipeline and component management logic."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/2336"),
+	)
+}
 
 // service represents the implementation of a component.Host.
 type service struct {
@@ -156,10 +172,19 @@ func (srv *service) initExtensionsAndPipeline(set *settings) error {
 		ProcessorConfigs:   srv.config.Processors,
 		ExporterFactories:  srv.host.factories.Exporters,
 		ExporterConfigs:    srv.config.Exporters,
+		ConnectorFactories: srv.host.factories.Connectors,
+		ConnectorConfigs:   srv.config.Connectors,
 		PipelineConfigs:    srv.config.Service.Pipelines,
 	}
-	if srv.host.pipelines, err = buildPipelines(context.Background(), pSet); err != nil {
-		return fmt.Errorf("cannot build pipelines: %w", err)
+
+	if featuregate.GetRegistry().IsEnabled(connectorsFeatureGateID) {
+		if srv.host.pipelines, err = buildPipelinesGraph(context.Background(), pSet); err != nil {
+			return fmt.Errorf("cannot build pipelines: %w", err)
+		}
+	} else {
+		if srv.host.pipelines, err = buildPipelines(context.Background(), pSet); err != nil {
+			return fmt.Errorf("cannot build pipelines: %w", err)
+		}
 	}
 
 	if set.Config.Service.Telemetry.Metrics.Level != configtelemetry.LevelNone && set.Config.Service.Telemetry.Metrics.Address != "" {
