@@ -252,7 +252,7 @@ func (tc *testConfig) Unmarshal(component *Conf) error {
 	if err := component.UnmarshalExact(tc); err != nil {
 		return err
 	}
-	tc.Another += " is not called"
+	tc.Another += " is only called directly"
 	return nil
 }
 
@@ -268,16 +268,36 @@ func (nc *nextConfig) Unmarshal(component *Conf) error {
 	return nil
 }
 
-func TestUnmarshallable(t *testing.T) {
+func TestUnmarshaler(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]interface{}{
 		"next": map[string]interface{}{
 			"string": "make sure this",
 		},
 		"another": "make sure this",
 	})
+
 	tc := &testConfig{}
-	assert.NoError(t, cfgMap.UnmarshalExact(tc))
+	assert.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this", tc.Another)
+	assert.Equal(t, "make sure this is called", tc.Next.String)
+
+	tce := &testConfig{}
+	assert.NoError(t, cfgMap.UnmarshalExact(tce))
+	assert.Equal(t, "make sure this", tce.Another)
+	assert.Equal(t, "make sure this is called", tce.Next.String)
+}
+
+func TestDirectUnmarshaler(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]interface{}{
+		"next": map[string]interface{}{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+	})
+
+	tc := &testConfig{}
+	assert.NoError(t, tc.Unmarshal(cfgMap))
+	assert.Equal(t, "make sure this is only called directly", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
 }
 
@@ -297,13 +317,20 @@ func (tc *errConfig) Unmarshal(component *Conf) error {
 	return errors.New("never works")
 }
 
-func TestUnmarshallableErr(t *testing.T) {
+func TestUnmarshalerErr(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]interface{}{
 		"err": map[string]interface{}{
 			"foo": "will not unmarshal due to error",
 		},
 	})
+
+	expectErr := "1 error(s) decoding:\n\n* error decoding 'err': never works"
+
 	tc := &testErrConfig{}
-	assert.EqualError(t, cfgMap.UnmarshalExact(tc), "1 error(s) decoding:\n\n* error decoding 'err': never works")
+	assert.EqualError(t, cfgMap.Unmarshal(tc), expectErr)
+	assert.Empty(t, tc.Err.Foo)
+
+	tce := &testErrConfig{}
+	assert.EqualError(t, cfgMap.UnmarshalExact(tce), expectErr)
 	assert.Empty(t, tc.Err.Foo)
 }
