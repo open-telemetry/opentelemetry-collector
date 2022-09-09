@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/jsonpb"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
@@ -52,33 +51,6 @@ var logsOTLP = func() Logs {
 	lg.SetObservedTimestamp(t)
 	lg.Attributes().UpsertString("sdkVersion", "1.0.1")
 	return ld
-}
-
-func TestReadLogsDataUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readLogsData(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, otlplogs.LogsData{}, value)
-}
-
-func TestReadResourceLogsUnknownField(t *testing.T) {
-	jsonStr := `{"extra":"","resource":{"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readResourceLogs(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlplogs.ResourceLogs{}, value)
-}
-
-func TestReadScopeLogs(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readScopeLogs(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlplogs.ScopeLogs{}, value)
 }
 
 func TestLogsJSON(t *testing.T) {
@@ -141,11 +113,11 @@ func TestLogsJSON_WrongTraceID(t *testing.T) {
 	}
 }
 
-var LogsJSONWrongSpanID = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":"--"}]}]}]}`
+var logsJSONWrongSpanID = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":"--"}]}]}]}`
 
 func TestLogsJSON_WrongSpanID(t *testing.T) {
 	decoder := NewJSONUnmarshaler()
-	_, err := decoder.UnmarshalLogs([]byte(LogsJSONWrongSpanID))
+	_, err := decoder.UnmarshalLogs([]byte(logsJSONWrongSpanID))
 	assert.Error(t, err)
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "parse span_id")

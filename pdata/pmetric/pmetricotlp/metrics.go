@@ -25,6 +25,7 @@ import (
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
 
 var jsonMarshaler = &jsonpb.Marshaler{}
@@ -103,11 +104,7 @@ func (mr Request) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls Request from JSON bytes.
 func (mr Request) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig); err != nil {
-		return err
-	}
-	otlp.MigrateMetrics(mr.orig.ResourceMetrics)
-	return nil
+	return pmetricjson.UnmarshalExportMetricsServiceRequest(data, mr.orig)
 }
 
 func (mr Request) Metrics() pmetric.Metrics {

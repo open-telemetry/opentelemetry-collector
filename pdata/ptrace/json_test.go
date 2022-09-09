@@ -18,10 +18,8 @@ import (
 	"testing"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -154,117 +152,4 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 			assert.NoError(b, err)
 		}
 	})
-}
-
-func TestReadTraceDataUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readTraceData(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, otlptrace.TracesData{}, val)
-}
-
-func TestReadResourceSpansUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readResourceSpans(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
-}
-
-func TestReadScopeSpansUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readScopeSpans(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.ScopeSpans{}, val)
-}
-
-func TestReadSpanUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readSpan(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.Span{}, val)
-}
-
-func TestReadSpanUnknownStatusField(t *testing.T) {
-	jsonStr := `{"status":{"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readSpan(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.Span{}, val)
-}
-
-func TestReadSpanInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse trace_id")
-	}
-}
-
-func TestReadSpanInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse span_id")
-	}
-}
-
-func TestReadSpanInvalidParentSpanIDField(t *testing.T) {
-	jsonStr := `{"parent_span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse parent_span_id")
-	}
-}
-
-func TestReadSpanLinkUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readSpanLink(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.Span_Link{}, val)
-}
-
-func TestReadSpanLinkInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpanLink(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse trace_id")
-	}
-}
-
-func TestReadSpanLinkInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpanLink(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse span_id")
-	}
-}
-
-func TestReadSpanEventUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readSpanEvent(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.Span_Event{}, val)
 }
