@@ -67,9 +67,7 @@ func copy${structName}(from []${itemType}) []${itemType} {
 	}
 
 	to := make([]${itemType}, len(from))
-	for i := range from {
-		to[i] = from[i]
-	}
+	copy(to, from)
 	return to
 }`
 

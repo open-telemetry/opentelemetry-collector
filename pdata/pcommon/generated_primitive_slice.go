@@ -67,9 +67,7 @@ func copyByteSlice(from []byte) []byte {
 	}
 
 	to := make([]byte, len(from))
-	for i := range from {
-		to[i] = from[i]
-	}
+	copy(to, from)
 	return to
 }
 
@@ -121,9 +119,7 @@ func copyFloat64Slice(from []float64) []float64 {
 	}
 
 	to := make([]float64, len(from))
-	for i := range from {
-		to[i] = from[i]
-	}
+	copy(to, from)
 	return to
 }
 
@@ -175,8 +171,6 @@ func copyUInt64Slice(from []uint64) []uint64 {
 	}
 
 	to := make([]uint64, len(from))
-	for i := range from {
-		to[i] = from[i]
-	}
+	copy(to, from)
 	return to
 }
