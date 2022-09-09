@@ -52,14 +52,6 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	ms.getOrig().${originFieldName} = v
 }`
 
-const copyToPrimitiveSliceTestTemplate = `	if len(ms.getOrig().${originFieldName}) == 0 {	
-		dest.getOrig().${originFieldName} = nil
-	} else {
-		dest.getOrig().${originFieldName} = make(${rawType}, len(ms.getOrig().${originFieldName}))
-		copy(dest.getOrig().${originFieldName}, ms.getOrig().${originFieldName})
-	}
-`
-
 const accessorsPrimitiveSliceTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
 	return ${packageName}${returnType}(internal.New${returnType}(&ms.getOrig().${originFieldName}))
@@ -516,20 +508,7 @@ func (psf *primitiveSliceField) generateSetWithTestValue(sb *strings.Builder) {
 }
 
 func (psf *primitiveSliceField) generateCopyToValue(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(copyToPrimitiveSliceTestTemplate, func(name string) string {
-		switch name {
-		case "structName":
-			return ms.getName()
-		case "originFieldName":
-			return psf.originFieldName
-		case "rawType":
-			return psf.rawType
-		case "returnType":
-			return psf.returnType
-		default:
-			panic(name)
-		}
-	}))
+	sb.WriteString("\tms." + psf.fieldName + "().CopyTo(dest." + psf.fieldName + "())")
 }
 
 var _ baseField = (*primitiveSliceField)(nil)

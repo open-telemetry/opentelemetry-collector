@@ -61,6 +61,17 @@ func (ms ${structName}) SetAt(i int, val ${itemType}) {
 	(*ms.getOrig())[i] = val
 }
 
+// MoveTo moves ${structName} to another instance.
+func (ms ${structName}) MoveTo(dest ${structName}) {
+	*dest.getOrig() = *ms.getOrig()
+	*ms.getOrig() = nil
+}
+
+// CopyTo copies ${structName} to another instance.
+func (ms ${structName}) CopyTo(dest ${structName}) {
+	*dest.getOrig() = copy${structName}(*ms.getOrig())
+}
+
 func copy${structName}(from []${itemType}) []${itemType} {
 	if len(from) == 0 {
 		return nil
@@ -84,6 +95,24 @@ const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
 	ms.FromRaw([]${itemType}{3})
 	assert.Equal(t, 1, ms.Len())
 	assert.Equal(t, ${itemType}(3), ms.At(0))
+	
+	cp := New${structName}()
+	ms.CopyTo(cp)
+	ms.SetAt(0, ${itemType}(2))
+	assert.Equal(t, ${itemType}(2), ms.At(0))
+	assert.Equal(t, ${itemType}(3), cp.At(0))
+	ms.CopyTo(cp)
+	assert.Equal(t, ${itemType}(2), cp.At(0))
+	
+	mv := New${structName}()
+	ms.MoveTo(mv)
+	assert.Equal(t, 0, ms.Len())
+	assert.Equal(t, 1, mv.Len())
+	assert.Equal(t, ${itemType}(2), mv.At(0))
+	ms.FromRaw([]${itemType}{1, 2, 3})
+	ms.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, ${itemType}(1), mv.At(0))
 }`
 
 const primitiveSliceInternalTemplate = `

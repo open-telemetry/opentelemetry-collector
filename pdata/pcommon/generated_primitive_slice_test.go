@@ -34,6 +34,24 @@ func TestNewByteSlice(t *testing.T) {
 	ms.FromRaw([]byte{3})
 	assert.Equal(t, 1, ms.Len())
 	assert.Equal(t, byte(3), ms.At(0))
+
+	cp := NewByteSlice()
+	ms.CopyTo(cp)
+	ms.SetAt(0, byte(2))
+	assert.Equal(t, byte(2), ms.At(0))
+	assert.Equal(t, byte(3), cp.At(0))
+	ms.CopyTo(cp)
+	assert.Equal(t, byte(2), cp.At(0))
+
+	mv := NewByteSlice()
+	ms.MoveTo(mv)
+	assert.Equal(t, 0, ms.Len())
+	assert.Equal(t, 1, mv.Len())
+	assert.Equal(t, byte(2), mv.At(0))
+	ms.FromRaw([]byte{1, 2, 3})
+	ms.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, byte(1), mv.At(0))
 }
 
 func TestNewFloat64Slice(t *testing.T) {
@@ -47,6 +65,24 @@ func TestNewFloat64Slice(t *testing.T) {
 	ms.FromRaw([]float64{3})
 	assert.Equal(t, 1, ms.Len())
 	assert.Equal(t, float64(3), ms.At(0))
+
+	cp := NewFloat64Slice()
+	ms.CopyTo(cp)
+	ms.SetAt(0, float64(2))
+	assert.Equal(t, float64(2), ms.At(0))
+	assert.Equal(t, float64(3), cp.At(0))
+	ms.CopyTo(cp)
+	assert.Equal(t, float64(2), cp.At(0))
+
+	mv := NewFloat64Slice()
+	ms.MoveTo(mv)
+	assert.Equal(t, 0, ms.Len())
+	assert.Equal(t, 1, mv.Len())
+	assert.Equal(t, float64(2), mv.At(0))
+	ms.FromRaw([]float64{1, 2, 3})
+	ms.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, float64(1), mv.At(0))
 }
 
 func TestNewUInt64Slice(t *testing.T) {
@@ -60,4 +96,22 @@ func TestNewUInt64Slice(t *testing.T) {
 	ms.FromRaw([]uint64{3})
 	assert.Equal(t, 1, ms.Len())
 	assert.Equal(t, uint64(3), ms.At(0))
+
+	cp := NewUInt64Slice()
+	ms.CopyTo(cp)
+	ms.SetAt(0, uint64(2))
+	assert.Equal(t, uint64(2), ms.At(0))
+	assert.Equal(t, uint64(3), cp.At(0))
+	ms.CopyTo(cp)
+	assert.Equal(t, uint64(2), cp.At(0))
+
+	mv := NewUInt64Slice()
+	ms.MoveTo(mv)
+	assert.Equal(t, 0, ms.Len())
+	assert.Equal(t, 1, mv.Len())
+	assert.Equal(t, uint64(2), mv.At(0))
+	ms.FromRaw([]uint64{1, 2, 3})
+	ms.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, uint64(1), mv.At(0))
 }
