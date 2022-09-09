@@ -133,8 +133,8 @@ var traceIDType = &primitiveType{
 	structName:  "TraceID",
 	packageName: "pcommon",
 	rawType:     "data.TraceID",
-	defaultVal:  "data.NewTraceID([16]byte{})",
-	testVal:     "data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+	defaultVal:  "data.TraceID([16]byte{})",
+	testVal:     "data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var spanIDField = &primitiveTypedField{
@@ -153,8 +153,8 @@ var spanIDType = &primitiveType{
 	structName:  "SpanID",
 	packageName: "pcommon",
 	rawType:     "data.SpanID",
-	defaultVal:  "data.NewSpanID([8]byte{})",
-	testVal:     "data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
+	defaultVal:  "data.SpanID([8]byte{})",
+	testVal:     "data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var schemaURLField = &primitiveField{

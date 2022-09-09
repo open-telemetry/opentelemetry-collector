@@ -175,8 +175,8 @@ func GenerateTestLogRecord() LogRecord {
 func FillTestLogRecord(tv LogRecord) {
 	tv.orig.ObservedTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.TraceId = data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.Flags = 1
 	tv.orig.SeverityText = "INFO"
 	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)

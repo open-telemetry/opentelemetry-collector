@@ -22,18 +22,16 @@ import (
 
 const traceIDSize = 16
 
-var errInvalidTraceIDSize = errors.New("invalid length for TraceID")
+var (
+	errMarshalTraceID   = errors.New("marshal: invalid buffer length for TraceID")
+	errUnmarshalTraceID = errors.New("unmarshal: invalid TraceID length")
+)
 
 // TraceID is a custom data type that is used for all trace_id fields in OTLP
 // Protobuf messages.
 type TraceID [traceIDSize]byte
 
 var _ proto.Sizer = (*SpanID)(nil)
-
-// NewTraceID creates a TraceID from a byte slice.
-func NewTraceID(bytes [16]byte) TraceID {
-	return bytes
-}
 
 // Size returns the size of the data to serialize.
 func (tid TraceID) Size() int {
@@ -53,7 +51,12 @@ func (tid TraceID) MarshalTo(data []byte) (n int, err error) {
 	if tid.IsEmpty() {
 		return 0, nil
 	}
-	return marshalBytes(data, tid[:])
+
+	if len(data) < traceIDSize {
+		return 0, errMarshalTraceID
+	}
+
+	return copy(data, tid[:]), nil
 }
 
 // Unmarshal inflates this trace ID from binary representation. Called by Protobuf serialization.
@@ -64,7 +67,7 @@ func (tid *TraceID) Unmarshal(data []byte) error {
 	}
 
 	if len(data) != traceIDSize {
-		return errInvalidTraceIDSize
+		return errUnmarshalTraceID
 	}
 
 	copy(tid[:], data)

@@ -1838,16 +1838,16 @@ func TestExemplar_FilteredAttributes(t *testing.T) {
 
 func TestExemplar_TraceID(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.TraceID(data.NewTraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.TraceID(data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
 func TestExemplar_SpanID(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.SpanID(data.NewSpanID([8]byte{})), ms.SpanID())
-	testValSpanID := pcommon.SpanID(data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
