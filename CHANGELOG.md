@@ -30,6 +30,13 @@
 - Deprecate `*DataPoint.[Set]FlagsImmutable()` funcs in favor of `*DataPoint.[Set]Flags()`. (#6017)
 - Deprecate `LogRecord.FlagsStruct()` and `LogRecord.SetFlagsStruct()` in favor of `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
 - Deprecate `config.Unmarshallable` in favor of `confmap.Unmarshaler`. (#6031)
+- Primitive slice wrapper are now mutable (#5971):
+  - `pcommon.ImmutableByteSlice` is deprecated in favor of `pcommon.ByteSlice`
+  - `pcommon.ImmutableFloat64Slice` is deprecated in favor of `pcommon.Float64Slice`
+  - `pcommon.ImmutableUInt64Slice` is deprecated in favor of `pcommon.UInt64Slice`
+  - Temporarily deprecate `pcommon.NewValueBytes` that will be replaced with `pcommon.NewValueBytesEmpty` in 0.60.0
+  - Deprecate `pcommon.Map.UpsertBytes` in favor of `pcommon.Map.UpsertEmptyBytes`
+  - Deprecate `pcommon.Value.SetBytesVal` in favor of `pcommon.Value.SetEmptyBytesVal`
 
 ### 💡 Enhancements 💡
 

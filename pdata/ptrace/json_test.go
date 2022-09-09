@@ -94,7 +94,7 @@ var tracesOTLPFull = func() Traces {
 	sp.Attributes().UpsertBool("bool", true)
 	sp.Attributes().UpsertInt("int", 1)
 	sp.Attributes().UpsertDouble("double", 1.1)
-	sp.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
+	sp.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte("foo"))
 	arr := sp.Attributes().UpsertEmptySlice("array")
 	arr.AppendEmpty().SetIntVal(1)
 	arr.AppendEmpty().SetStringVal("str")
@@ -110,7 +110,7 @@ var tracesOTLPFull = func() Traces {
 	event.Attributes().UpsertBool("bool", true)
 	event.Attributes().UpsertInt("int", 1)
 	event.Attributes().UpsertDouble("double", 1.1)
-	event.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
+	event.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte("foo"))
 	// Add links.
 	link := sp.Links().AppendEmpty()
 	link.SetTraceState("state")
@@ -121,7 +121,7 @@ var tracesOTLPFull = func() Traces {
 	link.Attributes().UpsertBool("bool", true)
 	link.Attributes().UpsertInt("int", 1)
 	link.Attributes().UpsertDouble("double", 1.1)
-	link.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
+	link.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte("foo"))
 	// Add another span.
 	sp2 := il.Spans().AppendEmpty()
 	sp2.SetName("testSpan2")
