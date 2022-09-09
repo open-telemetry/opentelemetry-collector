@@ -187,8 +187,14 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFunc(t *testing.T) {
 		},
 	}
 	conf := NewFromStringMap(stringMap)
+
+	cfgExact := &TestIDConfig{}
+	assert.NoError(t, conf.UnmarshalExact(cfgExact))
+	assert.True(t, cfgExact.Boolean)
+	assert.Equal(t, map[TestID]string{"string": "this is a string"}, cfgExact.Map)
+
 	cfg := &TestIDConfig{}
-	assert.NoError(t, conf.UnmarshalExact(cfg))
+	assert.NoError(t, conf.Unmarshal(cfg))
 	assert.True(t, cfg.Boolean)
 	assert.Equal(t, map[TestID]string{"string": "this is a string"}, cfg.Map)
 }
@@ -202,8 +208,12 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
 		},
 	}
 	conf := NewFromStringMap(stringMap)
+
+	cfgExact := &TestIDConfig{}
+	assert.Error(t, conf.UnmarshalExact(cfgExact))
+
 	cfg := &TestIDConfig{}
-	assert.Error(t, conf.UnmarshalExact(cfg))
+	assert.Error(t, conf.Unmarshal(cfg))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T) {
@@ -214,8 +224,12 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T)
 		},
 	}
 	conf := NewFromStringMap(stringMap)
+
+	cfgExact := &TestIDConfig{}
+	assert.Error(t, conf.UnmarshalExact(cfgExact))
+
 	cfg := &TestIDConfig{}
-	assert.Error(t, conf.UnmarshalExact(cfg))
+	assert.Error(t, conf.Unmarshal(cfg))
 }
 
 // newConfFromFile creates a new Conf by reading the given file.
@@ -227,4 +241,96 @@ func newConfFromFile(t testing.TB, fileName string) map[string]interface{} {
 	require.NoError(t, yaml.Unmarshal(content, &data), "unable to parse yaml")
 
 	return NewFromStringMap(data).ToStringMap()
+}
+
+type testConfig struct {
+	Next    nextConfig `mapstructure:"next"`
+	Another string     `mapstructure:"another"`
+}
+
+func (tc *testConfig) Unmarshal(component *Conf) error {
+	if err := component.UnmarshalExact(tc); err != nil {
+		return err
+	}
+	tc.Another += " is only called directly"
+	return nil
+}
+
+type nextConfig struct {
+	String string `mapstructure:"string"`
+}
+
+func (nc *nextConfig) Unmarshal(component *Conf) error {
+	if err := component.UnmarshalExact(nc); err != nil {
+		return err
+	}
+	nc.String += " is called"
+	return nil
+}
+
+func TestUnmarshaler(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]interface{}{
+		"next": map[string]interface{}{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+	})
+
+	tc := &testConfig{}
+	assert.NoError(t, cfgMap.Unmarshal(tc))
+	assert.Equal(t, "make sure this", tc.Another)
+	assert.Equal(t, "make sure this is called", tc.Next.String)
+
+	tce := &testConfig{}
+	assert.NoError(t, cfgMap.UnmarshalExact(tce))
+	assert.Equal(t, "make sure this", tce.Another)
+	assert.Equal(t, "make sure this is called", tce.Next.String)
+}
+
+func TestDirectUnmarshaler(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]interface{}{
+		"next": map[string]interface{}{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+	})
+
+	tc := &testConfig{}
+	assert.NoError(t, tc.Unmarshal(cfgMap))
+	assert.Equal(t, "make sure this is only called directly", tc.Another)
+	assert.Equal(t, "make sure this is called", tc.Next.String)
+}
+
+type testErrConfig struct {
+	Err errConfig `mapstructure:"err"`
+}
+
+func (tc *testErrConfig) Unmarshal(component *Conf) error {
+	return component.UnmarshalExact(tc)
+}
+
+type errConfig struct {
+	Foo string `mapstructure:"foo"`
+}
+
+func (tc *errConfig) Unmarshal(component *Conf) error {
+	return errors.New("never works")
+}
+
+func TestUnmarshalerErr(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]interface{}{
+		"err": map[string]interface{}{
+			"foo": "will not unmarshal due to error",
+		},
+	})
+
+	expectErr := "1 error(s) decoding:\n\n* error decoding 'err': never works"
+
+	tc := &testErrConfig{}
+	assert.EqualError(t, cfgMap.Unmarshal(tc), expectErr)
+	assert.Empty(t, tc.Err.Foo)
+
+	tce := &testErrConfig{}
+	assert.EqualError(t, cfgMap.UnmarshalExact(tce), expectErr)
+	assert.Empty(t, tc.Err.Foo)
 }
