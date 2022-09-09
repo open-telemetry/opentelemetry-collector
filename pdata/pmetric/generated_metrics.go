@@ -1621,20 +1621,8 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 		dest.SetSum(ms.Sum())
 	}
 
-	if len(ms.getOrig().BucketCounts) == 0 {
-		dest.getOrig().BucketCounts = nil
-	} else {
-		dest.getOrig().BucketCounts = make([]uint64, len(ms.getOrig().BucketCounts))
-		copy(dest.getOrig().BucketCounts, ms.getOrig().BucketCounts)
-	}
-
-	if len(ms.getOrig().ExplicitBounds) == 0 {
-		dest.getOrig().ExplicitBounds = nil
-	} else {
-		dest.getOrig().ExplicitBounds = make([]float64, len(ms.getOrig().ExplicitBounds))
-		copy(dest.getOrig().ExplicitBounds, ms.getOrig().ExplicitBounds)
-	}
-
+	ms.BucketCounts().CopyTo(dest.BucketCounts())
+	ms.ExplicitBounds().CopyTo(dest.ExplicitBounds())
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
 	if ms.HasMin() {
@@ -2034,13 +2022,7 @@ func (ms Buckets) SetBucketCounts(v pcommon.UInt64Slice) {
 // CopyTo copies all properties from the current struct to the dest.
 func (ms Buckets) CopyTo(dest Buckets) {
 	dest.SetOffset(ms.Offset())
-	if len(ms.getOrig().BucketCounts) == 0 {
-		dest.getOrig().BucketCounts = nil
-	} else {
-		dest.getOrig().BucketCounts = make([]uint64, len(ms.getOrig().BucketCounts))
-		copy(dest.getOrig().BucketCounts, ms.getOrig().BucketCounts)
-	}
-
+	ms.BucketCounts().CopyTo(dest.BucketCounts())
 }
 
 // SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
