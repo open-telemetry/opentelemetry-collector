@@ -212,6 +212,10 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 // by implementing the Unmarshaler interface.
 func unmarshalerHookFunc(result interface{}) mapstructure.DecodeHookFuncValue {
 	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
+		if !to.CanAddr() {
+			return from.Interface(), nil
+		}
+
 		toPtr := to.Addr().Interface()
 		if _, ok := toPtr.(Unmarshaler); !ok {
 			return from.Interface(), nil
