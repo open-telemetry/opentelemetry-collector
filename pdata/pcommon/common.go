@@ -598,18 +598,9 @@ func (m Map) getOrig() *[]otlpcommon.KeyValue {
 // NewMapFromRaw creates a Map with values from the given map[string]interface{}.
 // Deprecated: [0.60.0] Use NewMap().FromRaw instead
 func NewMapFromRaw(rawMap map[string]interface{}) Map {
-	if len(rawMap) == 0 {
-		kv := []otlpcommon.KeyValue(nil)
-		return newMap(&kv)
-	}
-	origs := make([]otlpcommon.KeyValue, len(rawMap))
-	ix := 0
-	for k, iv := range rawMap {
-		origs[ix].Key = k
-		newValueFromRaw(iv).copyTo(&origs[ix].Value)
-		ix++
-	}
-	return Map(internal.NewMap(&origs))
+	ret := NewMap()
+	ret.FromRaw(rawMap)
+	return ret
 }
 
 func newMap(orig *[]otlpcommon.KeyValue) Map {
@@ -980,6 +971,7 @@ func (m Map) AsRaw() map[string]interface{} {
 func (m Map) FromRaw(rawMap map[string]interface{}) {
 	if len(rawMap) == 0 {
 		*m.getOrig() = nil
+		return
 	}
 
 	origs := make([]otlpcommon.KeyValue, len(rawMap))
@@ -995,15 +987,9 @@ func (m Map) FromRaw(rawMap map[string]interface{}) {
 // NewSliceFromRaw creates a Slice with values from the given []interface{}.
 // Deprecated: [0.60.0] Use NewSlice().FromRaw instead.
 func NewSliceFromRaw(rawSlice []interface{}) Slice {
-	if len(rawSlice) == 0 {
-		v := []otlpcommon.AnyValue(nil)
-		return newSlice(&v)
-	}
-	origs := make([]otlpcommon.AnyValue, len(rawSlice))
-	for ix, iv := range rawSlice {
-		newValueFromRaw(iv).copyTo(&origs[ix])
-	}
-	return newSlice(&origs)
+	ret := NewSlice()
+	ret.FromRaw(rawSlice)
+	return ret
 }
 
 // AsRaw return []interface{} copy of the Slice.
@@ -1019,6 +1005,7 @@ func (es Slice) AsRaw() []interface{} {
 func (es Slice) FromRaw(rawSlice []interface{}) {
 	if len(rawSlice) == 0 {
 		*es.getOrig() = nil
+		return
 	}
 	origs := make([]otlpcommon.AnyValue, len(rawSlice))
 	for ix, iv := range rawSlice {
