@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestParseModules(t *testing.T) {
@@ -93,6 +94,7 @@ func TestInvalidModule(t *testing.T) {
 	configurations := []invalidModuleTest{
 		{
 			cfg: Config{
+				Logger: zap.NewNop(),
 				Extensions: []Module{{
 					Import: "invalid",
 				}},
@@ -101,6 +103,7 @@ func TestInvalidModule(t *testing.T) {
 		},
 		{
 			cfg: Config{
+				Logger: zap.NewNop(),
 				Receivers: []Module{{
 					Import: "invalid",
 				}},
@@ -109,6 +112,7 @@ func TestInvalidModule(t *testing.T) {
 		},
 		{
 			cfg: Config{
+				Logger: zap.NewNop(),
 				Exporters: []Module{{
 					Import: "invali",
 				}},
@@ -117,6 +121,7 @@ func TestInvalidModule(t *testing.T) {
 		},
 		{
 			cfg: Config{
+				Logger: zap.NewNop(),
 				Processors: []Module{{
 					Import: "invalid",
 				}},
@@ -126,7 +131,7 @@ func TestInvalidModule(t *testing.T) {
 	}
 
 	for _, test := range configurations {
-		assert.True(t, errors.Is(test.cfg.ParseModules(), test.err))
+		assert.True(t, errors.Is(test.cfg.Validate(), test.err))
 	}
 }
 
