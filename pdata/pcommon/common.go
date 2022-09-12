@@ -675,7 +675,7 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 // Important: this function should not be used if the caller has access to
 // the raw value to avoid an extra allocation.
 //
-// NOTE: The method will be deprecated in 0.60.0. Replace it with the following function calls:
+// Deprecated: [0.60.0] Replace it with the following function calls:
 // For primitive types, use Insert<Type> methods, e.g. InsertString.
 // For complex and unknown types, use:
 //
@@ -691,6 +691,14 @@ func (m Map) Insert(k string, v Value) {
 
 // InsertString adds the string Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
+//
+// Deprecated: [0.60.0] Replace it with the following function calls if you need to make sure that existing value is
+// not overridden, otherwise just use UpsertString.
+//
+//	_, ok := m.Get(k)
+//	if !ok {
+//		m.UpsertString(k)
+//	}
 func (m Map) InsertString(k string, v string) {
 	if _, existing := m.Get(k); !existing {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueString(k, v))
@@ -699,6 +707,14 @@ func (m Map) InsertString(k string, v string) {
 
 // InsertInt adds the int Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
+//
+// Deprecated: [0.60.0] Replace it with the following function calls if you need to make sure that existing value is
+// not overridden, otherwise just use UpsertInt.
+//
+//	_, ok := m.Get(k)
+//	if !ok {
+//		m.UpsertInt(k)
+//	}
 func (m Map) InsertInt(k string, v int64) {
 	if _, existing := m.Get(k); !existing {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueInt(k, v))
@@ -707,6 +723,14 @@ func (m Map) InsertInt(k string, v int64) {
 
 // InsertDouble adds the double Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
+//
+// Deprecated: [0.60.0] Replace it with the following function calls if you need to make sure that existing value is
+// not overridden, otherwise just use UpsertDouble.
+//
+//	_, ok := m.Get(k)
+//	if !ok {
+//		m.UpsertDouble(k)
+//	}
 func (m Map) InsertDouble(k string, v float64) {
 	if _, existing := m.Get(k); !existing {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueDouble(k, v))
@@ -715,6 +739,14 @@ func (m Map) InsertDouble(k string, v float64) {
 
 // InsertBool adds the bool Value to the map when the key does not exist.
 // No action is applied to the map where the key already exists.
+//
+// Deprecated: [0.60.0] Replace it with the following function calls if you need to make sure that existing value is
+// not overridden, otherwise just use UpsertBool.
+//
+//	_, ok := m.Get(k)
+//	if !ok {
+//		m.UpsertBool(k)
+//	}
 func (m Map) InsertBool(k string, v bool) {
 	if _, existing := m.Get(k); !existing {
 		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueBool(k, v))

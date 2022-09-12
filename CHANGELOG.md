@@ -38,6 +38,7 @@
   - Deprecate `pcommon.Map.UpsertBytes` in favor of `pcommon.Map.UpsertEmptyBytes`
   - Deprecate `pcommon.Value.SetBytesVal` in favor of `pcommon.Value.SetEmptyBytesVal`
   - Deprecate `pcommon.New[Slice|Map]FromRaw` functions in favor of `New[Slice|Map]().FromRaw` (#6045)
+- Deprecate `pcommon.Map.Insert*` methods (#6051)
 
 ### 💡 Enhancements 💡
 
