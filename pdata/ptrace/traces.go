@@ -70,13 +70,33 @@ func (ms Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&ms.getOrig().ResourceSpans)
 }
 
-// TraceState is a string representing the tracestate in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
+// Deprecated: [v0.60.0] use pcommon.TraceState.
 type TraceState string
 
 const (
-	// TraceStateEmpty represents the empty TraceState.
+	// Deprecated: [v0.60.0] use pcommon.TraceState.AsRaw() and compare with empty string.
 	TraceStateEmpty TraceState = ""
 )
+
+// Deprecated: [v0.60.0] use TraceStateStruct().AsRaw().
+func (ms Span) TraceState() TraceState {
+	return TraceState(ms.getOrig().TraceState)
+}
+
+// Deprecated: [v0.60.0] use TraceStateStruct().FromRaw(val).
+func (ms Span) SetTraceState(v TraceState) {
+	ms.getOrig().TraceState = string(v)
+}
+
+// Deprecated: [v0.60.0] use TraceStateStruct().AsRaw().
+func (ms SpanLink) TraceState() TraceState {
+	return TraceState(ms.getOrig().TraceState)
+}
+
+// Deprecated: [v0.60.0] use TraceStateStruct().FromRaw(val).
+func (ms SpanLink) SetTraceState(v TraceState) {
+	ms.getOrig().TraceState = string(v)
+}
 
 // SpanKind is the type of span. Can be used to specify additional relationships between spans
 // in addition to a parent/child relationship.

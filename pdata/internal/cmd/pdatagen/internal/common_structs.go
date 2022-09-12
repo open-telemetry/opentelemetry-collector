@@ -72,6 +72,11 @@ var scopeField = &messageValueField{
 	returnMessage:   scope,
 }
 
+var traceState = &messageValueStruct{
+	structName:  "TraceState",
+	packageName: "pcommon",
+}
+
 var timestampType = &primitiveType{
 	structName:  "Timestamp",
 	packageName: "pcommon",

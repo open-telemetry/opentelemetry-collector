@@ -468,12 +468,10 @@ func TestSpan_SpanID(t *testing.T) {
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
-func TestSpan_TraceState(t *testing.T) {
+func TestSpan_TraceStateStruct(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, TraceState(""), ms.TraceState())
-	testValTraceState := TraceState("congo=congos")
-	ms.SetTraceState(testValTraceState)
-	assert.Equal(t, testValTraceState, ms.TraceState())
+	internal.FillTestTraceState(internal.TraceState(ms.TraceStateStruct()))
+	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceStateStruct())
 }
 
 func TestSpan_ParentSpanID(t *testing.T) {
@@ -864,12 +862,10 @@ func TestSpanLink_SpanID(t *testing.T) {
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
-func TestSpanLink_TraceState(t *testing.T) {
+func TestSpanLink_TraceStateStruct(t *testing.T) {
 	ms := NewSpanLink()
-	assert.Equal(t, TraceState(""), ms.TraceState())
-	testValTraceState := TraceState("congo=congos")
-	ms.SetTraceState(testValTraceState)
-	assert.Equal(t, testValTraceState, ms.TraceState())
+	internal.FillTestTraceState(internal.TraceState(ms.TraceStateStruct()))
+	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceStateStruct())
 }
 
 func TestSpanLink_Attributes(t *testing.T) {

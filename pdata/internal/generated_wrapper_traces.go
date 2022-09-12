@@ -235,7 +235,7 @@ func GenerateTestSpan() Span {
 func FillTestSpan(tv Span) {
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.TraceState = "congo=congos"
+	FillTestTraceState(NewTraceState(&tv.orig.TraceState))
 	tv.orig.ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.Name = "test_name"
 	tv.orig.Kind = otlptrace.Span_SpanKind(3)
@@ -304,7 +304,7 @@ func GenerateTestSpanLink() SpanLink {
 func FillTestSpanLink(tv SpanLink) {
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.TraceState = "congo=congos"
+	FillTestTraceState(NewTraceState(&tv.orig.TraceState))
 	FillTestMap(NewMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }

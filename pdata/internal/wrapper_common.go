@@ -30,6 +30,17 @@ func NewValue(orig *otlpcommon.AnyValue) Value {
 	return Value{orig: orig}
 }
 
+func FillTestValue(dest Value) {
+	dest.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
+}
+
+func GenerateTestValue() Value {
+	var orig otlpcommon.AnyValue
+	ms := NewValue(&orig)
+	FillTestValue(ms)
+	return ms
+}
+
 type Map struct {
 	orig *[]otlpcommon.KeyValue
 }
@@ -42,25 +53,37 @@ func NewMap(orig *[]otlpcommon.KeyValue) Map {
 	return Map{orig: orig}
 }
 
-func FillTestValue(dest Value) {
-	dest.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
-}
-
-func GenerateTestValue() Value {
-	var orig otlpcommon.AnyValue
-	av := NewValue(&orig)
-	FillTestValue(av)
-	return av
-}
-
 func GenerateTestMap() Map {
 	var orig []otlpcommon.KeyValue
-	am := NewMap(&orig)
-	FillTestMap(am)
-	return am
+	ms := NewMap(&orig)
+	FillTestMap(ms)
+	return ms
 }
 
 func FillTestMap(dest Map) {
 	*dest.orig = nil
 	*dest.orig = append(*dest.orig, otlpcommon.KeyValue{Key: "k", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}})
+}
+
+type TraceState struct {
+	orig *string
+}
+
+func GetOrigTraceState(ms TraceState) *string {
+	return ms.orig
+}
+
+func NewTraceState(orig *string) TraceState {
+	return TraceState{orig: orig}
+}
+
+func GenerateTestTraceState() TraceState {
+	var orig string
+	ms := NewTraceState(&orig)
+	FillTestTraceState(ms)
+	return ms
+}
+
+func FillTestTraceState(dest TraceState) {
+	*dest.orig = "rojo=00f067aa0ba902b7"
 }
