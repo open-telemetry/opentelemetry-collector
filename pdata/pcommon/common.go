@@ -178,11 +178,11 @@ func newValueFromRaw(iv interface{}) Value {
 		return bv
 	case map[string]interface{}:
 		mv := NewValueMap()
-		NewMapFromRaw(tv).CopyTo(mv.MapVal())
+		mv.MapVal().FromRaw(tv)
 		return mv
 	case []interface{}:
 		av := NewValueSlice()
-		NewSliceFromRaw(tv).CopyTo(av.SliceVal())
+		av.SliceVal().FromRaw(tv)
 		return av
 	default:
 		return NewValueString(fmt.Sprintf("<Invalid value type %T>", tv))
@@ -596,6 +596,7 @@ func (m Map) getOrig() *[]otlpcommon.KeyValue {
 }
 
 // NewMapFromRaw creates a Map with values from the given map[string]interface{}.
+// Deprecated: [0.60.0] Use NewMap().FromRaw instead
 func NewMapFromRaw(rawMap map[string]interface{}) Map {
 	if len(rawMap) == 0 {
 		kv := []otlpcommon.KeyValue(nil)
@@ -976,7 +977,23 @@ func (m Map) AsRaw() map[string]interface{} {
 	return rawMap
 }
 
+func (m Map) FromRaw(rawMap map[string]interface{}) {
+	if len(rawMap) == 0 {
+		*m.getOrig() = nil
+	}
+
+	origs := make([]otlpcommon.KeyValue, len(rawMap))
+	ix := 0
+	for k, iv := range rawMap {
+		origs[ix].Key = k
+		newValueFromRaw(iv).copyTo(&origs[ix].Value)
+		ix++
+	}
+	*m.getOrig() = origs
+}
+
 // NewSliceFromRaw creates a Slice with values from the given []interface{}.
+// Deprecated: [0.60.0] Use NewSlice().FromRaw instead.
 func NewSliceFromRaw(rawSlice []interface{}) Slice {
 	if len(rawSlice) == 0 {
 		v := []otlpcommon.AnyValue(nil)
@@ -989,13 +1006,25 @@ func NewSliceFromRaw(rawSlice []interface{}) Slice {
 	return newSlice(&origs)
 }
 
-// AsRaw converts the Slice to a standard go slice.
+// AsRaw return []interface{} copy of the Slice.
 func (es Slice) AsRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		rawSlice = append(rawSlice, es.At(i).asRaw())
 	}
 	return rawSlice
+}
+
+// FromRaw copies []interface{} into the Slice.
+func (es Slice) FromRaw(rawSlice []interface{}) {
+	if len(rawSlice) == 0 {
+		*es.getOrig() = nil
+	}
+	origs := make([]otlpcommon.AnyValue, len(rawSlice))
+	for ix, iv := range rawSlice {
+		newValueFromRaw(iv).copyTo(&origs[ix])
+	}
+	*es.getOrig() = origs
 }
 
 // Deprecated: [0.60.0] Use ByteSlice instead.
