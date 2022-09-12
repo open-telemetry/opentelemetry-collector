@@ -17,38 +17,38 @@
 
 package internal
 
-type ImmutableByteSlice struct {
-	orig []byte
+type ByteSlice struct {
+	orig *[]byte
 }
 
-func GetOrigImmutableByteSlice(ms ImmutableByteSlice) []byte {
+func GetOrigByteSlice(ms ByteSlice) *[]byte {
 	return ms.orig
 }
 
-func NewImmutableByteSlice(orig []byte) ImmutableByteSlice {
-	return ImmutableByteSlice{orig: orig}
+func NewByteSlice(orig *[]byte) ByteSlice {
+	return ByteSlice{orig: orig}
 }
 
-type ImmutableFloat64Slice struct {
-	orig []float64
+type Float64Slice struct {
+	orig *[]float64
 }
 
-func GetOrigImmutableFloat64Slice(ms ImmutableFloat64Slice) []float64 {
+func GetOrigFloat64Slice(ms Float64Slice) *[]float64 {
 	return ms.orig
 }
 
-func NewImmutableFloat64Slice(orig []float64) ImmutableFloat64Slice {
-	return ImmutableFloat64Slice{orig: orig}
+func NewFloat64Slice(orig *[]float64) Float64Slice {
+	return Float64Slice{orig: orig}
 }
 
-type ImmutableUInt64Slice struct {
-	orig []uint64
+type UInt64Slice struct {
+	orig *[]uint64
 }
 
-func GetOrigImmutableUInt64Slice(ms ImmutableUInt64Slice) []uint64 {
+func GetOrigUInt64Slice(ms UInt64Slice) *[]uint64 {
 	return ms.orig
 }
 
-func NewImmutableUInt64Slice(orig []uint64) ImmutableUInt64Slice {
-	return ImmutableUInt64Slice{orig: orig}
+func NewUInt64Slice(orig *[]uint64) UInt64Slice {
+	return UInt64Slice{orig: orig}
 }

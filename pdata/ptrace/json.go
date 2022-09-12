@@ -26,15 +26,11 @@ import (
 
 // NewJSONMarshaler returns a model.Marshaler. Marshals to OTLP json bytes.
 func NewJSONMarshaler() Marshaler {
-	return newJSONMarshaler()
+	return &jsonMarshaler{delegate: jsonpb.Marshaler{}}
 }
 
 type jsonMarshaler struct {
 	delegate jsonpb.Marshaler
-}
-
-func newJSONMarshaler() *jsonMarshaler {
-	return &jsonMarshaler{delegate: jsonpb.Marshaler{}}
 }
 
 func (e *jsonMarshaler) MarshalTraces(td Traces) ([]byte, error) {
@@ -49,8 +45,7 @@ func NewJSONUnmarshaler() Unmarshaler {
 	return &jsonUnmarshaler{}
 }
 
-type jsonUnmarshaler struct {
-}
+type jsonUnmarshaler struct{}
 
 func (jsonUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	var td otlptrace.TracesData

@@ -57,23 +57,13 @@ func (l *Conf) AllKeys() []string {
 
 // Unmarshal unmarshalls the config into a struct.
 // Tags on the fields of the structure must be properly set.
-func (l *Conf) Unmarshal(rawVal interface{}) error {
-	decoder, err := mapstructure.NewDecoder(decoderConfig(rawVal))
-	if err != nil {
-		return err
-	}
-	return decoder.Decode(l.ToStringMap())
+func (l *Conf) Unmarshal(result interface{}) error {
+	return decodeConfig(l, result, false)
 }
 
 // UnmarshalExact unmarshalls the config into a struct, erroring if a field is nonexistent.
-func (l *Conf) UnmarshalExact(rawVal interface{}) error {
-	dc := decoderConfig(rawVal)
-	dc.ErrorUnused = true
-	decoder, err := mapstructure.NewDecoder(dc)
-	if err != nil {
-		return err
-	}
-	return decoder.Decode(l.ToStringMap())
+func (l *Conf) UnmarshalExact(result interface{}) error {
+	return decodeConfig(l, result, true)
 }
 
 // Get can retrieve any value given the key to use.
@@ -114,15 +104,17 @@ func (l *Conf) ToStringMap() map[string]interface{} {
 	return maps.Unflatten(l.k.All(), KeyDelimiter)
 }
 
-// decoderConfig returns a default mapstructure.DecoderConfig capable of parsing time.Duration
-// and weakly converting config field values to primitive types.  It also ensures that maps
-// whose values are nil pointer structs resolved to the zero value of the target struct (see
-// expandNilStructPointers). A decoder created from this mapstructure.DecoderConfig will decode
-// its contents to the result argument.
-func decoderConfig(result interface{}) *mapstructure.DecoderConfig {
-	return &mapstructure.DecoderConfig{
+// decodeConfig decodes the contents of the Conf into the result argument, using a
+// mapstructure decoder with the following notable behaviors. Ensures that maps whose
+// values are nil pointer structs resolved to the zero value of the target struct (see
+// expandNilStructPointers). Converts string to []string by splitting on ','. Ensures
+// uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
+// Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
+// encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
+func decodeConfig(m *Conf, result interface{}, errorUnused bool) error {
+	dc := &mapstructure.DecoderConfig{
+		ErrorUnused:      errorUnused,
 		Result:           result,
-		Metadata:         nil,
 		TagName:          "mapstructure",
 		WeaklyTypedInput: true,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
@@ -131,8 +123,14 @@ func decoderConfig(result interface{}) *mapstructure.DecoderConfig {
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
+			unmarshalerHookFunc(result),
 		),
 	}
+	decoder, err := mapstructure.NewDecoder(dc)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(m.ToStringMap())
 }
 
 // In cases where a config has a mapping of something to a struct pointers
@@ -207,6 +205,37 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 			m.SetMapIndex(reflect.Indirect(tKey), reflect.ValueOf(true))
 		}
 		return data, nil
+	}
+}
+
+// Provides a mechanism for individual structs to define their own unmarshal logic,
+// by implementing the Unmarshaler interface.
+func unmarshalerHookFunc(result interface{}) mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
+		if !to.CanAddr() {
+			return from.Interface(), nil
+		}
+
+		toPtr := to.Addr().Interface()
+		if _, ok := toPtr.(Unmarshaler); !ok {
+			return from.Interface(), nil
+		}
+
+		if _, ok := from.Interface().(map[string]interface{}); !ok {
+			return from.Interface(), nil
+		}
+
+		// Need to ignore the top structure to avoid circular dependency.
+		if toPtr == result {
+			return from.Interface(), nil
+		}
+
+		unmarshaler := reflect.New(to.Type()).Interface().(Unmarshaler)
+		if err := unmarshaler.Unmarshal(NewFromStringMap(from.Interface().(map[string]interface{}))); err != nil {
+			return nil, err
+		}
+
+		return unmarshaler, nil
 	}
 }
 

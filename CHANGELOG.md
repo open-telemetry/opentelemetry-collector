@@ -30,12 +30,21 @@
 - Deprecate `*DataPoint.[Set]FlagsImmutable()` funcs in favor of `*DataPoint.[Set]Flags()`. (#6017)
 - Deprecate `LogRecord.FlagsStruct()` and `LogRecord.SetFlagsStruct()` in favor of `LogRecord.Flags()` and `LogRecord.SetFlags()`. (#6007)
 - Deprecate `config.Unmarshallable` in favor of `confmap.Unmarshaler`. (#6031)
+- Primitive slice wrapper are now mutable (#5971):
+  - `pcommon.ImmutableByteSlice` is deprecated in favor of `pcommon.ByteSlice`
+  - `pcommon.ImmutableFloat64Slice` is deprecated in favor of `pcommon.Float64Slice`
+  - `pcommon.ImmutableUInt64Slice` is deprecated in favor of `pcommon.UInt64Slice`
+  - Temporarily deprecate `pcommon.NewValueBytes` that will be replaced with `pcommon.NewValueBytesEmpty` in 0.60.0
+  - Deprecate `pcommon.Map.UpsertBytes` in favor of `pcommon.Map.UpsertEmptyBytes`
+  - Deprecate `pcommon.Value.SetBytesVal` in favor of `pcommon.Value.SetEmptyBytesVal`
 
 ### 💡 Enhancements 💡
 
 - Add `skip-get-modules` builder flag to support isolated environment executions (#6009)
   - Skip unnecessary Go binary path validation when the builder is used with `skip-compilation` and `skip-get-modules` flags (#6026)
 - Make the otlpreceiver support to use jsoniter to unmarshal JSON payloads. (#6040)
+- Add mapstructure hook function for confmap.Unmarshaler interface (#6029)
+- Add CopyTo and MoveTo methods to primitive slices (#6044)
 
 ### 🧰 Bug fixes 🧰
 

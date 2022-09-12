@@ -550,9 +550,9 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	histogramDataPoints.At(0).Attributes().Remove("key0")
 	histogramDataPoints.At(0).Attributes().UpsertString("k", "v")
 	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes())
-	histogramDataPoints.At(0).SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1}))
+	histogramDataPoints.At(0).ExplicitBounds().FromRaw([]float64{1})
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).ExplicitBounds().AsRaw())
-	histogramDataPoints.At(0).SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{21, 32}))
+	histogramDataPoints.At(0).BucketCounts().FromRaw([]uint64{21, 32})
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
