@@ -7,6 +7,7 @@ OpenTelemetry Collector supports the following providers `scheme`:
 - [file](../confmap/provider/fileprovider/provider.go) - Reads configuration from a file. E.g. `file:path/to/config.yaml`.
 - [env](../confmap/provider/envprovider/provider.go) - Reads configuration from an environment variable. E.g. `env:MY_CONFIG_IN_AN_ENVVAR`.
 - [yaml](../confmap/provider/yamlprovider/provider.go) - Reads configuration from yaml bytes. E.g. `yaml:exporters::logging::loglevel: debug`.
+- [http](../confmap/provider/httpprovider/provider.go) - Reads configuration from a HTTP URI. E.g. `http://www.example.com`
 
 For more technical details about how configuration is resolved you can read the [configuration resolving design](../confmap/README.md#configuration-resolving).
 
