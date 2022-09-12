@@ -164,9 +164,9 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 func newTraces(numTraces int, numSpans int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	batch := traces.ResourceSpans().AppendEmpty()
-	batch.Resource().Attributes().InsertString("resource-attr", "some-resource")
-	batch.Resource().Attributes().InsertInt("num-traces", int64(numTraces))
-	batch.Resource().Attributes().InsertInt("num-spans", int64(numSpans))
+	batch.Resource().Attributes().UpsertString("resource-attr", "some-resource")
+	batch.Resource().Attributes().UpsertInt("num-traces", int64(numTraces))
+	batch.Resource().Attributes().UpsertInt("num-spans", int64(numSpans))
 
 	for i := 0; i < numTraces; i++ {
 		traceID := pcommon.TraceID([16]byte{1, 2, 3, byte(i)})
@@ -176,12 +176,12 @@ func newTraces(numTraces int, numSpans int) ptrace.Traces {
 			span.SetTraceID(traceID)
 			span.SetSpanID([8]byte{1, 2, 3, byte(j)})
 			span.SetName("should-not-be-changed")
-			span.Attributes().InsertInt("int-attribute", int64(j))
-			span.Attributes().InsertString("str-attribute-1", "foobar")
-			span.Attributes().InsertString("str-attribute-2", "fdslafjasdk12312312jkl")
-			span.Attributes().InsertString("str-attribute-3", "AbcDefGeKKjkfdsafasdfsdasdf")
-			span.Attributes().InsertString("str-attribute-4", "xxxxxx")
-			span.Attributes().InsertString("str-attribute-5", "abcdef")
+			span.Attributes().UpsertInt("int-attribute", int64(j))
+			span.Attributes().UpsertString("str-attribute-1", "foobar")
+			span.Attributes().UpsertString("str-attribute-2", "fdslafjasdk12312312jkl")
+			span.Attributes().UpsertString("str-attribute-3", "AbcDefGeKKjkfdsafasdfsdasdf")
+			span.Attributes().UpsertString("str-attribute-4", "xxxxxx")
+			span.Attributes().UpsertString("str-attribute-5", "abcdef")
 		}
 	}
 
