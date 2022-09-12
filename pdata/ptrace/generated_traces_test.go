@@ -470,8 +470,8 @@ func TestSpan_SpanID(t *testing.T) {
 
 func TestSpan_TraceState(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, TraceState(""), ms.TraceState())
-	testValTraceState := TraceState("congo=congos")
+	assert.Equal(t, pcommon.TraceState(""), ms.TraceState())
+	testValTraceState := pcommon.TraceState("congo=congos")
 	ms.SetTraceState(testValTraceState)
 	assert.Equal(t, testValTraceState, ms.TraceState())
 }
@@ -866,8 +866,8 @@ func TestSpanLink_SpanID(t *testing.T) {
 
 func TestSpanLink_TraceState(t *testing.T) {
 	ms := NewSpanLink()
-	assert.Equal(t, TraceState(""), ms.TraceState())
-	testValTraceState := TraceState("congo=congos")
+	assert.Equal(t, pcommon.TraceState(""), ms.TraceState())
+	testValTraceState := pcommon.TraceState("congo=congos")
 	ms.SetTraceState(testValTraceState)
 	assert.Equal(t, testValTraceState, ms.TraceState())
 }

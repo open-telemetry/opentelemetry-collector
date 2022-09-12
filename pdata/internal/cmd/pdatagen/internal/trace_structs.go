@@ -216,12 +216,7 @@ var spanStatus = &messageValueStruct{
 var traceStateField = &primitiveTypedField{
 	fieldName:       "TraceState",
 	originFieldName: "TraceState",
-	returnType: &primitiveType{
-		structName: "TraceState",
-		rawType:    "string",
-		defaultVal: `""`,
-		testVal:    `"congo=congos"`,
-	},
+	returnType:      traceStateType,
 }
 
 var droppedAttributesCount = &primitiveField{

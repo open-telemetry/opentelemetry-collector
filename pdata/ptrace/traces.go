@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
@@ -70,12 +71,12 @@ func (ms Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&ms.getOrig().ResourceSpans)
 }
 
-// TraceState is a string representing the tracestate in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
-type TraceState string
+// Deprecated: [v0.60.0] use pcommon.TraceState.
+type TraceState = pcommon.TraceState
 
 const (
-	// TraceStateEmpty represents the empty TraceState.
-	TraceStateEmpty TraceState = ""
+	// Deprecated: [v0.60.0] use pcommon.TraceStateEmpty.
+	TraceStateEmpty = pcommon.TraceStateEmpty
 )
 
 // SpanKind is the type of span. Can be used to specify additional relationships between spans

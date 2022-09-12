@@ -80,6 +80,14 @@ var timestampType = &primitiveType{
 	testVal:     "1234567890",
 }
 
+var traceStateType = &primitiveType{
+	structName:  "TraceState",
+	packageName: "pcommon",
+	rawType:     "string",
+	defaultVal:  `""`,
+	testVal:     `"congo=congos"`,
+}
+
 var startTimeField = &primitiveTypedField{
 	fieldName:       "StartTimestamp",
 	originFieldName: "StartTimeUnixNano",

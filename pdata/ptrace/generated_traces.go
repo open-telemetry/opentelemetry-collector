@@ -621,12 +621,12 @@ func (ms Span) SetSpanID(v pcommon.SpanID) {
 }
 
 // TraceState returns the tracestate associated with this Span.
-func (ms Span) TraceState() TraceState {
-	return TraceState(ms.getOrig().TraceState)
+func (ms Span) TraceState() pcommon.TraceState {
+	return pcommon.TraceState(ms.getOrig().TraceState)
 }
 
 // SetTraceState replaces the tracestate associated with this Span.
-func (ms Span) SetTraceState(v TraceState) {
+func (ms Span) SetTraceState(v pcommon.TraceState) {
 	ms.getOrig().TraceState = string(v)
 }
 
@@ -1162,12 +1162,12 @@ func (ms SpanLink) SetSpanID(v pcommon.SpanID) {
 }
 
 // TraceState returns the tracestate associated with this SpanLink.
-func (ms SpanLink) TraceState() TraceState {
-	return TraceState(ms.getOrig().TraceState)
+func (ms SpanLink) TraceState() pcommon.TraceState {
+	return pcommon.TraceState(ms.getOrig().TraceState)
 }
 
 // SetTraceState replaces the tracestate associated with this SpanLink.
-func (ms SpanLink) SetTraceState(v TraceState) {
+func (ms SpanLink) SetTraceState(v pcommon.TraceState) {
 	ms.getOrig().TraceState = string(v)
 }
 
