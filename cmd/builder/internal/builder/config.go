@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -102,7 +103,7 @@ func (c *Config) Validate() error {
 		c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
 	}
 
-	return nil
+	return multierr.Combine(validateModules(c.Extensions), validateModules(c.Receivers), validateModules(c.Exporters), validateModules(c.Processors))
 }
 
 // ParseModules will parse the Modules entries and populate the missing values
@@ -132,13 +133,18 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
+func validateModules(mods []Module) error {
+	for _, mod := range mods {
+		if mod.GoMod == "" {
+			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
+		}
+	}
+	return nil
+}
+
 func parseModules(mods []Module) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
-		if mod.GoMod == "" {
-			return mods, fmt.Errorf("%w, module: %q", ErrInvalidGoMod, mod.GoMod)
-		}
-
 		if mod.Import == "" {
 			mod.Import = strings.Split(mod.GoMod, " ")[0]
 		}
