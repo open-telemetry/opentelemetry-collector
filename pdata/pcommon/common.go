@@ -140,52 +140,46 @@ func (v Value) getOrig() *otlpcommon.AnyValue {
 	return internal.GetOrigValue(internal.Value(v))
 }
 
-func newValueFromRaw(iv interface{}) Value {
+func (v Value) fromRaw(iv interface{}) {
 	switch tv := iv.(type) {
 	case nil:
-		return NewValueEmpty()
+		v.getOrig().Value = nil
 	case string:
-		return NewValueString(tv)
+		v.SetStringVal(tv)
 	case int:
-		return NewValueInt(int64(tv))
+		v.SetIntVal(int64(tv))
 	case int8:
-		return NewValueInt(int64(tv))
+		v.SetIntVal(int64(tv))
 	case int16:
-		return NewValueInt(int64(tv))
+		v.SetIntVal(int64(tv))
 	case int32:
-		return NewValueInt(int64(tv))
+		v.SetIntVal(int64(tv))
 	case int64:
-		return NewValueInt(tv)
+		v.SetIntVal(tv)
 	case uint:
-		return NewValueInt(int64(tv))
+		v.SetIntVal(int64(tv))
 	case uint8:
-		return NewValueInt(int64(tv))
+		v.SetIntVal(int64(tv))
 	case uint16:
-		return NewValueInt(int64(tv))
+		v.SetIntVal(int64(tv))
 	case uint32:
-		return NewValueInt(int64(tv))
+		v.SetIntVal(int64(tv))
 	case uint64:
-		return NewValueInt(int64(tv))
+		v.SetIntVal(int64(tv))
 	case float32:
-		return NewValueDouble(float64(tv))
+		v.SetDoubleVal(float64(tv))
 	case float64:
-		return NewValueDouble(tv)
+		v.SetDoubleVal(tv)
 	case bool:
-		return NewValueBool(tv)
+		v.SetBoolVal(tv)
 	case []byte:
-		bv := NewValueBytesEmpty()
-		bv.BytesVal().FromRaw(tv)
-		return bv
+		v.SetEmptyBytesVal().FromRaw(tv)
 	case map[string]interface{}:
-		mv := NewValueMap()
-		mv.MapVal().FromRaw(tv)
-		return mv
+		v.SetEmptyMapVal().FromRaw(tv)
 	case []interface{}:
-		av := NewValueSlice()
-		av.SliceVal().FromRaw(tv)
-		return av
+		v.SetEmptySliceVal().FromRaw(tv)
 	default:
-		return NewValueString(fmt.Sprintf("<Invalid value type %T>", tv))
+		v.SetStringVal(fmt.Sprintf("<Invalid value type %T>", tv))
 	}
 }
 
@@ -978,7 +972,7 @@ func (m Map) FromRaw(rawMap map[string]interface{}) {
 	ix := 0
 	for k, iv := range rawMap {
 		origs[ix].Key = k
-		newValueFromRaw(iv).copyTo(&origs[ix].Value)
+		newValue(&origs[ix].Value).fromRaw(iv)
 		ix++
 	}
 	*m.getOrig() = origs
@@ -1009,7 +1003,7 @@ func (es Slice) FromRaw(rawSlice []interface{}) {
 	}
 	origs := make([]otlpcommon.AnyValue, len(rawSlice))
 	for ix, iv := range rawSlice {
-		newValueFromRaw(iv).copyTo(&origs[ix])
+		newValue(&origs[ix]).fromRaw(iv)
 	}
 	*es.getOrig() = origs
 }
