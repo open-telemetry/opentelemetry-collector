@@ -85,7 +85,7 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, 0, m2.MapVal().Len())
 
 	// Modify the source map that was inserted.
-	m2.MapVal().UpsertString("key_in_child", "somestr")
+	m2.MapVal().PutString("key_in_child", "somestr")
 	assert.Equal(t, 1, m2.MapVal().Len())
 	got, exists = m2.MapVal().Get("key_in_child")
 	assert.True(t, exists)
@@ -249,12 +249,12 @@ func TestValueEqual(t *testing.T) {
 	assert.False(t, av1.Equal(av2))
 
 	av1 = NewValueMap()
-	av1.MapVal().UpsertString("foo", "bar")
+	av1.MapVal().PutString("foo", "bar")
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av2 = NewValueMap()
-	av2.MapVal().UpsertString("foo", "bar")
+	av2.MapVal().PutString("foo", "bar")
 	assert.True(t, av1.Equal(av2))
 
 	fooVal, ok := av2.MapVal().Get("foo")
@@ -318,25 +318,25 @@ func TestMap(t *testing.T) {
 	updateMapBytes.UpdateBytes("k", NewImmutableByteSlice([]byte{1, 2, 3}))
 	assert.EqualValues(t, NewMap(), updateMapBytes)
 
-	upsertMapString := NewMap()
-	upsertMapString.UpsertString("k", "v")
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), upsertMapString)
+	putMapString := NewMap()
+	putMapString.PutString("k", "v")
+	assert.EqualValues(t, Map(internal.GenerateTestMap()), putMapString)
 
-	upsertMapInt := NewMap()
-	upsertMapInt.UpsertInt("k", 123)
-	assert.EqualValues(t, generateTestIntMap(), upsertMapInt)
+	putMapInt := NewMap()
+	putMapInt.PutInt("k", 123)
+	assert.EqualValues(t, generateTestIntMap(), putMapInt)
 
-	upsertMapDouble := NewMap()
-	upsertMapDouble.UpsertDouble("k", 12.3)
-	assert.EqualValues(t, generateTestDoubleMap(), upsertMapDouble)
+	putMapDouble := NewMap()
+	putMapDouble.PutDouble("k", 12.3)
+	assert.EqualValues(t, generateTestDoubleMap(), putMapDouble)
 
-	upsertMapBool := NewMap()
-	upsertMapBool.UpsertBool("k", true)
-	assert.EqualValues(t, generateTestBoolMap(), upsertMapBool)
+	putMapBool := NewMap()
+	putMapBool.PutBool("k", true)
+	assert.EqualValues(t, generateTestBoolMap(), putMapBool)
 
-	upsertMapBytes := NewMap()
-	upsertMapBytes.UpsertBytes("k", NewImmutableByteSlice([]byte{1, 2, 3, 4, 5}))
-	assert.EqualValues(t, generateTestBytesMap(), upsertMapBytes)
+	putMapBytes := NewMap()
+	putMapBytes.PutEmptyBytes("k").FromRaw([]byte{1, 2, 3, 4, 5})
+	assert.EqualValues(t, generateTestBytesMap(), putMapBytes)
 
 	removeMap := NewMap()
 	assert.False(t, removeMap.Remove("k"))
@@ -346,9 +346,9 @@ func TestMap(t *testing.T) {
 	assert.EqualValues(t, NewMap(), NewMap().Sort())
 }
 
-func TestMapUpsertEmpty(t *testing.T) {
+func TestMapPutEmpty(t *testing.T) {
 	m := NewMap()
-	v := m.UpsertEmpty("k1")
+	v := m.PutEmpty("k1")
 	assert.EqualValues(t, map[string]interface{}{
 		"k1": nil,
 	}, m.AsRaw())
@@ -358,27 +358,27 @@ func TestMapUpsertEmpty(t *testing.T) {
 		"k1": true,
 	}, m.AsRaw())
 
-	v = m.UpsertEmpty("k1")
+	v = m.PutEmpty("k1")
 	v.SetIntVal(1)
 	v2, ok := m.Get("k1")
 	assert.True(t, ok)
 	assert.Equal(t, int64(1), v2.IntVal())
 }
 
-func TestMapUpsertEmptyMap(t *testing.T) {
+func TestMapPutEmptyMap(t *testing.T) {
 	m := NewMap()
-	childMap := m.UpsertEmptyMap("k1")
+	childMap := m.PutEmptyMap("k1")
 	assert.EqualValues(t, map[string]interface{}{
 		"k1": map[string]interface{}{},
 	}, m.AsRaw())
-	childMap.UpsertEmptySlice("k2").AppendEmpty().SetStringVal("val")
+	childMap.PutEmptySlice("k2").AppendEmpty().SetStringVal("val")
 	assert.EqualValues(t, map[string]interface{}{
 		"k1": map[string]interface{}{
 			"k2": []interface{}{"val"},
 		},
 	}, m.AsRaw())
 
-	childMap.UpsertEmptyMap("k2").UpsertInt("k3", 1)
+	childMap.PutEmptyMap("k2").PutInt("k3", 1)
 	assert.EqualValues(t, map[string]interface{}{
 		"k1": map[string]interface{}{
 			"k2": map[string]interface{}{"k3": int64(1)},
@@ -386,9 +386,9 @@ func TestMapUpsertEmptyMap(t *testing.T) {
 	}, m.AsRaw())
 }
 
-func TestMapUpsertEmptySlice(t *testing.T) {
+func TestMapPutEmptySlice(t *testing.T) {
 	m := NewMap()
-	childSlice := m.UpsertEmptySlice("k")
+	childSlice := m.PutEmptySlice("k")
 	assert.EqualValues(t, map[string]interface{}{
 		"k": []interface{}{},
 	}, m.AsRaw())
@@ -397,7 +397,7 @@ func TestMapUpsertEmptySlice(t *testing.T) {
 		"k": []interface{}{1.1},
 	}, m.AsRaw())
 
-	m.UpsertEmptySlice("k")
+	m.PutEmptySlice("k")
 	assert.EqualValues(t, map[string]interface{}{
 		"k": []interface{}{},
 	}, m.AsRaw())
@@ -409,9 +409,9 @@ func TestMapUpsertEmptySlice(t *testing.T) {
 	}, m.AsRaw())
 }
 
-func TestMapUpsertEmptyBytes(t *testing.T) {
+func TestMapPutEmptyBytes(t *testing.T) {
 	m := NewMap()
-	b := m.UpsertEmptyBytes("k")
+	b := m.PutEmptyBytes("k")
 	bv, ok := m.Get("k")
 	assert.True(t, ok)
 	assert.Equal(t, []byte(nil), bv.BytesVal().AsRaw())
@@ -420,7 +420,7 @@ func TestMapUpsertEmptyBytes(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, []byte{1, 2, 3}, bv.BytesVal().AsRaw())
 
-	m.UpsertEmptyBytes("k")
+	m.PutEmptyBytes("k")
 	bv, ok = m.Get("k")
 	assert.True(t, ok)
 	assert.Equal(t, []byte(nil), bv.BytesVal().AsRaw())
@@ -519,61 +519,61 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
 	assert.EqualValues(t, []byte{4, 5, 6}, val.BytesVal().AsRaw())
 
-	sm.UpsertString("other_key_string", "other_value")
+	sm.PutString("other_key_string", "other_value")
 	val, exist = sm.Get("other_key")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeString, val.Type())
 	assert.EqualValues(t, "other_value", val.StringVal())
 
-	sm.UpsertInt("other_key_int", 123)
+	sm.PutInt("other_key_int", 123)
 	val, exist = sm.Get("other_key_int")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeInt, val.Type())
 	assert.EqualValues(t, 123, val.IntVal())
 
-	sm.UpsertDouble("other_key_double", 1.23)
+	sm.PutDouble("other_key_double", 1.23)
 	val, exist = sm.Get("other_key_double")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeDouble, val.Type())
 	assert.EqualValues(t, 1.23, val.DoubleVal())
 
-	sm.UpsertBool("other_key_bool", true)
+	sm.PutBool("other_key_bool", true)
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.True(t, val.BoolVal())
 
-	sm.UpsertBytes("other_key_bytes", NewImmutableByteSlice([]byte{7, 8, 9}))
+	sm.PutEmptyBytes("other_key_bytes").FromRaw([]byte{7, 8, 9})
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
 	assert.EqualValues(t, []byte{7, 8, 9}, val.BytesVal().AsRaw())
 
-	sm.UpsertString("yet_another_key_string", "yet_another_value")
+	sm.PutString("yet_another_key_string", "yet_another_value")
 	val, exist = sm.Get("yet_another_key_string")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeString, val.Type())
 	assert.EqualValues(t, "yet_another_value", val.StringVal())
 
-	sm.UpsertInt("yet_another_key_int", 456)
+	sm.PutInt("yet_another_key_int", 456)
 	val, exist = sm.Get("yet_another_key_int")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeInt, val.Type())
 	assert.EqualValues(t, 456, val.IntVal())
 
-	sm.UpsertDouble("yet_another_key_double", 4.56)
+	sm.PutDouble("yet_another_key_double", 4.56)
 	val, exist = sm.Get("yet_another_key_double")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeDouble, val.Type())
 	assert.EqualValues(t, 4.56, val.DoubleVal())
 
-	sm.UpsertBool("yet_another_key_bool", false)
+	sm.PutBool("yet_another_key_bool", false)
 	val, exist = sm.Get("yet_another_key_bool")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBool, val.Type())
 	assert.False(t, val.BoolVal())
 
-	sm.UpsertBytes("yet_another_key_bytes", NewImmutableByteSlice([]byte{1}))
+	sm.PutEmptyBytes("yet_another_key_bytes").FromRaw([]byte{1})
 	val, exist = sm.Get("yet_another_key_bytes")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
@@ -674,12 +674,12 @@ func TestMap_FromRaw(t *testing.T) {
 	am := NewMap()
 	am.FromRaw(map[string]interface{}{})
 	assert.Equal(t, 0, am.Len())
-	am.UpsertEmpty("k")
+	am.PutEmpty("k")
 	assert.Equal(t, 1, am.Len())
 
 	am.FromRaw(nil)
 	assert.Equal(t, 0, am.Len())
-	am.UpsertEmpty("k")
+	am.PutEmpty("k")
 	assert.Equal(t, 1, am.Len())
 
 	am.FromRaw(map[string]interface{}{
@@ -801,11 +801,11 @@ func TestMap_Clear(t *testing.T) {
 
 func TestMap_RemoveIf(t *testing.T) {
 	am := NewMap()
-	am.UpsertString("k_string", "123")
-	am.UpsertInt("k_int", int64(123))
-	am.UpsertDouble("k_double", float64(1.23))
-	am.UpsertBool("k_bool", true)
-	am.UpsertEmpty("k_empty")
+	am.PutString("k_string", "123")
+	am.PutInt("k_int", int64(123))
+	am.PutDouble("k_double", float64(1.23))
+	am.PutBool("k_bool", true)
+	am.PutEmpty("k_empty")
 
 	assert.Equal(t, 5, am.Len())
 
@@ -1217,17 +1217,17 @@ func TestNewValueFromRaw(t *testing.T) {
 func generateTestValueMap() Value {
 	ret := NewValueMap()
 	attrMap := ret.MapVal()
-	attrMap.UpsertString("strKey", "strVal")
-	attrMap.UpsertInt("intKey", 7)
-	attrMap.UpsertDouble("floatKey", 18.6)
-	attrMap.UpsertBool("boolKey", false)
-	attrMap.UpsertEmpty("nullKey")
+	attrMap.PutString("strKey", "strVal")
+	attrMap.PutInt("intKey", 7)
+	attrMap.PutDouble("floatKey", 18.6)
+	attrMap.PutBool("boolKey", false)
+	attrMap.PutEmpty("nullKey")
 
-	m := attrMap.UpsertEmptyMap("mapKey")
-	m.UpsertString("keyOne", "valOne")
-	m.UpsertString("keyTwo", "valTwo")
+	m := attrMap.PutEmptyMap("mapKey")
+	m.PutString("keyOne", "valOne")
+	m.PutString("keyTwo", "valTwo")
 
-	s := attrMap.UpsertEmptySlice("arrKey")
+	s := attrMap.PutEmptySlice("arrKey")
 	s.AppendEmpty().SetStringVal("strOne")
 	s.AppendEmpty().SetStringVal("strTwo")
 

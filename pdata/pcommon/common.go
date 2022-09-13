@@ -681,7 +681,7 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 //
 //	_, ok := m.Get(k)
 //	if !ok {
-//		v.CopyTo(m.UpsertEmpty(k)) // or use m.UpsertEmpty<Type> for complex types.
+//		v.CopyTo(m.PutEmpty(k)) // or use m.PutEmpty<Type> for complex types.
 //	}
 func (m Map) Insert(k string, v Value) {
 	if _, existing := m.Get(k); !existing {
@@ -693,11 +693,11 @@ func (m Map) Insert(k string, v Value) {
 // No action is applied to the map where the key already exists.
 //
 // Deprecated: [0.60.0] Replace it with the following function calls if you need to make sure that existing value is
-// not overridden, otherwise just use UpsertString.
+// not overridden, otherwise just use PutString.
 //
 //	_, ok := m.Get(k)
 //	if !ok {
-//		m.UpsertString(k)
+//		m.PutString(k)
 //	}
 func (m Map) InsertString(k string, v string) {
 	if _, existing := m.Get(k); !existing {
@@ -709,11 +709,11 @@ func (m Map) InsertString(k string, v string) {
 // No action is applied to the map where the key already exists.
 //
 // Deprecated: [0.60.0] Replace it with the following function calls if you need to make sure that existing value is
-// not overridden, otherwise just use UpsertInt.
+// not overridden, otherwise just use PutInt.
 //
 //	_, ok := m.Get(k)
 //	if !ok {
-//		m.UpsertInt(k)
+//		m.PutInt(k)
 //	}
 func (m Map) InsertInt(k string, v int64) {
 	if _, existing := m.Get(k); !existing {
@@ -725,11 +725,11 @@ func (m Map) InsertInt(k string, v int64) {
 // No action is applied to the map where the key already exists.
 //
 // Deprecated: [0.60.0] Replace it with the following function calls if you need to make sure that existing value is
-// not overridden, otherwise just use UpsertDouble.
+// not overridden, otherwise just use PutDouble.
 //
 //	_, ok := m.Get(k)
 //	if !ok {
-//		m.UpsertDouble(k)
+//		m.PutDouble(k)
 //	}
 func (m Map) InsertDouble(k string, v float64) {
 	if _, existing := m.Get(k); !existing {
@@ -741,11 +741,11 @@ func (m Map) InsertDouble(k string, v float64) {
 // No action is applied to the map where the key already exists.
 //
 // Deprecated: [0.60.0] Replace it with the following function calls if you need to make sure that existing value is
-// not overridden, otherwise just use UpsertBool.
+// not overridden, otherwise just use PutBool.
 //
 //	_, ok := m.Get(k)
 //	if !ok {
-//		m.UpsertBool(k)
+//		m.PutBool(k)
 //	}
 func (m Map) InsertBool(k string, v bool) {
 	if _, existing := m.Get(k); !existing {
@@ -822,9 +822,9 @@ func (m Map) UpdateBytes(k string, v ImmutableByteSlice) {
 	}
 }
 
-// UpsertEmpty inserts or updates an empty value to the map under given key
+// PutEmpty inserts or updates an empty value to the map under given key
 // and return the updated/inserted value.
-func (m Map) UpsertEmpty(k string) Value {
+func (m Map) PutEmpty(k string) Value {
 	if av, existing := m.Get(k); existing {
 		av.getOrig().Value = nil
 		return newValue(av.getOrig())
@@ -833,10 +833,10 @@ func (m Map) UpsertEmpty(k string) Value {
 	return newValue(&(*m.getOrig())[len(*m.getOrig())-1].Value)
 }
 
-// UpsertString performs the Insert or Update action. The Value is
+// PutString performs the Insert or Update action. The Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) UpsertString(k string, v string) {
+func (m Map) PutString(k string, v string) {
 	if av, existing := m.Get(k); existing {
 		av.SetStringVal(v)
 	} else {
@@ -844,10 +844,10 @@ func (m Map) UpsertString(k string, v string) {
 	}
 }
 
-// UpsertInt performs the Insert or Update action. The int Value is
+// PutInt performs the Insert or Update action. The int Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) UpsertInt(k string, v int64) {
+func (m Map) PutInt(k string, v int64) {
 	if av, existing := m.Get(k); existing {
 		av.SetIntVal(v)
 	} else {
@@ -855,10 +855,10 @@ func (m Map) UpsertInt(k string, v int64) {
 	}
 }
 
-// UpsertDouble performs the Insert or Update action. The double Value is
+// PutDouble performs the Insert or Update action. The double Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) UpsertDouble(k string, v float64) {
+func (m Map) PutDouble(k string, v float64) {
 	if av, existing := m.Get(k); existing {
 		av.SetDoubleVal(v)
 	} else {
@@ -866,10 +866,10 @@ func (m Map) UpsertDouble(k string, v float64) {
 	}
 }
 
-// UpsertBool performs the Insert or Update action. The bool Value is
+// PutBool performs the Insert or Update action. The bool Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) UpsertBool(k string, v bool) {
+func (m Map) PutBool(k string, v bool) {
 	if av, existing := m.Get(k); existing {
 		av.SetBoolVal(v)
 	} else {
@@ -880,7 +880,7 @@ func (m Map) UpsertBool(k string, v bool) {
 // UpsertBytes performs the Insert or Update action. The ImmutableByteSlice Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-// Deprecated: [0.60.0] Use UpsertEmptyBytes().FromRaw(v) instead.
+// Deprecated: [0.60.0] Use PutEmptyBytes().FromRaw(v) instead.
 func (m Map) UpsertBytes(k string, v ByteSlice) {
 	if av, existing := m.Get(k); existing {
 		av.SetBytesVal(v)
@@ -889,8 +889,8 @@ func (m Map) UpsertBytes(k string, v ByteSlice) {
 	}
 }
 
-// UpsertEmptyBytes inserts or updates an empty byte slice under given key and returns it.
-func (m Map) UpsertEmptyBytes(k string) ByteSlice {
+// PutEmptyBytes inserts or updates an empty byte slice under given key and returns it.
+func (m Map) PutEmptyBytes(k string) ByteSlice {
 	bv := otlpcommon.AnyValue_BytesValue{}
 	if av, existing := m.Get(k); existing {
 		av.getOrig().Value = &bv
@@ -900,8 +900,8 @@ func (m Map) UpsertEmptyBytes(k string) ByteSlice {
 	return ByteSlice(internal.NewByteSlice(&bv.BytesValue))
 }
 
-// UpsertEmptyMap inserts or updates an empty map under given key and returns it.
-func (m Map) UpsertEmptyMap(k string) Map {
+// PutEmptyMap inserts or updates an empty map under given key and returns it.
+func (m Map) PutEmptyMap(k string) Map {
 	kvl := otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{Values: []otlpcommon.KeyValue(nil)}}
 	if av, existing := m.Get(k); existing {
 		av.getOrig().Value = &kvl
@@ -911,8 +911,8 @@ func (m Map) UpsertEmptyMap(k string) Map {
 	return Map(internal.NewMap(&kvl.KvlistValue.Values))
 }
 
-// UpsertEmptySlice inserts or updates an empty clice under given key and returns it.
-func (m Map) UpsertEmptySlice(k string) Slice {
+// PutEmptySlice inserts or updates an empty slice under given key and returns it.
+func (m Map) PutEmptySlice(k string) Slice {
 	vl := otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{Values: []otlpcommon.AnyValue(nil)}}
 	if av, existing := m.Get(k); existing {
 		av.getOrig().Value = &vl
@@ -920,6 +920,41 @@ func (m Map) UpsertEmptySlice(k string) Slice {
 		*m.getOrig() = append(*m.getOrig(), otlpcommon.KeyValue{Key: k, Value: otlpcommon.AnyValue{Value: &vl}})
 	}
 	return Slice(internal.NewSlice(&vl.ArrayValue.Values))
+}
+
+// Deprecated: [0.60.0] Use PutEmpty instead.
+func (m Map) UpsertEmpty(k string) Value {
+	return m.PutEmpty(k)
+}
+
+// Deprecated: [0.60.0] Use PutString instead.
+func (m Map) UpsertString(k string, v string) {
+	m.PutString(k, v)
+}
+
+// Deprecated: [0.60.0] Use func PutInt instead.
+func (m Map) UpsertInt(k string, v int64) {
+	m.PutInt(k, v)
+}
+
+// Deprecated: [0.60.0] Use PutDouble instead.
+func (m Map) UpsertDouble(k string, v float64) {
+	m.PutDouble(k, v)
+}
+
+// Deprecated: [0.60.0] Use PutBool instead.
+func (m Map) UpsertBool(k string, v bool) {
+	m.PutBool(k, v)
+}
+
+// Deprecated: [0.60.0] Use PutEmptyMap instead.
+func (m Map) UpsertEmptyMap(k string) Map {
+	return m.PutEmptyMap(k)
+}
+
+// Deprecated: [0.60.0] Use PutEmptySlice instead.
+func (m Map) UpsertEmptySlice(k string) Slice {
+	return m.PutEmptySlice(k)
 }
 
 // Sort sorts the entries in the Map so two instances can be compared.
