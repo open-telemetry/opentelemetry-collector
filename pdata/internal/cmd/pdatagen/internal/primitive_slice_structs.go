@@ -38,12 +38,12 @@ func New${structName}() ${structName} {
 
 // AsRaw returns a copy of the []${itemType} slice.
 func (ms ${structName}) AsRaw() []${itemType} {
-	return copy${structName}(*ms.getOrig())
+	return copy${structName}(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []${itemType} into the slice ${structName}.
 func (ms ${structName}) FromRaw(val []${itemType}) {
-	*ms.getOrig() = copy${structName}(val)
+	*ms.getOrig() = copy${structName}(*ms.getOrig(), val)
 }
 
 // Len returns length of the []${itemType} slice value.
@@ -69,17 +69,12 @@ func (ms ${structName}) MoveTo(dest ${structName}) {
 
 // CopyTo copies ${structName} to another instance.
 func (ms ${structName}) CopyTo(dest ${structName}) {
-	*dest.getOrig() = copy${structName}(*ms.getOrig())
+	*dest.getOrig() = copy${structName}(*dest.getOrig(), *ms.getOrig())
 }
 
-func copy${structName}(from []${itemType}) []${itemType} {
-	if len(from) == 0 {
-		return nil
-	}
-
-	to := make([]${itemType}, len(from))
-	copy(to, from)
-	return to
+func copy${structName}(dst, src []${itemType}) []${itemType} {
+	dst = dst[:0]
+	return append(dst, src...)
 }`
 
 const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {

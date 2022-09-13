@@ -1046,7 +1046,7 @@ type ImmutableByteSlice = ByteSlice
 // NewImmutableByteSlice creates a new ByteSlice by copying the provided []byte slice.
 // Deprecated: [0.60.0] Use New{structName}() and {structName}.FromRaw([]byte) instead
 func NewImmutableByteSlice(from []byte) ByteSlice {
-	orig := copyByteSlice(from)
+	orig := copyByteSlice(nil, from)
 	return ByteSlice(internal.NewByteSlice(&orig))
 }
 
@@ -1056,7 +1056,7 @@ type ImmutableFloat64Slice = Float64Slice
 // NewImmutableFloat64Slice creates a new Float64Slice by copying the provided []float64 slice.
 // Deprecated: [0.60.0] Use New{structName}() and {structName}.FromRaw([]float64) instead
 func NewImmutableFloat64Slice(from []float64) Float64Slice {
-	orig := copyFloat64Slice(from)
+	orig := copyFloat64Slice(nil, from)
 	return Float64Slice(internal.NewFloat64Slice(&orig))
 }
 
@@ -1066,6 +1066,6 @@ type ImmutableUInt64Slice = UInt64Slice
 // NewImmutableUInt64Slice creates a new UInt64Slice by copying the provided []uint64 slice.
 // Deprecated: [0.60.0] Use New{structName}() and {structName}.FromRaw([]uint64) instead
 func NewImmutableUInt64Slice(from []uint64) UInt64Slice {
-	orig := copyUInt64Slice(from)
+	orig := copyUInt64Slice(nil, from)
 	return UInt64Slice(internal.NewUInt64Slice(&orig))
 }

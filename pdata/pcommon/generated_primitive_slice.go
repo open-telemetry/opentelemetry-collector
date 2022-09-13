@@ -38,12 +38,12 @@ func NewByteSlice() ByteSlice {
 
 // AsRaw returns a copy of the []byte slice.
 func (ms ByteSlice) AsRaw() []byte {
-	return copyByteSlice(*ms.getOrig())
+	return copyByteSlice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []byte into the slice ByteSlice.
 func (ms ByteSlice) FromRaw(val []byte) {
-	*ms.getOrig() = copyByteSlice(val)
+	*ms.getOrig() = copyByteSlice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []byte slice value.
@@ -69,17 +69,12 @@ func (ms ByteSlice) MoveTo(dest ByteSlice) {
 
 // CopyTo copies ByteSlice to another instance.
 func (ms ByteSlice) CopyTo(dest ByteSlice) {
-	*dest.getOrig() = copyByteSlice(*ms.getOrig())
+	*dest.getOrig() = copyByteSlice(*dest.getOrig(), *ms.getOrig())
 }
 
-func copyByteSlice(from []byte) []byte {
-	if len(from) == 0 {
-		return nil
-	}
-
-	to := make([]byte, len(from))
-	copy(to, from)
-	return to
+func copyByteSlice(dst, src []byte) []byte {
+	dst = dst[:0]
+	return append(dst, src...)
 }
 
 // Float64Slice represents a []float64 slice.
@@ -101,12 +96,12 @@ func NewFloat64Slice() Float64Slice {
 
 // AsRaw returns a copy of the []float64 slice.
 func (ms Float64Slice) AsRaw() []float64 {
-	return copyFloat64Slice(*ms.getOrig())
+	return copyFloat64Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []float64 into the slice Float64Slice.
 func (ms Float64Slice) FromRaw(val []float64) {
-	*ms.getOrig() = copyFloat64Slice(val)
+	*ms.getOrig() = copyFloat64Slice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []float64 slice value.
@@ -132,17 +127,12 @@ func (ms Float64Slice) MoveTo(dest Float64Slice) {
 
 // CopyTo copies Float64Slice to another instance.
 func (ms Float64Slice) CopyTo(dest Float64Slice) {
-	*dest.getOrig() = copyFloat64Slice(*ms.getOrig())
+	*dest.getOrig() = copyFloat64Slice(*dest.getOrig(), *ms.getOrig())
 }
 
-func copyFloat64Slice(from []float64) []float64 {
-	if len(from) == 0 {
-		return nil
-	}
-
-	to := make([]float64, len(from))
-	copy(to, from)
-	return to
+func copyFloat64Slice(dst, src []float64) []float64 {
+	dst = dst[:0]
+	return append(dst, src...)
 }
 
 // UInt64Slice represents a []uint64 slice.
@@ -164,12 +154,12 @@ func NewUInt64Slice() UInt64Slice {
 
 // AsRaw returns a copy of the []uint64 slice.
 func (ms UInt64Slice) AsRaw() []uint64 {
-	return copyUInt64Slice(*ms.getOrig())
+	return copyUInt64Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []uint64 into the slice UInt64Slice.
 func (ms UInt64Slice) FromRaw(val []uint64) {
-	*ms.getOrig() = copyUInt64Slice(val)
+	*ms.getOrig() = copyUInt64Slice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []uint64 slice value.
@@ -195,15 +185,10 @@ func (ms UInt64Slice) MoveTo(dest UInt64Slice) {
 
 // CopyTo copies UInt64Slice to another instance.
 func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
-	*dest.getOrig() = copyUInt64Slice(*ms.getOrig())
+	*dest.getOrig() = copyUInt64Slice(*dest.getOrig(), *ms.getOrig())
 }
 
-func copyUInt64Slice(from []uint64) []uint64 {
-	if len(from) == 0 {
-		return nil
-	}
-
-	to := make([]uint64, len(from))
-	copy(to, from)
-	return to
+func copyUInt64Slice(dst, src []uint64) []uint64 {
+	dst = dst[:0]
+	return append(dst, src...)
 }
