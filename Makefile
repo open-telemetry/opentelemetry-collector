@@ -318,8 +318,18 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 	@$(MAKE) -C $(CONTRIB_PATH) test
-	@echo Restoring contrib to no longer use this core checkout
+	@if [ -z "$(SKIP_RESTORE_CONTRIB)" ]; then \
+		$(MAKE) restore-contrib; \
+	fi
+
+# Restores contrib to its original state after running check-contrib.
+.PHONY: restore-contrib
+restore-contrib:
+	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/pdata"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/semconv"
+	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := localhost|""|config/configgrpc/testdata \
