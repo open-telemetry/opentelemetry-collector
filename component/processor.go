@@ -187,6 +187,13 @@ func (p processorFactory) LogsProcessorStability() StabilityLevel {
 	return p.logsStabilityLevel
 }
 
+// WithProcessorSampleConfig sets the configuration string for the processor factory type.
+func WithProcessorSampleConfig(yamlConfig string) ProcessorFactoryOption {
+	return processorFactoryOptionFunc(func(o *processorFactory) {
+		o.baseFactory.sampleConfig = yamlConfig
+	})
+}
+
 // WithTracesProcessor overrides the default "error not supported" implementation for CreateTracesProcessor and the default "undefined" stability level.
 func WithTracesProcessor(createTracesProcessor CreateTracesProcessorFunc, sl StabilityLevel) ProcessorFactoryOption {
 	return processorFactoryOptionFunc(func(o *processorFactory) {

@@ -16,6 +16,7 @@ package zpagesextension // import "go.opentelemetry.io/collector/extension/zpage
 
 import (
 	"context"
+	_ "embed"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -29,9 +30,18 @@ const (
 	defaultEndpoint = "localhost:55679"
 )
 
+//go:embed zpages.sample.yaml
+var sampleConfig string
+
 // NewFactory creates a factory for Z-Pages extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
+	return component.NewExtensionFactory(
+		typeStr,
+		createDefaultConfig,
+		createExtension,
+		component.StabilityLevelBeta,
+		component.WithExtensionSampleConfig(sampleConfig),
+	)
 }
 
 func createDefaultConfig() config.Extension {

@@ -164,15 +164,24 @@ type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() config.Type
 
+	// SampleConfig returns a sample configuration defined for this component.
+	// Authors must ensure to return a valid YAML string which minimally represents a valid Configuration
+	// for the component.
+	SampleConfig() string
+
 	unexportedFactoryFunc()
 }
 
 type baseFactory struct {
-	cfgType config.Type
+	cfgType      config.Type
+	sampleConfig string
 }
 
 func (baseFactory) unexportedFactoryFunc() {}
 
 func (bf baseFactory) Type() config.Type {
 	return bf.cfgType
+}
+func (bf baseFactory) SampleConfig() string {
+	return bf.sampleConfig
 }

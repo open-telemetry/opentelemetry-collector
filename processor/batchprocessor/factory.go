@@ -16,6 +16,7 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"context"
+	_ "embed"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -31,6 +32,9 @@ const (
 	defaultTimeout       = 200 * time.Millisecond
 )
 
+//go:embed batch.sample.yaml
+var sampleConfig string
+
 // NewFactory returns a new factory for the Batch processor.
 func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
@@ -38,7 +42,9 @@ func NewFactory() component.ProcessorFactory {
 		createDefaultConfig,
 		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelStable),
 		component.WithMetricsProcessor(createMetricsProcessor, component.StabilityLevelStable),
-		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelStable))
+		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelStable),
+		component.WithProcessorSampleConfig(sampleConfig),
+	)
 }
 
 func createDefaultConfig() config.Processor {

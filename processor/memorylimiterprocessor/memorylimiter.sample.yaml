@@ -1,0 +1,17 @@
+memory_limiter:
+  # CheckInterval is the time between measurements of memory usage for the
+  # purposes of avoiding going over the limits. Defaults to zero, so no
+  # checks will be performed.
+  check_interval: 1m
+  # MemoryLimitMiB is the maximum amount of memory, in MiB, targeted to be
+  # allocated by the process.
+  limit_mib: 450
+  # MemorySpikeLimitMiB is the maximum, in MiB, spike expected between the
+  # measurements of memory usage.
+  spike_limit_mib: 0
+  # MemoryLimitPercentage is the maximum amount of memory, in %, targeted to be
+  # allocated by the process. The fixed memory settings MemoryLimitMiB has a higher precedence.
+  limit_percentage: 0
+  # MemorySpikePercentage is the maximum, in percents against the total memory,
+  # spike expected between the measurements of memory usage.
+  spike_limit_percentage: 0

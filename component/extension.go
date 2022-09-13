@@ -88,6 +88,20 @@ type ExtensionFactory interface {
 	ExtensionStability() StabilityLevel
 }
 
+type ExtensionFactoryOption interface {
+	// applyExtensionFactoryOption applies the option.
+	applyExtensionFactoryOption(o *extensionFactory)
+}
+
+var _ ExtensionFactoryOption = (*extensionFactoryOptionFunc)(nil)
+
+// extensionFactoryOptionFunc is an ExtensionFactoryOption created through a function.
+type extensionFactoryOptionFunc func(*extensionFactory)
+
+func (f extensionFactoryOptionFunc) applyExtensionFactoryOption(o *extensionFactory) {
+	f(o)
+}
+
 type extensionFactory struct {
 	baseFactory
 	ExtensionCreateDefaultConfigFunc
@@ -99,16 +113,29 @@ func (ef *extensionFactory) ExtensionStability() StabilityLevel {
 	return ef.extensionStability
 }
 
+// WithExtensionSampleConfig sets the configuration string for the Extension factory type.
+func WithExtensionSampleConfig(yamlConfig string) ExtensionFactoryOption {
+	return extensionFactoryOptionFunc(func(o *extensionFactory) {
+		o.baseFactory.sampleConfig = yamlConfig
+	})
+}
+
 // NewExtensionFactory returns a new ExtensionFactory  based on this configuration.
 func NewExtensionFactory(
 	cfgType config.Type,
 	createDefaultConfig ExtensionCreateDefaultConfigFunc,
 	createServiceExtension CreateExtensionFunc,
-	sl StabilityLevel) ExtensionFactory {
-	return &extensionFactory{
+	sl StabilityLevel, options ...ExtensionFactoryOption) ExtensionFactory {
+	ext := &extensionFactory{
 		baseFactory:                      baseFactory{cfgType: cfgType},
 		ExtensionCreateDefaultConfigFunc: createDefaultConfig,
 		CreateExtensionFunc:              createServiceExtension,
 		extensionStability:               sl,
 	}
+
+	for _, opt := range options {
+		opt.applyExtensionFactoryOption(ext)
+	}
+
+	return ext
 }

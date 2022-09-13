@@ -96,6 +96,7 @@
 ### 💡 Enhancements 💡
 
 - Add `skip-get-modules` builder flag to support isolated environment executions (#6009)
+- Add subcommand `config` which returns a sample configuration for the given components (#5943)
   - Skip unnecessary Go binary path validation when the builder is used with `skip-compilation` and `skip-get-modules` flags (#6026)
 - Make the otlpreceiver support to use jsoniter to unmarshal JSON payloads. (#6040)
 - Add mapstructure hook function for confmap.Unmarshaler interface (#6029)

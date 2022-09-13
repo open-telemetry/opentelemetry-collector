@@ -16,6 +16,7 @@ package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexpor
 
 import (
 	"context"
+	_ "embed"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -30,6 +31,9 @@ const (
 	typeStr = "otlp"
 )
 
+//go:embed otlp.sample.yaml
+var sampleConfig string
+
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
@@ -38,6 +42,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithTracesExporter(createTracesExporter, component.StabilityLevelStable),
 		component.WithMetricsExporter(createMetricsExporter, component.StabilityLevelStable),
 		component.WithLogsExporter(createLogsExporter, component.StabilityLevelBeta),
+		component.WithExporterSampleConfig(sampleConfig),
 	)
 }
 

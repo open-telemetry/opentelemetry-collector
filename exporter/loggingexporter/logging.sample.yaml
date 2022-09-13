@@ -1,0 +1,7 @@
+logging:
+  # LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
+  loglevel: 0
+  # SamplingInitial defines how many samples are initially logged during each second.
+  sampling_initial: 2
+  # SamplingThereafter defines the sampling rate after the initial samples are logged.
+  sampling_thereafter: 500

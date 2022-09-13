@@ -1,0 +1,29 @@
+otlphttp:
+  # The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
+  endpoint: "localhost:3333"
+  # TLSSetting struct exposes TLS client configuration.
+  tls:
+    # Path to the CA cert. For a client this verifies the server certificate.
+    # For a server this verifies client certificates. If empty uses system root CA.
+    # (optional)
+    ca_file: "/path/to/ca"
+    # Path to the TLS cert to use for TLS required connections. (optional)
+    cert_file: "/path/to/cert"
+    # Path to the TLS key to use for TLS required connections. (optional)
+    key_file: "/path/to/key"
+    # In HTTP, this disables verifying the server's certificate chain and host name
+    # (InsecureSkipVerify in the tls Config). Please refer to
+    # https://godoc.org/crypto/tls#Config for more information.
+    # (optional, default false)
+    insecure: false
+    # InsecureSkipVerify will enable TLS but not verify the certificate.
+    insecure_skip_verify: false
+  # Timeout parameter configures `http.Client.Timeout`.
+  timeout: 30s
+  # Additional headers attached to each HTTP request sent by the client.
+  # Existing header values are overwritten if collision happens.
+  headers: null
+  # The compression key for supported compression types within collector.
+  compression: gzip
+  # The URL to send metrics to. If omitted the Endpoint + "/v1/metrics" will be used.
+  metrics_endpoint: "/api/v2/metrics/consume"

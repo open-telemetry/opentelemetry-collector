@@ -16,6 +16,7 @@ package memorylimiterprocessor // import "go.opentelemetry.io/collector/processo
 
 import (
 	"context"
+	_ "embed"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,6 +31,9 @@ const (
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: false}
+
+//go:embed memorylimiter.sample.yaml
+var sampleConfig string
 
 type factory struct {
 	// memoryLimiters stores memoryLimiter instances with unique configs that multiple processors can reuse.
@@ -48,7 +52,9 @@ func NewFactory() component.ProcessorFactory {
 		createDefaultConfig,
 		component.WithTracesProcessor(f.createTracesProcessor, component.StabilityLevelBeta),
 		component.WithMetricsProcessor(f.createMetricsProcessor, component.StabilityLevelBeta),
-		component.WithLogsProcessor(f.createLogsProcessor, component.StabilityLevelBeta))
+		component.WithLogsProcessor(f.createLogsProcessor, component.StabilityLevelBeta),
+		component.WithProcessorSampleConfig(sampleConfig),
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice

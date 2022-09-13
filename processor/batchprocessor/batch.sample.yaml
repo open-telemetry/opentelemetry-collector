@@ -1,0 +1,9 @@
+batch:
+  # Timeout sets the time after which a batch will be sent regardless of size.
+  timeout: 200ms
+  # SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
+  send_batch_size: 8192
+  # SendBatchMaxSize is the maximum size of a batch. It must be larger than SendBatchSize.
+  # Larger batches are split into smaller units.
+  # Default value is 0, that means no maximum size.
+  send_batch_max_size: 0

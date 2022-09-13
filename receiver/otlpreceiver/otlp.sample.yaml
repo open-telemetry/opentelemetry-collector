@@ -1,0 +1,36 @@
+otlp:
+  # Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
+  protocols:
+    # GRPCServerSettings defines common settings for a gRPC server configuration.
+    grpc:
+      # Endpoint configures the address for this network connection.
+      # For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address,
+      # or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name.
+      # If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
+      # "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
+      endpoint: 0.0.0.0:4317
+      # Transport to use. Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
+      # "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
+      transport: tcp
+      # Configures the protocol to use TLS.
+      # The default value is nil, which will cause the protocol to not use TLS.
+      tls:
+        # Path to the CA cert. For a client this verifies the server certificate.
+        # For a server this verifies client certificates. If empty uses system root CA.
+        # (optional)
+        ca_file: "/path/to/ca"
+        # Path to the TLS cert to use for TLS required connections. (optional)
+        cert_file: "/path/to/cert"
+        # Path to the TLS key to use for TLS required connections. (optional)
+        key_file: "/path/to/key"
+      # Auth for this receiver
+      auth:
+        # AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
+        authenticator: null
+      # Include propagates the incoming connection's metadata to downstream consumers.
+      # Experimental: *NOTE* this option is subject to change or removal in the future.
+      include_metadata: false
+    # HTTPServerSettings defines settings for creating an HTTP server.
+    http:
+      # Endpoint configures the listening address for the server.
+      endpoint: 0.0.0.0:4318

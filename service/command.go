@@ -62,5 +62,6 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 	}
 
 	rootCmd.Flags().AddGoFlagSet(flagSet)
+	rootCmd.AddCommand(NewConfigurationInitCommand(set))
 	return rootCmd
 }

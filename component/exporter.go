@@ -172,6 +172,13 @@ func (e exporterFactory) LogsExporterStability() StabilityLevel {
 	return e.logsStabilityLevel
 }
 
+// WithExporterSampleConfig sets the configuration string for the exporter factory type.
+func WithExporterSampleConfig(yamlConfig string) ExporterFactoryOption {
+	return exporterFactoryOptionFunc(func(o *exporterFactory) {
+		o.baseFactory.sampleConfig = yamlConfig
+	})
+}
+
 // WithTracesExporter overrides the default "error not supported" implementation for CreateTracesExporter and the default "undefined" stability level.
 func WithTracesExporter(createTracesExporter CreateTracesExporterFunc, sl StabilityLevel) ExporterFactoryOption {
 	return exporterFactoryOptionFunc(func(o *exporterFactory) {

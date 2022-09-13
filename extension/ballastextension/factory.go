@@ -16,6 +16,7 @@ package ballastextension // import "go.opentelemetry.io/collector/extension/ball
 
 import (
 	"context"
+	_ "embed"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -27,12 +28,20 @@ const (
 	typeStr = "memory_ballast"
 )
 
+//go:embed memoryballast.sample.yaml
+var sampleConfig string
+
 // memHandler returns the total memory of the target host/vm
 var memHandler = iruntime.TotalMemory
 
 // NewFactory creates a factory for FluentBit extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
+	return component.NewExtensionFactory(
+		typeStr,
+		createDefaultConfig,
+		createExtension,
+		component.StabilityLevelBeta,
+		component.WithExtensionSampleConfig(sampleConfig))
 }
 
 func createDefaultConfig() config.Extension {

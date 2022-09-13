@@ -1,0 +1,7 @@
+memory_ballast:
+  # SizeMiB is the size, in MiB, of the memory ballast
+  # to be created for this process.
+  size_mib: 500
+  # SizeInPercentage is the maximum amount of memory ballast, in %, targeted to be
+  # allocated. The fixed memory settings SizeMiB has a higher precedence.
+  size_in_percentage: 50

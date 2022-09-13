@@ -16,6 +16,7 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 
 import (
 	"context"
+	_ "embed"
 	"time"
 
 	"go.uber.org/zap"
@@ -34,6 +35,9 @@ const (
 	defaultSamplingThereafter = 500
 )
 
+//go:embed logging.sample.yaml
+var sampleConfig string
+
 // NewFactory creates a factory for Logging exporter
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
@@ -42,6 +46,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithTracesExporter(createTracesExporter, component.StabilityLevelInDevelopment),
 		component.WithMetricsExporter(createMetricsExporter, component.StabilityLevelInDevelopment),
 		component.WithLogsExporter(createLogsExporter, component.StabilityLevelInDevelopment),
+		component.WithExporterSampleConfig(sampleConfig),
 	)
 }
 

@@ -232,6 +232,13 @@ func (r receiverFactory) LogsReceiverStability() StabilityLevel {
 	return r.logsStabilityLevel
 }
 
+// WithReceiverSampleConfig sets the configuration string for the receiver factory type.
+func WithReceiverSampleConfig(yamlConfig string) ReceiverFactoryOption {
+	return receiverFactoryOptionFunc(func(o *receiverFactory) {
+		o.baseFactory.sampleConfig = yamlConfig
+	})
+}
+
 // WithTracesReceiver overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
 func WithTracesReceiver(createTracesReceiver CreateTracesReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {

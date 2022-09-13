@@ -16,6 +16,7 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 
 import (
 	"context"
+	_ "embed"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -33,6 +34,9 @@ const (
 	defaultHTTPEndpoint = "0.0.0.0:4318"
 )
 
+//go:embed otlp.sample.yaml
+var sampleConfig string
+
 // NewFactory creates a new OTLP receiver factory.
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
@@ -40,7 +44,9 @@ func NewFactory() component.ReceiverFactory {
 		createDefaultConfig,
 		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelStable),
 		component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelStable),
-		component.WithLogsReceiver(createLogReceiver, component.StabilityLevelBeta))
+		component.WithLogsReceiver(createLogReceiver, component.StabilityLevelBeta),
+		component.WithReceiverSampleConfig(sampleConfig),
+	)
 }
 
 // createDefaultConfig creates the default configuration for receiver.
