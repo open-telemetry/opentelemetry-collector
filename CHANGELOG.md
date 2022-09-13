@@ -3,6 +3,7 @@
 ## Unreleased
 - Fix reading resource attributes for trace JSON, remove duplicate code. (#6023)
 - Add support to unmarshalls bytes into plogs.Logs with `jsoniter` in jsonUnmarshaler(#5935)
+- Instead of exiting, `ocb` now generates a default Collector when no build configuration is supplied (#5752)
 
 
 ### 🛑 Breaking changes 🛑

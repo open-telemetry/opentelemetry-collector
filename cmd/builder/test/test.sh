@@ -12,17 +12,10 @@ fi
 
 echo "Using ${GOBIN} to compile the distributions."
 
-# each attempt pauses for 100ms before retrying
-max_retries=50
+test_build_config() {
+    local test="$1"
+    local build_config="$2"
 
-tests="core"
-
-base=`mktemp -d`
-echo "Running the tests in ${base}"
-
-failed=false
-for test in $tests
-do 
     out="${base}/${test}"
     mkdir -p "${out}"
     if [ $? != 0 ]; then
@@ -32,22 +25,33 @@ do
 
     echo "Starting test '${test}' at `date`" >> "${out}/test.log"
 
-    go run . --go "${GOBIN}" --config "./test/${test}.builder.yaml" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
+    if [ -z "$build_config" ] ; then
+        go run . --go "${GOBIN}" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
+    else
+        go run . --go "${GOBIN}" --config "$build_config" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
+    fi
+
     if [ $? != 0 ]; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"
         cat "${out}/builder.log"
         failed=true
-        continue
+        return
     fi
 
     if [ ! -f "${out}/otelcol-built-test" ]; then
         echo "❌ FAIL ${test}. Binary not found for ${test} at '${out}/otelcol-built-test'. Build logs:"
         cat "${out}/builder.log"
         failed=true
-        continue
+        return
     fi
 
     # start the distribution
+    if [ ! -f "./test/${test}.otel.yaml" ]; then
+        echo "❌ FAIL ${test}. Config file for ${test} not found at './test/${test}.otel.yaml'"
+        failed=true
+        return
+    fi
+
     "${out}/otelcol-built-test" --config "./test/${test}.otel.yaml" > "${out}/otelcol.log" 2>&1 &
     pid=$!
 
@@ -62,7 +66,10 @@ do
             break
         fi
 
-        curl -s http://localhost:55679/debug/servicez | grep Uptime > /dev/null
+        # Since the content of the servicez page depend on which extensions are
+        # built into the collector, we depend only on the zpages extension
+        # being present and serving something.
+        curl --fail --silent --output /dev/null http://localhost:55679/debug/servicez
         if [ $? == 0 ]; then
             echo "✅ PASS ${test}"
 
@@ -92,7 +99,25 @@ do
     done
 
     echo "Stopping server for '${test}' (pid: ${pid})" >> "${out}/test.log"
-    wait ${pid}
+
+}
+
+# each attempt pauses for 100ms before retrying
+max_retries=50
+
+tests="core"
+
+base=`mktemp -d`
+echo "Running the tests in ${base}"
+
+failed=false
+
+# Test that an empty build configuration builds a working default collector.
+test_build_config "default"
+
+for test in $tests
+do
+    test_build_config "$test" "./test/${test}.builder.yaml"
 done
 
 if [[ "$failed" == "true" ]]; then
