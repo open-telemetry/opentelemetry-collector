@@ -257,7 +257,7 @@ func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 		b.logEntry("SpanLink #%d", i)
 		b.logEntry("     -> Trace ID: %s", l.TraceID().HexString())
 		b.logEntry("     -> ID: %s", l.SpanID().HexString())
-		b.logEntry("     -> TraceState: %s", l.TraceState())
+		b.logEntry("     -> TraceState: %s", l.TraceStateStruct().AsRaw())
 		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
 		if l.Attributes().Len() == 0 {
 			continue

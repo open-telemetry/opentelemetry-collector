@@ -620,14 +620,9 @@ func (ms Span) SetSpanID(v pcommon.SpanID) {
 	ms.getOrig().SpanId = data.SpanID(v)
 }
 
-// TraceState returns the tracestate associated with this Span.
-func (ms Span) TraceState() TraceState {
-	return TraceState(ms.getOrig().TraceState)
-}
-
-// SetTraceState replaces the tracestate associated with this Span.
-func (ms Span) SetTraceState(v TraceState) {
-	ms.getOrig().TraceState = string(v)
+// TraceStateStruct returns the tracestatestruct associated with this Span.
+func (ms Span) TraceStateStruct() pcommon.TraceState {
+	return pcommon.TraceState(internal.NewTraceState(&ms.getOrig().TraceState))
 }
 
 // ParentSpanID returns the parentspanid associated with this Span.
@@ -734,7 +729,7 @@ func (ms Span) Status() SpanStatus {
 func (ms Span) CopyTo(dest Span) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
-	dest.SetTraceState(ms.TraceState())
+	ms.TraceStateStruct().CopyTo(dest.TraceStateStruct())
 	dest.SetParentSpanID(ms.ParentSpanID())
 	dest.SetName(ms.Name())
 	dest.SetKind(ms.Kind())
@@ -1161,14 +1156,9 @@ func (ms SpanLink) SetSpanID(v pcommon.SpanID) {
 	ms.getOrig().SpanId = data.SpanID(v)
 }
 
-// TraceState returns the tracestate associated with this SpanLink.
-func (ms SpanLink) TraceState() TraceState {
-	return TraceState(ms.getOrig().TraceState)
-}
-
-// SetTraceState replaces the tracestate associated with this SpanLink.
-func (ms SpanLink) SetTraceState(v TraceState) {
-	ms.getOrig().TraceState = string(v)
+// TraceStateStruct returns the tracestatestruct associated with this SpanLink.
+func (ms SpanLink) TraceStateStruct() pcommon.TraceState {
+	return pcommon.TraceState(internal.NewTraceState(&ms.getOrig().TraceState))
 }
 
 // Attributes returns the Attributes associated with this SpanLink.
@@ -1190,7 +1180,7 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
-	dest.SetTraceState(ms.TraceState())
+	ms.TraceStateStruct().CopyTo(dest.TraceStateStruct())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }
