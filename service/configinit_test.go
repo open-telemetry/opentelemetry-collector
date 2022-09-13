@@ -273,6 +273,7 @@ func TestPrompts(t *testing.T) {
 	factories := testcomponents()
 	set := &CollectorSettings{Factories: factories}
 	available := getAvailableComponentsForPrompts(set)
+	file := "otelcol_temp_config.yaml"
 	RunCmdTest(t,
 		func(t *testing.T, c *expect.Console, s *vt10x.State) {
 			// select exporters at index 0, 1
@@ -306,11 +307,15 @@ func TestPrompts(t *testing.T) {
 			_, _ = c.SendLine(string(terminal.KeyEnter))
 
 			// enter file name
-			file := "otelcol_temp_config.yaml"
 			_, _ = c.ExpectString("Name of the config file")
 			_, _ = c.SendLine(file)
 
 			_, _ = c.ExpectEOF()
+
+		},
+		func(c *expect.Console) {
+			err := showPrompt(available, terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
+			assert.NoError(t, err)
 
 			assert.Equal(t, 2, len(opts.Exporters))
 			assert.Equal(t, available.exporters[0:2], opts.Exporters)
@@ -327,8 +332,5 @@ func TestPrompts(t *testing.T) {
 			assert.Equal(t, available.pipelines[1:], opts.Pipelines)
 
 			assert.Equal(t, file, opts.ConfigFileName)
-		},
-		func(c *expect.Console) {
-			showPrompt(available, terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
 		})
 }
