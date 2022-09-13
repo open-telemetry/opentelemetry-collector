@@ -37,7 +37,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Prepare Core for release.
 
-    * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.44.0...main. Commit the changes.
+    * Update CHANGELOG.md file, this is done via `chloggen`. Run the following command from the root of the opentelemetry-collector-contrib repo:
+      * `make chlog-update VERSION=v0.55.0`
 
     * Run `make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0`
 
@@ -59,7 +60,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Prepare Contrib for release.
 
-  * Update CHANGELOG.md file, this is now done via `chloggen`. Run the following command from the root of the opentelemetry-collector-contrib repo:
+  * Update CHANGELOG.md file, this is done via `chloggen`. Run the following command from the root of the opentelemetry-collector-contrib repo:
       * `make chlog-update VERSION=v0.55.0`
 
   * Use multimod to update the version of the collector package:
