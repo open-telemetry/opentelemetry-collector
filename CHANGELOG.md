@@ -100,7 +100,7 @@
   - `ptrace.Span.SetTraceState` in favor of `ptrace.Span.TraceStateStruct().FromRaw`
   - `ptrace.SpanLink.TraceState` in favor of `ptrace.SpanLink.TraceStateStruct().AsRaw()`
   - `ptrace.SpanLink.SetTraceState` in favor of `ptrace.SpanLink.TraceStateStruct().FromRaw`
-  - `TraceStateStruct` is a temporary name that will be replaced back to TraceState in the next release.
+  - `TraceStateStruct` is a temporary name that will be replaced back to `TraceState` in the next release.
 
 ### 💡 Enhancements 💡
 
