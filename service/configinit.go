@@ -72,7 +72,7 @@ var defaultConfigFileName = "otelcol.config.yaml"
 
 var cfgCmd *configCommand
 var log *zap.Logger
-var opts *optionsSelected = new(optionsSelected)
+var opts = new(optionsSelected)
 
 func init() {
 	var err error
@@ -104,7 +104,7 @@ func NewConfigurationInitCommand(set CollectorSettings) *cobra.Command {
 				// err could be interrupt or error occurred due to failed write to the answer object,
 				// in either case, we can't proceed further
 				if err != nil {
-					cfgCmd.exiter(err)
+					return cfgCmd.exiter(err)
 				}
 			}
 
@@ -332,11 +332,8 @@ func outputConfiguration(b *bytes.Buffer) error {
 // getComponentNode create a yaml.Node from the given set of factories and the corresponding component type.
 // For example, given the exporter factories and type exporter with [otlp, logging] as components, it will
 // return an Node reprensentation equivalent of-
-//
-//   exporters:
-//     logging: {}
-//     otlp: {}
-//
+// exporters.otlp = {}
+// exporters.logging = {}
 func getComponentNode(factories component.Factories, components []string, componentType string) (*yaml.Node, error) {
 	content := newMappingNode()
 

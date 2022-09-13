@@ -17,6 +17,7 @@ package service
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/ActiveState/vt10x"
@@ -209,7 +210,7 @@ func TestSampleConfigNotPresent(t *testing.T) {
 	assert.NoError(t, err)
 
 	node := yaml.Node{}
-	bytes, err := os.ReadFile(file)
+	bytes, err := os.ReadFile(filepath.Clean(file))
 	require.NoError(t, err)
 
 	err = yaml.Unmarshal(bytes, &node)
