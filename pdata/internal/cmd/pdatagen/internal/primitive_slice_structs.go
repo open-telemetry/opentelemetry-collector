@@ -61,6 +61,25 @@ func (ms ${structName}) SetAt(i int, val ${itemType}) {
 	(*ms.getOrig())[i] = val
 }
 
+// EnsureCapacity ensures ${structName} has at least the specified capacity.
+// 1. If the newCap <= cap, then is no change in capacity.
+// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value.
+func (ms ${structName}) EnsureCapacity(newCap int) {
+	oldCap := cap(*ms.getOrig())
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]${itemType}, len(*ms.getOrig()), newCap)
+	copy(newOrig, *ms.getOrig())
+	*ms.getOrig() = newOrig
+}
+
+// Append appends extra elements to ${structName}.
+func (ms ${structName}) Append(elms ...${itemType}) {
+	*ms.getOrig() = append(*ms.getOrig(), elms...)
+}
+
 // MoveTo moves ${structName} to another instance.
 func (ms ${structName}) MoveTo(dest ${structName}) {
 	*dest.getOrig() = *ms.getOrig()
@@ -106,6 +125,22 @@ const immutableSliceTestTemplate = `func TestNew${structName}(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, ${itemType}(1), mv.At(0))
+}
+
+func Test${structName}Append(t *testing.T) {
+	ms := New${structName}()
+	ms.FromRaw([]${itemType}{1, 2, 3})
+	ms.Append(4, 5)
+	assert.Equal(t, 5, ms.Len())
+	assert.Equal(t, ${itemType}(5), ms.At(4))
+}
+
+func Test${structName}EnsureCapacity(t *testing.T) {
+	ms := New${structName}()
+	ms.EnsureCapacity(4)
+	assert.Equal(t, 4, cap(*ms.getOrig()))
+	ms.EnsureCapacity(2)
+	assert.Equal(t, 4, cap(*ms.getOrig()))
 }`
 
 const primitiveSliceInternalTemplate = `
