@@ -112,7 +112,7 @@ var traceJSON = []byte(`
 var traceOtlp = func() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString(semconv.AttributeHostName, "testHost")
+	rs.Resource().Attributes().PutString(semconv.AttributeHostName, "testHost")
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
 	span1 := spans.AppendEmpty()
 	span1.SetTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC})
@@ -122,7 +122,7 @@ var traceOtlp = func() ptrace.Traces {
 	span1.SetStartTimestamp(1544712660300000000)
 	span1.SetEndTimestamp(1544712660600000000)
 	span1.SetKind(ptrace.SpanKindServer)
-	span1.Attributes().UpsertInt("attr1", 55)
+	span1.Attributes().PutInt("attr1", 55)
 	span2 := spans.AppendEmpty()
 	span2.SetTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC})
 	span2.SetSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73})
@@ -130,7 +130,7 @@ var traceOtlp = func() ptrace.Traces {
 	span2.SetStartTimestamp(1544712660000000000)
 	span2.SetEndTimestamp(1544712661000000000)
 	span2.SetKind(ptrace.SpanKindClient)
-	span2.Attributes().UpsertInt("attr1", 55)
+	span2.Attributes().PutInt("attr1", 55)
 	return td
 }()
 

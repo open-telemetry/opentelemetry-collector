@@ -32,10 +32,11 @@
   - `pcommon.ImmutableFloat64Slice` is deprecated in favor of `pcommon.Float64Slice`
   - `pcommon.ImmutableUInt64Slice` is deprecated in favor of `pcommon.UInt64Slice`
   - Temporarily deprecate `pcommon.NewValueBytes` that will be replaced with `pcommon.NewValueBytesEmpty` in 0.60.0
-  - Deprecate `pcommon.Map.UpsertBytes` in favor of `pcommon.Map.UpsertEmptyBytes`
+  - Deprecate `pcommon.Map.UpsertBytes` in favor of `pcommon.Map.PutEmptyBytes` (#6064)
   - Deprecate `pcommon.Value.SetBytesVal` in favor of `pcommon.Value.SetEmptyBytesVal`
   - Deprecate `pcommon.New[Slice|Map]FromRaw` functions in favor of `New[Slice|Map]().FromRaw` (#6045)
 - Deprecate `pcommon.Map.Insert*` methods (#6051)
+- Deprecate `pcommon.Map.Upsert*` methods in favor of `pcommon.Map.Put*` (#6064)
 
 ### 💡 Enhancements 💡
 
