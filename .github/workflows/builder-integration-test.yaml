@@ -35,5 +35,19 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+      - name: Patch builder config
+        shell: bash
+        run: |
+          cd ./cmd/builder
+          cat >> cmd/builder/internal/config/default.yaml <<EOF
+          replaces:
+            - go.opentelemetry.io/collector => ../../
+            - go.opentelemetry.io/collector/semconv => ../../semconv
+            - go.opentelemetry.io/collector/pdata => ../../pdata
+          EOF
+          ./test/test.sh
       - name: Test
-        run: cd ./cmd/builder && ./test/test.sh
+        shell: bash
+        run: |
+          cd ./cmd/builder
+          ./test/test.sh
