@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.60.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Replace deprecated `*DataPoint.Flags()` with `*DataPoint.[Set]FlagsImmutable()`. (#6017)
