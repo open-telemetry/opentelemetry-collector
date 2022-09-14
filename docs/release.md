@@ -37,9 +37,9 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Prepare Core for release.
 
-    * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.44.0...main.
-
     * Run `make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0`
+    
+    * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.44.0...main.
 
     * Ensure the `main` branch builds successfully.
 
@@ -97,6 +97,7 @@ The last step of the release process creates artifacts for the new version of th
 ## Troubleshooting
 
 1. `unknown revision internal/coreinternal/v0.55.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module. 
+2. `commitChangesToNewBranch failed: invalid merge` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/47) with our release tooling. The current workaround is to clone a fresh copy of the repository and try again. Note that you may need to set up a `fork` remote pointing to your own fork for the release tooling to work properly.
 
 ## Bugfix releases
 
