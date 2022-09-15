@@ -468,10 +468,10 @@ func TestSpan_SpanID(t *testing.T) {
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
-func TestSpan_TraceStateStruct(t *testing.T) {
+func TestSpan_TraceState(t *testing.T) {
 	ms := NewSpan()
-	internal.FillTestTraceState(internal.TraceState(ms.TraceStateStruct()))
-	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceStateStruct())
+	internal.FillTestTraceState(internal.TraceState(ms.TraceState()))
+	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
 }
 
 func TestSpan_ParentSpanID(t *testing.T) {
@@ -862,10 +862,10 @@ func TestSpanLink_SpanID(t *testing.T) {
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
-func TestSpanLink_TraceStateStruct(t *testing.T) {
+func TestSpanLink_TraceState(t *testing.T) {
 	ms := NewSpanLink()
-	internal.FillTestTraceState(internal.TraceState(ms.TraceStateStruct()))
-	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceStateStruct())
+	internal.FillTestTraceState(internal.TraceState(ms.TraceState()))
+	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
 }
 
 func TestSpanLink_Attributes(t *testing.T) {

@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Replace deprecated `ptrace.Span[Link]?.TraceState` with `ptrace.Span[Link]?.TraceStateStruct` definition (#6085)
 - Delete deprecated `config.Unmarshalable` interface. (#6084)
 - Delete deprecated `p[metric|log|trace].MarshalerSizer` interfaces (#6083)
 - Delete deprecated `pcommon.Map.Insert*` funcs. (#6088)
@@ -16,7 +17,8 @@
 
 ### 🚩 Deprecations 🚩
 
-- Deprecate pmetric.OptionalType, unused enum type. (#6096)
+- Deprecate `pmetric.OptionalType`, unused enum type. (#6096)
+- Deprecate `ptrace.Span[Link]?.TraceStateStruct` in favor of `ptrace.Span[Link]?.TraceState` (#6085)
 
 ### 💡 Enhancements 💡
 

@@ -84,7 +84,7 @@ var tracesOTLPFull = func() Traces {
 	sp.SetDroppedLinksCount(1)
 	sp.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	sp.SetParentSpanID(spanID)
-	sp.TraceStateStruct().FromRaw("state")
+	sp.TraceState().FromRaw("state")
 	sp.Status().SetCode(StatusCodeOk)
 	sp.Status().SetMessage("message")
 	// Add attributes.
@@ -111,7 +111,7 @@ var tracesOTLPFull = func() Traces {
 	event.Attributes().PutEmptyBytes("bytes").FromRaw([]byte("foo"))
 	// Add links.
 	link := sp.Links().AppendEmpty()
-	link.TraceStateStruct().FromRaw("state")
+	link.TraceState().FromRaw("state")
 	link.SetTraceID(traceID)
 	link.SetSpanID(spanID)
 	link.SetDroppedAttributesCount(1)

@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
@@ -70,32 +71,14 @@ func (ms Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&ms.getOrig().ResourceSpans)
 }
 
-// Deprecated: [v0.60.0] use pcommon.TraceState.
-type TraceState string
-
-const (
-	// Deprecated: [v0.60.0] use pcommon.TraceState.AsRaw() and compare with empty string.
-	TraceStateEmpty TraceState = ""
-)
-
-// Deprecated: [v0.60.0] use TraceStateStruct().AsRaw().
-func (ms Span) TraceState() TraceState {
-	return TraceState(ms.getOrig().TraceState)
+// Deprecated: [v0.61.0] use TraceState().AsRaw().
+func (ms Span) TraceStateStruct() pcommon.TraceState {
+	return ms.TraceState()
 }
 
-// Deprecated: [v0.60.0] use TraceStateStruct().FromRaw(val).
-func (ms Span) SetTraceState(v TraceState) {
-	ms.getOrig().TraceState = string(v)
-}
-
-// Deprecated: [v0.60.0] use TraceStateStruct().AsRaw().
-func (ms SpanLink) TraceState() TraceState {
-	return TraceState(ms.getOrig().TraceState)
-}
-
-// Deprecated: [v0.60.0] use TraceStateStruct().FromRaw(val).
-func (ms SpanLink) SetTraceState(v TraceState) {
-	ms.getOrig().TraceState = string(v)
+// Deprecated: [v0.61.0] use TraceState().AsRaw().
+func (ms SpanLink) TraceStateStruct() pcommon.TraceState {
+	return ms.TraceState()
 }
 
 // SpanKind is the type of span. Can be used to specify additional relationships between spans
