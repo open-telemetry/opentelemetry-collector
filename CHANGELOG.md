@@ -5,6 +5,7 @@
 ### 🛑 Breaking changes 🛑
 
 - Delete deprecated `config.Unmarshalable` interface. (#6084)
+- Delete deprecated `p[metric|log|trace].MarshalerSizer` interfaces (#6083)
 
 ## v0.60.0 Beta
 
@@ -43,6 +44,12 @@
   - Deprecate `pcommon.New[Slice|Map]FromRaw` functions in favor of `New[Slice|Map]().FromRaw` (#6045)
 - Deprecate `pcommon.Map.Insert*` methods (#6051)
 - Deprecate `pcommon.Map.Upsert*` methods in favor of `pcommon.Map.Put*` (#6064)
+- Deprecate `ptrace.TraceState` in favor of `pcommon.TraceState`. (#6052)
+  - `ptrace.Span.TraceState` in favor of `ptrace.Span.TraceStateStruct().AsRaw()`
+  - `ptrace.Span.SetTraceState` in favor of `ptrace.Span.TraceStateStruct().FromRaw`
+  - `ptrace.SpanLink.TraceState` in favor of `ptrace.SpanLink.TraceStateStruct().AsRaw()`
+  - `ptrace.SpanLink.SetTraceState` in favor of `ptrace.SpanLink.TraceStateStruct().FromRaw`
+  - `TraceStateStruct` is a temporary name that will be replaced back to `TraceState` in the next release.
 
 ### 💡 Enhancements 💡
 
@@ -102,12 +109,6 @@
   - `SummaryDataPoint.Flags` -> `SummaryDataPoint.FlagsImmutable`
   - `MetricDataPointFlags` -> `MetricDataPointFlagsImmutable`
   - `NewMetricDataPointFlags` -> `MetricDataPointFlagsImmutable`
-- Deprecate `ptrace.TraceState` in favor of `pcommon.TraceState`. (#6052)
-  - `ptrace.Span.TraceState` in favor of `ptrace.Span.TraceStateStruct().AsRaw()`
-  - `ptrace.Span.SetTraceState` in favor of `ptrace.Span.TraceStateStruct().FromRaw`
-  - `ptrace.SpanLink.TraceState` in favor of `ptrace.SpanLink.TraceStateStruct().AsRaw()`
-  - `ptrace.SpanLink.SetTraceState` in favor of `ptrace.SpanLink.TraceStateStruct().FromRaw`
-  - `TraceStateStruct` is a temporary name that will be replaced back to `TraceState` in the next release.
 
 ### 💡 Enhancements 💡
 

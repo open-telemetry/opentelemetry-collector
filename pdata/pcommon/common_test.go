@@ -739,6 +739,11 @@ func TestValue_CopyTo(t *testing.T) {
 	orig = &otlpcommon.AnyValue{}
 	newValue(orig).CopyTo(dest)
 	assert.Nil(t, dest.getOrig().Value)
+
+	av := NewValueEmpty()
+	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
+	av.CopyTo(newValue(&destVal))
+	assert.EqualValues(t, nil, destVal.Value)
 }
 
 func TestMap_CopyTo(t *testing.T) {
@@ -759,13 +764,6 @@ func TestMap_CopyTo(t *testing.T) {
 	(*dest.getOrig())[0].Value = otlpcommon.AnyValue{}
 	Map(internal.GenerateTestMap()).CopyTo(dest)
 	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
-}
-
-func TestValue_copyTo(t *testing.T) {
-	av := NewValueEmpty()
-	destVal := otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{}}
-	av.copyTo(&destVal)
-	assert.EqualValues(t, nil, destVal.Value)
 }
 
 func TestMap_EnsureCapacity_Zero(t *testing.T) {

@@ -332,14 +332,15 @@ func (v Value) SetEmptySliceVal() Slice {
 	return newSlice(&av.ArrayValue.Values)
 }
 
-// copyTo copies the value to Value. Will panic if dest is nil.
-func (v Value) copyTo(dest *otlpcommon.AnyValue) {
+// CopyTo copies the attribute to a destination.
+func (v Value) CopyTo(dest Value) {
+	destOrig := dest.getOrig()
 	switch ov := v.getOrig().Value.(type) {
 	case *otlpcommon.AnyValue_KvlistValue:
-		kv, ok := dest.Value.(*otlpcommon.AnyValue_KvlistValue)
+		kv, ok := destOrig.Value.(*otlpcommon.AnyValue_KvlistValue)
 		if !ok {
 			kv = &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}
-			dest.Value = kv
+			destOrig.Value = kv
 		}
 		if ov.KvlistValue == nil {
 			kv.KvlistValue = nil
@@ -348,10 +349,10 @@ func (v Value) copyTo(dest *otlpcommon.AnyValue) {
 		// Deep copy to dest.
 		newMap(&ov.KvlistValue.Values).CopyTo(newMap(&kv.KvlistValue.Values))
 	case *otlpcommon.AnyValue_ArrayValue:
-		av, ok := dest.Value.(*otlpcommon.AnyValue_ArrayValue)
+		av, ok := destOrig.Value.(*otlpcommon.AnyValue_ArrayValue)
 		if !ok {
 			av = &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}
-			dest.Value = av
+			destOrig.Value = av
 		}
 		if ov.ArrayValue == nil {
 			av.ArrayValue = nil
@@ -360,22 +361,17 @@ func (v Value) copyTo(dest *otlpcommon.AnyValue) {
 		// Deep copy to dest.
 		newSlice(&ov.ArrayValue.Values).CopyTo(newSlice(&av.ArrayValue.Values))
 	case *otlpcommon.AnyValue_BytesValue:
-		bv, ok := dest.Value.(*otlpcommon.AnyValue_BytesValue)
+		bv, ok := destOrig.Value.(*otlpcommon.AnyValue_BytesValue)
 		if !ok {
 			bv = &otlpcommon.AnyValue_BytesValue{}
-			dest.Value = bv
+			destOrig.Value = bv
 		}
 		bv.BytesValue = make([]byte, len(ov.BytesValue))
 		copy(bv.BytesValue, ov.BytesValue)
 	default:
 		// Primitive immutable type, no need for deep copy.
-		dest.Value = v.getOrig().Value
+		destOrig.Value = ov
 	}
-}
-
-// CopyTo copies the attribute to a destination.
-func (v Value) CopyTo(dest Value) {
-	v.copyTo(dest.getOrig())
 }
 
 // Equal checks for equality, it returns true if the objects are equal otherwise false.
@@ -565,7 +561,7 @@ func newAttributeKeyValueNull(k string) otlpcommon.KeyValue {
 
 func newAttributeKeyValue(k string, av Value) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
-	av.copyTo(&orig.Value)
+	av.CopyTo(newValue(&orig.Value))
 	return orig
 }
 
@@ -1004,7 +1000,7 @@ func (m Map) CopyTo(dest Map) {
 			akv := &(*m.getOrig())[i]
 			destAkv := &(*dest.getOrig())[i]
 			destAkv.Key = akv.Key
-			newValue(&akv.Value).copyTo(&destAkv.Value)
+			newValue(&akv.Value).CopyTo(newValue(&destAkv.Value))
 		}
 		return
 	}
@@ -1014,7 +1010,7 @@ func (m Map) CopyTo(dest Map) {
 	for i := range *m.getOrig() {
 		akv := &(*m.getOrig())[i]
 		origs[i].Key = akv.Key
-		newValue(&akv.Value).copyTo(&origs[i].Value)
+		newValue(&akv.Value).CopyTo(newValue(&origs[i].Value))
 	}
 	*dest.getOrig() = origs
 }
