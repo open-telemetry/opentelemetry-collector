@@ -19,7 +19,7 @@ import (
 	"path"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/internal/runtimeinfo"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
