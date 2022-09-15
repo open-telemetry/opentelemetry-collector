@@ -48,11 +48,8 @@ func (f FlagValue) Set(s string) error {
 		return nil
 	}
 
-	return f.setSlice(strings.Split(s, ","))
-}
-
-func (f FlagValue) setSlice(s []string) error {
-	for _, v := range s {
+	ss := strings.Split(s, ",")
+	for _, v := range ss {
 		var id string
 		var val bool
 		switch v[0] {
