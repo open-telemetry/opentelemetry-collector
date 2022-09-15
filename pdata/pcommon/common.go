@@ -140,7 +140,7 @@ func (v Value) getOrig() *otlpcommon.AnyValue {
 	return internal.GetOrigValue(internal.Value(v))
 }
 
-func (v Value) fromRaw(iv interface{}) {
+func (v Value) FromRaw(iv interface{}) {
 	switch tv := iv.(type) {
 	case nil:
 		v.getOrig().Value = nil
@@ -504,7 +504,7 @@ func float64AsString(f float64) string {
 	return string(b)
 }
 
-func (v Value) asRaw() interface{} {
+func (v Value) AsRaw() interface{} {
 	switch v.Type() {
 	case ValueTypeEmpty:
 		return nil
@@ -1019,7 +1019,7 @@ func (m Map) CopyTo(dest Map) {
 func (m Map) AsRaw() map[string]interface{} {
 	rawMap := make(map[string]interface{})
 	m.Range(func(k string, v Value) bool {
-		rawMap[k] = v.asRaw()
+		rawMap[k] = v.AsRaw()
 		return true
 	})
 	return rawMap
@@ -1035,7 +1035,7 @@ func (m Map) FromRaw(rawMap map[string]interface{}) {
 	ix := 0
 	for k, iv := range rawMap {
 		origs[ix].Key = k
-		newValue(&origs[ix].Value).fromRaw(iv)
+		newValue(&origs[ix].Value).FromRaw(iv)
 		ix++
 	}
 	*m.getOrig() = origs
@@ -1053,7 +1053,7 @@ func NewSliceFromRaw(rawSlice []interface{}) Slice {
 func (es Slice) AsRaw() []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
-		rawSlice = append(rawSlice, es.At(i).asRaw())
+		rawSlice = append(rawSlice, es.At(i).AsRaw())
 	}
 	return rawSlice
 }
@@ -1066,7 +1066,7 @@ func (es Slice) FromRaw(rawSlice []interface{}) {
 	}
 	origs := make([]otlpcommon.AnyValue, len(rawSlice))
 	for ix, iv := range rawSlice {
-		newValue(&origs[ix]).fromRaw(iv)
+		newValue(&origs[ix]).FromRaw(iv)
 	}
 	*es.getOrig() = origs
 }

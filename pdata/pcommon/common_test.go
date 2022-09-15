@@ -639,7 +639,7 @@ func TestMap_Range(t *testing.T) {
 	assert.Equal(t, 1, calls)
 
 	am.Range(func(k string, v Value) bool {
-		assert.Equal(t, rawMap[k], v.asRaw())
+		assert.Equal(t, rawMap[k], v.AsRaw())
 		delete(rawMap, k)
 		return true
 	})
@@ -1047,7 +1047,7 @@ func TestValueAsRaw(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := test.input.asRaw()
+			actual := test.input.AsRaw()
 			assert.Equal(t, test.expected, actual)
 		})
 	}
@@ -1206,7 +1206,7 @@ func TestNewValueFromRaw(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := NewValueEmpty()
-			actual.fromRaw(tt.input)
+			actual.FromRaw(tt.input)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
