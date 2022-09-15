@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Delete deprecated `config.Unmarshalable` interface. (#6084)
+
 ## v0.60.0 Beta
 
 ### 🛑 Breaking changes 🛑

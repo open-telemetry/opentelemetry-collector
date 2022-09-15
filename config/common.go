@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+
 import (
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -25,9 +26,6 @@ type validatable interface {
 	// Validate validates the configuration and returns an error if invalid.
 	Validate() error
 }
-
-// Deprecated: [v0.60.0] use confmap.Unmarshaler.
-type Unmarshallable = confmap.Unmarshaler
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
 // collecting metrics, traces and logs, this can expand in the future.
