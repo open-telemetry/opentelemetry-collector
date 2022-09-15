@@ -4,11 +4,13 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Delete deprecated `config.Unmarshalable` interface. (#6084)
 - Delete deprecated `p[metric|log|trace].MarshalerSizer` interfaces (#6083)
 
 ### 💡 Enhancements 💡
 
 - Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
+- Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
 
 ## v0.60.0 Beta
 
