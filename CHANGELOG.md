@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Delete deprecated `p[metric|log|trace].MarshalerSizer` interfaces (#6083)
+
+
 ## v0.60.0 Beta
 
 ### 🛑 Breaking changes 🛑
