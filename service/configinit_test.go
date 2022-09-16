@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !windows
+// +build !windows
+
 package service
 
 import (
@@ -220,6 +223,8 @@ func TestSampleConfigNotPresent(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("# Sample config for %v %v is not implemented.", "nop", "exporter"), node.Content[0].Content[1].Content[0].HeadComment)
 }
 
+// RunCmdTest runs a test function for a given procedure. This function only works on unix-systems and
+// therefore the test is disabled on windows.
 // https://github.com/AlecAivazis/survey/blob/master/survey_posix_test.go
 func RunCmdTest(t *testing.T, procedure func(*testing.T, *expect.Console, *vt10x.State), test func(*expect.Console)) {
 	// Multiplex output to a buffer as well for the raw bytes.
@@ -277,41 +282,65 @@ func TestPrompts(t *testing.T) {
 	file := "otelcol_temp_config.yaml"
 	RunCmdTest(t,
 		func(t *testing.T, c *expect.Console, s *vt10x.State) {
+			var err error
 			// select exporters at index 0, 1
-			_, _ = c.ExpectString("Select exporters")
-			_, _ = c.Send(" ")
-			_, _ = c.Send(string(terminal.KeyArrowDown))
-			_, _ = c.Send(" ")
-			_, _ = c.SendLine(string(terminal.KeyEnter))
+			_, err = c.ExpectString("Select exporters")
+			require.NoError(t, err)
+			_, err = c.Send(" ")
+			require.NoError(t, err)
+			_, err = c.Send(string(terminal.KeyArrowDown))
+			require.NoError(t, err)
+			_, err = c.Send(" ")
+			require.NoError(t, err)
+			_, err = c.SendLine(string(terminal.KeyEnter))
+			require.NoError(t, err)
 
 			// select processor at index 1
-			_, _ = c.ExpectString("Select processors")
-			_, _ = c.Send(string(terminal.KeyArrowDown))
-			_, _ = c.Send(" ")
-			_, _ = c.SendLine(string(terminal.KeyEnter))
+			_, err = c.ExpectString("Select processors")
+			require.NoError(t, err)
+			_, err = c.Send(string(terminal.KeyArrowDown))
+			require.NoError(t, err)
+			_, err = c.Send(" ")
+			require.NoError(t, err)
+			_, err = c.SendLine(string(terminal.KeyEnter))
+			require.NoError(t, err)
 
 			// select receiver at index 0
-			_, _ = c.ExpectString("Select receivers")
-			_, _ = c.Send(" ")
-			_, _ = c.SendLine(string(terminal.KeyEnter))
+			_, err = c.ExpectString("Select receivers")
+			require.NoError(t, err)
+			_, err = c.Send(" ")
+			require.NoError(t, err)
+			_, err = c.SendLine(string(terminal.KeyEnter))
+			require.NoError(t, err)
 
 			// select no extensions
-			_, _ = c.ExpectString("Select extensions")
-			_, _ = c.SendLine(string(terminal.KeyEnter))
+			_, err = c.ExpectString("Select extensions")
+			require.NoError(t, err)
+			_, err = c.SendLine(string(terminal.KeyEnter))
+			require.NoError(t, err)
 
 			// select pipelines at index 1, 2
-			_, _ = c.ExpectString("Select pipelines")
-			_, _ = c.Send(string(terminal.KeyArrowDown))
-			_, _ = c.Send(" ")
-			_, _ = c.Send(string(terminal.KeyArrowDown))
-			_, _ = c.Send(" ")
-			_, _ = c.SendLine(string(terminal.KeyEnter))
+			_, err = c.ExpectString("Select pipelines")
+			require.NoError(t, err)
+			_, err = c.Send(string(terminal.KeyArrowDown))
+			require.NoError(t, err)
+			_, err = c.Send(" ")
+			require.NoError(t, err)
+			_, err = c.Send(string(terminal.KeyArrowDown))
+			require.NoError(t, err)
+			_, err = c.Send(" ")
+			require.NoError(t, err)
+			_, err = c.SendLine(string(terminal.KeyEnter))
+			require.NoError(t, err)
 
 			// enter file name
-			_, _ = c.ExpectString("Name of the config file")
-			_, _ = c.SendLine(file)
+			_, err = c.ExpectString("Name of the config file")
+			require.NoError(t, err)
+			_, err = c.SendLine(file)
+			require.NoError(t, err)
 
-			_, _ = c.ExpectEOF()
+			_, err = c.ExpectEOF()
+			require.NoError(t, err)
 
 		},
 		func(c *expect.Console) {
