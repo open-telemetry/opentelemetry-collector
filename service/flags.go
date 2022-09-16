@@ -18,7 +18,7 @@ import (
 	"flag"
 	"strings"
 
-	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 const (

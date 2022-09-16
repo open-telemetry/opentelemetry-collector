@@ -22,6 +22,7 @@
 
 ### 🚩 Deprecations 🚩
 
+- Deprecate `go.opentelemetry.io/collector/service/featuregate` in favor of `go.opentelemetry.io/collector/featuregate`. (#6094)
 - Deprecate pmetric.OptionalType, unused enum type. (#6096)
 - Deprecate `pcommon.NewValueBytesEmpty` in favor of `pcommon.NewValueBytes` that now has the same signature. (#6105)
 
