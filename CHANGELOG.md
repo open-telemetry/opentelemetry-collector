@@ -6,6 +6,12 @@
 
 - Delete deprecated `config.Unmarshalable` interface. (#6084)
 - Delete deprecated `p[metric|log|trace].MarshalerSizer` interfaces (#6083)
+- Delete deprecated `pcommon.Map.Insert*` funcs. (#6088)
+- Delete deprecated `pcommon.Map.Upsert*` funcs. (#6088)
+- Delete deprecated `pcommon.Map.Update*` funcs. (#6088)
+- Delete deprecated `pcommon.Map.Update*` funcs. (#6088)
+- Replace `pcommon.NewValueBytes` with `pcommon.NewValueBytesEmpty`. (#6088)
+- Delete deprecated `pcommon.Value.SetBytesVal`. (#6088)
 
 ### 💡 Enhancements 💡
 
