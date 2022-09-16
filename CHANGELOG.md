@@ -19,6 +19,7 @@
 - Delete deprecated `pcommon.ImmutableByteSlice` and `pcommon.NewImmutableByteSlice`. (#6107)
 - Delete deprecated `pcommon.ImmutableFloat64Slice` and `pcommon.NewImmutableFloat64Slice`. (#6107)
 - Delete deprecated `pcommon.ImmutableUInt64Slice` and `pcommon.NewImmutableUInt64Slice`. (#6107)
+- Delete deprecated `*DataPoint.SetBucketCounts` and `*DataPoint.SetExplicitBounds`. (#6108)
 
 ### 🚩 Deprecations 🚩
 
