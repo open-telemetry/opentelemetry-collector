@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/trace"
 	"io"
 	"net/http"
 	"net/url"
@@ -124,7 +125,9 @@ func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (e *exporter) export(ctx context.Context, url string, request []byte) error {
-	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
+	var span = trace.SpanFromContext(ctx)
+	var traceId = span.SpanContext().TraceID().String()
+	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url), zap.String("traceId", traceId))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
 		return consumererror.NewPermanent(err)
