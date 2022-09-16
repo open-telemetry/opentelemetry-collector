@@ -11,7 +11,6 @@
 - Delete deprecated `pcommon.Map.Insert*` funcs. (#6088)
 - Delete deprecated `pcommon.Map.Upsert*` funcs. (#6088)
 - Delete deprecated `pcommon.Map.Update*` funcs. (#6088)
-- Delete deprecated `pcommon.Map.Update*` funcs. (#6088)
 - Change `pcommon.NewValueBytes` signature to match `pcommon.NewValueBytesEmpty`. (#6088)
 - Delete deprecated `pcommon.Value.SetBytesVal`. (#6088)
 - Delete deprecated `pmetric.Metric.SetDataType`. (#6095)
