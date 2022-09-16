@@ -131,22 +131,6 @@ func (mdt MetricDataType) String() string {
 	return ""
 }
 
-// Deprecated: [v0.60.0] use one of SetEmptyGauge, SetEmptySum, SetEmptyHistogram, SetEmptyExponentialHistogram, or SetEmptySummary.
-func (ms Metric) SetDataType(ty MetricDataType) {
-	switch ty {
-	case MetricDataTypeGauge:
-		ms.getOrig().Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
-	case MetricDataTypeSum:
-		ms.getOrig().Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	case MetricDataTypeHistogram:
-		ms.getOrig().Data = &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
-	case MetricDataTypeExponentialHistogram:
-		ms.getOrig().Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: &otlpmetrics.ExponentialHistogram{}}
-	case MetricDataTypeSummary:
-		ms.getOrig().Data = &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}
-	}
-}
-
 // MetricAggregationTemporality defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
 type MetricAggregationTemporality int32
