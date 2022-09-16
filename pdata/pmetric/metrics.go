@@ -165,46 +165,6 @@ func (at MetricAggregationTemporality) String() string {
 	return otlpmetrics.AggregationTemporality(at).String()
 }
 
-// Deprecated: [v0.60.0] use Flags.
-func (ms NumberDataPoint) FlagsImmutable() MetricDataPointFlags {
-	return ms.Flags()
-}
-
-// Deprecated: [v0.60.0] use SetFlags.
-func (ms NumberDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
-	ms.SetFlags(v)
-}
-
-// Deprecated: [v0.60.0] use Flags.
-func (ms HistogramDataPoint) FlagsImmutable() MetricDataPointFlags {
-	return ms.Flags()
-}
-
-// Deprecated: [v0.60.0] use SetFlags.
-func (ms HistogramDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
-	ms.SetFlags(v)
-}
-
-// Deprecated: [v0.60.0] use Flags.
-func (ms ExponentialHistogramDataPoint) FlagsImmutable() MetricDataPointFlags {
-	return ms.Flags()
-}
-
-// Deprecated: [v0.60.0] use SetFlags.
-func (ms ExponentialHistogramDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
-	ms.SetFlags(v)
-}
-
-// Deprecated: [v0.60.0] use Flags.
-func (ms SummaryDataPoint) FlagsImmutable() MetricDataPointFlags {
-	return ms.Flags()
-}
-
-// Deprecated: [v0.60.0] use SetFlags.
-func (ms SummaryDataPoint) SetFlagsImmutable(v MetricDataPointFlags) {
-	ms.SetFlags(v)
-}
-
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType int32
 

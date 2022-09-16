@@ -4,6 +4,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Delete deprecated `pmetric.NewMetricDataPointFlagsImmutable` func. (#6097)
+- Delete deprecated `pmetric.*DataPoint.[Set]FlagsImmutable()` funcs. (#6097)
 - Delete deprecated `config.Unmarshalable` interface. (#6084)
 - Delete deprecated `p[metric|log|trace].MarshalerSizer` interfaces (#6083)
 - Delete deprecated `pcommon.Map.Insert*` funcs. (#6088)
