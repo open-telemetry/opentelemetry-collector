@@ -233,15 +233,17 @@ func (nt ExemplarValueType) String() string {
 	return ""
 }
 
-// OptionalType wraps optional fields into oneof fields
+// Deprecated: [v0.61.0] not used, will be deleted in next release.
 type OptionalType int32
 
 const (
+	// Deprecated: [v0.61.0] not used, will be deleted in next release.
 	OptionalTypeNone OptionalType = iota
+	// Deprecated: [v0.61.0] not used, will be deleted in next release.
 	OptionalTypeDouble
 )
 
-// String returns the string representation of the OptionalType.
+// Deprecated: [v0.61.0] not used, will be deleted in next release.
 func (ot OptionalType) String() string {
 	switch ot {
 	case OptionalTypeNone:
