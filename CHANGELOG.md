@@ -9,6 +9,7 @@
 
 ### 💡 Enhancements 💡
 
+- Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
 - Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
 
 ## v0.60.0 Beta

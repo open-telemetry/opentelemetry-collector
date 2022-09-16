@@ -61,6 +61,25 @@ func (ms ByteSlice) SetAt(i int, val byte) {
 	(*ms.getOrig())[i] = val
 }
 
+// EnsureCapacity ensures ByteSlice has at least the specified capacity.
+// 1. If the newCap <= cap, then is no change in capacity.
+// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value.
+func (ms ByteSlice) EnsureCapacity(newCap int) {
+	oldCap := cap(*ms.getOrig())
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]byte, len(*ms.getOrig()), newCap)
+	copy(newOrig, *ms.getOrig())
+	*ms.getOrig() = newOrig
+}
+
+// Append appends extra elements to ByteSlice.
+func (ms ByteSlice) Append(elms ...byte) {
+	*ms.getOrig() = append(*ms.getOrig(), elms...)
+}
+
 // MoveTo moves ByteSlice to another instance.
 func (ms ByteSlice) MoveTo(dest ByteSlice) {
 	*dest.getOrig() = *ms.getOrig()
@@ -119,6 +138,25 @@ func (ms Float64Slice) SetAt(i int, val float64) {
 	(*ms.getOrig())[i] = val
 }
 
+// EnsureCapacity ensures Float64Slice has at least the specified capacity.
+// 1. If the newCap <= cap, then is no change in capacity.
+// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value.
+func (ms Float64Slice) EnsureCapacity(newCap int) {
+	oldCap := cap(*ms.getOrig())
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]float64, len(*ms.getOrig()), newCap)
+	copy(newOrig, *ms.getOrig())
+	*ms.getOrig() = newOrig
+}
+
+// Append appends extra elements to Float64Slice.
+func (ms Float64Slice) Append(elms ...float64) {
+	*ms.getOrig() = append(*ms.getOrig(), elms...)
+}
+
 // MoveTo moves Float64Slice to another instance.
 func (ms Float64Slice) MoveTo(dest Float64Slice) {
 	*dest.getOrig() = *ms.getOrig()
@@ -175,6 +213,25 @@ func (ms UInt64Slice) At(i int) uint64 {
 // SetAt sets uint64 item at particular index.
 func (ms UInt64Slice) SetAt(i int, val uint64) {
 	(*ms.getOrig())[i] = val
+}
+
+// EnsureCapacity ensures UInt64Slice has at least the specified capacity.
+// 1. If the newCap <= cap, then is no change in capacity.
+// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value.
+func (ms UInt64Slice) EnsureCapacity(newCap int) {
+	oldCap := cap(*ms.getOrig())
+	if newCap <= oldCap {
+		return
+	}
+
+	newOrig := make([]uint64, len(*ms.getOrig()), newCap)
+	copy(newOrig, *ms.getOrig())
+	*ms.getOrig() = newOrig
+}
+
+// Append appends extra elements to UInt64Slice.
+func (ms UInt64Slice) Append(elms ...uint64) {
+	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
 // MoveTo moves UInt64Slice to another instance.

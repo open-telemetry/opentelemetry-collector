@@ -54,6 +54,22 @@ func TestNewByteSlice(t *testing.T) {
 	assert.Equal(t, byte(1), mv.At(0))
 }
 
+func TestByteSliceAppend(t *testing.T) {
+	ms := NewByteSlice()
+	ms.FromRaw([]byte{1, 2, 3})
+	ms.Append(4, 5)
+	assert.Equal(t, 5, ms.Len())
+	assert.Equal(t, byte(5), ms.At(4))
+}
+
+func TestByteSliceEnsureCapacity(t *testing.T) {
+	ms := NewByteSlice()
+	ms.EnsureCapacity(4)
+	assert.Equal(t, 4, cap(*ms.getOrig()))
+	ms.EnsureCapacity(2)
+	assert.Equal(t, 4, cap(*ms.getOrig()))
+}
+
 func TestNewFloat64Slice(t *testing.T) {
 	ms := NewFloat64Slice()
 	assert.Equal(t, 0, ms.Len())
@@ -85,6 +101,22 @@ func TestNewFloat64Slice(t *testing.T) {
 	assert.Equal(t, float64(1), mv.At(0))
 }
 
+func TestFloat64SliceAppend(t *testing.T) {
+	ms := NewFloat64Slice()
+	ms.FromRaw([]float64{1, 2, 3})
+	ms.Append(4, 5)
+	assert.Equal(t, 5, ms.Len())
+	assert.Equal(t, float64(5), ms.At(4))
+}
+
+func TestFloat64SliceEnsureCapacity(t *testing.T) {
+	ms := NewFloat64Slice()
+	ms.EnsureCapacity(4)
+	assert.Equal(t, 4, cap(*ms.getOrig()))
+	ms.EnsureCapacity(2)
+	assert.Equal(t, 4, cap(*ms.getOrig()))
+}
+
 func TestNewUInt64Slice(t *testing.T) {
 	ms := NewUInt64Slice()
 	assert.Equal(t, 0, ms.Len())
@@ -114,4 +146,20 @@ func TestNewUInt64Slice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, uint64(1), mv.At(0))
+}
+
+func TestUInt64SliceAppend(t *testing.T) {
+	ms := NewUInt64Slice()
+	ms.FromRaw([]uint64{1, 2, 3})
+	ms.Append(4, 5)
+	assert.Equal(t, 5, ms.Len())
+	assert.Equal(t, uint64(5), ms.At(4))
+}
+
+func TestUInt64SliceEnsureCapacity(t *testing.T) {
+	ms := NewUInt64Slice()
+	ms.EnsureCapacity(4)
+	assert.Equal(t, 4, cap(*ms.getOrig()))
+	ms.EnsureCapacity(2)
+	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
