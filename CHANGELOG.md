@@ -12,7 +12,7 @@
 - Delete deprecated `pcommon.Map.Upsert*` funcs. (#6088)
 - Delete deprecated `pcommon.Map.Update*` funcs. (#6088)
 - Delete deprecated `pcommon.Map.Update*` funcs. (#6088)
-- Replace `pcommon.NewValueBytes` with `pcommon.NewValueBytesEmpty`. (#6088)
+- Change `pcommon.NewValueBytes` signature to match `pcommon.NewValueBytesEmpty`. (#6088)
 - Delete deprecated `pcommon.Value.SetBytesVal`. (#6088)
 - Delete deprecated `pmetric.Metric.SetDataType`. (#6095)
 - Delete deprecated `plog.LogRecord.[Set]FlagStruct` funcs. (#6100)
@@ -20,6 +20,7 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate pmetric.OptionalType, unused enum type. (#6096)
+- Deprecate `pcommon.NewValueBytesEmpty` in favor of `pcommon.NewValueBytes` that now has the same signature. (#6105)
 
 ### 💡 Enhancements 💡
 

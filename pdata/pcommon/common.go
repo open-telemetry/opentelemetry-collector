@@ -125,6 +125,9 @@ func NewValueBytes() Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: nil}})
 }
 
+// Deprecated: [0.61.0] Use NewValueBytes instead
+var NewValueBytesEmpty = NewValueBytes
+
 func newValue(orig *otlpcommon.AnyValue) Value {
 	return Value(internal.NewValue(orig))
 }
