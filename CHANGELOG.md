@@ -35,6 +35,13 @@
 - Deprecate `pmetric.NumberDataPoint.[Set]?[Int|Double]Val()` in favor of `pmetric.NumberDataPoint.[Set]?[Int|Double]Value()`. (#6134)
 - Deprecate `pmetric.Exemplar.[Set]?[Int|Double]Val()` in favor of `pmetric.Exemplar.[Set]?[Int|Double]Value()`. (#6134)
 
+### 🚩 Deprecations 🚩
+
+- Rename all `pcommon.Value` getter/setter methods by removing `Val` suffix. (#6092) 
+  - Old methods with `Val` suffix are deprecated.
+  - `StringVal` and `SetStringVal` are deprecated in favor of `Str` and `SetStr` to avoid implementing `fmt.Stringer` interface. 
+  - Therefore, `ValueTypeString` is deprecated in favour of `ValueTypeStr` for consistency.
+
 ### 💡 Enhancements 💡
 
 - Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
