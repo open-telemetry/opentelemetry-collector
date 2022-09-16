@@ -55,12 +55,6 @@ func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 const accessorsPrimitiveSliceTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
 	return ${packageName}${returnType}(internal.New${returnType}(&ms.getOrig().${originFieldName}))
-}
-
-// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-// Deprecated: [0.60.0] Use ${fieldName}().FromRaw() instead
-func (ms ${structName}) Set${fieldName}(v ${packageName}${returnType}) {
-	ms.getOrig().${originFieldName} = *internal.GetOrig${returnType}(internal.${returnType}(v))
 }`
 
 const oneOfTypeAccessorHeaderTemplate = `// ${originFieldName}Type returns the type of the ${lowerOriginFieldName} for this ${structName}.
