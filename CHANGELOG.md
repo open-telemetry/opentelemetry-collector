@@ -16,6 +16,9 @@
 - Delete deprecated `pcommon.Value.SetBytesVal`. (#6088)
 - Delete deprecated `pmetric.Metric.SetDataType`. (#6095)
 - Delete deprecated `plog.LogRecord.[Set]FlagStruct` funcs. (#6100)
+- Delete deprecated `pcommon.ImmutableByteSlice` and `pcommon.NewImmutableByteSlice`. (#6107)
+- Delete deprecated `pcommon.ImmutableFloat64Slice` and `pcommon.NewImmutableFloat64Slice`. (#6107)
+- Delete deprecated `pcommon.ImmutableUInt64Slice` and `pcommon.NewImmutableUInt64Slice`. (#6107)
 
 ### 🚩 Deprecations 🚩
 
