@@ -17,6 +17,7 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/otel/trace"
 	"os"
 
 	"go.uber.org/zap"
@@ -36,8 +37,9 @@ type loggingExporter struct {
 	tracesMarshaler  ptrace.Marshaler
 }
 
-func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
-	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
+func (s *loggingExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()),
+		zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 	if s.logLevel != zapcore.DebugLevel {
 		return nil
 	}
@@ -50,8 +52,9 @@ func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error 
 	return nil
 }
 
-func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
-	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
+func (s *loggingExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()),
+		zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 
 	if s.logLevel != zapcore.DebugLevel {
 		return nil
@@ -65,8 +68,9 @@ func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) err
 	return nil
 }
 
-func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
-	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
+func (s *loggingExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()),
+		zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 
 	if s.logLevel != zapcore.DebugLevel {
 		return nil

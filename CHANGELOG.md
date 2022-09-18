@@ -24,6 +24,8 @@
 
 - Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
 - Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
+- Add trace id in Debug log for otlpexporter, otlphttpexporter, and logging_exporter for 
+  better log messages correlation (#6102)
 
 ## v0.60.0 Beta
 
