@@ -379,7 +379,7 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m collector-core
+	multimod prerelease -b=false -v ./versions.yaml -m collector-core
 	$(MAKE) gotidy
 
 .PHONY: prepare-release
@@ -412,8 +412,6 @@ endif
 	git add .
 	git commit -m "prepare release $(RELEASE_CANDIDATE)"
 	$(MAKE) multimod-prerelease
-	# merge multimod changes
-	git merge prerelease_collector-core_v$(RELEASE_CANDIDATE)
 	# regenerate files
 	$(MAKE) -C cmd/builder config
 	$(MAKE) genotelcorecol
