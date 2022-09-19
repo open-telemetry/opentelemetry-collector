@@ -11,7 +11,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.15.0
 	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad
-	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220327151007-0b1d24fa04f4
+	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220919170044-dd98e8af322a
 	go.opentelemetry.io/build-tools/multimod v0.0.0-20220919170044-dd98e8af322a
 	go.opentelemetry.io/build-tools/semconvgen v0.0.0-20220919170044-dd98e8af322a
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
