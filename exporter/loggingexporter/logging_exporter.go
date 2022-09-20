@@ -96,7 +96,7 @@ func newLoggingExporter(logger *zap.Logger, logLevel zapcore.Level) *loggingExpo
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {
 	return func(context.Context) error {
-		// Currently Sync() return a different error depending on the OS.
+		// Currently, Sync() return a different error depending on the OS.
 		// Since these are not actionable ignore them.
 		err := logger.Sync()
 		osErr := &os.PathError{}
