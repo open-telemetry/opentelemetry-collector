@@ -29,7 +29,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.9 // indirect
+	github.com/klauspost/compress v1.15.10 // indirect
 	github.com/knadh/koanf v1.4.3 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
@@ -57,16 +57,16 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/collector/pdata v0.60.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.60.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.34.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.34.0 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.9.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.34.0 // indirect
-	go.opentelemetry.io/otel v1.9.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.31.0 // indirect
-	go.opentelemetry.io/otel/metric v0.31.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.9.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.31.0 // indirect
-	go.opentelemetry.io/otel/trace v1.9.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.35.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.35.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.10.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.35.0 // indirect
+	go.opentelemetry.io/otel v1.10.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.32.0 // indirect
+	go.opentelemetry.io/otel/metric v0.32.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.10.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.32.0 // indirect
+	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect

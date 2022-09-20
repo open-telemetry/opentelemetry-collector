@@ -18,9 +18,6 @@ const noRecordValueMask = uint32(1)
 
 var DefaultMetricDataPointFlags = MetricDataPointFlags(0)
 
-// Deprecated: [v0.60.0] Use MetricDataPointFlags.
-type MetricDataPointFlagsImmutable = MetricDataPointFlags
-
 // MetricDataPointFlags defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
 //

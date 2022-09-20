@@ -104,13 +104,3 @@ const (
 
 // String returns the string representation of the SeverityNumber.
 func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }
-
-// Deprecated: [v0.60.0] use Flags().
-func (ms LogRecord) FlagsStruct() LogRecordFlags {
-	return ms.Flags()
-}
-
-// Deprecated: [v0.60.0] use SetFlags().
-func (ms LogRecord) SetFlagsStruct(v LogRecordFlags) {
-	ms.SetFlags(v)
-}

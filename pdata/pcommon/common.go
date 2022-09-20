@@ -125,6 +125,9 @@ func NewValueBytes() Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: nil}})
 }
 
+// Deprecated: [0.61.0] Use NewValueBytes instead
+var NewValueBytesEmpty = NewValueBytes
+
 func newValue(orig *otlpcommon.AnyValue) Value {
 	return Value(internal.NewValue(orig))
 }
@@ -252,7 +255,7 @@ func (v Value) SliceVal() Slice {
 	return newSlice(&arr.Values)
 }
 
-// BytesVal returns the ImmutableByteSlice value associated with this Value.
+// BytesVal returns the ByteSlice value associated with this Value.
 // If the Type() is not ValueTypeBytes then returns an invalid ByteSlice object. Note that using
 // such slice can cause panic.
 //
@@ -818,34 +821,4 @@ func (es Slice) FromRaw(rawSlice []interface{}) {
 		newValue(&origs[ix]).FromRaw(iv)
 	}
 	*es.getOrig() = origs
-}
-
-// Deprecated: [0.60.0] Use ByteSlice instead.
-type ImmutableByteSlice = ByteSlice
-
-// NewImmutableByteSlice creates a new ByteSlice by copying the provided []byte slice.
-// Deprecated: [0.60.0] Use New{structName}() and {structName}.FromRaw([]byte) instead
-func NewImmutableByteSlice(from []byte) ByteSlice {
-	orig := copyByteSlice(nil, from)
-	return ByteSlice(internal.NewByteSlice(&orig))
-}
-
-// Deprecated: [0.60.0] Use Float64Slice instead.
-type ImmutableFloat64Slice = Float64Slice
-
-// NewImmutableFloat64Slice creates a new Float64Slice by copying the provided []float64 slice.
-// Deprecated: [0.60.0] Use New{structName}() and {structName}.FromRaw([]float64) instead
-func NewImmutableFloat64Slice(from []float64) Float64Slice {
-	orig := copyFloat64Slice(nil, from)
-	return Float64Slice(internal.NewFloat64Slice(&orig))
-}
-
-// Deprecated: [0.60.0] Use UInt64Slice instead.
-type ImmutableUInt64Slice = UInt64Slice
-
-// NewImmutableUInt64Slice creates a new UInt64Slice by copying the provided []uint64 slice.
-// Deprecated: [0.60.0] Use New{structName}() and {structName}.FromRaw([]uint64) instead
-func NewImmutableUInt64Slice(from []uint64) UInt64Slice {
-	orig := copyUInt64Slice(nil, from)
-	return UInt64Slice(internal.NewUInt64Slice(&orig))
 }
