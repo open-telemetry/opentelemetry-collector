@@ -60,6 +60,7 @@ func (es ResourceSpansSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
+//
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
 //       ... // Do something with the element
@@ -93,6 +94,7 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ResourceSpansSlice can be initialized:
+//
 //   es := NewResourceSpansSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
@@ -122,6 +124,7 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
+//
 //   lessFunc := func(a, b ResourceSpans) bool {
 //     return a.Name() < b.Name() // choose any comparison here
 //   }
@@ -257,6 +260,7 @@ func (es ScopeSpansSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
+//
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
 //       ... // Do something with the element
@@ -290,6 +294,7 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ScopeSpansSlice can be initialized:
+//
 //   es := NewScopeSpansSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
@@ -319,6 +324,7 @@ func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
+//
 //   lessFunc := func(a, b ScopeSpans) bool {
 //     return a.Name() < b.Name() // choose any comparison here
 //   }
@@ -454,6 +460,7 @@ func (es SpanSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
+//
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
 //       ... // Do something with the element
@@ -487,6 +494,7 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new SpanSlice can be initialized:
+//
 //   es := NewSpanSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
@@ -516,6 +524,7 @@ func (es SpanSlice) AppendEmpty() Span {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
+//
 //   lessFunc := func(a, b Span) bool {
 //     return a.Name() < b.Name() // choose any comparison here
 //   }
@@ -769,6 +778,7 @@ func (es SpanEventSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
+//
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
 //       ... // Do something with the element
@@ -802,6 +812,7 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new SpanEventSlice can be initialized:
+//
 //   es := NewSpanEventSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
@@ -831,6 +842,7 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
+//
 //   lessFunc := func(a, b SpanEvent) bool {
 //     return a.Name() < b.Name() // choose any comparison here
 //   }
@@ -983,6 +995,7 @@ func (es SpanLinkSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
+//
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
 //       ... // Do something with the element
@@ -1016,6 +1029,7 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new SpanLinkSlice can be initialized:
+//
 //   es := NewSpanLinkSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
@@ -1045,6 +1059,7 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
+//
 //   lessFunc := func(a, b SpanLink) bool {
 //     return a.Name() < b.Name() // choose any comparison here
 //   }

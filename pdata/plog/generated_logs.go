@@ -60,6 +60,7 @@ func (es ResourceLogsSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
+//
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
 //       ... // Do something with the element
@@ -93,6 +94,7 @@ func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ResourceLogsSlice can be initialized:
+//
 //   es := NewResourceLogsSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
@@ -122,6 +124,7 @@ func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
+//
 //   lessFunc := func(a, b ResourceLogs) bool {
 //     return a.Name() < b.Name() // choose any comparison here
 //   }
@@ -257,6 +260,7 @@ func (es ScopeLogsSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
+//
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
 //       ... // Do something with the element
@@ -290,6 +294,7 @@ func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new ScopeLogsSlice can be initialized:
+//
 //   es := NewScopeLogsSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
@@ -319,6 +324,7 @@ func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
+//
 //   lessFunc := func(a, b ScopeLogs) bool {
 //     return a.Name() < b.Name() // choose any comparison here
 //   }
@@ -454,6 +460,7 @@ func (es LogRecordSlice) Len() int {
 // At returns the element at the given index.
 //
 // This function is used mostly for iterating over all the values in the slice:
+//
 //   for i := 0; i < es.Len(); i++ {
 //       e := es.At(i)
 //       ... // Do something with the element
@@ -487,6 +494,7 @@ func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
 // Here is how a new LogRecordSlice can be initialized:
+//
 //   es := NewLogRecordSlice()
 //   es.EnsureCapacity(4)
 //   for i := 0; i < 4; i++ {
@@ -516,6 +524,7 @@ func (es LogRecordSlice) AppendEmpty() LogRecord {
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
+//
 //   lessFunc := func(a, b LogRecord) bool {
 //     return a.Name() < b.Name() // choose any comparison here
 //   }
