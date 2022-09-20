@@ -19,13 +19,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel/trace"
 	"io"
 	"net/http"
 	"net/url"
 	"runtime"
 	"strconv"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"

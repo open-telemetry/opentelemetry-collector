@@ -18,10 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 	"runtime"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"

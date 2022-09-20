@@ -17,8 +17,9 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 import (
 	"context"
 	"errors"
-	"go.opentelemetry.io/otel/trace"
 	"os"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
