@@ -61,10 +61,10 @@ func (es ResourceSpansSlice) Len() int {
 //
 // This function is used mostly for iterating over all the values in the slice:
 //
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es ResourceSpansSlice) At(ix int) ResourceSpans {
 	return newResourceSpans((*es.getOrig())[ix])
 }
@@ -95,12 +95,12 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 //
 // Here is how a new ResourceSpansSlice can be initialized:
 //
-//   es := NewResourceSpansSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//	es := NewResourceSpansSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
@@ -125,10 +125,10 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 //
 // Returns the same instance to allow nicer code like:
 //
-//   lessFunc := func(a, b ResourceSpans) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//	lessFunc := func(a, b ResourceSpans) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) ResourceSpansSlice {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -261,10 +261,10 @@ func (es ScopeSpansSlice) Len() int {
 //
 // This function is used mostly for iterating over all the values in the slice:
 //
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es ScopeSpansSlice) At(ix int) ScopeSpans {
 	return newScopeSpans((*es.getOrig())[ix])
 }
@@ -295,12 +295,12 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 //
 // Here is how a new ScopeSpansSlice can be initialized:
 //
-//   es := NewScopeSpansSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//	es := NewScopeSpansSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
@@ -325,10 +325,10 @@ func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 //
 // Returns the same instance to allow nicer code like:
 //
-//   lessFunc := func(a, b ScopeSpans) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//	lessFunc := func(a, b ScopeSpans) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) ScopeSpansSlice {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -461,10 +461,10 @@ func (es SpanSlice) Len() int {
 //
 // This function is used mostly for iterating over all the values in the slice:
 //
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es SpanSlice) At(ix int) Span {
 	return newSpan((*es.getOrig())[ix])
 }
@@ -495,12 +495,12 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 //
 // Here is how a new SpanSlice can be initialized:
 //
-//   es := NewSpanSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//	es := NewSpanSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es SpanSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
@@ -525,10 +525,10 @@ func (es SpanSlice) AppendEmpty() Span {
 //
 // Returns the same instance to allow nicer code like:
 //
-//   lessFunc := func(a, b Span) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//	lessFunc := func(a, b Span) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es SpanSlice) Sort(less func(a, b Span) bool) SpanSlice {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -779,10 +779,10 @@ func (es SpanEventSlice) Len() int {
 //
 // This function is used mostly for iterating over all the values in the slice:
 //
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es SpanEventSlice) At(ix int) SpanEvent {
 	return newSpanEvent((*es.getOrig())[ix])
 }
@@ -813,12 +813,12 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 //
 // Here is how a new SpanEventSlice can be initialized:
 //
-//   es := NewSpanEventSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//	es := NewSpanEventSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es SpanEventSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
@@ -843,10 +843,10 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 //
 // Returns the same instance to allow nicer code like:
 //
-//   lessFunc := func(a, b SpanEvent) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//	lessFunc := func(a, b SpanEvent) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) SpanEventSlice {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
@@ -996,10 +996,10 @@ func (es SpanLinkSlice) Len() int {
 //
 // This function is used mostly for iterating over all the values in the slice:
 //
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es SpanLinkSlice) At(ix int) SpanLink {
 	return newSpanLink((*es.getOrig())[ix])
 }
@@ -1030,12 +1030,12 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 //
 // Here is how a new SpanLinkSlice can be initialized:
 //
-//   es := NewSpanLinkSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//	es := NewSpanLinkSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
@@ -1060,10 +1060,10 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 //
 // Returns the same instance to allow nicer code like:
 //
-//   lessFunc := func(a, b SpanLink) bool {
-//     return a.Name() < b.Name() // choose any comparison here
-//   }
-//   assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
+//	lessFunc := func(a, b SpanLink) bool {
+//	  return a.Name() < b.Name() // choose any comparison here
+//	}
+//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
 func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) SpanLinkSlice {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es

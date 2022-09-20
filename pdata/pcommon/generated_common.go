@@ -133,10 +133,10 @@ func (es Slice) Len() int {
 //
 // This function is used mostly for iterating over all the values in the slice:
 //
-//   for i := 0; i < es.Len(); i++ {
-//       e := es.At(i)
-//       ... // Do something with the element
-//   }
+//	for i := 0; i < es.Len(); i++ {
+//	    e := es.At(i)
+//	    ... // Do something with the element
+//	}
 func (es Slice) At(ix int) Value {
 	return newValue(&(*es.getOrig())[ix])
 }
@@ -162,12 +162,12 @@ func (es Slice) CopyTo(dest Slice) {
 //
 // Here is how a new Slice can be initialized:
 //
-//   es := NewSlice()
-//   es.EnsureCapacity(4)
-//   for i := 0; i < 4; i++ {
-//       e := es.AppendEmpty()
-//       // Here should set all the values for e.
-//   }
+//	es := NewSlice()
+//	es.EnsureCapacity(4)
+//	for i := 0; i < 4; i++ {
+//	    e := es.AppendEmpty()
+//	    // Here should set all the values for e.
+//	}
 func (es Slice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
