@@ -17,7 +17,7 @@
 
 package pcommon
 
-import ()
+import "go.opentelemetry.io/collector/pdata/internal"
 
 // ByteSlice represents a []byte slice.
 // The instance of ByteSlice can be assigned to multiple objects since it's immutable.
