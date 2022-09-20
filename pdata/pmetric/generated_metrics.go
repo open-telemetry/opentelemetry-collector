@@ -630,27 +630,27 @@ func (ms Metric) SetUnit(v string) {
 	ms.getOrig().Unit = v
 }
 
-// DataType returns the type of the data for this Metric.
+// Type returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DataType() MetricDataType {
+func (ms Metric) Type() MetricType {
 	switch ms.getOrig().Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
-		return MetricDataTypeGauge
+		return MetricTypeGauge
 	case *otlpmetrics.Metric_Sum:
-		return MetricDataTypeSum
+		return MetricTypeSum
 	case *otlpmetrics.Metric_Histogram:
-		return MetricDataTypeHistogram
+		return MetricTypeHistogram
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		return MetricDataTypeExponentialHistogram
+		return MetricTypeExponentialHistogram
 	case *otlpmetrics.Metric_Summary:
-		return MetricDataTypeSummary
+		return MetricTypeSummary
 	}
-	return MetricDataTypeNone
+	return MetricTypeNone
 }
 
 // Gauge returns the gauge associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeGauge returns an invalid
+// Calling this function when Type() != MetricTypeGauge returns an invalid
 // zero-initialized instance of Gauge. Note that using such Gauge instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -664,7 +664,7 @@ func (ms Metric) Gauge() Gauge {
 
 // SetEmptyGauge sets an empty gauge to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeGauge".
+// After this, Type() function will return MetricTypeGauge".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyGauge() Gauge {
@@ -675,7 +675,7 @@ func (ms Metric) SetEmptyGauge() Gauge {
 
 // Sum returns the sum associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeSum returns an invalid
+// Calling this function when Type() != MetricTypeSum returns an invalid
 // zero-initialized instance of Sum. Note that using such Sum instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -689,7 +689,7 @@ func (ms Metric) Sum() Sum {
 
 // SetEmptySum sets an empty sum to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeSum".
+// After this, Type() function will return MetricTypeSum".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySum() Sum {
@@ -700,7 +700,7 @@ func (ms Metric) SetEmptySum() Sum {
 
 // Histogram returns the histogram associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeHistogram returns an invalid
+// Calling this function when Type() != MetricTypeHistogram returns an invalid
 // zero-initialized instance of Histogram. Note that using such Histogram instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -714,7 +714,7 @@ func (ms Metric) Histogram() Histogram {
 
 // SetEmptyHistogram sets an empty histogram to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeHistogram".
+// After this, Type() function will return MetricTypeHistogram".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyHistogram() Histogram {
@@ -725,7 +725,7 @@ func (ms Metric) SetEmptyHistogram() Histogram {
 
 // ExponentialHistogram returns the exponentialhistogram associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeExponentialHistogram returns an invalid
+// Calling this function when Type() != MetricTypeExponentialHistogram returns an invalid
 // zero-initialized instance of ExponentialHistogram. Note that using such ExponentialHistogram instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -739,7 +739,7 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 
 // SetEmptyExponentialHistogram sets an empty exponentialhistogram to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeExponentialHistogram".
+// After this, Type() function will return MetricTypeExponentialHistogram".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
@@ -750,7 +750,7 @@ func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
 
 // Summary returns the summary associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeSummary returns an invalid
+// Calling this function when Type() != MetricTypeSummary returns an invalid
 // zero-initialized instance of Summary. Note that using such Summary instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -764,7 +764,7 @@ func (ms Metric) Summary() Summary {
 
 // SetEmptySummary sets an empty summary to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeSummary".
+// After this, Type() function will return MetricTypeSummary".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySummary() Summary {
@@ -778,16 +778,16 @@ func (ms Metric) CopyTo(dest Metric) {
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
-	switch ms.DataType() {
-	case MetricDataTypeGauge:
+	switch ms.Type() {
+	case MetricTypeGauge:
 		ms.Gauge().CopyTo(dest.SetEmptyGauge())
-	case MetricDataTypeSum:
+	case MetricTypeSum:
 		ms.Sum().CopyTo(dest.SetEmptySum())
-	case MetricDataTypeHistogram:
+	case MetricTypeHistogram:
 		ms.Histogram().CopyTo(dest.SetEmptyHistogram())
-	case MetricDataTypeExponentialHistogram:
+	case MetricTypeExponentialHistogram:
 		ms.ExponentialHistogram().CopyTo(dest.SetEmptyExponentialHistogram())
-	case MetricDataTypeSummary:
+	case MetricTypeSummary:
 		ms.Summary().CopyTo(dest.SetEmptySummary())
 	}
 

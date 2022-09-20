@@ -35,14 +35,14 @@ const (
 	endTime   = uint64(12578940000000054321)
 )
 
-func TestMetricDataTypeString(t *testing.T) {
-	assert.Equal(t, "None", MetricDataTypeNone.String())
-	assert.Equal(t, "Gauge", MetricDataTypeGauge.String())
-	assert.Equal(t, "Sum", MetricDataTypeSum.String())
-	assert.Equal(t, "Histogram", MetricDataTypeHistogram.String())
-	assert.Equal(t, "ExponentialHistogram", MetricDataTypeExponentialHistogram.String())
-	assert.Equal(t, "Summary", MetricDataTypeSummary.String())
-	assert.Equal(t, "", (MetricDataTypeSummary + 1).String())
+func TestMetricTypeString(t *testing.T) {
+	assert.Equal(t, "None", MetricTypeNone.String())
+	assert.Equal(t, "Gauge", MetricTypeGauge.String())
+	assert.Equal(t, "Sum", MetricTypeSum.String())
+	assert.Equal(t, "Histogram", MetricTypeHistogram.String())
+	assert.Equal(t, "ExponentialHistogram", MetricTypeExponentialHistogram.String())
+	assert.Equal(t, "Summary", MetricTypeSummary.String())
+	assert.Equal(t, "", (MetricTypeSummary + 1).String())
 }
 
 func TestNumberDataPointValueTypeString(t *testing.T) {
@@ -256,7 +256,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_int", metricInt.Name())
 	assert.EqualValues(t, "My metric", metricInt.Description())
 	assert.EqualValues(t, "ms", metricInt.Unit())
-	assert.EqualValues(t, MetricDataTypeGauge, metricInt.DataType())
+	assert.EqualValues(t, MetricTypeGauge, metricInt.Type())
 	gaugeDataPoints := metricInt.Gauge().DataPoints()
 	assert.EqualValues(t, 2, gaugeDataPoints.Len())
 	// First point
@@ -275,7 +275,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_double", metricDouble.Name())
 	assert.EqualValues(t, "My metric", metricDouble.Description())
 	assert.EqualValues(t, "ms", metricDouble.Unit())
-	assert.EqualValues(t, MetricDataTypeSum, metricDouble.DataType())
+	assert.EqualValues(t, MetricTypeSum, metricDouble.Type())
 	dsd := metricDouble.Sum()
 	assert.EqualValues(t, MetricAggregationTemporalityCumulative, dsd.AggregationTemporality())
 	sumDataPoints := dsd.DataPoints()
@@ -296,7 +296,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_histogram", metricHistogram.Name())
 	assert.EqualValues(t, "My metric", metricHistogram.Description())
 	assert.EqualValues(t, "ms", metricHistogram.Unit())
-	assert.EqualValues(t, MetricDataTypeHistogram, metricHistogram.DataType())
+	assert.EqualValues(t, MetricTypeHistogram, metricHistogram.Type())
 	dhd := metricHistogram.Histogram()
 	assert.EqualValues(t, MetricAggregationTemporalityDelta, dhd.AggregationTemporality())
 	histogramDataPoints := dhd.DataPoints()

@@ -127,10 +127,11 @@ var metric = &messageValueStruct{
 			testVal:         `"1"`,
 		},
 		&oneOfField{
-			typeName:         "MetricDataType",
-			originFieldName:  "Data",
-			originTypePrefix: "otlpmetrics.Metric_",
-			testValueIdx:     1, // Sum
+			typeName:                   "MetricType",
+			originFieldName:            "Data",
+			originTypePrefix:           "otlpmetrics.Metric_",
+			testValueIdx:               1, // Sum
+			omitOriginFieldNameInNames: true,
 			values: []oneOfValue{
 				&oneOfMessageValue{
 					fieldName:              "Gauge",

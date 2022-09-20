@@ -82,16 +82,16 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 			ms := ilm.Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				switch m.DataType() {
-				case MetricDataTypeGauge:
+				switch m.Type() {
+				case MetricTypeGauge:
 					dataPointCount += m.Gauge().DataPoints().Len()
-				case MetricDataTypeSum:
+				case MetricTypeSum:
 					dataPointCount += m.Sum().DataPoints().Len()
-				case MetricDataTypeHistogram:
+				case MetricTypeHistogram:
 					dataPointCount += m.Histogram().DataPoints().Len()
-				case MetricDataTypeExponentialHistogram:
+				case MetricTypeExponentialHistogram:
 					dataPointCount += m.ExponentialHistogram().DataPoints().Len()
-				case MetricDataTypeSummary:
+				case MetricTypeSummary:
 					dataPointCount += m.Summary().DataPoints().Len()
 				}
 			}
@@ -100,32 +100,55 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 	return
 }
 
-// MetricDataType specifies the type of data in a Metric.
-type MetricDataType int32
+// Deprecated: [v0.61.0] use MetricType.
+type MetricDataType = MetricType
 
 const (
-	MetricDataTypeNone MetricDataType = iota
-	MetricDataTypeGauge
-	MetricDataTypeSum
-	MetricDataTypeHistogram
-	MetricDataTypeExponentialHistogram
-	MetricDataTypeSummary
+	// Deprecated: [v0.61.0] use MetricTypeNone.
+	MetricDataTypeNone = MetricTypeNone
+	// Deprecated: [v0.61.0] use MetricTypeGauge.
+	MetricDataTypeGauge = MetricTypeGauge
+	// Deprecated: [v0.61.0] use MetricTypeSum.
+	MetricDataTypeSum = MetricTypeSum
+	// Deprecated: [v0.61.0] use MetricTypeHistogram.
+	MetricDataTypeHistogram = MetricTypeHistogram
+	// Deprecated: [v0.61.0] use MetricTypeExponentialHistogram.
+	MetricDataTypeExponentialHistogram = MetricTypeExponentialHistogram
+	// Deprecated: [v0.61.0] use MetricTypeSummary.
+	MetricDataTypeSummary = MetricTypeSummary
 )
 
-// String returns the string representation of the MetricDataType.
-func (mdt MetricDataType) String() string {
+// Deprecated: [v0.61.0] use Metric.Type().
+func (ms Metric) DataType() MetricDataType {
+	return ms.Type()
+}
+
+// MetricType specifies the type of data in a Metric.
+type MetricType int32
+
+const (
+	MetricTypeNone MetricType = iota
+	MetricTypeGauge
+	MetricTypeSum
+	MetricTypeHistogram
+	MetricTypeExponentialHistogram
+	MetricTypeSummary
+)
+
+// String returns the string representation of the MetricType.
+func (mdt MetricType) String() string {
 	switch mdt {
-	case MetricDataTypeNone:
+	case MetricTypeNone:
 		return "None"
-	case MetricDataTypeGauge:
+	case MetricTypeGauge:
 		return "Gauge"
-	case MetricDataTypeSum:
+	case MetricTypeSum:
 		return "Sum"
-	case MetricDataTypeHistogram:
+	case MetricTypeHistogram:
 		return "Histogram"
-	case MetricDataTypeExponentialHistogram:
+	case MetricTypeExponentialHistogram:
 		return "ExponentialHistogram"
-	case MetricDataTypeSummary:
+	case MetricTypeSummary:
 		return "Summary"
 	}
 	return ""
