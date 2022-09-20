@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -28,7 +29,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"

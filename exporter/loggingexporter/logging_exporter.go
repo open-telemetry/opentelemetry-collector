@@ -31,82 +31,82 @@ import (
 )
 
 type loggingExporter struct {
-	logLevel         zapcore.Level
-	logger           *zap.Logger
-	logsMarshaler    plog.Marshaler
-	metricsMarshaler pmetric.Marshaler
-	tracesMarshaler  ptrace.Marshaler
+    logLevel         zapcore.Level
+    logger           *zap.Logger
+    logsMarshaler    plog.Marshaler
+    metricsMarshaler pmetric.Marshaler
+    tracesMarshaler  ptrace.Marshaler
 }
 
 func (s *loggingExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()),
-		zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
-	if s.logLevel != zapcore.DebugLevel {
-		return nil
-	}
+    s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()),
+        zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
+    if s.logLevel != zapcore.DebugLevel {
+        return nil
+    }
 
-	buf, err := s.tracesMarshaler.MarshalTraces(td)
-	if err != nil {
-		return err
-	}
-	s.logger.Info(string(buf))
-	return nil
+    buf, err := s.tracesMarshaler.MarshalTraces(td)
+    if err != nil {
+        return err
+    }
+    s.logger.Info(string(buf))
+    return nil
 }
 
 func (s *loggingExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()),
-		zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
+    s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()),
+        zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 
-	if s.logLevel != zapcore.DebugLevel {
-		return nil
-	}
+    if s.logLevel != zapcore.DebugLevel {
+        return nil
+    }
 
-	buf, err := s.metricsMarshaler.MarshalMetrics(md)
-	if err != nil {
-		return err
-	}
-	s.logger.Info(string(buf))
-	return nil
+    buf, err := s.metricsMarshaler.MarshalMetrics(md)
+    if err != nil {
+        return err
+    }
+    s.logger.Info(string(buf))
+    return nil
 }
 
 func (s *loggingExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()),
-		zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
+    s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()),
+        zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 
-	if s.logLevel != zapcore.DebugLevel {
-		return nil
-	}
+    if s.logLevel != zapcore.DebugLevel {
+        return nil
+    }
 
-	buf, err := s.logsMarshaler.MarshalLogs(ld)
-	if err != nil {
-		return err
-	}
-	s.logger.Info(string(buf))
-	return nil
+    buf, err := s.logsMarshaler.MarshalLogs(ld)
+    if err != nil {
+        return err
+    }
+    s.logger.Info(string(buf))
+    return nil
 }
 
 func newLoggingExporter(logger *zap.Logger, logLevel zapcore.Level) *loggingExporter {
-	return &loggingExporter{
-		logLevel:         logLevel,
-		logger:           logger,
-		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
-		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
-		tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
-	}
+    return &loggingExporter{
+        logLevel:         logLevel,
+        logger:           logger,
+        logsMarshaler:    otlptext.NewTextLogsMarshaler(),
+        metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
+        tracesMarshaler:  otlptext.NewTextTracesMarshaler(),
+    }
 }
 
 func loggerSync(logger *zap.Logger) func(context.Context) error {
-	return func(context.Context) error {
-		// Currently Sync() return a different error depending on the OS.
-		// Since these are not actionable ignore them.
-		err := logger.Sync()
-		osErr := &os.PathError{}
-		if errors.As(err, &osErr) {
-			wrappedErr := osErr.Unwrap()
-			if knownSyncError(wrappedErr) {
-				err = nil
-			}
-		}
-		return err
-	}
+    return func(context.Context) error {
+        // Currently Sync() return a different error depending on the OS.
+        // Since these are not actionable ignore them.
+        err := logger.Sync()
+        osErr := &os.PathError{}
+        if errors.As(err, &osErr) {
+            wrappedErr := osErr.Unwrap()
+            if knownSyncError(wrappedErr) {
+                err = nil
+            }
+        }
+        return err
+    }
 }
