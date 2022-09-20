@@ -20,10 +20,7 @@ package ptrace
 import (
 	"sort"
 
-	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // ResourceSpansSlice logically represents a slice of ResourceSpans.

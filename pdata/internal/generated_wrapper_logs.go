@@ -18,7 +18,8 @@
 package internal
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal/data"
+	"sort"
+
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 

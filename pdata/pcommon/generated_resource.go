@@ -18,7 +18,6 @@
 package pcommon
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 )
 

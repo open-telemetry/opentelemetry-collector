@@ -17,6 +17,8 @@
 
 package internal
 
+import ()
+
 type ByteSlice struct {
 	orig *[]byte
 }
