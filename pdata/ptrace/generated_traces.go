@@ -620,8 +620,8 @@ func (ms Span) SetSpanID(v pcommon.SpanID) {
 	ms.getOrig().SpanId = data.SpanID(v)
 }
 
-// TraceStateStruct returns the tracestatestruct associated with this Span.
-func (ms Span) TraceStateStruct() pcommon.TraceState {
+// TraceState returns the tracestate associated with this Span.
+func (ms Span) TraceState() pcommon.TraceState {
 	return pcommon.TraceState(internal.NewTraceState(&ms.getOrig().TraceState))
 }
 
@@ -729,7 +729,7 @@ func (ms Span) Status() SpanStatus {
 func (ms Span) CopyTo(dest Span) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
-	ms.TraceStateStruct().CopyTo(dest.TraceStateStruct())
+	ms.TraceState().CopyTo(dest.TraceState())
 	dest.SetParentSpanID(ms.ParentSpanID())
 	dest.SetName(ms.Name())
 	dest.SetKind(ms.Kind())
@@ -1156,8 +1156,8 @@ func (ms SpanLink) SetSpanID(v pcommon.SpanID) {
 	ms.getOrig().SpanId = data.SpanID(v)
 }
 
-// TraceStateStruct returns the tracestatestruct associated with this SpanLink.
-func (ms SpanLink) TraceStateStruct() pcommon.TraceState {
+// TraceState returns the tracestate associated with this SpanLink.
+func (ms SpanLink) TraceState() pcommon.TraceState {
 	return pcommon.TraceState(internal.NewTraceState(&ms.getOrig().TraceState))
 }
 
@@ -1180,7 +1180,7 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
-	ms.TraceStateStruct().CopyTo(dest.TraceStateStruct())
+	ms.TraceState().CopyTo(dest.TraceState())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }

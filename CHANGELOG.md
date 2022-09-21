@@ -4,6 +4,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Change `ptrace.Span[Link]?.TraceState` signature to match `ptrace.Span[Link]?.TraceStateStruct` (#6085)
 - Delete deprecated `pmetric.NewMetricDataPointFlagsImmutable` func. (#6097)
 - Delete deprecated `pmetric.*DataPoint.[Set]FlagsImmutable()` funcs. (#6097)
 - Delete deprecated `config.Unmarshalable` interface. (#6084)
@@ -23,7 +24,8 @@
 ### 🚩 Deprecations 🚩
 
 - Deprecate `go.opentelemetry.io/collector/service/featuregate` in favor of `go.opentelemetry.io/collector/featuregate`. (#6094)
-- Deprecate pmetric.OptionalType, unused enum type. (#6096)
+- Deprecate `pmetric.OptionalType`, unused enum type. (#6096)
+- Deprecate `ptrace.Span[Link]?.TraceStateStruct` in favor of `ptrace.Span[Link]?.TraceState` (#6085)
 - Deprecate `pcommon.NewValueBytesEmpty` in favor of `pcommon.NewValueBytes` that now has the same signature. (#6105)
 
 ### 💡 Enhancements 💡
