@@ -27,6 +27,8 @@
 - Deprecate `pmetric.OptionalType`, unused enum type. (#6096)
 - Deprecate `ptrace.Span[Link]?.TraceStateStruct` in favor of `ptrace.Span[Link]?.TraceState` (#6085)
 - Deprecate `pcommon.NewValueBytesEmpty` in favor of `pcommon.NewValueBytes` that now has the same signature. (#6105)
+- Deprecate `pmetric.MetricDataType` and related constants in favor of `pmetric.MetricType`. (#6127)
+- Deprecate `pmetric.Metric.DataType()` in favor of `pmetric.Metric.Type()`. (#6127)
 
 ### 💡 Enhancements 💡
 
