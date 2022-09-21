@@ -111,23 +111,23 @@ func Test${structName}_CopyTo_${fieldName}(t *testing.T) {
 const copyToValueOneOfMessageTemplate = `	case ${typeName}:
 		ms.${fieldName}().CopyTo(dest.SetEmpty${fieldName}())`
 
-const accessorsOneOfPrimitiveTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) ${fieldName}() ${returnType} {
+const accessorsOneOfPrimitiveTemplate = `// ${accessorFieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) ${accessorFieldName}() ${returnType} {
 	return ms.getOrig().Get${originFieldName}()
 }
 
-// Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+// Set${accessorFieldName} replaces the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) Set${accessorFieldName}(v ${returnType}) {
 	ms.getOrig().${originOneOfFieldName} = &${originStructType}{
 		${originFieldName}: v,
 	}
 }`
 
-const accessorsOneOfPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+const accessorsOneOfPrimitiveTestTemplate = `func Test${structName}_${accessorFieldName}(t *testing.T) {
 	ms := New${structName}()
-	assert.Equal(t, ${defaultVal}, ms.${fieldName}())
-	ms.Set${fieldName}(${testValue})
-	assert.Equal(t, ${testValue}, ms.${fieldName}())
+	assert.Equal(t, ${defaultVal}, ms.${accessorFieldName}())
+	ms.Set${accessorFieldName}(${testValue})
+	assert.Equal(t, ${testValue}, ms.${accessorFieldName}())
 	assert.Equal(t, ${typeName}, ms.${originOneOfTypeFuncName}())
 }`
 
@@ -603,7 +603,6 @@ type oneOfValue interface {
 
 type oneOfPrimitiveValue struct {
 	fieldName       string
-	fieldType       string
 	defaultVal      string
 	testVal         string
 	returnType      string
@@ -615,8 +614,8 @@ func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField,
 		switch name {
 		case "structName":
 			return ms.getName()
-		case "fieldName":
-			return opv.fieldName
+		case "accessorFieldName":
+			return opv.accessorFieldName(of)
 		case "lowerFieldName":
 			return strings.ToLower(opv.fieldName)
 		case "returnType":
@@ -643,14 +642,14 @@ func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, of *oneOfField, sb 
 			return opv.defaultVal
 		case "packageName":
 			return ""
-		case "fieldName":
-			return opv.fieldName
+		case "accessorFieldName":
+			return opv.accessorFieldName(of)
 		case "testValue":
 			return opv.testVal
 		case "originOneOfTypeFuncName":
 			return of.typeFuncName()
 		case "typeName":
-			return of.typeName + opv.fieldType
+			return of.typeName + opv.fieldName
 		default:
 			panic(name)
 		}
@@ -658,18 +657,25 @@ func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, of *oneOfField, sb 
 	sb.WriteString("\n")
 }
 
+func (opv *oneOfPrimitiveValue) accessorFieldName(of *oneOfField) string {
+	if of.omitOriginFieldNameInNames {
+		return opv.fieldName
+	}
+	return opv.fieldName + of.originFieldName
+}
+
 func (opv *oneOfPrimitiveValue) generateSetWithTestValue(of *oneOfField, sb *strings.Builder) {
 	sb.WriteString("\ttv.orig." + of.originFieldName + " = &" + of.originTypePrefix + opv.originFieldName + "{" + opv.originFieldName + ":" + opv.testVal + "}")
 }
 
 func (opv *oneOfPrimitiveValue) generateCopyToValue(of *oneOfField, sb *strings.Builder) {
-	sb.WriteString("\tcase " + of.typeName + opv.fieldType + ":\n")
-	sb.WriteString("\tdest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
+	sb.WriteString("\tcase " + of.typeName + opv.fieldName + ":\n")
+	sb.WriteString("\tdest.Set" + opv.accessorFieldName(of) + "(ms." + opv.accessorFieldName(of) + "())\n")
 }
 
 func (opv *oneOfPrimitiveValue) generateTypeSwitchCase(of *oneOfField, sb *strings.Builder) {
 	sb.WriteString("\tcase *" + of.originTypePrefix + opv.originFieldName + ":\n")
-	sb.WriteString("\t\treturn " + of.typeName + opv.fieldType + "\n")
+	sb.WriteString("\t\treturn " + of.typeName + opv.fieldName + "\n")
 }
 
 var _ oneOfValue = (*oneOfPrimitiveValue)(nil)

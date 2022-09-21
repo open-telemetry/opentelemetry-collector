@@ -258,16 +258,14 @@ var numberDataPoint = &messageValueStruct{
 			testValueIdx:     0, // Double
 			values: []oneOfValue{
 				&oneOfPrimitiveValue{
-					fieldName:       "DoubleVal",
-					fieldType:       "Double",
+					fieldName:       "Double",
 					originFieldName: "AsDouble",
 					returnType:      "float64",
 					defaultVal:      "float64(0.0)",
 					testVal:         "float64(17.13)",
 				},
 				&oneOfPrimitiveValue{
-					fieldName:       "IntVal",
-					fieldType:       "Int",
+					fieldName:       "Int",
 					originFieldName: "AsInt",
 					returnType:      "int64",
 					defaultVal:      "int64(0)",
@@ -464,20 +462,18 @@ var exemplar = &messageValueStruct{
 			testValueIdx:     1, // Int
 			values: []oneOfValue{
 				&oneOfPrimitiveValue{
-					fieldName:       "DoubleVal",
+					fieldName:       "Double",
 					originFieldName: "AsDouble",
 					returnType:      "float64",
 					defaultVal:      "float64(0.0)",
 					testVal:         "float64(17.13)",
-					fieldType:       "Double",
 				},
 				&oneOfPrimitiveValue{
-					fieldName:       "IntVal",
+					fieldName:       "Int",
 					originFieldName: "AsInt",
 					returnType:      "int64",
 					defaultVal:      "int64(0)",
 					testVal:         "int64(17)",
-					fieldType:       "Int",
 				},
 			},
 		},

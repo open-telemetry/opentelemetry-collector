@@ -1263,25 +1263,25 @@ func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 	return NumberDataPointValueTypeNone
 }
 
-// DoubleVal returns the doubleval associated with this NumberDataPoint.
-func (ms NumberDataPoint) DoubleVal() float64 {
+// DoubleValue returns the double associated with this NumberDataPoint.
+func (ms NumberDataPoint) DoubleValue() float64 {
 	return ms.getOrig().GetAsDouble()
 }
 
-// SetDoubleVal replaces the doubleval associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetDoubleVal(v float64) {
+// SetDoubleValue replaces the double associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetDoubleValue(v float64) {
 	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
 	}
 }
 
-// IntVal returns the intval associated with this NumberDataPoint.
-func (ms NumberDataPoint) IntVal() int64 {
+// IntValue returns the int associated with this NumberDataPoint.
+func (ms NumberDataPoint) IntValue() int64 {
 	return ms.getOrig().GetAsInt()
 }
 
-// SetIntVal replaces the intval associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetIntVal(v int64) {
+// SetIntValue replaces the int associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetIntValue(v int64) {
 	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsInt{
 		AsInt: v,
 	}
@@ -1309,9 +1309,9 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case NumberDataPointValueTypeDouble:
-		dest.SetDoubleVal(ms.DoubleVal())
+		dest.SetDoubleValue(ms.DoubleValue())
 	case NumberDataPointValueTypeInt:
-		dest.SetIntVal(ms.IntVal())
+		dest.SetIntValue(ms.IntValue())
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
@@ -2628,25 +2628,25 @@ func (ms Exemplar) ValueType() ExemplarValueType {
 	return ExemplarValueTypeNone
 }
 
-// DoubleVal returns the doubleval associated with this Exemplar.
-func (ms Exemplar) DoubleVal() float64 {
+// DoubleValue returns the double associated with this Exemplar.
+func (ms Exemplar) DoubleValue() float64 {
 	return ms.getOrig().GetAsDouble()
 }
 
-// SetDoubleVal replaces the doubleval associated with this Exemplar.
-func (ms Exemplar) SetDoubleVal(v float64) {
+// SetDoubleValue replaces the double associated with this Exemplar.
+func (ms Exemplar) SetDoubleValue(v float64) {
 	ms.getOrig().Value = &otlpmetrics.Exemplar_AsDouble{
 		AsDouble: v,
 	}
 }
 
-// IntVal returns the intval associated with this Exemplar.
-func (ms Exemplar) IntVal() int64 {
+// IntValue returns the int associated with this Exemplar.
+func (ms Exemplar) IntValue() int64 {
 	return ms.getOrig().GetAsInt()
 }
 
-// SetIntVal replaces the intval associated with this Exemplar.
-func (ms Exemplar) SetIntVal(v int64) {
+// SetIntValue replaces the int associated with this Exemplar.
+func (ms Exemplar) SetIntValue(v int64) {
 	ms.getOrig().Value = &otlpmetrics.Exemplar_AsInt{
 		AsInt: v,
 	}
@@ -2682,9 +2682,9 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case ExemplarValueTypeDouble:
-		dest.SetDoubleVal(ms.DoubleVal())
+		dest.SetDoubleValue(ms.DoubleValue())
 	case ExemplarValueTypeInt:
-		dest.SetIntVal(ms.IntVal())
+		dest.SetIntValue(ms.IntValue())
 	}
 
 	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())
