@@ -21,25 +21,12 @@ import (
 
 var emptySpanID = SpanID([8]byte{})
 
-// Deprecated: [v0.60.0] use NewSpanIDEmpty.
-var EmptySpanID = SpanID([8]byte{})
-
 // SpanID is span identifier.
 type SpanID [8]byte
 
 // NewSpanIDEmpty returns a new empty (all zero bytes) SpanID.
 func NewSpanIDEmpty() SpanID {
 	return emptySpanID
-}
-
-// Deprecated: [v0.60.0] use SpanID(bytes).
-func NewSpanID(bytes [8]byte) SpanID {
-	return bytes
-}
-
-// Deprecated: [v0.60.0] use [8]byte(sid).
-func (ms SpanID) Bytes() [8]byte {
-	return ms
 }
 
 // HexString returns hex representation of the SpanID.
