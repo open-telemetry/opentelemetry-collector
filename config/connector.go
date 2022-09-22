@@ -23,7 +23,9 @@ type Connector interface {
 	identifiable
 	validatable
 
-	privateConfigConnector()
+	// Implement both to ensure:
+	// 1. Only connectors are defined in 'connectors' section
+	// 2. Connectors may be placed in receiver and exporter positions in pipelines
 	privateConfigExporter()
 	privateConfigReceiver()
 }
@@ -66,8 +68,6 @@ func (es *ConnectorSettings) SetIDName(idName string) {
 func (es *ConnectorSettings) Validate() error {
 	return nil
 }
-
-func (es *ConnectorSettings) privateConfigConnector() {}
 
 func (es *ConnectorSettings) privateConfigExporter() {}
 

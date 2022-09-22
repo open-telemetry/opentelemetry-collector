@@ -13,6 +13,7 @@ import (
 	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 	nopconnector "go.opentelemetry.io/collector/connector/nopconnector"
+	countconnector "go.opentelemetry.io/collector/connector/countconnector"
 )
 
 func components() (component.Factories, error) {
@@ -29,6 +30,7 @@ func components() (component.Factories, error) {
 
 	factories.Connectors, err = component.MakeConnectorFactoryMap(
 		nopconnector.NewFactory(),
+		countconnector.NewFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err
@@ -37,6 +39,7 @@ func components() (component.Factories, error) {
 	factories.Receivers, err = component.MakeReceiverFactoryMap(
 		otlpreceiver.NewFactory(),
 		nopconnector.NewFactory().NewReceiverFactory(),
+		countconnector.NewFactory().NewReceiverFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err
@@ -47,6 +50,7 @@ func components() (component.Factories, error) {
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 		nopconnector.NewFactory().NewExporterFactory(),
+		countconnector.NewFactory().NewExporterFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err

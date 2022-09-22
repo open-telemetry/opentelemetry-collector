@@ -18,21 +18,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// Connector exports telemetry data from one pipeline to another.
-// type Connector interface {
-// 	Component
-// 	Exporter
-// 	Receiver
-// }
-
-// // ConnectorCreateSettings configures Connector creators.
-// type ConnectorCreateSettings struct {
-// 	TelemetrySettings
-
-// 	// BuildInfo can be used by components for informational purposes
-// 	BuildInfo BuildInfo
-// }
-
 // ConnectorFactory is factory interface for connectors.
 //
 // This interface cannot be directly implemented. Implementations must
@@ -60,6 +45,12 @@ type ConnectorCreateDefaultConfigFunc func() config.Connector
 func (f ConnectorCreateDefaultConfigFunc) CreateDefaultConfig() config.Connector {
 	return f()
 }
+func (f ConnectorCreateDefaultConfigFunc) createDefaultReceiverConfig() config.Receiver {
+	return f()
+}
+func (f ConnectorCreateDefaultConfigFunc) CreateDefaultExporterConfig() config.Exporter {
+	return f()
+}
 
 type connectorFactory struct {
 	baseFactory
@@ -84,9 +75,21 @@ func NewConnectorFactory(
 }
 
 func (f *connectorFactory) NewExporterFactory() ExporterFactory {
-	return NewExporterFactory(f.cfgType, nil, f.exporterFactoryOptions...)
+	return NewExporterFactory(f.cfgType, f.CreateDefaultExporterConfig, f.exporterFactoryOptions...)
 }
 
 func (f *connectorFactory) NewReceiverFactory() ReceiverFactory {
-	return NewReceiverFactory(f.cfgType, nil, f.receiverFactoryOptions...)
+	return NewReceiverFactory(f.cfgType, f.createDefaultReceiverConfig, f.receiverFactoryOptions...)
 }
+
+// TODO Implement and enforce ConnectorFactoryOptions that enumerate valid signal combos.
+//
+// Example: nopconnector
+// func AsLogsToLogsConnector() ConnectorFactoryOption
+// func AsMetricsToMetricsConnector() ConnectorFactoryOption
+// func AsTracesToTracesConnector() ConnectorFactoryOption
+//
+// Example: countconnector
+// func AsLogsToMetricsConnector() ConnectorFactoryOption
+// func AsMetricsToMetricsConnector() ConnectorFactoryOption
+// func AsTracesToMetricsConnector() ConnectorFactoryOption

@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package nopconnector passes signals from one pipeline to another.
-package nopconnector // import "go.opentelemetry.io/collector/connector/nopconnector"
+// Package countconnector counts signals other pipelines.
+package countconnector // import "go.opentelemetry.io/collector/connector/countconnector"

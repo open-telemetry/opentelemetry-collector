@@ -28,3 +28,5 @@ processors:
 connectors:
   - import: go.opentelemetry.io/collector/connector/nopconnector
     gomod: go.opentelemetry.io/collector v0.60.0
+  - import: go.opentelemetry.io/collector/connector/countconnector
+    gomod: go.opentelemetry.io/collector v0.60.0

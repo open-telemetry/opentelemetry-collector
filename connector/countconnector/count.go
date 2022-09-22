@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nopconnector // import "go.opentelemetry.io/collector/connector/nopconnector"
+package countconnector // import "go.opentelemetry.io/collector/connector/countconnector"
 
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -28,7 +31,7 @@ import (
 )
 
 const (
-	typeStr = "nop"
+	typeStr = "count"
 )
 
 type Config struct {
@@ -48,9 +51,7 @@ func NewFactory() component.ConnectorFactory {
 			component.WithLogsExporter(createLogExporter, component.StabilityLevelInDevelopment),
 		},
 		[]component.ReceiverFactoryOption{
-			component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelInDevelopment),
 			component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelInDevelopment),
-			component.WithLogsReceiver(createLogReceiver, component.StabilityLevelInDevelopment),
 		},
 	)
 }
@@ -67,10 +68,10 @@ func createTracesExporter(
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	comp := connectors.GetOrAdd(cfg.ID(), func() component.Component {
-		return newNopConnector(cfg.(*Config), set)
+		return newCountConnector(cfg.(*Config), set)
 	})
 
-	conn := comp.Unwrap().(*nopConnector)
+	conn := comp.Unwrap().(*countConnector)
 	return conn, nil
 }
 
@@ -81,10 +82,10 @@ func createMetricsExporter(
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	comp := connectors.GetOrAdd(cfg.ID(), func() component.Component {
-		return newNopConnector(cfg.(*Config), set)
+		return newCountConnector(cfg.(*Config), set)
 	})
 
-	conn := comp.Unwrap().(*nopConnector)
+	conn := comp.Unwrap().(*countConnector)
 	return conn, nil
 }
 
@@ -95,31 +96,10 @@ func createLogExporter(
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	comp := connectors.GetOrAdd(cfg.ID(), func() component.Component {
-		return newNopConnector(cfg.(*Config), set)
+		return newCountConnector(cfg.(*Config), set)
 	})
 
-	conn := comp.Unwrap().(*nopConnector)
-	return conn, nil
-}
-
-// createTracesReceiver creates a trace receiver based on provided config.
-func createTracesReceiver(
-	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
-	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
-	comp := connectors.GetOrAdd(cfg.ID(), func() component.Component {
-		// Expect to have already created this component as an exporter
-		return nil
-	})
-
-	if comp == nil {
-		return nil, fmt.Errorf("connector must be initialized as exporter and receiver")
-	}
-
-	conn := comp.Unwrap().(*nopConnector)
-	conn.tracesConsumer = nextConsumer
+	conn := comp.Unwrap().(*countConnector)
 	return conn, nil
 }
 
@@ -139,77 +119,72 @@ func createMetricsReceiver(
 		return nil, fmt.Errorf("connector must be initialized as exporter and receiver")
 	}
 
-	conn := comp.Unwrap().(*nopConnector)
+	conn := comp.Unwrap().(*countConnector)
 	conn.metricsConsumer = nextConsumer
 	return conn, nil
 }
 
-// createLogReceiver creates a log receiver based on provided config.
-func createLogReceiver(
-	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
-	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
-	comp := connectors.GetOrAdd(cfg.ID(), func() component.Component {
-		// Expect to have already created this component as an exporter
-		return nil
-	})
-
-	if comp == nil {
-		return nil, fmt.Errorf("connector must be initialized as exporter and receiver")
-	}
-
-	conn := comp.Unwrap().(*nopConnector)
-	conn.logsConsumer = nextConsumer
-	return conn, nil
-}
-
-// This is the map of already created nop connectors for particular configurations.
+// This is the map of already created count connectors for particular configurations.
 // We maintain this map because the Factory is asked trace, metric, and log receivers
 // separately but they must not create separate objects. When the connector is shutdown
 // it should be removed from this map so the same configuration can be recreated successfully.
 var connectors = sharedcomponent.NewSharedComponents()
 
 // otlpReceiver is the type that exposes Trace and Metrics reception.
-type nopConnector struct {
+type countConnector struct {
 	cfg *Config
 
-	tracesConsumer  consumer.Traces
 	metricsConsumer consumer.Metrics
-	logsConsumer    consumer.Logs
 
 	// Use ExporterCreateSettings because exporters are created first.
 	// Receiver settings should be the same anyways.
 	settings component.ExporterCreateSettings
 }
 
-func newNopConnector(cfg *Config, set component.ExporterCreateSettings) *nopConnector {
-	return &nopConnector{cfg: cfg, settings: set}
+func newCountConnector(cfg *Config, set component.ExporterCreateSettings) *countConnector {
+	return &countConnector{
+		cfg:      cfg,
+		settings: set,
+	}
 }
 
-func (c *nopConnector) Capabilities() consumer.Capabilities {
+func (c *countConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (c *nopConnector) Start(_ context.Context, host component.Host) error {
-	// TODO
+func (c *countConnector) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (c *nopConnector) Shutdown(ctx context.Context) error {
-	// TODO
+func (c *countConnector) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (c *nopConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	return c.tracesConsumer.ConsumeTraces(ctx, td)
+func (c *countConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	return c.metricsConsumer.ConsumeMetrics(ctx, newCountMetric("spans", td.SpanCount()))
 }
 
-func (c *nopConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return c.metricsConsumer.ConsumeMetrics(ctx, md)
+func (c *countConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	return c.metricsConsumer.ConsumeMetrics(ctx, newCountMetric("metrics", md.MetricCount()))
 }
 
-func (c *nopConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	return c.logsConsumer.ConsumeLogs(ctx, ld)
+func (c *countConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	return c.metricsConsumer.ConsumeMetrics(ctx, newCountMetric("logs", ld.LogRecordCount()))
+}
+
+func newCountMetric(signalType string, count int) pmetric.Metrics {
+	ms := pmetric.NewMetrics()
+	rms := ms.ResourceMetrics().AppendEmpty()
+	sms := rms.ScopeMetrics().AppendEmpty()
+	cm := sms.Metrics().AppendEmpty()
+	cm.SetName(fmt.Sprintf("count.%s", signalType))
+	cm.SetDescription(fmt.Sprintf("The number of %ss observed.", signalType))
+	sum := cm.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+	dp := sum.DataPoints().AppendEmpty()
+	dp.Attributes().PutString("signal.type", signalType)
+	dp.SetIntVal(int64(count))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return ms
 }
