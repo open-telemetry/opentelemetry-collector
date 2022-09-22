@@ -39,6 +39,7 @@
 
 - Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
 - Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
+- Updated how `telemetryInitializer` is created so it's instanced per Collector instance rather than global to the process ()
 
 ## v0.60.0 Beta
 
