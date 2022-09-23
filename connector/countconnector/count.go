@@ -19,12 +19,11 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -184,7 +183,7 @@ func newCountMetric(signalType string, count int) pmetric.Metrics {
 	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 	dp := sum.DataPoints().AppendEmpty()
 	dp.Attributes().PutString("signal.type", signalType)
-	dp.SetIntVal(int64(count))
+	dp.SetIntValue(int64(count))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return ms
 }

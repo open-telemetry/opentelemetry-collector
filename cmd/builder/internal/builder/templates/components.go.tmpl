@@ -4,6 +4,9 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
+	{{- range .Connectors}}
+	{{.Name}} "{{.Import}}"
+	{{- end}}
 	{{- range .Exporters}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
@@ -14,9 +17,6 @@ import (
 	{{.Name}} "{{.Import}}"
 	{{- end}}
 	{{- range .Receivers}}
-	{{.Name}} "{{.Import}}"
-	{{- end}}
-	{{- range .Connectors}}
 	{{.Name}} "{{.Import}}"
 	{{- end}}
 )

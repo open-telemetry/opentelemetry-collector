@@ -4,6 +4,8 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
+	countconnector "go.opentelemetry.io/collector/connector/countconnector"
+	nopconnector "go.opentelemetry.io/collector/connector/nopconnector"
 	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -12,8 +14,6 @@ import (
 	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
 	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
-	nopconnector "go.opentelemetry.io/collector/connector/nopconnector"
-	countconnector "go.opentelemetry.io/collector/connector/countconnector"
 )
 
 func components() (component.Factories, error) {
@@ -29,8 +29,8 @@ func components() (component.Factories, error) {
 	}
 
 	factories.Connectors, err = component.MakeConnectorFactoryMap(
-		nopconnector.NewFactory(),
 		countconnector.NewFactory(),
+		nopconnector.NewFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err
@@ -38,8 +38,8 @@ func components() (component.Factories, error) {
 
 	factories.Receivers, err = component.MakeReceiverFactoryMap(
 		otlpreceiver.NewFactory(),
-		nopconnector.NewFactory().NewReceiverFactory(),
 		countconnector.NewFactory().NewReceiverFactory(),
+		nopconnector.NewFactory().NewReceiverFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err
@@ -49,8 +49,8 @@ func components() (component.Factories, error) {
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
-		nopconnector.NewFactory().NewExporterFactory(),
 		countconnector.NewFactory().NewExporterFactory(),
+		nopconnector.NewFactory().NewExporterFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err
