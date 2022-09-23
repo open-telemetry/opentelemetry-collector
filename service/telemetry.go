@@ -46,9 +46,6 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-// internalMetricFGRegisterOnce is a Once that ensures that the internal metric feature gate is only registered once
-var internalMetricFGRegisterOnce sync.Once
-
 const (
 	zapKeyTelemetryAddress = "address"
 	zapKeyTelemetryLevel   = "level"
@@ -77,16 +74,21 @@ type telemetryInitializer struct {
 	doInitOnce sync.Once
 }
 
-func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
-	// Ensure we only do the register once
-	internalMetricFGRegisterOnce.Do(func() {
-		registry.MustRegister(featuregate.Gate{
-			ID:          useOtelForInternalMetricsfeatureGateID,
-			Description: "controls whether the collector to uses OpenTelemetry for internal metrics",
-			Enabled:     false,
-		})
-	})
+func init() {
+	// register feature gate
+	registerInternalMetricFeatureGate(featuregate.GetRegistry())
+}
 
+// registerInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
+func registerInternalMetricFeatureGate(registry *featuregate.Registry) {
+	registry.MustRegister(featuregate.Gate{
+		ID:          useOtelForInternalMetricsfeatureGateID,
+		Description: "controls whether the collector to uses OpenTelemetry for internal metrics",
+		Enabled:     false,
+	})
+}
+
+func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
 	return &telemetryInitializer{
 		registry: registry,
 		mp:       metric.NewNoopMeterProvider(),
