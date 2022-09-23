@@ -32,6 +32,8 @@
 - Deprecate `pcommon.NewValueBytesEmpty` in favor of `pcommon.NewValueBytes` that now has the same signature. (#6105)
 - Deprecate `pmetric.MetricDataType` and related constants in favor of `pmetric.MetricType`. (#6127)
 - Deprecate `pmetric.Metric.DataType()` in favor of `pmetric.Metric.Type()`. (#6127)
+- Deprecate `pmetric.NumberDataPoint.[Set]?[Int|Double]Val()` in favor of `pmetric.NumberDataPoint.[Set]?[Int|Double]Value()`. (#6134)
+- Deprecate `pmetric.Exemplar.[Set]?[Int|Double]Val()` in favor of `pmetric.Exemplar.[Set]?[Int|Double]Value()`. (#6134)
 
 ### 💡 Enhancements 💡
 

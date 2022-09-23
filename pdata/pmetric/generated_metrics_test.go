@@ -865,19 +865,19 @@ func TestNumberDataPoint_ValueType(t *testing.T) {
 	assert.Equal(t, NumberDataPointValueTypeNone, tv.ValueType())
 }
 
-func TestNumberDataPoint_DoubleVal(t *testing.T) {
+func TestNumberDataPoint_DoubleValue(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.Equal(t, float64(0.0), ms.DoubleVal())
-	ms.SetDoubleVal(float64(17.13))
-	assert.Equal(t, float64(17.13), ms.DoubleVal())
+	assert.Equal(t, float64(0.0), ms.DoubleValue())
+	ms.SetDoubleValue(float64(17.13))
+	assert.Equal(t, float64(17.13), ms.DoubleValue())
 	assert.Equal(t, NumberDataPointValueTypeDouble, ms.ValueType())
 }
 
-func TestNumberDataPoint_IntVal(t *testing.T) {
+func TestNumberDataPoint_IntValue(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.Equal(t, int64(0), ms.IntVal())
-	ms.SetIntVal(int64(17))
-	assert.Equal(t, int64(17), ms.IntVal())
+	assert.Equal(t, int64(0), ms.IntValue())
+	ms.SetIntValue(int64(17))
+	assert.Equal(t, int64(17), ms.IntValue())
 	assert.Equal(t, NumberDataPointValueTypeInt, ms.ValueType())
 }
 
@@ -1810,19 +1810,19 @@ func TestExemplar_ValueType(t *testing.T) {
 	assert.Equal(t, ExemplarValueTypeNone, tv.ValueType())
 }
 
-func TestExemplar_DoubleVal(t *testing.T) {
+func TestExemplar_DoubleValue(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, float64(0.0), ms.DoubleVal())
-	ms.SetDoubleVal(float64(17.13))
-	assert.Equal(t, float64(17.13), ms.DoubleVal())
+	assert.Equal(t, float64(0.0), ms.DoubleValue())
+	ms.SetDoubleValue(float64(17.13))
+	assert.Equal(t, float64(17.13), ms.DoubleValue())
 	assert.Equal(t, ExemplarValueTypeDouble, ms.ValueType())
 }
 
-func TestExemplar_IntVal(t *testing.T) {
+func TestExemplar_IntValue(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, int64(0), ms.IntVal())
-	ms.SetIntVal(int64(17))
-	assert.Equal(t, int64(17), ms.IntVal())
+	assert.Equal(t, int64(0), ms.IntValue())
+	ms.SetIntValue(int64(17))
+	assert.Equal(t, int64(17), ms.IntValue())
 	assert.Equal(t, ExemplarValueTypeInt, ms.ValueType())
 }
 

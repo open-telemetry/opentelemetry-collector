@@ -236,3 +236,43 @@ func (ot OptionalType) String() string {
 	}
 	return ""
 }
+
+// Deprecated: [v0.61.0] use NumberDataPoint.DoubleValue().
+func (ms NumberDataPoint) DoubleVal() float64 {
+	return ms.DoubleValue()
+}
+
+// Deprecated: [v0.61.0] use NumberDataPoint.SetDoubleValue().
+func (ms NumberDataPoint) SetDoubleVal(v float64) {
+	ms.SetDoubleValue(v)
+}
+
+// Deprecated: [v0.61.0] use NumberDataPoint.IntValue().
+func (ms NumberDataPoint) IntVal() int64 {
+	return ms.IntValue()
+}
+
+// Deprecated: [v0.61.0] use NumberDataPoint.SetIntValue().
+func (ms NumberDataPoint) SetIntVal(v int64) {
+	ms.SetIntValue(v)
+}
+
+// Deprecated: [v0.61.0] use Exemplar.DoubleValue().
+func (ms Exemplar) DoubleVal() float64 {
+	return ms.DoubleValue()
+}
+
+// Deprecated: [v0.61.0] use Exemplar.SetDoubleValue().
+func (ms Exemplar) SetDoubleVal(v float64) {
+	ms.SetDoubleValue(v)
+}
+
+// Deprecated: [v0.61.0] use Exemplar.IntValue().
+func (ms Exemplar) IntVal() int64 {
+	return ms.IntValue()
+}
+
+// Deprecated: [v0.61.0] use Exemplar.SetIntValue().
+func (ms Exemplar) SetIntVal(v int64) {
+	ms.SetIntValue(v)
+}
