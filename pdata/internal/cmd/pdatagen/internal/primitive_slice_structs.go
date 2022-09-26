@@ -47,23 +47,29 @@ func (ms ${structName}) FromRaw(val []${itemType}) {
 }
 
 // Len returns length of the []${itemType} slice value.
+// Equivalent of len(${lowerStructName}).
 func (ms ${structName}) Len() int {
 	return len(*ms.getOrig())
 }
 
 // At returns an item from particular index.
+// Equivalent of ${lowerStructName}[i].
 func (ms ${structName}) At(i int) ${itemType} {
 	return (*ms.getOrig())[i]
 }
 
 // SetAt sets ${itemType} item at particular index.
+// Equivalent of ${lowerStructName}[i] = val
 func (ms ${structName}) SetAt(i int, val ${itemType}) {
 	(*ms.getOrig())[i] = val
 }
 
 // EnsureCapacity ensures ${structName} has at least the specified capacity.
 // 1. If the newCap <= cap, then is no change in capacity.
-// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value.
+// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value which will be equivalent of:
+//	buf := make([]${itemType}, len(${lowerStructName}), newCap)
+//	copy(buf, ${lowerStructName})
+//	${lowerStructName} = buf
 func (ms ${structName}) EnsureCapacity(newCap int) {
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
@@ -76,6 +82,7 @@ func (ms ${structName}) EnsureCapacity(newCap int) {
 }
 
 // Append appends extra elements to ${structName}.
+// Equivalent of ${lowerStructName} = append(${lowerStructName}, elms...) 
 func (ms ${structName}) Append(elms ...${itemType}) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
@@ -175,6 +182,8 @@ func (iss *primitiveSliceStruct) generateStruct(sb *strings.Builder) {
 		switch name {
 		case "structName":
 			return iss.structName
+		case "lowerStructName":
+			return strings.ToLower(iss.structName[:1]) + iss.structName[1:]
 		case "itemType":
 			return iss.itemType
 		default:

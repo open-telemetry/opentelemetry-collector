@@ -47,23 +47,29 @@ func (ms ByteSlice) FromRaw(val []byte) {
 }
 
 // Len returns length of the []byte slice value.
+// Equivalent of len(byteSlice).
 func (ms ByteSlice) Len() int {
 	return len(*ms.getOrig())
 }
 
 // At returns an item from particular index.
+// Equivalent of byteSlice[i].
 func (ms ByteSlice) At(i int) byte {
 	return (*ms.getOrig())[i]
 }
 
 // SetAt sets byte item at particular index.
+// Equivalent of byteSlice[i] = val
 func (ms ByteSlice) SetAt(i int, val byte) {
 	(*ms.getOrig())[i] = val
 }
 
 // EnsureCapacity ensures ByteSlice has at least the specified capacity.
-// 1. If the newCap <= cap, then is no change in capacity.
-// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value.
+//  1. If the newCap <= cap, then is no change in capacity.
+//  2. If the newCap > cap, then the slice capacity will be expanded to the provided value which will be equivalent of:
+//     buf := make([]byte, len(byteSlice), newCap)
+//     copy(buf, byteSlice)
+//     byteSlice = buf
 func (ms ByteSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
@@ -76,6 +82,7 @@ func (ms ByteSlice) EnsureCapacity(newCap int) {
 }
 
 // Append appends extra elements to ByteSlice.
+// Equivalent of byteSlice = append(byteSlice, elms...)
 func (ms ByteSlice) Append(elms ...byte) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
@@ -124,23 +131,29 @@ func (ms Float64Slice) FromRaw(val []float64) {
 }
 
 // Len returns length of the []float64 slice value.
+// Equivalent of len(float64Slice).
 func (ms Float64Slice) Len() int {
 	return len(*ms.getOrig())
 }
 
 // At returns an item from particular index.
+// Equivalent of float64Slice[i].
 func (ms Float64Slice) At(i int) float64 {
 	return (*ms.getOrig())[i]
 }
 
 // SetAt sets float64 item at particular index.
+// Equivalent of float64Slice[i] = val
 func (ms Float64Slice) SetAt(i int, val float64) {
 	(*ms.getOrig())[i] = val
 }
 
 // EnsureCapacity ensures Float64Slice has at least the specified capacity.
-// 1. If the newCap <= cap, then is no change in capacity.
-// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value.
+//  1. If the newCap <= cap, then is no change in capacity.
+//  2. If the newCap > cap, then the slice capacity will be expanded to the provided value which will be equivalent of:
+//     buf := make([]float64, len(float64Slice), newCap)
+//     copy(buf, float64Slice)
+//     float64Slice = buf
 func (ms Float64Slice) EnsureCapacity(newCap int) {
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
@@ -153,6 +166,7 @@ func (ms Float64Slice) EnsureCapacity(newCap int) {
 }
 
 // Append appends extra elements to Float64Slice.
+// Equivalent of float64Slice = append(float64Slice, elms...)
 func (ms Float64Slice) Append(elms ...float64) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
@@ -201,23 +215,29 @@ func (ms UInt64Slice) FromRaw(val []uint64) {
 }
 
 // Len returns length of the []uint64 slice value.
+// Equivalent of len(uInt64Slice).
 func (ms UInt64Slice) Len() int {
 	return len(*ms.getOrig())
 }
 
 // At returns an item from particular index.
+// Equivalent of uInt64Slice[i].
 func (ms UInt64Slice) At(i int) uint64 {
 	return (*ms.getOrig())[i]
 }
 
 // SetAt sets uint64 item at particular index.
+// Equivalent of uInt64Slice[i] = val
 func (ms UInt64Slice) SetAt(i int, val uint64) {
 	(*ms.getOrig())[i] = val
 }
 
 // EnsureCapacity ensures UInt64Slice has at least the specified capacity.
-// 1. If the newCap <= cap, then is no change in capacity.
-// 2. If the newCap > cap, then the slice capacity will be expanded to the provided value.
+//  1. If the newCap <= cap, then is no change in capacity.
+//  2. If the newCap > cap, then the slice capacity will be expanded to the provided value which will be equivalent of:
+//     buf := make([]uint64, len(uInt64Slice), newCap)
+//     copy(buf, uInt64Slice)
+//     uInt64Slice = buf
 func (ms UInt64Slice) EnsureCapacity(newCap int) {
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
@@ -230,6 +250,7 @@ func (ms UInt64Slice) EnsureCapacity(newCap int) {
 }
 
 // Append appends extra elements to UInt64Slice.
+// Equivalent of uInt64Slice = append(uInt64Slice, elms...)
 func (ms UInt64Slice) Append(elms ...uint64) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
