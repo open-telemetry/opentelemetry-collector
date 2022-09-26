@@ -61,6 +61,7 @@
 - Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
 - Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
 - Convert `ValueTypeBytes` attributes in logging exporter (#6153)
+- service.name Resource attribute is added to Collector's own telemetry, defaults to the value of `BuildInfo.Command` and can be overridden in the config (#6152) 
 - Updated how `telemetryInitializer` is created so it's instanced per Collector instance rather than global to the process (#6138)
 
 ## v0.60.0 Beta

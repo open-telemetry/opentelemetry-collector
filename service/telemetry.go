@@ -117,27 +117,8 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 
 	logger.Info("Setting up own telemetry...")
 
-	// Construct telemetry attributes from resource attributes.
-	telAttrs := map[string]string{}
-	for k, v := range cfg.Resource {
-		// nil value indicates that the attribute should not be included in the telemetry.
-		if v != nil {
-			telAttrs[k] = *v
-		}
-	}
-
-	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
-		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
-		instanceUUID, _ := uuid.NewRandom()
-		instanceID := instanceUUID.String()
-		telAttrs[semconv.AttributeServiceInstanceID] = instanceID
-	}
-
-	if _, ok := cfg.Resource[semconv.AttributeServiceVersion]; !ok {
-		// AttributeServiceVersion is not specified in the config. Use the actual
-		// build version.
-		telAttrs[semconv.AttributeServiceVersion] = buildInfo.Version
-	}
+	// Construct telemetry attributes from build info and config's resource attributes.
+	telAttrs := buildTelAttrs(buildInfo, cfg)
 
 	if tp, err := textMapPropagatorFromConfig(cfg.Traces.Propagators); err == nil {
 		otel.SetTextMapPropagator(tp)
@@ -177,6 +158,37 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 	}()
 
 	return nil
+}
+
+func buildTelAttrs(buildInfo component.BuildInfo, cfg telemetry.Config) map[string]string {
+	telAttrs := map[string]string{}
+
+	for k, v := range cfg.Resource {
+		// nil value indicates that the attribute should not be included in the telemetry.
+		if v != nil {
+			telAttrs[k] = *v
+		}
+	}
+
+	if _, ok := cfg.Resource[semconv.AttributeServiceName]; !ok {
+		// AttributeServiceName is not specified in the config. Use the default service name.
+		telAttrs[semconv.AttributeServiceName] = buildInfo.Command
+	}
+
+	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
+		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
+		instanceUUID, _ := uuid.NewRandom()
+		instanceID := instanceUUID.String()
+		telAttrs[semconv.AttributeServiceInstanceID] = instanceID
+	}
+
+	if _, ok := cfg.Resource[semconv.AttributeServiceVersion]; !ok {
+		// AttributeServiceVersion is not specified in the config. Use the actual
+		// build version.
+		telAttrs[semconv.AttributeServiceVersion] = buildInfo.Version
+	}
+
+	return telAttrs
 }
 
 func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs map[string]string) (http.Handler, error) {
