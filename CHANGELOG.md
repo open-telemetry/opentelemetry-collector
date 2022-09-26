@@ -14,7 +14,7 @@
 - Delete deprecated `pcommon.Map.Update*` funcs. (#6088)
 - Change `pcommon.NewValueBytes` signature to match `pcommon.NewValueBytesEmpty`. (#6088)
 - Delete deprecated `pcommon.Empty[Trace|Span]ID`. (#6098)
-- Delete deprecated `pcommon.SpanID.Bytes()`. (#6098)
+- Delete deprecated `pcommon.[Trace|Span]ID.Bytes()`. (#6098)
 - Delete deprecated `pcommon.New[Trace|Span]ID()`. (#6098)
 - Delete deprecated `pcommon.Value.SetBytesVal`. (#6088)
 - Delete deprecated `pmetric.Metric.SetDataType`. (#6095)
