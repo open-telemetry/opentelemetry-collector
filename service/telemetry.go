@@ -16,39 +16,35 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
 	"unicode"
 
-	"contrib.go.opencensus.io/exporter/prometheus"
+	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	ocmetric "go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
-	otelprometheus "go.opentelemetry.io/otel/exporters/prometheus"
+	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
-
-// collectorTelemetry is collector's own telemetrySettings.
-var collectorTelemetry = newColTelemetry(featuregate.GetRegistry())
 
 const (
 	zapKeyTelemetryAddress = "address"
@@ -72,20 +68,27 @@ type telemetryInitializer struct {
 	views    []*view.View
 
 	ocRegistry *ocmetric.Registry
-
-	mp metric.MeterProvider
+	mp         metric.MeterProvider
 
 	server     *http.Server
 	doInitOnce sync.Once
 }
 
-func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
+func init() {
+	// register feature gate
+	registerInternalMetricFeatureGate(featuregate.GetRegistry())
+}
+
+// registerInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
+func registerInternalMetricFeatureGate(registry *featuregate.Registry) {
 	registry.MustRegister(featuregate.Gate{
 		ID:          useOtelForInternalMetricsfeatureGateID,
 		Description: "controls whether the collector to uses OpenTelemetry for internal metrics",
 		Enabled:     false,
 	})
+}
 
+func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
 	return &telemetryInitializer{
 		registry: registry,
 		mp:       metric.NewNoopMeterProvider(),
@@ -191,7 +194,7 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	}
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
-	opts := prometheus.Options{
+	opts := ocprom.Options{
 		Namespace: "otelcol",
 	}
 
@@ -201,7 +204,7 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 		opts.ConstLabels[sanitizePrometheusKey(k)] = v
 	}
 
-	pe, err := prometheus.NewExporter(opts)
+	pe, err := ocprom.NewExporter(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -213,24 +216,16 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 func (tel *telemetryInitializer) initOpenTelemetry() (http.Handler, error) {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
-	config := otelprometheus.Config{}
-	c := controller.New(
-		processor.NewFactory(
-			selector.NewWithHistogramDistribution(
-				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
-			),
-			aggregation.CumulativeTemporalitySelector(),
-			processor.WithMemory(true),
-		),
-	)
 
-	pe, err := otelprometheus.New(config, c)
-	if err != nil {
-		return nil, err
+	exporter := otelprom.New()
+	tel.mp = sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
+
+	registry := prometheus.NewRegistry()
+	if err := registry.Register(exporter.Collector); err != nil {
+		return nil, fmt.Errorf("failed to register prometheus collector: %w", err)
 	}
 
-	tel.mp = pe.MeterProvider()
-	return pe, err
+	return promhttp.HandlerFor(registry, promhttp.HandlerOpts{}), nil
 }
 
 func (tel *telemetryInitializer) shutdown() error {

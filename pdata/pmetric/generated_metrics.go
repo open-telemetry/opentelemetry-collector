@@ -630,27 +630,27 @@ func (ms Metric) SetUnit(v string) {
 	ms.getOrig().Unit = v
 }
 
-// DataType returns the type of the data for this Metric.
+// Type returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) DataType() MetricDataType {
+func (ms Metric) Type() MetricType {
 	switch ms.getOrig().Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
-		return MetricDataTypeGauge
+		return MetricTypeGauge
 	case *otlpmetrics.Metric_Sum:
-		return MetricDataTypeSum
+		return MetricTypeSum
 	case *otlpmetrics.Metric_Histogram:
-		return MetricDataTypeHistogram
+		return MetricTypeHistogram
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		return MetricDataTypeExponentialHistogram
+		return MetricTypeExponentialHistogram
 	case *otlpmetrics.Metric_Summary:
-		return MetricDataTypeSummary
+		return MetricTypeSummary
 	}
-	return MetricDataTypeNone
+	return MetricTypeNone
 }
 
 // Gauge returns the gauge associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeGauge returns an invalid
+// Calling this function when Type() != MetricTypeGauge returns an invalid
 // zero-initialized instance of Gauge. Note that using such Gauge instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -664,7 +664,7 @@ func (ms Metric) Gauge() Gauge {
 
 // SetEmptyGauge sets an empty gauge to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeGauge".
+// After this, Type() function will return MetricTypeGauge".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyGauge() Gauge {
@@ -675,7 +675,7 @@ func (ms Metric) SetEmptyGauge() Gauge {
 
 // Sum returns the sum associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeSum returns an invalid
+// Calling this function when Type() != MetricTypeSum returns an invalid
 // zero-initialized instance of Sum. Note that using such Sum instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -689,7 +689,7 @@ func (ms Metric) Sum() Sum {
 
 // SetEmptySum sets an empty sum to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeSum".
+// After this, Type() function will return MetricTypeSum".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySum() Sum {
@@ -700,7 +700,7 @@ func (ms Metric) SetEmptySum() Sum {
 
 // Histogram returns the histogram associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeHistogram returns an invalid
+// Calling this function when Type() != MetricTypeHistogram returns an invalid
 // zero-initialized instance of Histogram. Note that using such Histogram instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -714,7 +714,7 @@ func (ms Metric) Histogram() Histogram {
 
 // SetEmptyHistogram sets an empty histogram to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeHistogram".
+// After this, Type() function will return MetricTypeHistogram".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyHistogram() Histogram {
@@ -725,7 +725,7 @@ func (ms Metric) SetEmptyHistogram() Histogram {
 
 // ExponentialHistogram returns the exponentialhistogram associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeExponentialHistogram returns an invalid
+// Calling this function when Type() != MetricTypeExponentialHistogram returns an invalid
 // zero-initialized instance of ExponentialHistogram. Note that using such ExponentialHistogram instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -739,7 +739,7 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 
 // SetEmptyExponentialHistogram sets an empty exponentialhistogram to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeExponentialHistogram".
+// After this, Type() function will return MetricTypeExponentialHistogram".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
@@ -750,7 +750,7 @@ func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
 
 // Summary returns the summary associated with this Metric.
 //
-// Calling this function when DataType() != MetricDataTypeSummary returns an invalid
+// Calling this function when Type() != MetricTypeSummary returns an invalid
 // zero-initialized instance of Summary. Note that using such Summary instance can cause panic.
 //
 // Calling this function on zero-initialized Metric will cause a panic.
@@ -764,7 +764,7 @@ func (ms Metric) Summary() Summary {
 
 // SetEmptySummary sets an empty summary to this Metric.
 //
-// After this, DataType() function will return MetricDataTypeSummary".
+// After this, Type() function will return MetricTypeSummary".
 //
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySummary() Summary {
@@ -778,16 +778,16 @@ func (ms Metric) CopyTo(dest Metric) {
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
-	switch ms.DataType() {
-	case MetricDataTypeGauge:
+	switch ms.Type() {
+	case MetricTypeGauge:
 		ms.Gauge().CopyTo(dest.SetEmptyGauge())
-	case MetricDataTypeSum:
+	case MetricTypeSum:
 		ms.Sum().CopyTo(dest.SetEmptySum())
-	case MetricDataTypeHistogram:
+	case MetricTypeHistogram:
 		ms.Histogram().CopyTo(dest.SetEmptyHistogram())
-	case MetricDataTypeExponentialHistogram:
+	case MetricTypeExponentialHistogram:
 		ms.ExponentialHistogram().CopyTo(dest.SetEmptyExponentialHistogram())
-	case MetricDataTypeSummary:
+	case MetricTypeSummary:
 		ms.Summary().CopyTo(dest.SetEmptySummary())
 	}
 
@@ -1263,25 +1263,25 @@ func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 	return NumberDataPointValueTypeNone
 }
 
-// DoubleVal returns the doubleval associated with this NumberDataPoint.
-func (ms NumberDataPoint) DoubleVal() float64 {
+// DoubleValue returns the double associated with this NumberDataPoint.
+func (ms NumberDataPoint) DoubleValue() float64 {
 	return ms.getOrig().GetAsDouble()
 }
 
-// SetDoubleVal replaces the doubleval associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetDoubleVal(v float64) {
+// SetDoubleValue replaces the double associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetDoubleValue(v float64) {
 	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
 	}
 }
 
-// IntVal returns the intval associated with this NumberDataPoint.
-func (ms NumberDataPoint) IntVal() int64 {
+// IntValue returns the int associated with this NumberDataPoint.
+func (ms NumberDataPoint) IntValue() int64 {
 	return ms.getOrig().GetAsInt()
 }
 
-// SetIntVal replaces the intval associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetIntVal(v int64) {
+// SetIntValue replaces the int associated with this NumberDataPoint.
+func (ms NumberDataPoint) SetIntValue(v int64) {
 	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsInt{
 		AsInt: v,
 	}
@@ -1309,9 +1309,9 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case NumberDataPointValueTypeDouble:
-		dest.SetDoubleVal(ms.DoubleVal())
+		dest.SetDoubleValue(ms.DoubleValue())
 	case NumberDataPointValueTypeInt:
-		dest.SetIntVal(ms.IntVal())
+		dest.SetIntValue(ms.IntValue())
 	}
 
 	ms.Exemplars().CopyTo(dest.Exemplars())
@@ -1547,21 +1547,9 @@ func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
 }
 
-// SetBucketCounts replaces the bucketcounts associated with this HistogramDataPoint.
-// Deprecated: [0.60.0] Use BucketCounts().FromRaw() instead
-func (ms HistogramDataPoint) SetBucketCounts(v pcommon.UInt64Slice) {
-	ms.getOrig().BucketCounts = *internal.GetOrigUInt64Slice(internal.UInt64Slice(v))
-}
-
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) ExplicitBounds() pcommon.Float64Slice {
 	return pcommon.Float64Slice(internal.NewFloat64Slice(&ms.getOrig().ExplicitBounds))
-}
-
-// SetExplicitBounds replaces the explicitbounds associated with this HistogramDataPoint.
-// Deprecated: [0.60.0] Use ExplicitBounds().FromRaw() instead
-func (ms HistogramDataPoint) SetExplicitBounds(v pcommon.Float64Slice) {
-	ms.getOrig().ExplicitBounds = *internal.GetOrigFloat64Slice(internal.Float64Slice(v))
 }
 
 // Exemplars returns the Exemplars associated with this HistogramDataPoint.
@@ -2011,12 +1999,6 @@ func (ms Buckets) SetOffset(v int32) {
 // BucketCounts returns the bucketcounts associated with this Buckets.
 func (ms Buckets) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
-}
-
-// SetBucketCounts replaces the bucketcounts associated with this Buckets.
-// Deprecated: [0.60.0] Use BucketCounts().FromRaw() instead
-func (ms Buckets) SetBucketCounts(v pcommon.UInt64Slice) {
-	ms.getOrig().BucketCounts = *internal.GetOrigUInt64Slice(internal.UInt64Slice(v))
 }
 
 // CopyTo copies all properties from the current struct to the dest.
@@ -2646,25 +2628,25 @@ func (ms Exemplar) ValueType() ExemplarValueType {
 	return ExemplarValueTypeNone
 }
 
-// DoubleVal returns the doubleval associated with this Exemplar.
-func (ms Exemplar) DoubleVal() float64 {
+// DoubleValue returns the double associated with this Exemplar.
+func (ms Exemplar) DoubleValue() float64 {
 	return ms.getOrig().GetAsDouble()
 }
 
-// SetDoubleVal replaces the doubleval associated with this Exemplar.
-func (ms Exemplar) SetDoubleVal(v float64) {
+// SetDoubleValue replaces the double associated with this Exemplar.
+func (ms Exemplar) SetDoubleValue(v float64) {
 	ms.getOrig().Value = &otlpmetrics.Exemplar_AsDouble{
 		AsDouble: v,
 	}
 }
 
-// IntVal returns the intval associated with this Exemplar.
-func (ms Exemplar) IntVal() int64 {
+// IntValue returns the int associated with this Exemplar.
+func (ms Exemplar) IntValue() int64 {
 	return ms.getOrig().GetAsInt()
 }
 
-// SetIntVal replaces the intval associated with this Exemplar.
-func (ms Exemplar) SetIntVal(v int64) {
+// SetIntValue replaces the int associated with this Exemplar.
+func (ms Exemplar) SetIntValue(v int64) {
 	ms.getOrig().Value = &otlpmetrics.Exemplar_AsInt{
 		AsInt: v,
 	}
@@ -2700,9 +2682,9 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case ExemplarValueTypeDouble:
-		dest.SetDoubleVal(ms.DoubleVal())
+		dest.SetDoubleValue(ms.DoubleValue())
 	case ExemplarValueTypeInt:
-		dest.SetIntVal(ms.IntVal())
+		dest.SetIntValue(ms.IntValue())
 	}
 
 	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())

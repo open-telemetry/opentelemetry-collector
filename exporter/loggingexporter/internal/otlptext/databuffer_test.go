@@ -24,23 +24,23 @@ import (
 
 func TestNestedArraySerializesCorrectly(t *testing.T) {
 	ava := pcommon.NewValueSlice()
-	ava.SliceVal().AppendEmpty().SetStringVal("foo")
-	ava.SliceVal().AppendEmpty().SetIntVal(42)
+	ava.Slice().AppendEmpty().SetStr("foo")
+	ava.Slice().AppendEmpty().SetInt(42)
 
 	ava2 := pcommon.NewValueSlice()
-	ava2.SliceVal().AppendEmpty().SetStringVal("bar")
-	ava2.CopyTo(ava.SliceVal().AppendEmpty())
+	ava2.Slice().AppendEmpty().SetStr("bar")
+	ava2.CopyTo(ava.Slice().AppendEmpty())
 
-	ava.SliceVal().AppendEmpty().SetBoolVal(true)
-	ava.SliceVal().AppendEmpty().SetDoubleVal(5.5)
+	ava.Slice().AppendEmpty().SetBool(true)
+	ava.Slice().AppendEmpty().SetDouble(5.5)
 
-	assert.Equal(t, 5, ava.SliceVal().Len())
+	assert.Equal(t, 5, ava.Slice().Len())
 	assert.Equal(t, "[foo, 42, [bar], true, 5.5]", attributeValueToString(ava))
 }
 
 func TestNestedMapSerializesCorrectly(t *testing.T) {
 	ava := pcommon.NewValueMap()
-	av := ava.MapVal()
+	av := ava.Map()
 	av.PutString("foo", "test")
 
 	av.PutEmptyMap("zoo").PutInt("bar", 13)
@@ -50,6 +50,6 @@ func TestNestedMapSerializesCorrectly(t *testing.T) {
      -> zoo: MAP({"bar":13})
 }`
 
-	assert.Equal(t, 2, ava.MapVal().Len())
+	assert.Equal(t, 2, ava.Map().Len())
 	assert.Equal(t, expected, attributeValueToString(ava))
 }

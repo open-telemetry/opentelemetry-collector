@@ -53,7 +53,7 @@ func fillLogOne(log plog.LogRecord) {
 	attrs.PutString("app", "server")
 	attrs.PutInt("instance_num", 1)
 
-	log.Body().SetStringVal("This is a log message")
+	log.Body().SetStr("This is a log message")
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -66,5 +66,5 @@ func fillLogTwo(log plog.LogRecord) {
 	attrs.PutString("customer", "acme")
 	attrs.PutString("env", "dev")
 
-	log.Body().SetStringVal("something happened")
+	log.Body().SetStr("something happened")
 }

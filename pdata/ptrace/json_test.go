@@ -84,7 +84,7 @@ var tracesOTLPFull = func() Traces {
 	sp.SetDroppedLinksCount(1)
 	sp.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	sp.SetParentSpanID(spanID)
-	sp.TraceStateStruct().FromRaw("state")
+	sp.TraceState().FromRaw("state")
 	sp.Status().SetCode(StatusCodeOk)
 	sp.Status().SetMessage("message")
 	// Add attributes.
@@ -94,8 +94,8 @@ var tracesOTLPFull = func() Traces {
 	sp.Attributes().PutDouble("double", 1.1)
 	sp.Attributes().PutEmptyBytes("bytes").FromRaw([]byte("foo"))
 	arr := sp.Attributes().PutEmptySlice("array")
-	arr.AppendEmpty().SetIntVal(1)
-	arr.AppendEmpty().SetStringVal("str")
+	arr.AppendEmpty().SetInt(1)
+	arr.AppendEmpty().SetStr("str")
 	kvList := sp.Attributes().PutEmptyMap("kvList")
 	kvList.PutInt("int", 1)
 	kvList.PutString("string", "string")
@@ -111,7 +111,7 @@ var tracesOTLPFull = func() Traces {
 	event.Attributes().PutEmptyBytes("bytes").FromRaw([]byte("foo"))
 	// Add links.
 	link := sp.Links().AppendEmpty()
-	link.TraceStateStruct().FromRaw("state")
+	link.TraceState().FromRaw("state")
 	link.SetTraceID(traceID)
 	link.SetSpanID(spanID)
 	link.SetDroppedAttributesCount(1)

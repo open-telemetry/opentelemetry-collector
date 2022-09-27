@@ -379,7 +379,7 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m collector-core
+	multimod prerelease -s=true -b=false -v ./versions.yaml -m collector-core
 	$(MAKE) gotidy
 
 .PHONY: prepare-release
@@ -407,15 +407,14 @@ endif
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' ./cmd/otelcorecol/builder-config.yaml
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' examples/k8s/otel-config.yaml
 	find . -name "*.bak" -type f -delete
-	# regenerate files
-	$(MAKE) -C cmd/builder config
-	$(MAKE) genotelcorecol
 	# commit changes before running multimod
 	git checkout -b opentelemetry-collector-bot/release-$(RELEASE_CANDIDATE)
 	git add .
 	git commit -m "prepare release $(RELEASE_CANDIDATE)"
 	$(MAKE) multimod-prerelease
-	# commit multimod changes
+	# regenerate files
+	$(MAKE) -C cmd/builder config
+	$(MAKE) genotelcorecol
 	git add .
 	git commit -m "add multimod changes" || (echo "no multimod changes to commit")
 	git push fork opentelemetry-collector-bot/release-$(RELEASE_CANDIDATE)

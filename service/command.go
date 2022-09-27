@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/overwritepropertiesconverter"
-	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.

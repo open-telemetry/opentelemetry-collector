@@ -17,7 +17,7 @@ const myFeatureGateID = "namespaced.uniqueIdentifier"
 
 func init() {
 	featuregate.Register(featuregate.Gate{
-		ID:          fancyNewFeatureGate,
+		ID:          myFeatureGateID,
 		Description: "A brief description of what the gate controls",
 		Enabled:     false,
 	})
