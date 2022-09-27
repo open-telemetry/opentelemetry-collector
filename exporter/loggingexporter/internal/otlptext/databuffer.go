@@ -16,6 +16,7 @@ package otlptext // import "go.opentelemetry.io/collector/exporter/loggingexport
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"math"
 	"strconv"
@@ -280,6 +281,8 @@ func attributeValueToString(v pcommon.Value) string {
 		return strconv.FormatFloat(v.Double(), 'f', -1, 64)
 	case pcommon.ValueTypeInt:
 		return strconv.FormatInt(v.Int(), 10)
+	case pcommon.ValueTypeBytes:
+		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())
 	case pcommon.ValueTypeSlice:
 		return sliceToString(v.Slice())
 	case pcommon.ValueTypeMap:
