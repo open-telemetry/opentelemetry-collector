@@ -44,7 +44,16 @@ func (ms Logs) MoveTo(dest Logs) {
 	*ms.getOrig() = otlpcollectorlog.ExportLogsServiceRequest{}
 }
 
+// CopyTo copies all logs from ms to dest.
+func (ms Logs) CopyTo(dest Logs) {
+	ms.ResourceLogs().CopyTo(dest.ResourceLogs())
+}
+
 // Clone returns a copy of Logs.
+// Deprecated: [0.61.0] Replace with:
+//
+//	newLogs := NewLogs()
+//	ms.CopyTo(newLogs)
 func (ms Logs) Clone() Logs {
 	cloneLd := NewLogs()
 	ms.ResourceLogs().CopyTo(cloneLd.ResourceLogs())

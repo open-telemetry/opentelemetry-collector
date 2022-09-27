@@ -45,7 +45,16 @@ func (ms Traces) MoveTo(dest Traces) {
 	*ms.getOrig() = otlpcollectortrace.ExportTraceServiceRequest{}
 }
 
+// CopyTo copies all logs from ms to dest.
+func (ms Traces) CopyTo(dest Traces) {
+	ms.ResourceSpans().CopyTo(dest.ResourceSpans())
+}
+
 // Clone returns a copy of Traces.
+// Deprecated: [0.61.0] Replace with:
+//
+//	newTraces := NewTraces()
+//	ms.CopyTo(newTraces)
 func (ms Traces) Clone() Traces {
 	cloneTd := NewTraces()
 	ms.ResourceSpans().CopyTo(cloneTd.ResourceSpans())
