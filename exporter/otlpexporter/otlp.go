@@ -103,23 +103,23 @@ func (e *exporter) shutdown(context.Context) error {
 }
 
 func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	e.settings.Logger.Debug("Exporting traces", zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 	req := ptraceotlp.NewRequestFromTraces(td)
 	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	e.settings.Logger.Debug("Exporting traces for ", zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 	return processError(err)
 }
 
 func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	e.settings.Logger.Debug("Exporting metrics", zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 	req := pmetricotlp.NewRequestFromMetrics(md)
 	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	e.settings.Logger.Debug("Exporting metrics for ", zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 	return processError(err)
 }
 
 func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	e.settings.Logger.Debug("Exporting logs", zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 	req := plogotlp.NewRequestFromLogs(ld)
 	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	e.settings.Logger.Debug("Exporting logs for ", zap.Stringer("traceId", trace.SpanContextFromContext(ctx).TraceID()))
 	return processError(err)
 }
 
