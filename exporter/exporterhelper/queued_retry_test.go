@@ -241,7 +241,7 @@ func TestQueuedRetry_ThrottleError(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	retry := NewThrottleRetry(errors.New("throttle error"), 100*time.Millisecond)
+	retry := consumererror.NewThrottleRetry(100 * time.Millisecond)
 	mockR := newMockRequest(context.Background(), 2, wrappedError{retry})
 	start := time.Now()
 	ocs.run(func() {

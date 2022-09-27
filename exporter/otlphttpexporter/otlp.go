@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
@@ -33,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -174,7 +174,7 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 			}
 		}
 		// Indicate to our caller to pause for the specified number of seconds.
-		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
+		return multierr.Combine(formattedErr, consumererror.NewThrottleRetry(time.Duration(retryAfter)*time.Second))
 	}
 
 	if isPermanentClientFailure(resp.StatusCode) {

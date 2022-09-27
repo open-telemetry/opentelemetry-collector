@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"time"
 
+	"go.uber.org/multierr"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -30,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -152,7 +152,7 @@ func processError(err error) error {
 	throttleDuration := getThrottleDuration(retryInfo)
 	if throttleDuration != 0 {
 		// We are throttled. Wait before retrying as requested by the server.
-		return exporterhelper.NewThrottleRetry(err, throttleDuration)
+		return multierr.Combine(err, consumererror.NewThrottleRetry(throttleDuration))
 	}
 
 	// Need to retry.

@@ -31,6 +31,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -42,7 +43,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -432,26 +432,29 @@ func TestErrorResponses(t *testing.T) {
 			name:           "419",
 			responseStatus: http.StatusTooManyRequests,
 			responseBody:   status.New(codes.InvalidArgument, "Quota exceeded"),
-			err: exporterhelper.NewThrottleRetry(
+			err: multierr.Combine(
 				errors.New(errMsgPrefix+"429, Message=Quota exceeded, Details=[]"),
-				time.Duration(0)*time.Second),
+				consumererror.NewThrottleRetry(time.Duration(0)*time.Second),
+			),
 		},
 		{
 			name:           "503",
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
-			err: exporterhelper.NewThrottleRetry(
+			err: multierr.Combine(
 				errors.New(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
-				time.Duration(0)*time.Second),
+				consumererror.NewThrottleRetry(time.Duration(0)*time.Second),
+			),
 		},
 		{
 			name:           "503-Retry-After",
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			headers:        map[string]string{"Retry-After": "30"},
-			err: exporterhelper.NewThrottleRetry(
+			err: multierr.Combine(
 				errors.New(errMsgPrefix+"503, Message=Server overloaded, Details=[]"),
-				time.Duration(30)*time.Second),
+				consumererror.NewThrottleRetry(time.Duration(30)*time.Second),
+			),
 		},
 	}
 

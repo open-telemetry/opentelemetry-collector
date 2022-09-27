@@ -378,6 +378,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
     that takes `pcommon.ImmutableFloat64Slice` instead of []float64.
   - `HistogramDataPoint.MExplicitBounds` func func is deprecated in favor of `HistogramDataPoint.ExplicitBounds`
     returns `pcommon.ImmutableFloat64Slice` instead of []float64.
+- Deprecate `exporterhelper.NewThrottleRetry` in favor of `consumererror.NewThrottleRetry` (#5551)
 
 ### 💡 Enhancements 💡
 

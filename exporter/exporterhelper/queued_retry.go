@@ -321,25 +321,11 @@ func (qrs *queuedRetrySender) send(req internal.Request) error {
 }
 
 // TODO: Clean this by forcing all exporters to return an internal error type that always include the information about retries.
-type throttleRetry struct {
-	err   error
-	delay time.Duration
-}
-
-func (t throttleRetry) Error() string {
-	return "Throttle (" + t.delay.String() + "), error: " + t.err.Error()
-}
-
-func (t throttleRetry) Unwrap() error {
-	return t.err
-}
 
 // NewThrottleRetry creates a new throttle retry error.
+// Deprecated: [v0.60.0] Use consumererror.NewThrottleRetry instead
 func NewThrottleRetry(err error, delay time.Duration) error {
-	return throttleRetry{
-		err:   err,
-		delay: delay,
-	}
+	return fmt.Errorf("%v, error: %w", consumererror.NewThrottleRetry(delay), err)
 }
 
 type onRequestHandlingFinishedFunc func(*zap.Logger, internal.Request, error) error
@@ -411,10 +397,9 @@ func (rs *retrySender) send(req internal.Request) error {
 			return rs.onTemporaryFailure(rs.logger, req, err)
 		}
 
-		throttleErr := throttleRetry{}
-		isThrottle := errors.As(err, &throttleErr)
-		if isThrottle {
-			backoffDelay = max(backoffDelay, throttleErr.delay)
+		throttleErr := consumererror.Throttle{}
+		if errors.As(err, &throttleErr) {
+			backoffDelay = max(backoffDelay, throttleErr.RetryDelay())
 		}
 
 		backoffDelayStr := backoffDelay.String()
