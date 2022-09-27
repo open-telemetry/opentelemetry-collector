@@ -274,6 +274,8 @@ func (v Value) Bytes() ByteSlice {
 
 // SetStr replaces the string value associated with this Value,
 // it also changes the type to be ValueTypeStr.
+// The shorter name is used instead of SetString to avoid implementing
+// fmt.Stringer interface by the corresponding getter method.
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) SetStr(sv string) {
 	v.getOrig().Value = &otlpcommon.AnyValue_StringValue{StringValue: sv}
