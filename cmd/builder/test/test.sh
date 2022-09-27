@@ -25,11 +25,7 @@ test_build_config() {
 
     echo "Starting test '${test}' at `date`" >> "${out}/test.log"
 
-    if [ -z "$build_config" ] ; then
-        go run . --go "${GOBIN}" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
-    else
-        go run . --go "${GOBIN}" --config "$build_config" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
-    fi
+    go run . --go "${GOBIN}" --config "$build_config" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
 
     if [ $? != 0 ]; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"
@@ -111,9 +107,6 @@ base=`mktemp -d`
 echo "Running the tests in ${base}"
 
 failed=false
-
-# Test that an empty build configuration builds a working default collector.
-test_build_config "default"
 
 for test in $tests
 do
