@@ -20,9 +20,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
+
+	"go.opentelemetry.io/collector/cmd/builder/internal/config"
 )
 
 func TestParseModules(t *testing.T) {
@@ -139,6 +144,26 @@ func TestNewDefaultConfig(t *testing.T) {
 	cfg := NewDefaultConfig()
 	require.NoError(t, cfg.ParseModules())
 	require.NoError(t, cfg.Validate())
+}
+
+func TestNewBuiltinConfig(t *testing.T) {
+	k := koanf.New(".")
+
+	require.NoError(t, k.Load(config.DefaultProvider(), yaml.Parser()))
+
+	cfg := Config{Logger: zaptest.NewLogger(t)}
+
+	require.NoError(t, k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "mapstructure"}))
+	assert.NoError(t, cfg.ParseModules())
+	assert.NoError(t, cfg.Validate())
+
+	// Unlike the config initialized in NewDefaultConfig(), we expect
+	// the builtin default to be practically useful, so there must be
+	// a set of modules present.
+	assert.NotZero(t, len(cfg.Receivers))
+	assert.NotZero(t, len(cfg.Exporters))
+	assert.NotZero(t, len(cfg.Extensions))
+	assert.NotZero(t, len(cfg.Processors))
 }
 
 func TestSkipGoValidation(t *testing.T) {
