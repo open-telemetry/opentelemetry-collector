@@ -48,6 +48,7 @@
 - Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
 - Convert `ValueTypeBytes` attributes in logging exporter (#6153)
 - Updated how `telemetryInitializer` is created so it's instanced per Collector instance rather than global to the process (#6138)
+- Add subcommand `config` which returns a sample configuration for the given components (#5943)
 
 ## v0.60.0 Beta
 
@@ -96,8 +97,7 @@
 ### 💡 Enhancements 💡
 
 - Add `skip-get-modules` builder flag to support isolated environment executions (#6009)
-- Add subcommand `config` which returns a sample configuration for the given components (#5943)
-  - Skip unnecessary Go binary path validation when the builder is used with `skip-compilation` and `skip-get-modules` flags (#6026)
+- Skip unnecessary Go binary path validation when the builder is used with `skip-compilation` and `skip-get-modules` flags (#6026)
 - Make the otlpreceiver support to use jsoniter to unmarshal JSON payloads. (#6040)
 - Add mapstructure hook function for confmap.Unmarshaler interface (#6029)
 - Add CopyTo and MoveTo methods to primitive slices (#6044)

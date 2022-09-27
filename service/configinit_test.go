@@ -122,11 +122,14 @@ func TestNewConfigurationInitCommand(t *testing.T) {
 			args:    []string{"-l", "metrics", "-r", "otlp", "-r", "otlp", "-e", "otlp", "-d"},
 			wantErr: true,
 		},
+		{
+			name: "duplicate-pipeline",
+			args: []string{"-l", "metrics", "-l", "metrics", "-r", "otlp", "-e", "otlp", "-d"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := NewConfigurationInitCommand(CollectorSettings{Factories: factories})
-			cmd.SilenceUsage = true
 			origCfgCmd := cfgCmd
 			cfgCmd.exiter = func(args ...error) error {
 				return fmt.Errorf("%v", args)
@@ -174,7 +177,6 @@ func TestGetComponentNodeErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := NewConfigurationInitCommand(CollectorSettings{Factories: factories})
-			cmd.SilenceUsage = true
 			origCfgCmd := cfgCmd
 			cfgCmd.exiter = func(args ...error) error {
 				return fmt.Errorf("%v", args)
@@ -276,9 +278,6 @@ func NewVTConsole(t *testing.T, opts ...expect.ConsoleOpt) (*expect.Console, *vt
 
 func TestPrompts(t *testing.T) {
 	t.Cleanup(cleanup)
-	factories := testcomponents()
-	set := &CollectorSettings{Factories: factories}
-	available := getAvailableComponentsForPrompts(set)
 	file := "otelcol_temp_config.yaml"
 	RunCmdTest(t,
 		func(t *testing.T, c *expect.Console, s *vt10x.State) {
@@ -313,8 +312,12 @@ func TestPrompts(t *testing.T) {
 			_, err = c.SendLine(string(terminal.KeyEnter))
 			require.NoError(t, err)
 
-			// select no extensions
+			// select zpapes(hardcoded using filter) extension
 			_, err = c.ExpectString("Select extensions")
+			require.NoError(t, err)
+			_, err = c.Send("zpa")
+			require.NoError(t, err)
+			_, err = c.Send(" ")
 			require.NoError(t, err)
 			_, err = c.SendLine(string(terminal.KeyEnter))
 			require.NoError(t, err)
@@ -344,7 +347,23 @@ func TestPrompts(t *testing.T) {
 
 		},
 		func(c *expect.Console) {
-			err := showPrompt(available, terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
+			factories := testcomponents()
+			set := &CollectorSettings{Factories: factories}
+			available := getAvailableComponentsForPrompts(factories)
+
+			cmd := NewConfigurationInitCommand(*set)
+			origCfgCmd := cfgCmd
+			cfgCmd = &configCommand{
+				exiter: func(args ...error) error {
+					return fmt.Errorf("%v", args)
+				},
+				stdio:     terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()},
+				available: available,
+			}
+
+			origOsArgs := os.Args
+			os.Args = []string{"config"}
+			err := cmd.Execute()
 			assert.NoError(t, err)
 
 			assert.Equal(t, 2, len(opts.Exporters))
@@ -356,11 +375,39 @@ func TestPrompts(t *testing.T) {
 			assert.Equal(t, 1, len(opts.Receivers))
 			assert.Equal(t, available.receivers[0:1], opts.Receivers)
 
-			assert.Equal(t, 0, len(opts.Extensions))
+			assert.Equal(t, 1, len(opts.Extensions))
+			assert.Equal(t, "zpages", opts.Extensions[0])
 
 			assert.Equal(t, 2, len(opts.Pipelines))
 			assert.Equal(t, available.pipelines[1:], opts.Pipelines)
 
 			assert.Equal(t, file, opts.ConfigFileName)
+
+			cfgCmd = origCfgCmd
+			os.Args = origOsArgs
+		})
+}
+
+func TestPromptsForError(t *testing.T) {
+	t.Cleanup(cleanup)
+	RunCmdTest(t,
+		func(t *testing.T, c *expect.Console, s *vt10x.State) {
+			var err error
+			_, err = c.ExpectString("Select exporters")
+			require.NoError(t, err)
+			_, err = c.Send(" ")
+			require.NoError(t, err)
+			_, err = c.Send(string(terminal.KeyEnter))
+			require.NoError(t, err)
+		}, func(c *expect.Console) {
+			factories, err := componenttest.NopFactories()
+			require.NoError(t, err)
+			available := getAvailableComponentsForPrompts(factories)
+
+			// invalidAns has no fields, therefore survey should throw an error while writing the answer
+			type invalidAns struct{}
+			var ans *invalidAns
+			err = showPrompt(available, ans, terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
+			assert.Error(t, err)
 		})
 }

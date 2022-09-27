@@ -36,17 +36,14 @@ import (
 )
 
 const (
-	commandTemplate = `Generate a sample configuration file.
-It needs a project source directory on your file system
-to create configuration fields for the components.`
-
 	sampleConfigHeader = `Opentelemetry Collector sample configuration. Double check the pipeline configuration
 by ensuring the desired components belong to the respective pipeline type(ex metrics, logs, traces).`
 )
 
 type configCommand struct {
-	exiter func(args ...error) error
-	stdio  terminal.Stdio
+	exiter    func(args ...error) error
+	stdio     terminal.Stdio
+	available *componentsAvailable
 }
 
 type componentsAvailable struct {
@@ -89,18 +86,18 @@ func NewConfigurationInitCommand(set CollectorSettings) *cobra.Command {
 			log.Error(fmt.Sprintf("command failed %v", args))
 			return nil
 		},
-		stdio: terminal.Stdio{In: os.Stdin, Out: os.Stdout, Err: os.Stderr},
+		stdio:     terminal.Stdio{In: os.Stdin, Out: os.Stdout, Err: os.Stderr},
+		available: getAvailableComponentsForPrompts(set.Factories),
 	}
 	opts = &optionsSelected{}
 	cmd := &cobra.Command{
-		Use:   "config",
-		Short: "Generate a sample configuration file.",
-		Long:  commandTemplate,
+		Use:          "config",
+		Short:        "Generate a sample configuration file.",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// no flags were passed(except dry run), show prompt
 			if (len(os.Args) == 3 && cmd.Flags().Lookup("dry-run").Changed) || len(os.Args) <= 2 {
-				c := getAvailableComponentsForPrompts(&set)
-				err := showPrompt(c, cfgCmd.stdio)
+				err := showPrompt(cfgCmd.available, opts, cfgCmd.stdio)
 				// err could be interrupt or error occurred due to failed write to the answer object,
 				// in either case, we can't proceed further
 				if err != nil {
@@ -154,27 +151,28 @@ func NewConfigurationInitCommand(set CollectorSettings) *cobra.Command {
 
 }
 
-func getAvailableComponentsForPrompts(set *CollectorSettings) *componentsAvailable {
+func getAvailableComponentsForPrompts(factories component.Factories) *componentsAvailable {
 	c := &componentsAvailable{}
 
-	for _, exp := range set.Factories.Exporters {
+	for _, exp := range factories.Exporters {
 		c.exporters = append(c.exporters, string(exp.Type()))
 	}
-	for _, proc := range set.Factories.Processors {
+	for _, proc := range factories.Processors {
 		c.processors = append(c.processors, string(proc.Type()))
 	}
-	for _, rec := range set.Factories.Receivers {
+	for _, rec := range factories.Receivers {
 		c.receivers = append(c.receivers, string(rec.Type()))
 	}
-	for _, ext := range set.Factories.Extensions {
+	for _, ext := range factories.Extensions {
 		c.extensions = append(c.extensions, string(ext.Type()))
 	}
 	c.pipelines = []string{string(config.MetricsDataType), string(config.TracesDataType), string(config.LogsDataType)}
 	return c
 }
 
-// showPrompt displays a prompt to the user for configuration options
-func showPrompt(c *componentsAvailable, stdio terminal.Stdio) error {
+// showPrompt displays a prompt to the user for configuration options using stdio terminal source
+// and answers as output sink.
+func showPrompt(c *componentsAvailable, answers interface{}, stdio terminal.Stdio) error {
 	promptExp := &survey.MultiSelect{
 		Message: "Select exporters",
 		Options: c.exporters,
@@ -236,7 +234,7 @@ func showPrompt(c *componentsAvailable, stdio terminal.Stdio) error {
 			Prompt: promptFile,
 		})
 	}
-	return survey.Ask(questions, opts, survey.WithStdio(stdio.In, stdio.Out, stdio.Err))
+	return survey.Ask(questions, answers, survey.WithStdio(stdio.In, stdio.Out, stdio.Err))
 }
 
 // filterFunc filters out the options that containing the given prefix with len at least 3
