@@ -45,7 +45,7 @@ var logsOTLP = func() Logs {
 	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	lg.SetTraceID(traceID)
 	lg.SetSpanID(spanID)
-	lg.Body().SetStringVal("hello world")
+	lg.Body().SetStr("hello world")
 	t := pcommon.NewTimestampFromTime(time.Now())
 	lg.SetTimestamp(t)
 	lg.SetObservedTimestamp(t)

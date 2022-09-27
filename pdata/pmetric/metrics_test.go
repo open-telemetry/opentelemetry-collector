@@ -45,14 +45,14 @@ func TestMetricTypeString(t *testing.T) {
 	assert.Equal(t, "", (MetricTypeSummary + 1).String())
 }
 
-func TestNumberDataPointValueTypeString(t *testing.T) {
+func TestNumberDataPointValueTypeStr(t *testing.T) {
 	assert.Equal(t, "None", NumberDataPointValueTypeNone.String())
 	assert.Equal(t, "Int", NumberDataPointValueTypeInt.String())
 	assert.Equal(t, "Double", NumberDataPointValueTypeDouble.String())
 	assert.Equal(t, "", (NumberDataPointValueTypeDouble + 1).String())
 }
 
-func TestExemplarValueTypeString(t *testing.T) {
+func TestExemplarValueTypeStr(t *testing.T) {
 	assert.Equal(t, "None", ExemplarValueTypeNone.String())
 	assert.Equal(t, "Int", ExemplarValueTypeInt.String())
 	assert.Equal(t, "Double", ExemplarValueTypeDouble.String())
