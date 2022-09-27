@@ -55,12 +55,8 @@ See below for examples.
 ## Client Configuration
 
 [Exporters](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md)
-leverage client configuration.
-
-Note that client configuration supports TLS configuration, the
-configuration parameters are also defined under `tls` like server
-configuration. For more information, see [configtls
-README](../configtls/README.md).
+leverage client configuration. The TLS configuration parameters are defined
+under `tls`, like server configuration.
 
 Beyond TLS configuration, the following setting can optionally be configured:
 

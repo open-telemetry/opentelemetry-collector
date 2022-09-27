@@ -31,13 +31,13 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Determine the version number that will be assigned to the release. During the beta phase, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.55.0` as the version to be released, following `v0.54.0`.
 
-1. To keep track of the progress, it might be helpful to create a [tracking issue](https://github.com/open-telemetry/opentelemetry-collector/issues/new?assignees=&labels=release&template=release.md&title=Release+vX.X.X) similar to [#4870](https://github.com/open-telemetry/opentelemetry-collector/issues/4870). You are responsible for all of them, except the operator one. Once the issue is created, you can create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
+1. To keep track of the progress, it might be helpful to create a [tracking issue](https://github.com/open-telemetry/opentelemetry-collector/issues/new?assignees=&labels=release&template=release.md&title=Release+vX.X.X) similar to [#6067](https://github.com/open-telemetry/opentelemetry-collector/issues/6067). You are responsible for all of the steps under the *"Performed by collector release manager"* heading. Once the issue is created, you can create the individual ones by hovering them and clicking the "Convert to issue" button on the right hand side.
 
 1. Update Contrib to use the latest in development version of Core. Run `make update-otel` in Contrib root directory and if it results in any changes, submit a PR. Open this PR as draft. This is to ensure that the latest core does not break contrib in any way. We’ll update it once more to the final release number later.
 
 1. Prepare Core for release.
 
-    * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.44.0...main.
+    * Update CHANGELOG.md file and rename the Unreleased section to the new release name. Add a new unreleased section at top. Use commit history feature to get the list of commits since the last release to help understand what should be in the release notes, e.g.: https://github.com/open-telemetry/opentelemetry-collector/compare/v0.44.0...main. Commit the changes.
 
     * Run `make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0`
 
@@ -97,6 +97,8 @@ The last step of the release process creates artifacts for the new version of th
 ## Troubleshooting
 
 1. `unknown revision internal/coreinternal/v0.55.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module. 
+2. `commitChangesToNewBranch failed: invalid merge` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/47) with our release tooling. The current workaround is to clone a fresh copy of the repository and try again. Note that you may need to set up a `fork` remote pointing to your own fork for the release tooling to work properly.
+3. `could not run Go Mod Tidy: go mod tidy failed` when running `multimod` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/46) with our release tooling. The current workaround is to run `make gotidy` manually after the multimod tool fails and commit the result.
 
 ## Bugfix releases
 
@@ -126,10 +128,10 @@ The OpenTelemetry Collector maintainers will ultimately have the responsibility 
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-09-14 | v0.60.0 | @mx-psi         |
 | 2022-09-28 | v0.61.0 | @codeboten      |
 | 2022-10-12 | v0.62.0 | @tigrannajaryan |
 | 2022-10-26 | v0.63.0 | @dmitryax       |
 | 2022-11-09 | v0.64.0 | @jpkrohling     |
 | 2022-11-23 | v0.65.0 | @bogdandrutu    |
 | 2022-12-07 | v0.66.0 | @Aneurysm9      |
+| 2022-12-21 | v0.67.0 | @mx-psi         |

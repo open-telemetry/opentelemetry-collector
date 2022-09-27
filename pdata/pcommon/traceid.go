@@ -22,25 +22,12 @@ import (
 
 var emptyTraceID = TraceID([16]byte{})
 
-// Deprecated: [v0.60.0] use NewTraceIDEmpty.
-var EmptyTraceID = TraceID([16]byte{})
-
 // TraceID is a trace identifier.
 type TraceID [16]byte
 
 // NewTraceIDEmpty returns a new empty (all zero bytes) TraceID.
 func NewTraceIDEmpty() TraceID {
 	return emptyTraceID
-}
-
-// Deprecated: [v0.60.0] use TraceID(bytes).
-func NewTraceID(bytes [16]byte) TraceID {
-	return bytes
-}
-
-// Deprecated: [v0.60.0] use [16]byte(tid).
-func (ms TraceID) Bytes() [16]byte {
-	return ms
 }
 
 // HexString returns hex representation of the TraceID.

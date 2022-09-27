@@ -214,7 +214,7 @@ var spanStatus = &messageValueStruct{
 }
 
 var traceStateField = &messageValueField{
-	fieldName:       "TraceStateStruct",
+	fieldName:       "TraceState",
 	originFieldName: "TraceState",
 	returnMessage:   traceState,
 }

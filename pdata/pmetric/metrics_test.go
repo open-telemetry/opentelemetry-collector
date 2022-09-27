@@ -35,24 +35,24 @@ const (
 	endTime   = uint64(12578940000000054321)
 )
 
-func TestMetricDataTypeString(t *testing.T) {
-	assert.Equal(t, "None", MetricDataTypeNone.String())
-	assert.Equal(t, "Gauge", MetricDataTypeGauge.String())
-	assert.Equal(t, "Sum", MetricDataTypeSum.String())
-	assert.Equal(t, "Histogram", MetricDataTypeHistogram.String())
-	assert.Equal(t, "ExponentialHistogram", MetricDataTypeExponentialHistogram.String())
-	assert.Equal(t, "Summary", MetricDataTypeSummary.String())
-	assert.Equal(t, "", (MetricDataTypeSummary + 1).String())
+func TestMetricTypeString(t *testing.T) {
+	assert.Equal(t, "None", MetricTypeNone.String())
+	assert.Equal(t, "Gauge", MetricTypeGauge.String())
+	assert.Equal(t, "Sum", MetricTypeSum.String())
+	assert.Equal(t, "Histogram", MetricTypeHistogram.String())
+	assert.Equal(t, "ExponentialHistogram", MetricTypeExponentialHistogram.String())
+	assert.Equal(t, "Summary", MetricTypeSummary.String())
+	assert.Equal(t, "", (MetricTypeSummary + 1).String())
 }
 
-func TestNumberDataPointValueTypeString(t *testing.T) {
+func TestNumberDataPointValueTypeStr(t *testing.T) {
 	assert.Equal(t, "None", NumberDataPointValueTypeNone.String())
 	assert.Equal(t, "Int", NumberDataPointValueTypeInt.String())
 	assert.Equal(t, "Double", NumberDataPointValueTypeDouble.String())
 	assert.Equal(t, "", (NumberDataPointValueTypeDouble + 1).String())
 }
 
-func TestExemplarValueTypeString(t *testing.T) {
+func TestExemplarValueTypeStr(t *testing.T) {
 	assert.Equal(t, "None", ExemplarValueTypeNone.String())
 	assert.Equal(t, "Int", ExemplarValueTypeInt.String())
 	assert.Equal(t, "Double", ExemplarValueTypeDouble.String())
@@ -256,18 +256,18 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_int", metricInt.Name())
 	assert.EqualValues(t, "My metric", metricInt.Description())
 	assert.EqualValues(t, "ms", metricInt.Unit())
-	assert.EqualValues(t, MetricDataTypeGauge, metricInt.DataType())
+	assert.EqualValues(t, MetricTypeGauge, metricInt.Type())
 	gaugeDataPoints := metricInt.Gauge().DataPoints()
 	assert.EqualValues(t, 2, gaugeDataPoints.Len())
 	// First point
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(0).Timestamp())
-	assert.EqualValues(t, 123.1, gaugeDataPoints.At(0).DoubleVal())
+	assert.EqualValues(t, 123.1, gaugeDataPoints.At(0).DoubleValue())
 	assert.EqualValues(t, map[string]interface{}{"key0": "value0"}, gaugeDataPoints.At(0).Attributes().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(1).Timestamp())
-	assert.EqualValues(t, 456.1, gaugeDataPoints.At(1).DoubleVal())
+	assert.EqualValues(t, 456.1, gaugeDataPoints.At(1).DoubleValue())
 	assert.EqualValues(t, map[string]interface{}{"key1": "value1"}, gaugeDataPoints.At(1).Attributes().AsRaw())
 
 	// Check double metric
@@ -275,7 +275,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_double", metricDouble.Name())
 	assert.EqualValues(t, "My metric", metricDouble.Description())
 	assert.EqualValues(t, "ms", metricDouble.Unit())
-	assert.EqualValues(t, MetricDataTypeSum, metricDouble.DataType())
+	assert.EqualValues(t, MetricTypeSum, metricDouble.Type())
 	dsd := metricDouble.Sum()
 	assert.EqualValues(t, MetricAggregationTemporalityCumulative, dsd.AggregationTemporality())
 	sumDataPoints := dsd.DataPoints()
@@ -283,12 +283,12 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	// First point
 	assert.EqualValues(t, startTime, sumDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(0).Timestamp())
-	assert.EqualValues(t, 123.1, sumDataPoints.At(0).DoubleVal())
+	assert.EqualValues(t, 123.1, sumDataPoints.At(0).DoubleValue())
 	assert.EqualValues(t, map[string]interface{}{"key0": "value0"}, sumDataPoints.At(0).Attributes().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, sumDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(1).Timestamp())
-	assert.EqualValues(t, 456.1, sumDataPoints.At(1).DoubleVal())
+	assert.EqualValues(t, 456.1, sumDataPoints.At(1).DoubleValue())
 	assert.EqualValues(t, map[string]interface{}{"key1": "value1"}, sumDataPoints.At(1).Attributes().AsRaw())
 
 	// Check histogram metric
@@ -296,7 +296,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_histogram", metricHistogram.Name())
 	assert.EqualValues(t, "My metric", metricHistogram.Description())
 	assert.EqualValues(t, "ms", metricHistogram.Unit())
-	assert.EqualValues(t, MetricDataTypeHistogram, metricHistogram.DataType())
+	assert.EqualValues(t, MetricTypeHistogram, metricHistogram.Type())
 	dhd := metricHistogram.Histogram()
 	assert.EqualValues(t, MetricAggregationTemporalityDelta, dhd.AggregationTemporality())
 	histogramDataPoints := dhd.DataPoints()
@@ -380,8 +380,8 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	assert.EqualValues(t, startTime+1, gaugeDataPoints.At(0).StartTimestamp())
 	gaugeDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, gaugeDataPoints.At(0).Timestamp())
-	gaugeDataPoints.At(0).SetDoubleVal(124.1)
-	assert.EqualValues(t, 124.1, gaugeDataPoints.At(0).DoubleVal())
+	gaugeDataPoints.At(0).SetDoubleValue(124.1)
+	assert.EqualValues(t, 124.1, gaugeDataPoints.At(0).DoubleValue())
 	gaugeDataPoints.At(0).Attributes().Remove("key0")
 	gaugeDataPoints.At(0).Attributes().PutString("k", "v")
 	assert.EqualValues(t, newAttributes, gaugeDataPoints.At(0).Attributes().AsRaw())
@@ -463,8 +463,8 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	assert.EqualValues(t, startTime+1, doubleDataPoints.At(0).StartTimestamp())
 	doubleDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, doubleDataPoints.At(0).Timestamp())
-	doubleDataPoints.At(0).SetDoubleVal(124.1)
-	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).DoubleVal())
+	doubleDataPoints.At(0).SetDoubleValue(124.1)
+	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).DoubleValue())
 	doubleDataPoints.At(0).Attributes().Remove("key0")
 	doubleDataPoints.At(0).Attributes().PutString("k", "v")
 	assert.EqualValues(t, newAttributes, doubleDataPoints.At(0).Attributes().AsRaw())
