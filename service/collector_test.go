@@ -409,7 +409,9 @@ func TestCollectorStartWithOpenCensusMetrics(t *testing.T) {
 func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
 	for _, tc := range ownMetricsTestCases("test version") {
 		t.Run(tc.name, func(t *testing.T) {
-			colTel := newColTelemetry(featuregate.NewRegistry())
+			registry := featuregate.NewRegistry()
+			registerInternalMetricFeatureGate(registry)
+			colTel := newColTelemetry(registry)
 			require.NoError(t, colTel.registry.Apply(map[string]bool{useOtelForInternalMetricsfeatureGateID: true}))
 			testCollectorStartHelper(t, colTel, tc)
 		})
