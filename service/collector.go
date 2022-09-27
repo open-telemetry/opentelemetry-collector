@@ -30,6 +30,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/ballastextension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
 )
 
@@ -92,7 +93,7 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	if set.telemetry == nil {
-		set.telemetry = collectorTelemetry
+		set.telemetry = newColTelemetry(featuregate.GetRegistry())
 	}
 
 	return &Collector{

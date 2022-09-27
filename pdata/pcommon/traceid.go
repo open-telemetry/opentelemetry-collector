@@ -30,11 +30,6 @@ func NewTraceIDEmpty() TraceID {
 	return emptyTraceID
 }
 
-// Deprecated: [v0.60.0] use [16]byte(tid).
-func (ms TraceID) Bytes() [16]byte {
-	return ms
-}
-
 // HexString returns hex representation of the TraceID.
 func (ms TraceID) HexString() string {
 	if ms.IsEmpty() {

@@ -273,20 +273,20 @@ func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 
 func attributeValueToString(v pcommon.Value) string {
 	switch v.Type() {
-	case pcommon.ValueTypeString:
-		return v.StringVal()
+	case pcommon.ValueTypeStr:
+		return v.Str()
 	case pcommon.ValueTypeBool:
-		return strconv.FormatBool(v.BoolVal())
+		return strconv.FormatBool(v.Bool())
 	case pcommon.ValueTypeDouble:
-		return strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
+		return strconv.FormatFloat(v.Double(), 'f', -1, 64)
 	case pcommon.ValueTypeInt:
-		return strconv.FormatInt(v.IntVal(), 10)
+		return strconv.FormatInt(v.Int(), 10)
 	case pcommon.ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.BytesVal().AsRaw())
+		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())
 	case pcommon.ValueTypeSlice:
-		return sliceToString(v.SliceVal())
+		return sliceToString(v.Slice())
 	case pcommon.ValueTypeMap:
-		return mapToString(v.MapVal())
+		return mapToString(v.Map())
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", v.Type())
 	}

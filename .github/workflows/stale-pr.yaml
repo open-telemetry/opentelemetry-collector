@@ -7,7 +7,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v5
+      - uses: actions/stale@v6
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-pr-message: 'This PR was marked stale due to lack of activity. It will be closed in 14 days.'

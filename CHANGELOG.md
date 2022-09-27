@@ -14,7 +14,7 @@
 - Delete deprecated `pcommon.Map.Update*` funcs. (#6088)
 - Change `pcommon.NewValueBytes` signature to match `pcommon.NewValueBytesEmpty`. (#6088)
 - Delete deprecated `pcommon.Empty[Trace|Span]ID`. (#6098)
-- Delete deprecated `pcommon.SpanID.Bytes()`. (#6098)
+- Delete deprecated `pcommon.[Trace|Span]ID.Bytes()`. (#6098)
 - Delete deprecated `pcommon.New[Trace|Span]ID()`. (#6098)
 - Delete deprecated `pcommon.Value.SetBytesVal`. (#6088)
 - Delete deprecated `pmetric.Metric.SetDataType`. (#6095)
@@ -35,11 +35,19 @@
 - Deprecate `pmetric.NumberDataPoint.[Set]?[Int|Double]Val()` in favor of `pmetric.NumberDataPoint.[Set]?[Int|Double]Value()`. (#6134)
 - Deprecate `pmetric.Exemplar.[Set]?[Int|Double]Val()` in favor of `pmetric.Exemplar.[Set]?[Int|Double]Value()`. (#6134)
 
+### 🚩 Deprecations 🚩
+
+- Rename all `pcommon.Value` getter/setter methods by removing `Val` suffix. (#6092) 
+  - Old methods with `Val` suffix are deprecated.
+  - `StringVal` and `SetStringVal` are deprecated in favor of `Str` and `SetStr` to avoid implementing `fmt.Stringer` interface. 
+  - Therefore, `ValueTypeString` is deprecated in favour of `ValueTypeStr` for consistency.
+
 ### 💡 Enhancements 💡
 
 - Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
 - Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
 - Convert `ValueTypeBytes` attributes in logging exporter (#6153)
+- Updated how `telemetryInitializer` is created so it's instanced per Collector instance rather than global to the process (#6138)
 
 ## v0.60.0 Beta
 
