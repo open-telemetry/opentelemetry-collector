@@ -68,7 +68,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.Equal(t, ptraceotlp.Response{}, resp)
 }
 
-func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.Client {
+func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, tc)
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)

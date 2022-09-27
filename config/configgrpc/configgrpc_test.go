@@ -782,13 +782,13 @@ func (ms *mockedStream) Context() context.Context {
 func TestClientInfoInterceptors(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		tester func(context.Context, ptraceotlp.Client)
+		tester func(context.Context, ptraceotlp.GRPCClient)
 	}{
 		{
 			// we only have unary services, we don't have any clients we could use
 			// to test with streaming services
 			desc: "unary",
-			tester: func(ctx context.Context, cl ptraceotlp.Client) {
+			tester: func(ctx context.Context, cl ptraceotlp.GRPCClient) {
 				resp, errResp := cl.Export(ctx, ptraceotlp.NewRequest())
 				require.NoError(t, errResp)
 				require.NotNil(t, resp)
