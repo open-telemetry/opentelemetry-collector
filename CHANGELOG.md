@@ -39,6 +39,7 @@
 
 - Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
 - Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
+- Convert `ValueTypeBytes` attributes in logging exporter (#6153)
 
 ## v0.60.0 Beta
 
