@@ -481,6 +481,15 @@ that each of the following steps is done in a separate version:
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
    needed.
 
+### Specification Tracking
+
+The [OpenTelemetry Specification](https://github.com/open-telemetry/opentelemetry-specification) can be a rapidly
+moving target at times.  While it may seem efficient to get an early start on implementing new features or
+functionality under development in the specification, this can also lead to significant churn and a risk that
+changes in the specification can result in breaking changes to the implementation.  For this reason it is the
+policy of the Collector SIG to not implement, or accept implementations of, new or changed specification language
+prior to inclusion in a stable release of the specification.
+
 ## Updating Changelog
 
 An entry into the [Changelog](./CHANGELOG.md) is required for the following reasons:
