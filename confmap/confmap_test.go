@@ -400,3 +400,134 @@ func TestUnmarshalerErr(t *testing.T) {
 	assert.EqualError(t, cfgMap.Unmarshal(tc), expectErr)
 	assert.Empty(t, tc.Err.Foo)
 }
+
+func TestUnmarshalerSlices(t *testing.T) {
+	type innerStructWithSlices struct {
+		Ints []int `mapstructure:"ints"`
+	}
+	type structWithSlices struct {
+		Strings []string              `mapstructure:"strings"`
+		Nested  innerStructWithSlices `mapstructure:"nested"`
+	}
+
+	tests := []struct {
+		name     string
+		cfg      map[string]any
+		provided any
+		expected any
+	}{
+		{
+			name: "overridden by slice",
+			cfg: map[string]any{
+				"strings": []string{"111"},
+			},
+			provided: &structWithSlices{
+				Strings: []string{"xxx", "yyyy", "zzzz"},
+			},
+			expected: &structWithSlices{
+				Strings: []string{"111"},
+			},
+		},
+		{
+			name: "overridden by a bigger slice",
+			cfg: map[string]any{
+				"strings": []string{"111", "222", "333"},
+			},
+			provided: &structWithSlices{
+				Strings: []string{"xxx", "yyyy"},
+			},
+			expected: &structWithSlices{
+				Strings: []string{"111", "222", "333"},
+			},
+		},
+		{
+			name: "overridden by an empty slice",
+			cfg: map[string]any{
+				"strings": []string{},
+			},
+			provided: &structWithSlices{
+				Strings: []string{"xxx", "yyyy"},
+			},
+			expected: &structWithSlices{
+				Strings: []string{},
+			},
+		},
+		{
+			name: "not overridden by nil slice",
+			cfg: map[string]any{
+				"strings": []string(nil),
+			},
+			provided: &structWithSlices{
+				Strings: []string{"xxx", "yyyy"},
+			},
+			expected: &structWithSlices{
+				Strings: []string{"xxx", "yyyy"},
+			},
+		},
+		{
+			name: "not overridden by nil",
+			cfg: map[string]any{
+				"strings": nil,
+			},
+			provided: &structWithSlices{
+				Strings: []string{"xxx", "yyyy"},
+			},
+			expected: &structWithSlices{
+				Strings: []string{"xxx", "yyyy"},
+			},
+		},
+		{
+			name: "not overridden by missing value",
+			cfg:  map[string]any{},
+			provided: &structWithSlices{
+				Strings: []string{"xxx", "yyyy"},
+			},
+			expected: &structWithSlices{
+				Strings: []string{"xxx", "yyyy"},
+			},
+		},
+		{
+			name: "overridden by nested slice",
+			cfg: map[string]any{
+				"nested": map[string]any{
+					"ints": []int{777},
+				},
+			},
+			provided: &structWithSlices{
+				Nested: innerStructWithSlices{
+					Ints: []int{1, 2, 3},
+				},
+			},
+			expected: &structWithSlices{
+				Nested: innerStructWithSlices{
+					Ints: []int{777},
+				},
+			},
+		},
+		{
+			name: "overridden by weakly typed input",
+			cfg: map[string]any{
+				"strings": "111",
+			},
+			provided: &structWithSlices{
+				Strings: []string{"xxx", "yyyy", "zzzz"},
+			},
+			expected: &structWithSlices{
+				Strings: []string{"111"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewFromStringMap(tt.cfg)
+
+			err := cfg.Unmarshal(tt.provided)
+			if assert.NoError(t, err) {
+				assert.Equal(t, tt.expected, tt.provided)
+			}
+		})
+	}
+}

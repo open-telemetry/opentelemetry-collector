@@ -168,6 +168,7 @@ func decodeConfig(m *Conf, result interface{}, errorUnused bool) error {
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			unmarshalerHookFunc(result),
+			zeroesSliceHookFunc(),
 		),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
@@ -317,6 +318,23 @@ func marshalerHookFunc(orig interface{}) mapstructure.DecodeHookFuncValue {
 			return nil, err
 		}
 		return conf.ToStringMap(), nil
+	}
+}
+
+// mapstructure library doesn't override full slice during unmarshalling.
+// Origin issue: https://github.com/mitchellh/mapstructure/issues/74#issuecomment-279886492
+// To address this we empty every slice before unmarshalling unless user provided slice is nil.
+func zeroesSliceHookFunc() mapstructure.DecodeHookFuncValue {
+	return func(from reflect.Value, to reflect.Value) (interface{}, error) {
+		if from.Kind() == reflect.Slice && from.IsNil() {
+			return from.Interface(), nil
+		}
+
+		if to.CanSet() && to.Kind() == reflect.Slice {
+			to.Set(reflect.MakeSlice(reflect.SliceOf(to.Type().Elem()), 0, 0))
+		}
+
+		return from.Interface(), nil
 	}
 }
 

@@ -1,0 +1,5 @@
+change_type: "bug_fix"
+component: "config"
+note: "Fully override default slice fields of config"
+issues: [4001]
+subtext:
