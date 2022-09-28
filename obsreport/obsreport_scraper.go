@@ -16,6 +16,7 @@ package obsreport // import "go.opentelemetry.io/collector/obsreport"
 
 import (
 	"context"
+	"errors"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -25,13 +26,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // Scraper is a helper to add observability to a component.Scraper.
 type Scraper struct {
+	level      configtelemetry.Level
 	receiverID config.ComponentID
 	scraper    config.ComponentID
 	mutators   []tag.Mutator
@@ -48,6 +49,7 @@ type ScraperSettings struct {
 // NewScraper creates a new Scraper.
 func NewScraper(cfg ScraperSettings) *Scraper {
 	return &Scraper{
+		level:      cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		receiverID: cfg.ReceiverID,
 		scraper:    cfg.Scraper,
 		mutators: []tag.Mutator{
@@ -77,7 +79,8 @@ func (s *Scraper) EndMetricsOp(
 ) {
 	numErroredMetrics := 0
 	if err != nil {
-		if partialErr, isPartial := err.(scrapererror.PartialScrapeError); isPartial {
+		var partialErr scrapererror.PartialScrapeError
+		if errors.As(err, &partialErr) {
 			numErroredMetrics = partialErr.Failed
 		} else {
 			numErroredMetrics = numScrapedMetrics
@@ -87,7 +90,7 @@ func (s *Scraper) EndMetricsOp(
 
 	span := trace.SpanFromContext(scraperCtx)
 
-	if obsreportconfig.Level() != configtelemetry.LevelNone {
+	if s.level != configtelemetry.LevelNone {
 		stats.Record(
 			scraperCtx,
 			obsmetrics.ScraperScrapedMetricPoints.M(int64(numScrapedMetrics)),

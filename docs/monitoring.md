@@ -34,9 +34,11 @@ Most exporters offer a [queue/retry mechanism](../exporter/exporterhelper/README
 that is recommended as the retry mechanism for the Collector and as such should
 be used in any production deployment.
 
-**TODO:** Add metric to monitor queue length.
+The `otelcol_exporter_queue_capacity` indicates the capacity of the retry queue (in batches). The `otelcol_exporter_queue_size` indicates the current size of retry queue. So you can use these two metrics to check if the queue capacity is enough for your workload. 
 
-Currently, the queue/retry mechanism only supports logging for monitoring. Check
+The `otelcol_exporter_enqueue_failed_spans`, `otelcol_exporter_enqueue_failed_metric_points` and `otelcol_exporter_enqueue_failed_log_records` indicate the number of span/metric points/log records failed to be added to the sending queue. This may be cause by a queue full of unsettled elements, so you may need to decrease your sending rate or horizontally scale collectors.
+
+The queue/retry mechanism also supports logging for monitoring. Check
 the logs for messages like `"Dropping data because sending_queue is full"`.
 
 ### Receive Failures

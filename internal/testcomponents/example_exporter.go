@@ -20,98 +20,88 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var _ config.Unmarshallable = (*ExampleExporter)(nil)
+const (
+	typeStr   = "exampleexporter"
+	stability = component.StabilityLevelInDevelopment
+)
 
-// ExampleExporter is for testing purposes. We are defining an example config and factory
-// for "exampleexporter" exporter type.
-type ExampleExporter struct {
+// ExampleExporterConfig config for ExampleExporter.
+type ExampleExporterConfig struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ExtraInt                int32                    `mapstructure:"extra_int"`
-	ExtraSetting            string                   `mapstructure:"extra"`
-	ExtraMapSetting         map[string]string        `mapstructure:"extra_map"`
-	ExtraListSetting        []string                 `mapstructure:"extra_list"`
 }
-
-// Unmarshal a config.Map data into the config struct
-func (cfg *ExampleExporter) Unmarshal(componentParser *config.Map) error {
-	return componentParser.UnmarshalExact(cfg)
-}
-
-const expType = "exampleexporter"
 
 // ExampleExporterFactory is factory for ExampleExporter.
 var ExampleExporterFactory = component.NewExporterFactory(
-	expType,
+	typeStr,
 	createExporterDefaultConfig,
-	component.WithTracesExporter(createTracesExporter),
-	component.WithMetricsExporter(createMetricsExporter),
-	component.WithLogsExporter(createLogsExporter))
+	component.WithTracesExporter(createTracesExporter, stability),
+	component.WithMetricsExporter(createMetricsExporter, stability),
+	component.WithLogsExporter(createLogsExporter, stability),
+)
 
-// CreateDefaultConfig creates the default configuration for the Exporter.
 func createExporterDefaultConfig() config.Exporter {
-	return &ExampleExporter{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(expType)),
-		ExtraSetting:     "some export string",
-		ExtraMapSetting:  nil,
-		ExtraListSetting: nil,
+	return &ExampleExporterConfig{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 	}
 }
 
 func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {
-	return &ExampleExporterConsumer{}, nil
+	return &ExampleExporter{}, nil
 }
 
 func createMetricsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error) {
-	return &ExampleExporterConsumer{}, nil
+	return &ExampleExporter{}, nil
 }
 
 func createLogsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error) {
-	return &ExampleExporterConsumer{}, nil
+	return &ExampleExporter{}, nil
 }
 
-// ExampleExporterConsumer stores consumed traces and metrics for testing purposes.
-type ExampleExporterConsumer struct {
-	Traces           []pdata.Traces
-	Metrics          []pdata.Metrics
-	Logs             []pdata.Logs
-	ExporterStarted  bool
-	ExporterShutdown bool
+// ExampleExporter stores consumed traces and metrics for testing purposes.
+type ExampleExporter struct {
+	Traces  []ptrace.Traces
+	Metrics []pmetric.Metrics
+	Logs    []plog.Logs
+	Started bool
+	Stopped bool
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned.
-func (exp *ExampleExporterConsumer) Start(_ context.Context, _ component.Host) error {
-	exp.ExporterStarted = true
+func (exp *ExampleExporter) Start(_ context.Context, _ component.Host) error {
+	exp.Started = true
 	return nil
 }
 
-// ConsumeTraces receives pdata.Traces for processing by the consumer.Traces.
-func (exp *ExampleExporterConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+// ConsumeTraces receives ptrace.Traces for processing by the consumer.Traces.
+func (exp *ExampleExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	exp.Traces = append(exp.Traces, td)
 	return nil
 }
 
-func (exp *ExampleExporterConsumer) Capabilities() consumer.Capabilities {
+func (exp *ExampleExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-// ConsumeMetrics receives pdata.Metrics for processing by the Metrics.
-func (exp *ExampleExporterConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+// ConsumeMetrics receives pmetric.Metrics for processing by the Metrics.
+func (exp *ExampleExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	exp.Metrics = append(exp.Metrics, md)
 	return nil
 }
 
-func (exp *ExampleExporterConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+func (exp *ExampleExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	exp.Logs = append(exp.Logs, ld)
 	return nil
 }
 
 // Shutdown is invoked during shutdown.
-func (exp *ExampleExporterConsumer) Shutdown(context.Context) error {
-	exp.ExporterShutdown = true
+func (exp *ExampleExporter) Shutdown(context.Context) error {
+	exp.Stopped = true
 	return nil
 }

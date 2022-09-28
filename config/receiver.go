@@ -13,6 +13,9 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // Receiver is the configuration of a component.Receiver. Specific extensions must implement
 // this interface and must embed ReceiverSettings struct or a struct that extends it.
@@ -21,6 +24,13 @@ type Receiver interface {
 	validatable
 
 	privateConfigReceiver()
+}
+
+// UnmarshalReceiver helper function to unmarshal a Receiver config.
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalReceiver(conf *confmap.Conf, cfg Receiver) error {
+	return unmarshal(conf, cfg)
 }
 
 // ReceiverSettings defines common settings for a component.Receiver configuration.

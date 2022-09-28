@@ -41,8 +41,15 @@ reasonably fast reviews.
 
 ### When adding a new component
 
-Consider submitting different PRs for (more details about adding new components
-[here](#adding-new-components)) :
+Components comprise of exporters, extensions, receivers, and processors. The key criteria to implementing a component is to:
+
+* Implement the `component.Component` interface
+* Provide a configuration structure which defines the configuration of the component
+* Provide the implementation which performs the component operation
+
+For more details on components, see the [Adding New Components](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-new-components) document and the tutorial [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) which provides a detailed example of building a component.
+
+When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
 * First PR should include the overall structure of the new component:
   * Readme, configuration, and factory implementation usually using the helper
@@ -137,7 +144,7 @@ section of general project contributing guide.
 Working with the project sources requires the following tools:
 
 1. [git](https://git-scm.com/)
-2. [go](https://golang.org/) (version 1.17 and up)
+2. [go](https://golang.org/) (version 1.18 and up)
 3. [make](https://www.gnu.org/software/make/)
 4. [docker](https://www.docker.com/)
 
@@ -180,12 +187,27 @@ $ git commit
 $ git push fork feature
 ```
 
+### Commit Messages
+
+Use descriptive commit messages. Here are [some recommendations](https://cbea.ms/git-commit/)
+on how to write good commit messages.
+When creating PRs GitHub will automatically copy commit messages into the PR description,
+so it is a useful habit to write good commit messages before the PR is created.
+Also, unless you actually want to tell a story with multiple commits make sure to squash
+into a single commit before creating the PR.
+
+When maintainers merge PRs with multiple commits, they will be squashed and GitHub will
+concatenate all commit messages right before you hit the "Confirm squash and merge"
+button. Maintainers must make sure to edit this concatenated message to make it right before merging.
+In some cases, if the commit messages are lacking the easiest approach to have at
+least something useful is copy/pasting the PR description into the commit message box
+before merging (but see above paragraph about writing good commit messages in the first place).
+
 ## General Notes
 
-This project uses Go 1.17.* and CircleCI.
+This project uses Go 1.18.* and [Github Actions.](https://github.com/features/actions)
 
-CircleCI uses the Makefile with the `ci` target, it is recommended to
-run it before submitting your PR. It runs `gofmt -s` (simplify) and `golint`.
+It is recommended to run `make gofmt all` before submitting your PR
 
 The dependencies are managed with `go mod` if you work with the sources under your
 `$GOPATH` you need to set the environment variable `GO111MODULE=on`.
@@ -225,10 +247,10 @@ To keep naming patterns consistent across the project, naming patterns are enfor
 In order to simplify developing within the project, library recommendations have been set
 and should be followed.
 
-| Scenario 	| Recommended                                  	| Rationale                                                                                                               	|
-|----------	|----------------------------------------------	|--------------------------------------------------------------------------------------------------------------------------	|
-| Hashing  	| ["hashing/fnv"](https://pkg.go.dev/hash/fnv) 	| The project adopted this as the default hashing method due to the efficiency and is reasonable for non cryptographic use 	|
-| Testing  	| Use `t.Parallel()` where possible            	| Enabling more test to be run in parallel will speed up the feedback process when working on the project.                 	|
+| Scenario 	 | Recommended                   	                | Rationale                                                                                                                  |
+|------------|------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| Hashing  	 | ["hashing/fnv"](https://pkg.go.dev/hash/fnv) 	 | The project adopted this as the default hashing method due to the efficiency and is reasonable for non cryptographic use 	 |
+| Testing  	 | Use `t.Parallel()` where possible            	 | Enabling more test to be run in parallel will speed up the feedback process when working on the project.                 	 |
 
 
 Within the project, there are some packages that are yet to follow the recommendations and are being address, however, any new code should adhere to the recommendations.
@@ -415,9 +437,11 @@ version (`vM.N+1`).
 Deprecation notice SHOULD contain a version starting from which the deprecation takes effect for tracking purposes. For
 example, if `GetFoo` function is going to be deprecated in `v0.45.0` version, it gets the following godoc line:
 
-```go
-// Deprecated: [v0.45.0] Use MustGetFoo instead.
-func GetFoo() Bar {
+```golang
+package test
+
+// Deprecated: [v0.45.0] Use MustDoFoo instead.
+func DoFoo() {}
 ```
 
 When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
@@ -456,6 +480,15 @@ that each of the following steps is done in a separate version:
    GetFoo() Foo` is changed to call `func GetFooWithContext(context.Background()) Foo`.
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
    needed.
+
+### Specification Tracking
+
+The [OpenTelemetry Specification](https://github.com/open-telemetry/opentelemetry-specification) can be a rapidly
+moving target at times.  While it may seem efficient to get an early start on implementing new features or
+functionality under development in the specification, this can also lead to significant churn and a risk that
+changes in the specification can result in breaking changes to the implementation.  For this reason it is the
+policy of the Collector SIG to not implement, or accept implementations of, new or changed specification language
+prior to inclusion in a stable release of the specification.
 
 ## Updating Changelog
 

@@ -22,22 +22,20 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var logsMarshaler = otlp.NewProtobufLogsMarshaler()
-var logsUnmarshaler = otlp.NewProtobufLogsUnmarshaler()
+var logsMarshaler = plog.NewProtoMarshaler()
+var logsUnmarshaler = plog.NewProtoUnmarshaler()
 
 type logsRequest struct {
 	baseRequest
-	ld     pdata.Logs
-	pusher consumerhelper.ConsumeLogsFunc
+	ld     plog.Logs
+	pusher consumer.ConsumeLogsFunc
 }
 
-func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher consumerhelper.ConsumeLogsFunc) request {
+func newLogsRequest(ctx context.Context, ld plog.Logs, pusher consumer.ConsumeLogsFunc) internal.Request {
 	return &logsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		ld:          ld,
@@ -45,8 +43,8 @@ func newLogsRequest(ctx context.Context, ld pdata.Logs, pusher consumerhelper.Co
 	}
 }
 
-func newLogsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeLogsFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.PersistentRequest, error) {
+func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) internal.RequestUnmarshaler {
+	return func(bytes []byte) (internal.Request, error) {
 		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 		if err != nil {
 			return nil, err
@@ -55,7 +53,7 @@ func newLogsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeLogsFunc) intern
 	}
 }
 
-func (req *logsRequest) onError(err error) request {
+func (req *logsRequest) OnError(err error) internal.Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
 		return newLogsRequest(req.ctx, logError.GetLogs(), req.pusher)
@@ -63,7 +61,7 @@ func (req *logsRequest) onError(err error) request {
 	return req
 }
 
-func (req *logsRequest) export(ctx context.Context) error {
+func (req *logsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.ld)
 }
 
@@ -71,7 +69,7 @@ func (req *logsRequest) Marshal() ([]byte, error) {
 	return logsMarshaler.MarshalLogs(req.ld)
 }
 
-func (req *logsRequest) count() int {
+func (req *logsRequest) Count() int {
 	return req.ld.LogRecordCount()
 }
 
@@ -80,11 +78,12 @@ type logsExporter struct {
 	consumer.Logs
 }
 
-// NewLogsExporter creates an LogsExporter that records observability metrics and wraps every request with a Span.
+// NewLogsExporter creates a component.LogsExporter that records observability metrics and wraps every request with a Span.
 func NewLogsExporter(
-	cfg config.Exporter,
+	_ context.Context,
 	set component.ExporterCreateSettings,
-	pusher consumerhelper.ConsumeLogsFunc,
+	cfg config.Exporter,
+	pusher consumer.ConsumeLogsFunc,
 	options ...Option,
 ) (component.LogsExporter, error) {
 	if cfg == nil {
@@ -108,11 +107,11 @@ func NewLogsExporter(
 		}
 	})
 
-	lc, err := consumerhelper.NewLogs(func(ctx context.Context, ld pdata.Logs) error {
+	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req := newLogsRequest(ctx, ld, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {
-			be.obsrep.recordLogsEnqueueFailure(req.context(), int64(req.count()))
+			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.Count()))
 		}
 		return err
 	}, bs.consumerOptions...)
@@ -128,9 +127,9 @@ type logsExporterWithObservability struct {
 	nextSender requestSender
 }
 
-func (lewo *logsExporterWithObservability) send(req request) error {
-	req.setContext(lewo.obsrep.StartLogsOp(req.context()))
+func (lewo *logsExporterWithObservability) send(req internal.Request) error {
+	req.SetContext(lewo.obsrep.StartLogsOp(req.Context()))
 	err := lewo.nextSender.send(req)
-	lewo.obsrep.EndLogsOp(req.context(), req.count(), err)
+	lewo.obsrep.EndLogsOp(req.Context(), req.Count(), err)
 	return err
 }

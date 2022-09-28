@@ -13,6 +13,9 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // Extension is the configuration of a component.Extension. Specific extensions must implement
 // this interface and must embed ExtensionSettings struct or a struct that extends it.
@@ -21,6 +24,13 @@ type Extension interface {
 	validatable
 
 	privateConfigExtension()
+}
+
+// UnmarshalExtension helper function to unmarshal an Extension config.
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalExtension(conf *confmap.Conf, cfg Extension) error {
+	return unmarshal(conf, cfg)
 }
 
 // ExtensionSettings defines common settings for a component.Extension configuration.

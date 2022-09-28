@@ -11,14 +11,8 @@ Logs can be helpful in identifying issues. Always start by checking the log
 output and looking for potential issues.
 The verbosity level defaults to `INFO` and can be adjusted.
 
-#### Version 0.35 and below:
-Pass `--log-level` flag to the `otelcol` process. See `--help` for more details.
-
-```bash
-$ otelcol --log-level DEBUG
-```
-
 #### Version 0.36 and above:
+
 Set the log level in the config `service::telemetry::logs`
 
 ```yaml
@@ -28,16 +22,37 @@ service:
       level: "debug"
 ```
 
+#### Version 0.35 and below:
+
+Pass `--log-level` flag to the `otelcol` process. See `--help` for more details.
+
+```console
+$ otelcol --log-level DEBUG
+```
+
 ### Metrics
 
-Prometheus metrics are exposed locally on port `8888` and path `/metrics`.
+Prometheus metrics are exposed locally on port `8888` and path `/metrics`. For
+containerized environments it may be desirable to expose this port on a
+public interface instead of just locally.
 
-For containerized environments it may be desirable to expose this port on a
-public interface instead of just locally. The metrics address can be configured
-by passing the `--metrics-addr` flag to the `otelcol` process. See `--help` for
+#### Version 0.43.0 and above:
+
+Set the address in the config `service::telemetry::metrics`
+
+```yaml
+service:
+  telemetry:
+    metrics:
+      address: ":8888"
+```
+
+#### Version 0.42.0 and below:
+
+Pass `--metrics-addr <ADDR>` flag to the `otelcol` process. See `--help` for
 more details.
 
-```bash
+```console
 $ otelcol --metrics-addr 0.0.0.0:8888
 ```
 
@@ -139,13 +154,13 @@ that contains:
 
 With the Collector running, send this payload to the Collector. For example:
 
-```bash
+```console
 $ curl -X POST localhost:9411/api/v2/spans -H'Content-Type: application/json' -d @trace.json
 ```
 
 You should see a log entry like the following from the Collector:
 
-```json
+```
 2020-11-11T04:12:33.089Z	INFO	loggingexporter/logging_exporter.go:296	TraceExporter	{"#spans": 1}
 ```
 
@@ -159,11 +174,11 @@ exporters:
 
 With the modified configuration if you re-run the test above the log output should look like:
 
-```json
+```
 2020-11-11T04:08:17.344Z	DEBUG	loggingexporter/logging_exporter.go:353	ResourceSpans #0
 Resource labels:
      -> service.name: STRING(api)
-InstrumentationLibrarySpans #0
+ScopeSpans #0
 Span #0
     Trace ID       : 5982fe77008310cc80f1da5e10147519
     Parent ID      : 90394f6bcffb5d13

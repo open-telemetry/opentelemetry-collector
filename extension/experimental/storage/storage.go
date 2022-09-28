@@ -38,10 +38,13 @@ type Extension interface {
 //   - Set doesn't error if a key already exists - it just overwrites the value.
 //   - Get doesn't error if a key is not found - it just returns nil.
 //   - Delete doesn't error if the key doesn't exist - it just no-ops.
+//
 // Similarly:
 //   - Batch doesn't error if any of the above happens for either retrieved or updated keys
+//
 // This also provides a way to differentiate data operations
-//   [overwrite | not-found | no-op] from "real" problems
+//
+//	[overwrite | not-found | no-op] from "real" problems
 type Client interface {
 
 	// Get will retrieve data from storage that corresponds to the

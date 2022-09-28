@@ -85,8 +85,13 @@ func Compile(cfg Config) error {
 	}
 
 	cfg.Logger.Info("Compiling")
+
+	args := []string{"build", "-ldflags=-s -w", "-trimpath", "-o", cfg.Distribution.Name}
+	if cfg.Distribution.BuildTags != "" {
+		args = append(args, "-tags", cfg.Distribution.BuildTags)
+	}
 	// #nosec G204
-	cmd := exec.Command(cfg.Distribution.Go, "build", "-ldflags=-s -w", "-trimpath", "-o", cfg.Distribution.Name)
+	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to compile the OpenTelemetry Collector distribution: %w. Output: %q", err, out)
@@ -98,8 +103,13 @@ func Compile(cfg Config) error {
 
 // GetModules retrieves the go modules, updating go.mod and go.sum in the process
 func GetModules(cfg Config) error {
+	if cfg.SkipGetModules {
+		cfg.Logger.Info("Generating source codes only, will not update go.mod and retrieve Go modules.")
+		return nil
+	}
+
 	// #nosec G204
-	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.17")
+	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.18")
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to update go.mod: %w. Output: %q", err, out)
@@ -112,7 +122,7 @@ func GetModules(cfg Config) error {
 	failReason := "unknown"
 	for i := 1; i <= retries; i++ {
 		// #nosec G204
-		cmd := exec.Command(cfg.Distribution.Go, "mod", "download", "all")
+		cmd := exec.Command(cfg.Distribution.Go, "mod", "download")
 		cmd.Dir = cfg.Distribution.OutputPath
 		if out, err := cmd.CombinedOutput(); err != nil {
 			failReason = fmt.Sprintf("%s. Output: %q", err, out)

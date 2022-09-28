@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -80,13 +79,13 @@ func TestReceiveTraceDataOp(t *testing.T) {
 	var acceptedSpans, refusedSpans int
 	for i, span := range spans {
 		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name())
-		switch params[i].err {
-		case nil:
+		switch {
+		case params[i].err == nil:
 			acceptedSpans += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errFake:
+		case errors.Is(params[i].err, errFake):
 			refusedSpans += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(0)})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
@@ -128,13 +127,13 @@ func TestReceiveLogsOp(t *testing.T) {
 	var acceptedLogRecords, refusedLogRecords int
 	for i, span := range spans {
 		assert.Equal(t, "receiver/"+receiver.String()+"/LogsReceived", span.Name())
-		switch params[i].err {
-		case nil:
+		switch {
+		case params[i].err == nil:
 			acceptedLogRecords += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errFake:
+		case errors.Is(params[i].err, errFake):
 			refusedLogRecords += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
@@ -176,13 +175,13 @@ func TestReceiveMetricsOp(t *testing.T) {
 	var acceptedMetricPoints, refusedMetricPoints int
 	for i, span := range spans {
 		assert.Equal(t, "receiver/"+receiver.String()+"/MetricsReceived", span.Name())
-		switch params[i].err {
-		case nil:
+		switch {
+		case params[i].err == nil:
 			acceptedMetricPoints += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errFake:
+		case errors.Is(params[i].err, errFake):
 			refusedMetricPoints += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
@@ -226,20 +225,20 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	var scrapedMetricPoints, erroredMetricPoints int
 	for i, span := range spans {
 		assert.Equal(t, "scraper/"+receiver.String()+"/"+scraper.String()+"/MetricsScraped", span.Name())
-		switch params[i].err {
-		case nil:
+		switch {
+		case params[i].err == nil:
 			scrapedMetricPoints += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errFake:
+		case errors.Is(params[i].err, errFake):
 			erroredMetricPoints += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(0)})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 
-		case partialErrFake:
+		case errors.Is(params[i].err, partialErrFake):
 			scrapedMetricPoints += params[i].items
 			erroredMetricPoints++
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
@@ -263,7 +262,6 @@ func TestExportTraceDataOp(t *testing.T) {
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -284,13 +282,13 @@ func TestExportTraceDataOp(t *testing.T) {
 	var sentSpans, failedToSendSpans int
 	for i, span := range spans {
 		assert.Equal(t, "exporter/"+exporter.String()+"/traces", span.Name())
-		switch params[i].err {
-		case nil:
+		switch {
+		case params[i].err == nil:
 			sentSpans += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errFake:
+		case errors.Is(params[i].err, errFake):
 			failedToSendSpans += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentSpansKey, Value: attribute.Int64Value(0)})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
@@ -313,7 +311,6 @@ func TestExportMetricsOp(t *testing.T) {
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -335,13 +332,13 @@ func TestExportMetricsOp(t *testing.T) {
 	var sentMetricPoints, failedToSendMetricPoints int
 	for i, span := range spans {
 		assert.Equal(t, "exporter/"+exporter.String()+"/metrics", span.Name())
-		switch params[i].err {
-		case nil:
+		switch {
+		case params[i].err == nil:
 			sentMetricPoints += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendMetricPointsKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errFake:
+		case errors.Is(params[i].err, errFake):
 			failedToSendMetricPoints += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentMetricPointsKey, Value: attribute.Int64Value(0)})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
@@ -364,7 +361,6 @@ func TestExportLogsOp(t *testing.T) {
 	defer parentSpan.End()
 
 	obsrep := NewExporter(ExporterSettings{
-		Level:                  configtelemetry.LevelNormal,
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -386,13 +382,13 @@ func TestExportLogsOp(t *testing.T) {
 	var sentLogRecords, failedToSendLogRecords int
 	for i, span := range spans {
 		assert.Equal(t, "exporter/"+exporter.String()+"/logs", span.Name())
-		switch params[i].err {
-		case nil:
+		switch {
+		case params[i].err == nil:
 			sentLogRecords += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendLogRecordsKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errFake:
+		case errors.Is(params[i].err, errFake):
 			failedToSendLogRecords += params[i].items
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.SentLogRecordsKey, Value: attribute.Int64Value(0)})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.FailedToSendLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
@@ -443,12 +439,12 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		assert.Equal(t, parentSpan.SpanContext().SpanID(), link.SpanContext.SpanID())
 		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name())
 		require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.TransportKey, Value: attribute.StringValue(transport)})
-		switch params[i].err {
-		case nil:
+		switch {
+		case params[i].err == nil:
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errFake:
+		case errors.Is(params[i].err, errFake):
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(0)})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 			assert.Equal(t, codes.Error, span.Status().Code)
@@ -469,7 +465,6 @@ func TestProcessorTraceData(t *testing.T) {
 	const droppedSpans = 13
 
 	obsrep := NewProcessor(ProcessorSettings{
-		Level:                   configtelemetry.LevelNormal,
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -490,7 +485,6 @@ func TestProcessorMetricsData(t *testing.T) {
 	const droppedPoints = 17
 
 	obsrep := NewProcessor(ProcessorSettings{
-		Level:                   configtelemetry.LevelNormal,
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -533,7 +527,6 @@ func TestProcessorLogRecords(t *testing.T) {
 	const droppedRecords = 17
 
 	obsrep := NewProcessor(ProcessorSettings{
-		Level:                   configtelemetry.LevelNormal,
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})

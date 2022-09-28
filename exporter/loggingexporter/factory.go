@@ -16,12 +16,15 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 
 import (
 	"context"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -36,9 +39,10 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter, component.StabilityLevelInDevelopment),
+		component.WithMetricsExporter(createMetricsExporter, component.StabilityLevelInDevelopment),
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelInDevelopment),
+	)
 }
 
 func createDefaultConfig() config.Exporter {
@@ -50,52 +54,58 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTracesExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
-
-	exporterLogger, err := createLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return newTracesExporter(config, exporterLogger, set)
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
+	return exporterhelper.NewTracesExporter(ctx, set, cfg,
+		s.pushTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
+		exporterhelper.WithShutdown(loggerSync(exporterLogger)),
+	)
 }
 
-func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
-
-	exporterLogger, err := createLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return newMetricsExporter(config, exporterLogger, set)
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
+	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
+		s.pushMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
+		exporterhelper.WithShutdown(loggerSync(exporterLogger)),
+	)
 }
 
-func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
-
-	exporterLogger, err := createLogger(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return newLogsExporter(config, exporterLogger, set)
+	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
+	return exporterhelper.NewLogsExporter(ctx, set, cfg,
+		s.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
+		exporterhelper.WithShutdown(loggerSync(exporterLogger)),
+	)
 }
 
-func createLogger(cfg *Config) (*zap.Logger, error) {
-	// We take development config as the base since it matches the purpose
-	// of logging exporter being used for debugging reasons (so e.g. console encoder)
-	conf := zap.NewDevelopmentConfig()
-	conf.Level = zap.NewAtomicLevelAt(cfg.LogLevel)
-	conf.Sampling = &zap.SamplingConfig{
-		Initial:    cfg.SamplingInitial,
-		Thereafter: cfg.SamplingThereafter,
-	}
+func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
+	core := zapcore.NewSamplerWithOptions(
+		logger.Core(),
+		1*time.Second,
+		cfg.SamplingInitial,
+		cfg.SamplingThereafter,
+	)
 
-	logginglogger, err := conf.Build()
-	if err != nil {
-		return nil, err
-	}
-	return logginglogger, nil
+	return zap.New(core)
 }

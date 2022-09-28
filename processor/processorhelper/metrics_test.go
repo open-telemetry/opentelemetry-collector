@@ -23,29 +23,28 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var testMetricsCfg = config.NewProcessorSettings(config.NewComponentID("test"))
 
 func TestNewMetricsProcessor(t *testing.T) {
-	mp, err := NewMetricsProcessor(&testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil))
+	mp, err := NewMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, mp.Capabilities().MutatesData)
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, mp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.NoError(t, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	assert.NoError(t, mp.Shutdown(context.Background()))
 }
 
 func TestNewMetricsProcessor_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	mp, err := NewMetricsProcessor(&testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil),
+	mp, err := NewMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -57,28 +56,28 @@ func TestNewMetricsProcessor_WithOptions(t *testing.T) {
 }
 
 func TestNewMetricsProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewMetricsProcessor(&testMetricsCfg, consumertest.NewNop(), nil)
+	_, err := NewMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testMetricsCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 
-	_, err = NewMetricsProcessor(&testMetricsCfg, nil, newTestMProcessor(nil))
-	assert.Equal(t, componenterror.ErrNilNextConsumer, err)
+	_, err = NewMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testMetricsCfg, nil, newTestMProcessor(nil))
+	assert.Equal(t, component.ErrNilNextConsumer, err)
 }
 
 func TestNewMetricsProcessor_ProcessMetricsError(t *testing.T) {
 	want := errors.New("my_error")
-	mp, err := NewMetricsProcessor(&testMetricsCfg, consumertest.NewNop(), newTestMProcessor(want))
+	mp, err := NewMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(want))
 	require.NoError(t, err)
-	assert.Equal(t, want, mp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.Equal(t, want, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 }
 
 func TestNewMetricsProcessor_ProcessMetricsErrSkipProcessingData(t *testing.T) {
-	mp, err := NewMetricsProcessor(&testMetricsCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
+	mp, err := NewMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
-	assert.Equal(t, nil, mp.ConsumeMetrics(context.Background(), pdata.NewMetrics()))
+	assert.Equal(t, nil, mp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 }
 
 func newTestMProcessor(retError error) ProcessMetricsFunc {
-	return func(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+	return func(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 		return md, retError
 	}
 }

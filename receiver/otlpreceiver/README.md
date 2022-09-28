@@ -1,13 +1,16 @@
 # OTLP Receiver
 
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | traces [stable]       |
+|                          | metrics [stable]      |
+|                          | logs [beta]           |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
+
 Receives data via gRPC or HTTP using [OTLP](
 https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 format.
-
-Supported pipeline types: traces, metrics, logs
-
-:warning: OTLP logs format is currently marked as "Beta" and may change in
-incompatible ways.
 
 ## Getting Started
 
@@ -41,8 +44,7 @@ Several helper files are leveraged to provide additional capabilities automatica
 
 The OTLP receiver can receive trace export calls via HTTP/JSON in addition to
 gRPC. The HTTP/JSON address is the same as gRPC as the protocol is recognized
-and processed accordingly. Note the format needs to be [protobuf JSON
-serialization](https://developers.google.com/protocol-buffers/docs/proto3#json).
+and processed accordingly. Note the serialization format needs to be [protobuf JSON](https://developers.google.com/protocol-buffers/docs/proto3#json).
 
 To write traces with HTTP/JSON, `POST` to `[address]/v1/traces` for traces,
 to `[address]/v1/metrics` for metrics, to `[address]/v1/logs` for logs. The default
@@ -75,3 +77,8 @@ receivers:
             - Example-Header
           max_age: 7200
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
+[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable

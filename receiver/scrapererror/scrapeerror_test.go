@@ -66,7 +66,7 @@ func TestScrapeErrorsCombine(t *testing.T) {
 			errs: func() ScrapeErrors {
 				var errs ScrapeErrors
 				errs.AddPartial(10, errors.New("bad scrapes"))
-				errs.AddPartial(1, fmt.Errorf("err: %s", errors.New("bad scrape")))
+				errs.AddPartial(1, fmt.Errorf("err: %w", errors.New("bad scrape")))
 				return errs
 			},
 			expectedErr:         "bad scrapes; err: bad scrape",
@@ -77,7 +77,7 @@ func TestScrapeErrorsCombine(t *testing.T) {
 			errs: func() ScrapeErrors {
 				var errs ScrapeErrors
 				errs.Add(errors.New("bad regular"))
-				errs.Add(fmt.Errorf("err: %s", errors.New("bad reg")))
+				errs.Add(fmt.Errorf("err: %w", errors.New("bad reg")))
 				return errs
 			},
 			expectedErr: "bad regular; err: bad reg",
@@ -86,9 +86,9 @@ func TestScrapeErrorsCombine(t *testing.T) {
 			errs: func() ScrapeErrors {
 				var errs ScrapeErrors
 				errs.AddPartial(2, errors.New("bad two scrapes"))
-				errs.AddPartial(10, fmt.Errorf("%d scrapes failed: %s", 10, errors.New("bad things happened")))
+				errs.AddPartial(10, fmt.Errorf("%d scrapes failed: %w", 10, errors.New("bad things happened")))
 				errs.Add(errors.New("bad event"))
-				errs.Add(fmt.Errorf("event: %s", errors.New("something happened")))
+				errs.Add(fmt.Errorf("event: %w", errors.New("something happened")))
 				return errs
 			},
 			expectedErr:         "bad two scrapes; 10 scrapes failed: bad things happened; bad event; event: something happened",
@@ -105,8 +105,8 @@ func TestScrapeErrorsCombine(t *testing.T) {
 		}
 		assert.EqualError(t, scrapeErrs.Combine(), tc.expectedErr)
 		if tc.expectedScrape {
-			partialScrapeErr, ok := scrapeErrs.Combine().(PartialScrapeError)
-			if !ok {
+			var partialScrapeErr PartialScrapeError
+			if !errors.As(scrapeErrs.Combine(), &partialScrapeErr) {
 				t.Errorf("%+v.Combine() = %q. Want: PartialScrapeError", scrapeErrs, scrapeErrs.Combine())
 			} else if tc.expectedFailedCount != partialScrapeErr.Failed {
 				t.Errorf("%+v.Combine().Failed. Got %d Failed count. Want: %d", scrapeErrs, partialScrapeErr.Failed, tc.expectedFailedCount)

@@ -27,16 +27,18 @@ import (
 	"golang.org/x/sys/windows/svc"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/testcomponents"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func TestWindowsService_Execute(t *testing.T) {
-	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-config.yaml")}
+func TestNewSvcHandler(t *testing.T) {
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-nop.yaml")}
 
-	factories, err := testcomponents.NewDefaultFactories()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
-	s := NewWindowsService(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
+	s := NewSvcHandler(CollectorSettings{BuildInfo: component.NewDefaultBuildInfo(), Factories: factories})
 
 	colDone := make(chan struct{})
 	requests := make(chan svc.ChangeRequest)

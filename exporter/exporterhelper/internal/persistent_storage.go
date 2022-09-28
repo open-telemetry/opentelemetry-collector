@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build enable_unstable
-// +build enable_unstable
-
 package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
 import (
@@ -22,24 +19,12 @@ import (
 	"errors"
 	"strconv"
 	"sync"
-	"sync/atomic"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
-
-// persistentStorage provides an interface for request storage operations
-type persistentStorage interface {
-	// put appends the request to the storage
-	put(req PersistentRequest) error
-	// get returns the next available request; note that the channel is unbuffered
-	get() <-chan PersistentRequest
-	// size returns the current size of the persistent storage with items waiting for processing
-	size() uint64
-	// stop gracefully stops the storage
-	stop()
-}
 
 // persistentContiguousStorage provides a persistent queue implementation backed by file storage extension
 //
@@ -50,21 +35,19 @@ type persistentStorage interface {
 // The items currently dispatched by consumers are not deleted until the processing is finished.
 // Their list is stored under a separate key.
 //
-//
-//   ┌───────file extension-backed queue───────┐
-//   │                                         │
-//   │     ┌───┐     ┌───┐ ┌───┐ ┌───┐ ┌───┐   │
-//   │ n+1 │ n │ ... │ 4 │ │ 3 │ │ 2 │ │ 1 │   │
-//   │     └───┘     └───┘ └─x─┘ └─|─┘ └─x─┘   │
-//   │                       x     |     x     │
-//   └───────────────────────x─────|─────x─────┘
-//      ▲              ▲     x     |     x
-//      │              │     x     |     xxxx deleted
-//      │              │     x     |
-//    write          read    x     └── currently dispatched item
-//    index          index   x
-//                           xxxx deleted
-//
+//	┌───────file extension-backed queue───────┐
+//	│                                         │
+//	│     ┌───┐     ┌───┐ ┌───┐ ┌───┐ ┌───┐   │
+//	│ n+1 │ n │ ... │ 4 │ │ 3 │ │ 2 │ │ 1 │   │
+//	│     └───┘     └───┘ └─x─┘ └─|─┘ └─x─┘   │
+//	│                       x     |     x     │
+//	└───────────────────────x─────|─────x─────┘
+//	   ▲              ▲     x     |     x
+//	   │              │     x     |     xxxx deleted
+//	   │              │     x     |
+//	 write          read    x     └── currently dispatched item
+//	 index          index   x
+//	                        xxxx deleted
 type persistentContiguousStorage struct {
 	logger      *zap.Logger
 	queueName   string
@@ -76,14 +59,14 @@ type persistentContiguousStorage struct {
 	stopOnce sync.Once
 	capacity uint64
 
-	reqChan chan PersistentRequest
+	reqChan chan Request
 
 	mu                       sync.Mutex
 	readIndex                itemIndex
 	writeIndex               itemIndex
 	currentlyDispatchedItems []itemIndex
 
-	itemsCount uint64
+	itemsCount *atomic.Uint64
 }
 
 type itemIndex uint64
@@ -116,8 +99,9 @@ func newPersistentContiguousStorage(ctx context.Context, queueName string, capac
 		unmarshaler: unmarshaler,
 		capacity:    capacity,
 		putChan:     make(chan struct{}, capacity),
-		reqChan:     make(chan PersistentRequest),
+		reqChan:     make(chan Request),
 		stopChan:    make(chan struct{}),
+		itemsCount:  atomic.NewUint64(0),
 	}
 
 	initPersistentContiguousStorage(ctx, pcs)
@@ -152,7 +136,7 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 	}
 
 	if err != nil {
-		if err == errValueNotSet {
+		if errors.Is(err, errValueNotSet) {
 			pcs.logger.Info("Initializing new persistent queue", zap.String(zapQueueNameKey, pcs.queueName))
 		} else {
 			pcs.logger.Error("Failed getting read/write index, starting with new ones",
@@ -166,10 +150,10 @@ func initPersistentContiguousStorage(ctx context.Context, pcs *persistentContigu
 		pcs.writeIndex = writeIndex
 	}
 
-	atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
+	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 }
 
-func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []PersistentRequest) {
+func (pcs *persistentContiguousStorage) enqueueNotDispatchedReqs(reqs []Request) {
 	if len(reqs) > 0 {
 		errCount := 0
 		for _, req := range reqs {
@@ -207,24 +191,27 @@ func (pcs *persistentContiguousStorage) loop() {
 }
 
 // get returns the request channel that all the requests will be send on
-func (pcs *persistentContiguousStorage) get() <-chan PersistentRequest {
+func (pcs *persistentContiguousStorage) get() <-chan Request {
 	return pcs.reqChan
 }
 
 // size returns the number of currently available items, which were not picked by consumers yet
 func (pcs *persistentContiguousStorage) size() uint64 {
-	return atomic.LoadUint64(&pcs.itemsCount)
+	return pcs.itemsCount.Load()
 }
 
 func (pcs *persistentContiguousStorage) stop() {
 	pcs.logger.Debug("Stopping persistentContiguousStorage", zap.String(zapQueueNameKey, pcs.queueName))
 	pcs.stopOnce.Do(func() {
 		close(pcs.stopChan)
+		if err := pcs.client.Close(context.Background()); err != nil {
+			pcs.logger.Warn("failed to close client", zap.Error(err))
+		}
 	})
 }
 
 // put marshals the request and puts it into the persistent queue
-func (pcs *persistentContiguousStorage) put(req PersistentRequest) error {
+func (pcs *persistentContiguousStorage) put(req Request) error {
 	// Nil requests are ignored
 	if req == nil {
 		return nil
@@ -240,7 +227,7 @@ func (pcs *persistentContiguousStorage) put(req PersistentRequest) error {
 
 	itemKey := pcs.itemKey(pcs.writeIndex)
 	pcs.writeIndex++
-	atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
+	pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 
 	ctx := context.Background()
 	_, err := newBatch(pcs).setItemIndex(writeIndexKey, pcs.writeIndex).setRequest(itemKey, req).execute(ctx)
@@ -252,7 +239,7 @@ func (pcs *persistentContiguousStorage) put(req PersistentRequest) error {
 }
 
 // getNextItem pulls the next available item from the persistent storage; if none is found, returns (nil, false)
-func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (PersistentRequest, bool) {
+func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Request, bool) {
 	pcs.mu.Lock()
 	defer pcs.mu.Unlock()
 
@@ -260,12 +247,12 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Persis
 		index := pcs.readIndex
 		// Increase here, so even if errors happen below, it always iterates
 		pcs.readIndex++
-		atomic.StoreUint64(&pcs.itemsCount, uint64(pcs.writeIndex-pcs.readIndex))
+		pcs.itemsCount.Store(uint64(pcs.writeIndex - pcs.readIndex))
 
 		pcs.updateReadIndex(ctx)
 		pcs.itemDispatchingStart(ctx, index)
 
-		var req PersistentRequest
+		var req Request
 		batch, err := newBatch(pcs).get(pcs.itemKey(index)).execute(ctx)
 		if err == nil {
 			req, err = batch.getRequestResult(pcs.itemKey(index))
@@ -293,8 +280,8 @@ func (pcs *persistentContiguousStorage) getNextItem(ctx context.Context) (Persis
 // retrieveNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items back to the queue. The function returns an array which might contain nils
 // if unmarshalling of the value at a given index was not possible.
-func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []PersistentRequest {
-	var reqs []PersistentRequest
+func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Context) []Request {
+	var reqs []Request
 	var dispatchedItems []itemIndex
 
 	pcs.mu.Lock()
@@ -317,7 +304,7 @@ func (pcs *persistentContiguousStorage) retrieveNotDispatchedReqs(ctx context.Co
 		pcs.logger.Debug("No items left for dispatch by consumers")
 	}
 
-	reqs = make([]PersistentRequest, len(dispatchedItems))
+	reqs = make([]Request, len(dispatchedItems))
 	keys := make([]string, len(dispatchedItems))
 	retrieveBatch := newBatch(pcs)
 	cleanupBatch := newBatch(pcs)

@@ -22,22 +22,20 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var metricsMarshaler = otlp.NewProtobufMetricsMarshaler()
-var metricsUnmarshaler = otlp.NewProtobufMetricsUnmarshaler()
+var metricsMarshaler = pmetric.NewProtoMarshaler()
+var metricsUnmarshaler = pmetric.NewProtoUnmarshaler()
 
 type metricsRequest struct {
 	baseRequest
-	md     pdata.Metrics
-	pusher consumerhelper.ConsumeMetricsFunc
+	md     pmetric.Metrics
+	pusher consumer.ConsumeMetricsFunc
 }
 
-func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher consumerhelper.ConsumeMetricsFunc) request {
+func newMetricsRequest(ctx context.Context, md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) internal.Request {
 	return &metricsRequest{
 		baseRequest: baseRequest{ctx: ctx},
 		md:          md,
@@ -45,8 +43,8 @@ func newMetricsRequest(ctx context.Context, md pdata.Metrics, pusher consumerhel
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeMetricsFunc) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.PersistentRequest, error) {
+func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) internal.RequestUnmarshaler {
+	return func(bytes []byte) (internal.Request, error) {
 		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 		if err != nil {
 			return nil, err
@@ -55,7 +53,7 @@ func newMetricsRequestUnmarshalerFunc(pusher consumerhelper.ConsumeMetricsFunc) 
 	}
 }
 
-func (req *metricsRequest) onError(err error) request {
+func (req *metricsRequest) OnError(err error) internal.Request {
 	var metricsError consumererror.Metrics
 	if errors.As(err, &metricsError) {
 		return newMetricsRequest(req.ctx, metricsError.GetMetrics(), req.pusher)
@@ -63,7 +61,7 @@ func (req *metricsRequest) onError(err error) request {
 	return req
 }
 
-func (req *metricsRequest) export(ctx context.Context) error {
+func (req *metricsRequest) Export(ctx context.Context) error {
 	return req.pusher(ctx, req.md)
 }
 
@@ -72,7 +70,7 @@ func (req *metricsRequest) Marshal() ([]byte, error) {
 	return metricsMarshaler.MarshalMetrics(req.md)
 }
 
-func (req *metricsRequest) count() int {
+func (req *metricsRequest) Count() int {
 	return req.md.DataPointCount()
 }
 
@@ -81,11 +79,12 @@ type metricsExporter struct {
 	consumer.Metrics
 }
 
-// NewMetricsExporter creates an MetricsExporter that records observability metrics and wraps every request with a Span.
+// NewMetricsExporter creates a component.MetricsExporter that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(
-	cfg config.Exporter,
+	_ context.Context,
 	set component.ExporterCreateSettings,
-	pusher consumerhelper.ConsumeMetricsFunc,
+	cfg config.Exporter,
+	pusher consumer.ConsumeMetricsFunc,
 	options ...Option,
 ) (component.MetricsExporter, error) {
 	if cfg == nil {
@@ -109,11 +108,11 @@ func NewMetricsExporter(
 		}
 	})
 
-	mc, err := consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
+	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		req := newMetricsRequest(ctx, md, pusher)
 		err := be.sender.send(req)
 		if errors.Is(err, errSendingQueueIsFull) {
-			be.obsrep.recordMetricsEnqueueFailure(req.context(), int64(req.count()))
+			be.obsrep.recordMetricsEnqueueFailure(req.Context(), int64(req.Count()))
 		}
 		return err
 	}, bs.consumerOptions...)
@@ -129,9 +128,9 @@ type metricsSenderWithObservability struct {
 	nextSender requestSender
 }
 
-func (mewo *metricsSenderWithObservability) send(req request) error {
-	req.setContext(mewo.obsrep.StartMetricsOp(req.context()))
+func (mewo *metricsSenderWithObservability) send(req internal.Request) error {
+	req.SetContext(mewo.obsrep.StartMetricsOp(req.Context()))
 	err := mewo.nextSender.send(req)
-	mewo.obsrep.EndMetricsOp(req.context(), req.count(), err)
+	mewo.obsrep.EndMetricsOp(req.Context(), req.Count(), err)
 	return err
 }

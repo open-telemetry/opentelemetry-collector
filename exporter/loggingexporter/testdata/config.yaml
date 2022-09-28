@@ -1,22 +1,3 @@
-receivers:
-  nop:
-
-processors:
-  nop:
-
-exporters:
-  logging:
-  logging/2:
-    loglevel: debug
-    sampling_initial: 10
-    sampling_thereafter: 50
-
-service:
-  pipelines:
-    traces:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [logging]
-    metrics:
-      receivers: [nop]
-      exporters: [logging,logging/2]
+loglevel: debug
+sampling_initial: 10
+sampling_thereafter: 50

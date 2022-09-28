@@ -18,8 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,18 +28,21 @@ import (
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/tag"
+	"go.uber.org/atomic"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
-	return func(bytes []byte) (internal.PersistentRequest, error) {
+	return func(bytes []byte) (internal.Request, error) {
 		return mr, nil
 	}
 }
@@ -104,7 +107,7 @@ func TestQueuedRetry_OnError(t *testing.T) {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
 
-	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTracesOneSpan())
+	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
 	mockR := newMockRequest(context.Background(), 2, traceErr)
 	ocs.run(func() {
 		// This is asynchronous so it should just enqueue, no errors expected.
@@ -343,6 +346,7 @@ func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
 	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
+	checkValueForGlobalManager(t, defaultExporterTags, int64(5000), "exporter/queue_capacity")
 	for i := 0; i < 7; i++ {
 		require.NoError(t, be.sender.send(newErrorRequest(context.Background())))
 	}
@@ -380,15 +384,194 @@ func TestQueueSettings_Validate(t *testing.T) {
 	assert.NoError(t, qCfg.Validate())
 }
 
+func TestGetRetrySettings(t *testing.T) {
+	getStorageClientError := errors.New("unable to create storage client")
+	testCases := []struct {
+		desc           string
+		storage        storage.Extension
+		numStorages    int
+		storageIndex   int
+		expectedError  error
+		getClientError error
+	}{
+		{
+			desc:          "obtain storage extension by name",
+			numStorages:   2,
+			storageIndex:  0,
+			expectedError: nil,
+		},
+		{
+			desc:          "fail on not existing storage extension",
+			numStorages:   2,
+			storageIndex:  100,
+			expectedError: errNoStorageClient,
+		},
+		{
+			desc:          "invalid extension type",
+			numStorages:   2,
+			storageIndex:  100,
+			expectedError: errNoStorageClient,
+		},
+		{
+			desc:           "fail on error getting storage client from extension",
+			numStorages:    1,
+			storageIndex:   0,
+			expectedError:  getStorageClientError,
+			getClientError: getStorageClientError,
+		},
+	}
+
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			storageID := config.NewComponentIDWithName("file_storage", strconv.Itoa(tC.storageIndex))
+
+			var extensions = map[config.ComponentID]component.Extension{}
+			for i := 0; i < tC.numStorages; i++ {
+				extensions[config.NewComponentIDWithName("file_storage", strconv.Itoa(i))] = &mockStorageExtension{GetClientError: tC.getClientError}
+			}
+			host := &mockHost{ext: extensions}
+			ownerID := config.NewComponentID("foo_exporter")
+
+			// execute
+			client, err := toStorageClient(context.Background(), storageID, host, ownerID, config.TracesDataType)
+
+			// verify
+			if tC.expectedError != nil {
+				assert.ErrorIs(t, err, tC.expectedError)
+				assert.Nil(t, client)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, client)
+			}
+		})
+	}
+}
+
+func TestInvalidStorageExtensionType(t *testing.T) {
+	storageID := config.NewComponentIDWithName("extension", "extension")
+
+	// make a test extension
+	factory := componenttest.NewNopExtensionFactory()
+	extConfig := factory.CreateDefaultConfig()
+	settings := componenttest.NewNopExtensionCreateSettings()
+	extension, err := factory.CreateExtension(context.Background(), settings, extConfig)
+	assert.NoError(t, err)
+	var extensions = map[config.ComponentID]component.Extension{
+		storageID: extension,
+	}
+	host := &mockHost{ext: extensions}
+	ownerID := config.NewComponentID("foo_exporter")
+
+	// execute
+	client, err := toStorageClient(context.Background(), storageID, host, ownerID, config.TracesDataType)
+
+	// we should get an error about the extension type
+	assert.ErrorIs(t, err, errWrongExtensionType)
+	assert.Nil(t, client)
+}
+
+// if requeueing is enabled, we eventually retry even if we failed at first
+func TestQueuedRetry_RequeuingEnabled(t *testing.T) {
+	qCfg := NewDefaultQueueSettings()
+	qCfg.NumConsumers = 1
+	rCfg := NewDefaultRetrySettings()
+	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
+	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+	ocs := newObservabilityConsumerSender(be.qrSender.consumerSender)
+	be.qrSender.consumerSender = ocs
+	be.qrSender.requeuingEnabled = true
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, be.Shutdown(context.Background()))
+	})
+
+	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
+	mockR := newMockRequest(context.Background(), 1, traceErr)
+	ocs.run(func() {
+		// This is asynchronous so it should just enqueue, no errors expected.
+		require.NoError(t, be.sender.send(mockR))
+		ocs.waitGroup.Add(1) // necessary because we'll call send() again after requeueing
+	})
+	ocs.awaitAsyncProcessing()
+
+	// In the newMockConcurrentExporter we count requests and items even for failed requests
+	mockR.checkNumRequests(t, 2)
+	ocs.checkSendItemsCount(t, 1)
+	ocs.checkDroppedItemsCount(t, 1) // not actually dropped, but ocs counts each failed send here
+}
+
+// if requeueing is enabled, but the queue is full, we get an error
+func TestQueuedRetry_RequeuingEnabledQueueFull(t *testing.T) {
+	qCfg := NewDefaultQueueSettings()
+	qCfg.NumConsumers = 0
+	qCfg.QueueSize = 0
+	rCfg := NewDefaultRetrySettings()
+	rCfg.MaxElapsedTime = time.Nanosecond // we don't want to retry at all, but requeue instead
+	be := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+	be.qrSender.requeuingEnabled = true
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, be.Shutdown(context.Background()))
+	})
+
+	traceErr := consumererror.NewTraces(errors.New("some error"), testdata.GenerateTraces(1))
+	mockR := newMockRequest(context.Background(), 1, traceErr)
+
+	require.Error(t, be.qrSender.consumerSender.send(mockR), "sending_queue is full")
+	mockR.checkNumRequests(t, 1)
+}
+
+func TestQueuedRetryPersistenceEnabled(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	qCfg := NewDefaultQueueSettings()
+	storageID := config.NewComponentIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID // enable persistence
+	rCfg := NewDefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+
+	var extensions = map[config.ComponentID]component.Extension{
+		storageID: &mockStorageExtension{},
+	}
+	host := &mockHost{ext: extensions}
+
+	// we start correctly with a file storage extension
+	require.NoError(t, be.Start(context.Background(), host))
+	require.NoError(t, be.Shutdown(context.Background()))
+}
+
+func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
+	storageError := errors.New("could not get storage client")
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	qCfg := NewDefaultQueueSettings()
+	storageID := config.NewComponentIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID // enable persistence
+	rCfg := NewDefaultRetrySettings()
+	be := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+
+	var extensions = map[config.ComponentID]component.Extension{
+		storageID: &mockStorageExtension{GetClientError: storageError},
+	}
+	host := &mockHost{ext: extensions}
+
+	// we fail to start if we get an error creating the storage client
+	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
+}
+
 type mockErrorRequest struct {
 	baseRequest
 }
 
-func (mer *mockErrorRequest) export(_ context.Context) error {
+func (mer *mockErrorRequest) Export(_ context.Context) error {
 	return errors.New("transient error")
 }
 
-func (mer *mockErrorRequest) onError(error) request {
+func (mer *mockErrorRequest) OnError(error) internal.Request {
 	return mer
 }
 
@@ -396,11 +579,11 @@ func (mer *mockErrorRequest) Marshal() ([]byte, error) {
 	return nil, nil
 }
 
-func (mer *mockErrorRequest) count() int {
+func (mer *mockErrorRequest) Count() int {
 	return 7
 }
 
-func newErrorRequest(ctx context.Context) request {
+func newErrorRequest(ctx context.Context) internal.Request {
 	return &mockErrorRequest{
 		baseRequest: baseRequest{ctx: ctx},
 	}
@@ -411,11 +594,11 @@ type mockRequest struct {
 	cnt          int
 	mu           sync.Mutex
 	consumeError error
-	requestCount *int64
+	requestCount *atomic.Int64
 }
 
-func (m *mockRequest) export(ctx context.Context) error {
-	atomic.AddInt64(m.requestCount, 1)
+func (m *mockRequest) Export(ctx context.Context) error {
+	m.requestCount.Inc()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	err := m.consumeError
@@ -428,10 +611,10 @@ func (m *mockRequest) export(ctx context.Context) error {
 }
 
 func (m *mockRequest) Marshal() ([]byte, error) {
-	return otlp.NewProtobufTracesMarshaler().MarshalTraces(pdata.NewTraces())
+	return ptrace.NewProtoMarshaler().MarshalTraces(ptrace.NewTraces())
 }
 
-func (m *mockRequest) onError(error) request {
+func (m *mockRequest) OnError(error) internal.Request {
 	return &mockRequest{
 		baseRequest:  m.baseRequest,
 		cnt:          1,
@@ -442,11 +625,11 @@ func (m *mockRequest) onError(error) request {
 
 func (m *mockRequest) checkNumRequests(t *testing.T, want int) {
 	assert.Eventually(t, func() bool {
-		return int64(want) == atomic.LoadInt64(m.requestCount)
+		return int64(want) == m.requestCount.Load()
 	}, time.Second, 1*time.Millisecond)
 }
 
-func (m *mockRequest) count() int {
+func (m *mockRequest) Count() int {
 	return m.cnt
 }
 
@@ -455,27 +638,32 @@ func newMockRequest(ctx context.Context, cnt int, consumeError error) *mockReque
 		baseRequest:  baseRequest{ctx: ctx},
 		cnt:          cnt,
 		consumeError: consumeError,
-		requestCount: new(int64),
+		requestCount: atomic.NewInt64(0),
 	}
 }
 
 type observabilityConsumerSender struct {
 	waitGroup         *sync.WaitGroup
-	sentItemsCount    int64
-	droppedItemsCount int64
+	sentItemsCount    *atomic.Int64
+	droppedItemsCount *atomic.Int64
 	nextSender        requestSender
 }
 
 func newObservabilityConsumerSender(nextSender requestSender) *observabilityConsumerSender {
-	return &observabilityConsumerSender{waitGroup: new(sync.WaitGroup), nextSender: nextSender}
+	return &observabilityConsumerSender{
+		waitGroup:         new(sync.WaitGroup),
+		nextSender:        nextSender,
+		droppedItemsCount: atomic.NewInt64(0),
+		sentItemsCount:    atomic.NewInt64(0),
+	}
 }
 
-func (ocs *observabilityConsumerSender) send(req request) error {
+func (ocs *observabilityConsumerSender) send(req internal.Request) error {
 	err := ocs.nextSender.send(req)
 	if err != nil {
-		atomic.AddInt64(&ocs.droppedItemsCount, int64(req.count()))
+		ocs.droppedItemsCount.Add(int64(req.Count()))
 	} else {
-		atomic.AddInt64(&ocs.sentItemsCount, int64(req.count()))
+		ocs.sentItemsCount.Add(int64(req.Count()))
 	}
 	ocs.waitGroup.Done()
 	return err
@@ -491,11 +679,11 @@ func (ocs *observabilityConsumerSender) awaitAsyncProcessing() {
 }
 
 func (ocs *observabilityConsumerSender) checkSendItemsCount(t *testing.T, want int) {
-	assert.EqualValues(t, want, atomic.LoadInt64(&ocs.sentItemsCount))
+	assert.EqualValues(t, want, ocs.sentItemsCount.Load())
 }
 
 func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, want int) {
-	assert.EqualValues(t, want, atomic.LoadInt64(&ocs.droppedItemsCount))
+	assert.EqualValues(t, want, ocs.droppedItemsCount.Load())
 }
 
 // checkValueForGlobalManager checks that the given metrics with wantTags is reported by one of the
@@ -539,4 +727,32 @@ func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []met
 		}
 	}
 	return true
+}
+
+type mockHost struct {
+	component.Host
+	ext map[config.ComponentID]component.Extension
+}
+
+func (nh *mockHost) GetExtensions() map[config.ComponentID]component.Extension {
+	return nh.ext
+}
+
+type mockStorageExtension struct {
+	GetClientError error
+}
+
+func (mse *mockStorageExtension) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (mse *mockStorageExtension) Shutdown(_ context.Context) error {
+	return nil
+}
+
+func (mse *mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ config.ComponentID, _ string) (storage.Client, error) {
+	if mse.GetClientError != nil {
+		return nil, mse.GetClientError
+	}
+	return storage.NewNopClient(), nil
 }

@@ -1,0 +1,38 @@
+receivers:
+  nop:
+  nop/myreceiver:
+
+processors:
+  nop:
+
+exporters:
+  nop/myexporter:
+  nop:
+
+extensions:
+  nop/0:
+  nop/disabled:
+  nop/1:
+
+service:
+  telemetry:
+    logs:
+      level: "DEBUG"
+      development: true
+      encoding: "console"
+      disable_caller: true
+      disable_stacktrace: true
+      output_paths: ["stderr", "./output-logs"]
+      error_output_paths: ["stderr", "./error-output-logs"]
+      initial_fields:
+        field_key: "filed_value"
+    metrics:
+      level: "normal"
+      address: ":8081"
+  extensions: [nop/0, nop/1]
+  pipelines:
+    traces:
+      receivers: [nop/myreceiver]
+      processors: [nop]
+      exporters: [nop/myexporter]
+

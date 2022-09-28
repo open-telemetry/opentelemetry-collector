@@ -39,7 +39,7 @@ func TestTracesMultiplexingNonMutating(t *testing.T) {
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
 		err := tfc.ConsumeTraces(context.Background(), td)
@@ -72,7 +72,7 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
 		err := tfc.ConsumeTraces(context.Background(), td)
@@ -106,7 +106,7 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
 		err := tfc.ConsumeTraces(context.Background(), td)
@@ -141,7 +141,7 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
 	assert.False(t, tfc.Capabilities().MutatesData)
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
 		err := tfc.ConsumeTraces(context.Background(), td)
@@ -174,7 +174,7 @@ func TestTracesWhenErrors(t *testing.T) {
 	p3 := new(consumertest.TracesSink)
 
 	tfc := NewTraces([]consumer.Traces{p1, p2, p3})
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
 		assert.Error(t, tfc.ConsumeTraces(context.Background(), td))

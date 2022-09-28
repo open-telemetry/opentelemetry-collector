@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -32,9 +31,6 @@ type TimeoutSettings struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
-// Deprecated: [v0.46.0] use NewDefaultTimeoutSettings instead.
-var DefaultTimeoutSettings = NewDefaultTimeoutSettings
-
 // NewDefaultTimeoutSettings returns the default settings for TimeoutSettings.
 func NewDefaultTimeoutSettings() TimeoutSettings {
 	return TimeoutSettings{
@@ -42,39 +38,22 @@ func NewDefaultTimeoutSettings() TimeoutSettings {
 	}
 }
 
-// request is an abstraction of an individual request (batch of data) independent of the type of the data (traces, metrics, logs).
-type request interface {
-	// context returns the Context of the requests.
-	context() context.Context
-	// setContext updates the Context of the requests.
-	setContext(context.Context)
-	export(ctx context.Context) error
-	// Returns a new request may contain the items left to be sent if some items failed to process and can be retried.
-	// Otherwise, it should return the original request.
-	onError(error) request
-	// Returns the count of spans/metric points or log records.
-	count() int
-
-	// PersistentRequest provides interface with additional capabilities required by persistent queue
-	internal.PersistentRequest
-}
-
 // requestSender is an abstraction of a sender for a request independent of the type of the data (traces, metrics, logs).
 type requestSender interface {
-	send(req request) error
+	send(req internal.Request) error
 }
 
-// baseRequest is a base implementation for the request.
+// baseRequest is a base implementation for the internal.Request.
 type baseRequest struct {
 	ctx                        context.Context
 	processingFinishedCallback func()
 }
 
-func (req *baseRequest) context() context.Context {
+func (req *baseRequest) Context() context.Context {
 	return req.ctx
 }
 
-func (req *baseRequest) setContext(ctx context.Context) {
+func (req *baseRequest) SetContext(ctx context.Context) {
 	req.ctx = ctx
 }
 
@@ -92,7 +71,7 @@ func (req *baseRequest) OnProcessingFinished() {
 type baseSettings struct {
 	component.StartFunc
 	component.ShutdownFunc
-	consumerOptions []consumerhelper.Option
+	consumerOptions []consumer.Option
 	TimeoutSettings
 	QueueSettings
 	RetrySettings
@@ -164,7 +143,7 @@ func WithQueue(queueSettings QueueSettings) Option {
 // TODO: Verify if we can change the default to be mutable as we do for processors.
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *baseSettings) {
-		o.consumerOptions = append(o.consumerOptions, consumerhelper.WithCapabilities(capabilities))
+		o.consumerOptions = append(o.consumerOptions, consumer.WithCapabilities(capabilities))
 	}
 }
 
@@ -180,11 +159,7 @@ type baseExporter struct {
 func newBaseExporter(cfg config.Exporter, set component.ExporterCreateSettings, bs *baseSettings, signal config.DataType, reqUnmarshaler internal.RequestUnmarshaler) *baseExporter {
 	be := &baseExporter{}
 
-	be.obsrep = newObsExporter(obsreport.ExporterSettings{
-		Level:                  set.MetricsLevel,
-		ExporterID:             cfg.ID(),
-		ExporterCreateSettings: set,
-	}, globalInstruments)
+	be.obsrep = newObsExporter(obsreport.ExporterSettings{ExporterID: cfg.ID(), ExporterCreateSettings: set}, globalInstruments)
 	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
@@ -211,20 +186,19 @@ func (be *baseExporter) wrapConsumerSender(f func(consumer requestSender) reques
 	be.qrSender.consumerSender = f(be.qrSender.consumerSender)
 }
 
-// timeoutSender is a request sender that adds a `timeout` to every request that passes this sender.
+// timeoutSender is a requestSender that adds a `timeout` to every request that passes this sender.
 type timeoutSender struct {
 	cfg TimeoutSettings
 }
 
-// send implements the requestSender interface
-func (ts *timeoutSender) send(req request) error {
+func (ts *timeoutSender) send(req internal.Request) error {
 	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
 	// updated because this deadline most likely is before the next one.
-	ctx := req.context()
+	ctx := req.Context()
 	if ts.cfg.Timeout > 0 {
 		var cancelFunc func()
-		ctx, cancelFunc = context.WithTimeout(req.context(), ts.cfg.Timeout)
+		ctx, cancelFunc = context.WithTimeout(req.Context(), ts.cfg.Timeout)
 		defer cancelFunc()
 	}
-	return req.export(ctx)
+	return req.Export(ctx)
 }

@@ -15,18 +15,18 @@
 package batchprocessor // import "go.opentelemetry.io/collector/processor/batchprocessor"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // splitLogs removes logrecords from the input data and returns a new data of the specified size.
-func splitLogs(size int, src pdata.Logs) pdata.Logs {
+func splitLogs(size int, src plog.Logs) plog.Logs {
 	if src.LogRecordCount() <= size {
 		return src
 	}
 	totalCopiedLogRecords := 0
-	dest := pdata.NewLogs()
+	dest := plog.NewLogs()
 
-	src.ResourceLogs().RemoveIf(func(srcRl pdata.ResourceLogs) bool {
+	src.ResourceLogs().RemoveIf(func(srcRl plog.ResourceLogs) bool {
 		// If we are done skip everything else.
 		if totalCopiedLogRecords == size {
 			return false
@@ -42,7 +42,7 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 
 		destRl := dest.ResourceLogs().AppendEmpty()
 		srcRl.Resource().CopyTo(destRl.Resource())
-		srcRl.InstrumentationLibraryLogs().RemoveIf(func(srcIll pdata.InstrumentationLibraryLogs) bool {
+		srcRl.ScopeLogs().RemoveIf(func(srcIll plog.ScopeLogs) bool {
 			// If we are done skip everything else.
 			if totalCopiedLogRecords == size {
 				return false
@@ -52,13 +52,13 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 			srcIllLRC := srcIll.LogRecords().Len()
 			if size >= srcIllLRC+totalCopiedLogRecords {
 				totalCopiedLogRecords += srcIllLRC
-				srcIll.MoveTo(destRl.InstrumentationLibraryLogs().AppendEmpty())
+				srcIll.MoveTo(destRl.ScopeLogs().AppendEmpty())
 				return true
 			}
 
-			destIll := destRl.InstrumentationLibraryLogs().AppendEmpty()
-			srcIll.InstrumentationLibrary().CopyTo(destIll.InstrumentationLibrary())
-			srcIll.LogRecords().RemoveIf(func(srcMetric pdata.LogRecord) bool {
+			destIll := destRl.ScopeLogs().AppendEmpty()
+			srcIll.Scope().CopyTo(destIll.Scope())
+			srcIll.LogRecords().RemoveIf(func(srcMetric plog.LogRecord) bool {
 				// If we are done skip everything else.
 				if totalCopiedLogRecords == size {
 					return false
@@ -69,16 +69,16 @@ func splitLogs(size int, src pdata.Logs) pdata.Logs {
 			})
 			return false
 		})
-		return srcRl.InstrumentationLibraryLogs().Len() == 0
+		return srcRl.ScopeLogs().Len() == 0
 	})
 
 	return dest
 }
 
-// resourceLRC calculates the total number of log records in the pdata.ResourceLogs.
-func resourceLRC(rs pdata.ResourceLogs) (count int) {
-	for k := 0; k < rs.InstrumentationLibraryLogs().Len(); k++ {
-		count += rs.InstrumentationLibraryLogs().At(k).LogRecords().Len()
+// resourceLRC calculates the total number of log records in the plog.ResourceLogs.
+func resourceLRC(rs plog.ResourceLogs) (count int) {
+	for k := 0; k < rs.ScopeLogs().Len(); k++ {
+		count += rs.ScopeLogs().At(k).LogRecords().Len()
 	}
 	return
 }

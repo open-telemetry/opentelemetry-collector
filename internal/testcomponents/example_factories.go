@@ -15,70 +15,21 @@
 package testcomponents // import "go.opentelemetry.io/collector/internal/testcomponents"
 
 import (
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/extension/zpagesextension"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/config"
 )
 
 // ExampleComponents registers example factories. This is only used by tests.
-func ExampleComponents() (
-	factories component.Factories,
-	err error,
-) {
-	if factories.Extensions, err = component.MakeExtensionFactoryMap(ExampleExtensionFactory); err != nil {
-		return
-	}
-
-	if factories.Receivers, err = component.MakeReceiverFactoryMap(ExampleReceiverFactory); err != nil {
-		return
-	}
-
-	if factories.Exporters, err = component.MakeExporterFactoryMap(ExampleExporterFactory); err != nil {
-		return
-	}
-
-	factories.Processors, err = component.MakeProcessorFactoryMap(ExampleProcessorFactory)
-
-	return
-}
-
-// Deprecated: [v0.46.0] use NewDefaultFactories instead.
-var DefaultFactories = NewDefaultFactories
-
-// NewDefaultFactories returns the set of components in "testdata/otelcol-config.yaml". This is only used by tests.
-func NewDefaultFactories() (component.Factories, error) {
-	var errs error
-
-	extensions, err := component.MakeExtensionFactoryMap(
-		zpagesextension.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	receivers, err := component.MakeReceiverFactoryMap(
-		otlpreceiver.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	processors, err := component.MakeProcessorFactoryMap(
-		batchprocessor.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	exporters, err := component.MakeExporterFactoryMap(
-		otlpexporter.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
-	factories := component.Factories{
-		Extensions: extensions,
-		Receivers:  receivers,
-		Processors: processors,
-		Exporters:  exporters,
-	}
-
-	return factories, errs
+func ExampleComponents() (component.Factories, error) {
+	return component.Factories{
+		Receivers: map[config.Type]component.ReceiverFactory{
+			ExampleReceiverFactory.Type(): ExampleReceiverFactory,
+		},
+		Processors: map[config.Type]component.ProcessorFactory{
+			ExampleProcessorFactory.Type(): ExampleProcessorFactory,
+		},
+		Exporters: map[config.Type]component.ExporterFactory{
+			ExampleExporterFactory.Type(): ExampleExporterFactory,
+		},
+	}, nil
 }

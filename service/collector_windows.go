@@ -19,28 +19,35 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"errors"
+	"flag"
 	"fmt"
 	"os"
-	"syscall"
 	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
+
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/converter/overwritepropertiesconverter"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
-type WindowsService struct {
+type windowsService struct {
 	settings CollectorSettings
 	col      *Collector
+	flags    *flag.FlagSet
 }
 
-func NewWindowsService(set CollectorSettings) *WindowsService {
-	return &WindowsService{settings: set}
+// NewSvcHandler constructs a new svc.Handler using the given CollectorSettings.
+func NewSvcHandler(set CollectorSettings) svc.Handler {
+	return &windowsService{settings: set, flags: flags()}
 }
 
 // Execute implements https://godoc.org/golang.org/x/sys/windows/svc#Handler
-func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	// The first argument supplied to service.Execute is the service name. If this is
 	// not provided for some reason, raise a relevant error to the system event log
 	if len(args) == 0 {
@@ -83,13 +90,16 @@ func (s *WindowsService) Execute(args []string, requests <-chan svc.ChangeReques
 	return false, 0
 }
 
-func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
+func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
 	// Parse all the flags manually.
-	if err := flags().Parse(os.Args[1:]); err != nil {
+	if err := s.flags.Parse(os.Args[1:]); err != nil {
+		return err
+	}
+	if err := featuregate.GetRegistry().Apply(gatesList); err != nil {
 		return err
 	}
 	var err error
-	s.col, err = newWithWindowsEventLogCore(s.settings, elog)
+	s.col, err = newWithWindowsEventLogCore(s.settings, s.flags, elog)
 	if err != nil {
 		return err
 	}
@@ -116,9 +126,8 @@ func (s *WindowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 	return <-colErrorChannel
 }
 
-func (s *WindowsService) stop(colErrorChannel chan error) error {
-	// simulate a SIGTERM signal to terminate the collector server
-	s.col.signalsChannel <- syscall.SIGTERM
+func (s *windowsService) stop(colErrorChannel chan error) error {
+	s.col.Shutdown()
 	// return the response of col.Start
 	return <-colErrorChannel
 }
@@ -132,13 +141,28 @@ func openEventLog(serviceName string) (*eventlog.Log, error) {
 	return elog, nil
 }
 
-func newWithWindowsEventLogCore(set CollectorSettings, elog *eventlog.Log) (*Collector, error) {
+func newWithWindowsEventLogCore(set CollectorSettings, flags *flag.FlagSet, elog *eventlog.Log) (*Collector, error) {
 	if set.ConfigProvider == nil {
-		set.ConfigProvider = MustNewDefaultConfigProvider(getConfigFlag(), getSetFlag())
+		var err error
+
+		configFlags := getConfigFlag(flags)
+		if len(configFlags) == 0 {
+			return nil, errors.New("at least one config flag must be provided")
+		}
+
+		cfgSet := newDefaultConfigProviderSettings(configFlags)
+		// Append the "overwrite properties converter" as the first converter.
+		cfgSet.ResolverSettings.Converters = append(
+			[]confmap.Converter{overwritepropertiesconverter.New(getSetFlag(flags))},
+			cfgSet.ResolverSettings.Converters...)
+		set.ConfigProvider, err = NewConfigProvider(cfgSet)
+		if err != nil {
+			return nil, err
+		}
 	}
 	set.LoggingOptions = append(
-		set.LoggingOptions,
-		zap.WrapCore(withWindowsCore(elog)),
+		[]zap.Option{zap.WrapCore(withWindowsCore(elog))},
+		set.LoggingOptions...,
 	)
 	return New(set)
 }

@@ -1,0 +1,13 @@
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  pipelines:
+    wrongdatatype:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

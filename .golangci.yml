@@ -38,6 +38,10 @@ run:
   # the dependency descriptions in go.mod.
   modules-download-mode: readonly
 
+  # Allow multiple parallel golangci-lint instances running.
+  # If false (default) - golangci-lint acquires file lock on start.
+  allow-parallel-runners: true
+
 # output configuration options
 output:
   # colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
@@ -95,9 +99,28 @@ linters-settings:
       - kilometre
       - kilometres
 
+  depguard:
+    list-type: denylist
+    include-go-root: true
+    packages-with-error-message:
+      # See https://github.com/open-telemetry/opentelemetry-collector/issues/5200 for rationale
+      - sync/atomic: "Use go.uber.org/atomic instead of sync/atomic"
+      - github.com/pkg/errors: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
+    # Add a different guard rule so that we can ignore tests.
+    additional-guards:
+      - list-type: denylist
+        include-go-root: true
+        packages-with-error-message:
+          - go.opentelemetry.io/proto: "Use go.opentelemetry.io/collector/pdata instead"
+        # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
+        ignore-file-rules:
+          - "**/*_test.go"
+
 linters:
   enable:
+    - depguard
     - errcheck
+    - errorlint
     - exportloopref
     - gocritic
     - gofmt
@@ -107,21 +130,22 @@ linters:
     - misspell
     - revive
     - staticcheck
+    - tenv
     - unconvert
+    - unused
     - unparam
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: otlp_test.go
-      linters:
-        # See https://github.com/golangci/golangci-lint/issues/537#issuecomment-545170007
-        - structcheck
     - text: "G404:"
       linters:
         - gosec
     - text: "G402:"
+      linters:
+        - gosec
+    # https://github.com/open-telemetry/opentelemetry-collector/issues/5699
+    - text: "G112:"
       linters:
         - gosec
 

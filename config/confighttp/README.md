@@ -67,10 +67,7 @@ will not be enabled.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
 
-[cors]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-[cors-headers]: https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header
-[cors-cache]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
-[origin]: https://developer.mozilla.org/en-US/docs/Glossary/Origin
+You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
 Example:
 
@@ -79,6 +76,7 @@ receivers:
   otlp:
     protocols:
       http:
+        include_metadata: true
         cors:
           allowed_origins:
             - https://foo.bar.com
@@ -87,4 +85,16 @@ receivers:
             - Example-Header
           max_age: 7200
         endpoint: 0.0.0.0:55690
+processors:
+  attributes:
+    actions:
+      - key: http.client_ip
+        from_context: X-Forwarded-For
+        action: upsert
 ```
+
+[cors]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+[cors-headers]: https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header
+[cors-cache]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
+[origin]: https://developer.mozilla.org/en-US/docs/Glossary/Origin
+[attribute-processor]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md

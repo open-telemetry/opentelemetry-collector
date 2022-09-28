@@ -19,7 +19,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"sync"
 
-	uatomic "go.uber.org/atomic"
+	"go.uber.org/atomic"
 )
 
 // boundedMemoryQueue implements a producer-consumer exchange similar to a ring buffer queue,
@@ -28,103 +28,63 @@ import (
 // channels, with a special Reaper goroutine that wakes up when the queue is full and consumers
 // the items from the top of the queue until its size drops back to maxSize
 type boundedMemoryQueue struct {
-	workers       int
-	stopWG        sync.WaitGroup
-	size          *uatomic.Uint32
-	capacity      *uatomic.Uint32
-	stopped       *uatomic.Uint32
-	items         *chan interface{}
-	onDroppedItem func(item interface{})
-	factory       func() consumer
-	stopCh        chan struct{}
+	stopWG   sync.WaitGroup
+	size     *atomic.Uint32
+	stopped  *atomic.Bool
+	items    chan Request
+	capacity uint32
 }
 
 // NewBoundedMemoryQueue constructs the new queue of specified capacity, and with an optional
 // callback for dropped items (e.g. useful to emit metrics).
-func NewBoundedMemoryQueue(capacity int, onDroppedItem func(item interface{})) ProducerConsumerQueue {
-	queue := make(chan interface{}, capacity)
+func NewBoundedMemoryQueue(capacity int) ProducerConsumerQueue {
 	return &boundedMemoryQueue{
-		onDroppedItem: onDroppedItem,
-		items:         &queue,
-		stopCh:        make(chan struct{}),
-		capacity:      uatomic.NewUint32(uint32(capacity)),
-		stopped:       uatomic.NewUint32(0),
-		size:          uatomic.NewUint32(0),
+		items:    make(chan Request, capacity),
+		stopped:  atomic.NewBool(false),
+		size:     atomic.NewUint32(0),
+		capacity: uint32(capacity),
 	}
 }
 
 // StartConsumers starts a given number of goroutines consuming items from the queue
 // and passing them into the consumer callback.
-func (q *boundedMemoryQueue) StartConsumers(num int, callback func(item interface{})) {
-	factory := func() consumer {
-		return consumerFunc(callback)
-	}
-	q.workers = num
-	q.factory = factory
+func (q *boundedMemoryQueue) StartConsumers(numWorkers int, callback func(item Request)) {
 	var startWG sync.WaitGroup
-	for i := 0; i < q.workers; i++ {
+	for i := 0; i < numWorkers; i++ {
 		q.stopWG.Add(1)
 		startWG.Add(1)
 		go func() {
 			startWG.Done()
 			defer q.stopWG.Done()
-			itemConsumer := q.factory()
-			queue := *q.items
-			for {
-				select {
-				case item, ok := <-queue:
-					if ok {
-						q.size.Sub(1)
-						itemConsumer.consume(item)
-					} else {
-						// channel closed, finish worker
-						return
-					}
-				case <-q.stopCh:
-					// the whole queue is closing, finish worker
-					return
-				}
+			for item := range q.items {
+				q.size.Sub(1)
+				callback(item)
 			}
 		}()
 	}
 	startWG.Wait()
 }
 
-// consumerFunc is an adapter to allow the use of
-// a consume function callback as a consumer.
-type consumerFunc func(item interface{})
-
-// Consume calls c(item)
-func (c consumerFunc) consume(item interface{}) {
-	c(item)
-}
-
 // Produce is used by the producer to submit new item to the queue. Returns false in case of queue overflow.
-func (q *boundedMemoryQueue) Produce(item interface{}) bool {
-	if q.stopped.Load() != 0 {
-		q.onDroppedItem(item)
+func (q *boundedMemoryQueue) Produce(item Request) bool {
+	if q.stopped.Load() {
 		return false
 	}
 
 	// we might have two concurrent backing queues at the moment
 	// their combined size is stored in q.size, and their combined capacity
 	// should match the capacity of the new queue
-	if q.Size() >= q.Capacity() {
-		// note that all items will be dropped if the capacity is 0
-		q.onDroppedItem(item)
+	if q.size.Load() >= q.capacity {
 		return false
 	}
 
 	q.size.Add(1)
 	select {
-	case *q.items <- item:
+	case q.items <- item:
 		return true
 	default:
 		// should not happen, as overflows should have been captured earlier
 		q.size.Sub(1)
-		if q.onDroppedItem != nil {
-			q.onDroppedItem(item)
-		}
 		return false
 	}
 }
@@ -132,18 +92,12 @@ func (q *boundedMemoryQueue) Produce(item interface{}) bool {
 // Stop stops all consumers, as well as the length reporter if started,
 // and releases the items channel. It blocks until all consumers have stopped.
 func (q *boundedMemoryQueue) Stop() {
-	q.stopped.Store(1) // disable producer
-	close(q.stopCh)
+	q.stopped.Store(true) // disable producer
+	close(q.items)
 	q.stopWG.Wait()
-	close(*q.items)
 }
 
 // Size returns the current size of the queue
 func (q *boundedMemoryQueue) Size() int {
 	return int(q.size.Load())
-}
-
-// Capacity returns capacity of the queue
-func (q *boundedMemoryQueue) Capacity() int {
-	return int(q.capacity.Load())
 }

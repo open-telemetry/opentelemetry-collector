@@ -16,29 +16,29 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/otlptext"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/otlptext"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type loggingExporter struct {
+	logLevel         zapcore.Level
 	logger           *zap.Logger
-	logsMarshaler    pdata.LogsMarshaler
-	metricsMarshaler pdata.MetricsMarshaler
-	tracesMarshaler  pdata.TracesMarshaler
+	logsMarshaler    plog.Marshaler
+	metricsMarshaler pmetric.Marshaler
+	tracesMarshaler  ptrace.Marshaler
 }
 
-func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
+func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
-	if !s.logger.Core().Enabled(zapcore.DebugLevel) {
+	if s.logLevel != zapcore.DebugLevel {
 		return nil
 	}
 
@@ -46,14 +46,14 @@ func (s *loggingExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 	if err != nil {
 		return err
 	}
-	s.logger.Debug(string(buf))
+	s.logger.Info(string(buf))
 	return nil
 }
 
-func (s *loggingExporter) pushMetrics(_ context.Context, md pdata.Metrics) error {
+func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
 
-	if !s.logger.Core().Enabled(zapcore.DebugLevel) {
+	if s.logLevel != zapcore.DebugLevel {
 		return nil
 	}
 
@@ -61,14 +61,14 @@ func (s *loggingExporter) pushMetrics(_ context.Context, md pdata.Metrics) error
 	if err != nil {
 		return err
 	}
-	s.logger.Debug(string(buf))
+	s.logger.Info(string(buf))
 	return nil
 }
 
-func (s *loggingExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
+func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
 
-	if !s.logger.Core().Enabled(zapcore.DebugLevel) {
+	if s.logLevel != zapcore.DebugLevel {
 		return nil
 	}
 
@@ -76,12 +76,13 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld pdata.Logs) error {
 	if err != nil {
 		return err
 	}
-	s.logger.Debug(string(buf))
+	s.logger.Info(string(buf))
 	return nil
 }
 
-func newLoggingExporter(logger *zap.Logger) *loggingExporter {
+func newLoggingExporter(logger *zap.Logger, logLevel zapcore.Level) *loggingExporter {
 	return &loggingExporter{
+		logLevel:         logLevel,
 		logger:           logger,
 		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
 		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),
@@ -89,63 +90,13 @@ func newLoggingExporter(logger *zap.Logger) *loggingExporter {
 	}
 }
 
-// newTracesExporter creates an exporter.TracesExporter that just drops the
-// received data and logs debugging messages.
-func newTracesExporter(config config.Exporter, logger *zap.Logger, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-	s := newLoggingExporter(logger)
-	return exporterhelper.NewTracesExporter(
-		config,
-		set,
-		s.pushTraces,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(logger)),
-	)
-}
-
-// newMetricsExporter creates an exporter.MetricsExporter that just drops the
-// received data and logs debugging messages.
-func newMetricsExporter(config config.Exporter, logger *zap.Logger, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
-	s := newLoggingExporter(logger)
-	return exporterhelper.NewMetricsExporter(
-		config,
-		set,
-		s.pushMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(logger)),
-	)
-}
-
-// newLogsExporter creates an exporter.LogsExporter that just drops the
-// received data and logs debugging messages.
-func newLogsExporter(config config.Exporter, logger *zap.Logger, set component.ExporterCreateSettings) (component.LogsExporter, error) {
-	s := newLoggingExporter(logger)
-	return exporterhelper.NewLogsExporter(
-		config,
-		set,
-		s.pushLogs,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// Disable Timeout/RetryOnFailure and SendingQueue
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
-		exporterhelper.WithShutdown(loggerSync(logger)),
-	)
-}
-
 func loggerSync(logger *zap.Logger) func(context.Context) error {
 	return func(context.Context) error {
 		// Currently Sync() return a different error depending on the OS.
 		// Since these are not actionable ignore them.
 		err := logger.Sync()
-		if osErr, ok := err.(*os.PathError); ok {
+		osErr := &os.PathError{}
+		if errors.As(err, &osErr) {
 			wrappedErr := osErr.Unwrap()
 			if knownSyncError(wrappedErr) {
 				err = nil

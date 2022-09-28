@@ -21,16 +21,14 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // ProcessTracesFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
 // If error is returned then returned data are ignored. It MUST not call the next component.
-type ProcessTracesFunc func(context.Context, pdata.Traces) (pdata.Traces, error)
+type ProcessTracesFunc func(context.Context, ptrace.Traces) (ptrace.Traces, error)
 
 type tracesProcessor struct {
 	component.StartFunc
@@ -38,25 +36,27 @@ type tracesProcessor struct {
 	consumer.Traces
 }
 
-// NewTracesProcessor creates a TracesProcessor that ensure context propagation and the right tags are set.
-// TODO: Add observability metrics support
+// NewTracesProcessor creates a component.TracesProcessor that ensure context propagation and the right tags are set.
 func NewTracesProcessor(
+	_ context.Context,
+	_ component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 	tracesFunc ProcessTracesFunc,
 	options ...Option,
 ) (component.TracesProcessor, error) {
+	// TODO: Add observability Traces support
 	if tracesFunc == nil {
 		return nil, errors.New("nil tracesFunc")
 	}
 
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	eventOptions := spanAttributes(cfg.ID())
 	bs := fromOptions(options)
-	traceConsumer, err := consumerhelper.NewTraces(func(ctx context.Context, td pdata.Traces) error {
+	traceConsumer, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		var err error

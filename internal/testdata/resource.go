@@ -14,14 +14,8 @@
 
 package testdata
 
-import (
-	"go.opentelemetry.io/collector/model/pdata"
-)
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
-func initResource1(r pdata.Resource) {
+func initResource(r pcommon.Resource) {
 	initResourceAttributes1(r.Attributes())
-}
-
-func initResource2(r pdata.Resource) {
-	initResourceAttributes2(r.Attributes())
 }

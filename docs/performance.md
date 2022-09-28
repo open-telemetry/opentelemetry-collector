@@ -22,7 +22,7 @@ on a variety of factors including:
 
 Testing was completed on Linux using the [Synthetic Load Generator
 utility](https://github.com/Omnition/synthetic-load-generator) running for a
-minimum of one hour (i.e. sustained rate). You can be reproduce these results in
+minimum of one hour (i.e. sustained rate). You can reproduce these results in
 your own environment using the parameters described in this document. It is
 important to note that this utility has a few configurable parameters which can
 impact the results of the tests. The parameters used are defined below.

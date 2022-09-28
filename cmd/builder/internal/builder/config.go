@@ -17,15 +17,16 @@ package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/bu
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.46.0"
+const defaultOtelColVersion = "0.61.0"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
@@ -34,6 +35,7 @@ var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 type Config struct {
 	Logger          *zap.Logger
 	SkipCompilation bool `mapstructure:"-"`
+	SkipGetModules  bool `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
@@ -53,6 +55,7 @@ type Distribution struct {
 	OtelColVersion string `mapstructure:"otelcol_version"`
 	OutputPath     string `mapstructure:"output_path"`
 	Version        string `mapstructure:"version"`
+	BuildTags      string `mapstructure:"build_tags"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
@@ -63,9 +66,6 @@ type Module struct {
 	Path   string `mapstructure:"path"`   // an optional path to the local version of this module
 }
 
-// Deprecated: [v0.46.0] Use NewDefaultConfig instead
-var DefaultConfig = NewDefaultConfig
-
 // NewDefaultConfig creates a new config, with default values
 func NewDefaultConfig() Config {
 	log, err := zap.NewDevelopment()
@@ -73,7 +73,7 @@ func NewDefaultConfig() Config {
 		panic(fmt.Sprintf("failed to obtain a logger instance: %v", err))
 	}
 
-	outputDir, err := ioutil.TempDir("", "otelcol-distribution")
+	outputDir, err := os.MkdirTemp("", "otelcol-distribution")
 	if err != nil {
 		log.Error("failed to obtain a temporary directory", zap.Error(err))
 	}
@@ -90,18 +90,20 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	// #nosec G204
-	if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
-		path, err := exec.LookPath("go")
-		if err != nil {
-			return ErrGoNotFound
+	if !c.SkipCompilation || !c.SkipGetModules {
+		// #nosec G204
+		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
+			path, err := exec.LookPath("go")
+			if err != nil {
+				return ErrGoNotFound
+			}
+			c.Distribution.Go = path
 		}
-		c.Distribution.Go = path
+
+		c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
 	}
 
-	c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
-
-	return nil
+	return multierr.Combine(validateModules(c.Extensions), validateModules(c.Receivers), validateModules(c.Exporters), validateModules(c.Processors))
 }
 
 // ParseModules will parse the Modules entries and populate the missing values
@@ -131,13 +133,18 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
+func validateModules(mods []Module) error {
+	for _, mod := range mods {
+		if mod.GoMod == "" {
+			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
+		}
+	}
+	return nil
+}
+
 func parseModules(mods []Module) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
-		if mod.GoMod == "" {
-			return mods, fmt.Errorf("%w, module: %q", ErrInvalidGoMod, mod.GoMod)
-		}
-
 		if mod.Import == "" {
 			mod.Import = strings.Split(mod.GoMod, " ")[0]
 		}
@@ -147,13 +154,13 @@ func parseModules(mods []Module) ([]Module, error) {
 			mod.Name = parts[len(parts)-1]
 		}
 
-		if strings.HasPrefix(mod.Path, "./") {
-			path, err := os.Getwd()
+		// Check if path is empty, otherwise filepath.Abs replaces it with current path ".".
+		if mod.Path != "" {
+			var err error
+			mod.Path, err = filepath.Abs(mod.Path)
 			if err != nil {
-				return mods, fmt.Errorf("module has a relative Path element, but we couldn't get the current working dir: %v", err)
+				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
 			}
-
-			mod.Path = fmt.Sprintf("%s/%s", path, mod.Path[2:])
 		}
 
 		parsedModules = append(parsedModules, mod)

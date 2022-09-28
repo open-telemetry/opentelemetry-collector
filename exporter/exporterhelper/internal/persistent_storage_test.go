@@ -12,17 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build enable_unstable
-// +build enable_unstable
-
 package internal
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"reflect"
 	"sync"
 	"testing"
@@ -34,8 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func createStorageExtension(_ string) storage.Extension {
@@ -60,28 +54,20 @@ func createTestPersistentStorage(client storage.Client) *persistentContiguousSto
 	return createTestPersistentStorageWithLoggingAndCapacity(client, logger, 1000)
 }
 
-func createTemporaryDirectory() string {
-	directory, err := ioutil.TempDir("", "persistent-test")
-	if err != nil {
-		panic(err)
-	}
-	return directory
-}
-
 type fakeTracesRequest struct {
-	td                         pdata.Traces
+	td                         ptrace.Traces
 	processingFinishedCallback func()
-	PersistentRequest
+	Request
 }
 
-func newFakeTracesRequest(td pdata.Traces) *fakeTracesRequest {
+func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
 	return &fakeTracesRequest{
 		td: td,
 	}
 }
 
 func (fd *fakeTracesRequest) Marshal() ([]byte, error) {
-	return otlp.NewProtobufTracesMarshaler().MarshalTraces(fd.td)
+	return ptrace.NewProtoMarshaler().MarshalTraces(fd.td)
 }
 
 func (fd *fakeTracesRequest) OnProcessingFinished() {
@@ -95,8 +81,8 @@ func (fd *fakeTracesRequest) SetOnProcessingFinished(callback func()) {
 }
 
 func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
-	return func(bytes []byte) (PersistentRequest, error) {
-		traces, err := otlp.NewProtobufTracesUnmarshaler().UnmarshalTraces(bytes)
+	return func(bytes []byte) (Request, error) {
+		traces, err := ptrace.NewProtoUnmarshaler().UnmarshalTraces(bytes)
 		if err != nil {
 			return nil, err
 		}
@@ -105,8 +91,7 @@ func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
 }
 
 func TestPersistentStorage_CorruptedData(t *testing.T) {
-	path := createTemporaryDirectory()
-	defer os.RemoveAll(path)
+	path := t.TempDir()
 
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
@@ -222,8 +207,7 @@ func TestPersistentStorage_CorruptedData(t *testing.T) {
 }
 
 func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
-	path := createTemporaryDirectory()
-	defer os.RemoveAll(path)
+	path := t.TempDir()
 
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
@@ -287,8 +271,7 @@ func TestPersistentStorage_CurrentlyProcessedItems(t *testing.T) {
 }
 
 func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
-	path := createTemporaryDirectory()
-	defer os.RemoveAll(path)
+	path := t.TempDir()
 
 	traces := newTraces(5, 10)
 	req := newFakeTracesRequest(traces)
@@ -337,8 +320,7 @@ func TestPersistentStorage_RepeatPutCloseReadClose(t *testing.T) {
 }
 
 func TestPersistentStorage_EmptyRequest(t *testing.T) {
-	path := createTemporaryDirectory()
-	defer os.RemoveAll(path)
+	path := t.TempDir()
 
 	ext := createStorageExtension(path)
 	client := createTestClient(ext)
@@ -376,8 +358,7 @@ func BenchmarkPersistentStorage_TraceSpans(b *testing.B) {
 
 	for _, c := range cases {
 		b.Run(fmt.Sprintf("#traces: %d #spansPerTrace: %d", c.numTraces, c.numSpansPerTrace), func(bb *testing.B) {
-			path := createTemporaryDirectory()
-			defer os.RemoveAll(path)
+			path := bb.TempDir()
 			ext := createStorageExtension(path)
 			client := createTestClient(ext)
 			ps := createTestPersistentStorageWithLoggingAndCapacity(client, zap.NewNop(), 10000000)
@@ -435,8 +416,22 @@ func TestPersistentStorage_ItemIndexMarshaling(t *testing.T) {
 	}
 }
 
-func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) PersistentRequest {
-	var readReq PersistentRequest
+func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
+	path := t.TempDir()
+
+	ext := createStorageExtension(path)
+	client := createTestClient(ext)
+	ps := createTestPersistentStorage(client)
+
+	ps.stop()
+
+	castedClient, ok := client.(*mockStorageClient)
+	require.True(t, ok, "expected client to be mockStorageClient")
+	require.Equal(t, uint64(1), castedClient.getCloseCount())
+}
+
+func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) Request {
+	var readReq Request
 	require.Eventually(t, func() bool {
 		readReq = <-pcs.get()
 		return true
@@ -477,8 +472,9 @@ func newMockStorageClient() storage.Client {
 }
 
 type mockStorageClient struct {
-	st  map[string][]byte
-	mux sync.Mutex
+	st           map[string][]byte
+	mux          sync.Mutex
+	closeCounter uint64
 }
 
 func (m *mockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
@@ -510,6 +506,7 @@ func (m *mockStorageClient) Delete(_ context.Context, s string) error {
 }
 
 func (m *mockStorageClient) Close(_ context.Context) error {
+	m.closeCounter++
 	return nil
 }
 
@@ -531,4 +528,8 @@ func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) e
 	}
 
 	return nil
+}
+
+func (m *mockStorageClient) getCloseCount() uint64 {
+	return m.closeCounter
 }

@@ -16,7 +16,6 @@ package consumererror
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,8 +25,8 @@ import (
 )
 
 func TestTraces(t *testing.T) {
-	td := testdata.GenerateTracesOneSpan()
-	err := fmt.Errorf("some error")
+	td := testdata.GenerateTraces(1)
+	err := errors.New("some error")
 	traceErr := NewTraces(err, td)
 	assert.Equal(t, err.Error(), traceErr.Error())
 	var target Traces
@@ -38,7 +37,7 @@ func TestTraces(t *testing.T) {
 }
 
 func TestTraces_Unwrap(t *testing.T) {
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 	var err error = testErrorType{"some error"}
 	// Wrapping err with error Traces.
 	traceErr := NewTraces(err, td)
@@ -50,8 +49,8 @@ func TestTraces_Unwrap(t *testing.T) {
 }
 
 func TestLogs(t *testing.T) {
-	td := testdata.GenerateLogsOneLogRecord()
-	err := fmt.Errorf("some error")
+	td := testdata.GenerateLogs(1)
+	err := errors.New("some error")
 	logsErr := NewLogs(err, td)
 	assert.Equal(t, err.Error(), logsErr.Error())
 	var target Logs
@@ -62,7 +61,7 @@ func TestLogs(t *testing.T) {
 }
 
 func TestLogs_Unwrap(t *testing.T) {
-	td := testdata.GenerateLogsOneLogRecord()
+	td := testdata.GenerateLogs(1)
 	var err error = testErrorType{"some error"}
 	// Wrapping err with error Logs.
 	logsErr := NewLogs(err, td)
@@ -74,8 +73,8 @@ func TestLogs_Unwrap(t *testing.T) {
 }
 
 func TestMetrics(t *testing.T) {
-	td := testdata.GenerateMetricsOneMetric()
-	err := fmt.Errorf("some error")
+	td := testdata.GenerateMetrics(1)
+	err := errors.New("some error")
 	metricErr := NewMetrics(err, td)
 	assert.Equal(t, err.Error(), metricErr.Error())
 	var target Metrics
@@ -86,7 +85,7 @@ func TestMetrics(t *testing.T) {
 }
 
 func TestMetrics_Unwrap(t *testing.T) {
-	td := testdata.GenerateMetricsOneMetric()
+	td := testdata.GenerateMetrics(1)
 	var err error = testErrorType{"some error"}
 	// Wrapping err with error Metrics.
 	metricErr := NewMetrics(err, td)

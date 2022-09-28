@@ -1,18 +1,3 @@
-receivers:
-  otlp:
-    protocols:
-      grpc:
-      htttp:
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    traces:
-     receivers: [otlp]
-     processors: [nop]
-     exporters: [nop]
+protocols:
+  grpc:
+  htttp:

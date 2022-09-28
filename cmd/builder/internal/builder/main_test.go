@@ -15,46 +15,47 @@
 package builder
 
 import (
-	"io/ioutil"
-	"log"
-	"os"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateDefault(t *testing.T) {
-	require.NoError(t, Generate(DefaultConfig()))
+	require.NoError(t, Generate(NewDefaultConfig()))
 }
 
 func TestGenerateInvalidCollectorVersion(t *testing.T) {
-	cfg := DefaultConfig()
+	cfg := NewDefaultConfig()
 	cfg.Distribution.OtelColVersion = "invalid"
 	err := Generate(cfg)
 	require.NoError(t, err)
 }
 
 func TestGenerateInvalidOutputPath(t *testing.T) {
-	cfg := DefaultConfig()
-	cfg.Distribution.OutputPath = "/invalid"
+	cfg := NewDefaultConfig()
+	cfg.Distribution.OutputPath = "/:invalid"
 	err := Generate(cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create output path")
 }
 
 func TestGenerateAndCompileDefault(t *testing.T) {
-	dir, err := ioutil.TempDir("/tmp", "default")
-	if err != nil {
-		log.Fatal(err)
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping the test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/5403")
 	}
-	defer os.RemoveAll(dir)
-	cfg := DefaultConfig()
-	cfg.Distribution.OutputPath = dir
+	cfg := NewDefaultConfig()
+	cfg.Distribution.OutputPath = t.TempDir()
 
 	// we override this version, otherwise this would break during releases
-	cfg.Distribution.OtelColVersion = "0.38.0"
+	cfg.Distribution.OtelColVersion = "0.52.0"
 
 	assert.NoError(t, cfg.Validate())
 	require.NoError(t, GenerateAndCompile(cfg))
+
+	// Sleep for 1 second to make sure all processes using the files are completed
+	// (on Windows fail to delete temp dir otherwise).
+	time.Sleep(1 * time.Second)
 }

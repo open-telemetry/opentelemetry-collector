@@ -20,13 +20,13 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // NewTraces wraps multiple trace consumers in a single one.
 // It fanouts the incoming data to all the consumers, and does smart routing:
-//  * Clones only to the consumer that needs to mutate the data.
-//  * If all consumers needs to mutate the data one will get the original data.
+//   - Clones only to the consumer that needs to mutate the data.
+//   - If all consumers needs to mutate the data one will get the original data.
 func NewTraces(tcs []consumer.Traces) consumer.Traces {
 	if len(tcs) == 1 {
 		// Don't wrap if no need to do it.
@@ -62,8 +62,8 @@ func (tsc *tracesConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-// ConsumeTraces exports the pdata.Traces to all consumers wrapped by the current one.
-func (tsc *tracesConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+// ConsumeTraces exports the ptrace.Traces to all consumers wrapped by the current one.
+func (tsc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 	// Initially pass to clone exporter to avoid the case where the optimization of sending
 	// the incoming data to a mutating consumer is used that may change the incoming data before

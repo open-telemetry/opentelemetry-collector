@@ -22,13 +22,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestTracesSink(t *testing.T) {
 	sink := new(TracesSink)
-	td := testdata.GenerateTracesOneSpan()
-	want := make([]pdata.Traces, 0, 7)
+	td := testdata.GenerateTraces(1)
+	want := make([]ptrace.Traces, 0, 7)
 	for i := 0; i < 7; i++ {
 		require.NoError(t, sink.ConsumeTraces(context.Background(), td))
 		want = append(want, td)
@@ -42,8 +44,8 @@ func TestTracesSink(t *testing.T) {
 
 func TestMetricsSink(t *testing.T) {
 	sink := new(MetricsSink)
-	md := testdata.GenerateMetricsOneMetric()
-	want := make([]pdata.Metrics, 0, 7)
+	md := testdata.GenerateMetrics(1)
+	want := make([]pmetric.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
 		require.NoError(t, sink.ConsumeMetrics(context.Background(), md))
 		want = append(want, md)
@@ -57,8 +59,8 @@ func TestMetricsSink(t *testing.T) {
 
 func TestLogsSink(t *testing.T) {
 	sink := new(LogsSink)
-	md := testdata.GenerateLogsOneLogRecord()
-	want := make([]pdata.Logs, 0, 7)
+	md := testdata.GenerateLogs(1)
+	want := make([]plog.Logs, 0, 7)
 	for i := 0; i < 7; i++ {
 		require.NoError(t, sink.ConsumeLogs(context.Background(), md))
 		want = append(want, md)

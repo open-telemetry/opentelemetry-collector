@@ -1,0 +1,20 @@
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+extensions:
+  nop:
+service:
+  extensions:
+    - nop
+  pipelines:
+    traces:
+      receivers:
+        - nop
+      processors:
+        - nop
+      exporters:
+        - nop
+      unknown_section: 1

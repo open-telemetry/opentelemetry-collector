@@ -52,11 +52,11 @@ type ExtensionCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// ExtensionDefaultConfigFunc is the equivalent of component.ExtensionFactory.CreateDefaultConfig()
-type ExtensionDefaultConfigFunc func() config.Extension
+// ExtensionCreateDefaultConfigFunc is the equivalent of component.ExtensionFactory.CreateDefaultConfig()
+type ExtensionCreateDefaultConfigFunc func() config.Extension
 
 // CreateDefaultConfig implements ExtensionFactory.CreateDefaultConfig()
-func (f ExtensionDefaultConfigFunc) CreateDefaultConfig() config.Extension {
+func (f ExtensionCreateDefaultConfigFunc) CreateDefaultConfig() config.Extension {
 	return f()
 }
 
@@ -83,21 +83,32 @@ type ExtensionFactory interface {
 
 	// CreateExtension creates an extension based on the given config.
 	CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg config.Extension) (Extension, error)
+
+	// ExtensionStability gets the stability level of the Extension.
+	ExtensionStability() StabilityLevel
 }
 
 type extensionFactory struct {
 	baseFactory
-	ExtensionDefaultConfigFunc
+	ExtensionCreateDefaultConfigFunc
 	CreateExtensionFunc
+	extensionStability StabilityLevel
 }
 
+func (ef *extensionFactory) ExtensionStability() StabilityLevel {
+	return ef.extensionStability
+}
+
+// NewExtensionFactory returns a new ExtensionFactory  based on this configuration.
 func NewExtensionFactory(
 	cfgType config.Type,
-	createDefaultConfig ExtensionDefaultConfigFunc,
-	createServiceExtension CreateExtensionFunc) ExtensionFactory {
+	createDefaultConfig ExtensionCreateDefaultConfigFunc,
+	createServiceExtension CreateExtensionFunc,
+	sl StabilityLevel) ExtensionFactory {
 	return &extensionFactory{
-		baseFactory:                baseFactory{cfgType: cfgType},
-		ExtensionDefaultConfigFunc: createDefaultConfig,
-		CreateExtensionFunc:        createServiceExtension,
+		baseFactory:                      baseFactory{cfgType: cfgType},
+		ExtensionCreateDefaultConfigFunc: createDefaultConfig,
+		CreateExtensionFunc:              createServiceExtension,
+		extensionStability:               sl,
 	}
 }

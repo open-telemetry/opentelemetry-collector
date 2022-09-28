@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build enable_unstable
-// +build enable_unstable
-
 package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -33,35 +32,37 @@ type persistentQueue struct {
 	stopOnce   sync.Once
 	stopChan   chan struct{}
 	numWorkers int
-	storage    persistentStorage
+	storage    *persistentContiguousStorage
 }
 
-// NewPersistentQueue creates a new queue backed by file storage; name parameter must be a unique value that identifies the queue
-func NewPersistentQueue(ctx context.Context, name string, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
+// buildPersistentStorageName returns a name that is constructed out of queue name and signal type. This is done
+// to avoid conflicts between different signals, which require unique persistent storage name
+func buildPersistentStorageName(name string, signal config.DataType) string {
+	return fmt.Sprintf("%s-%s", name, signal)
+}
+
+// NewPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
+func NewPersistentQueue(ctx context.Context, name string, signal config.DataType, capacity int, logger *zap.Logger, client storage.Client, unmarshaler RequestUnmarshaler) ProducerConsumerQueue {
 	return &persistentQueue{
 		logger:   logger,
 		stopChan: make(chan struct{}),
-		storage:  newPersistentContiguousStorage(ctx, name, uint64(capacity), logger, client, unmarshaler),
+		storage:  newPersistentContiguousStorage(ctx, buildPersistentStorageName(name, signal), uint64(capacity), logger, client, unmarshaler),
 	}
 }
 
 // StartConsumers starts the given number of consumers which will be consuming items
-func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{})) {
-	factory := func() consumer {
-		return consumerFunc(callback)
-	}
+func (pq *persistentQueue) StartConsumers(num int, callback func(item Request)) {
 	pq.numWorkers = num
 
 	for i := 0; i < pq.numWorkers; i++ {
 		pq.stopWG.Add(1)
 		go func() {
 			defer pq.stopWG.Done()
-			itemConsumer := factory()
 
 			for {
 				select {
 				case req := <-pq.storage.get():
-					itemConsumer.consume(req)
+					callback(req)
 				case <-pq.stopChan:
 					return
 				}
@@ -71,8 +72,8 @@ func (pq *persistentQueue) StartConsumers(num int, callback func(item interface{
 }
 
 // Produce adds an item to the queue and returns true if it was accepted
-func (pq *persistentQueue) Produce(item interface{}) bool {
-	err := pq.storage.put(item.(PersistentRequest))
+func (pq *persistentQueue) Produce(item Request) bool {
+	err := pq.storage.put(item)
 	return err == nil
 }
 
@@ -88,10 +89,4 @@ func (pq *persistentQueue) Stop() {
 // Size returns the current depth of the queue, excluding the item already in the storage channel (if any)
 func (pq *persistentQueue) Size() int {
 	return int(pq.storage.size())
-}
-
-// Capacity returns the current capacity of persistent queue.
-// Currently, it is unlimited but in the future it can take into account available storage space or configured limits
-func (pq *persistentQueue) Capacity() int {
-	return pq.Size() + 1
 }

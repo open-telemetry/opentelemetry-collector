@@ -1,0 +1,21 @@
+receivers:
+  nop:
+processors:
+  nop:
+    unknown_section:
+      a_num: 2
+exporters:
+  nop:
+extensions:
+  nop:
+service:
+  extensions:
+    - examapleextension
+  pipelines:
+    traces:
+      receivers:
+        - nop
+      processors:
+        - nop
+      exporters:
+        - nop

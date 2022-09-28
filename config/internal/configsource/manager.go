@@ -25,10 +25,10 @@ import (
 
 	"github.com/spf13/cast"
 	"go.uber.org/multierr"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 const (
@@ -64,17 +64,17 @@ type (
 // The current syntax to reference a config source in a YAML is provisional. Currently
 // single-line:
 //
-//    param_to_be_retrieved: $<cfgSrcName>:<selector>[?<params_url_query_format>]
+//	param_to_be_retrieved: $<cfgSrcName>:<selector>[?<params_url_query_format>]
 //
 // bracketed single-line:
 //
-//    param_to_be_retrieved: ${<cfgSrcName>:<selector>[?<params_url_query_format>]}
+//	param_to_be_retrieved: ${<cfgSrcName>:<selector>[?<params_url_query_format>]}
 //
 // and multi-line are supported:
 //
-//    param_to_be_retrieved: |
-//      $<cfgSrcName>: <selector>
-//      [<params_multi_line_YAML>]
+//	param_to_be_retrieved: |
+//	  $<cfgSrcName>: <selector>
+//	  [<params_multi_line_YAML>]
 //
 // The <cfgSrcName> is a name string used to identify the config source instance to be used
 // to retrieve the value.
@@ -88,16 +88,18 @@ type (
 // Hypothetical example in a YAML file:
 //
 // component:
-//   config_field: $file:/etc/secret.bin?binary=true
+//
+//	config_field: $file:/etc/secret.bin?binary=true
 //
 // For multi-line format <params_multi_line_YAML> uses syntax as a YAML inside YAML. Possible usage
 // example in a YAML file:
 //
 // component:
-//   config_field: |
-//     $yamltemplate: /etc/log_template.yaml
-//     logs_path: /var/logs/
-//     timeout: 10s
+//
+//	config_field: |
+//	  $yamltemplate: /etc/log_template.yaml
+//	  logs_path: /var/logs/
+//	  timeout: 10s
 //
 // Not all config sources need these optional parameters, they are used to provide extra control when
 // retrieving and data to be injected into the configuration.
@@ -105,33 +107,33 @@ type (
 // Assuming a config source named "env" that retrieve environment variables and one named "file" that
 // retrieves contents from individual files, here are some examples:
 //
-//    component:
-//      # Retrieves the value of the environment variable LOGS_DIR.
-//      logs_dir: $env:LOGS_DIR
+//	component:
+//	  # Retrieves the value of the environment variable LOGS_DIR.
+//	  logs_dir: $env:LOGS_DIR
 //
-//      # Retrieves the value from the file /etc/secret.bin and injects its contents as a []byte.
-//      bytes_from_file: $file:/etc/secret.bin?binary=true
+//	  # Retrieves the value from the file /etc/secret.bin and injects its contents as a []byte.
+//	  bytes_from_file: $file:/etc/secret.bin?binary=true
 //
-//      # Retrieves the value from the file /etc/text.txt and injects its contents as a string.
-//      # Hypothetically the "file" config source by default tries to inject the file contents
-//      # as a string if params doesn't specify that "binary" is true.
-//      text_from_file: $file:/etc/text.txt
+//	  # Retrieves the value from the file /etc/text.txt and injects its contents as a string.
+//	  # Hypothetically the "file" config source by default tries to inject the file contents
+//	  # as a string if params doesn't specify that "binary" is true.
+//	  text_from_file: $file:/etc/text.txt
 //
 // Bracketed single-line should be used when concatenating a suffix to the value retrieved by
 // the config source. Example:
 //
-//    component:
-//      # Retrieves the value of the environment variable LOGS_DIR and appends /component.log to it.
-//      log_file_fullname: ${env:LOGS_DIR}/component.log
+//	component:
+//	  # Retrieves the value of the environment variable LOGS_DIR and appends /component.log to it.
+//	  log_file_fullname: ${env:LOGS_DIR}/component.log
 //
 // Environment variables are expanded before passed to the config source when used in the selector or
 // the optional parameters. Example:
 //
-//    component:
-//      # Retrieves the value from the file text.txt located on the path specified by the environment
-//      # variable DATA_PATH. The name of the environment variable is the string after the delimiter
-//      # until the first character different than '_' and non-alpha-numeric.
-//      text_from_file: $file:$DATA_PATH/text.txt
+//	component:
+//	  # Retrieves the value from the file text.txt located on the path specified by the environment
+//	  # variable DATA_PATH. The name of the environment variable is the string after the delimiter
+//	  # until the first character different than '_' and non-alpha-numeric.
+//	  text_from_file: $file:$DATA_PATH/text.txt
 //
 // Since environment variables and config sources both use the '$', with or without brackets, as a prefix
 // for their expansion it is necessary to have a way to distinguish between them. For the non-bracketed
@@ -139,21 +141,21 @@ type (
 // that character is a ':' it will treat it as a config source and as environment variable otherwise.
 // For example:
 //
-//    component:
-//      field_0: $PATH:/etc/logs # Injects the data from a config sourced named "PATH" using the selector "/etc/logs".
-//      field_1: $PATH/etc/logs  # Expands the environment variable "PATH" and adds the suffix "/etc/logs" to it.
+//	component:
+//	  field_0: $PATH:/etc/logs # Injects the data from a config sourced named "PATH" using the selector "/etc/logs".
+//	  field_1: $PATH/etc/logs  # Expands the environment variable "PATH" and adds the suffix "/etc/logs" to it.
 //
 // So if you need to include an environment followed by ':' the bracketed syntax must be used instead:
 //
-//    component:
-//      field_0: ${PATH}:/etc/logs # Expands the environment variable "PATH" and adds the suffix ":/etc/logs" to it.
+//	component:
+//	  field_0: ${PATH}:/etc/logs # Expands the environment variable "PATH" and adds the suffix ":/etc/logs" to it.
 //
 // For the bracketed syntax the presence of ':' inside the brackets indicates that code will treat the bracketed
 // contents as a config source. For example:
 //
-//    component:
-//      field_0: ${file:/var/secret.txt} # Injects the data from a config sourced named "file" using the selector "/var/secret.txt".
-//      field_1: ${file}:/var/secret.txt # Expands the environment variable "file" and adds the suffix ":/var/secret.txt" to it.
+//	component:
+//	  field_0: ${file:/var/secret.txt} # Injects the data from a config sourced named "file" using the selector "/var/secret.txt".
+//	  field_1: ${file}:/var/secret.txt # Expands the environment variable "file" and adds the suffix ":/var/secret.txt" to it.
 //
 // If the character following the '$' is in the set {'*', '#', '$', '@', '!', '?', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 // the code will consider it to be the name of an environment variable to expand, or config source if followed by ':'. Do not use any of these
@@ -181,7 +183,7 @@ type Manager struct {
 // NewManager creates a new instance of a Manager to be used to inject data from
 // ConfigSource objects into a configuration and watch for updates on the injected
 // data.
-func NewManager(_ *config.Map) (*Manager, error) {
+func NewManager(_ *confmap.Conf) (*Manager, error) {
 	// TODO: Config sources should be extracted for the config itself, need Factories for that.
 
 	return &Manager{
@@ -190,18 +192,18 @@ func NewManager(_ *config.Map) (*Manager, error) {
 	}, nil
 }
 
-// Resolve inspects the given config.Map and resolves all config sources referenced
-// in the configuration, returning a config.Map in which all env vars and config sources on
+// Resolve inspects the given confmap.Conf and resolves all config sources referenced
+// in the configuration, returning a confmap.Conf in which all env vars and config sources on
 // the given input config map are resolved to actual literal values of the env vars or config sources.
 // This method must be called only once per lifetime of a Manager object.
-func (m *Manager) Resolve(ctx context.Context, configMap *config.Map) (*config.Map, error) {
-	res := config.NewMap()
+func (m *Manager) Resolve(ctx context.Context, configMap *confmap.Conf) (*confmap.Conf, error) {
+	out := make(map[string]interface{})
 	allKeys := configMap.AllKeys()
 	for _, k := range allKeys {
 		if strings.HasPrefix(k, configSourcesKey) {
 			// Remove everything under the config_sources section. The `config_sources` section
 			// is read when loading the config sources used in the configuration, but it is not
-			// part of the resulting configuration returned via *config.Map.
+			// part of the resulting configuration returned via *confmap.Conf.
 			continue
 		}
 
@@ -209,10 +211,10 @@ func (m *Manager) Resolve(ctx context.Context, configMap *config.Map) (*config.M
 		if err != nil {
 			return nil, err
 		}
-		res.Set(k, value)
+		out[k] = value
 	}
 
-	return res, nil
+	return confmap.NewFromStringMap(out), nil
 }
 
 // WatchForUpdate must watch for updates on any of the values retrieved from config sources
@@ -285,7 +287,7 @@ func (m *Manager) Close(ctx context.Context) error {
 
 // parseConfigValue takes the value of a "config node" and process it recursively. The processing consists
 // in transforming invocations of config sources and/or environment variables into literal data that can be
-// used directly from a `config.Map` object.
+// used directly from a `confmap.Conf` object.
 func (m *Manager) parseConfigValue(ctx context.Context, value interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
@@ -509,11 +511,11 @@ func newErrUnknownConfigSource(cfgSrcName string) error {
 
 // parseCfgSrcInvocation parses the original string in the configuration that has a config source
 // retrieve operation and return its "logical components": the config source name, the selector, and
-// a config.Map to be used in this invocation of the config source. See Test_parseCfgSrcInvocation
+// a confmap.Conf to be used in this invocation of the config source. See Test_parseCfgSrcInvocation
 // for some examples of input and output.
 // The caller should check for error explicitly since it is possible for the
 // other values to have been partially set.
-func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigMap *config.Map, err error) {
+func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigMap *confmap.Conf, err error) {
 	parts := strings.SplitN(s, string(configSourceNameDelimChar), 2)
 	if len(parts) != 2 {
 		err = fmt.Errorf("invalid config source syntax at %q, it must have at least the config source name and a selector", s)
@@ -534,7 +536,7 @@ func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigM
 			if err = yaml.Unmarshal([]byte(parts[1]), &data); err != nil {
 				return
 			}
-			paramsConfigMap = config.NewMapFromStringMap(data)
+			paramsConfigMap = confmap.NewFromStringMap(data)
 		}
 
 	default:
@@ -556,7 +558,7 @@ func parseCfgSrcInvocation(s string) (cfgSrcName, selector string, paramsConfigM
 	return cfgSrcName, selector, paramsConfigMap, err
 }
 
-func parseParamsAsURLQuery(s string) (*config.Map, error) {
+func parseParamsAsURLQuery(s string) (*confmap.Conf, error) {
 	values, err := url.ParseQuery(s)
 	if err != nil {
 		return nil, err
@@ -587,7 +589,7 @@ func parseParamsAsURLQuery(s string) (*config.Map, error) {
 			params[k] = elemSlice
 		}
 	}
-	return config.NewMapFromStringMap(params), err
+	return confmap.NewFromStringMap(params), err
 }
 
 // osExpandEnv replicate the internal behavior of os.ExpandEnv when handling env

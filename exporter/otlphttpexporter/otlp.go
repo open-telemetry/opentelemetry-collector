@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -35,8 +34,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/otlpgrpc"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 type exporter struct {
@@ -57,7 +60,7 @@ const (
 	maxHTTPResponseReadBytes = 64 * 1024
 )
 
-// Crete new exporter.
+// Create new exporter.
 func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
@@ -83,7 +86,7 @@ func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*ex
 // start actually creates the HTTP client. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *exporter) start(_ context.Context, host component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
+	client, err := e.config.HTTPClientSettings.ToClient(host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -91,10 +94,9 @@ func (e *exporter) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	tr := otlpgrpc.NewTracesRequest()
-	tr.SetTraces(td)
-	request, err := tr.Marshal()
+func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	tr := ptraceotlp.NewRequestFromTraces(td)
+	request, err := tr.MarshalProto()
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -102,20 +104,18 @@ func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	return e.export(ctx, e.tracesURL, request)
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
-	tr := otlpgrpc.NewMetricsRequest()
-	tr.SetMetrics(md)
-	request, err := tr.Marshal()
+func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	tr := pmetricotlp.NewRequestFromMetrics(md)
+	request, err := tr.MarshalProto()
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
 	return e.export(ctx, e.metricsURL, request)
 }
 
-func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
-	tr := otlpgrpc.NewLogsRequest()
-	tr.SetLogs(ld)
-	request, err := tr.Marshal()
+func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	tr := plogotlp.NewRequestFromLogs(ld)
+	request, err := tr.MarshalProto()
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -139,7 +139,7 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		io.CopyN(ioutil.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
+		io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
 		resp.Body.Close()
 	}()
 
@@ -177,13 +177,36 @@ func (e *exporter) export(ctx context.Context, url string, request []byte) error
 		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
 	}
 
-	if resp.StatusCode == http.StatusBadRequest {
-		// Report the failure as permanent if the server thinks the request is malformed.
+	if isPermanentClientFailure(resp.StatusCode) {
+		// Do not retry; report the failure as permanent if the server thinks the request is malformed.
 		return consumererror.NewPermanent(formattedErr)
 	}
 
 	// All other errors are retryable, so don't wrap them in consumererror.NewPermanent().
 	return formattedErr
+}
+
+// Does the 'code' indicate a permanent error
+func isPermanentClientFailure(code int) bool {
+	switch code {
+	case http.StatusBadRequest:
+		return true
+	case http.StatusPaymentRequired:
+		// 402 - payment required typically means that an auth token isn't valid anymore and as such, we deem it as permanent
+		return true
+	case http.StatusRequestEntityTooLarge:
+		return true
+	case http.StatusRequestURITooLong:
+		return true
+	case http.StatusRequestHeaderFieldsTooLarge:
+		return true
+	case http.StatusNotFound:
+		return true
+	case http.StatusMethodNotAllowed:
+		return true
+	default:
+		return false
+	}
 }
 
 // Read the response and decode the status.Status from the body.
