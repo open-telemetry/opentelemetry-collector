@@ -4,7 +4,7 @@
 
 ### 💡 Enhancements 💡
 
-- `receiver/otlp`: Rewrite logs related to servers (#6174)
+- `receiver/otlp`: Make logs related to gRCPC and HTTP server startup clearer (#6174)
 
 ## v0.61.0 Beta
 
