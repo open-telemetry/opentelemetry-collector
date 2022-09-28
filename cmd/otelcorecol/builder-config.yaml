@@ -2,29 +2,29 @@ dist:
   module: go.opentelemetry.io/collector/cmd/otelcorecol
   name: otelcorecol
   description: Local OpenTelemetry Collector binary, testing only.
-  version: 0.60.0-dev
-  otelcol_version: 0.60.0
+  version: 0.61.0-dev
+  otelcol_version: 0.61.0
 
 receivers:
   - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    gomod: go.opentelemetry.io/collector v0.60.0
+    gomod: go.opentelemetry.io/collector v0.61.0
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
-    gomod: go.opentelemetry.io/collector v0.60.0
+    gomod: go.opentelemetry.io/collector v0.61.0
   - import: go.opentelemetry.io/collector/exporter/otlpexporter
-    gomod: go.opentelemetry.io/collector v0.60.0
+    gomod: go.opentelemetry.io/collector v0.61.0
   - import: go.opentelemetry.io/collector/exporter/otlphttpexporter
-    gomod: go.opentelemetry.io/collector v0.60.0
+    gomod: go.opentelemetry.io/collector v0.61.0
 extensions:
   - import: go.opentelemetry.io/collector/extension/ballastextension
-    gomod: go.opentelemetry.io/collector v0.60.0
+    gomod: go.opentelemetry.io/collector v0.61.0
   - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.60.0
+    gomod: go.opentelemetry.io/collector v0.61.0
 processors:
   - import: go.opentelemetry.io/collector/processor/batchprocessor
-    gomod: go.opentelemetry.io/collector v0.60.0
+    gomod: go.opentelemetry.io/collector v0.61.0
   - import: go.opentelemetry.io/collector/processor/memorylimiterprocessor
-    gomod: go.opentelemetry.io/collector v0.60.0
+    gomod: go.opentelemetry.io/collector v0.61.0
 
 replaces:
   - go.opentelemetry.io/collector => ../../

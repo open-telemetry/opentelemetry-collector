@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.61.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Change `ptrace.Span[Link]?.TraceState` signature to match `ptrace.Span[Link]?.TraceStateStruct` (#6085)
