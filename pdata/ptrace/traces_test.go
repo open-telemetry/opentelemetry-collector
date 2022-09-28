@@ -127,12 +127,6 @@ func TestTracesMoveTo(t *testing.T) {
 	assert.EqualValues(t, ResourceSpansSlice(internal.GenerateTestResourceSpansSlice()), dest.ResourceSpans())
 }
 
-func TestTracesClone(t *testing.T) {
-	traces := NewTraces()
-	internal.FillTestResourceSpansSlice(internal.ResourceSpansSlice(traces.ResourceSpans()))
-	assert.EqualValues(t, traces, traces.Clone())
-}
-
 func TestTracesCopyTo(t *testing.T) {
 	traces := NewTraces()
 	internal.FillTestResourceSpansSlice(internal.ResourceSpansSlice(traces.ResourceSpans()))

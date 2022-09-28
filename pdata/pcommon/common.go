@@ -44,9 +44,6 @@ const (
 	ValueTypeBytes
 )
 
-// Deprecated: [0.61.0] Use ValueTypeStr instead
-const ValueTypeString = ValueTypeStr
-
 // String returns the string representation of the ValueType.
 func (avt ValueType) String() string {
 	switch avt {
@@ -130,9 +127,6 @@ func NewValueSlice() Value {
 func NewValueBytes() Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: nil}})
 }
-
-// Deprecated: [0.61.0] Use NewValueBytes instead
-var NewValueBytesEmpty = NewValueBytes
 
 func newValue(orig *otlpcommon.AnyValue) Value {
 	return Value(internal.NewValue(orig))
@@ -327,76 +321,6 @@ func (v Value) SetEmptySlice() Slice {
 	av := &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}
 	v.getOrig().Value = av
 	return newSlice(&av.ArrayValue.Values)
-}
-
-// Deprecated: [0.61.0] Use Str instead.
-func (v Value) StringVal() string {
-	return v.Str()
-}
-
-// Deprecated: [0.61.0] Use Int instead.
-func (v Value) IntVal() int64 {
-	return v.Int()
-}
-
-// Deprecated: [0.61.0] Use Double instead.
-func (v Value) DoubleVal() float64 {
-	return v.Double()
-}
-
-// Deprecated: [0.61.0] Use Bool instead.
-func (v Value) BoolVal() bool {
-	return v.Bool()
-}
-
-// Deprecated: [0.61.0] Use Map instead.
-func (v Value) MapVal() Map {
-	return v.Map()
-}
-
-// Deprecated: [0.61.0] Use Slice instead.
-func (v Value) SliceVal() Slice {
-	return v.Slice()
-}
-
-// Deprecated: [0.61.0] Use Bytes instead.
-func (v Value) BytesVal() ByteSlice {
-	return v.Bytes()
-}
-
-// Deprecated: [0.61.0] Use SetStr instead.
-func (v Value) SetStringVal(sv string) {
-	v.SetStr(sv)
-}
-
-// Deprecated: [0.61.0] Use SetInt instead.
-func (v Value) SetIntVal(iv int64) {
-	v.SetInt(iv)
-}
-
-// Deprecated: [0.61.0] Use SetDouble instead.
-func (v Value) SetDoubleVal(dv float64) {
-	v.SetDouble(dv)
-}
-
-// Deprecated: [0.61.0] Use SetBool instead.
-func (v Value) SetBoolVal(bv bool) {
-	v.SetBool(bv)
-}
-
-// Deprecated: [0.61.0] Use SetEmptyBytes instead.
-func (v Value) SetEmptyBytesVal() ByteSlice {
-	return v.SetEmptyBytes()
-}
-
-// Deprecated: [0.61.0] Use SetEmptyMap instead.
-func (v Value) SetEmptyMapVal() Map {
-	return v.SetEmptyMap()
-}
-
-// Deprecated: [0.61.0] Use SetEmptySlice instead.
-func (v Value) SetEmptySliceVal() Slice {
-	return v.SetEmptySlice()
 }
 
 // CopyTo copies the attribute to a destination.

@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Delete deprecated `go.opentelemetry.io/collector/service/featuregate`. (#6178)
+- Delete deprecated `pmetric.OptionalType`. (#6178)
+- Delete deprecated `ptrace.Span[Link]?.TraceStateStruct`. (#6178)
+- Delete deprecated `pcommon.NewValueBytesEmpty`. (#6178)
+- Delete deprecated `pmetric.MetricDataType`. (#6178)
+- Delete deprecated `pmetric.Metric.DataType()`. (#6178)
+- Delete deprecated `pmetric.NumberDataPoint.[Set]?[Int|Double]Val()`. (#6178)
+- Delete deprecated `pmetric.Exemplar.[Set]?[Int|Double]Val()`. (#6178)
+- Delete deprecated `p[metric|log|trace]otlp.[Client|Server]`. (#6178)
+- Delete deprecated pdata Clone methods. (#6178)
+- Delete deprecated `pcommon.Value` getter/setter methods with `Val` suffix. (#6178)
+- Delete deprecated `StringVal` and `SetStringVal` methods. (#6178)
+- Delete deprecated `ValueTypeString` method. (#6178)
+
 ### 🚩 Deprecations 🚩
 
 - Deprecate `p[metric|log|trace]otlp.RegiserServer` in favor of `p[metric|log|trace]otlp.RegiserGRPCServer` (#6180)

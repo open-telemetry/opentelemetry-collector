@@ -42,17 +42,6 @@ func (ms Metrics) CopyTo(dest Metrics) {
 	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
 }
 
-// Clone returns a copy of Metrics.
-// Deprecated: [0.61.0] Replace with:
-//
-//	newMetrics := NewMetrics()
-//	ms.CopyTo(newMetrics)
-func (ms Metrics) Clone() Metrics {
-	cloneMd := NewMetrics()
-	ms.ResourceMetrics().CopyTo(cloneMd.ResourceMetrics())
-	return cloneMd
-}
-
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value.
 func (ms Metrics) MoveTo(dest Metrics) {
@@ -107,29 +96,6 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 		}
 	}
 	return
-}
-
-// Deprecated: [v0.61.0] use MetricType.
-type MetricDataType = MetricType
-
-const (
-	// Deprecated: [v0.61.0] use MetricTypeNone.
-	MetricDataTypeNone = MetricTypeNone
-	// Deprecated: [v0.61.0] use MetricTypeGauge.
-	MetricDataTypeGauge = MetricTypeGauge
-	// Deprecated: [v0.61.0] use MetricTypeSum.
-	MetricDataTypeSum = MetricTypeSum
-	// Deprecated: [v0.61.0] use MetricTypeHistogram.
-	MetricDataTypeHistogram = MetricTypeHistogram
-	// Deprecated: [v0.61.0] use MetricTypeExponentialHistogram.
-	MetricDataTypeExponentialHistogram = MetricTypeExponentialHistogram
-	// Deprecated: [v0.61.0] use MetricTypeSummary.
-	MetricDataTypeSummary = MetricTypeSummary
-)
-
-// Deprecated: [v0.61.0] use Metric.Type().
-func (ms Metric) DataType() MetricDataType {
-	return ms.Type()
 }
 
 // MetricType specifies the type of data in a Metric.
@@ -223,65 +189,4 @@ func (nt ExemplarValueType) String() string {
 		return "Double"
 	}
 	return ""
-}
-
-// Deprecated: [v0.61.0] not used, will be deleted in next release.
-type OptionalType int32
-
-const (
-	// Deprecated: [v0.61.0] not used, will be deleted in next release.
-	OptionalTypeNone OptionalType = iota
-	// Deprecated: [v0.61.0] not used, will be deleted in next release.
-	OptionalTypeDouble
-)
-
-// Deprecated: [v0.61.0] not used, will be deleted in next release.
-func (ot OptionalType) String() string {
-	switch ot {
-	case OptionalTypeNone:
-		return "None"
-	case OptionalTypeDouble:
-		return "Double"
-	}
-	return ""
-}
-
-// Deprecated: [v0.61.0] use NumberDataPoint.DoubleValue().
-func (ms NumberDataPoint) DoubleVal() float64 {
-	return ms.DoubleValue()
-}
-
-// Deprecated: [v0.61.0] use NumberDataPoint.SetDoubleValue().
-func (ms NumberDataPoint) SetDoubleVal(v float64) {
-	ms.SetDoubleValue(v)
-}
-
-// Deprecated: [v0.61.0] use NumberDataPoint.IntValue().
-func (ms NumberDataPoint) IntVal() int64 {
-	return ms.IntValue()
-}
-
-// Deprecated: [v0.61.0] use NumberDataPoint.SetIntValue().
-func (ms NumberDataPoint) SetIntVal(v int64) {
-	ms.SetIntValue(v)
-}
-
-// Deprecated: [v0.61.0] use Exemplar.DoubleValue().
-func (ms Exemplar) DoubleVal() float64 {
-	return ms.DoubleValue()
-}
-
-// Deprecated: [v0.61.0] use Exemplar.SetDoubleValue().
-func (ms Exemplar) SetDoubleVal(v float64) {
-	ms.SetDoubleValue(v)
-}
-
-// Deprecated: [v0.61.0] use Exemplar.IntValue().
-func (ms Exemplar) IntVal() int64 {
-	return ms.IntValue()
-}
-
-// Deprecated: [v0.61.0] use Exemplar.SetIntValue().
-func (ms Exemplar) SetIntVal(v int64) {
-	ms.SetIntValue(v)
 }

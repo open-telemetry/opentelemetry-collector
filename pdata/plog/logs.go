@@ -49,17 +49,6 @@ func (ms Logs) CopyTo(dest Logs) {
 	ms.ResourceLogs().CopyTo(dest.ResourceLogs())
 }
 
-// Clone returns a copy of Logs.
-// Deprecated: [0.61.0] Replace with:
-//
-//	newLogs := NewLogs()
-//	ms.CopyTo(newLogs)
-func (ms Logs) Clone() Logs {
-	cloneLd := NewLogs()
-	ms.ResourceLogs().CopyTo(cloneLd.ResourceLogs())
-	return cloneLd
-}
-
 // LogRecordCount calculates the total number of log records.
 func (ms Logs) LogRecordCount() int {
 	logCount := 0

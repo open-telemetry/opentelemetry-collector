@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Traces is the top-level struct that is propagated through the traces pipeline.
@@ -50,17 +49,6 @@ func (ms Traces) CopyTo(dest Traces) {
 	ms.ResourceSpans().CopyTo(dest.ResourceSpans())
 }
 
-// Clone returns a copy of Traces.
-// Deprecated: [0.61.0] Replace with:
-//
-//	newTraces := NewTraces()
-//	ms.CopyTo(newTraces)
-func (ms Traces) Clone() Traces {
-	cloneTd := NewTraces()
-	ms.ResourceSpans().CopyTo(cloneTd.ResourceSpans())
-	return cloneTd
-}
-
 // SpanCount calculates the total number of spans.
 func (ms Traces) SpanCount() int {
 	spanCount := 0
@@ -78,16 +66,6 @@ func (ms Traces) SpanCount() int {
 // ResourceSpans returns the ResourceSpansSlice associated with this Metrics.
 func (ms Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&ms.getOrig().ResourceSpans)
-}
-
-// Deprecated: [v0.61.0] use TraceState().AsRaw().
-func (ms Span) TraceStateStruct() pcommon.TraceState {
-	return ms.TraceState()
-}
-
-// Deprecated: [v0.61.0] use TraceState().AsRaw().
-func (ms SpanLink) TraceStateStruct() pcommon.TraceState {
-	return ms.TraceState()
 }
 
 // SpanKind is the type of span. Can be used to specify additional relationships between spans

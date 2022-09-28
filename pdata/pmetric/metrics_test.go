@@ -672,12 +672,6 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	}, md.getOrig())
 }
 
-func TestMetricsClone(t *testing.T) {
-	metrics := NewMetrics()
-	internal.FillTestResourceMetricsSlice(internal.ResourceMetricsSlice(metrics.ResourceMetrics()))
-	assert.EqualValues(t, metrics, metrics.Clone())
-}
-
 func TestMetricsCopyTo(t *testing.T) {
 	metrics := NewMetrics()
 	internal.FillTestResourceMetricsSlice(internal.ResourceMetricsSlice(metrics.ResourceMetrics()))
