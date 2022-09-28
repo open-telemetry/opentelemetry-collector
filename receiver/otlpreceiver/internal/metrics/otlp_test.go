@@ -35,9 +35,6 @@ import (
 
 func TestExport(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
-	// Keep metric data to compare the test result against it
-	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	metricData := md.Clone()
 	req := pmetricotlp.NewRequestFromMetrics(md)
 
 	metricSink := new(consumertest.MetricsSink)
@@ -49,7 +46,7 @@ func TestExport(t *testing.T) {
 
 	mds := metricSink.AllMetrics()
 	require.Len(t, mds, 1)
-	assert.EqualValues(t, metricData, mds[0])
+	assert.EqualValues(t, md, mds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {

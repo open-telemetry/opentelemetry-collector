@@ -35,9 +35,6 @@ import (
 
 func TestExport(t *testing.T) {
 	td := testdata.GenerateTraces(1)
-	// Keep trace data to compare the test result against it
-	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	traceData := td.Clone()
 	req := ptraceotlp.NewRequestFromTraces(td)
 
 	traceSink := new(consumertest.TracesSink)
@@ -47,7 +44,7 @@ func TestExport(t *testing.T) {
 	require.NotNil(t, resp, "The response is missing")
 
 	require.Len(t, traceSink.AllTraces(), 1)
-	assert.EqualValues(t, traceData, traceSink.AllTraces()[0])
+	assert.EqualValues(t, td, traceSink.AllTraces()[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {

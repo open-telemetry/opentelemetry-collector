@@ -69,7 +69,9 @@ func (tsc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	// the incoming data to a mutating consumer is used that may change the incoming data before
 	// cloning.
 	for _, tc := range tsc.clone {
-		errs = multierr.Append(errs, tc.ConsumeTraces(ctx, td.Clone()))
+		clonedTraces := ptrace.NewTraces()
+		td.CopyTo(clonedTraces)
+		errs = multierr.Append(errs, tc.ConsumeTraces(ctx, clonedTraces))
 	}
 	for _, tc := range tsc.pass {
 		errs = multierr.Append(errs, tc.ConsumeTraces(ctx, td))

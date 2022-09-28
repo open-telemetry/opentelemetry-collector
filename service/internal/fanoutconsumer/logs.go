@@ -71,7 +71,9 @@ func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	// the incoming data to a mutating consumer is used that may change the incoming data before
 	// cloning.
 	for _, lc := range lsc.clone {
-		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, ld.Clone()))
+		clonedLogs := plog.NewLogs()
+		ld.CopyTo(clonedLogs)
+		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, clonedLogs))
 	}
 	for _, lc := range lsc.pass {
 		errs = multierr.Append(errs, lc.ConsumeLogs(ctx, ld))

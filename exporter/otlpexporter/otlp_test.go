@@ -593,7 +593,8 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pt
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Clone the request and store as expected.
-	expectedData := td.Clone()
+	expectedData := ptrace.NewTraces()
+	td.CopyTo(expectedData)
 
 	// Resend the request, this should succeed.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
