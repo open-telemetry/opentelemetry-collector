@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `receiver/otlp`: Rewrite logs related to servers (#6174)
+
 ## v0.61.0 Beta
 
 ### 🛑 Breaking changes 🛑
