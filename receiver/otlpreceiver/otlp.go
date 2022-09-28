@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"sync"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
@@ -67,7 +68,7 @@ func newOtlpReceiver(cfg *Config, settings component.ReceiverCreateSettings) *ot
 }
 
 func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host component.Host) error {
-	r.settings.Logger.Info("Starting GRPC server on endpoint " + cfg.NetAddr.Endpoint)
+	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", cfg.NetAddr.Endpoint))
 
 	gln, err := cfg.ToListener()
 	if err != nil {
@@ -85,7 +86,7 @@ func (r *otlpReceiver) startGRPCServer(cfg *configgrpc.GRPCServerSettings, host 
 }
 
 func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host component.Host) error {
-	r.settings.Logger.Info("Starting HTTP server on endpoint " + cfg.Endpoint)
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", cfg.Endpoint))
 	var hln net.Listener
 	hln, err := cfg.ToListener()
 	if err != nil {
