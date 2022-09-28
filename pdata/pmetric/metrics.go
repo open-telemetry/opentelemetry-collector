@@ -37,7 +37,16 @@ func NewMetrics() Metrics {
 	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{})
 }
 
-// Clone returns a copy of MetricData.
+// CopyTo copies all metrics from ms to dest.
+func (ms Metrics) CopyTo(dest Metrics) {
+	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
+}
+
+// Clone returns a copy of Metrics.
+// Deprecated: [0.61.0] Replace with:
+//
+//	newMetrics := NewMetrics()
+//	ms.CopyTo(newMetrics)
 func (ms Metrics) Clone() Metrics {
 	cloneMd := NewMetrics()
 	ms.ResourceMetrics().CopyTo(cloneMd.ResourceMetrics())

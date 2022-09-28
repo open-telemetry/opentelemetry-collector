@@ -35,9 +35,10 @@
 - Deprecate `pmetric.NumberDataPoint.[Set]?[Int|Double]Val()` in favor of `pmetric.NumberDataPoint.[Set]?[Int|Double]Value()`. (#6134)
 - Deprecate `pmetric.Exemplar.[Set]?[Int|Double]Val()` in favor of `pmetric.Exemplar.[Set]?[Int|Double]Value()`. (#6134)
 - Deprecate `p[metric|log|trace]otlp.[Client|Server]` in favor of `p[metric|log|trace]otlp.GRPC[Client|Server]` (#6165)
-
-### 🚩 Deprecations 🚩
-
+- Deprecate pdata Clone methods in favor of CopyTo for consistency with other pdata structs (#6164)
+  - `pmetric.Metrics.Clone` is deprecated in favor of `pmetric.Metrics.CopyTo`
+  - `ptrace.Traces.Clone` is deprecated in favor of `pmetric.Traces.CopyTo`
+  - `plog.Logs.Clone` is deprecated in favor of `plogs.Logs.CopyTo`
 - Rename all `pcommon.Value` getter/setter methods by removing `Val` suffix. (#6092) 
   - Old methods with `Val` suffix are deprecated.
   - `StringVal` and `SetStringVal` are deprecated in favor of `Str` and `SetStr` to avoid implementing `fmt.Stringer` interface. 

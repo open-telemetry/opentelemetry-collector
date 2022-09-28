@@ -678,16 +678,12 @@ func TestMetricsClone(t *testing.T) {
 	assert.EqualValues(t, metrics, metrics.Clone())
 }
 
-func BenchmarkMetricsClone(b *testing.B) {
+func TestMetricsCopyTo(t *testing.T) {
 	metrics := NewMetrics()
 	internal.FillTestResourceMetricsSlice(internal.ResourceMetricsSlice(metrics.ResourceMetrics()))
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		clone := metrics.Clone()
-		if clone.ResourceMetrics().Len() != metrics.ResourceMetrics().Len() {
-			b.Fail()
-		}
-	}
+	metricsCopy := NewMetrics()
+	metrics.CopyTo(metricsCopy)
+	assert.EqualValues(t, metrics, metricsCopy)
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
