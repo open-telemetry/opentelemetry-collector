@@ -34,6 +34,7 @@
 - Deprecate `pmetric.Metric.DataType()` in favor of `pmetric.Metric.Type()`. (#6127)
 - Deprecate `pmetric.NumberDataPoint.[Set]?[Int|Double]Val()` in favor of `pmetric.NumberDataPoint.[Set]?[Int|Double]Value()`. (#6134)
 - Deprecate `pmetric.Exemplar.[Set]?[Int|Double]Val()` in favor of `pmetric.Exemplar.[Set]?[Int|Double]Value()`. (#6134)
+- Deprecate `p[metric|log|trace]otlp.[Client|Server]` in favor of `p[metric|log|trace]otlp.GRPC[Client|Server]` (#6165)
 - Deprecate pdata Clone methods in favor of CopyTo for consistency with other pdata structs (#6164)
   - `pmetric.Metrics.Clone` is deprecated in favor of `pmetric.Metrics.CopyTo`
   - `ptrace.Traces.Clone` is deprecated in favor of `pmetric.Traces.CopyTo`

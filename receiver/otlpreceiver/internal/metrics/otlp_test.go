@@ -70,7 +70,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.Equal(t, pmetricotlp.Response{}, resp)
 }
 
-func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.Client {
+func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, mc)
 
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())

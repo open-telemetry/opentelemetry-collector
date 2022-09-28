@@ -44,9 +44,9 @@ type exporter struct {
 	config *Config
 
 	// gRPC clients and connection.
-	traceExporter  ptraceotlp.Client
-	metricExporter pmetricotlp.Client
-	logExporter    plogotlp.Client
+	traceExporter  ptraceotlp.GRPCClient
+	metricExporter pmetricotlp.GRPCClient
+	logExporter    plogotlp.GRPCClient
 	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
 	callOptions    []grpc.CallOption
