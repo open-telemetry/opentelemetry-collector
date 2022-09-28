@@ -590,28 +590,28 @@ func (v Value) AsRaw() interface{} {
 	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
 }
 
-func newAttributeKeyValueString(k string, v string) otlpcommon.KeyValue {
+func newKeyValueString(k string, v string) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := newValue(&orig.Value)
 	akv.SetStr(v)
 	return orig
 }
 
-func newAttributeKeyValueInt(k string, v int64) otlpcommon.KeyValue {
+func newKeyValueInt(k string, v int64) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := newValue(&orig.Value)
 	akv.SetInt(v)
 	return orig
 }
 
-func newAttributeKeyValueDouble(k string, v float64) otlpcommon.KeyValue {
+func newKeyValueDouble(k string, v float64) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := newValue(&orig.Value)
 	akv.SetDouble(v)
 	return orig
 }
 
-func newAttributeKeyValueBool(k string, v bool) otlpcommon.KeyValue {
+func newKeyValueBool(k string, v bool) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := newValue(&orig.Value)
 	akv.SetBool(v)
@@ -719,7 +719,7 @@ func (m Map) PutString(k string, v string) {
 	if av, existing := m.Get(k); existing {
 		av.SetStr(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueString(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v))
 	}
 }
 
@@ -730,7 +730,7 @@ func (m Map) PutInt(k string, v int64) {
 	if av, existing := m.Get(k); existing {
 		av.SetInt(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueInt(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueInt(k, v))
 	}
 }
 
@@ -741,7 +741,7 @@ func (m Map) PutDouble(k string, v float64) {
 	if av, existing := m.Get(k); existing {
 		av.SetDouble(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueDouble(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueDouble(k, v))
 	}
 }
 
@@ -752,7 +752,7 @@ func (m Map) PutBool(k string, v bool) {
 	if av, existing := m.Get(k); existing {
 		av.SetBool(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueBool(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueBool(k, v))
 	}
 }
 
