@@ -83,7 +83,7 @@ func TestRequestJSON(t *testing.T) {
 func TestGrpc(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
-	RegisterServer(s, &fakeLogsServer{t: t})
+	RegisterGRPCServer(s, &fakeLogsServer{t: t})
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -116,7 +116,7 @@ func TestGrpc(t *testing.T) {
 func TestGrpcError(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
-	RegisterServer(s, &fakeLogsServer{t: t, err: errors.New("my error")})
+	RegisterGRPCServer(s, &fakeLogsServer{t: t, err: errors.New("my error")})
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
