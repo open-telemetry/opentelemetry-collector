@@ -23,6 +23,8 @@ import (
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/mitchellh/mapstructure"
+
+	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
 )
 
 const (
@@ -64,6 +66,20 @@ func (l *Conf) Unmarshal(result interface{}) error {
 // UnmarshalExact unmarshalls the config into a struct, erroring if a field is nonexistent.
 func (l *Conf) UnmarshalExact(result interface{}) error {
 	return decodeConfig(l, result, true)
+}
+
+// Marshal encodes the config and merges it into the Conf.
+func (l *Conf) Marshal(rawVal interface{}) error {
+	enc := encoder.New(encoderConfig(rawVal))
+	data, err := enc.Encode(rawVal)
+	if err != nil {
+		return err
+	}
+	out, ok := data.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid config encoding")
+	}
+	return l.Merge(NewFromStringMap(out))
 }
 
 // Get can retrieve any value given the key to use.
@@ -131,6 +147,18 @@ func decodeConfig(m *Conf, result interface{}, errorUnused bool) error {
 		return err
 	}
 	return decoder.Decode(m.ToStringMap())
+}
+
+// encoderConfig returns a default encoder.EncoderConfig that includes
+// an EncodeHook that handles both TextMarshaller and Marshaler
+// interfaces.
+func encoderConfig(rawVal interface{}) *encoder.EncoderConfig {
+	return &encoder.EncoderConfig{
+		EncodeHook: mapstructure.ComposeDecodeHookFunc(
+			encoder.TextMarshalerHookFunc(),
+			marshalerHookFunc(rawVal),
+		),
+	}
 }
 
 // In cases where a config has a mapping of something to a struct pointers
@@ -239,9 +267,43 @@ func unmarshalerHookFunc(result interface{}) mapstructure.DecodeHookFuncValue {
 	}
 }
 
+// marshalerHookFunc returns a DecodeHookFuncValue that checks structs that aren't
+// the original to see if they implement the Marshaler interface.
+func marshalerHookFunc(orig interface{}) mapstructure.DecodeHookFuncValue {
+	origType := reflect.TypeOf(orig)
+	return func(from reflect.Value, _ reflect.Value) (interface{}, error) {
+		if from.Kind() != reflect.Struct {
+			return from.Interface(), nil
+		}
+
+		// ignore original to avoid infinite loop.
+		if from.Type() == origType && reflect.DeepEqual(from.Interface(), orig) {
+			return from.Interface(), nil
+		}
+		marshaler, ok := from.Interface().(Marshaler)
+		if !ok {
+			return from.Interface(), nil
+		}
+		conf := New()
+		if err := marshaler.Marshal(conf); err != nil {
+			return nil, err
+		}
+		return conf.ToStringMap(), nil
+	}
+}
+
 // Unmarshaler interface may be implemented by types to customize their behavior when being unmarshaled from a Conf.
 type Unmarshaler interface {
 	// Unmarshal a Conf into the struct in a custom way.
 	// The Conf for this specific component may be nil or empty if no config available.
 	Unmarshal(component *Conf) error
+}
+
+// Marshaler defines an optional interface for custom configuration marshaling.
+// A configuration struct can implement this interface to override the default
+// marshaling.
+type Marshaler interface {
+	// Marshal the config into a Conf in a custom way.
+	// The Conf will be empty and can be merged into.
+	Marshal(component *Conf) error
 }

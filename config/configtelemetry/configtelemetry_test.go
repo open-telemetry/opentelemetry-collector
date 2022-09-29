@@ -103,6 +103,9 @@ func TestLevelString(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.str, func(t *testing.T) {
 			assert.Equal(t, test.str, test.level.String())
+			got, err := test.level.MarshalText()
+			assert.NoError(t, err)
+			assert.Equal(t, test.str, string(got))
 		})
 	}
 }
