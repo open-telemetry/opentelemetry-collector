@@ -160,6 +160,18 @@ type TestConfig struct {
 	MapStruct map[string]*Struct `mapstructure:"map_struct"`
 }
 
+func (t TestConfig) Marshal(conf *Conf) error {
+	if t.Boolean != nil && !*t.Boolean {
+		return errors.New("unable to marshal")
+	}
+	if err := conf.Marshal(t); err != nil {
+		return err
+	}
+	return conf.Merge(NewFromStringMap(map[string]interface{}{
+		"additional": "field",
+	}))
+}
+
 type Struct struct {
 	Name string
 }
@@ -172,6 +184,14 @@ func (tID *TestID) UnmarshalText(text []byte) error {
 		return errors.New("parsing error")
 	}
 	return nil
+}
+
+func (tID TestID) MarshalText() (text []byte, err error) {
+	out := string(tID)
+	if !strings.HasSuffix(out, "_") {
+		out += "_"
+	}
+	return []byte(out), nil
 }
 
 type TestIDConfig struct {
@@ -230,6 +250,63 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T)
 
 	cfg := &TestIDConfig{}
 	assert.Error(t, conf.Unmarshal(cfg))
+}
+
+func TestMarshal(t *testing.T) {
+	conf := New()
+	cfg := &TestIDConfig{
+		Boolean: true,
+		Map: map[TestID]string{
+			"string": "this is a string",
+		},
+	}
+	assert.NoError(t, conf.Marshal(cfg))
+	assert.Equal(t, true, conf.Get("bool"))
+	assert.Equal(t, map[string]interface{}{"string_": "this is a string"}, conf.Get("map"))
+}
+
+func TestMarshalDuplicateID(t *testing.T) {
+	conf := New()
+	cfg := &TestIDConfig{
+		Boolean: true,
+		Map: map[TestID]string{
+			"string":  "this is a string",
+			"string_": "this is another string",
+		},
+	}
+	assert.Error(t, conf.Marshal(cfg))
+}
+
+func TestMarshalError(t *testing.T) {
+	conf := New()
+	assert.Error(t, conf.Marshal(nil))
+}
+
+func TestMarshaler(t *testing.T) {
+	conf := New()
+	cfg := &TestConfig{
+		Struct: &Struct{
+			Name: "StructName",
+		},
+	}
+	assert.NoError(t, conf.Marshal(cfg))
+	assert.Equal(t, "field", conf.Get("additional"))
+
+	conf = New()
+	type NestedMarshaler struct {
+		TestConfig *TestConfig
+	}
+	nmCfg := &NestedMarshaler{
+		TestConfig: cfg,
+	}
+	assert.NoError(t, conf.Marshal(nmCfg))
+	sub, err := conf.Sub("testconfig")
+	assert.NoError(t, err)
+	assert.True(t, sub.IsSet("additional"))
+	assert.Equal(t, "field", sub.Get("additional"))
+	varBool := false
+	nmCfg.TestConfig.Boolean = &varBool
+	assert.Error(t, conf.Marshal(nmCfg))
 }
 
 // newConfFromFile creates a new Conf by reading the given file.

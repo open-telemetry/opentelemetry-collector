@@ -6,6 +6,10 @@
 
 - Deprecate `p[metric|log|trace]otlp.RegiserServer` in favor of `p[metric|log|trace]otlp.RegiserGRPCServer` (#6180)
 
+### 💡 Enhancements 💡
+
+- Add config marshaler (#5566)
+
 ### 🧰 Bug fixes 🧰
 
 - Make sure `pcommon.Map.[Delete|Put]` doesn't affect other values returned by `pcommon.Map.Get` (#6182)
