@@ -115,7 +115,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 	}
 
 	// Now run it as a gRPC server
-	ptraceotlp.RegisterServer(rcv.srv, rcv)
+	ptraceotlp.RegisterGRPCServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -155,7 +155,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	plogotlp.RegisterServer(rcv.srv, rcv)
+	plogotlp.RegisterGRPCServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -195,7 +195,7 @@ func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	pmetricotlp.RegisterServer(rcv.srv, rcv)
+	pmetricotlp.RegisterGRPCServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()

@@ -113,15 +113,15 @@ func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 		r.serverGRPC = grpc.NewServer(opts...)
 
 		if r.traceReceiver != nil {
-			ptraceotlp.RegisterServer(r.serverGRPC, r.traceReceiver)
+			ptraceotlp.RegisterGRPCServer(r.serverGRPC, r.traceReceiver)
 		}
 
 		if r.metricsReceiver != nil {
-			pmetricotlp.RegisterServer(r.serverGRPC, r.metricsReceiver)
+			pmetricotlp.RegisterGRPCServer(r.serverGRPC, r.metricsReceiver)
 		}
 
 		if r.logReceiver != nil {
-			plogotlp.RegisterServer(r.serverGRPC, r.logReceiver)
+			plogotlp.RegisterGRPCServer(r.serverGRPC, r.logReceiver)
 		}
 
 		err = r.startGRPCServer(r.cfg.GRPC, host)

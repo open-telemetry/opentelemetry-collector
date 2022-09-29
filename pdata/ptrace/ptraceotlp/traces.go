@@ -156,10 +156,13 @@ type GRPCServer interface {
 // Deprecated: [0.61.0] Use GRPCServer instead
 type Server = GRPCServer
 
-// RegisterServer registers the GRPCServer to the grpc.Server.
-func RegisterServer(s *grpc.Server, srv GRPCServer) {
+// RegisterGRPCServer registers the GRPCServer to the grpc.Server.
+func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
 	otlpcollectortrace.RegisterTraceServiceServer(s, &rawTracesServer{srv: srv})
 }
+
+// Deprecated: [0.62.0] Use RegisterGRPCServer instead
+var RegisterServer = RegisterGRPCServer
 
 type rawTracesServer struct {
 	srv GRPCServer

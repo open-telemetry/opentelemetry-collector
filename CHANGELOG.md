@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🚩 Deprecations 🚩
+
+- Deprecate `p[metric|log|trace]otlp.RegiserServer` in favor of `p[metric|log|trace]otlp.RegiserGRPCServer` (#6180)
+
 ## v0.61.0 Beta
 
 ### 🛑 Breaking changes 🛑
