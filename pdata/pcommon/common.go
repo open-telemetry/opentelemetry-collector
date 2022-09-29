@@ -331,32 +331,32 @@ func (v Value) StringVal() string {
 	return v.Str()
 }
 
-// Deprecated: [0.61.0] Use GetInt instead.
+// Deprecated: [0.61.0] Use Int instead.
 func (v Value) IntVal() int64 {
 	return v.Int()
 }
 
-// Deprecated: [0.61.0] Use GetDouble instead.
+// Deprecated: [0.61.0] Use Double instead.
 func (v Value) DoubleVal() float64 {
 	return v.Double()
 }
 
-// Deprecated: [0.61.0] Use GetBool instead.
+// Deprecated: [0.61.0] Use Bool instead.
 func (v Value) BoolVal() bool {
 	return v.Bool()
 }
 
-// Deprecated: [0.61.0] Use GetMap instead.
+// Deprecated: [0.61.0] Use Map instead.
 func (v Value) MapVal() Map {
 	return v.Map()
 }
 
-// Deprecated: [0.61.0] Use GetSlice instead.
+// Deprecated: [0.61.0] Use Slice instead.
 func (v Value) SliceVal() Slice {
 	return v.Slice()
 }
 
-// Deprecated: [0.61.0] Use GetBytes instead.
+// Deprecated: [0.61.0] Use Bytes instead.
 func (v Value) BytesVal() ByteSlice {
 	return v.Bytes()
 }
