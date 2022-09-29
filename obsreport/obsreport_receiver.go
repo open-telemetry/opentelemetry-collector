@@ -20,6 +20,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -36,6 +37,10 @@ type Receiver struct {
 	longLivedCtx   bool
 	mutators       []tag.Mutator
 	tracer         trace.Tracer
+
+	// Otel API
+	otelEnabled bool
+	otelAttrs   []attribute.KeyValue
 }
 
 // ReceiverSettings are settings for creating an Receiver.
@@ -53,6 +58,7 @@ type ReceiverSettings struct {
 
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
+
 	return &Receiver{
 		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
@@ -63,6 +69,12 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
 		},
 		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
+
+		otelEnabled: InstrumentWithOtel(),
+		otelAttrs: []attribute.KeyValue{
+			obsmetrics.AttrReceiver.String(cfg.ReceiverID.String()),
+			obsmetrics.AttrTransport.String(cfg.Transport),
+		},
 	}
 }
 
@@ -163,23 +175,42 @@ func (rec *Receiver) endOp(
 	span := trace.SpanFromContext(receiverCtx)
 
 	if rec.level != configtelemetry.LevelNone {
-		var acceptedMeasure, refusedMeasure *stats.Int64Measure
-		switch dataType {
-		case config.TracesDataType:
-			acceptedMeasure = obsmetrics.ReceiverAcceptedSpans
-			refusedMeasure = obsmetrics.ReceiverRefusedSpans
-		case config.MetricsDataType:
-			acceptedMeasure = obsmetrics.ReceiverAcceptedMetricPoints
-			refusedMeasure = obsmetrics.ReceiverRefusedMetricPoints
-		case config.LogsDataType:
-			acceptedMeasure = obsmetrics.ReceiverAcceptedLogRecords
-			refusedMeasure = obsmetrics.ReceiverRefusedLogRecords
-		}
+		if rec.otelEnabled {
+			var acceptedMeasure, refusedMeasure syncint64.Counter
+			switch dataType {
+			case config.TracesDataType:
+				acceptedMeasure = obsmetrics.OtelReceiverAcceptedSpans
+				refusedMeasure = obsmetrics.OtelReceiverRefusedSpans
+			case config.MetricsDataType:
+				acceptedMeasure = obsmetrics.OtelReceiverAcceptedMetricPoints
+				refusedMeasure = obsmetrics.OtelReceiverRefusedMetricPoints
+			case config.LogsDataType:
+				acceptedMeasure = obsmetrics.OtelReceiverAcceptedLogRecords
+				refusedMeasure = obsmetrics.OtelReceiverRefusedLogRecords
+			}
 
-		stats.Record(
-			receiverCtx,
-			acceptedMeasure.M(int64(numAccepted)),
-			refusedMeasure.M(int64(numRefused)))
+			acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs...)
+			refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs...)
+
+		} else {
+			var acceptedMeasure, refusedMeasure *stats.Int64Measure
+			switch dataType {
+			case config.TracesDataType:
+				acceptedMeasure = obsmetrics.ReceiverAcceptedSpans
+				refusedMeasure = obsmetrics.ReceiverRefusedSpans
+			case config.MetricsDataType:
+				acceptedMeasure = obsmetrics.ReceiverAcceptedMetricPoints
+				refusedMeasure = obsmetrics.ReceiverRefusedMetricPoints
+			case config.LogsDataType:
+				acceptedMeasure = obsmetrics.ReceiverAcceptedLogRecords
+				refusedMeasure = obsmetrics.ReceiverRefusedLogRecords
+			}
+
+			stats.Record(
+				receiverCtx,
+				acceptedMeasure.M(int64(numAccepted)),
+				refusedMeasure.M(int64(numRefused)))
+		}
 	}
 
 	// end span according to errors

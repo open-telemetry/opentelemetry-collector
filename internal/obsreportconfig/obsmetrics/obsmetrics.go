@@ -19,4 +19,10 @@ package obsmetrics // import "go.opentelemetry.io/collector/internal/obsreportco
 
 const (
 	NameSep = "/"
+
+	MeterName = "io.opentelemetry.collector"
+
+	// UseOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
+	// telemetrySettings for internal metrics.
+	UseOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 )

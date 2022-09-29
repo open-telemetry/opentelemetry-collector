@@ -15,6 +15,7 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -31,16 +32,22 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	otelview "go.opentelemetry.io/otel/sdk/metric/view"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -52,7 +59,7 @@ const (
 
 	// useOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
 	// telemetrySettings for internal metrics.
-	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
+	useOtelForInternalMetricsfeatureGateID = obsmetrics.UseOtelForInternalMetricsfeatureGateID
 
 	// supported trace propagators
 	traceContextPropagator = "tracecontext"
@@ -128,8 +135,12 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 
 	var pe http.Handler
 	var err error
+
+	// Initialize the ocRegistry, still used by the process metrics.
+	tel.ocRegistry = ocmetric.NewRegistry()
+
 	if tel.registry.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
-		pe, err = tel.initOpenTelemetry()
+		pe, err = tel.initOpenTelemetry(telAttrs, logger)
 	} else {
 		pe, err = tel.initOpenCensus(cfg, telAttrs)
 	}
@@ -192,7 +203,6 @@ func buildTelAttrs(buildInfo component.BuildInfo, cfg telemetry.Config) map[stri
 }
 
 func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs map[string]string) (http.Handler, error) {
-	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
 	var views []*view.View
@@ -225,15 +235,46 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	return pe, nil
 }
 
-func (tel *telemetryInitializer) initOpenTelemetry() (http.Handler, error) {
-	// Initialize the ocRegistry, still used by the process metrics.
-	tel.ocRegistry = ocmetric.NewRegistry()
+func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, logger *zap.Logger) (http.Handler, error) {
+	logger.Info("Setting up telemetry with otel-go")
+
+	resAttrs := []attribute.KeyValue{
+		attribute.String(semconv.AttributeServiceName, "io.opentelemetry.collector"),
+	}
+
+	for k, v := range attrs {
+		resAttrs = append(resAttrs, attribute.String(k, v))
+	}
+
+	res, err := resource.New(context.TODO(), resource.WithAttributes(resAttrs...))
+	if err != nil {
+		return nil, fmt.Errorf("error creating otlp resources: %w", err)
+	}
+
+	otelviews := obsreport.GetViews()
+	// TODO: this empty view can be deleted after this otel-go sdk bug is fixed
+	// https://github.com/open-telemetry/opentelemetry-go/issues/3224
+	// this needs to be the last view on the views slice since views are matched sequentially.
+	otelviews = append(otelviews, otelview.View{})
+	logger.Info("Configuring otel-go exporters", zap.Int("views_discovered", len(otelviews)))
 
 	exporter := otelprom.New()
-	tel.mp = sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
+	tel.mp = sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(exporter, otelviews...),
+	)
+
+	global.SetMeterProvider(tel.mp)
 
 	registry := prometheus.NewRegistry()
-	if err := registry.Register(exporter.Collector); err != nil {
+
+	promLabels := make(prometheus.Labels)
+	for k, v := range attrs {
+		promLabels[sanitizePrometheusKey(k)] = v
+	}
+
+	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", prometheus.WrapRegistererWith(promLabels, registry))
+	if err := wrappedRegisterer.Register(exporter.Collector); err != nil {
 		return nil, fmt.Errorf("failed to register prometheus collector: %w", err)
 	}
 

@@ -17,10 +17,17 @@ package obsreport // import "go.opentelemetry.io/collector/obsreport"
 import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
 func recordError(span trace.Span, err error) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 	}
+}
+
+func InstrumentWithOtel() bool {
+	return featuregate.GetRegistry().IsEnabled(obsmetrics.UseOtelForInternalMetricsfeatureGateID)
 }
