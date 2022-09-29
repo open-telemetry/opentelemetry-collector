@@ -35,9 +35,6 @@ import (
 
 func TestExport(t *testing.T) {
 	ld := testdata.GenerateLogs(1)
-	// Keep log data to compare the test result against it
-	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	logData := ld.Clone()
 	req := plogotlp.NewRequestFromLogs(ld)
 
 	logSink := new(consumertest.LogsSink)
@@ -48,7 +45,7 @@ func TestExport(t *testing.T) {
 
 	lds := logSink.AllLogs()
 	require.Len(t, lds, 1)
-	assert.EqualValues(t, logData, lds[0])
+	assert.EqualValues(t, ld, lds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {

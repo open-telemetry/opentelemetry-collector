@@ -69,7 +69,9 @@ func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	// the incoming data to a mutating consumer is used that may change the incoming data before
 	// cloning.
 	for _, mc := range msc.clone {
-		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, md.Clone()))
+		clonedMetrics := pmetric.NewMetrics()
+		md.CopyTo(clonedMetrics)
+		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, clonedMetrics))
 	}
 	for _, mc := range msc.pass {
 		errs = multierr.Append(errs, mc.ConsumeMetrics(ctx, md))

@@ -157,7 +157,7 @@ func RegisterServer(s *grpc.Server, srv GRPCServer) {
 }
 
 type rawMetricsServer struct {
-	srv Server
+	srv GRPCServer
 }
 
 func (s rawMetricsServer) Export(ctx context.Context, request *otlpcollectormetrics.ExportMetricsServiceRequest) (*otlpcollectormetrics.ExportMetricsServiceResponse, error) {
