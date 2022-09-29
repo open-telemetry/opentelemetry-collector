@@ -403,7 +403,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 									Gauge: &otlpmetrics.Gauge{
 										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{
-												Attributes: []otlpcommon.KeyValue{
+												Attributes: []*otlpcommon.KeyValue{
 													{
 														Key:   "k",
 														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
@@ -487,7 +487,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 										DataPoints: []*otlpmetrics.NumberDataPoint{
 											{
-												Attributes: []otlpcommon.KeyValue{
+												Attributes: []*otlpcommon.KeyValue{
 													{
 														Key:   "k",
 														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
@@ -571,7 +571,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 										DataPoints: []*otlpmetrics.HistogramDataPoint{
 											{
-												Attributes: []otlpcommon.KeyValue{
+												Attributes: []*otlpcommon.KeyValue{
 													{
 														Key:   "k",
 														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
@@ -651,7 +651,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 										AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 										DataPoints: []*otlpmetrics.ExponentialHistogramDataPoint{
 											{
-												Attributes: []otlpcommon.KeyValue{
+												Attributes: []*otlpcommon.KeyValue{
 													{
 														Key:   "k",
 														Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}},
@@ -794,7 +794,7 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 
 func generateTestProtoResource() otlpresource.Resource {
 	return otlpresource.Resource{
-		Attributes: []otlpcommon.KeyValue{
+		Attributes: []*otlpcommon.KeyValue{
 			{
 				Key:   "string",
 				Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "string-resource"}},
@@ -819,7 +819,7 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 			Gauge: &otlpmetrics.Gauge{
 				DataPoints: []*otlpmetrics.NumberDataPoint{
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key0",
 								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
@@ -832,7 +832,7 @@ func generateTestProtoGaugeMetric() *otlpmetrics.Metric {
 						},
 					},
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key1",
 								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
@@ -859,7 +859,7 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
 				DataPoints: []*otlpmetrics.NumberDataPoint{
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key0",
 								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
@@ -872,7 +872,7 @@ func generateTestProtoSumMetric() *otlpmetrics.Metric {
 						},
 					},
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key1",
 								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},
@@ -900,7 +900,7 @@ func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 				AggregationTemporality: otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA,
 				DataPoints: []*otlpmetrics.HistogramDataPoint{
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key0",
 								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value0"}},
@@ -912,7 +912,7 @@ func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 						ExplicitBounds:    []float64{1, 2},
 					},
 					{
-						Attributes: []otlpcommon.KeyValue{
+						Attributes: []*otlpcommon.KeyValue{
 							{
 								Key:   "key1",
 								Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value1"}},

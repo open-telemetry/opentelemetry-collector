@@ -390,8 +390,8 @@ func TestMapPutEmptyBytes(t *testing.T) {
 }
 
 func TestMapWithEmpty(t *testing.T) {
-	origWithNil := []otlpcommon.KeyValue{
-		{},
+	origWithNil := []*otlpcommon.KeyValue{
+		nil,
 		{
 			Key:   "test_key",
 			Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "test_value"}},
@@ -502,6 +502,25 @@ func TestMapWithEmpty(t *testing.T) {
 
 	// Test Sort
 	assert.EqualValues(t, newMap(&origWithNil), sm.Sort())
+
+	// Test CopyTo
+	copyMap := NewMap()
+	sm.CopyTo(copyMap)
+	assert.EqualValues(t, sm, copyMap)
+	sm.CopyTo(copyMap)
+	assert.EqualValues(t, sm, copyMap)
+	smallMap := NewMap()
+	smallMap.PutString("k", "v")
+	smallMap.CopyTo(copyMap)
+	assert.EqualValues(t, smallMap, copyMap)
+	bigMap := NewMap()
+	bigMap.PutString("k1", "v1")
+	bigMap.PutString("k2", "v2")
+	bigMap.PutString("k3", "v3")
+	bigMap.PutString("k4", "v4")
+	bigMap.CopyTo(sm)
+	assert.EqualValues(t, sm, bigMap)
+
 }
 
 func TestMapIterationNil(t *testing.T) {
@@ -690,6 +709,31 @@ func TestMap_RemoveIf(t *testing.T) {
 	assert.False(t, exists)
 	_, exists = am.Get("k_empty")
 	assert.True(t, exists)
+}
+
+func TestGetNoEffectedByRemoveOrAdd(t *testing.T) {
+	m := NewMap()
+	m.PutString("k1", "v1")
+	m.PutString("k2", "v2")
+	v1, _ := m.Get("k1")
+	v2, _ := m.Get("k2")
+	require.Equal(t, "v1", v1.Str())
+	require.Equal(t, "v2", v2.Str())
+
+	m.Remove("k1")
+	assert.Equal(t, "v1", v1.Str())
+	assert.Equal(t, "v2", v2.Str())
+
+	v1, ok := m.Get("k1")
+	assert.False(t, ok)
+	assert.Equal(t, "", v1.Str())
+
+	v2, ok = m.Get("k2")
+	assert.True(t, ok)
+	assert.Equal(t, "v2", v2.Str())
+
+	m.PutString("k3", "v3")
+	assert.Equal(t, "v2", v2.Str())
 }
 
 func generateTestEmptyMap() Map {

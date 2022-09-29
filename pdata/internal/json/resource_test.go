@@ -34,7 +34,7 @@ func TestReadResource(t *testing.T) {
 			name:    "resource",
 			jsonStr: `{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}],"dropped_attributes_count":1}`,
 			want: &otlpresource.Resource{
-				Attributes: []otlpcommon.KeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
 						Key: "host.name",
 						Value: otlpcommon.AnyValue{
@@ -51,7 +51,7 @@ func TestReadResource(t *testing.T) {
 			name:    "Unknown field",
 			jsonStr: `{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}],"test":1}`,
 			want: &otlpresource.Resource{
-				Attributes: []otlpcommon.KeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
 						Key: "host.name",
 						Value: otlpcommon.AnyValue{

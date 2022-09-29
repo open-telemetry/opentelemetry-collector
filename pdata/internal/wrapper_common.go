@@ -42,27 +42,27 @@ func GenerateTestValue() Value {
 }
 
 type Map struct {
-	orig *[]otlpcommon.KeyValue
+	orig *[]*otlpcommon.KeyValue
 }
 
-func GetOrigMap(ms Map) *[]otlpcommon.KeyValue {
+func GetOrigMap(ms Map) *[]*otlpcommon.KeyValue {
 	return ms.orig
 }
 
-func NewMap(orig *[]otlpcommon.KeyValue) Map {
+func NewMap(orig *[]*otlpcommon.KeyValue) Map {
 	return Map{orig: orig}
 }
 
 func GenerateTestMap() Map {
-	var orig []otlpcommon.KeyValue
+	var orig []*otlpcommon.KeyValue
 	ms := NewMap(&orig)
 	FillTestMap(ms)
 	return ms
 }
 
 func FillTestMap(dest Map) {
-	*dest.orig = nil
-	*dest.orig = append(*dest.orig, otlpcommon.KeyValue{Key: "k", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}})
+	kv := otlpcommon.KeyValue{Key: "k", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}}
+	*dest.orig = []*otlpcommon.KeyValue{&kv}
 }
 
 type TraceState struct {

@@ -24,8 +24,8 @@ import (
 )
 
 // ReadAttribute Unmarshal JSON data and return otlpcommon.KeyValue
-func ReadAttribute(iter *jsoniter.Iterator) otlpcommon.KeyValue {
-	kv := otlpcommon.KeyValue{}
+func ReadAttribute(iter *jsoniter.Iterator) *otlpcommon.KeyValue {
+	kv := &otlpcommon.KeyValue{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "key":

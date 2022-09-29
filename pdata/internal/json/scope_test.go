@@ -68,7 +68,7 @@ func TestReadScope(t *testing.T) {
 			want: &otlpcommon.InstrumentationScope{
 				Name:    "my_name",
 				Version: "my_version",
-				Attributes: []otlpcommon.KeyValue{
+				Attributes: []*otlpcommon.KeyValue{
 					{
 						Key: "string_key",
 						Value: otlpcommon.AnyValue{
