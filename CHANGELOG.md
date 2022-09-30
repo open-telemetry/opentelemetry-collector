@@ -10,6 +10,7 @@
 ### 💡 Enhancements 💡
 
 - Add config marshaler (#5566)
+- Add semantic conventions for specification v1.10-v1.13 (#6213)
 
 ## v0.61.0 Beta
 
