@@ -79,7 +79,7 @@ func (avt ValueType) String() string {
 //
 //	func f1(val Value) { val.SetInt(234) }
 //	func f2() {
-//	    v := NewValueString("a string")
+//	    v := NewValueStr("a string")
 //	    f1(v)
 //	    _ := v.Type() // this will return ValueTypeInt
 //	}
@@ -93,10 +93,13 @@ func NewValueEmpty() Value {
 	return newValue(&otlpcommon.AnyValue{})
 }
 
-// NewValueString creates a new Value with the given string value.
-func NewValueString(v string) Value {
+// NewValueStr creates a new Value with the given string value.
+func NewValueStr(v string) Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}})
 }
+
+// Deprecated: [0.62.0] Use NewValueStr instead.
+var NewValueString = NewValueStr
 
 // NewValueInt creates a new Value with the given int64 value.
 func NewValueInt(v int64) Value {

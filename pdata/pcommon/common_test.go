@@ -27,7 +27,7 @@ import (
 )
 
 func TestValue(t *testing.T) {
-	v := NewValueString("abc")
+	v := NewValueStr("abc")
 	assert.EqualValues(t, ValueTypeStr, v.Type())
 	assert.EqualValues(t, "abc", v.Str())
 
@@ -89,7 +89,7 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, 1, m2.Len())
 	got, exists = m2.Get("key_in_child")
 	assert.True(t, exists)
-	assert.Equal(t, NewValueString("somestr"), got)
+	assert.Equal(t, NewValueStr("somestr"), got)
 
 	// Insert the second map as a child. This should perform a deep copy.
 	assert.EqualValues(t, 2, m1.MapVal().Len())
@@ -105,26 +105,26 @@ func TestValueMap(t *testing.T) {
 	assert.EqualValues(t, 1, m2.Len())
 	got, exists = m2.Get("key_in_child")
 	assert.True(t, exists)
-	assert.Equal(t, NewValueString("somestr2"), got)
+	assert.Equal(t, NewValueStr("somestr2"), got)
 
 	// The child map inside m1 should be modified.
 	childMap, childMapExists := m1.MapVal().Get("child_map")
 	require.True(t, childMapExists)
 	got, exists = childMap.Map().Get("key_in_child")
 	require.True(t, exists)
-	assert.Equal(t, NewValueString("somestr2"), got)
+	assert.Equal(t, NewValueStr("somestr2"), got)
 
 	// Now modify the inserted map (not the source)
 	childMap.MapVal().PutString("key_in_child", "somestr3")
 	assert.EqualValues(t, 1, childMap.MapVal().Len())
 	got, exists = childMap.MapVal().Get("key_in_child")
 	require.True(t, exists)
-	assert.Equal(t, NewValueString("somestr3"), got)
+	assert.Equal(t, NewValueStr("somestr3"), got)
 
 	// The source child map should be modified.
 	got, exists = m2.Get("key_in_child")
 	require.True(t, exists)
-	assert.Equal(t, NewValueString("somestr3"), got)
+	assert.Equal(t, NewValueStr("somestr3"), got)
 
 	removed := m1.Map().Remove("double_key")
 	assert.True(t, removed)
@@ -180,14 +180,14 @@ func TestValueEqual(t *testing.T) {
 	av2 := NewValueEmpty()
 	assert.True(t, av1.Equal(av2))
 
-	av2 = NewValueString("abc")
+	av2 = NewValueStr("abc")
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
-	av1 = NewValueString("abc")
+	av1 = NewValueStr("abc")
 	assert.True(t, av1.Equal(av2))
 
-	av2 = NewValueString("edf")
+	av2 = NewValueStr("edf")
 	assert.False(t, av1.Equal(av2))
 
 	av2 = NewValueInt(123)
@@ -755,7 +755,7 @@ func TestValueSlice(t *testing.T) {
 
 	a2.Slice().AppendEmpty().SetStr("somestr")
 	assert.EqualValues(t, 1, a2.Slice().Len())
-	assert.EqualValues(t, NewValueString("somestr"), a2.Slice().At(0))
+	assert.EqualValues(t, NewValueStr("somestr"), a2.Slice().At(0))
 
 	// Insert the second array as a child.
 	a2.CopyTo(a1.Slice().AppendEmpty())
@@ -806,7 +806,7 @@ func TestAsString(t *testing.T) {
 	}{
 		{
 			name:     "string",
-			input:    NewValueString("string value"),
+			input:    NewValueStr("string value"),
 			expected: "string value",
 		},
 		{
@@ -881,7 +881,7 @@ func TestValueAsRaw(t *testing.T) {
 	}{
 		{
 			name:     "string",
-			input:    NewValueString("value"),
+			input:    NewValueStr("value"),
 			expected: "value",
 		},
 		{
@@ -961,7 +961,7 @@ func TestNewValueFromRaw(t *testing.T) {
 		{
 			name:     "string",
 			input:    "text",
-			expected: NewValueString("text"),
+			expected: NewValueStr("text"),
 		},
 		{
 			name:     "int",
@@ -1079,7 +1079,7 @@ func TestNewValueFromRaw(t *testing.T) {
 			name:  "invalid value",
 			input: ValueTypeDouble,
 			expected: (func() Value {
-				return NewValueString("<Invalid value type pcommon.ValueType>")
+				return NewValueStr("<Invalid value type pcommon.ValueType>")
 			})(),
 		},
 	}
