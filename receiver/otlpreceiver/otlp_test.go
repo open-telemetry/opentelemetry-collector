@@ -112,7 +112,7 @@ var traceJSON = []byte(`
 var traceOtlp = func() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutString(semconv.AttributeHostName, "testHost")
+	rs.Resource().Attributes().PutStr(semconv.AttributeHostName, "testHost")
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
 	span1 := spans.AppendEmpty()
 	span1.SetTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC})

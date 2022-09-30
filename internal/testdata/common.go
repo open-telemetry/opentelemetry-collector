@@ -25,40 +25,40 @@ const (
 
 func initResourceAttributes1(dest pcommon.Map) {
 	dest.Clear()
-	dest.PutString("resource-attr", "resource-attr-val-1")
+	dest.PutStr("resource-attr", "resource-attr-val-1")
 }
 
 func initSpanEventAttributes(dest pcommon.Map) {
 	dest.Clear()
-	dest.PutString("span-event-attr", "span-event-attr-val")
+	dest.PutStr("span-event-attr", "span-event-attr-val")
 }
 
 func initSpanLinkAttributes(dest pcommon.Map) {
 	dest.Clear()
-	dest.PutString("span-link-attr", "span-link-attr-val")
+	dest.PutStr("span-link-attr", "span-link-attr-val")
 }
 
 func initMetricExemplarAttributes(dest pcommon.Map) {
 	dest.Clear()
-	dest.PutString("exemplar-attachment", "exemplar-attachment-value")
+	dest.PutStr("exemplar-attachment", "exemplar-attachment-value")
 }
 
 func initMetricAttributes1(dest pcommon.Map) {
 	dest.Clear()
-	dest.PutString("label-1", "label-value-1")
+	dest.PutStr("label-1", "label-value-1")
 }
 
 func initMetricAttributes12(dest pcommon.Map) {
 	initMetricAttributes1(dest)
-	dest.PutString(testLabelKey2, testLabelValue2)
+	dest.PutStr(testLabelKey2, testLabelValue2)
 }
 
 func initMetricAttributes13(dest pcommon.Map) {
 	initMetricAttributes1(dest)
-	dest.PutString("label-3", "label-value-3")
+	dest.PutStr("label-3", "label-value-3")
 }
 
 func initMetricAttributes2(dest pcommon.Map) {
 	dest.Clear()
-	dest.PutString(testLabelKey2, testLabelValue2)
+	dest.PutStr(testLabelKey2, testLabelValue2)
 }
