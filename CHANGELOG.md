@@ -6,6 +6,7 @@
 
 - Deprecate `p[metric|log|trace]otlp.RegiserServer` in favor of `p[metric|log|trace]otlp.RegiserGRPCServer` (#6180)
 - Deprecate `pcommon.Map.PutString` in favor of `pcommon.Map.PutStr` (#6210)
+- Deprecate `pcommon.NewValueString` in favor of `pcommon.NewValueStr` (#6209)
 
 ### 💡 Enhancements 💡
 
