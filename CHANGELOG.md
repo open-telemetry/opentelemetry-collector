@@ -6,6 +6,10 @@
 
 - Deprecate `p[metric|log|trace]otlp.RegiserServer` in favor of `p[metric|log|trace]otlp.RegiserGRPCServer` (#6180)
 - Deprecate `pcommon.NewValueString` in favor of `pcommon.NewValueStr` (#6209)
+- Deprecate `ptrace.StatusCode` along its enum constants favor of `SpanStatusCode` (#6212)
+  - `StatusCodeUnset` renamed to `SpanStatusCodeUnset`.
+  - `StatusCodeOk` renamed to `SpanStatusCodeOk`.
+  - `StatusCodeError` renamed to `SpanStatusCodeError`.
 
 ### 💡 Enhancements 💡
 

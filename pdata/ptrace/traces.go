@@ -120,14 +120,26 @@ const (
 	SpanKindConsumer = SpanKind(otlptrace.Span_SPAN_KIND_CONSUMER)
 )
 
-// StatusCode mirrors the codes defined at
+// SpanStatusCode mirrors the codes defined at
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
-type StatusCode int32
+type SpanStatusCode int32
+
+// Deprecated: [0.62.0] Use SpanStatusCode instead
+type StatusCode = SpanStatusCode
 
 const (
-	StatusCodeUnset = StatusCode(otlptrace.Status_STATUS_CODE_UNSET)
-	StatusCodeOk    = StatusCode(otlptrace.Status_STATUS_CODE_OK)
-	StatusCodeError = StatusCode(otlptrace.Status_STATUS_CODE_ERROR)
+	SpanStatusCodeUnset = SpanStatusCode(otlptrace.Status_STATUS_CODE_UNSET)
+	SpanStatusCodeOk    = SpanStatusCode(otlptrace.Status_STATUS_CODE_OK)
+	SpanStatusCodeError = SpanStatusCode(otlptrace.Status_STATUS_CODE_ERROR)
+
+	// Deprecated: [0.62.0] Use SpanStatusCodeUnset instead
+	StatusCodeUnset = SpanStatusCodeUnset
+
+	// Deprecated: [0.62.0] Use SpanStatusCodeOk instead
+	StatusCodeOk = SpanStatusCodeOk
+
+	// Deprecated: [0.62.0] Use SpanStatusCodeError instead
+	StatusCodeError = SpanStatusCodeError
 )
 
 // String returns the string representation of the StatusCode.

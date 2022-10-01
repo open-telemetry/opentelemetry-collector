@@ -197,7 +197,7 @@ var spanStatus = &messageValueStruct{
 			fieldName:       "Code",
 			originFieldName: "Code",
 			returnType: &primitiveType{
-				structName: "StatusCode",
+				structName: "SpanStatusCode",
 				rawType:    "otlptrace.Status_StatusCode",
 				defaultVal: "0",
 				testVal:    "1",

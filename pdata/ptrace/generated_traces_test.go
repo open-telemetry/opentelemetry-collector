@@ -902,8 +902,8 @@ func TestSpanStatus_CopyTo(t *testing.T) {
 
 func TestSpanStatus_Code(t *testing.T) {
 	ms := NewSpanStatus()
-	assert.Equal(t, StatusCode(0), ms.Code())
-	testValCode := StatusCode(1)
+	assert.Equal(t, SpanStatusCode(0), ms.Code())
+	testValCode := SpanStatusCode(1)
 	ms.SetCode(testValCode)
 	assert.Equal(t, testValCode, ms.Code())
 }

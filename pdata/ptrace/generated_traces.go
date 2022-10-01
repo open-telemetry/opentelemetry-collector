@@ -1220,12 +1220,12 @@ func (ms SpanStatus) MoveTo(dest SpanStatus) {
 }
 
 // Code returns the code associated with this SpanStatus.
-func (ms SpanStatus) Code() StatusCode {
-	return StatusCode(ms.getOrig().Code)
+func (ms SpanStatus) Code() SpanStatusCode {
+	return SpanStatusCode(ms.getOrig().Code)
 }
 
 // SetCode replaces the code associated with this SpanStatus.
-func (ms SpanStatus) SetCode(v StatusCode) {
+func (ms SpanStatus) SetCode(v SpanStatusCode) {
 	ms.getOrig().Code = otlptrace.Status_StatusCode(v)
 }
 
