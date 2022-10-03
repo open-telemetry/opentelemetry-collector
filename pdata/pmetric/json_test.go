@@ -27,7 +27,7 @@ import (
 var metricsOTLP = func() Metrics {
 	md := NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutString("host.name", "testHost")
+	rm.Resource().Attributes().PutStr("host.name", "testHost")
 	il := rm.ScopeMetrics().AppendEmpty()
 	il.Scope().SetName("name")
 	il.Scope().SetVersion("version")
@@ -62,14 +62,14 @@ var metricsSumOTLPFull = func() Metrics {
 	rs := metric.ResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
-	rs.Resource().Attributes().PutString("host.name", "testHost")
-	rs.Resource().Attributes().PutString("service.name", "testService")
+	rs.Resource().Attributes().PutStr("host.name", "testHost")
+	rs.Resource().Attributes().PutStr("service.name", "testService")
 	rs.Resource().SetDroppedAttributesCount(1)
 	// Add InstrumentationLibraryMetrics.
 	m := rs.ScopeMetrics().AppendEmpty()
 	m.Scope().SetName("instrumentation name")
 	m.Scope().SetVersion("instrumentation version")
-	m.Scope().Attributes().PutString("instrumentation.attribute", "test")
+	m.Scope().Attributes().PutStr("instrumentation.attribute", "test")
 	m.SetSchemaUrl("schemaURL")
 	// Add Metric
 	sumMetric := m.Metrics().AppendEmpty()
@@ -82,7 +82,7 @@ var metricsSumOTLPFull = func() Metrics {
 	datapoint := sum.DataPoints().AppendEmpty()
 	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	datapoint.SetIntValue(100)
-	datapoint.Attributes().PutString("string", "value")
+	datapoint.Attributes().PutStr("string", "value")
 	datapoint.Attributes().PutBool("bool", true)
 	datapoint.Attributes().PutInt("int", 1)
 	datapoint.Attributes().PutDouble("double", 1.1)
@@ -94,7 +94,7 @@ var metricsSumOTLPFull = func() Metrics {
 	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetSpanID(spanID)
 	exemplar.SetTraceID(traceID)
-	exemplar.FilteredAttributes().PutString("service.name", "testService")
+	exemplar.FilteredAttributes().PutStr("service.name", "testService")
 	datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return metric
 }
@@ -104,8 +104,8 @@ var metricsGaugeOTLPFull = func() Metrics {
 	rs := metric.ResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
-	rs.Resource().Attributes().PutString("host.name", "testHost")
-	rs.Resource().Attributes().PutString("service.name", "testService")
+	rs.Resource().Attributes().PutStr("host.name", "testHost")
+	rs.Resource().Attributes().PutStr("service.name", "testService")
 	rs.Resource().SetDroppedAttributesCount(1)
 	// Add InstrumentationLibraryMetrics.
 	m := rs.ScopeMetrics().AppendEmpty()
@@ -121,7 +121,7 @@ var metricsGaugeOTLPFull = func() Metrics {
 	datapoint := gauge.DataPoints().AppendEmpty()
 	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	datapoint.SetDoubleValue(10.2)
-	datapoint.Attributes().PutString("string", "value")
+	datapoint.Attributes().PutStr("string", "value")
 	datapoint.Attributes().PutBool("bool", true)
 	datapoint.Attributes().PutInt("int", 1)
 	datapoint.Attributes().PutDouble("double", 1.1)
@@ -133,7 +133,7 @@ var metricsGaugeOTLPFull = func() Metrics {
 	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetSpanID(spanID)
 	exemplar.SetTraceID(traceID)
-	exemplar.FilteredAttributes().PutString("service.name", "testService")
+	exemplar.FilteredAttributes().PutStr("service.name", "testService")
 	datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return metric
 }
@@ -143,8 +143,8 @@ var metricsHistogramOTLPFull = func() Metrics {
 	rs := metric.ResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
-	rs.Resource().Attributes().PutString("host.name", "testHost")
-	rs.Resource().Attributes().PutString("service.name", "testService")
+	rs.Resource().Attributes().PutStr("host.name", "testHost")
+	rs.Resource().Attributes().PutStr("service.name", "testService")
 	rs.Resource().SetDroppedAttributesCount(1)
 	// Add InstrumentationLibraryMetrics.
 	m := rs.ScopeMetrics().AppendEmpty()
@@ -160,7 +160,7 @@ var metricsHistogramOTLPFull = func() Metrics {
 	histogram.SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	datapoint := histogram.DataPoints().AppendEmpty()
 	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	datapoint.Attributes().PutString("string", "value")
+	datapoint.Attributes().PutStr("string", "value")
 	datapoint.Attributes().PutBool("bool", true)
 	datapoint.Attributes().PutInt("int", 1)
 	datapoint.Attributes().PutDouble("double", 1.1)
@@ -177,7 +177,7 @@ var metricsHistogramOTLPFull = func() Metrics {
 	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetSpanID(spanID)
 	exemplar.SetTraceID(traceID)
-	exemplar.FilteredAttributes().PutString("service.name", "testService")
+	exemplar.FilteredAttributes().PutStr("service.name", "testService")
 	datapoint.SetMax(float64(time.Now().Unix()))
 	datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return metric
@@ -188,8 +188,8 @@ var metricsExponentialHistogramOTLPFull = func() Metrics {
 	rs := metric.ResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
-	rs.Resource().Attributes().PutString("host.name", "testHost")
-	rs.Resource().Attributes().PutString("service.name", "testService")
+	rs.Resource().Attributes().PutStr("host.name", "testHost")
+	rs.Resource().Attributes().PutStr("service.name", "testService")
 	rs.Resource().SetDroppedAttributesCount(1)
 	// Add InstrumentationLibraryMetrics.
 	m := rs.ScopeMetrics().AppendEmpty()
@@ -206,7 +206,7 @@ var metricsExponentialHistogramOTLPFull = func() Metrics {
 	datapoint := histogram.DataPoints().AppendEmpty()
 	datapoint.SetScale(1)
 	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	datapoint.Attributes().PutString("string", "value")
+	datapoint.Attributes().PutStr("string", "value")
 	datapoint.Attributes().PutBool("bool", true)
 	datapoint.Attributes().PutInt("int", 1)
 	datapoint.Attributes().PutDouble("double", 1.1)
@@ -223,7 +223,7 @@ var metricsExponentialHistogramOTLPFull = func() Metrics {
 	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	exemplar.SetSpanID(spanID)
 	exemplar.SetTraceID(traceID)
-	exemplar.FilteredAttributes().PutString("service.name", "testService")
+	exemplar.FilteredAttributes().PutStr("service.name", "testService")
 	datapoint.SetMax(float64(time.Now().Unix()))
 	datapoint.Negative().BucketCounts().FromRaw([]uint64{1, 1, 2})
 	datapoint.Negative().SetOffset(2)
@@ -237,8 +237,8 @@ var metricsSummaryOTLPFull = func() Metrics {
 	rs := metric.ResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
-	rs.Resource().Attributes().PutString("host.name", "testHost")
-	rs.Resource().Attributes().PutString("service.name", "testService")
+	rs.Resource().Attributes().PutStr("host.name", "testHost")
+	rs.Resource().Attributes().PutStr("service.name", "testService")
 	rs.Resource().SetDroppedAttributesCount(1)
 	// Add InstrumentationLibraryMetrics.
 	m := rs.ScopeMetrics().AppendEmpty()
@@ -258,7 +258,7 @@ var metricsSummaryOTLPFull = func() Metrics {
 	quantile := datapoint.QuantileValues().AppendEmpty()
 	quantile.SetQuantile(0.5)
 	quantile.SetValue(1.2)
-	datapoint.Attributes().PutString("string", "value")
+	datapoint.Attributes().PutStr("string", "value")
 	datapoint.Attributes().PutBool("bool", true)
 	datapoint.Attributes().PutInt("int", 1)
 	datapoint.Attributes().PutDouble("double", 1.1)

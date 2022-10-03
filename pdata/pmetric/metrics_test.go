@@ -383,7 +383,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	gaugeDataPoints.At(0).SetDoubleValue(124.1)
 	assert.EqualValues(t, 124.1, gaugeDataPoints.At(0).DoubleValue())
 	gaugeDataPoints.At(0).Attributes().Remove("key0")
-	gaugeDataPoints.At(0).Attributes().PutString("k", "v")
+	gaugeDataPoints.At(0).Attributes().PutStr("k", "v")
 	assert.EqualValues(t, newAttributes, gaugeDataPoints.At(0).Attributes().AsRaw())
 
 	// Test that everything is updated.
@@ -466,7 +466,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	doubleDataPoints.At(0).SetDoubleValue(124.1)
 	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).DoubleValue())
 	doubleDataPoints.At(0).Attributes().Remove("key0")
-	doubleDataPoints.At(0).Attributes().PutString("k", "v")
+	doubleDataPoints.At(0).Attributes().PutStr("k", "v")
 	assert.EqualValues(t, newAttributes, doubleDataPoints.At(0).Attributes().AsRaw())
 
 	// Test that everything is updated.
@@ -548,7 +548,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	histogramDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
 	histogramDataPoints.At(0).Attributes().Remove("key0")
-	histogramDataPoints.At(0).Attributes().PutString("k", "v")
+	histogramDataPoints.At(0).Attributes().PutStr("k", "v")
 	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes().AsRaw())
 	histogramDataPoints.At(0).ExplicitBounds().FromRaw([]float64{1})
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).ExplicitBounds().AsRaw())
@@ -631,7 +631,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	histogramDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
 	histogramDataPoints.At(0).Attributes().Remove("key0")
-	histogramDataPoints.At(0).Attributes().PutString("k", "v")
+	histogramDataPoints.At(0).Attributes().PutStr("k", "v")
 	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes().AsRaw())
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
@@ -730,7 +730,7 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		md := newMetrics(req)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().
-			PutString("key0", "value2")
+			PutStr("key0", "value2")
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -757,7 +757,7 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		md := newMetrics(req)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().
-			PutString("key0", "value2")
+			PutStr("key0", "value2")
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -784,7 +784,7 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		md := newMetrics(req)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().
-			PutString("key0", "value2")
+			PutStr("key0", "value2")
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()

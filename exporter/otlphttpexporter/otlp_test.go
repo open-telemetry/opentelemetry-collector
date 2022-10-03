@@ -269,8 +269,8 @@ func TestIssue_4221(t *testing.T) {
 
 	md := ptrace.NewTraces()
 	rms := md.ResourceSpans().AppendEmpty()
-	rms.Resource().Attributes().PutString("service.name", "uop.stage-eu-1")
-	rms.Resource().Attributes().PutString("outsystems.module.version", "903386")
+	rms.Resource().Attributes().PutStr("service.name", "uop.stage-eu-1")
+	rms.Resource().Attributes().PutStr("outsystems.module.version", "903386")
 	ils := rms.ScopeSpans().AppendEmpty()
 	ils.Scope().SetName("uop_canaries")
 	ils.Scope().SetVersion("1")
@@ -292,7 +292,7 @@ func TestIssue_4221(t *testing.T) {
 
 	span.SetEndTimestamp(1634684637873000000)
 	span.Attributes().PutInt("span_index", 3)
-	span.Attributes().PutString("code.function", "myFunction36")
+	span.Attributes().PutStr("code.function", "myFunction36")
 	span.SetStartTimestamp(1634684637873000000)
 
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), md))

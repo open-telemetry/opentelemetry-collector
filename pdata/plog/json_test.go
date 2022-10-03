@@ -28,7 +28,7 @@ import (
 var logsOTLP = func() Logs {
 	ld := NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("host.name", "testHost")
+	rl.Resource().Attributes().PutStr("host.name", "testHost")
 	rl.Resource().SetDroppedAttributesCount(1)
 	rl.SetSchemaUrl("testSchemaURL")
 	il := rl.ScopeLogs().AppendEmpty()
@@ -49,7 +49,7 @@ var logsOTLP = func() Logs {
 	t := pcommon.NewTimestampFromTime(time.Now())
 	lg.SetTimestamp(t)
 	lg.SetObservedTimestamp(t)
-	lg.Attributes().PutString("sdkVersion", "1.0.1")
+	lg.Attributes().PutStr("sdkVersion", "1.0.1")
 	return ld
 }
 

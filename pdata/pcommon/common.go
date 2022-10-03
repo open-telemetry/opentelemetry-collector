@@ -715,15 +715,23 @@ func (m Map) PutEmpty(k string) Value {
 	return newValue(&(*m.getOrig())[len(*m.getOrig())-1].Value)
 }
 
-// PutString performs the Insert or Update action. The Value is
+// PutStr performs the Insert or Update action. The Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) PutString(k string, v string) {
+func (m Map) PutStr(k string, v string) {
 	if av, existing := m.Get(k); existing {
 		av.SetStr(v)
 	} else {
 		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v))
 	}
+}
+
+// PutString performs the Insert or Update action. The Value is
+// inserted to the map that did not originally have the key. The key/value is
+// updated to the map where the key already existed.
+// Deprecated: [0.62.0] Use PutStr instead.
+func (m Map) PutString(k string, v string) {
+	m.PutStr(k, v)
 }
 
 // PutInt performs the Insert or Update action. The int Value is

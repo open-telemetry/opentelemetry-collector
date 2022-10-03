@@ -85,7 +85,7 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, 0, m2.Len())
 
 	// Modify the source map that was inserted.
-	m2.PutString("key_in_child", "somestr")
+	m2.PutStr("key_in_child", "somestr")
 	assert.Equal(t, 1, m2.Len())
 	got, exists = m2.Get("key_in_child")
 	assert.True(t, exists)
@@ -101,7 +101,7 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, m2, got.MapVal())
 
 	// Modify the source map m2 that was inserted into m1.
-	m2.PutString("key_in_child", "somestr2")
+	m2.PutStr("key_in_child", "somestr2")
 	assert.EqualValues(t, 1, m2.Len())
 	got, exists = m2.Get("key_in_child")
 	assert.True(t, exists)
@@ -115,7 +115,7 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, NewValueStr("somestr2"), got)
 
 	// Now modify the inserted map (not the source)
-	childMap.MapVal().PutString("key_in_child", "somestr3")
+	childMap.MapVal().PutStr("key_in_child", "somestr3")
 	assert.EqualValues(t, 1, childMap.MapVal().Len())
 	got, exists = childMap.MapVal().Get("key_in_child")
 	require.True(t, exists)
@@ -248,12 +248,12 @@ func TestValueEqual(t *testing.T) {
 	assert.False(t, av1.Equal(av2))
 
 	av1 = NewValueMap()
-	av1.Map().PutString("foo", "bar")
+	av1.Map().PutStr("foo", "bar")
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av2 = NewValueMap()
-	av2.Map().PutString("foo", "bar")
+	av2.Map().PutStr("foo", "bar")
 	assert.True(t, av1.Equal(av2))
 
 	fooVal, ok := av2.Map().Get("foo")
@@ -270,7 +270,7 @@ func TestMap(t *testing.T) {
 	assert.EqualValues(t, newValue(nil), val)
 
 	putString := NewMap()
-	putString.PutString("k", "v")
+	putString.PutStr("k", "v")
 	assert.EqualValues(t, Map(internal.GenerateTestMap()), putString)
 
 	putInt := NewMap()
@@ -412,7 +412,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeEmpty, val.Type())
 	assert.EqualValues(t, "", val.Str())
 
-	sm.PutString("other_key_string", "other_value")
+	sm.PutStr("other_key_string", "other_value")
 	val, exist = sm.Get("other_key_string")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeStr, val.Type())
@@ -442,7 +442,7 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.EqualValues(t, ValueTypeBytes, val.Type())
 	assert.EqualValues(t, []byte{7, 8, 9}, val.Bytes().AsRaw())
 
-	sm.PutString("another_key_string", "another_value")
+	sm.PutStr("another_key_string", "another_value")
 	val, exist = sm.Get("another_key_string")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeStr, val.Type())
@@ -668,7 +668,7 @@ func TestMap_Clear(t *testing.T) {
 
 func TestMap_RemoveIf(t *testing.T) {
 	am := NewMap()
-	am.PutString("k_string", "123")
+	am.PutStr("k_string", "123")
 	am.PutInt("k_int", int64(123))
 	am.PutDouble("k_double", float64(1.23))
 	am.PutBool("k_bool", true)
@@ -1095,15 +1095,15 @@ func TestNewValueFromRaw(t *testing.T) {
 func generateTestValueMap() Value {
 	ret := NewValueMap()
 	attrMap := ret.Map()
-	attrMap.PutString("strKey", "strVal")
+	attrMap.PutStr("strKey", "strVal")
 	attrMap.PutInt("intKey", 7)
 	attrMap.PutDouble("floatKey", 18.6)
 	attrMap.PutBool("boolKey", false)
 	attrMap.PutEmpty("nullKey")
 
 	m := attrMap.PutEmptyMap("mapKey")
-	m.PutString("keyOne", "valOne")
-	m.PutString("keyTwo", "valTwo")
+	m.PutStr("keyOne", "valOne")
+	m.PutStr("keyTwo", "valTwo")
 
 	s := attrMap.PutEmptySlice("arrKey")
 	s.AppendEmpty().SetStr("strOne")
