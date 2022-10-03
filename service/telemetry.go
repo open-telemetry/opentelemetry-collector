@@ -15,6 +15,7 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -31,10 +32,12 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -229,8 +232,21 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string) (htt
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
 
+	var resAttrs []attribute.KeyValue
+	for k, v := range attrs {
+		resAttrs = append(resAttrs, attribute.String(k, v))
+	}
+
+	res, err := resource.New(context.TODO(), resource.WithAttributes(resAttrs...))
+	if err != nil {
+		return nil, fmt.Errorf("error creating otel resources: %w", err)
+	}
+
 	exporter := otelprom.New()
-	tel.mp = sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
+	tel.mp = sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(exporter),
+	)
 
 	registry := prometheus.NewRegistry()
 	promLabels := make(prometheus.Labels)
