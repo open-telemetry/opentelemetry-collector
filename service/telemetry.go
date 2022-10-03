@@ -38,7 +38,6 @@ import (
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	otelview "go.opentelemetry.io/otel/sdk/metric/view"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
@@ -47,7 +46,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -251,17 +249,10 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, logg
 		return nil, fmt.Errorf("error creating otlp resources: %w", err)
 	}
 
-	otelviews := obsreport.GetViews()
-	// TODO: this empty view can be deleted after this otel-go sdk bug is fixed
-	// https://github.com/open-telemetry/opentelemetry-go/issues/3224
-	// this needs to be the last view on the views slice since views are matched sequentially.
-	otelviews = append(otelviews, otelview.View{})
-	logger.Info("Configuring otel-go exporters", zap.Int("views_discovered", len(otelviews)))
-
 	exporter := otelprom.New()
 	tel.mp = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
-		sdkmetric.WithReader(exporter, otelviews...),
+		sdkmetric.WithReader(exporter),
 	)
 
 	global.SetMeterProvider(tel.mp)
