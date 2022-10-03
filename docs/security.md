@@ -22,6 +22,7 @@ Collector architecture and functionality.
   - MAY require privileged access for some components
 - Receivers/Exporters
   - SHOULD use encryption and authentication
+  - SHOULD limit exposure of servers to authorized users
   - MAY pose a security risk if configuration parameters are modified improperly
 - Processors
   - SHOULD configure obfuscation/scrubbing of sensitive metadata
@@ -126,6 +127,22 @@ false` configuration setting) and SHOULD leverage
 and
 [http](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp)
 helper functions.
+
+### Safeguards against denial of service attacks
+
+Users SHOULD bind receivers' servers to addresses that limit connections to authorized users.
+For example, if the OTLP receiver OTLP/gRPC server only has local clients, the `endpoint` setting SHOULD be bound to `localhost`:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+```
+
+Generally, `localhost`-like addresses should be preferred over the 0.0.0.0 address outside of containerized environments.
+For more information, see [CWE-1327](https://cwe.mitre.org/data/definitions/1327.html).
 
 ## Processors
 
