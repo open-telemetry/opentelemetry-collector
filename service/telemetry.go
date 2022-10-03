@@ -237,7 +237,7 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string) (htt
 		resAttrs = append(resAttrs, attribute.String(k, v))
 	}
 
-	res, err := resource.New(context.TODO(), resource.WithAttributes(resAttrs...))
+	res, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
 	if err != nil {
 		return nil, fmt.Errorf("error creating otel resources: %w", err)
 	}
@@ -249,6 +249,10 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string) (htt
 	)
 
 	registry := prometheus.NewRegistry()
+	// OpenTelemetry specifies that resource attributes must not be attached to prometheus metrics,
+	// to be compatible with existing OpenCensus instrumentation we need to add them as constant labels
+	// to the prometheus registry.
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#resource-attributes-1
 	promLabels := make(prometheus.Labels)
 	for k, v := range attrs {
 		promLabels[sanitizePrometheusKey(k)] = v
