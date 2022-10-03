@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexporter"
+package otlpgrpcexporter // import "go.opentelemetry.io/collector/exporters/otlpgrpcexporter"
 
 import (
 	"context"

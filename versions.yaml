@@ -18,6 +18,7 @@ module-sets:
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder
+      - go.opentelemetry.io/collector/exporters/otlpgrpcexporter
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/pdata
 
