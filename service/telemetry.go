@@ -129,7 +129,7 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 	var pe http.Handler
 	var err error
 	if tel.registry.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
-		pe, err = tel.initOpenTelemetry()
+		pe, err = tel.initOpenTelemetry(telAttrs)
 	} else {
 		pe, err = tel.initOpenCensus(cfg, telAttrs)
 	}
@@ -225,7 +225,7 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	return pe, nil
 }
 
-func (tel *telemetryInitializer) initOpenTelemetry() (http.Handler, error) {
+func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string) (http.Handler, error) {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
 
@@ -233,7 +233,13 @@ func (tel *telemetryInitializer) initOpenTelemetry() (http.Handler, error) {
 	tel.mp = sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
 
 	registry := prometheus.NewRegistry()
-	if err := registry.Register(exporter.Collector); err != nil {
+	promLabels := make(prometheus.Labels)
+	for k, v := range attrs {
+		promLabels[sanitizePrometheusKey(k)] = v
+	}
+
+	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", prometheus.WrapRegistererWith(promLabels, registry))
+	if err := wrappedRegisterer.Register(exporter.Collector); err != nil {
 		return nil, fmt.Errorf("failed to register prometheus collector: %w", err)
 	}
 
