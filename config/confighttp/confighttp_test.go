@@ -355,7 +355,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load CA CertPool: failed to load CA /doesnt/exist:",
 			settings: HTTPServerSettings{
-				Endpoint: "",
+				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/doesnt/exist",
@@ -366,7 +366,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither",
 			settings: HTTPServerSettings{
-				Endpoint: "",
+				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
 					TLSSetting: configtls.TLSSetting{
 						CertFile: "/doesnt/exist",
@@ -377,7 +377,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 		{
 			err: "^failed to load TLS config: failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: HTTPServerSettings{
-				Endpoint: "",
+				Endpoint: "localhost:0",
 				TLSSetting: &configtls.TLSServerSetting{
 					ClientCAFile: "/doesnt/exist",
 				},
@@ -759,7 +759,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, maxAge int, extraHe
 
 func ExampleHTTPServerSettings() {
 	settings := HTTPServerSettings{
-		Endpoint: ":443",
+		Endpoint: "localhost:443",
 	}
 	s, err := settings.ToServer(
 		componenttest.NewNopHost(),
