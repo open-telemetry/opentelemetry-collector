@@ -17,10 +17,6 @@ package obsmetrics // import "go.opentelemetry.io/collector/internal/obsreportco
 import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/unit"
 )
 
 const (
@@ -87,40 +83,4 @@ var (
 		ReceiverPrefix+RefusedLogRecordsKey,
 		"Number of log records that could not be pushed into the pipeline.",
 		stats.UnitDimensionless)
-
-	otelMeter     = global.Meter(MeterName)
-	AttrReceiver  = attribute.Key(ReceiverKey)
-	AttrTransport = attribute.Key(TransportKey)
-
-	// Receiver metrics created via the OpenTelemetry Go APIs.
-	OtelReceiverAcceptedSpans, _ = otelMeter.SyncInt64().Counter(
-		ReceiverPrefix+AcceptedSpansKey,
-		instrument.WithDescription("Number of spans successfully pushed into the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
-	)
-	OtelReceiverRefusedSpans, _ = otelMeter.SyncInt64().Counter(
-		ReceiverPrefix+RefusedSpansKey,
-		instrument.WithDescription("Number of spans that could not be pushed into the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
-	)
-	OtelReceiverAcceptedMetricPoints, _ = otelMeter.SyncInt64().Counter(
-		ReceiverPrefix+AcceptedMetricPointsKey,
-		instrument.WithDescription("Number of metric points successfully pushed into the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
-	)
-	OtelReceiverRefusedMetricPoints, _ = otelMeter.SyncInt64().Counter(
-		ReceiverPrefix+RefusedMetricPointsKey,
-		instrument.WithDescription("Number of metric points that could not be pushed into the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
-	)
-	OtelReceiverAcceptedLogRecords, _ = otelMeter.SyncInt64().Counter(
-		ReceiverPrefix+AcceptedLogRecordsKey,
-		instrument.WithDescription("Number of log records successfully pushed into the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
-	)
-	OtelReceiverRefusedLogRecords, _ = otelMeter.SyncInt64().Counter(
-		ReceiverPrefix+RefusedLogRecordsKey,
-		instrument.WithDescription("Number of log records that could not be pushed into the pipeline."),
-		instrument.WithUnit(unit.Dimensionless),
-	)
 )
