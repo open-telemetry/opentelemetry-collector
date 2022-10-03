@@ -60,10 +60,27 @@ type ConfigProvider interface {
 	//
 	// Should never be called concurrently with itself or Get.
 	Shutdown(ctx context.Context) error
+
+	// ConfigUpdateFailed is called by the Service if applying the last config
+	// returned by Get() failed for any reason, including if Get() returned an error.
+	ConfigUpdateFailed(err error)
+
+	// ConfigUpdateSucceeded is called by the Service if applying the last config
+	// return by Get() succeeded and the Service.Start() succeeded.
+	ConfigUpdateSucceeded()
 }
 
 type configProvider struct {
 	mapResolver *confmap.Resolver
+
+	// lastResolvedConfig contains the result of the last mapResolver.Resolve() operation in YAML format.
+	lastResolvedConfig []byte
+
+	// lastKnownGoodConfig is the last config that is known to be good since the service
+	// has successfully started and reported it to be good. This field is in YAML format.
+	// If as a result of the last mapResolver.Resolve() the service successfully applied
+	// the config and started successfully then lastKnownGoodConfig==lastResolvedConfig.
+	lastKnownGoodConfig []byte
 }
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
@@ -100,9 +117,22 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*Config, error) {
+	// If resolving fails we don't want to mistakenly keep the previously resolved config.
+	cm.lastResolvedConfig = nil
+
 	retMap, err := cm.mapResolver.Resolve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
+	}
+
+	// Update lastResolvedConfig
+	effectiveConfig, err := retMap.MarshalToYAML()
+	if err == nil {
+		cm.lastResolvedConfig = effectiveConfig
+	} else {
+		// TODO: log the error. We don't want to return an error just because we could not
+		// compute the effective config's YAML representation which is only needed for
+		// reporting, but not needed for service operation.
 	}
 
 	var cfg *Config
@@ -115,6 +145,15 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 	}
 
 	return cfg, nil
+}
+
+func (cm *configProvider) ConfigUpdateFailed(err error) {
+	cm.mapResolver.ConfigUpdateFailed(cm.lastKnownGoodConfig, cm.lastResolvedConfig, err)
+}
+
+func (cm *configProvider) ConfigUpdateSucceeded() {
+	cm.lastKnownGoodConfig = cm.lastResolvedConfig
+	cm.mapResolver.ConfigUpdateSucceeded(cm.lastKnownGoodConfig)
 }
 
 func (cm *configProvider) Watch() <-chan error {

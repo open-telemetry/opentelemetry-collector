@@ -156,6 +156,22 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	return retMap, nil
 }
 
+func (mr *Resolver) ConfigUpdateFailed(lastKnownGoodEffectiveConfig, failedEffectiveConfig []byte, failureReason error) {
+	for _, provider := range mr.providers {
+		if np, ok := provider.(NotifiableProvider); ok {
+			np.ConfigUpdateFailed(lastKnownGoodEffectiveConfig, failedEffectiveConfig, failureReason)
+		}
+	}
+}
+
+func (mr *Resolver) ConfigUpdateSucceeded(newEffectiveConfig []byte) {
+	for _, provider := range mr.providers {
+		if np, ok := provider.(NotifiableProvider); ok {
+			np.ConfigUpdateSucceeded(newEffectiveConfig)
+		}
+	}
+}
+
 // Watch blocks until any configuration change was detected or an unrecoverable error
 // happened during monitoring the configuration changes.
 //

@@ -74,6 +74,25 @@ type Provider interface {
 	Shutdown(ctx context.Context) error
 }
 
+// NotifiableProvider is an optional interface that can be implemented by a Provider implementation
+// in order to be notified on the failure or success of applying the resolved config.
+type NotifiableProvider interface {
+	// ConfigUpdateFailed is called by the Service if applying the last config
+	// returned by Get() failed for any reason, including if Get() returned an error.
+	//
+	// lastKnownGoodEffectiveConfig is the last effective config that is known to be good since the Service
+	// has successfully started and reported it to be good.
+	// failedEffectiveConfig is the last effective config that was resolved but which failed to be applied.
+	// lastKnownGoodEffectiveConfig and failedEffectiveConfig are in YAML format.
+	// failureReason is the error that indicates why applying the config failed.
+	ConfigUpdateFailed(lastKnownGoodEffectiveConfig, failedEffectiveConfig []byte, failureReason error)
+
+	// ConfigUpdateSucceeded is called by the Service if applying the last config
+	// return by Get() succeeded and the Service.Start() succeeded.
+	// newEffectiveConfig is the effective config that was successfully applied.
+	ConfigUpdateSucceeded(newEffectiveConfig []byte)
+}
+
 type WatcherFunc func(*ChangeEvent)
 
 // ChangeEvent describes the particular change event that happened with the config.

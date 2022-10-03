@@ -21,6 +21,7 @@ import (
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/maps"
+	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/mitchellh/mapstructure"
 
@@ -80,6 +81,10 @@ func (l *Conf) Marshal(rawVal interface{}) error {
 		return fmt.Errorf("invalid config encoding")
 	}
 	return l.Merge(NewFromStringMap(out))
+}
+
+func (l *Conf) MarshalToYAML() ([]byte, error) {
+	return l.k.Marshal(yaml.Parser())
 }
 
 // Get can retrieve any value given the key to use.

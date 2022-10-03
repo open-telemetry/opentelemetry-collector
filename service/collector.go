@@ -125,6 +125,15 @@ func (col *Collector) Shutdown() {
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
+	var err error
+	defer func() {
+		if err != nil {
+			col.set.ConfigProvider.ConfigUpdateFailed(err)
+		} else {
+			col.set.ConfigProvider.ConfigUpdateSucceeded()
+		}
+	}()
+
 	col.setCollectorState(Starting)
 
 	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
@@ -152,6 +161,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return err
 	}
 	col.setCollectorState(Running)
+
 	return nil
 }
 
@@ -176,6 +186,10 @@ LOOP:
 				col.service.telemetrySettings.Logger.Error("Config watch failed", zap.Error(err))
 				break LOOP
 			}
+
+			// TODO: Refactor this code to Resolve and verify the new config before shutting down the service.
+			// If the new config is is invalid then don't restart the service, instead log the error and continue
+			// running the service using the old config.
 
 			col.service.telemetrySettings.Logger.Warn("Config updated, restart service")
 			col.setCollectorState(Closing)
