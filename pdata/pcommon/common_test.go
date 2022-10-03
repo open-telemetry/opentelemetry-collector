@@ -74,14 +74,14 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, NewMap(), m1.Map())
 	assert.Equal(t, 0, m1.Map().Len())
 
-	m1.MapVal().PutDouble("double_key", 123)
-	assert.Equal(t, 1, m1.MapVal().Len())
-	got, exists := m1.MapVal().Get("double_key")
+	m1.Map().PutDouble("double_key", 123)
+	assert.Equal(t, 1, m1.Map().Len())
+	got, exists := m1.Map().Get("double_key")
 	assert.True(t, exists)
 	assert.Equal(t, NewValueDouble(123), got)
 
 	// Create a second map.
-	m2 := m1.MapVal().PutEmptyMap("child_map")
+	m2 := m1.Map().PutEmptyMap("child_map")
 	assert.Equal(t, 0, m2.Len())
 
 	// Modify the source map that was inserted.
@@ -92,13 +92,13 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, NewValueStr("somestr"), got)
 
 	// Insert the second map as a child. This should perform a deep copy.
-	assert.EqualValues(t, 2, m1.MapVal().Len())
-	got, exists = m1.MapVal().Get("double_key")
+	assert.EqualValues(t, 2, m1.Map().Len())
+	got, exists = m1.Map().Get("double_key")
 	assert.True(t, exists)
 	assert.Equal(t, NewValueDouble(123), got)
 	got, exists = m1.Map().Get("child_map")
 	assert.True(t, exists)
-	assert.Equal(t, m2, got.MapVal())
+	assert.Equal(t, m2, got.Map())
 
 	// Modify the source map m2 that was inserted into m1.
 	m2.PutStr("key_in_child", "somestr2")
@@ -108,16 +108,16 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, NewValueStr("somestr2"), got)
 
 	// The child map inside m1 should be modified.
-	childMap, childMapExists := m1.MapVal().Get("child_map")
+	childMap, childMapExists := m1.Map().Get("child_map")
 	require.True(t, childMapExists)
 	got, exists = childMap.Map().Get("key_in_child")
 	require.True(t, exists)
 	assert.Equal(t, NewValueStr("somestr2"), got)
 
 	// Now modify the inserted map (not the source)
-	childMap.MapVal().PutStr("key_in_child", "somestr3")
-	assert.EqualValues(t, 1, childMap.MapVal().Len())
-	got, exists = childMap.MapVal().Get("key_in_child")
+	childMap.Map().PutStr("key_in_child", "somestr3")
+	assert.EqualValues(t, 1, childMap.Map().Len())
+	got, exists = childMap.Map().Get("key_in_child")
 	require.True(t, exists)
 	assert.Equal(t, NewValueStr("somestr3"), got)
 
@@ -221,12 +221,12 @@ func TestValueEqual(t *testing.T) {
 	assert.True(t, av1.Equal(av2))
 
 	av2 = NewValueBytes()
-	av2.BytesVal().FromRaw([]byte{1, 2, 3})
+	av2.Bytes().FromRaw([]byte{1, 2, 3})
 	assert.False(t, av1.Equal(av2))
 	assert.False(t, av2.Equal(av1))
 
 	av1 = NewValueBytes()
-	av1.BytesVal().FromRaw([]byte{1, 2, 4})
+	av1.Bytes().FromRaw([]byte{1, 2, 4})
 	assert.False(t, av1.Equal(av2))
 
 	av1.Bytes().SetAt(2, 3)
@@ -362,7 +362,7 @@ func TestMapPutEmptySlice(t *testing.T) {
 	}, m.AsRaw())
 	childSliceVal, ok := m.Get("k")
 	assert.True(t, ok)
-	childSliceVal.Slice().AppendEmpty().SetEmptySliceVal().AppendEmpty().SetStr("val")
+	childSliceVal.Slice().AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("val")
 	assert.EqualValues(t, map[string]interface{}{
 		"k": []interface{}{[]interface{}{"val"}},
 	}, m.AsRaw())
@@ -446,7 +446,7 @@ func TestMapWithEmpty(t *testing.T) {
 	val, exist = sm.Get("another_key_string")
 	assert.True(t, exist)
 	assert.EqualValues(t, ValueTypeStr, val.Type())
-	assert.EqualValues(t, "another_value", val.StringVal())
+	assert.EqualValues(t, "another_value", val.Str())
 
 	sm.PutInt("another_key_int", 456)
 	val, exist = sm.Get("another_key_int")
@@ -1033,7 +1033,7 @@ func TestNewValueFromRaw(t *testing.T) {
 			input: []byte{1, 2, 3},
 			expected: func() Value {
 				m := NewValueBytes()
-				m.BytesVal().FromRaw([]byte{1, 2, 3})
+				m.Bytes().FromRaw([]byte{1, 2, 3})
 				return m
 			}(),
 		},
@@ -1044,7 +1044,7 @@ func TestNewValueFromRaw(t *testing.T) {
 			},
 			expected: func() Value {
 				m := NewValueMap()
-				m.MapVal().FromRaw(map[string]interface{}{"k": "v"})
+				m.Map().FromRaw(map[string]interface{}{"k": "v"})
 				return m
 			}(),
 		},
@@ -1125,6 +1125,6 @@ func generateTestValueSlice() Value {
 
 func generateTestValueBytes() Value {
 	v := NewValueBytes()
-	v.BytesVal().FromRaw([]byte("String bytes"))
+	v.Bytes().FromRaw([]byte("String bytes"))
 	return v
 }

@@ -126,9 +126,6 @@ type GRPCClient interface {
 	Export(ctx context.Context, request Request, opts ...grpc.CallOption) (Response, error)
 }
 
-// Deprecated: [0.61.0] Use GRPCClient instead
-type Client = GRPCClient
-
 type tracesClient struct {
 	rawClient otlpcollectortrace.TraceServiceClient
 }
@@ -152,9 +149,6 @@ type GRPCServer interface {
 	// alive for the entire life of the application.
 	Export(context.Context, Request) (Response, error)
 }
-
-// Deprecated: [0.61.0] Use GRPCServer instead
-type Server = GRPCServer
 
 // RegisterGRPCServer registers the GRPCServer to the grpc.Server.
 func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
