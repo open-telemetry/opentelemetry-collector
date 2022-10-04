@@ -129,10 +129,6 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 
 	var pe http.Handler
 	var err error
-
-	// Initialize the ocRegistry, still used by the process metrics.
-	tel.ocRegistry = ocmetric.NewRegistry()
-
 	if tel.registry.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
 		tel.useOtelForMetrics = true
 		pe, err = tel.initOpenTelemetry()
