@@ -33,6 +33,10 @@ type TelemetrySettings struct {
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.
 	MeterProvider metric.MeterProvider
 
+	// UseOtelForMetrics controls whether the collector should use otel go sdk for
+	// internal telemetry metrics.
+	UseOtelForMetrics bool
+
 	// MetricsLevel controls the level of detail for metrics emitted by the collector.
 	// Experimental: *NOTE* this field is experimental and may be changed or removed.
 	MetricsLevel configtelemetry.Level

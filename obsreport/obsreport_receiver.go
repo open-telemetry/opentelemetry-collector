@@ -33,11 +33,6 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
-const (
-	attrReceiver  = attribute.Key(obsmetrics.ReceiverKey)
-	attrTransport = attribute.Key(obsmetrics.TransportKey)
-)
-
 // Receiver is a helper to add observability to a component.Receiver.
 type Receiver struct {
 	level          configtelemetry.Level
@@ -50,8 +45,8 @@ type Receiver struct {
 	logger         *zap.Logger
 
 	// Otel API
-	otelEnabled bool
-	otelAttrs   []attribute.KeyValue
+	useOtelForMetrics bool
+	otelAttrs         []attribute.KeyValue
 
 	acceptedSpansCounter        syncint64.Counter
 	refusedSpansCounter         syncint64.Counter
@@ -90,10 +85,10 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(cfg.ReceiverID.String()),
 		logger: cfg.ReceiverCreateSettings.Logger,
 
-		otelEnabled: InstrumentWithOtel(),
+		useOtelForMetrics: cfg.ReceiverCreateSettings.UseOtelForMetrics,
 		otelAttrs: []attribute.KeyValue{
-			attrReceiver.String(cfg.ReceiverID.String()),
-			attrTransport.String(cfg.Transport),
+			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
+			attribute.String(obsmetrics.TransportKey, cfg.Transport),
 		},
 	}
 
@@ -250,7 +245,7 @@ func (rec *Receiver) endOp(
 	span := trace.SpanFromContext(receiverCtx)
 
 	if rec.level != configtelemetry.LevelNone {
-		if rec.otelEnabled {
+		if rec.useOtelForMetrics {
 			rec.recordWithOtel(receiverCtx, dataType, numAccepted, numRefused)
 		} else {
 			rec.recordWithOC(receiverCtx, dataType, numAccepted, numRefused)
