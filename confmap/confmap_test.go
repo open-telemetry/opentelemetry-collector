@@ -329,7 +329,7 @@ func (tc *testConfig) Unmarshal(component *Conf) error {
 	if err := component.UnmarshalExact(tc); err != nil {
 		return err
 	}
-	tc.Another += " is only called directly"
+	tc.Another += " root"
 	return nil
 }
 
@@ -341,41 +341,37 @@ func (nc *nextConfig) Unmarshal(component *Conf) error {
 	if err := component.UnmarshalExact(nc); err != nil {
 		return err
 	}
-	nc.String += " is called"
+	nc.String += " sub-root"
 	return nil
 }
 
 func TestUnmarshaler(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]interface{}{
 		"next": map[string]interface{}{
-			"string": "make sure this",
+			"string": "make sure this is called at",
 		},
-		"another": "make sure this",
+		"another": "make sure this is called at",
 	})
 
 	tc := &testConfig{}
 	assert.NoError(t, cfgMap.Unmarshal(tc))
-	assert.Equal(t, "make sure this", tc.Another)
-	assert.Equal(t, "make sure this is called", tc.Next.String)
-
-	tce := &testConfig{}
-	assert.NoError(t, cfgMap.UnmarshalExact(tce))
-	assert.Equal(t, "make sure this", tce.Another)
-	assert.Equal(t, "make sure this is called", tce.Next.String)
+	assert.Equal(t, "make sure this is called at root", tc.Another)
+	assert.Equal(t, "make sure this is called at sub-root", tc.Next.String)
 }
 
 func TestDirectUnmarshaler(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]interface{}{
 		"next": map[string]interface{}{
-			"string": "make sure this",
+			"string": "make sure this is called at",
 		},
-		"another": "make sure this",
+		"another": "make sure this is called at",
 	})
 
 	tc := &testConfig{}
 	assert.NoError(t, tc.Unmarshal(cfgMap))
-	assert.Equal(t, "make sure this is only called directly", tc.Another)
-	assert.Equal(t, "make sure this is called", tc.Next.String)
+	// Double call the root-root.
+	assert.Equal(t, "make sure this is called at root root", tc.Another)
+	assert.Equal(t, "make sure this is called at sub-root", tc.Next.String)
 }
 
 type testErrConfig struct {
@@ -390,7 +386,7 @@ type errConfig struct {
 	Foo string `mapstructure:"foo"`
 }
 
-func (tc *errConfig) Unmarshal(component *Conf) error {
+func (tc *errConfig) Unmarshal(*Conf) error {
 	return errors.New("never works")
 }
 

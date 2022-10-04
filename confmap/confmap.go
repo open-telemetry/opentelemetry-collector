@@ -48,7 +48,8 @@ func NewFromStringMap(data map[string]interface{}) *Conf {
 // Conf represents the raw configuration map for the OpenTelemetry Collector.
 // The confmap.Conf can be unmarshalled into the Collector's config using the "service" package.
 type Conf struct {
-	k *koanf.Koanf
+	k           *koanf.Koanf
+	inInterface bool
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
@@ -60,12 +61,12 @@ func (l *Conf) AllKeys() []string {
 // Unmarshal unmarshalls the config into a struct.
 // Tags on the fields of the structure must be properly set.
 func (l *Conf) Unmarshal(result interface{}) error {
-	return decodeConfig(l, result, false)
+	return l.decodeConfig(result, false)
 }
 
 // UnmarshalExact unmarshalls the config into a struct, erroring if a field is nonexistent.
 func (l *Conf) UnmarshalExact(result interface{}) error {
-	return decodeConfig(l, result, true)
+	return l.decodeConfig(result, true)
 }
 
 // Marshal encodes the config and merges it into the Conf.
@@ -127,7 +128,13 @@ func (l *Conf) ToStringMap() map[string]interface{} {
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result interface{}, errorUnused bool) error {
+func (l *Conf) decodeConfig(result interface{}, errorUnused bool) error {
+	if !l.inInterface {
+		if unmarshaler, ok := result.(Unmarshaler); ok {
+			newConf := &Conf{k: l.k, inInterface: true}
+			return unmarshaler.Unmarshal(newConf)
+		}
+	}
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
@@ -146,7 +153,7 @@ func decodeConfig(m *Conf, result interface{}, errorUnused bool) error {
 	if err != nil {
 		return err
 	}
-	return decoder.Decode(m.ToStringMap())
+	return decoder.Decode(l.ToStringMap())
 }
 
 // encoderConfig returns a default encoder.EncoderConfig that includes
@@ -259,7 +266,9 @@ func unmarshalerHookFunc(result interface{}) mapstructure.DecodeHookFuncValue {
 		}
 
 		unmarshaler := reflect.New(to.Type()).Interface().(Unmarshaler)
-		if err := unmarshaler.Unmarshal(NewFromStringMap(from.Interface().(map[string]interface{}))); err != nil {
+		conf := NewFromStringMap(from.Interface().(map[string]interface{}))
+		conf.inInterface = true
+		if err := unmarshaler.Unmarshal(conf); err != nil {
 			return nil, err
 		}
 
