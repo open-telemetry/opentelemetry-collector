@@ -390,39 +390,9 @@ func readExponentialHistogramDataPoint(iter *jsoniter.Iterator) *otlpmetrics.Exp
 		case "zero_count", "zeroCount":
 			point.ZeroCount = json.ReadUint64(iter)
 		case "positive":
-			positive := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "bucket_counts", "bucketCounts":
-					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						positive.BucketCounts = append(positive.BucketCounts, json.ReadUint64(iter))
-						return true
-					})
-				case "offset":
-					positive.Offset = iter.ReadInt32()
-				default:
-					iter.Skip()
-				}
-				point.Positive = positive
-				return true
-			})
+			point.Positive = readExponentialHistogramBuckets(iter)
 		case "negative":
-			negative := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-			iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-				switch f {
-				case "bucket_counts", "bucketCounts":
-					iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-						negative.BucketCounts = append(negative.BucketCounts, json.ReadUint64(iter))
-						return true
-					})
-				case "offset":
-					negative.Offset = iter.ReadInt32()
-				default:
-					iter.Skip()
-				}
-				point.Negative = negative
-				return true
-			})
+			point.Negative = readExponentialHistogramBuckets(iter)
 		case "exemplars":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				point.Exemplars = append(point.Exemplars, readExemplar(iter))
@@ -476,6 +446,25 @@ func readSummaryDataPoint(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint
 		return true
 	})
 	return point
+}
+
+func readExponentialHistogramBuckets(iter *jsoniter.Iterator) otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	buckets := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "bucket_counts", "bucketCounts":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				buckets.BucketCounts = append(buckets.BucketCounts, json.ReadUint64(iter))
+				return true
+			})
+		case "offset":
+			buckets.Offset = iter.ReadInt32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return buckets
 }
 
 func readQuantileValue(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
