@@ -144,7 +144,15 @@ const (
 
 // String returns the string representation of the MetricAggregationTemporality.
 func (at MetricAggregationTemporality) String() string {
-	return otlpmetrics.AggregationTemporality(at).String()
+	switch at {
+	case MetricAggregationTemporalityUnspecified:
+		return "Unspecified"
+	case MetricAggregationTemporalityDelta:
+		return "Delta"
+	case MetricAggregationTemporalityCumulative:
+		return "Cumulative"
+	}
+	return ""
 }
 
 // NumberDataPointValueType specifies the type of NumberDataPoint value.

@@ -17,6 +17,7 @@
 - Delete deprecated `pcommon.Value` getter/setter methods with `Val` suffix. (#6178)
 - Delete deprecated `StringVal` and `SetStringVal` methods. (#6178)
 - Delete deprecated `ValueTypeString` method. (#6178)
+- Change AggregationTemporality.String to simpler, easier to read. (#6117)
 
 ### 🚩 Deprecations 🚩
 
