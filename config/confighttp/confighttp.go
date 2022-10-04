@@ -17,13 +17,16 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/component"
@@ -259,6 +262,18 @@ func WithErrorHandler(e errorHandler) ToServerOption {
 
 // ToServer creates an http.Server from settings object.
 func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+	if endpointURL, err := url.Parse(hss.Endpoint); err != nil {
+		return nil, fmt.Errorf("failed to parse endpoint: %w", err)
+	} else if endpointURL.Hostname() == "0.0.0.0" {
+		settings.Logger.Warn(
+			"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
+			zap.String(
+				"documentation",
+				"https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md#safeguards-against-denial-of-service-attacks",
+			),
+		)
+	}
+
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o(serverOpts)

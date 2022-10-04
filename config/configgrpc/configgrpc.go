@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/mostynb/go-grpc-compression/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
@@ -273,6 +275,18 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC.
 func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
+	if endpointURL, err := url.Parse(gss.NetAddr.Endpoint); err != nil {
+		return nil, fmt.Errorf("failed to parse endpoint: %w", err)
+	} else if endpointURL.Hostname() == "0.0.0.0" {
+		settings.Logger.Warn(
+			"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
+			zap.String(
+				"documentation",
+				"https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md#safeguards-against-denial-of-service-attacks",
+			),
+		)
+	}
+
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
