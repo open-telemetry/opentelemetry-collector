@@ -26,10 +26,9 @@ import (
 // NewNopTelemetrySettings returns a new nop telemetry settings for Create* functions.
 func NewNopTelemetrySettings() component.TelemetrySettings {
 	return component.TelemetrySettings{
-		Logger:            zap.NewNop(),
-		TracerProvider:    trace.NewNoopTracerProvider(),
-		MeterProvider:     metric.NewNoopMeterProvider(),
-		UseOtelForMetrics: true,
-		MetricsLevel:      configtelemetry.LevelNone,
+		Logger:         zap.NewNop(),
+		TracerProvider: trace.NewNoopTracerProvider(),
+		MeterProvider:  metric.NewNoopMeterProvider(),
+		MetricsLevel:   configtelemetry.LevelNone,
 	}
 }
