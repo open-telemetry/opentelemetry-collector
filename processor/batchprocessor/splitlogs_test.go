@@ -156,34 +156,3 @@ func TestSplitLogsMultipleILL(t *testing.T) {
 	assert.Equal(t, "test-log-int-0-0", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SeverityText())
 	assert.Equal(t, "test-log-int-0-4", split.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).SeverityText())
 }
-
-func BenchmarkSplitLogs(b *testing.B) {
-	md := plog.NewLogs()
-	rms := md.ResourceLogs()
-	for i := 0; i < 20; i++ {
-		testdata.GenerateLogs(20).ResourceLogs().MoveAndAppendTo(md.ResourceLogs())
-		ms := rms.At(rms.Len() - 1).ScopeLogs().At(0).LogRecords()
-		for i := 0; i < ms.Len(); i++ {
-			ms.At(i).SetSeverityText(getTestLogSeverityText(1, i))
-		}
-	}
-
-	if b.N > 100000 {
-		b.Skipf("SKIP: b.N too high, set -benchtime=<n>x with n < 100000")
-	}
-
-	clones := make([]plog.Logs, b.N)
-	for n := 0; n < b.N; n++ {
-		clones[n] = md.Clone()
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		cloneReq := clones[n]
-		split := splitLogs(128, cloneReq)
-		if split.LogRecordCount() != 128 || cloneReq.LogRecordCount() != 400-128 {
-			b.Fail()
-		}
-	}
-}

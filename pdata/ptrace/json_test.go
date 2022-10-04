@@ -26,7 +26,7 @@ import (
 var tracesOTLP = func() Traces {
 	td := NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutString("host.name", "testHost")
+	rs.Resource().Attributes().PutStr("host.name", "testHost")
 	il := rs.ScopeSpans().AppendEmpty()
 	il.Scope().SetName("name")
 	il.Scope().SetVersion("version")
@@ -64,8 +64,8 @@ var tracesOTLPFull = func() Traces {
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
-	rs.Resource().Attributes().PutString("host.name", "testHost")
-	rs.Resource().Attributes().PutString("service.name", "testService")
+	rs.Resource().Attributes().PutStr("host.name", "testHost")
+	rs.Resource().Attributes().PutStr("service.name", "testService")
 	rs.Resource().SetDroppedAttributesCount(1)
 	// Add ScopeSpans.
 	il := rs.ScopeSpans().AppendEmpty()
@@ -88,7 +88,7 @@ var tracesOTLPFull = func() Traces {
 	sp.Status().SetCode(StatusCodeOk)
 	sp.Status().SetMessage("message")
 	// Add attributes.
-	sp.Attributes().PutString("string", "value")
+	sp.Attributes().PutStr("string", "value")
 	sp.Attributes().PutBool("bool", true)
 	sp.Attributes().PutInt("int", 1)
 	sp.Attributes().PutDouble("double", 1.1)
@@ -98,13 +98,13 @@ var tracesOTLPFull = func() Traces {
 	arr.AppendEmpty().SetStr("str")
 	kvList := sp.Attributes().PutEmptyMap("kvList")
 	kvList.PutInt("int", 1)
-	kvList.PutString("string", "string")
+	kvList.PutStr("string", "string")
 	// Add events.
 	event := sp.Events().AppendEmpty()
 	event.SetName("eventName")
 	event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	event.SetDroppedAttributesCount(1)
-	event.Attributes().PutString("string", "value")
+	event.Attributes().PutStr("string", "value")
 	event.Attributes().PutBool("bool", true)
 	event.Attributes().PutInt("int", 1)
 	event.Attributes().PutDouble("double", 1.1)
@@ -115,7 +115,7 @@ var tracesOTLPFull = func() Traces {
 	link.SetTraceID(traceID)
 	link.SetSpanID(spanID)
 	link.SetDroppedAttributesCount(1)
-	link.Attributes().PutString("string", "value")
+	link.Attributes().PutStr("string", "value")
 	link.Attributes().PutBool("bool", true)
 	link.Attributes().PutInt("int", 1)
 	link.Attributes().PutDouble("double", 1.1)

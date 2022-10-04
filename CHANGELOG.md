@@ -2,8 +2,32 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- Delete deprecated `go.opentelemetry.io/collector/service/featuregate`. (#6178)
+- Delete deprecated `pmetric.OptionalType`. (#6178)
+- Delete deprecated `ptrace.Span[Link]?.TraceStateStruct`. (#6178)
+- Delete deprecated `pcommon.NewValueBytesEmpty`. (#6178)
+- Delete deprecated `pmetric.MetricDataType`. (#6178)
+- Delete deprecated `pmetric.Metric.DataType()`. (#6178)
+- Delete deprecated `pmetric.NumberDataPoint.[Set]?[Int|Double]Val()`. (#6178)
+- Delete deprecated `pmetric.Exemplar.[Set]?[Int|Double]Val()`. (#6178)
+- Delete deprecated `p[metric|log|trace]otlp.[Client|Server]`. (#6178)
+- Delete deprecated pdata Clone methods. (#6178)
+- Delete deprecated `pcommon.Value` getter/setter methods with `Val` suffix. (#6178)
+- Delete deprecated `StringVal` and `SetStringVal` methods. (#6178)
+- Delete deprecated `ValueTypeString` method. (#6178)
+
+### 🚩 Deprecations 🚩
+
+- Deprecate `p[metric|log|trace]otlp.RegiserServer` in favor of `p[metric|log|trace]otlp.RegiserGRPCServer` (#6180)
+- Deprecate `pcommon.Map.PutString` in favor of `pcommon.Map.PutStr` (#6210)
+- Deprecate `pcommon.NewValueString` in favor of `pcommon.NewValueStr` (#6209)
+
 ### 💡 Enhancements 💡
 
+- Add config marshaler (#5566)
+- Add semantic conventions for specification v1.10-v1.13 (#6213)
 - `receiver/otlp`: Make logs related to gRCPC and HTTP server startup clearer (#6174)
 
 ## v0.61.0 Beta
@@ -55,6 +79,7 @@
 - Add AppendEmpty and EnsureCapacity method to primitive pdata slices (#6060)
 - Expose `AsRaw` and `FromRaw` `pcommon.Value` methods (#6090)
 - Convert `ValueTypeBytes` attributes in logging exporter (#6153)
+- service.name Resource attribute is added to Collector's own telemetry, defaults to the value of `BuildInfo.Command` and can be overridden in the config (#6152) 
 - Updated how `telemetryInitializer` is created so it's instanced per Collector instance rather than global to the process (#6138)
 
 ## v0.60.0 Beta

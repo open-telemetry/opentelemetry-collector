@@ -69,6 +69,12 @@ func (id ComponentID) Name() string {
 	return id.nameVal
 }
 
+// MarshalText implements the encoding.TextMarshaler interface.
+// This marshals the type and name as one string in the config.
+func (id ComponentID) MarshalText() (text []byte, err error) {
+	return []byte(id.String()), nil
+}
+
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (id *ComponentID) UnmarshalText(text []byte) error {
 	idStr := string(text)

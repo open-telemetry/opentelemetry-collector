@@ -44,9 +44,6 @@ const (
 	ValueTypeBytes
 )
 
-// Deprecated: [0.61.0] Use ValueTypeStr instead
-const ValueTypeString = ValueTypeStr
-
 // String returns the string representation of the ValueType.
 func (avt ValueType) String() string {
 	switch avt {
@@ -79,7 +76,7 @@ func (avt ValueType) String() string {
 //
 //	func f1(val Value) { val.SetInt(234) }
 //	func f2() {
-//	    v := NewValueString("a string")
+//	    v := NewValueStr("a string")
 //	    f1(v)
 //	    _ := v.Type() // this will return ValueTypeInt
 //	}
@@ -93,10 +90,13 @@ func NewValueEmpty() Value {
 	return newValue(&otlpcommon.AnyValue{})
 }
 
-// NewValueString creates a new Value with the given string value.
-func NewValueString(v string) Value {
+// NewValueStr creates a new Value with the given string value.
+func NewValueStr(v string) Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}})
 }
+
+// Deprecated: [0.62.0] Use NewValueStr instead.
+var NewValueString = NewValueStr
 
 // NewValueInt creates a new Value with the given int64 value.
 func NewValueInt(v int64) Value {
@@ -127,9 +127,6 @@ func NewValueSlice() Value {
 func NewValueBytes() Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: nil}})
 }
-
-// Deprecated: [0.61.0] Use NewValueBytes instead
-var NewValueBytesEmpty = NewValueBytes
 
 func newValue(orig *otlpcommon.AnyValue) Value {
 	return Value(internal.NewValue(orig))
@@ -326,76 +323,6 @@ func (v Value) SetEmptySlice() Slice {
 	return newSlice(&av.ArrayValue.Values)
 }
 
-// Deprecated: [0.61.0] Use Str instead.
-func (v Value) StringVal() string {
-	return v.Str()
-}
-
-// Deprecated: [0.61.0] Use GetInt instead.
-func (v Value) IntVal() int64 {
-	return v.Int()
-}
-
-// Deprecated: [0.61.0] Use GetDouble instead.
-func (v Value) DoubleVal() float64 {
-	return v.Double()
-}
-
-// Deprecated: [0.61.0] Use GetBool instead.
-func (v Value) BoolVal() bool {
-	return v.Bool()
-}
-
-// Deprecated: [0.61.0] Use GetMap instead.
-func (v Value) MapVal() Map {
-	return v.Map()
-}
-
-// Deprecated: [0.61.0] Use GetSlice instead.
-func (v Value) SliceVal() Slice {
-	return v.Slice()
-}
-
-// Deprecated: [0.61.0] Use GetBytes instead.
-func (v Value) BytesVal() ByteSlice {
-	return v.Bytes()
-}
-
-// Deprecated: [0.61.0] Use SetStr instead.
-func (v Value) SetStringVal(sv string) {
-	v.SetStr(sv)
-}
-
-// Deprecated: [0.61.0] Use SetInt instead.
-func (v Value) SetIntVal(iv int64) {
-	v.SetInt(iv)
-}
-
-// Deprecated: [0.61.0] Use SetDouble instead.
-func (v Value) SetDoubleVal(dv float64) {
-	v.SetDouble(dv)
-}
-
-// Deprecated: [0.61.0] Use SetBool instead.
-func (v Value) SetBoolVal(bv bool) {
-	v.SetBool(bv)
-}
-
-// Deprecated: [0.61.0] Use SetEmptyBytes instead.
-func (v Value) SetEmptyBytesVal() ByteSlice {
-	return v.SetEmptyBytes()
-}
-
-// Deprecated: [0.61.0] Use SetEmptyMap instead.
-func (v Value) SetEmptyMapVal() Map {
-	return v.SetEmptyMap()
-}
-
-// Deprecated: [0.61.0] Use SetEmptySlice instead.
-func (v Value) SetEmptySliceVal() Slice {
-	return v.SetEmptySlice()
-}
-
 // CopyTo copies the attribute to a destination.
 func (v Value) CopyTo(dest Value) {
 	destOrig := dest.getOrig()
@@ -590,28 +517,28 @@ func (v Value) AsRaw() interface{} {
 	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
 }
 
-func newAttributeKeyValueString(k string, v string) otlpcommon.KeyValue {
+func newKeyValueString(k string, v string) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := newValue(&orig.Value)
 	akv.SetStr(v)
 	return orig
 }
 
-func newAttributeKeyValueInt(k string, v int64) otlpcommon.KeyValue {
+func newKeyValueInt(k string, v int64) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := newValue(&orig.Value)
 	akv.SetInt(v)
 	return orig
 }
 
-func newAttributeKeyValueDouble(k string, v float64) otlpcommon.KeyValue {
+func newKeyValueDouble(k string, v float64) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := newValue(&orig.Value)
 	akv.SetDouble(v)
 	return orig
 }
 
-func newAttributeKeyValueBool(k string, v bool) otlpcommon.KeyValue {
+func newKeyValueBool(k string, v bool) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	akv := newValue(&orig.Value)
 	akv.SetBool(v)
@@ -712,15 +639,23 @@ func (m Map) PutEmpty(k string) Value {
 	return newValue(&(*m.getOrig())[len(*m.getOrig())-1].Value)
 }
 
-// PutString performs the Insert or Update action. The Value is
+// PutStr performs the Insert or Update action. The Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) PutString(k string, v string) {
+func (m Map) PutStr(k string, v string) {
 	if av, existing := m.Get(k); existing {
 		av.SetStr(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueString(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v))
 	}
+}
+
+// PutString performs the Insert or Update action. The Value is
+// inserted to the map that did not originally have the key. The key/value is
+// updated to the map where the key already existed.
+// Deprecated: [0.62.0] Use PutStr instead.
+func (m Map) PutString(k string, v string) {
+	m.PutStr(k, v)
 }
 
 // PutInt performs the Insert or Update action. The int Value is
@@ -730,7 +665,7 @@ func (m Map) PutInt(k string, v int64) {
 	if av, existing := m.Get(k); existing {
 		av.SetInt(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueInt(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueInt(k, v))
 	}
 }
 
@@ -741,7 +676,7 @@ func (m Map) PutDouble(k string, v float64) {
 	if av, existing := m.Get(k); existing {
 		av.SetDouble(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueDouble(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueDouble(k, v))
 	}
 }
 
@@ -752,7 +687,7 @@ func (m Map) PutBool(k string, v bool) {
 	if av, existing := m.Get(k); existing {
 		av.SetBool(v)
 	} else {
-		*m.getOrig() = append(*m.getOrig(), newAttributeKeyValueBool(k, v))
+		*m.getOrig() = append(*m.getOrig(), newKeyValueBool(k, v))
 	}
 }
 

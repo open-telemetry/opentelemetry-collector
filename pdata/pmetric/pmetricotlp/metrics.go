@@ -122,9 +122,6 @@ type GRPCClient interface {
 	Export(ctx context.Context, request Request, opts ...grpc.CallOption) (Response, error)
 }
 
-// Deprecated: [0.61.0] Use GRPCClient instead
-type Client = GRPCClient
-
 type metricsClient struct {
 	rawClient otlpcollectormetrics.MetricsServiceClient
 }
@@ -148,16 +145,16 @@ type GRPCServer interface {
 	Export(context.Context, Request) (Response, error)
 }
 
-// Deprecated: [0.61.0] Use GRPCServer instead
-type Server = GRPCServer
-
-// RegisterServer registers the GRPCServer to the grpc.Server.
-func RegisterServer(s *grpc.Server, srv GRPCServer) {
+// RegisterGRPCServer registers the GRPCServer to the grpc.Server.
+func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
 	otlpcollectormetrics.RegisterMetricsServiceServer(s, &rawMetricsServer{srv: srv})
 }
 
+// Deprecated: [0.62.0] Use RegisterGRPCServer instead
+var RegisterServer = RegisterGRPCServer
+
 type rawMetricsServer struct {
-	srv Server
+	srv GRPCServer
 }
 
 func (s rawMetricsServer) Export(ctx context.Context, request *otlpcollectormetrics.ExportMetricsServiceRequest) (*otlpcollectormetrics.ExportMetricsServiceResponse, error) {

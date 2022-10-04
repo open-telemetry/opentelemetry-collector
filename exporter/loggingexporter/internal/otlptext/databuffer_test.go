@@ -41,7 +41,7 @@ func TestNestedArraySerializesCorrectly(t *testing.T) {
 func TestNestedMapSerializesCorrectly(t *testing.T) {
 	ava := pcommon.NewValueMap()
 	av := ava.Map()
-	av.PutString("foo", "test")
+	av.PutStr("foo", "test")
 
 	av.PutEmptyMap("zoo").PutInt("bar", 13)
 
