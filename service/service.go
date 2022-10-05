@@ -72,7 +72,6 @@ func newService(set *settings) (*service, error) {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
-	srv.telemetrySettings.UseOtelForMetrics = srv.telemetryInitializer.useOtelForMetrics
 
 	extensionsSettings := extensions.Settings{
 		Telemetry: srv.telemetrySettings,

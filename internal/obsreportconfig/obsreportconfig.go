@@ -20,8 +20,20 @@ import (
 	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
+
+const (
+	// UseOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
+	// telemetrySettings for internal metrics.
+	UseOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
+)
+
+// UseOtelForMetrics controls whether the Collector should use Otel for Collector's internal instrumentation.
+func UseOtelForMetrics() bool {
+	return featuregate.GetRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID)
+}
 
 // ObsMetrics wraps OpenCensus View for Collector observability metrics
 type ObsMetrics struct {

@@ -50,10 +50,6 @@ const (
 	zapKeyTelemetryAddress = "address"
 	zapKeyTelemetryLevel   = "level"
 
-	// useOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
-	// telemetrySettings for internal metrics.
-	useOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
-
 	// supported trace propagators
 	traceContextPropagator = "tracecontext"
 	b3Propagator           = "b3"
@@ -67,9 +63,8 @@ type telemetryInitializer struct {
 	registry *featuregate.Registry
 	views    []*view.View
 
-	ocRegistry        *ocmetric.Registry
-	mp                metric.MeterProvider
-	useOtelForMetrics bool
+	ocRegistry *ocmetric.Registry
+	mp         metric.MeterProvider
 
 	server     *http.Server
 	doInitOnce sync.Once
@@ -83,7 +78,7 @@ func init() {
 // registerInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
 func registerInternalMetricFeatureGate(registry *featuregate.Registry) {
 	registry.MustRegister(featuregate.Gate{
-		ID:          useOtelForInternalMetricsfeatureGateID,
+		ID:          obsreportconfig.UseOtelForInternalMetricsfeatureGateID,
 		Description: "controls whether the collector to uses OpenTelemetry for internal metrics",
 		Enabled:     false,
 	})
@@ -129,8 +124,7 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 
 	var pe http.Handler
 	var err error
-	if tel.registry.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
-		tel.useOtelForMetrics = true
+	if tel.registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID) {
 		pe, err = tel.initOpenTelemetry()
 	} else {
 		pe, err = tel.initOpenCensus(cfg, telAttrs)

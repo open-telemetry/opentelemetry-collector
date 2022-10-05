@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -412,7 +413,7 @@ func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
 			registry := featuregate.NewRegistry()
 			registerInternalMetricFeatureGate(registry)
 			colTel := newColTelemetry(registry)
-			require.NoError(t, colTel.registry.Apply(map[string]bool{useOtelForInternalMetricsfeatureGateID: true}))
+			require.NoError(t, colTel.registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
 			testCollectorStartHelper(t, colTel, tc)
 		})
 	}

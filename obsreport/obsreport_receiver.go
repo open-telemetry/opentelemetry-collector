@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
@@ -85,7 +86,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(cfg.ReceiverID.String()),
 		logger: cfg.ReceiverCreateSettings.Logger,
 
-		useOtelForMetrics: cfg.ReceiverCreateSettings.UseOtelForMetrics,
+		useOtelForMetrics: obsreportconfig.UseOtelForMetrics(),
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(obsmetrics.TransportKey, cfg.Transport),
