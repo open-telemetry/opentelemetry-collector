@@ -86,11 +86,10 @@ func generateBenchmarkMetrics(metricsCount int) Metrics {
 	for i := 0; i < metricsCount; i++ {
 		im := ilm.Metrics().AppendEmpty()
 		im.SetName("test_name")
-		im.SetDataType(MetricDataTypeSum)
-		idp := im.Sum().DataPoints().AppendEmpty()
+		idp := im.SetEmptySum().DataPoints().AppendEmpty()
 		idp.SetStartTimestamp(startTime)
 		idp.SetTimestamp(endTime)
-		idp.SetIntVal(123)
+		idp.SetIntValue(123)
 	}
 	return md
 }

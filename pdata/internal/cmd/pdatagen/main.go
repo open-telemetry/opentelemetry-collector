@@ -15,9 +15,6 @@
 package main
 
 import (
-	"os"
-	"path/filepath"
-
 	"go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 )
 
@@ -29,26 +26,8 @@ func check(e error) {
 
 func main() {
 	for _, fp := range internal.AllFiles {
-		f, err := os.Create("./pdata/internal/generated_" + fp.Name + ".go")
-		check(err)
-		_, err = f.WriteString(fp.GenerateFile())
-		check(err)
-		check(f.Close())
-		f, err = os.Create("./pdata/internal/generated_" + fp.Name + "_test.go")
-		check(err)
-		_, err = f.WriteString(fp.GenerateTestFile())
-		check(err)
-		check(f.Close())
-		fileName := "generated_alias.go"
-		packageName := fp.Name
-		if fp.IsCommon {
-			fileName = "generated_" + fp.Name + "_alias.go"
-			packageName = "pcommon"
-		}
-		f, err = os.Create(filepath.Clean("./pdata/" + packageName + "/" + fileName))
-		check(err)
-		_, err = f.WriteString(fp.GenerateAliasFile(packageName))
-		check(err)
-		check(f.Close())
+		check(fp.GenerateFile())
+		check(fp.GenerateTestFile())
+		check(fp.GenerateInternalFile())
 	}
 }

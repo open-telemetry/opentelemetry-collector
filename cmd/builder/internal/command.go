@@ -22,16 +22,17 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/providers/posflag"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
+	"go.opentelemetry.io/collector/cmd/builder/internal/config"
 )
 
 const (
 	skipCompilationFlag            = "skip-compilation"
+	skipGetModulesFlag             = "skip-get-modules"
 	distributionNameFlag           = "name"
 	distributionDescriptionFlag    = "description"
 	distributionVersionFlag        = "version"
@@ -56,7 +57,8 @@ func Command() (*cobra.Command, error) {
 		Long: fmt.Sprintf("OpenTelemetry Collector Builder (%s)", version) + `
 
 ocb generates a custom OpenTelemetry Collector binary using the
-build configuration given by the "--config" argument.
+build configuration given by the "--config" argument. If no build
+configuration is provided, ocb will generate a default Collector.
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -77,15 +79,9 @@ build configuration given by the "--config" argument.
 
 	cmd.Flags().StringVar(&cfgFile, "config", "", "build configuration file")
 
-	// A build configuration file is always required, and there's no
-	// default. We can relax this in future by embedding the default
-	// config that is used to build otelcorecol.
-	if err := cmd.MarkFlagRequired("config"); err != nil {
-		panic(err) // Only fails if the usage message is empty, which is a programmer error.
-	}
-
 	// the distribution parameters, which we accept as CLI flags as well
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
+	cmd.Flags().BoolVar(&cfg.SkipGetModules, skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
 	cmd.Flags().StringVar(&cfg.Distribution.Name, distributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
 	if err := cmd.Flags().MarkDeprecated(distributionNameFlag, "use config distribution::name"); err != nil {
 		return nil, err
@@ -118,10 +114,6 @@ build configuration given by the "--config" argument.
 	// version of this binary
 	cmd.AddCommand(versionCommand())
 
-	if err := k.Load(posflag.Provider(cmd.Flags(), ".", k), nil); err != nil {
-		return nil, fmt.Errorf("failed to load command line arguments: %w", err)
-	}
-
 	return cmd, nil
 }
 
@@ -129,8 +121,18 @@ func initConfig(flags *flag.FlagSet) error {
 	cfg.Logger.Info("OpenTelemetry Collector Builder",
 		zap.String("version", version), zap.String("date", date))
 
-	// load the config file
-	if err := k.Load(file.Provider(cfgFile), yaml.Parser()); err != nil {
+	var provider koanf.Provider
+
+	if cfgFile != "" {
+		// load the config file
+		provider = file.Provider(cfgFile)
+	} else {
+		// or the default if the config isn't provided
+		provider = config.DefaultProvider()
+		cfg.Logger.Info("Using default build configuration")
+	}
+
+	if err := k.Load(provider, yaml.Parser()); err != nil {
 		return fmt.Errorf("failed to load configuration file: %w", err)
 	}
 
@@ -148,7 +150,10 @@ func initConfig(flags *flag.FlagSet) error {
 
 	applyCfgFromFile(flags, cfgFromFile)
 
-	cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
+	if cfgFile != "" {
+		cfg.Logger.Info("Using config file", zap.String("path", cfgFile))
+	}
+
 	return nil
 }
 
@@ -162,6 +167,9 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 
 	if !flags.Changed(skipCompilationFlag) && cfgFromFile.SkipCompilation {
 		cfg.SkipCompilation = cfgFromFile.SkipCompilation
+	}
+	if !flags.Changed(skipGetModulesFlag) && cfgFromFile.SkipGetModules {
+		cfg.SkipGetModules = cfgFromFile.SkipGetModules
 	}
 	if !flags.Changed(distributionNameFlag) && cfgFromFile.Distribution.Name != "" {
 		cfg.Distribution.Name = cfgFromFile.Distribution.Name

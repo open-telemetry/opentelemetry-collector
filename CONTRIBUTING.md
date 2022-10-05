@@ -65,6 +65,8 @@ When submitting a component to the community, consider breaking it down into sep
   stability and quality of the component.
 * Once a new component has been added to the executable, please add the component 
   to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
+* intra-repository `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
+  on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).
 
 ### Refactoring Work
 
@@ -480,6 +482,15 @@ that each of the following steps is done in a separate version:
    GetFoo() Foo` is changed to call `func GetFooWithContext(context.Background()) Foo`.
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
    needed.
+
+### Specification Tracking
+
+The [OpenTelemetry Specification](https://github.com/open-telemetry/opentelemetry-specification) can be a rapidly
+moving target at times.  While it may seem efficient to get an early start on implementing new features or
+functionality under development in the specification, this can also lead to significant churn and a risk that
+changes in the specification can result in breaking changes to the implementation.  For this reason it is the
+policy of the Collector SIG to not implement, or accept implementations of, new or changed specification language
+prior to inclusion in a stable release of the specification.
 
 ## Updating Changelog
 

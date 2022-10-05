@@ -8,6 +8,9 @@ exporters:
   nop:
 
 service:
+  telemetry:
+    metrics:
+      address: localhost:8888
   pipelines:
     traces:
       receivers: [nop]

@@ -22,10 +22,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
-const defaultOtelColVersion = "0.58.0"
+const defaultOtelColVersion = "0.61.0"
 
 // ErrInvalidGoMod indicates an invalid gomod
 var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
@@ -34,6 +35,7 @@ var ErrInvalidGoMod = errors.New("invalid gomod specification for module")
 type Config struct {
 	Logger          *zap.Logger
 	SkipCompilation bool `mapstructure:"-"`
+	SkipGetModules  bool `mapstructure:"-"`
 
 	Distribution Distribution `mapstructure:"dist"`
 	Exporters    []Module     `mapstructure:"exporters"`
@@ -88,18 +90,20 @@ func NewDefaultConfig() Config {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	// #nosec G204
-	if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
-		path, err := exec.LookPath("go")
-		if err != nil {
-			return ErrGoNotFound
+	if !c.SkipCompilation || !c.SkipGetModules {
+		// #nosec G204
+		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
+			path, err := exec.LookPath("go")
+			if err != nil {
+				return ErrGoNotFound
+			}
+			c.Distribution.Go = path
 		}
-		c.Distribution.Go = path
+
+		c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
 	}
 
-	c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
-
-	return nil
+	return multierr.Combine(validateModules(c.Extensions), validateModules(c.Receivers), validateModules(c.Exporters), validateModules(c.Processors))
 }
 
 // ParseModules will parse the Modules entries and populate the missing values
@@ -129,13 +133,18 @@ func (c *Config) ParseModules() error {
 	return nil
 }
 
+func validateModules(mods []Module) error {
+	for _, mod := range mods {
+		if mod.GoMod == "" {
+			return fmt.Errorf("module %q: %w", mod.GoMod, ErrInvalidGoMod)
+		}
+	}
+	return nil
+}
+
 func parseModules(mods []Module) ([]Module, error) {
 	var parsedModules []Module
 	for _, mod := range mods {
-		if mod.GoMod == "" {
-			return mods, fmt.Errorf("%w, module: %q", ErrInvalidGoMod, mod.GoMod)
-		}
-
 		if mod.Import == "" {
 			mod.Import = strings.Split(mod.GoMod, " ")[0]
 		}

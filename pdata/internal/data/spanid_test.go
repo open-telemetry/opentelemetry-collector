@@ -20,44 +20,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewSpanID(t *testing.T) {
-	sid := NewSpanID([8]byte{})
-	assert.EqualValues(t, [8]byte{}, sid.id)
+func TestSpanID(t *testing.T) {
+	sid := SpanID([8]byte{})
+	assert.EqualValues(t, [8]byte{}, sid)
 	assert.EqualValues(t, 0, sid.Size())
 
 	b := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
-	sid = NewSpanID(b)
-	assert.EqualValues(t, b, sid.id)
+	sid = b
+	assert.EqualValues(t, b, sid)
 	assert.EqualValues(t, 8, sid.Size())
-}
-
-func TestSpanIDHexString(t *testing.T) {
-	sid := NewSpanID([8]byte{})
-	assert.EqualValues(t, "", sid.HexString())
-
-	sid = NewSpanID([8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23})
-	assert.EqualValues(t, "1223ad1223ad1223", sid.HexString())
-}
-
-func TestSpanIDEqual(t *testing.T) {
-	sid := NewSpanID([8]byte{})
-	assert.True(t, sid.Equal(NewSpanID([8]byte{})))
-	assert.False(t, sid.Equal(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})))
-
-	sid = NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	assert.False(t, sid.Equal(NewSpanID([8]byte{})))
-	assert.True(t, sid.Equal(NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})))
 }
 
 func TestSpanIDMarshal(t *testing.T) {
 	buf := make([]byte, 10)
 
-	sid := NewSpanID([8]byte{})
+	sid := SpanID([8]byte{})
 	n, err := sid.MarshalTo(buf)
 	assert.EqualValues(t, 0, n)
 	assert.NoError(t, err)
 
-	sid = NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	sid = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 	n, err = sid.MarshalTo(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, 8, n)
@@ -68,12 +50,12 @@ func TestSpanIDMarshal(t *testing.T) {
 }
 
 func TestSpanIDMarshalJSON(t *testing.T) {
-	sid := NewSpanID([8]byte{})
+	sid := SpanID([8]byte{})
 	json, err := sid.MarshalJSON()
 	assert.EqualValues(t, []byte(`""`), json)
 	assert.NoError(t, err)
 
-	sid = NewSpanID([8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23})
+	sid = [8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23}
 	json, err = sid.MarshalJSON()
 	assert.EqualValues(t, []byte(`"1223ad1223ad1223"`), json)
 	assert.NoError(t, err)
@@ -85,15 +67,15 @@ func TestSpanIDUnmarshal(t *testing.T) {
 	sid := SpanID{}
 	err := sid.Unmarshal(buf[0:8])
 	assert.NoError(t, err)
-	assert.EqualValues(t, [8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23}, sid.id)
+	assert.EqualValues(t, [8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23}, sid)
 
 	err = sid.Unmarshal(buf[0:0])
 	assert.NoError(t, err)
-	assert.EqualValues(t, [8]byte{}, sid.id)
+	assert.EqualValues(t, [8]byte{}, sid)
 
 	err = sid.Unmarshal(nil)
 	assert.NoError(t, err)
-	assert.EqualValues(t, [8]byte{}, sid.id)
+	assert.EqualValues(t, [8]byte{}, sid)
 
 	err = sid.Unmarshal(buf[0:3])
 	assert.Error(t, err)
@@ -103,15 +85,15 @@ func TestSpanIDUnmarshalJSON(t *testing.T) {
 	sid := SpanID{}
 	err := sid.UnmarshalJSON([]byte(`""`))
 	assert.NoError(t, err)
-	assert.EqualValues(t, [8]byte{}, sid.id)
+	assert.EqualValues(t, [8]byte{}, sid)
 
 	err = sid.UnmarshalJSON([]byte(`"1234567812345678"`))
 	assert.NoError(t, err)
-	assert.EqualValues(t, [8]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}, sid.id)
+	assert.EqualValues(t, [8]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}, sid)
 
 	err = sid.UnmarshalJSON([]byte(`1234567812345678`))
 	assert.NoError(t, err)
-	assert.EqualValues(t, [8]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}, sid.id)
+	assert.EqualValues(t, [8]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}, sid)
 
 	err = sid.UnmarshalJSON([]byte(`"nothex"`))
 	assert.Error(t, err)

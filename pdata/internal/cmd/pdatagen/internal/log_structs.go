@@ -15,7 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var logFile = &File{
-	Name: "plog",
+	Name:        "logs",
+	PackageName: "plog",
 	imports: []string{
 		`"sort"`,
 		``,
@@ -26,7 +27,10 @@ var logFile = &File{
 		``,
 		`"github.com/stretchr/testify/assert"`,
 		``,
+		`"go.opentelemetry.io/collector/pdata/internal"`,
+		`"go.opentelemetry.io/collector/pdata/internal/data"`,
 		`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
+		`"go.opentelemetry.io/collector/pdata/pcommon"`,
 	},
 	structs: []baseStruct{
 		resourceLogsSlice,
@@ -91,27 +95,23 @@ var logRecord = &messageValueStruct{
 		&primitiveTypedField{
 			fieldName:       "ObservedTimestamp",
 			originFieldName: "ObservedTimeUnixNano",
-			returnType:      "Timestamp",
-			rawType:         "uint64",
-			defaultVal:      "Timestamp(0)",
-			testVal:         "Timestamp(1234567890)",
+			returnType:      timestampType,
 		},
 		&primitiveTypedField{
 			fieldName:       "Timestamp",
 			originFieldName: "TimeUnixNano",
-			returnType:      "Timestamp",
-			rawType:         "uint64",
-			defaultVal:      "Timestamp(0)",
-			testVal:         "Timestamp(1234567890)",
+			returnType:      timestampType,
 		},
 		traceIDField,
 		spanIDField,
-		&messageValueField{
-			fieldName:       "FlagsStruct",
+		&primitiveTypedField{
+			fieldName:       "Flags",
 			originFieldName: "Flags",
-			returnMessage: &messageValueStruct{
-				structName:     "LogRecordFlags",
-				originFullName: "uint32",
+			returnType: &primitiveType{
+				structName: "LogRecordFlags",
+				rawType:    "uint32",
+				defaultVal: "0",
+				testVal:    "1",
 			},
 		},
 		&primitiveField{
@@ -124,10 +124,12 @@ var logRecord = &messageValueStruct{
 		&primitiveTypedField{
 			fieldName:       "SeverityNumber",
 			originFieldName: "SeverityNumber",
-			returnType:      "SeverityNumber",
-			rawType:         "otlplogs.SeverityNumber",
-			defaultVal:      `SeverityNumberUndefined`,
-			testVal:         `SeverityNumberInfo`,
+			returnType: &primitiveType{
+				structName: "SeverityNumber",
+				rawType:    "otlplogs.SeverityNumber",
+				defaultVal: `otlplogs.SeverityNumber(0)`,
+				testVal:    `otlplogs.SeverityNumber(5)`,
+			},
 		},
 		bodyField,
 		attributes,

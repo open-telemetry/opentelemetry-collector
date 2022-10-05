@@ -416,6 +416,20 @@ func TestPersistentStorage_ItemIndexMarshaling(t *testing.T) {
 	}
 }
 
+func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
+	path := t.TempDir()
+
+	ext := createStorageExtension(path)
+	client := createTestClient(ext)
+	ps := createTestPersistentStorage(client)
+
+	ps.stop()
+
+	castedClient, ok := client.(*mockStorageClient)
+	require.True(t, ok, "expected client to be mockStorageClient")
+	require.Equal(t, uint64(1), castedClient.getCloseCount())
+}
+
 func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) Request {
 	var readReq Request
 	require.Eventually(t, func() bool {
@@ -458,8 +472,9 @@ func newMockStorageClient() storage.Client {
 }
 
 type mockStorageClient struct {
-	st  map[string][]byte
-	mux sync.Mutex
+	st           map[string][]byte
+	mux          sync.Mutex
+	closeCounter uint64
 }
 
 func (m *mockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
@@ -491,6 +506,7 @@ func (m *mockStorageClient) Delete(_ context.Context, s string) error {
 }
 
 func (m *mockStorageClient) Close(_ context.Context) error {
+	m.closeCounter++
 	return nil
 }
 
@@ -512,4 +528,8 @@ func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) e
 	}
 
 	return nil
+}
+
+func (m *mockStorageClient) getCloseCount() uint64 {
+	return m.closeCounter
 }

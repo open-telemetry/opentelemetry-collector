@@ -15,11 +15,13 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/overwritepropertiesconverter"
-	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 // NewCommand constructs a new cobra.Command using the given CollectorSettings.
@@ -35,7 +37,13 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 			}
 			if set.ConfigProvider == nil {
 				var err error
-				cfgSet := newDefaultConfigProviderSettings(getConfigFlag(flagSet))
+
+				configFlags := getConfigFlag(flagSet)
+				if len(configFlags) == 0 {
+					return errors.New("at least one config flag must be provided")
+				}
+
+				cfgSet := newDefaultConfigProviderSettings(configFlags)
 				// Append the "overwrite properties converter" as the first converter.
 				cfgSet.ResolverSettings.Converters = append(
 					[]confmap.Converter{overwritepropertiesconverter.New(getSetFlag(flagSet))},

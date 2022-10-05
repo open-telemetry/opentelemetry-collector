@@ -139,6 +139,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
 
 .PHONY: run
 run: otelcorecol
@@ -205,6 +206,7 @@ genotelcorecol:
 
 .PHONY: ocb
 ocb:
+	$(MAKE) -C cmd/builder config
 	$(MAKE) -C cmd/builder ocb
 
 DEPENDABOT_PATH=".github/dependabot.yml"
@@ -317,8 +319,18 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 	@$(MAKE) -C $(CONTRIB_PATH) test
-	@echo Restoring contrib to no longer use this core checkout
+	@if [ -z "$(SKIP_RESTORE_CONTRIB)" ]; then \
+		$(MAKE) restore-contrib; \
+	fi
+
+# Restores contrib to its original state after running check-contrib.
+.PHONY: restore-contrib
+restore-contrib:
+	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/pdata"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/semconv"
+	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
 
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := localhost|""|config/configgrpc/testdata \
@@ -368,7 +380,7 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m collector-core
+	multimod prerelease -s=true -b=false -v ./versions.yaml -m collector-core
 	$(MAKE) gotidy
 
 .PHONY: prepare-release
@@ -396,14 +408,14 @@ endif
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' ./cmd/otelcorecol/builder-config.yaml
 	sed -i.bak 's/$(PREVIOUS_VERSION)/$(RELEASE_CANDIDATE)/g' examples/k8s/otel-config.yaml
 	find . -name "*.bak" -type f -delete
-	# regenerate files
-	$(MAKE) genotelcorecol
 	# commit changes before running multimod
 	git checkout -b opentelemetry-collector-bot/release-$(RELEASE_CANDIDATE)
 	git add .
 	git commit -m "prepare release $(RELEASE_CANDIDATE)"
 	$(MAKE) multimod-prerelease
-	# commit multimod changes
+	# regenerate files
+	$(MAKE) -C cmd/builder config
+	$(MAKE) genotelcorecol
 	git add .
 	git commit -m "add multimod changes" || (echo "no multimod changes to commit")
 	git push fork opentelemetry-collector-bot/release-$(RELEASE_CANDIDATE)
@@ -422,3 +434,10 @@ checklinks:
 	command -v markdown-link-check >/dev/null 2>&1 || { echo >&2 "markdown-link-check not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
 	find . -name \*.md -print0 | xargs -0 -n1 \
 		markdown-link-check -q -c ./.github/workflows/check_links_config.json || true
+
+# error message "failed to sync logger:  sync /dev/stderr: inappropriate ioctl for device"
+# is a known issue but does not affect function. 
+.PHONY: crosslink
+crosslink: 
+	@echo "Executing crosslink"
+	crosslink --root=$(shell pwd) --prune

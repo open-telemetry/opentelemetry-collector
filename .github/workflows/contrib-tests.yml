@@ -28,4 +28,4 @@ jobs:
         run: |
           contrib_path=/tmp/opentelemetry-collector-contrib
           git clone https://github.com/open-telemetry/opentelemetry-collector-contrib.git $contrib_path
-          make CONTRIB_PATH=$contrib_path check-contrib
+          make CONTRIB_PATH=$contrib_path SKIP_RESTORE_CONTRIB=true check-contrib

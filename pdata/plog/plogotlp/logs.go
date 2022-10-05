@@ -25,6 +25,7 @@ import (
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/internal/plogjson"
 )
 
 var jsonMarshaler = &jsonpb.Marshaler{}
@@ -78,8 +79,8 @@ func NewRequest() Request {
 // NewRequestFromLogs returns a Request from plog.Logs.
 // Because Request is a wrapper for plog.Logs,
 // any changes to the provided Logs struct will be reflected in the Request and vice versa.
-func NewRequestFromLogs(l plog.Logs) Request {
-	return Request{orig: internal.LogsToOtlp(l)}
+func NewRequestFromLogs(ld plog.Logs) Request {
+	return Request{orig: internal.GetOrigLogs(internal.Logs(ld))}
 }
 
 // MarshalProto marshals Request into proto bytes.
@@ -107,21 +108,17 @@ func (lr Request) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls Request from JSON bytes.
 func (lr Request) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), lr.orig); err != nil {
-		return err
-	}
-	otlp.MigrateLogs(lr.orig.ResourceLogs)
-	return nil
+	return plogjson.UnmarshalExportLogsServiceRequest(data, lr.orig)
 }
 
 func (lr Request) Logs() plog.Logs {
-	return internal.LogsFromOtlp(lr.orig)
+	return plog.Logs(internal.NewLogs(lr.orig))
 }
 
-// Client is the client API for OTLP-GRPC Logs service.
+// GRPCClient is the client API for OTLP-GRPC Logs service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type Client interface {
+type GRPCClient interface {
 	// Export plog.Logs to the server.
 	//
 	// For performance reasons, it is recommended to keep this RPC
@@ -134,7 +131,7 @@ type logsClient struct {
 }
 
 // NewClient returns a new Client connected using the given connection.
-func NewClient(cc *grpc.ClientConn) Client {
+func NewClient(cc *grpc.ClientConn) GRPCClient {
 	return &logsClient{rawClient: otlpcollectorlog.NewLogsServiceClient(cc)}
 }
 
@@ -143,8 +140,8 @@ func (c *logsClient) Export(ctx context.Context, request Request, opts ...grpc.C
 	return Response{orig: rsp}, err
 }
 
-// Server is the server API for OTLP gRPC LogsService service.
-type Server interface {
+// GRPCServer is the server API for OTLP gRPC LogsService service.
+type GRPCServer interface {
 	// Export is called every time a new request is received.
 	//
 	// For performance reasons, it is recommended to keep this RPC
@@ -152,13 +149,16 @@ type Server interface {
 	Export(context.Context, Request) (Response, error)
 }
 
-// RegisterServer registers the Server to the grpc.Server.
-func RegisterServer(s *grpc.Server, srv Server) {
+// RegisterGRPCServer registers the Server to the grpc.Server.
+func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
 	otlpcollectorlog.RegisterLogsServiceServer(s, &rawLogsServer{srv: srv})
 }
 
+// Deprecated: [0.62.0] Use RegisterGRPCServer instead
+var RegisterServer = RegisterGRPCServer
+
 type rawLogsServer struct {
-	srv Server
+	srv GRPCServer
 }
 
 func (s rawLogsServer) Export(ctx context.Context, request *otlpcollectorlog.ExportLogsServiceRequest) (*otlpcollectorlog.ExportLogsServiceResponse, error) {

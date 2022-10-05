@@ -23,10 +23,6 @@ import (
 // marshalJSON converts trace id into a hex string enclosed in quotes.
 // Called by Protobuf JSON deserialization.
 func marshalJSON(id []byte) ([]byte, error) {
-	if len(id) == 0 {
-		return []byte(`""`), nil
-	}
-
 	// 2 chars per byte plus 2 quote chars at the start and end.
 	hexLen := 2*len(id) + 2
 
@@ -57,11 +53,4 @@ func unmarshalJSON(dst []byte, src []byte) error {
 		return fmt.Errorf("cannot unmarshal ID from string '%s': %w", string(src), err)
 	}
 	return nil
-}
-
-func marshalBytes(dst []byte, src []byte) (n int, err error) {
-	if len(dst) < len(src) {
-		return 0, errors.New("buffer is too short")
-	}
-	return copy(dst, src), nil
 }

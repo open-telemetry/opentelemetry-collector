@@ -15,76 +15,62 @@
 package data // import "go.opentelemetry.io/collector/pdata/internal/data"
 
 import (
-	"encoding/hex"
 	"errors"
+
+	"github.com/gogo/protobuf/proto"
 )
 
 const spanIDSize = 8
 
-var errInvalidSpanIDSize = errors.New("invalid length for SpanID")
+var (
+	errMarshalSpanID   = errors.New("marshal: invalid buffer length for SpanID")
+	errUnmarshalSpanID = errors.New("unmarshal: invalid SpanID length")
+)
 
 // SpanID is a custom data type that is used for all span_id fields in OTLP
 // Protobuf messages.
-type SpanID struct {
-	id [spanIDSize]byte
-}
+type SpanID [spanIDSize]byte
 
-// NewSpanID creates a SpanID from a byte slice.
-func NewSpanID(bytes [8]byte) SpanID {
-	return SpanID{id: bytes}
-}
-
-// HexString returns hex representation of the ID.
-func (sid SpanID) HexString() string {
-	if sid.IsEmpty() {
-		return ""
-	}
-	return hex.EncodeToString(sid.id[:])
-}
+var _ proto.Sizer = (*SpanID)(nil)
 
 // Size returns the size of the data to serialize.
-func (sid *SpanID) Size() int {
+func (sid SpanID) Size() int {
 	if sid.IsEmpty() {
 		return 0
 	}
 	return spanIDSize
 }
 
-// Equal returns true if ids are equal.
-func (sid SpanID) Equal(that SpanID) bool {
-	return sid.id == that.id
-}
-
 // IsEmpty returns true if id contains at least one non-zero byte.
 func (sid SpanID) IsEmpty() bool {
-	return sid.id == [8]byte{}
-}
-
-// Bytes returns the byte array representation of the SpanID.
-func (sid SpanID) Bytes() [8]byte {
-	return sid.id
+	return sid == [spanIDSize]byte{}
 }
 
 // MarshalTo converts trace ID into a binary representation. Called by Protobuf serialization.
-func (sid *SpanID) MarshalTo(data []byte) (n int, err error) {
+func (sid SpanID) MarshalTo(data []byte) (n int, err error) {
 	if sid.IsEmpty() {
 		return 0, nil
 	}
-	return marshalBytes(data, sid.id[:])
+
+	if len(data) < spanIDSize {
+		return 0, errMarshalSpanID
+	}
+
+	return copy(data, sid[:]), nil
 }
 
 // Unmarshal inflates this trace ID from binary representation. Called by Protobuf serialization.
 func (sid *SpanID) Unmarshal(data []byte) error {
 	if len(data) == 0 {
-		sid.id = [8]byte{}
+		*sid = [spanIDSize]byte{}
 		return nil
 	}
 
 	if len(data) != spanIDSize {
-		return errInvalidSpanIDSize
+		return errUnmarshalSpanID
 	}
 
-	copy(sid.id[:], data)
+	copy(sid[:], data)
 	return nil
 }
 
@@ -93,12 +79,12 @@ func (sid SpanID) MarshalJSON() ([]byte, error) {
 	if sid.IsEmpty() {
 		return []byte(`""`), nil
 	}
-	return marshalJSON(sid.id[:])
+	return marshalJSON(sid[:])
 }
 
 // UnmarshalJSON decodes SpanID from hex string, possibly enclosed in quotes.
 // Called by Protobuf JSON deserialization.
 func (sid *SpanID) UnmarshalJSON(data []byte) error {
-	sid.id = [8]byte{}
-	return unmarshalJSON(sid.id[:], data)
+	*sid = [spanIDSize]byte{}
+	return unmarshalJSON(sid[:], data)
 }

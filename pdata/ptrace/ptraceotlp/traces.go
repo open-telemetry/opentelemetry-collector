@@ -25,6 +25,7 @@ import (
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/internal/ptracejson"
 )
 
 var jsonMarshaler = &jsonpb.Marshaler{}
@@ -78,8 +79,8 @@ func NewRequest() Request {
 // NewRequestFromTraces returns a Request from ptrace.Traces.
 // Because Request is a wrapper for ptrace.Traces,
 // any changes to the provided Traces struct will be reflected in the Request and vice versa.
-func NewRequestFromTraces(t ptrace.Traces) Request {
-	return Request{orig: internal.TracesToOtlp(t)}
+func NewRequestFromTraces(td ptrace.Traces) Request {
+	return Request{orig: internal.GetOrigTraces(internal.Traces(td))}
 }
 
 // MarshalProto marshals Request into proto bytes.
@@ -107,21 +108,17 @@ func (tr Request) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls Request from JSON bytes.
 func (tr Request) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), tr.orig); err != nil {
-		return err
-	}
-	otlp.MigrateTraces(tr.orig.ResourceSpans)
-	return nil
+	return ptracejson.UnmarshalExportTraceServiceRequest(data, tr.orig)
 }
 
 func (tr Request) Traces() ptrace.Traces {
-	return internal.TracesFromOtlp(tr.orig)
+	return ptrace.Traces(internal.NewTraces(tr.orig))
 }
 
-// Client is the client API for OTLP-GRPC Traces service.
+// GRPCClient is the client API for OTLP-GRPC Traces service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type Client interface {
+type GRPCClient interface {
 	// Export ptrace.Traces to the server.
 	//
 	// For performance reasons, it is recommended to keep this RPC
@@ -134,7 +131,7 @@ type tracesClient struct {
 }
 
 // NewClient returns a new Client connected using the given connection.
-func NewClient(cc *grpc.ClientConn) Client {
+func NewClient(cc *grpc.ClientConn) GRPCClient {
 	return &tracesClient{rawClient: otlpcollectortrace.NewTraceServiceClient(cc)}
 }
 
@@ -144,8 +141,8 @@ func (c *tracesClient) Export(ctx context.Context, request Request, opts ...grpc
 	return Response{orig: rsp}, err
 }
 
-// Server is the server API for OTLP gRPC TracesService service.
-type Server interface {
+// GRPCServer is the server API for OTLP gRPC TracesService service.
+type GRPCServer interface {
 	// Export is called every time a new request is received.
 	//
 	// For performance reasons, it is recommended to keep this RPC
@@ -153,13 +150,16 @@ type Server interface {
 	Export(context.Context, Request) (Response, error)
 }
 
-// RegisterServer registers the Server to the grpc.Server.
-func RegisterServer(s *grpc.Server, srv Server) {
+// RegisterGRPCServer registers the GRPCServer to the grpc.Server.
+func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
 	otlpcollectortrace.RegisterTraceServiceServer(s, &rawTracesServer{srv: srv})
 }
 
+// Deprecated: [0.62.0] Use RegisterGRPCServer instead
+var RegisterServer = RegisterGRPCServer
+
 type rawTracesServer struct {
-	srv Server
+	srv GRPCServer
 }
 
 func (s rawTracesServer) Export(ctx context.Context, request *otlpcollectortrace.ExportTraceServiceRequest) (*otlpcollectortrace.ExportTraceServiceResponse, error) {
