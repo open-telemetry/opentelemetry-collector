@@ -45,14 +45,21 @@ func TestMetricTypeString(t *testing.T) {
 	assert.Equal(t, "", (MetricTypeSummary + 1).String())
 }
 
-func TestNumberDataPointValueTypeStr(t *testing.T) {
+func TestMetricAggregationTemporalityString(t *testing.T) {
+	assert.Equal(t, "Unspecified", MetricAggregationTemporalityUnspecified.String())
+	assert.Equal(t, "Delta", MetricAggregationTemporalityDelta.String())
+	assert.Equal(t, "Cumulative", MetricAggregationTemporalityCumulative.String())
+	assert.Equal(t, "", (MetricAggregationTemporalityCumulative + 1).String())
+}
+
+func TestNumberDataPointValueTypeString(t *testing.T) {
 	assert.Equal(t, "None", NumberDataPointValueTypeNone.String())
 	assert.Equal(t, "Int", NumberDataPointValueTypeInt.String())
 	assert.Equal(t, "Double", NumberDataPointValueTypeDouble.String())
 	assert.Equal(t, "", (NumberDataPointValueTypeDouble + 1).String())
 }
 
-func TestExemplarValueTypeStr(t *testing.T) {
+func TestExemplarValueTypeString(t *testing.T) {
 	assert.Equal(t, "None", ExemplarValueTypeNone.String())
 	assert.Equal(t, "Int", ExemplarValueTypeInt.String())
 	assert.Equal(t, "Double", ExemplarValueTypeDouble.String())

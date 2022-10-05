@@ -20,8 +20,6 @@ var DefaultMetricDataPointFlags = MetricDataPointFlags(0)
 
 // MetricDataPointFlags defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
-//
-// This is a temporary name, until the current MetricDataPointFlags is deprecated and removed.
 type MetricDataPointFlags uint32
 
 // NoRecordedValue returns true if the MetricDataPointFlags contains the NoRecordedValue flag.

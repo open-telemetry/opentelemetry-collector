@@ -17,6 +17,7 @@
 - Delete deprecated `pcommon.Value` getter/setter methods with `Val` suffix. (#6178)
 - Delete deprecated `StringVal` and `SetStringVal` methods. (#6178)
 - Delete deprecated `ValueTypeString` method. (#6178)
+- Change AggregationTemporality.String to simpler, easier to read. (#6117)
 
 ### 🚩 Deprecations 🚩
 
@@ -29,6 +30,7 @@
 - Add config marshaler (#5566)
 - Add semantic conventions for specification v1.10-v1.13 (#6213)
 - `receiver/otlp`: Make logs related to gRCPC and HTTP server startup clearer (#6174)
+- Add prometheus metric prefix to Collector's own telemetry when using OpenTelemetry for internal telemetry (#6223)
 - Instrument `obsreport.Receiver` metrics with otel-go (#6222)
 
 ## v0.61.0 Beta
