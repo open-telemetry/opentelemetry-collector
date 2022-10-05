@@ -71,6 +71,19 @@ func newService(set *settings) (*service, error) {
 	if err = srv.telemetryInitializer.init(set.BuildInfo, srv.telemetrySettings.Logger, set.Config.Service.Telemetry, set.AsyncErrorChannel); err != nil {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
+
+	// Used to capture main error and any defer errors
+	var returnErrs error
+
+	// If there is any error after we initialize telemetry we need to ensure we clean that up for any future service
+	defer func() {
+		if returnErrs != nil {
+			if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
+				returnErrs = multierr.Append(returnErrs, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
+			}
+		}
+	}()
+
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 
 	extensionsSettings := extensions.Settings{
@@ -80,7 +93,8 @@ func newService(set *settings) (*service, error) {
 		Factories: srv.host.factories.Extensions,
 	}
 	if srv.host.extensions, err = extensions.New(context.Background(), extensionsSettings, srv.config.Service.Extensions); err != nil {
-		return nil, fmt.Errorf("failed build extensions: %w", err)
+		returnErrs = multierr.Append(returnErrs, fmt.Errorf("failed build extensions: %w", err))
+		return nil, returnErrs
 	}
 
 	pipelinesSettings := pipelines.Settings{
@@ -95,13 +109,15 @@ func newService(set *settings) (*service, error) {
 		PipelineConfigs:    srv.config.Service.Pipelines,
 	}
 	if srv.host.pipelines, err = pipelines.Build(context.Background(), pipelinesSettings); err != nil {
-		return nil, fmt.Errorf("cannot build pipelines: %w", err)
+		returnErrs = multierr.Append(returnErrs, fmt.Errorf("cannot build pipelines: %w", err))
+		return nil, returnErrs
 	}
 
 	if set.Config.Telemetry.Metrics.Level != configtelemetry.LevelNone && set.Config.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
 		if err = telemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, getBallastSize(srv.host)); err != nil {
-			return nil, fmt.Errorf("failed to register process metrics: %w", err)
+			returnErrs = multierr.Append(returnErrs, fmt.Errorf("failed to register process metrics: %w", err))
+			return nil, returnErrs
 		}
 	}
 
