@@ -440,4 +440,4 @@ checklinks:
 .PHONY: crosslink
 crosslink: 
 	@echo "Executing crosslink"
-	crosslink --root=$(shell pwd)
+	crosslink --root=$(shell pwd) --prune
