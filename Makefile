@@ -438,6 +438,6 @@ checklinks:
 # error message "failed to sync logger:  sync /dev/stderr: inappropriate ioctl for device"
 # is a known issue but does not affect function. 
 .PHONY: crosslink
-crosslink: install-tools
+crosslink: 
 	@echo "Executing crosslink"
 	crosslink --root=$(shell pwd)
