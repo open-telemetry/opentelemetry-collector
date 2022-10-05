@@ -17,9 +17,9 @@ package otlptext // import "go.opentelemetry.io/collector/exporter/loggingexport
 import (
 	"fmt"
 
-	expohisto "go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/exponent"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/logarithm"
+	expohisto "github.com/lightstep/go-expohisto/mapping"
+	"github.com/lightstep/go-expohisto/mapping/exponent"
+	"github.com/lightstep/go-expohisto/mapping/logarithm"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
