@@ -46,7 +46,7 @@
 
 ### 🧰 Bug fixes 🧰
 
-- Fixed bug where `telemetryInitializer` is not cleaned up when `newService` errors ()
+- Fixed bug where `telemetryInitializer` is not cleaned up when `newService` errors (#6239)
 
 ## v0.61.0 Beta
 
