@@ -65,6 +65,8 @@ When submitting a component to the community, consider breaking it down into sep
   stability and quality of the component.
 * Once a new component has been added to the executable, please add the component 
   to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
+* intra-repository `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
+  on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).
 
 ### Refactoring Work
 
