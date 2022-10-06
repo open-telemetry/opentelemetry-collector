@@ -11,11 +11,11 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.16.0
 	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad
-	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220919170044-dd98e8af322a
-	go.opentelemetry.io/build-tools/crosslink v0.0.0-20220928154055-b00fb8eb9066
-	go.opentelemetry.io/build-tools/multimod v0.0.0-20220919170044-dd98e8af322a
-	go.opentelemetry.io/build-tools/semconvgen v0.0.0-20220919170044-dd98e8af322a
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
+	go.opentelemetry.io/build-tools/checkdoc v0.1.0
+	go.opentelemetry.io/build-tools/crosslink v0.1.0
+	go.opentelemetry.io/build-tools/multimod v0.1.0
+	go.opentelemetry.io/build-tools/semconvgen v0.1.0
+	golang.org/x/exp v0.0.0-20221004215720-b9f4876ce741
 	golang.org/x/tools v0.1.12
 )
 
@@ -192,7 +192,7 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	gitlab.com/bosi/decorder v0.2.3 // indirect
-	go.opentelemetry.io/build-tools v0.0.0-20220919170044-dd98e8af322a // indirect
+	go.opentelemetry.io/build-tools v0.1.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
