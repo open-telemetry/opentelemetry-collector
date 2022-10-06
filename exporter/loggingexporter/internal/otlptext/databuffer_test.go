@@ -30,7 +30,7 @@ func TestNestedArraySerializesCorrectly(t *testing.T) {
 	ava.Slice().AppendEmpty().SetBool(true)
 	ava.Slice().AppendEmpty().SetDouble(5.5)
 
-	assert.Equal(t, `SLICE(["foo",42,["bar"],true,5.5])`, valueToString(ava))
+	assert.Equal(t, `Slice(["foo",42,["bar"],true,5.5])`, valueToString(ava))
 }
 
 func TestNestedMapSerializesCorrectly(t *testing.T) {
@@ -39,5 +39,5 @@ func TestNestedMapSerializesCorrectly(t *testing.T) {
 	av.PutStr("foo", "test")
 	av.PutEmptyMap("zoo").PutInt("bar", 13)
 
-	assert.Equal(t, `MAP({"foo":"test","zoo":{"bar":13}})`, valueToString(ava))
+	assert.Equal(t, `Map({"foo":"test","zoo":{"bar":13}})`, valueToString(ava))
 }
