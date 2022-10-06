@@ -411,7 +411,7 @@ func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
 	for _, tc := range ownMetricsTestCases("test version") {
 		t.Run(tc.name, func(t *testing.T) {
 			registry := featuregate.NewRegistry()
-			registerInternalMetricFeatureGate(registry)
+			obsreportconfig.RegisterInternalMetricFeatureGate(registry)
 			colTel := newColTelemetry(registry)
 			require.NoError(t, colTel.registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
 			testCollectorStartHelper(t, colTel, tc)

@@ -30,9 +30,18 @@ const (
 	UseOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
 )
 
-// UseOtelForMetrics controls whether the Collector should use Otel for Collector's internal instrumentation.
-func UseOtelForMetrics() bool {
-	return featuregate.GetRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID)
+func init() {
+	// register feature gate
+	RegisterInternalMetricFeatureGate(featuregate.GetRegistry())
+}
+
+// RegisterInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
+func RegisterInternalMetricFeatureGate(registry *featuregate.Registry) {
+	registry.MustRegister(featuregate.Gate{
+		ID:          UseOtelForInternalMetricsfeatureGateID,
+		Description: "controls whether the collector to uses OpenTelemetry for internal metrics",
+		Enabled:     false,
+	})
 }
 
 // ObsMetrics wraps OpenCensus View for Collector observability metrics

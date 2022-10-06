@@ -73,20 +73,6 @@ type telemetryInitializer struct {
 	doInitOnce sync.Once
 }
 
-func init() {
-	// register feature gate
-	registerInternalMetricFeatureGate(featuregate.GetRegistry())
-}
-
-// registerInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
-func registerInternalMetricFeatureGate(registry *featuregate.Registry) {
-	registry.MustRegister(featuregate.Gate{
-		ID:          obsreportconfig.UseOtelForInternalMetricsfeatureGateID,
-		Description: "controls whether the collector to uses OpenTelemetry for internal metrics",
-		Enabled:     false,
-	})
-}
-
 func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
 	return &telemetryInitializer{
 		registry: registry,

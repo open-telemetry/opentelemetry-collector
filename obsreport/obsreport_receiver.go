@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
@@ -45,7 +46,6 @@ type Receiver struct {
 	meter          metric.Meter
 	logger         *zap.Logger
 
-	// Otel API
 	useOtelForMetrics bool
 	otelAttrs         []attribute.KeyValue
 
@@ -86,7 +86,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(cfg.ReceiverID.String()),
 		logger: cfg.ReceiverCreateSettings.Logger,
 
-		useOtelForMetrics: obsreportconfig.UseOtelForMetrics(),
+		useOtelForMetrics: featuregate.GetRegistry().IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(obsmetrics.TransportKey, cfg.Transport),
@@ -99,6 +99,10 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 }
 
 func (rec *Receiver) createOtelMetrics() {
+	if !rec.useOtelForMetrics {
+		return
+	}
+
 	var err error
 	handleError := func(metricName string, err error) {
 		if err != nil {
@@ -246,11 +250,7 @@ func (rec *Receiver) endOp(
 	span := trace.SpanFromContext(receiverCtx)
 
 	if rec.level != configtelemetry.LevelNone {
-		if rec.useOtelForMetrics {
-			rec.recordWithOtel(receiverCtx, dataType, numAccepted, numRefused)
-		} else {
-			rec.recordWithOC(receiverCtx, dataType, numAccepted, numRefused)
-		}
+		rec.recordMetrics(receiverCtx, dataType, numAccepted, numRefused)
 	}
 
 	// end span according to errors
@@ -276,6 +276,14 @@ func (rec *Receiver) endOp(
 		recordError(span, err)
 	}
 	span.End()
+}
+
+func (rec *Receiver) recordMetrics(receiverCtx context.Context, dataType config.DataType, numAccepted, numRefused int) {
+	if rec.useOtelForMetrics {
+		rec.recordWithOtel(receiverCtx, dataType, numAccepted, numRefused)
+	} else {
+		rec.recordWithOC(receiverCtx, dataType, numAccepted, numRefused)
+	}
 }
 
 func (rec *Receiver) recordWithOtel(receiverCtx context.Context, dataType config.DataType, numAccepted, numRefused int) {
