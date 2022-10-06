@@ -72,56 +72,16 @@ func newService(set *settings) (*service, error) {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 
-	// Used to capture main error and any defer errors
-	var returnErrs error
-
-	// If there is any error after we initialize telemetry we need to ensure we clean that up for any future service
-	defer func() {
-		if returnErrs == nil {
-			return
-		}
-
-		// This function is returning due to an error, ensure we shut down the telemetryInitializer
-		if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
-			returnErrs = multierr.Append(returnErrs, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
-		}
-	}()
-
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 
-	extensionsSettings := extensions.Settings{
-		Telemetry: srv.telemetrySettings,
-		BuildInfo: srv.buildInfo,
-		Configs:   srv.config.Extensions,
-		Factories: srv.host.factories.Extensions,
-	}
-	if srv.host.extensions, err = extensions.New(context.Background(), extensionsSettings, srv.config.Service.Extensions); err != nil {
-		returnErrs = multierr.Append(returnErrs, fmt.Errorf("failed build extensions: %w", err))
-		return nil, returnErrs
-	}
-
-	pipelinesSettings := pipelines.Settings{
-		Telemetry:          srv.telemetrySettings,
-		BuildInfo:          srv.buildInfo,
-		ReceiverFactories:  srv.host.factories.Receivers,
-		ReceiverConfigs:    srv.config.Receivers,
-		ProcessorFactories: srv.host.factories.Processors,
-		ProcessorConfigs:   srv.config.Processors,
-		ExporterFactories:  srv.host.factories.Exporters,
-		ExporterConfigs:    srv.config.Exporters,
-		PipelineConfigs:    srv.config.Service.Pipelines,
-	}
-	if srv.host.pipelines, err = pipelines.Build(context.Background(), pipelinesSettings); err != nil {
-		returnErrs = multierr.Append(returnErrs, fmt.Errorf("cannot build pipelines: %w", err))
-		return nil, returnErrs
-	}
-
-	if set.Config.Telemetry.Metrics.Level != configtelemetry.LevelNone && set.Config.Telemetry.Metrics.Address != "" {
-		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
-		if err = telemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, getBallastSize(srv.host)); err != nil {
-			returnErrs = multierr.Append(returnErrs, fmt.Errorf("failed to register process metrics: %w", err))
-			return nil, returnErrs
+	// process the configuration and initialize the pipeline
+	if err := srv.initPipeline(set); err != nil {
+		// If pipeline initialization fails then shut down the telemetry server
+		if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
+			err = multierr.Append(err, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
 		}
+
+		return nil, err
 	}
 
 	return srv, nil
@@ -171,4 +131,41 @@ func (srv *service) Shutdown(ctx context.Context) error {
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 	// TODO: Shutdown TracerProvider, MeterProvider, and Sync Logger.
 	return errs
+}
+
+func (srv *service) initPipeline(set *settings) error {
+	var err error
+	extensionsSettings := extensions.Settings{
+		Telemetry: srv.telemetrySettings,
+		BuildInfo: srv.buildInfo,
+		Configs:   srv.config.Extensions,
+		Factories: srv.host.factories.Extensions,
+	}
+	if srv.host.extensions, err = extensions.New(context.Background(), extensionsSettings, srv.config.Service.Extensions); err != nil {
+		return fmt.Errorf("failed build extensions: %w", err)
+	}
+
+	pipelinesSettings := pipelines.Settings{
+		Telemetry:          srv.telemetrySettings,
+		BuildInfo:          srv.buildInfo,
+		ReceiverFactories:  srv.host.factories.Receivers,
+		ReceiverConfigs:    srv.config.Receivers,
+		ProcessorFactories: srv.host.factories.Processors,
+		ProcessorConfigs:   srv.config.Processors,
+		ExporterFactories:  srv.host.factories.Exporters,
+		ExporterConfigs:    srv.config.Exporters,
+		PipelineConfigs:    srv.config.Service.Pipelines,
+	}
+	if srv.host.pipelines, err = pipelines.Build(context.Background(), pipelinesSettings); err != nil {
+		return fmt.Errorf("cannot build pipelines: %w", err)
+	}
+
+	if set.Config.Telemetry.Metrics.Level != configtelemetry.LevelNone && set.Config.Telemetry.Metrics.Address != "" {
+		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
+		if err = telemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, getBallastSize(srv.host)); err != nil {
+			return fmt.Errorf("failed to register process metrics: %w", err)
+		}
+	}
+
+	return nil
 }
