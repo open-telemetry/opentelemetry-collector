@@ -177,7 +177,7 @@ With the modified configuration if you re-run the test above the log output shou
 ```
 2020-11-11T04:08:17.344Z	DEBUG	loggingexporter/logging_exporter.go:353	ResourceSpans #0
 Resource labels:
-     -> service.name: STRING(api)
+     -> service.name: Str(api)
 ScopeSpans #0
 Span #0
     Trace ID       : 5982fe77008310cc80f1da5e10147519
@@ -188,7 +188,7 @@ Span #0
     Start time     : 2018-01-24 08:16:15.726 +0000 UTC
     End time       : 2018-01-24 08:16:15.752 +0000 UTC
 Attributes:
-     -> data.http_response_code: STRING(201)
+     -> data.http_response_code: Str(201)
 ```
 
 ### Health Check
