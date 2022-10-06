@@ -78,9 +78,12 @@ func newService(set *settings) (*service, error) {
 	// If there is any error after we initialize telemetry we need to ensure we clean that up for any future service
 	defer func() {
 		if returnErrs != nil {
-			if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
-				returnErrs = multierr.Append(returnErrs, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
-			}
+			return
+		}
+
+		// This function is returning due to an error, ensure we shut down the telemetryInitializer
+		if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
+			returnErrs = multierr.Append(returnErrs, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
 		}
 	}()
 
