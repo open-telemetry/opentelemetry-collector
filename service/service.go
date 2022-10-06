@@ -71,7 +71,6 @@ func newService(set *settings) (*service, error) {
 	if err = srv.telemetryInitializer.init(set.BuildInfo, srv.telemetrySettings.Logger, set.Config.Service.Telemetry, set.AsyncErrorChannel); err != nil {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
-
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 
 	// process the configuration and initialize the pipeline
