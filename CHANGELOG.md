@@ -31,6 +31,7 @@
 - Add semantic conventions for specification v1.10-v1.13 (#6213)
 - `receiver/otlp`: Make logs related to gRCPC and HTTP server startup clearer (#6174)
 - Add prometheus metric prefix and constant service attributes to Collector's own telemetry when using OpenTelemetry for internal telemetry (#6223)
+- `exporter/logging`: Apply consistent rendering of map values (#6244)
 
 ## v0.61.0 Beta
 
