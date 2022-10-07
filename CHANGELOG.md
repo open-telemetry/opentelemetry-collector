@@ -35,6 +35,7 @@
 - Deprecate `pcommon.Map.PutString` in favor of `pcommon.Map.PutStr` (#6210)
 - Deprecate `pcommon.NewValueString` in favor of `pcommon.NewValueStr` (#6209)
 - Deprecate `pmetric.MetricAggregationTemporality` enum type in favor of `pmetric.AggregationTemporality` (#6249)
+- Deprecate `confmap.Conf.UnmarshalExact` in favor of `confmap.Conf.Unmarshal(.., WithErrorUnused)` (#6231)
 
 ### 💡 Enhancements 💡
 
