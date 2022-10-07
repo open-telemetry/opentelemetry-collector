@@ -568,7 +568,7 @@ var aggregationTemporalityField = &primitiveTypedField{
 	fieldName:       "AggregationTemporality",
 	originFieldName: "AggregationTemporality",
 	returnType: &primitiveType{
-		structName: "MetricAggregationTemporality",
+		structName: "AggregationTemporality",
 		rawType:    "otlpmetrics.AggregationTemporality",
 		defaultVal: "otlpmetrics.AggregationTemporality(0)",
 		testVal:    "otlpmetrics.AggregationTemporality(1)",

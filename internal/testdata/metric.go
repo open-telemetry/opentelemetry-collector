@@ -291,13 +291,13 @@ func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType) {
 	case pmetric.MetricTypeSum:
 		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	case pmetric.MetricTypeHistogram:
 		histo := m.SetEmptyHistogram()
-		histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		histo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	case pmetric.MetricTypeExponentialHistogram:
 		histo := m.SetEmptyExponentialHistogram()
-		histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		histo.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	case pmetric.MetricTypeSummary:
 		m.SetEmptySummary()
 	}
