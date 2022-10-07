@@ -45,6 +45,10 @@
 - Add prometheus metric prefix and constant service attributes to Collector's own telemetry when using OpenTelemetry for internal telemetry (#6223)
 - `exporter/logging`: Apply consistent rendering of map values (#6244)
 
+### 🧰 Bug fixes 🧰
+
+- Fixed bug where `telemetryInitializer` is not cleaned up when `newService` errors (#6239)
+
 ## v0.61.0 Beta
 
 ### 🛑 Breaking changes 🛑
