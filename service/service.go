@@ -74,7 +74,7 @@ func newService(set *settings) (*service, error) {
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 
 	// process the configuration and initialize the pipeline
-	if err := srv.initPipeline(set); err != nil {
+	if err = srv.initExtensionsAndPipeline(set); err != nil {
 		// If pipeline initialization fails then shut down the telemetry server
 		if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
 			err = multierr.Append(err, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
@@ -132,7 +132,7 @@ func (srv *service) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-func (srv *service) initPipeline(set *settings) error {
+func (srv *service) initExtensionsAndPipeline(set *settings) error {
 	var err error
 	extensionsSettings := extensions.Settings{
 		Telemetry: srv.telemetrySettings,
