@@ -212,3 +212,9 @@ func (nt ExemplarValueType) String() string {
 	}
 	return ""
 }
+
+// Deprecated: [0.62.0] Use ExponentialHistogramDataPointBuckets instead.
+type Buckets = ExponentialHistogramDataPointBuckets
+
+// Deprecated: [0.62.0] Use NewExponentialHistogramDataPointBuckets instead.
+var NewBuckets = NewExponentialHistogramDataPointBuckets

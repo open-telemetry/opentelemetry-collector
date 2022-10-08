@@ -226,16 +226,16 @@ func NewExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramData
 	return ExponentialHistogramDataPoint{orig: orig}
 }
 
-type Buckets struct {
+type ExponentialHistogramDataPointBuckets struct {
 	orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets
 }
 
-func GetOrigBuckets(ms Buckets) *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+func GetOrigExponentialHistogramDataPointBuckets(ms ExponentialHistogramDataPointBuckets) *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
 	return ms.orig
 }
 
-func NewBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) Buckets {
-	return Buckets{orig: orig}
+func NewExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ExponentialHistogramDataPointBuckets {
+	return ExponentialHistogramDataPointBuckets{orig: orig}
 }
 
 type SummaryDataPointSlice struct {
@@ -552,22 +552,22 @@ func FillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Scale = int32(4)
 	tv.orig.ZeroCount = uint64(201)
-	FillTestBuckets(NewBuckets(&tv.orig.Positive))
-	FillTestBuckets(NewBuckets(&tv.orig.Negative))
+	FillTestExponentialHistogramDataPointBuckets(NewExponentialHistogramDataPointBuckets(&tv.orig.Positive))
+	FillTestExponentialHistogramDataPointBuckets(NewExponentialHistogramDataPointBuckets(&tv.orig.Negative))
 	FillTestExemplarSlice(NewExemplarSlice(&tv.orig.Exemplars))
 	tv.orig.Flags = 1
 	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(182.55)}
 }
 
-func GenerateTestBuckets() Buckets {
+func GenerateTestExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
 	orig := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-	tv := NewBuckets(&orig)
-	FillTestBuckets(tv)
+	tv := NewExponentialHistogramDataPointBuckets(&orig)
+	FillTestExponentialHistogramDataPointBuckets(tv)
 	return tv
 }
 
-func FillTestBuckets(tv Buckets) {
+func FillTestExponentialHistogramDataPointBuckets(tv ExponentialHistogramDataPointBuckets) {
 	tv.orig.Offset = int32(909)
 	tv.orig.BucketCounts = []uint64{1, 2, 3}
 }

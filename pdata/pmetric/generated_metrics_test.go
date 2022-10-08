@@ -1285,14 +1285,14 @@ func TestExponentialHistogramDataPoint_ZeroCount(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_Positive(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	internal.FillTestBuckets(internal.Buckets(ms.Positive()))
-	assert.Equal(t, Buckets(internal.GenerateTestBuckets()), ms.Positive())
+	internal.FillTestExponentialHistogramDataPointBuckets(internal.ExponentialHistogramDataPointBuckets(ms.Positive()))
+	assert.Equal(t, ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets()), ms.Positive())
 }
 
 func TestExponentialHistogramDataPoint_Negative(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	internal.FillTestBuckets(internal.Buckets(ms.Negative()))
-	assert.Equal(t, Buckets(internal.GenerateTestBuckets()), ms.Negative())
+	internal.FillTestExponentialHistogramDataPointBuckets(internal.ExponentialHistogramDataPointBuckets(ms.Negative()))
+	assert.Equal(t, ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets()), ms.Negative())
 }
 
 func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
@@ -1324,33 +1324,33 @@ func TestExponentialHistogramDataPoint_Max(t *testing.T) {
 	assert.Equal(t, float64(182.55), ms.Max())
 }
 
-func TestBuckets_MoveTo(t *testing.T) {
-	ms := Buckets(internal.GenerateTestBuckets())
-	dest := NewBuckets()
+func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
+	ms := ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets())
+	dest := NewExponentialHistogramDataPointBuckets()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewBuckets(), ms)
-	assert.Equal(t, Buckets(internal.GenerateTestBuckets()), dest)
+	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms)
+	assert.Equal(t, ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets()), dest)
 }
 
-func TestBuckets_CopyTo(t *testing.T) {
-	ms := NewBuckets()
-	orig := NewBuckets()
+func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
+	ms := NewExponentialHistogramDataPointBuckets()
+	orig := NewExponentialHistogramDataPointBuckets()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Buckets(internal.GenerateTestBuckets())
+	orig = ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
 
-func TestBuckets_Offset(t *testing.T) {
-	ms := NewBuckets()
+func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
+	ms := NewExponentialHistogramDataPointBuckets()
 	assert.Equal(t, int32(0), ms.Offset())
 	ms.SetOffset(int32(909))
 	assert.Equal(t, int32(909), ms.Offset())
 }
 
-func TestBuckets_BucketCounts(t *testing.T) {
-	ms := NewBuckets()
+func TestExponentialHistogramDataPointBuckets_BucketCounts(t *testing.T) {
+	ms := NewExponentialHistogramDataPointBuckets()
 	assert.Equal(t, []uint64(nil), ms.BucketCounts().AsRaw())
 	ms.BucketCounts().FromRaw([]uint64{1, 2, 3})
 	assert.Equal(t, []uint64{1, 2, 3}, ms.BucketCounts().AsRaw())

@@ -36,6 +36,7 @@
 - Deprecate `pcommon.NewValueString` in favor of `pcommon.NewValueStr` (#6209)
 - Deprecate `pmetric.MetricAggregationTemporality` enum type in favor of `pmetric.AggregationTemporality` (#6249)
 - Deprecate `confmap.Conf.UnmarshalExact` in favor of `confmap.Conf.Unmarshal(.., WithErrorUnused)` (#6231)
+- Deprecate `pmetric.[New]?Buckets` in favor of `pmetric.[New]?ExponentialHistogramDataPointBuckets` (#6261)
 
 ### 💡 Enhancements 💡
 
