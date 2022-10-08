@@ -491,7 +491,7 @@ var dataPointFlagsField = &primitiveTypedField{
 	fieldName:       "Flags",
 	originFieldName: "Flags",
 	returnType: &primitiveType{
-		structName: "MetricDataPointFlags",
+		structName: "DataPointFlags",
 		rawType:    "uint32",
 		defaultVal: "0",
 		testVal:    "1",
