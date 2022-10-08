@@ -44,26 +44,3 @@ func MetricsFromProto(orig otlpmetrics.MetricsData) Metrics {
 		ResourceMetrics: orig.ResourceMetrics,
 	}}
 }
-
-type MetricDataPointFlags struct {
-	orig *uint32
-}
-
-func GetOrigMetricDataPointFlags(ms MetricDataPointFlags) *uint32 {
-	return ms.orig
-}
-
-func NewMetricDataPointFlags(orig *uint32) MetricDataPointFlags {
-	return MetricDataPointFlags{orig: orig}
-}
-
-func FillTestMetricDataPointFlags(tv MetricDataPointFlags) {
-	*tv.orig = uint32(0)
-}
-
-func GenerateTestMetricDataPointFlags() MetricDataPointFlags {
-	var orig uint32
-	tv := NewMetricDataPointFlags(&orig)
-	FillTestMetricDataPointFlags(tv)
-	return tv
-}
