@@ -2226,8 +2226,8 @@ func (ms SummaryDataPoint) SetSum(v float64) {
 }
 
 // QuantileValues returns the QuantileValues associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
-	return ValueAtQuantileSlice(internal.NewValueAtQuantileSlice(&ms.getOrig().QuantileValues))
+func (ms SummaryDataPoint) QuantileValues() SummaryDataPointValueAtQuantileSlice {
+	return SummaryDataPointValueAtQuantileSlice(internal.NewSummaryDataPointValueAtQuantileSlice(&ms.getOrig().QuantileValues))
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
@@ -2251,34 +2251,34 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.SetFlags(ms.Flags())
 }
 
-// ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.
+// SummaryDataPointValueAtQuantileSlice logically represents a slice of SummaryDataPointValueAtQuantile.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewValueAtQuantileSlice function to create new instances.
+// Must use NewSummaryDataPointValueAtQuantileSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ValueAtQuantileSlice internal.ValueAtQuantileSlice
+type SummaryDataPointValueAtQuantileSlice internal.SummaryDataPointValueAtQuantileSlice
 
-func newValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) ValueAtQuantileSlice {
-	return ValueAtQuantileSlice(internal.NewValueAtQuantileSlice(orig))
+func newSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantileSlice {
+	return SummaryDataPointValueAtQuantileSlice(internal.NewSummaryDataPointValueAtQuantileSlice(orig))
 }
 
-func (ms ValueAtQuantileSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return internal.GetOrigValueAtQuantileSlice(internal.ValueAtQuantileSlice(ms))
+func (ms SummaryDataPointValueAtQuantileSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return internal.GetOrigSummaryDataPointValueAtQuantileSlice(internal.SummaryDataPointValueAtQuantileSlice(ms))
 }
 
-// NewValueAtQuantileSlice creates a ValueAtQuantileSlice with 0 elements.
+// NewSummaryDataPointValueAtQuantileSlice creates a SummaryDataPointValueAtQuantileSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewValueAtQuantileSlice() ValueAtQuantileSlice {
+func NewSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
 	orig := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile(nil)
-	return newValueAtQuantileSlice(&orig)
+	return newSummaryDataPointValueAtQuantileSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewValueAtQuantileSlice()".
-func (es ValueAtQuantileSlice) Len() int {
+// Returns "0" for a newly instance created with "NewSummaryDataPointValueAtQuantileSlice()".
+func (es SummaryDataPointValueAtQuantileSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -2290,18 +2290,18 @@ func (es ValueAtQuantileSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ValueAtQuantileSlice) At(ix int) ValueAtQuantile {
-	return newValueAtQuantile((*es.getOrig())[ix])
+func (es SummaryDataPointValueAtQuantileSlice) At(ix int) SummaryDataPointValueAtQuantile {
+	return newSummaryDataPointValueAtQuantile((*es.getOrig())[ix])
 }
 
 // CopyTo copies all elements from the current slice to the dest.
-func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
+func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newValueAtQuantile((*es.getOrig())[i]).CopyTo(newValueAtQuantile((*dest.getOrig())[i]))
+			newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newSummaryDataPointValueAtQuantile((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -2309,7 +2309,7 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 	wrappers := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newValueAtQuantile((*es.getOrig())[i]).CopyTo(newValueAtQuantile(wrappers[i]))
+		newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
 }
@@ -2318,15 +2318,15 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 // 1. If the newCap <= cap then no change in capacity.
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
-// Here is how a new ValueAtQuantileSlice can be initialized:
+// Here is how a new SummaryDataPointValueAtQuantileSlice can be initialized:
 //
-//	es := NewValueAtQuantileSlice()
+//	es := NewSummaryDataPointValueAtQuantileSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ValueAtQuantileSlice) EnsureCapacity(newCap int) {
+func (es SummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -2337,31 +2337,31 @@ func (es ValueAtQuantileSlice) EnsureCapacity(newCap int) {
 	*es.getOrig() = newOrig
 }
 
-// AppendEmpty will append to the end of the slice an empty ValueAtQuantile.
-// It returns the newly added ValueAtQuantile.
-func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
+// AppendEmpty will append to the end of the slice an empty SummaryDataPointValueAtQuantile.
+// It returns the newly added SummaryDataPointValueAtQuantile.
+func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointValueAtQuantile {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the ValueAtQuantile elements within ValueAtQuantileSlice given the
-// provided less function so that two instances of ValueAtQuantileSlice
+// Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the
+// provided less function so that two instances of SummaryDataPointValueAtQuantileSlice
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
 //
-//	lessFunc := func(a, b ValueAtQuantile) bool {
+//	lessFunc := func(a, b SummaryDataPointValueAtQuantile) bool {
 //	  return a.Name() < b.Name() // choose any comparison here
 //	}
 //	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ValueAtQuantileSlice) Sort(less func(a, b ValueAtQuantile) bool) ValueAtQuantileSlice {
+func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) SummaryDataPointValueAtQuantileSlice {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
+func (es SummaryDataPointValueAtQuantileSlice) MoveAndAppendTo(dest SummaryDataPointValueAtQuantileSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -2373,7 +2373,7 @@ func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ValueAtQuantileSlice) RemoveIf(f func(ValueAtQuantile) bool) {
+func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointValueAtQuantile) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -2391,61 +2391,61 @@ func (es ValueAtQuantileSlice) RemoveIf(f func(ValueAtQuantile) bool) {
 	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
-// ValueAtQuantile is a quantile value within a Summary data point.
+// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewValueAtQuantile function to create new instances.
+// Must use NewSummaryDataPointValueAtQuantile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 
-type ValueAtQuantile internal.ValueAtQuantile
+type SummaryDataPointValueAtQuantile internal.SummaryDataPointValueAtQuantile
 
-func newValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) ValueAtQuantile {
-	return ValueAtQuantile(internal.NewValueAtQuantile(orig))
+func newSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
+	return SummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(orig))
 }
 
-func (ms ValueAtQuantile) getOrig() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return internal.GetOrigValueAtQuantile(internal.ValueAtQuantile(ms))
+func (ms SummaryDataPointValueAtQuantile) getOrig() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return internal.GetOrigSummaryDataPointValueAtQuantile(internal.SummaryDataPointValueAtQuantile(ms))
 }
 
-// NewValueAtQuantile creates a new empty ValueAtQuantile.
+// NewSummaryDataPointValueAtQuantile creates a new empty SummaryDataPointValueAtQuantile.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewValueAtQuantile() ValueAtQuantile {
-	return newValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+func NewSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
+	return newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
-func (ms ValueAtQuantile) MoveTo(dest ValueAtQuantile) {
+func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQuantile) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 }
 
-// Quantile returns the quantile associated with this ValueAtQuantile.
-func (ms ValueAtQuantile) Quantile() float64 {
+// Quantile returns the quantile associated with this SummaryDataPointValueAtQuantile.
+func (ms SummaryDataPointValueAtQuantile) Quantile() float64 {
 	return ms.getOrig().Quantile
 }
 
-// SetQuantile replaces the quantile associated with this ValueAtQuantile.
-func (ms ValueAtQuantile) SetQuantile(v float64) {
+// SetQuantile replaces the quantile associated with this SummaryDataPointValueAtQuantile.
+func (ms SummaryDataPointValueAtQuantile) SetQuantile(v float64) {
 	ms.getOrig().Quantile = v
 }
 
-// Value returns the value associated with this ValueAtQuantile.
-func (ms ValueAtQuantile) Value() float64 {
+// Value returns the value associated with this SummaryDataPointValueAtQuantile.
+func (ms SummaryDataPointValueAtQuantile) Value() float64 {
 	return ms.getOrig().Value
 }
 
-// SetValue replaces the value associated with this ValueAtQuantile.
-func (ms ValueAtQuantile) SetValue(v float64) {
+// SetValue replaces the value associated with this SummaryDataPointValueAtQuantile.
+func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
 	ms.getOrig().Value = v
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
+func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQuantile) {
 	dest.SetQuantile(ms.Quantile())
 	dest.SetValue(ms.Value())
 }

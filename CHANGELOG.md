@@ -39,6 +39,7 @@
 - Deprecate `ptrace.SpanStatus` favor of `ptrace.Status` (#6258)
 - Deprecate `pmetric.[New]?Buckets` in favor of `pmetric.[New]?ExponentialHistogramDataPointBuckets` (#6261)
 - Deprecate `plog.SeverityNumberUndefined` in favor of `plog.SeverityNumberUnspecified` (#6269)
+- Deprecate `pmetric.[New]?ValueAtQuantile[Slice]?` in favor of `pmetric.[New]?SummaryDataPointValueAtQuantile[Slice]?` (#6262)
 
 ### 💡 Enhancements 💡
 
