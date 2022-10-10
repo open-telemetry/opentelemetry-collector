@@ -110,3 +110,9 @@ const (
 
 // String returns the string representation of the StatusCode.
 func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).String() }
+
+// Deprecated: [0.62.0] Use Status instead.
+type SpanStatus = Status
+
+// Deprecated: [0.62.0] Use NewStatus instead.
+var NewSpanStatus = NewStatus
