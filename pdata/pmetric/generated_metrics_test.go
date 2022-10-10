@@ -598,8 +598,8 @@ func TestSum_CopyTo(t *testing.T) {
 
 func TestSum_AggregationTemporality(t *testing.T) {
 	ms := NewSum()
-	assert.Equal(t, MetricAggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := MetricAggregationTemporality(otlpmetrics.AggregationTemporality(1))
+	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
@@ -638,8 +638,8 @@ func TestHistogram_CopyTo(t *testing.T) {
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewHistogram()
-	assert.Equal(t, MetricAggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := MetricAggregationTemporality(otlpmetrics.AggregationTemporality(1))
+	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
@@ -671,8 +671,8 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewExponentialHistogram()
-	assert.Equal(t, MetricAggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := MetricAggregationTemporality(otlpmetrics.AggregationTemporality(1))
+	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }

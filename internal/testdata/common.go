@@ -18,47 +18,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-const (
-	testLabelKey2   = "label-2"
-	testLabelValue2 = "label-value-2"
-)
-
-func initResourceAttributes1(dest pcommon.Map) {
-	dest.Clear()
-	dest.PutStr("resource-attr", "resource-attr-val-1")
-}
-
-func initSpanEventAttributes(dest pcommon.Map) {
-	dest.Clear()
-	dest.PutStr("span-event-attr", "span-event-attr-val")
-}
-
-func initSpanLinkAttributes(dest pcommon.Map) {
-	dest.Clear()
-	dest.PutStr("span-link-attr", "span-link-attr-val")
-}
-
 func initMetricExemplarAttributes(dest pcommon.Map) {
-	dest.Clear()
 	dest.PutStr("exemplar-attachment", "exemplar-attachment-value")
 }
 
 func initMetricAttributes1(dest pcommon.Map) {
-	dest.Clear()
 	dest.PutStr("label-1", "label-value-1")
+}
+
+func initMetricAttributes2(dest pcommon.Map) {
+	dest.PutStr("label-2", "label-value-2")
 }
 
 func initMetricAttributes12(dest pcommon.Map) {
 	initMetricAttributes1(dest)
-	dest.PutStr(testLabelKey2, testLabelValue2)
+	initMetricAttributes2(dest)
 }
 
 func initMetricAttributes13(dest pcommon.Map) {
 	initMetricAttributes1(dest)
 	dest.PutStr("label-3", "label-value-3")
-}
-
-func initMetricAttributes2(dest pcommon.Map) {
-	dest.Clear()
-	dest.PutStr(testLabelKey2, testLabelValue2)
 }

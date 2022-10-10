@@ -232,6 +232,17 @@ func TestReadExponentialHistogramDataPointUnknownField(t *testing.T) {
 	}, value)
 }
 
+func TestReadExponentialHistogramDataPointBucketsUnknownField(t *testing.T) {
+	jsonStr := `{"exists":{"exists":"true"},"offset":3}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readExponentialHistogramBuckets(iter)
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, otlpmetrics.ExponentialHistogramDataPoint_Buckets{
+		Offset: 3,
+	}, value)
+}
+
 func TestReadQuantileValue(t *testing.T) {
 	jsonStr := `{"exists":{"exists":"true"},"value":3}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))

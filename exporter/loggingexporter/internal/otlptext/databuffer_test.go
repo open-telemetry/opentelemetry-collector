@@ -26,30 +26,18 @@ func TestNestedArraySerializesCorrectly(t *testing.T) {
 	ava := pcommon.NewValueSlice()
 	ava.Slice().AppendEmpty().SetStr("foo")
 	ava.Slice().AppendEmpty().SetInt(42)
-
-	ava2 := pcommon.NewValueSlice()
-	ava2.Slice().AppendEmpty().SetStr("bar")
-	ava2.CopyTo(ava.Slice().AppendEmpty())
-
+	ava.Slice().AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("bar")
 	ava.Slice().AppendEmpty().SetBool(true)
 	ava.Slice().AppendEmpty().SetDouble(5.5)
 
-	assert.Equal(t, 5, ava.Slice().Len())
-	assert.Equal(t, "[foo, 42, [bar], true, 5.5]", attributeValueToString(ava))
+	assert.Equal(t, `Slice(["foo",42,["bar"],true,5.5])`, valueToString(ava))
 }
 
 func TestNestedMapSerializesCorrectly(t *testing.T) {
 	ava := pcommon.NewValueMap()
 	av := ava.Map()
 	av.PutStr("foo", "test")
-
 	av.PutEmptyMap("zoo").PutInt("bar", 13)
 
-	expected := `{
-     -> foo: STRING(test)
-     -> zoo: MAP({"bar":13})
-}`
-
-	assert.Equal(t, 2, ava.Map().Len())
-	assert.Equal(t, expected, attributeValueToString(ava))
+	assert.Equal(t, `Map({"foo":"test","zoo":{"bar":13}})`, valueToString(ava))
 }

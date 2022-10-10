@@ -15,6 +15,7 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -31,10 +32,12 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -129,7 +132,7 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 	var pe http.Handler
 	var err error
 	if tel.registry.IsEnabled(useOtelForInternalMetricsfeatureGateID) {
-		pe, err = tel.initOpenTelemetry()
+		pe, err = tel.initOpenTelemetry(telAttrs)
 	} else {
 		pe, err = tel.initOpenCensus(cfg, telAttrs)
 	}
@@ -225,15 +228,30 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	return pe, nil
 }
 
-func (tel *telemetryInitializer) initOpenTelemetry() (http.Handler, error) {
+func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string) (http.Handler, error) {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
 
+	var resAttrs []attribute.KeyValue
+	for k, v := range attrs {
+		resAttrs = append(resAttrs, attribute.String(k, v))
+	}
+
+	res, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
+	if err != nil {
+		return nil, fmt.Errorf("error creating otel resources: %w", err)
+	}
+
 	exporter := otelprom.New()
-	tel.mp = sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
+	tel.mp = sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(exporter),
+	)
 
 	registry := prometheus.NewRegistry()
-	if err := registry.Register(exporter.Collector); err != nil {
+
+	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", registry)
+	if err := wrappedRegisterer.Register(exporter.Collector); err != nil {
 		return nil, fmt.Errorf("failed to register prometheus collector: %w", err)
 	}
 
