@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/url"
 	"strings"
 	"time"
 
@@ -275,9 +274,9 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC.
 func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
-	if endpointURL, err := url.Parse(gss.NetAddr.Endpoint); err != nil {
+	if host, _, err := net.SplitHostPort(gss.NetAddr.Endpoint); err != nil {
 		return nil, fmt.Errorf("failed to parse endpoint: %w", err)
-	} else if endpointURL.Hostname() == "0.0.0.0" {
+	} else if host == "0.0.0.0" || host == "::" {
 		settings.Logger.Warn(
 			"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
 			zap.String(
