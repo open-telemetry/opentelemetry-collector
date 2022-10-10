@@ -139,6 +139,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
 
 .PHONY: run
 run: otelcorecol
@@ -433,3 +434,10 @@ checklinks:
 	command -v markdown-link-check >/dev/null 2>&1 || { echo >&2 "markdown-link-check not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
 	find . -name \*.md -print0 | xargs -0 -n1 \
 		markdown-link-check -q -c ./.github/workflows/check_links_config.json || true
+
+# error message "failed to sync logger:  sync /dev/stderr: inappropriate ioctl for device"
+# is a known issue but does not affect function. 
+.PHONY: crosslink
+crosslink: 
+	@echo "Executing crosslink"
+	crosslink --root=$(shell pwd) --prune

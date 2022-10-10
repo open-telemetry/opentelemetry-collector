@@ -92,7 +92,7 @@ func (ConfigUnmarshaler) Unmarshal(v *confmap.Conf, factories component.Factorie
 
 	// Unmarshal top level sections and validate.
 	rawCfg := configSettings{}
-	if err := v.UnmarshalExact(&rawCfg); err != nil {
+	if err := v.Unmarshal(&rawCfg, confmap.WithErrorUnused()); err != nil {
 		return nil, configError{
 			error: fmt.Errorf("error reading top level configuration sections: %w", err),
 			code:  errUnmarshalTopLevelStructure,
@@ -185,7 +185,7 @@ func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
 		},
 	}
 
-	if err := confmap.NewFromStringMap(srvRaw).UnmarshalExact(&srv); err != nil {
+	if err := confmap.NewFromStringMap(srvRaw).Unmarshal(&srv, confmap.WithErrorUnused()); err != nil {
 		return srv, fmt.Errorf("error reading service configuration: %w", err)
 	}
 

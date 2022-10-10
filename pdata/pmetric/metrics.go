@@ -129,31 +129,45 @@ func (mdt MetricType) String() string {
 	return ""
 }
 
-// MetricAggregationTemporality defines how a metric aggregator reports aggregated values.
+// AggregationTemporality defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
-type MetricAggregationTemporality int32
+type AggregationTemporality int32
 
 const (
-	// MetricAggregationTemporalityUnspecified is the default MetricAggregationTemporality, it MUST NOT be used.
-	MetricAggregationTemporalityUnspecified = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
-	// MetricAggregationTemporalityDelta is a MetricAggregationTemporality for a metric aggregator which reports changes since last report time.
-	MetricAggregationTemporalityDelta = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
-	// MetricAggregationTemporalityCumulative is a MetricAggregationTemporality for a metric aggregator which reports changes since a fixed start time.
-	MetricAggregationTemporalityCumulative = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
+	// AggregationTemporalityUnspecified is the default AggregationTemporality, it MUST NOT be used.
+	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
+	// AggregationTemporalityDelta is a AggregationTemporality for a metric aggregator which reports changes since last report time.
+	AggregationTemporalityDelta = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
+	// AggregationTemporalityCumulative is a AggregationTemporality for a metric aggregator which reports changes since a fixed start time.
+	AggregationTemporalityCumulative = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
 )
 
-// String returns the string representation of the MetricAggregationTemporality.
-func (at MetricAggregationTemporality) String() string {
+// String returns the string representation of the AggregationTemporality.
+func (at AggregationTemporality) String() string {
 	switch at {
-	case MetricAggregationTemporalityUnspecified:
+	case AggregationTemporalityUnspecified:
 		return "Unspecified"
-	case MetricAggregationTemporalityDelta:
+	case AggregationTemporalityDelta:
 		return "Delta"
-	case MetricAggregationTemporalityCumulative:
+	case AggregationTemporalityCumulative:
 		return "Cumulative"
 	}
 	return ""
 }
+
+// Deprecated: [0.62.0] Use AggregationTemporality instead.
+type MetricAggregationTemporality = AggregationTemporality
+
+const (
+	// Deprecated: [0.62.0] Use AggregationTemporalityUnspecified instead.
+	MetricAggregationTemporalityUnspecified = AggregationTemporalityUnspecified
+
+	// Deprecated: [0.62.0] Use AggregationTemporalityDelta instead.
+	MetricAggregationTemporalityDelta = AggregationTemporalityDelta
+
+	// Deprecated: [0.62.0] Use AggregationTemporalityCumulative instead.
+	MetricAggregationTemporalityCumulative = AggregationTemporalityCumulative
+)
 
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType int32

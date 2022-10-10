@@ -870,12 +870,12 @@ func (ms Sum) MoveTo(dest Sum) {
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
-func (ms Sum) AggregationTemporality() MetricAggregationTemporality {
-	return MetricAggregationTemporality(ms.getOrig().AggregationTemporality)
+func (ms Sum) AggregationTemporality() AggregationTemporality {
+	return AggregationTemporality(ms.getOrig().AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
-func (ms Sum) SetAggregationTemporality(v MetricAggregationTemporality) {
+func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
 	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
@@ -935,12 +935,12 @@ func (ms Histogram) MoveTo(dest Histogram) {
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
-func (ms Histogram) AggregationTemporality() MetricAggregationTemporality {
-	return MetricAggregationTemporality(ms.getOrig().AggregationTemporality)
+func (ms Histogram) AggregationTemporality() AggregationTemporality {
+	return AggregationTemporality(ms.getOrig().AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
-func (ms Histogram) SetAggregationTemporality(v MetricAggregationTemporality) {
+func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
@@ -990,12 +990,12 @@ func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this ExponentialHistogram.
-func (ms ExponentialHistogram) AggregationTemporality() MetricAggregationTemporality {
-	return MetricAggregationTemporality(ms.getOrig().AggregationTemporality)
+func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
+	return AggregationTemporality(ms.getOrig().AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this ExponentialHistogram.
-func (ms ExponentialHistogram) SetAggregationTemporality(v MetricAggregationTemporality) {
+func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 

@@ -48,5 +48,5 @@ func unmarshal(componentSection *confmap.Conf, intoCfg interface{}) error {
 		return cu.Unmarshal(componentSection)
 	}
 
-	return componentSection.UnmarshalExact(intoCfg)
+	return componentSection.Unmarshal(intoCfg, confmap.WithErrorUnused())
 }

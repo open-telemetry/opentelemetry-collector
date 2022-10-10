@@ -16,10 +16,8 @@ package otlptext // import "go.opentelemetry.io/collector/exporter/loggingexport
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -40,14 +38,22 @@ func (b *dataBuffer) logAttr(attr string, value string) {
 	b.logEntry("    %-15s: %s", attr, value)
 }
 
-func (b *dataBuffer) logAttributes(attr string, m pcommon.Map) {
+func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
 	if m.Len() == 0 {
 		return
 	}
 
-	b.logEntry("%s:", attr)
-	m.Range(func(k string, v pcommon.Value) bool {
-		b.logEntry("     -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
+	b.logEntry("%s:", header)
+	attrPrefix := "     ->"
+
+	// Add offset to attributes if needed.
+	headerParts := strings.Split(header, "->")
+	if len(headerParts) > 1 {
+		attrPrefix = headerParts[0] + attrPrefix
+	}
+
+	m.Sort().Range(func(k string, v pcommon.Value) bool {
+		b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
 		return true
 	})
 }
@@ -238,11 +244,7 @@ func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
 		if e.Attributes().Len() == 0 {
 			continue
 		}
-		b.logEntry("     -> Attributes:")
-		e.Attributes().Range(func(k string, v pcommon.Value) bool {
-			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
-			return true
-		})
+		b.logAttributes("     -> Attributes:", e.Attributes())
 	}
 }
 
@@ -263,58 +265,10 @@ func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 		if l.Attributes().Len() == 0 {
 			continue
 		}
-		b.logEntry("     -> Attributes:")
-		l.Attributes().Range(func(k string, v pcommon.Value) bool {
-			b.logEntry("         -> %s: %s(%s)", k, v.Type().String(), attributeValueToString(v))
-			return true
-		})
+		b.logAttributes("     -> Attributes:", l.Attributes())
 	}
 }
 
-func attributeValueToString(v pcommon.Value) string {
-	switch v.Type() {
-	case pcommon.ValueTypeStr:
-		return v.Str()
-	case pcommon.ValueTypeBool:
-		return strconv.FormatBool(v.Bool())
-	case pcommon.ValueTypeDouble:
-		return strconv.FormatFloat(v.Double(), 'f', -1, 64)
-	case pcommon.ValueTypeInt:
-		return strconv.FormatInt(v.Int(), 10)
-	case pcommon.ValueTypeBytes:
-		return base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())
-	case pcommon.ValueTypeSlice:
-		return sliceToString(v.Slice())
-	case pcommon.ValueTypeMap:
-		return mapToString(v.Map())
-	default:
-		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", v.Type())
-	}
-}
-
-func sliceToString(s pcommon.Slice) string {
-	var b strings.Builder
-	b.WriteByte('[')
-	for i := 0; i < s.Len(); i++ {
-		if i < s.Len()-1 {
-			fmt.Fprintf(&b, "%s, ", attributeValueToString(s.At(i)))
-		} else {
-			b.WriteString(attributeValueToString(s.At(i)))
-		}
-	}
-
-	b.WriteByte(']')
-	return b.String()
-}
-
-func mapToString(m pcommon.Map) string {
-	var b strings.Builder
-	b.WriteString("{\n")
-
-	m.Sort().Range(func(k string, v pcommon.Value) bool {
-		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), v.AsString())
-		return true
-	})
-	b.WriteByte('}')
-	return b.String()
+func valueToString(v pcommon.Value) string {
+	return fmt.Sprintf("%s(%s)", v.Type().String(), v.AsString())
 }
