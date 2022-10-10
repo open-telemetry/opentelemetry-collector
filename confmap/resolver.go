@@ -25,13 +25,21 @@ import (
 	"go.uber.org/multierr"
 )
 
-// follows drive-letter specification:
-// https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
-var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
+var (
+	// follows drive-letter specification:
+	// https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
+	driverLetterRegexp = regexp.MustCompile("^[A-z]:")
+
+	// Scheme name consist of a sequence of characters beginning with a letter and followed by any
+	// combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
+	locationRegexp = regexp.MustCompile(`^(?P<Scheme>[A-Za-z][A-Za-z0-9+.-]+):(?P<OpaqueValue>.*)$`)
+
+	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
+)
 
 // Resolver resolves a configuration as a Conf.
 type Resolver struct {
-	uris       []string
+	uris       []location
 	providers  map[string]Provider
 	converters []Converter
 
@@ -85,8 +93,21 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	}
 
 	// Safe copy, ensures the slices and maps cannot be changed from the caller.
-	urisCopy := make([]string, len(set.URIs))
-	copy(urisCopy, set.URIs)
+	uris := make([]location, len(set.URIs))
+	for i, uri := range set.URIs {
+		// For backwards compatibility:
+		// - empty url scheme means "file".
+		// - "^[A-z]:" also means "file"
+		if driverLetterRegexp.MatchString(uri) || !strings.Contains(uri, ":") {
+			uris[i] = location{scheme: "file", opaqueValue: uri}
+			continue
+		}
+		lURI, err := newLocation(uri)
+		if err != nil {
+			return nil, err
+		}
+		uris[i] = lURI
+	}
 	providersCopy := make(map[string]Provider, len(set.Providers))
 	for k, v := range set.Providers {
 		providersCopy[k] = v
@@ -95,7 +116,7 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	copy(convertersCopy, set.Converters)
 
 	return &Resolver{
-		uris:       urisCopy,
+		uris:       uris,
 		providers:  providersCopy,
 		converters: convertersCopy,
 		watcher:    make(chan error, 1),
@@ -114,13 +135,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 	// Retrieves individual configurations from all URIs in the given order, and merge them in retMap.
 	retMap := New()
 	for _, uri := range mr.uris {
-		// For backwards compatibility:
-		// - empty url scheme means "file".
-		// - "^[A-z]:" also means "file"
-		if driverLetterRegexp.MatchString(uri) {
-			uri = "file:" + uri
-		}
-		ret, err := mr.retrieveValue(ctx, location{uri: uri, defaultScheme: "file"})
+		ret, err := mr.retrieveValue(ctx, uri)
 		if err != nil {
 			return nil, fmt.Errorf("cannot retrieve the configuration: %w", err)
 		}
@@ -206,23 +221,21 @@ func (mr *Resolver) expandValueRecursively(ctx context.Context, value interface{
 		}
 		value = val
 	}
-	return nil, errors.New("too many recursive expansions")
+	return nil, errTooManyRecursiveExpansions
 }
-
-// Scheme name consist of a sequence of characters beginning with a letter and followed by any
-// combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
-var expandRegexp = regexp.MustCompile(`^\$\{[A-Za-z][A-Za-z0-9+.-]+:.*}$`)
 
 func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interface{}, bool, error) {
 	switch v := value.(type) {
 	case string:
 		// If it doesn't have the format "${scheme:opaque}" no need to expand.
-		if !expandRegexp.MatchString(v) {
+		if !strings.HasPrefix(v, "${") || !strings.HasSuffix(v, "}") || !strings.Contains(v, ":") {
 			return value, false, nil
 		}
-		uri := v[2 : len(v)-1]
-		// At this point it is guaranteed to have a valid "scheme" based on the expandRegexp, so no default.
-		ret, err := mr.retrieveValue(ctx, location{uri: uri})
+		lURI, err := newLocation(v[2 : len(v)-1])
+		if err != nil {
+			return nil, false, err
+		}
+		ret, err := mr.retrieveValue(ctx, lURI)
 		if err != nil {
 			return nil, false, err
 		}
@@ -258,21 +271,26 @@ func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interfa
 }
 
 type location struct {
-	uri           string
-	defaultScheme string
+	scheme      string
+	opaqueValue string
 }
 
-func (mr *Resolver) retrieveValue(ctx context.Context, l location) (*Retrieved, error) {
-	uri := l.uri
-	scheme := l.defaultScheme
-	if idx := strings.Index(uri, ":"); idx != -1 {
-		scheme = uri[:idx]
-	} else {
-		uri = scheme + ":" + uri
+func (c location) asString() string {
+	return c.scheme + ":" + c.opaqueValue
+}
+
+func newLocation(uri string) (location, error) {
+	submatches := locationRegexp.FindStringSubmatch(uri)
+	if len(submatches) != 3 {
+		return location{}, fmt.Errorf("invalid uri: %q", uri)
 	}
-	p, ok := mr.providers[scheme]
+	return location{scheme: submatches[1], opaqueValue: submatches[2]}, nil
+}
+
+func (mr *Resolver) retrieveValue(ctx context.Context, uri location) (*Retrieved, error) {
+	p, ok := mr.providers[uri.scheme]
 	if !ok {
-		return nil, fmt.Errorf("scheme %q is not supported for uri %q", scheme, uri)
+		return nil, fmt.Errorf("scheme %q is not supported for uri %q", uri.scheme, uri.asString())
 	}
-	return p.Retrieve(ctx, uri, mr.onChange)
+	return p.Retrieve(ctx, uri.asString(), mr.onChange)
 }

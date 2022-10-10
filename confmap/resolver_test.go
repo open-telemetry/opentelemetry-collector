@@ -95,6 +95,11 @@ func (m *mockConverter) Convert(context.Context, *Conf) error {
 	return errors.New("converter_err")
 }
 
+func TestNewResolverInvalidScheme(t *testing.T) {
+	_, err := NewResolver(ResolverSettings{URIs: []string{"s_3:has invalid char"}, Providers: makeMapProvidersMap(&mockProvider{scheme: "s_3"})})
+	assert.EqualError(t, err, `invalid uri: "s_3:has invalid char"`)
+}
+
 func TestResolverErrors(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -108,7 +113,7 @@ func TestResolverErrors(t *testing.T) {
 	}{
 		{
 			name:             "unsupported location scheme",
-			locations:        []string{"mock:", "not_supported:"},
+			locations:        []string{"mock:", "notsupported:"},
 			providers:        []Provider{&mockProvider{}},
 			expectResolveErr: true,
 		},
@@ -414,7 +419,7 @@ func TestResolverInfiniteExpand(t *testing.T) {
 	resolver.enableExpand = true
 
 	_, err = resolver.Resolve(context.Background())
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, errTooManyRecursiveExpansions)
 }
 
 func TestResolverExpandSliceValueError(t *testing.T) {
@@ -431,7 +436,7 @@ func TestResolverExpandSliceValueError(t *testing.T) {
 	resolver.enableExpand = true
 
 	_, err = resolver.Resolve(context.Background())
-	assert.Error(t, err)
+	assert.EqualError(t, err, "unsupported type=*errors.errorString for retrieved config")
 }
 
 func TestResolverExpandMapValueError(t *testing.T) {
@@ -448,7 +453,25 @@ func TestResolverExpandMapValueError(t *testing.T) {
 	resolver.enableExpand = true
 
 	_, err = resolver.Resolve(context.Background())
-	assert.Error(t, err)
+	assert.EqualError(t, err, "unsupported type=*errors.errorString for retrieved config")
+}
+
+func TestResolverExpandInvalidScheme(t *testing.T) {
+	const receiverValue = "${g_c_s:VALUE}"
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(map[string]interface{}{"test": receiverValue})
+	})
+
+	testProvider := newFakeProvider("g_c_s", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(receiverValue)
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	require.NoError(t, err)
+	resolver.enableExpand = true
+
+	_, err = resolver.Resolve(context.Background())
+	assert.EqualError(t, err, `invalid uri: "g_c_s:VALUE"`)
 }
 
 func makeMapProvidersMap(providers ...Provider) map[string]Provider {
