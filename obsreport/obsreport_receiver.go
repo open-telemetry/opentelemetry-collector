@@ -72,10 +72,11 @@ type ReceiverSettings struct {
 
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
+	prefixedID := obsmetrics.ReceiverPrefix + cfg.ReceiverID.String()
 
 	rec := &Receiver{
 		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
-		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
+		spanNamePrefix: prefixedID,
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
 		mutators: []tag.Mutator{
@@ -83,7 +84,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
 		},
 		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
-		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(cfg.ReceiverID.String()),
+		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(prefixedID),
 		logger: cfg.ReceiverCreateSettings.Logger,
 
 		useOtelForMetrics: featuregate.GetRegistry().IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
