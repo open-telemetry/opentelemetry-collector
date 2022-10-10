@@ -1871,13 +1871,13 @@ func (ms ExponentialHistogramDataPoint) SetZeroCount(v uint64) {
 }
 
 // Positive returns the positive associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Positive() Buckets {
-	return Buckets(internal.NewBuckets(&ms.getOrig().Positive))
+func (ms ExponentialHistogramDataPoint) Positive() ExponentialHistogramDataPointBuckets {
+	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(&ms.getOrig().Positive))
 }
 
 // Negative returns the negative associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Negative() Buckets {
-	return Buckets(internal.NewBuckets(&ms.getOrig().Negative))
+func (ms ExponentialHistogramDataPoint) Negative() ExponentialHistogramDataPointBuckets {
+	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(&ms.getOrig().Negative))
 }
 
 // Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
@@ -1953,56 +1953,56 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 
 }
 
-// Buckets are a set of bucket counts, encoded in a contiguous array of counts.
+// ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewBuckets function to create new instances.
+// Must use NewExponentialHistogramDataPointBuckets function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 
-type Buckets internal.Buckets
+type ExponentialHistogramDataPointBuckets internal.ExponentialHistogramDataPointBuckets
 
-func newBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) Buckets {
-	return Buckets(internal.NewBuckets(orig))
+func newExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ExponentialHistogramDataPointBuckets {
+	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(orig))
 }
 
-func (ms Buckets) getOrig() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	return internal.GetOrigBuckets(internal.Buckets(ms))
+func (ms ExponentialHistogramDataPointBuckets) getOrig() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	return internal.GetOrigExponentialHistogramDataPointBuckets(internal.ExponentialHistogramDataPointBuckets(ms))
 }
 
-// NewBuckets creates a new empty Buckets.
+// NewExponentialHistogramDataPointBuckets creates a new empty ExponentialHistogramDataPointBuckets.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewBuckets() Buckets {
-	return newBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
+func NewExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
+	return newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
 }
 
 // MoveTo moves all properties from the current struct to dest
 // resetting the current instance to its zero value
-func (ms Buckets) MoveTo(dest Buckets) {
+func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramDataPointBuckets) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 }
 
-// Offset returns the offset associated with this Buckets.
-func (ms Buckets) Offset() int32 {
+// Offset returns the offset associated with this ExponentialHistogramDataPointBuckets.
+func (ms ExponentialHistogramDataPointBuckets) Offset() int32 {
 	return ms.getOrig().Offset
 }
 
-// SetOffset replaces the offset associated with this Buckets.
-func (ms Buckets) SetOffset(v int32) {
+// SetOffset replaces the offset associated with this ExponentialHistogramDataPointBuckets.
+func (ms ExponentialHistogramDataPointBuckets) SetOffset(v int32) {
 	ms.getOrig().Offset = v
 }
 
-// BucketCounts returns the bucketcounts associated with this Buckets.
-func (ms Buckets) BucketCounts() pcommon.UInt64Slice {
+// BucketCounts returns the bucketcounts associated with this ExponentialHistogramDataPointBuckets.
+func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
 }
 
 // CopyTo copies all properties from the current struct to the dest.
-func (ms Buckets) CopyTo(dest Buckets) {
+func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.SetOffset(ms.Offset())
 	ms.BucketCounts().CopyTo(dest.BucketCounts())
 }
