@@ -645,7 +645,7 @@ func (ms Metric) Type() MetricType {
 	case *otlpmetrics.Metric_Summary:
 		return MetricTypeSummary
 	}
-	return MetricTypeNone
+	return MetricTypeEmpty
 }
 
 // Gauge returns the gauge associated with this Metric.
@@ -1260,7 +1260,7 @@ func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 	case *otlpmetrics.NumberDataPoint_AsInt:
 		return NumberDataPointValueTypeInt
 	}
-	return NumberDataPointValueTypeNone
+	return NumberDataPointValueTypeEmpty
 }
 
 // DoubleValue returns the double associated with this NumberDataPoint.
@@ -2625,7 +2625,7 @@ func (ms Exemplar) ValueType() ExemplarValueType {
 	case *otlpmetrics.Exemplar_AsInt:
 		return ExemplarValueTypeInt
 	}
-	return ExemplarValueTypeNone
+	return ExemplarValueTypeEmpty
 }
 
 // DoubleValue returns the double associated with this Exemplar.

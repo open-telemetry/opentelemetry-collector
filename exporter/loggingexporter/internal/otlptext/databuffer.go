@@ -76,7 +76,7 @@ func (b *dataBuffer) logMetricDescriptor(md pmetric.Metric) {
 
 func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric) {
 	switch m.Type() {
-	case pmetric.MetricTypeNone:
+	case pmetric.MetricTypeEmpty:
 		return
 	case pmetric.MetricTypeGauge:
 		b.logNumberDataPoints(m.Gauge().DataPoints())
