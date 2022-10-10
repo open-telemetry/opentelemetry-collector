@@ -39,7 +39,7 @@ func init() {
 func RegisterInternalMetricFeatureGate(registry *featuregate.Registry) {
 	registry.MustRegister(featuregate.Gate{
 		ID:          UseOtelForInternalMetricsfeatureGateID,
-		Description: "controls whether the collector to uses OpenTelemetry for internal metrics",
+		Description: "controls whether the collector uses OpenTelemetry for internal metrics",
 		Enabled:     false,
 	})
 }
@@ -64,19 +64,11 @@ func Configure(level configtelemetry.Level) *ObsMetrics {
 // allViews return the list of all views that needs to be configured.
 func allViews() []*view.View {
 	var views []*view.View
+	var measures []*stats.Int64Measure
+	var tagKeys []tag.Key
+
 	// Receiver views.
-	measures := []*stats.Int64Measure{
-		obsmetrics.ReceiverAcceptedSpans,
-		obsmetrics.ReceiverRefusedSpans,
-		obsmetrics.ReceiverAcceptedMetricPoints,
-		obsmetrics.ReceiverRefusedMetricPoints,
-		obsmetrics.ReceiverAcceptedLogRecords,
-		obsmetrics.ReceiverRefusedLogRecords,
-	}
-	tagKeys := []tag.Key{
-		obsmetrics.TagKeyReceiver, obsmetrics.TagKeyTransport,
-	}
-	views = append(views, genViews(measures, tagKeys, view.Sum())...)
+	views = append(views, receiverViews()...)
 
 	// Scraper views.
 	measures = []*stats.Int64Measure{
@@ -122,6 +114,26 @@ func allViews() []*view.View {
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	return views
+}
+
+func receiverViews() []*view.View {
+	if featuregate.GetRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
+		return nil
+	}
+
+	measures := []*stats.Int64Measure{
+		obsmetrics.ReceiverAcceptedSpans,
+		obsmetrics.ReceiverRefusedSpans,
+		obsmetrics.ReceiverAcceptedMetricPoints,
+		obsmetrics.ReceiverRefusedMetricPoints,
+		obsmetrics.ReceiverAcceptedLogRecords,
+		obsmetrics.ReceiverRefusedLogRecords,
+	}
+	tagKeys := []tag.Key{
+		obsmetrics.TagKeyReceiver, obsmetrics.TagKeyTransport,
+	}
+
+	return genViews(measures, tagKeys, view.Sum())
 }
 
 func genViews(
