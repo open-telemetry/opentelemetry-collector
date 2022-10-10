@@ -164,7 +164,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
-	gss := &GRPCServerSettings{}
+	gss := &GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint: "0.0.0.0:1234",
+		},
+	}
 	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
 
@@ -208,7 +212,11 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
-	gss := &GRPCServerSettings{}
+	gss := &GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint: "0.0.0.0:1234",
+		},
+	}
 
 	// sanity check
 	_, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
