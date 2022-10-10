@@ -28,6 +28,7 @@
 
 - Add config marshaler (#5566)
 - Add semantic conventions for specification v1.10-v1.13 (#6213)
+- Add warning when using unspecified (`0.0.0.0`) address on HTTP or gRPC servers (#6267)
 
 ## v0.61.0 Beta
 
