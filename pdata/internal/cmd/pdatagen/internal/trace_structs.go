@@ -188,8 +188,8 @@ var spanLink = &messageValueStruct{
 }
 
 var spanStatus = &messageValueStruct{
-	structName: "SpanStatus",
-	description: "// SpanStatus is an optional final status for this span. Semantically, when Status was not\n" +
+	structName: "Status",
+	description: "// Status is an optional final status for this span. Semantically, when Status was not\n" +
 		"// set, that means the span ended without errors and to assume Status.Ok (code = 0).",
 	originFullName: "otlptrace.Status",
 	fields: []baseField{

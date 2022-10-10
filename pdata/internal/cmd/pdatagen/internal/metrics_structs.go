@@ -387,8 +387,8 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 }
 
 var bucketsValues = &messageValueStruct{
-	structName:     "Buckets",
-	description:    "// Buckets are a set of bucket counts, encoded in a contiguous array of counts.",
+	structName:     "ExponentialHistogramDataPointBuckets",
+	description:    "// ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.",
 	originFullName: "otlpmetrics.ExponentialHistogramDataPoint_Buckets",
 	fields: []baseField{
 		&primitiveField{
