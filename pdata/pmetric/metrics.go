@@ -159,17 +159,17 @@ func (at AggregationTemporality) String() string {
 	return ""
 }
 
-// Deprecated: [0.62.0] Use AggregationTemporality instead.
+// Deprecated: [v0.62.0] Use AggregationTemporality instead.
 type MetricAggregationTemporality = AggregationTemporality
 
 const (
-	// Deprecated: [0.62.0] Use AggregationTemporalityUnspecified instead.
+	// Deprecated: [v0.62.0] Use AggregationTemporalityUnspecified instead.
 	MetricAggregationTemporalityUnspecified = AggregationTemporalityUnspecified
 
-	// Deprecated: [0.62.0] Use AggregationTemporalityDelta instead.
+	// Deprecated: [v0.62.0] Use AggregationTemporalityDelta instead.
 	MetricAggregationTemporalityDelta = AggregationTemporalityDelta
 
-	// Deprecated: [0.62.0] Use AggregationTemporalityCumulative instead.
+	// Deprecated: [v0.62.0] Use AggregationTemporalityCumulative instead.
 	MetricAggregationTemporalityCumulative = AggregationTemporalityCumulative
 )
 
@@ -225,20 +225,20 @@ func (nt ExemplarValueType) String() string {
 	return ""
 }
 
-// Deprecated: [0.62.0] Use ExponentialHistogramDataPointBuckets instead.
+// Deprecated: [v0.62.0] Use ExponentialHistogramDataPointBuckets instead.
 type Buckets = ExponentialHistogramDataPointBuckets
 
-// Deprecated: [0.62.0] Use NewExponentialHistogramDataPointBuckets instead.
+// Deprecated: [v0.62.0] Use NewExponentialHistogramDataPointBuckets instead.
 var NewBuckets = NewExponentialHistogramDataPointBuckets
 
-// Deprecated: [0.62.0] Use SummaryDataPointValueAtQuantile instead.
+// Deprecated: [v0.62.0] Use SummaryDataPointValueAtQuantile instead.
 type ValueAtQuantile = SummaryDataPointValueAtQuantile
 
-// Deprecated: [0.62.0] Use NewSummaryDataPointValueAtQuantile instead.
+// Deprecated: [v0.62.0] Use NewSummaryDataPointValueAtQuantile instead.
 var NewValueAtQuantile = NewSummaryDataPointValueAtQuantile
 
-// Deprecated: [0.62.0] Use SummaryDataPointValueAtQuantileSlice instead.
+// Deprecated: [v0.62.0] Use SummaryDataPointValueAtQuantileSlice instead.
 type ValueAtQuantileSlice = SummaryDataPointValueAtQuantileSlice
 
-// Deprecated: [0.62.0] Use NewSummaryDataPointValueAtQuantileSlice instead.
+// Deprecated: [v0.62.0] Use NewSummaryDataPointValueAtQuantileSlice instead.
 var NewValueAtQuantileSlice = NewSummaryDataPointValueAtQuantileSlice

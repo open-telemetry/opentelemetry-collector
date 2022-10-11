@@ -100,7 +100,7 @@ const (
 	SeverityNumberFatal4      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL4)
 )
 
-// Deprecated: [0.62.0] Use SeverityNumberUnspecified instead.
+// Deprecated: [v0.62.0] Use SeverityNumberUnspecified instead.
 const SeverityNumberUndefined = SeverityNumberUnspecified
 
 // String returns the string representation of the SeverityNumber.
