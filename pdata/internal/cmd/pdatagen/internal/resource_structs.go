@@ -44,7 +44,6 @@ var resource = &messageValueStruct{
 }
 
 var resourceField = &messageValueField{
-	fieldName:       "Resource",
-	originFieldName: "Resource",
-	returnMessage:   resource,
+	fieldName:     "Resource",
+	returnMessage: resource,
 }
