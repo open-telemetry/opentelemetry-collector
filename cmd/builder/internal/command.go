@@ -65,7 +65,7 @@ configuration is provided, ocb will generate a default Collector.
 			if err := initConfig(cmd.Flags()); err != nil {
 				return err
 			}
-			if err := cfg.Validate(); err != nil {
+			if err := cfg.ValidateAndSetGoPath(); err != nil {
 				return fmt.Errorf("invalid configuration: %w", err)
 			}
 

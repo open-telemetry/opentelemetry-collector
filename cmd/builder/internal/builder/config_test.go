@@ -136,20 +136,14 @@ func TestInvalidModule(t *testing.T) {
 	}
 
 	for _, test := range configurations {
-		assert.True(t, errors.Is(test.cfg.Validate(), test.err))
+		assert.True(t, errors.Is(test.cfg.ValidateAndSetGoPath(), test.err))
 	}
 }
 
 func TestNewDefaultConfig(t *testing.T) {
 	cfg := NewDefaultConfig()
 	require.NoError(t, cfg.ParseModules())
-	require.NoError(t, cfg.Validate())
-}
-
-func TestGoPathNotSet(t *testing.T) {
-	cfg := NewDefaultConfig()
-	assert.NoError(t, cfg.Validate())
-	assert.Zero(t, cfg.Distribution.Go)
+	require.NoError(t, cfg.ValidateAndSetGoPath())
 }
 
 func TestNewBuiltinConfig(t *testing.T) {
@@ -161,7 +155,7 @@ func TestNewBuiltinConfig(t *testing.T) {
 
 	require.NoError(t, k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "mapstructure"}))
 	assert.NoError(t, cfg.ParseModules())
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, cfg.ValidateAndSetGoPath())
 
 	// Unlike the config initialized in NewDefaultConfig(), we expect
 	// the builtin default to be practically useful, so there must be
@@ -180,7 +174,7 @@ func TestSkipGoValidation(t *testing.T) {
 		SkipCompilation: true,
 		SkipGetModules:  true,
 	}
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, cfg.ValidateAndSetGoPath())
 }
 
 func TestSkipGoInitialization(t *testing.T) {
@@ -188,6 +182,6 @@ func TestSkipGoInitialization(t *testing.T) {
 		SkipCompilation: true,
 		SkipGetModules:  true,
 	}
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, cfg.ValidateAndSetGoPath())
 	assert.Zero(t, cfg.Distribution.Go)
 }
