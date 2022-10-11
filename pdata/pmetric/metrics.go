@@ -102,7 +102,8 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 type MetricType int32
 
 const (
-	MetricTypeNone MetricType = iota
+	// MetricTypeEmpty means that metric type is unset.
+	MetricTypeEmpty MetricType = iota
 	MetricTypeGauge
 	MetricTypeSum
 	MetricTypeHistogram
@@ -110,11 +111,14 @@ const (
 	MetricTypeSummary
 )
 
+// Deprecated: [0.62.0] Use MetricTypeEmpty instead.
+const MetricTypeNone = MetricTypeEmpty
+
 // String returns the string representation of the MetricType.
 func (mdt MetricType) String() string {
 	switch mdt {
-	case MetricTypeNone:
-		return "None"
+	case MetricTypeEmpty:
+		return "Empty"
 	case MetricTypeGauge:
 		return "Gauge"
 	case MetricTypeSum:
@@ -173,16 +177,20 @@ const (
 type NumberDataPointValueType int32
 
 const (
-	NumberDataPointValueTypeNone NumberDataPointValueType = iota
+	// NumberDataPointValueTypeEmpty means that data point value is unset.
+	NumberDataPointValueTypeEmpty NumberDataPointValueType = iota
 	NumberDataPointValueTypeInt
 	NumberDataPointValueTypeDouble
 )
 
+// Deprecated: [0.62.0] Use NumberDataPointValueTypeEmpty instead.
+const NumberDataPointValueTypeNone = NumberDataPointValueTypeEmpty
+
 // String returns the string representation of the NumberDataPointValueType.
 func (nt NumberDataPointValueType) String() string {
 	switch nt {
-	case NumberDataPointValueTypeNone:
-		return "None"
+	case NumberDataPointValueTypeEmpty:
+		return "Empty"
 	case NumberDataPointValueTypeInt:
 		return "Int"
 	case NumberDataPointValueTypeDouble:
@@ -195,16 +203,20 @@ func (nt NumberDataPointValueType) String() string {
 type ExemplarValueType int32
 
 const (
-	ExemplarValueTypeNone ExemplarValueType = iota
+	// ExemplarValueTypeEmpty means that exemplar value is unset.
+	ExemplarValueTypeEmpty ExemplarValueType = iota
 	ExemplarValueTypeInt
 	ExemplarValueTypeDouble
 )
 
+// Deprecated: [0.62.0] Use ExemplarValueTypeEmpty instead.
+const ExemplarValueTypeNone = ExemplarValueTypeEmpty
+
 // String returns the string representation of the ExemplarValueType.
 func (nt ExemplarValueType) String() string {
 	switch nt {
-	case ExemplarValueTypeNone:
-		return "None"
+	case ExemplarValueTypeEmpty:
+		return "Empty"
 	case ExemplarValueTypeInt:
 		return "Int"
 	case ExemplarValueTypeDouble:

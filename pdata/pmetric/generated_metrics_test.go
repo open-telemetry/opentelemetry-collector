@@ -475,7 +475,7 @@ func TestMetric_Unit(t *testing.T) {
 
 func TestMetric_Type(t *testing.T) {
 	tv := NewMetric()
-	assert.Equal(t, MetricTypeNone, tv.Type())
+	assert.Equal(t, MetricTypeEmpty, tv.Type())
 }
 
 func TestMetric_Gauge(t *testing.T) {
@@ -862,7 +862,7 @@ func TestNumberDataPoint_Timestamp(t *testing.T) {
 
 func TestNumberDataPoint_ValueType(t *testing.T) {
 	tv := NewNumberDataPoint()
-	assert.Equal(t, NumberDataPointValueTypeNone, tv.ValueType())
+	assert.Equal(t, NumberDataPointValueTypeEmpty, tv.ValueType())
 }
 
 func TestNumberDataPoint_DoubleValue(t *testing.T) {
@@ -1807,7 +1807,7 @@ func TestExemplar_Timestamp(t *testing.T) {
 
 func TestExemplar_ValueType(t *testing.T) {
 	tv := NewExemplar()
-	assert.Equal(t, ExemplarValueTypeNone, tv.ValueType())
+	assert.Equal(t, ExemplarValueTypeEmpty, tv.ValueType())
 }
 
 func TestExemplar_DoubleValue(t *testing.T) {

@@ -64,7 +64,7 @@ func (ms ${structName}) ${typeFuncName}() ${typeName} {
 
 const oneOfTypeAccessorHeaderTestTemplate = `func Test${structName}_${typeFuncName}(t *testing.T) {
 	tv := New${structName}()
-	assert.Equal(t, ${typeName}None, tv.${typeFuncName}())
+	assert.Equal(t, ${typeName}Empty, tv.${typeFuncName}())
 }
 `
 
@@ -547,7 +547,7 @@ func (of *oneOfField) generateTypeAccessors(ms baseStruct, sb *strings.Builder) 
 		v.generateTypeSwitchCase(of, sb)
 	}
 	sb.WriteString("\t}\n")
-	sb.WriteString("\treturn " + of.typeName + "None\n")
+	sb.WriteString("\treturn " + of.typeName + "Empty\n")
 	sb.WriteString("}\n")
 }
 

@@ -36,7 +36,7 @@ const (
 )
 
 func TestMetricTypeString(t *testing.T) {
-	assert.Equal(t, "None", MetricTypeNone.String())
+	assert.Equal(t, "Empty", MetricTypeEmpty.String())
 	assert.Equal(t, "Gauge", MetricTypeGauge.String())
 	assert.Equal(t, "Sum", MetricTypeSum.String())
 	assert.Equal(t, "Histogram", MetricTypeHistogram.String())
@@ -53,14 +53,14 @@ func TestAggregationTemporalityString(t *testing.T) {
 }
 
 func TestNumberDataPointValueTypeString(t *testing.T) {
-	assert.Equal(t, "None", NumberDataPointValueTypeNone.String())
+	assert.Equal(t, "Empty", NumberDataPointValueTypeEmpty.String())
 	assert.Equal(t, "Int", NumberDataPointValueTypeInt.String())
 	assert.Equal(t, "Double", NumberDataPointValueTypeDouble.String())
 	assert.Equal(t, "", (NumberDataPointValueTypeDouble + 1).String())
 }
 
 func TestExemplarValueTypeString(t *testing.T) {
-	assert.Equal(t, "None", ExemplarValueTypeNone.String())
+	assert.Equal(t, "Empty", ExemplarValueTypeEmpty.String())
 	assert.Equal(t, "Int", ExemplarValueTypeInt.String())
 	assert.Equal(t, "Double", ExemplarValueTypeDouble.String())
 	assert.Equal(t, "", (ExemplarValueTypeDouble + 1).String())

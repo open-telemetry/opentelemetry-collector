@@ -28,6 +28,8 @@
   - ValueTypeMap.String() -> "Map"
   - ValueTypeSlice.String() -> "Slice"
   - ValueTypeBytes.String() -> "Bytes"
+- Rename output of `[MetricType|NumberDataPointValueType|ExemplarValueType].String()` for zero values from `"None"` to 
+  `"Empty"` (#6270)
 
 ### 🚩 Deprecations 🚩
 
@@ -40,6 +42,11 @@
 - Deprecate `pmetric.[New]?Buckets` in favor of `pmetric.[New]?ExponentialHistogramDataPointBuckets` (#6261)
 - Deprecate `plog.SeverityNumberUndefined` in favor of `plog.SeverityNumberUnspecified` (#6269)
 - Deprecate `pmetric.[New]?ValueAtQuantile[Slice]?` in favor of `pmetric.[New]?SummaryDataPointValueAtQuantile[Slice]?` (#6262)
+- Deprecate enum zero constants ending with `None` (#6270)
+  - Deprecate `pmetric.MetricTypeNone` in favor of `pmetric.MetricTypeEmpty`
+  - Deprecate `pmetric.NumberDataPointValueTypeNone` in favor of `pmetric.NumberDataPointValueTypeEmpty`
+  - Deprecate `pmetric.ExemplarValueTypeNone` in favor of `pmetric.ExemplarValueTypeEmpty`
+- Deprecate `plog.SeverityNumberUndefined` in favor of `plog.SeverityNumberUnspecified` (#6269)
 
 ### 💡 Enhancements 💡
 
