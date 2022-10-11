@@ -35,6 +35,12 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
 
+const (
+	receiverName = "receiver"
+
+	receiverScope = scopeName + nameSep + receiverName
+)
+
 // Receiver is a helper to add observability to a component.Receiver.
 type Receiver struct {
 	level          configtelemetry.Level
@@ -72,11 +78,9 @@ type ReceiverSettings struct {
 
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
-	prefixedID := obsmetrics.ReceiverPrefix + cfg.ReceiverID.String()
-
 	rec := &Receiver{
 		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
-		spanNamePrefix: prefixedID,
+		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
 		transport:      cfg.Transport,
 		longLivedCtx:   cfg.LongLivedCtx,
 		mutators: []tag.Mutator{
@@ -84,7 +88,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 			tag.Upsert(obsmetrics.TagKeyTransport, cfg.Transport, tag.WithTTL(tag.TTLNoPropagation)),
 		},
 		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.ReceiverID.String()),
-		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(prefixedID),
+		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(receiverScope),
 		logger: cfg.ReceiverCreateSettings.Logger,
 
 		useOtelForMetrics: featuregate.GetRegistry().IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
