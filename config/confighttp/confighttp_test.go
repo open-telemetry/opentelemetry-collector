@@ -728,6 +728,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 
 func TestHttpCorsWithAuthentication(t *testing.T) {
 	hss := &HTTPServerSettings{
+		Endpoint: "localhost:0",
 		CORS: &CORSSettings{
 			AllowedOrigins: []string{"*"},
 		},
@@ -925,6 +926,7 @@ func TestServerAuth(t *testing.T) {
 	// prepare
 	authCalled := false
 	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
 			AuthenticatorID: config.NewComponentID("mock"),
 		},
@@ -972,6 +974,7 @@ func TestInvalidServerAuth(t *testing.T) {
 func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
 			AuthenticatorID: config.NewComponentID("mock"),
 		},
