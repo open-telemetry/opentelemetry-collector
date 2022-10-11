@@ -56,6 +56,7 @@
 - `receiver/otlp`: Make logs related to gRCPC and HTTP server startup clearer (#6174)
 - Add prometheus metric prefix and constant service attributes to Collector's own telemetry when using OpenTelemetry for internal telemetry (#6223)
 - `exporter/logging`: Apply consistent rendering of map values (#6244)
+- Add support in the confmap.Resolver to expand embedded config URIs inside configuration. (#6276)
 
 ### 🧰 Bug fixes 🧰
 
