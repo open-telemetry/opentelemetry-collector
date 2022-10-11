@@ -218,3 +218,15 @@ type Buckets = ExponentialHistogramDataPointBuckets
 
 // Deprecated: [0.62.0] Use NewExponentialHistogramDataPointBuckets instead.
 var NewBuckets = NewExponentialHistogramDataPointBuckets
+
+// Deprecated: [0.62.0] Use SummaryDataPointValueAtQuantile instead.
+type ValueAtQuantile = SummaryDataPointValueAtQuantile
+
+// Deprecated: [0.62.0] Use NewSummaryDataPointValueAtQuantile instead.
+var NewValueAtQuantile = NewSummaryDataPointValueAtQuantile
+
+// Deprecated: [0.62.0] Use SummaryDataPointValueAtQuantileSlice instead.
+type ValueAtQuantileSlice = SummaryDataPointValueAtQuantileSlice
+
+// Deprecated: [0.62.0] Use NewSummaryDataPointValueAtQuantileSlice instead.
+var NewValueAtQuantileSlice = NewSummaryDataPointValueAtQuantileSlice

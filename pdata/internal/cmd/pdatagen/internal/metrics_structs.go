@@ -427,13 +427,13 @@ var summaryDataPoint = &messageValueStruct{
 }
 
 var quantileValuesSlice = &sliceOfPtrs{
-	structName: "ValueAtQuantileSlice",
+	structName: "SummaryDataPointValueAtQuantileSlice",
 	element:    quantileValues,
 }
 
 var quantileValues = &messageValueStruct{
-	structName:     "ValueAtQuantile",
-	description:    "// ValueAtQuantile is a quantile value within a Summary data point.",
+	structName:     "SummaryDataPointValueAtQuantile",
+	description:    "// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.",
 	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtQuantile",
 	fields: []baseField{
 		quantileField,

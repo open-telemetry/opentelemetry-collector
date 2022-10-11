@@ -262,28 +262,28 @@ func NewSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
 	return SummaryDataPoint{orig: orig}
 }
 
-type ValueAtQuantileSlice struct {
+type SummaryDataPointValueAtQuantileSlice struct {
 	orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
-func GetOrigValueAtQuantileSlice(ms ValueAtQuantileSlice) *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+func GetOrigSummaryDataPointValueAtQuantileSlice(ms SummaryDataPointValueAtQuantileSlice) *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return ms.orig
 }
 
-func NewValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) ValueAtQuantileSlice {
-	return ValueAtQuantileSlice{orig: orig}
+func NewSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantileSlice {
+	return SummaryDataPointValueAtQuantileSlice{orig: orig}
 }
 
-type ValueAtQuantile struct {
+type SummaryDataPointValueAtQuantile struct {
 	orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
-func GetOrigValueAtQuantile(ms ValueAtQuantile) *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+func GetOrigSummaryDataPointValueAtQuantile(ms SummaryDataPointValueAtQuantile) *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return ms.orig
 }
 
-func NewValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) ValueAtQuantile {
-	return ValueAtQuantile{orig: orig}
+func NewSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
+	return SummaryDataPointValueAtQuantile{orig: orig}
 }
 
 type ExemplarSlice struct {
@@ -600,33 +600,33 @@ func FillTestSummaryDataPoint(tv SummaryDataPoint) {
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
 	tv.orig.Sum = float64(17.13)
-	FillTestValueAtQuantileSlice(NewValueAtQuantileSlice(&tv.orig.QuantileValues))
+	FillTestSummaryDataPointValueAtQuantileSlice(NewSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues))
 	tv.orig.Flags = 1
 }
 
-func GenerateTestValueAtQuantileSlice() ValueAtQuantileSlice {
+func GenerateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
 	orig := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	tv := NewValueAtQuantileSlice(&orig)
-	FillTestValueAtQuantileSlice(tv)
+	tv := NewSummaryDataPointValueAtQuantileSlice(&orig)
+	FillTestSummaryDataPointValueAtQuantileSlice(tv)
 	return tv
 }
 
-func FillTestValueAtQuantileSlice(tv ValueAtQuantileSlice) {
+func FillTestSummaryDataPointValueAtQuantileSlice(tv SummaryDataPointValueAtQuantileSlice) {
 	*tv.orig = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		FillTestValueAtQuantile(NewValueAtQuantile((*tv.orig)[i]))
+		FillTestSummaryDataPointValueAtQuantile(NewSummaryDataPointValueAtQuantile((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestValueAtQuantile() ValueAtQuantile {
+func GenerateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
 	orig := otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	tv := NewValueAtQuantile(&orig)
-	FillTestValueAtQuantile(tv)
+	tv := NewSummaryDataPointValueAtQuantile(&orig)
+	FillTestSummaryDataPointValueAtQuantile(tv)
 	return tv
 }
 
-func FillTestValueAtQuantile(tv ValueAtQuantile) {
+func FillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
 	tv.orig.Quantile = float64(17.13)
 	tv.orig.Value = float64(17.13)
 }
