@@ -33,13 +33,13 @@
 
 ### 🚩 Deprecations 🚩
 
-- Deprecate `p[metric|log|trace]otlp.RegiserServer` in favor of `p[metric|log|trace]otlp.RegiserGRPCServer` (#6180)
+- Deprecate `p[metric|log|trace]otlp.RegiserServer` in favor of `p[metric|log|trace]otlp.RegiserGRPCServer` (#6182)
 - Deprecate `pcommon.Map.PutString` in favor of `pcommon.Map.PutStr` (#6210)
 - Deprecate `pcommon.NewValueString` in favor of `pcommon.NewValueStr` (#6209)
-- Deprecate `pmetric.MetricAggregationTemporality` enum type in favor of `pmetric.AggregationTemporality` (#6249)
+- Deprecate `pmetric.MetricAggregationTemporality` enum type in favor of `pmetric.AggregationTemporality` (#6253)
 - Deprecate `confmap.Conf.UnmarshalExact` in favor of `confmap.Conf.Unmarshal(.., WithErrorUnused)` (#6231)
-- Deprecate `pmetric.MetricDataPointFlags` favor of `pmetric.DataPointFlags` (#6259)
-- Deprecate `ptrace.SpanStatus` favor of `ptrace.Status` (#6258)
+- Deprecate `pmetric.[Default]?MetricDataPointFlags` favor of `pmetric.[Default]?DataPointFlags` (#6259)
+- Deprecate `ptrace.[New]?SpanStatus` favor of `ptrace.[New]?Status` (#6258)
 - Deprecate `pmetric.[New]?Buckets` in favor of `pmetric.[New]?ExponentialHistogramDataPointBuckets` (#6261)
 - Deprecate `plog.SeverityNumberUndefined` in favor of `plog.SeverityNumberUnspecified` (#6269)
 - Deprecate `pmetric.[New]?ValueAtQuantile[Slice]?` in favor of `pmetric.[New]?SummaryDataPointValueAtQuantile[Slice]?` (#6262)
@@ -47,7 +47,6 @@
   - Deprecate `pmetric.MetricTypeNone` in favor of `pmetric.MetricTypeEmpty`
   - Deprecate `pmetric.NumberDataPointValueTypeNone` in favor of `pmetric.NumberDataPointValueTypeEmpty`
   - Deprecate `pmetric.ExemplarValueTypeNone` in favor of `pmetric.ExemplarValueTypeEmpty`
-- Deprecate `plog.SeverityNumberUndefined` in favor of `plog.SeverityNumberUnspecified` (#6269)
 
 ### 💡 Enhancements 💡
 
