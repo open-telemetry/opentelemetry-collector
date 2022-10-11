@@ -387,8 +387,8 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 }
 
 var bucketsValues = &messageValueStruct{
-	structName:     "Buckets",
-	description:    "// Buckets are a set of bucket counts, encoded in a contiguous array of counts.",
+	structName:     "ExponentialHistogramDataPointBuckets",
+	description:    "// ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.",
 	originFullName: "otlpmetrics.ExponentialHistogramDataPoint_Buckets",
 	fields: []baseField{
 		&primitiveField{
@@ -427,13 +427,13 @@ var summaryDataPoint = &messageValueStruct{
 }
 
 var quantileValuesSlice = &sliceOfPtrs{
-	structName: "ValueAtQuantileSlice",
+	structName: "SummaryDataPointValueAtQuantileSlice",
 	element:    quantileValues,
 }
 
 var quantileValues = &messageValueStruct{
-	structName:     "ValueAtQuantile",
-	description:    "// ValueAtQuantile is a quantile value within a Summary data point.",
+	structName:     "SummaryDataPointValueAtQuantile",
+	description:    "// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.",
 	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtQuantile",
 	fields: []baseField{
 		quantileField,
@@ -491,7 +491,7 @@ var dataPointFlagsField = &primitiveTypedField{
 	fieldName:       "Flags",
 	originFieldName: "Flags",
 	returnType: &primitiveType{
-		structName: "MetricDataPointFlags",
+		structName: "DataPointFlags",
 		rawType:    "uint32",
 		defaultVal: "0",
 		testVal:    "1",

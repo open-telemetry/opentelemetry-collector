@@ -142,16 +142,16 @@ func NewSpanLink(orig *otlptrace.Span_Link) SpanLink {
 	return SpanLink{orig: orig}
 }
 
-type SpanStatus struct {
+type Status struct {
 	orig *otlptrace.Status
 }
 
-func GetOrigSpanStatus(ms SpanStatus) *otlptrace.Status {
+func GetOrigStatus(ms Status) *otlptrace.Status {
 	return ms.orig
 }
 
-func NewSpanStatus(orig *otlptrace.Status) SpanStatus {
-	return SpanStatus{orig: orig}
+func NewStatus(orig *otlptrace.Status) Status {
+	return Status{orig: orig}
 }
 
 func GenerateTestResourceSpansSlice() ResourceSpansSlice {
@@ -247,7 +247,7 @@ func FillTestSpan(tv Span) {
 	tv.orig.DroppedEventsCount = uint32(17)
 	FillTestSpanLinkSlice(NewSpanLinkSlice(&tv.orig.Links))
 	tv.orig.DroppedLinksCount = uint32(17)
-	FillTestSpanStatus(NewSpanStatus(&tv.orig.Status))
+	FillTestStatus(NewStatus(&tv.orig.Status))
 }
 
 func GenerateTestSpanEventSlice() SpanEventSlice {
@@ -309,14 +309,14 @@ func FillTestSpanLink(tv SpanLink) {
 	tv.orig.DroppedAttributesCount = uint32(17)
 }
 
-func GenerateTestSpanStatus() SpanStatus {
+func GenerateTestStatus() Status {
 	orig := otlptrace.Status{}
-	tv := NewSpanStatus(&orig)
-	FillTestSpanStatus(tv)
+	tv := NewStatus(&orig)
+	FillTestStatus(tv)
 	return tv
 }
 
-func FillTestSpanStatus(tv SpanStatus) {
+func FillTestStatus(tv Status) {
 	tv.orig.Code = 1
 	tv.orig.Message = "cancelled"
 }
