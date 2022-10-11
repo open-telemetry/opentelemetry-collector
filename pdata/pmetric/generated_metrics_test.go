@@ -890,8 +890,8 @@ func TestNumberDataPoint_Exemplars(t *testing.T) {
 
 func TestNumberDataPoint_Flags(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
-	testValFlags := MetricDataPointFlags(1)
+	assert.Equal(t, DataPointFlags(0), ms.Flags())
+	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
 }
@@ -1084,8 +1084,8 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 
 func TestHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
-	testValFlags := MetricDataPointFlags(1)
+	assert.Equal(t, DataPointFlags(0), ms.Flags())
+	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
 }
@@ -1304,8 +1304,8 @@ func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
-	testValFlags := MetricDataPointFlags(1)
+	assert.Equal(t, DataPointFlags(0), ms.Flags())
+	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
 }
@@ -1530,8 +1530,8 @@ func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 
 func TestSummaryDataPoint_Flags(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
-	testValFlags := MetricDataPointFlags(1)
+	assert.Equal(t, DataPointFlags(0), ms.Flags())
+	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
 }

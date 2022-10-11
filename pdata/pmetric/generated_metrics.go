@@ -1293,12 +1293,12 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(ms.getOrig().Flags)
+func (ms NumberDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
+func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -1558,12 +1558,12 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(ms.getOrig().Flags)
+func (ms HistogramDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
+func (ms HistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -1886,12 +1886,12 @@ func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(ms.getOrig().Flags)
+func (ms ExponentialHistogramDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
+func (ms ExponentialHistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -2231,12 +2231,12 @@ func (ms SummaryDataPoint) QuantileValues() SummaryDataPointValueAtQuantileSlice
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(ms.getOrig().Flags)
+func (ms SummaryDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
+func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
