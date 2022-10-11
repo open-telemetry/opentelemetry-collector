@@ -93,11 +93,10 @@ func (c *Config) Validate() error {
 	if !c.SkipCompilation || !c.SkipGetModules {
 		// #nosec G204
 		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
-			path, err := exec.LookPath("go")
+			_, err := exec.LookPath("go")
 			if err != nil {
 				return ErrGoNotFound
 			}
-			c.Distribution.Go = path
 		}
 
 		c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
