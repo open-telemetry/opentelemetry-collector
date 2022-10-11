@@ -146,6 +146,12 @@ func TestNewDefaultConfig(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 }
 
+func TestGoPathNotSet(t *testing.T) {
+	cfg := NewDefaultConfig()
+	assert.NoError(t, cfg.Validate())
+	assert.Zero(t, cfg.Distribution.Go)
+}
+
 func TestNewBuiltinConfig(t *testing.T) {
 	k := koanf.New(".")
 
