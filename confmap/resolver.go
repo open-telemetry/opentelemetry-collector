@@ -23,6 +23,8 @@ import (
 	"sync"
 
 	"go.uber.org/multierr"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var (
@@ -37,6 +39,17 @@ var (
 	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
 )
 
+const expandEnabled = "confmap.expandEnabled"
+
+func init() {
+	// TODO: Remove this if by v0.64.0 no complains from distros.
+	featuregate.GetRegistry().MustRegister(featuregate.Gate{
+		ID:          expandEnabled,
+		Description: "controls whether expending embedded external config providers URIs",
+		Enabled:     true,
+	})
+}
+
 // Resolver resolves a configuration as a Conf.
 type Resolver struct {
 	uris       []location
@@ -46,8 +59,6 @@ type Resolver struct {
 	sync.Mutex
 	closers []CloseFunc
 	watcher chan error
-
-	enableExpand bool
 }
 
 // ResolverSettings are the settings to configure the behavior of the Resolver.
@@ -149,7 +160,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		}
 	}
 
-	if mr.enableExpand {
+	if featuregate.GetRegistry().IsEnabled(expandEnabled) {
 		cfgMap := make(map[string]interface{})
 		for _, k := range retMap.AllKeys() {
 			val, err := mr.expandValueRecursively(ctx, retMap.Get(k))
@@ -160,7 +171,6 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		}
 		retMap = NewFromStringMap(cfgMap)
 	}
-
 	// Apply the converters in the given order.
 	for _, confConv := range mr.converters {
 		if err := confConv.Convert(ctx, retMap); err != nil {
