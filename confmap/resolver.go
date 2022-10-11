@@ -235,6 +235,9 @@ func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interfa
 		if err != nil {
 			return nil, false, err
 		}
+		if strings.Contains(lURI.opaqueValue, "$") {
+			return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
+		}
 		ret, err := mr.retrieveValue(ctx, lURI)
 		if err != nil {
 			return nil, false, err

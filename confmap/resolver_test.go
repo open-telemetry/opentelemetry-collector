@@ -474,6 +474,23 @@ func TestResolverExpandInvalidScheme(t *testing.T) {
 	assert.EqualError(t, err, `invalid uri: "g_c_s:VALUE"`)
 }
 
+func TestResolverExpandInvalidOpaqueValue(t *testing.T) {
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(map[string]interface{}{"test": []interface{}{map[string]interface{}{"test": "${test:$VALUE}"}}})
+	})
+
+	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(errors.New("invalid value"))
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	require.NoError(t, err)
+	resolver.enableExpand = true
+
+	_, err = resolver.Resolve(context.Background())
+	assert.EqualError(t, err, `the uri "test:$VALUE" contains unsupported characters ('$')`)
+}
+
 func makeMapProvidersMap(providers ...Provider) map[string]Provider {
 	ret := make(map[string]Provider, len(providers))
 	for _, provider := range providers {
