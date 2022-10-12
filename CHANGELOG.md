@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.62.0 Beta
+
 ### 🛑 Breaking changes 🛑
 
 - Delete deprecated `go.opentelemetry.io/collector/service/featuregate`. (#6178)
