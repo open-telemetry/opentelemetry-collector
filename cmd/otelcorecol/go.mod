@@ -7,7 +7,7 @@ go 1.18
 require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.61.0
-	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664
+	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
 )
 
 require (
@@ -62,10 +62,10 @@ require (
 	go.opentelemetry.io/contrib/propagators/b3 v1.10.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.36.1 // indirect
 	go.opentelemetry.io/otel v1.10.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.32.1 // indirect
-	go.opentelemetry.io/otel/metric v0.32.1 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.32.2 // indirect
+	go.opentelemetry.io/otel/metric v0.32.2 // indirect
 	go.opentelemetry.io/otel/sdk v1.10.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.32.1 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.32.2 // indirect
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
