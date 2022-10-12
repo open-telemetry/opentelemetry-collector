@@ -48,7 +48,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Create a branch named `release/<release-series>` (e.g. `release/v0.45.x`) from the changelog update commit and push to `open-telemetry/opentelemetry-collector`.
 
-1. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.55.0`). Push them to `open-telemetry/opentelemetry-collector` with `make push-tag TAG=v0.55.0`. Wait for the new tag build to pass successfully.
+1. Tag all the module groups (stable, beta) with the new release version by running the `make push-tags` command (e.g. `make push-tags MODSET=stable` and `make push-tags MODSET=beta`). Wait for the new tag build to pass successfully.
 
 1. The release script for the collector builder should create a new GitHub release for the builder. This is a separate release from the core, but we might join them in the future if it makes sense.
 
@@ -75,7 +75,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Create a branch named `release/<release-series>` (e.g. `release/v0.45.x`) in Contrib from the changelog update commit and push it to `open-telemetry/opentelemetry-collector-contrib`.
 
-1. Tag all the modules with the new release version by running the `make add-tag TAG=v0.55.0` command. Push them to `open-telemetry/opentelemetry-collector-contrib` with `make push-tag TAG=v0.55.0`. Wait for the new tag build to pass successfully.
+1. Tag all the module groups (`contrib-base`) with the new release version by running the `make push-tags MODSET=contrib-base` command. Wait for the new tag build to pass successfully.
 
 1. A new `v0.55.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description. At the top of the description add a link to Core release notes (assuming the previous release of Core and Contrib was also performed simultaneously), e.g. "The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.55.0) (be sure to check the release notes here as well!)."
 
@@ -89,7 +89,7 @@ The last step of the release process creates artifacts for the new version of th
 
 1. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
 
-1. Tag with the new release version by running the `make add-tag TAG=v0.55.0` command. Push them to `open-telemetry/opentelemetry-collector-releases` with `make push-tag TAG=v0.55.0`. Wait for the new tag build to pass successfully.
+1. Tag with the new release version by running the `make push-tags TAG=v0.55.0` command. Wait for the new tag build to pass successfully.
 
 1. Ensure the "Release" action passes, this will
 
