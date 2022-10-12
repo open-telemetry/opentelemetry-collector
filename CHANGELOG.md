@@ -52,7 +52,6 @@
 ### 🧰 Bug fixes 🧰
 
 - Fixed bug where `telemetryInitializer` is not cleaned up when `newService` errors (#6239)
-- (Builder)Remove setting of the Go executable from Validate fn (#6273)
 ## v0.61.0 Beta
 
 ### 🛑 Breaking changes 🛑
