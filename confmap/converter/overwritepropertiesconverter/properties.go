@@ -29,13 +29,8 @@ type converter struct {
 	properties []string
 }
 
-// New returns a confmap.Converter, that overrides all the given properties into the
-// input map.
-//
-// Properties must follow the Java properties format, key-value list separated by equal sign with a "."
-// as key delimiter.
-//
-//	["processors.batch.timeout=2s", "processors.batch/foo.timeout=3s"]
+// Deprecated: [v0.63.0] this converter will not be supported anymore because of dot separation limitation.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/6294 for more details.
 func New(properties []string) confmap.Converter {
 	return &converter{properties: properties}
 }
