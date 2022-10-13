@@ -102,7 +102,8 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 type MetricType int32
 
 const (
-	MetricTypeNone MetricType = iota
+	// MetricTypeEmpty means that metric type is unset.
+	MetricTypeEmpty MetricType = iota
 	MetricTypeGauge
 	MetricTypeSum
 	MetricTypeHistogram
@@ -110,11 +111,14 @@ const (
 	MetricTypeSummary
 )
 
+// Deprecated: [0.62.0] Use MetricTypeEmpty instead.
+const MetricTypeNone = MetricTypeEmpty
+
 // String returns the string representation of the MetricType.
 func (mdt MetricType) String() string {
 	switch mdt {
-	case MetricTypeNone:
-		return "None"
+	case MetricTypeEmpty:
+		return "Empty"
 	case MetricTypeGauge:
 		return "Gauge"
 	case MetricTypeSum:
@@ -129,46 +133,64 @@ func (mdt MetricType) String() string {
 	return ""
 }
 
-// MetricAggregationTemporality defines how a metric aggregator reports aggregated values.
+// AggregationTemporality defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
-type MetricAggregationTemporality int32
+type AggregationTemporality int32
 
 const (
-	// MetricAggregationTemporalityUnspecified is the default MetricAggregationTemporality, it MUST NOT be used.
-	MetricAggregationTemporalityUnspecified = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
-	// MetricAggregationTemporalityDelta is a MetricAggregationTemporality for a metric aggregator which reports changes since last report time.
-	MetricAggregationTemporalityDelta = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
-	// MetricAggregationTemporalityCumulative is a MetricAggregationTemporality for a metric aggregator which reports changes since a fixed start time.
-	MetricAggregationTemporalityCumulative = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
+	// AggregationTemporalityUnspecified is the default AggregationTemporality, it MUST NOT be used.
+	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
+	// AggregationTemporalityDelta is a AggregationTemporality for a metric aggregator which reports changes since last report time.
+	AggregationTemporalityDelta = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
+	// AggregationTemporalityCumulative is a AggregationTemporality for a metric aggregator which reports changes since a fixed start time.
+	AggregationTemporalityCumulative = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
 )
 
-// String returns the string representation of the MetricAggregationTemporality.
-func (at MetricAggregationTemporality) String() string {
+// String returns the string representation of the AggregationTemporality.
+func (at AggregationTemporality) String() string {
 	switch at {
-	case MetricAggregationTemporalityUnspecified:
+	case AggregationTemporalityUnspecified:
 		return "Unspecified"
-	case MetricAggregationTemporalityDelta:
+	case AggregationTemporalityDelta:
 		return "Delta"
-	case MetricAggregationTemporalityCumulative:
+	case AggregationTemporalityCumulative:
 		return "Cumulative"
 	}
 	return ""
 }
 
+// Deprecated: [v0.62.0] Use AggregationTemporality instead.
+type MetricAggregationTemporality = AggregationTemporality
+
+const (
+	// Deprecated: [v0.62.0] Use AggregationTemporalityUnspecified instead.
+	MetricAggregationTemporalityUnspecified = AggregationTemporalityUnspecified
+
+	// Deprecated: [v0.62.0] Use AggregationTemporalityDelta instead.
+	MetricAggregationTemporalityDelta = AggregationTemporalityDelta
+
+	// Deprecated: [v0.62.0] Use AggregationTemporalityCumulative instead.
+	MetricAggregationTemporalityCumulative = AggregationTemporalityCumulative
+)
+
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType int32
 
 const (
-	NumberDataPointValueTypeNone NumberDataPointValueType = iota
+	// NumberDataPointValueTypeEmpty means that data point value is unset.
+	NumberDataPointValueTypeEmpty NumberDataPointValueType = iota
 	NumberDataPointValueTypeInt
 	NumberDataPointValueTypeDouble
 )
 
+// Deprecated: [0.62.0] Use NumberDataPointValueTypeEmpty instead.
+const NumberDataPointValueTypeNone = NumberDataPointValueTypeEmpty
+
 // String returns the string representation of the NumberDataPointValueType.
 func (nt NumberDataPointValueType) String() string {
 	switch nt {
-	case NumberDataPointValueTypeNone:
-		return "None"
+	case NumberDataPointValueTypeEmpty:
+		return "Empty"
 	case NumberDataPointValueTypeInt:
 		return "Int"
 	case NumberDataPointValueTypeDouble:
@@ -181,16 +203,20 @@ func (nt NumberDataPointValueType) String() string {
 type ExemplarValueType int32
 
 const (
-	ExemplarValueTypeNone ExemplarValueType = iota
+	// ExemplarValueTypeEmpty means that exemplar value is unset.
+	ExemplarValueTypeEmpty ExemplarValueType = iota
 	ExemplarValueTypeInt
 	ExemplarValueTypeDouble
 )
 
+// Deprecated: [0.62.0] Use ExemplarValueTypeEmpty instead.
+const ExemplarValueTypeNone = ExemplarValueTypeEmpty
+
 // String returns the string representation of the ExemplarValueType.
 func (nt ExemplarValueType) String() string {
 	switch nt {
-	case ExemplarValueTypeNone:
-		return "None"
+	case ExemplarValueTypeEmpty:
+		return "Empty"
 	case ExemplarValueTypeInt:
 		return "Int"
 	case ExemplarValueTypeDouble:
@@ -198,3 +224,21 @@ func (nt ExemplarValueType) String() string {
 	}
 	return ""
 }
+
+// Deprecated: [v0.62.0] Use ExponentialHistogramDataPointBuckets instead.
+type Buckets = ExponentialHistogramDataPointBuckets
+
+// Deprecated: [v0.62.0] Use NewExponentialHistogramDataPointBuckets instead.
+var NewBuckets = NewExponentialHistogramDataPointBuckets
+
+// Deprecated: [v0.62.0] Use SummaryDataPointValueAtQuantile instead.
+type ValueAtQuantile = SummaryDataPointValueAtQuantile
+
+// Deprecated: [v0.62.0] Use NewSummaryDataPointValueAtQuantile instead.
+var NewValueAtQuantile = NewSummaryDataPointValueAtQuantile
+
+// Deprecated: [v0.62.0] Use SummaryDataPointValueAtQuantileSlice instead.
+type ValueAtQuantileSlice = SummaryDataPointValueAtQuantileSlice
+
+// Deprecated: [v0.62.0] Use NewSummaryDataPointValueAtQuantileSlice instead.
+var NewValueAtQuantileSlice = NewSummaryDataPointValueAtQuantileSlice

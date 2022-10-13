@@ -57,14 +57,14 @@ func TestValue(t *testing.T) {
 }
 
 func TestValueType(t *testing.T) {
-	assert.EqualValues(t, "EMPTY", ValueTypeEmpty.String())
-	assert.EqualValues(t, "STRING", ValueTypeStr.String())
-	assert.EqualValues(t, "BOOL", ValueTypeBool.String())
-	assert.EqualValues(t, "INT", ValueTypeInt.String())
-	assert.EqualValues(t, "DOUBLE", ValueTypeDouble.String())
-	assert.EqualValues(t, "MAP", ValueTypeMap.String())
-	assert.EqualValues(t, "SLICE", ValueTypeSlice.String())
-	assert.EqualValues(t, "BYTES", ValueTypeBytes.String())
+	assert.EqualValues(t, "Empty", ValueTypeEmpty.String())
+	assert.EqualValues(t, "Str", ValueTypeStr.String())
+	assert.EqualValues(t, "Bool", ValueTypeBool.String())
+	assert.EqualValues(t, "Int", ValueTypeInt.String())
+	assert.EqualValues(t, "Double", ValueTypeDouble.String())
+	assert.EqualValues(t, "Map", ValueTypeMap.String())
+	assert.EqualValues(t, "Slice", ValueTypeSlice.String())
+	assert.EqualValues(t, "Bytes", ValueTypeBytes.String())
 	assert.EqualValues(t, "", ValueType(100).String())
 }
 

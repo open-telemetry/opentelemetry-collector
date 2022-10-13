@@ -61,7 +61,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return errors.New("empty config for OTLP receiver")
 	}
 	// first load the config normally
-	err := componentParser.UnmarshalExact(cfg)
+	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}

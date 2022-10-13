@@ -60,9 +60,8 @@ var resourceSpans = &messageValueStruct{
 		resourceField,
 		schemaURLField,
 		&sliceField{
-			fieldName:       "ScopeSpans",
-			originFieldName: "ScopeSpans",
-			returnSlice:     scopeSpansSlice,
+			fieldName:   "ScopeSpans",
+			returnSlice: scopeSpansSlice,
 		},
 	},
 }
@@ -80,9 +79,8 @@ var scopeSpans = &messageValueStruct{
 		scopeField,
 		schemaURLField,
 		&sliceField{
-			fieldName:       "Spans",
-			originFieldName: "Spans",
-			returnSlice:     spanSlice,
+			fieldName:   "Spans",
+			returnSlice: spanSlice,
 		},
 	},
 }
@@ -104,8 +102,7 @@ var span = &messageValueStruct{
 		parentSpanIDField,
 		nameField,
 		&primitiveTypedField{
-			fieldName:       "Kind",
-			originFieldName: "Kind",
+			fieldName: "Kind",
 			returnType: &primitiveType{
 				structName: "SpanKind",
 				rawType:    "otlptrace.Span_SpanKind",
@@ -118,33 +115,28 @@ var span = &messageValueStruct{
 		attributes,
 		droppedAttributesCount,
 		&sliceField{
-			fieldName:       "Events",
-			originFieldName: "Events",
-			returnSlice:     spanEventSlice,
+			fieldName:   "Events",
+			returnSlice: spanEventSlice,
 		},
 		&primitiveField{
-			fieldName:       "DroppedEventsCount",
-			originFieldName: "DroppedEventsCount",
-			returnType:      "uint32",
-			defaultVal:      "uint32(0)",
-			testVal:         "uint32(17)",
+			fieldName:  "DroppedEventsCount",
+			returnType: "uint32",
+			defaultVal: "uint32(0)",
+			testVal:    "uint32(17)",
 		},
 		&sliceField{
-			fieldName:       "Links",
-			originFieldName: "Links",
-			returnSlice:     spanLinkSlice,
+			fieldName:   "Links",
+			returnSlice: spanLinkSlice,
 		},
 		&primitiveField{
-			fieldName:       "DroppedLinksCount",
-			originFieldName: "DroppedLinksCount",
-			returnType:      "uint32",
-			defaultVal:      "uint32(0)",
-			testVal:         "uint32(17)",
+			fieldName:  "DroppedLinksCount",
+			returnType: "uint32",
+			defaultVal: "uint32(0)",
+			testVal:    "uint32(17)",
 		},
 		&messageValueField{
-			fieldName:       "Status",
-			originFieldName: "Status",
-			returnMessage:   spanStatus,
+			fieldName:     "Status",
+			returnMessage: spanStatus,
 		},
 	},
 }
@@ -188,14 +180,13 @@ var spanLink = &messageValueStruct{
 }
 
 var spanStatus = &messageValueStruct{
-	structName: "SpanStatus",
-	description: "// SpanStatus is an optional final status for this span. Semantically, when Status was not\n" +
+	structName: "Status",
+	description: "// Status is an optional final status for this span. Semantically, when Status was not\n" +
 		"// set, that means the span ended without errors and to assume Status.Ok (code = 0).",
 	originFullName: "otlptrace.Status",
 	fields: []baseField{
 		&primitiveTypedField{
-			fieldName:       "Code",
-			originFieldName: "Code",
+			fieldName: "Code",
 			returnType: &primitiveType{
 				structName: "StatusCode",
 				rawType:    "otlptrace.Status_StatusCode",
@@ -204,25 +195,22 @@ var spanStatus = &messageValueStruct{
 			},
 		},
 		&primitiveField{
-			fieldName:       "Message",
-			originFieldName: "Message",
-			returnType:      "string",
-			defaultVal:      `""`,
-			testVal:         `"cancelled"`,
+			fieldName:  "Message",
+			returnType: "string",
+			defaultVal: `""`,
+			testVal:    `"cancelled"`,
 		},
 	},
 }
 
 var traceStateField = &messageValueField{
-	fieldName:       "TraceState",
-	originFieldName: "TraceState",
-	returnMessage:   traceState,
+	fieldName:     "TraceState",
+	returnMessage: traceState,
 }
 
 var droppedAttributesCount = &primitiveField{
-	fieldName:       "DroppedAttributesCount",
-	originFieldName: "DroppedAttributesCount",
-	returnType:      "uint32",
-	defaultVal:      "uint32(0)",
-	testVal:         "uint32(17)",
+	fieldName:  "DroppedAttributesCount",
+	returnType: "uint32",
+	defaultVal: "uint32(0)",
+	testVal:    "uint32(17)",
 }

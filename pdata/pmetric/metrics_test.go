@@ -36,7 +36,7 @@ const (
 )
 
 func TestMetricTypeString(t *testing.T) {
-	assert.Equal(t, "None", MetricTypeNone.String())
+	assert.Equal(t, "Empty", MetricTypeEmpty.String())
 	assert.Equal(t, "Gauge", MetricTypeGauge.String())
 	assert.Equal(t, "Sum", MetricTypeSum.String())
 	assert.Equal(t, "Histogram", MetricTypeHistogram.String())
@@ -45,22 +45,22 @@ func TestMetricTypeString(t *testing.T) {
 	assert.Equal(t, "", (MetricTypeSummary + 1).String())
 }
 
-func TestMetricAggregationTemporalityString(t *testing.T) {
-	assert.Equal(t, "Unspecified", MetricAggregationTemporalityUnspecified.String())
-	assert.Equal(t, "Delta", MetricAggregationTemporalityDelta.String())
-	assert.Equal(t, "Cumulative", MetricAggregationTemporalityCumulative.String())
-	assert.Equal(t, "", (MetricAggregationTemporalityCumulative + 1).String())
+func TestAggregationTemporalityString(t *testing.T) {
+	assert.Equal(t, "Unspecified", AggregationTemporalityUnspecified.String())
+	assert.Equal(t, "Delta", AggregationTemporalityDelta.String())
+	assert.Equal(t, "Cumulative", AggregationTemporalityCumulative.String())
+	assert.Equal(t, "", (AggregationTemporalityCumulative + 1).String())
 }
 
 func TestNumberDataPointValueTypeString(t *testing.T) {
-	assert.Equal(t, "None", NumberDataPointValueTypeNone.String())
+	assert.Equal(t, "Empty", NumberDataPointValueTypeEmpty.String())
 	assert.Equal(t, "Int", NumberDataPointValueTypeInt.String())
 	assert.Equal(t, "Double", NumberDataPointValueTypeDouble.String())
 	assert.Equal(t, "", (NumberDataPointValueTypeDouble + 1).String())
 }
 
 func TestExemplarValueTypeString(t *testing.T) {
-	assert.Equal(t, "None", ExemplarValueTypeNone.String())
+	assert.Equal(t, "Empty", ExemplarValueTypeEmpty.String())
 	assert.Equal(t, "Int", ExemplarValueTypeInt.String())
 	assert.Equal(t, "Double", ExemplarValueTypeDouble.String())
 	assert.Equal(t, "", (ExemplarValueTypeDouble + 1).String())
@@ -284,7 +284,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "ms", metricDouble.Unit())
 	assert.EqualValues(t, MetricTypeSum, metricDouble.Type())
 	dsd := metricDouble.Sum()
-	assert.EqualValues(t, MetricAggregationTemporalityCumulative, dsd.AggregationTemporality())
+	assert.EqualValues(t, AggregationTemporalityCumulative, dsd.AggregationTemporality())
 	sumDataPoints := dsd.DataPoints()
 	assert.EqualValues(t, 2, sumDataPoints.Len())
 	// First point
@@ -305,7 +305,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "ms", metricHistogram.Unit())
 	assert.EqualValues(t, MetricTypeHistogram, metricHistogram.Type())
 	dhd := metricHistogram.Histogram()
-	assert.EqualValues(t, MetricAggregationTemporalityDelta, dhd.AggregationTemporality())
+	assert.EqualValues(t, AggregationTemporalityDelta, dhd.AggregationTemporality())
 	histogramDataPoints := dhd.DataPoints()
 	assert.EqualValues(t, 2, histogramDataPoints.Len())
 	// First point
@@ -462,7 +462,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	// Mutate DataPoints
 	dsd := metric.Sum()
 	assert.EqualValues(t, 2, dsd.DataPoints().Len())
-	metric.SetEmptySum().SetAggregationTemporality(MetricAggregationTemporalityCumulative)
+	metric.SetEmptySum().SetAggregationTemporality(AggregationTemporalityCumulative)
 	doubleDataPoints := metric.Sum().DataPoints()
 	doubleDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, doubleDataPoints.Len())
@@ -546,7 +546,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	// Mutate DataPoints
 	dhd := metric.Histogram()
 	assert.EqualValues(t, 2, dhd.DataPoints().Len())
-	metric.SetEmptyHistogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
+	metric.SetEmptyHistogram().SetAggregationTemporality(AggregationTemporalityDelta)
 	histogramDataPoints := metric.Histogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, histogramDataPoints.Len())
@@ -629,7 +629,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	// Mutate DataPoints
 	dhd := metric.Histogram()
 	assert.EqualValues(t, 2, dhd.DataPoints().Len())
-	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
+	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(AggregationTemporalityDelta)
 	histogramDataPoints := metric.ExponentialHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, histogramDataPoints.Len())

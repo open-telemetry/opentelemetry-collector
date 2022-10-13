@@ -154,7 +154,7 @@ func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
 	otlpcollectorlog.RegisterLogsServiceServer(s, &rawLogsServer{srv: srv})
 }
 
-// Deprecated: [0.62.0] Use RegisterGRPCServer instead
+// Deprecated: [v0.62.0] Use RegisterGRPCServer instead
 var RegisterServer = RegisterGRPCServer
 
 type rawLogsServer struct {

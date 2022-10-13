@@ -57,19 +57,52 @@ func (l *Conf) AllKeys() []string {
 	return l.k.Keys()
 }
 
-// Unmarshal unmarshalls the config into a struct.
-// Tags on the fields of the structure must be properly set.
-func (l *Conf) Unmarshal(result interface{}) error {
-	return decodeConfig(l, result, false)
+type UnmarshalOption interface {
+	apply(*unmarshalOption)
 }
 
-// UnmarshalExact unmarshalls the config into a struct, erroring if a field is nonexistent.
+type unmarshalOption struct {
+	errorUnused bool
+}
+
+// WithErrorUnused sets an option to error when there are existing
+// keys in the original Conf that were unused in the decoding process
+// (extra keys).
+func WithErrorUnused() UnmarshalOption {
+	return unmarshalOptionFunc(func(uo *unmarshalOption) {
+		uo.errorUnused = true
+	})
+}
+
+type unmarshalOptionFunc func(*unmarshalOption)
+
+func (fn unmarshalOptionFunc) apply(set *unmarshalOption) {
+	fn(set)
+}
+
+// Unmarshal unmarshalls the config into a struct using the given options.
+// Tags on the fields of the structure must be properly set.
+func (l *Conf) Unmarshal(result interface{}, opts ...UnmarshalOption) error {
+	set := unmarshalOption{}
+	for _, opt := range opts {
+		opt.apply(&set)
+	}
+	return decodeConfig(l, result, set.errorUnused)
+}
+
+// Deprecated: [v0.62.0] use Unmarshal.
 func (l *Conf) UnmarshalExact(result interface{}) error {
-	return decodeConfig(l, result, true)
+	return l.Unmarshal(result, WithErrorUnused())
+}
+
+type marshalOption struct{}
+
+type MarshalOption interface {
+	apply(*marshalOption)
 }
 
 // Marshal encodes the config and merges it into the Conf.
-func (l *Conf) Marshal(rawVal interface{}) error {
+func (l *Conf) Marshal(rawVal interface{}, _ ...MarshalOption) error {
 	enc := encoder.New(encoderConfig(rawVal))
 	data, err := enc.Encode(rawVal)
 	if err != nil {

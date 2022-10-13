@@ -475,7 +475,7 @@ func TestMetric_Unit(t *testing.T) {
 
 func TestMetric_Type(t *testing.T) {
 	tv := NewMetric()
-	assert.Equal(t, MetricTypeNone, tv.Type())
+	assert.Equal(t, MetricTypeEmpty, tv.Type())
 }
 
 func TestMetric_Gauge(t *testing.T) {
@@ -598,8 +598,8 @@ func TestSum_CopyTo(t *testing.T) {
 
 func TestSum_AggregationTemporality(t *testing.T) {
 	ms := NewSum()
-	assert.Equal(t, MetricAggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := MetricAggregationTemporality(otlpmetrics.AggregationTemporality(1))
+	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
@@ -638,8 +638,8 @@ func TestHistogram_CopyTo(t *testing.T) {
 
 func TestHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewHistogram()
-	assert.Equal(t, MetricAggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := MetricAggregationTemporality(otlpmetrics.AggregationTemporality(1))
+	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
@@ -671,8 +671,8 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewExponentialHistogram()
-	assert.Equal(t, MetricAggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
-	testValAggregationTemporality := MetricAggregationTemporality(otlpmetrics.AggregationTemporality(1))
+	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
+	testValAggregationTemporality := AggregationTemporality(otlpmetrics.AggregationTemporality(1))
 	ms.SetAggregationTemporality(testValAggregationTemporality)
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
@@ -862,7 +862,7 @@ func TestNumberDataPoint_Timestamp(t *testing.T) {
 
 func TestNumberDataPoint_ValueType(t *testing.T) {
 	tv := NewNumberDataPoint()
-	assert.Equal(t, NumberDataPointValueTypeNone, tv.ValueType())
+	assert.Equal(t, NumberDataPointValueTypeEmpty, tv.ValueType())
 }
 
 func TestNumberDataPoint_DoubleValue(t *testing.T) {
@@ -890,8 +890,8 @@ func TestNumberDataPoint_Exemplars(t *testing.T) {
 
 func TestNumberDataPoint_Flags(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
-	testValFlags := MetricDataPointFlags(1)
+	assert.Equal(t, DataPointFlags(0), ms.Flags())
+	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
 }
@@ -1084,8 +1084,8 @@ func TestHistogramDataPoint_Exemplars(t *testing.T) {
 
 func TestHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
-	testValFlags := MetricDataPointFlags(1)
+	assert.Equal(t, DataPointFlags(0), ms.Flags())
+	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
 }
@@ -1285,14 +1285,14 @@ func TestExponentialHistogramDataPoint_ZeroCount(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_Positive(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	internal.FillTestBuckets(internal.Buckets(ms.Positive()))
-	assert.Equal(t, Buckets(internal.GenerateTestBuckets()), ms.Positive())
+	internal.FillTestExponentialHistogramDataPointBuckets(internal.ExponentialHistogramDataPointBuckets(ms.Positive()))
+	assert.Equal(t, ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets()), ms.Positive())
 }
 
 func TestExponentialHistogramDataPoint_Negative(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	internal.FillTestBuckets(internal.Buckets(ms.Negative()))
-	assert.Equal(t, Buckets(internal.GenerateTestBuckets()), ms.Negative())
+	internal.FillTestExponentialHistogramDataPointBuckets(internal.ExponentialHistogramDataPointBuckets(ms.Negative()))
+	assert.Equal(t, ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets()), ms.Negative())
 }
 
 func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
@@ -1304,8 +1304,8 @@ func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
-	testValFlags := MetricDataPointFlags(1)
+	assert.Equal(t, DataPointFlags(0), ms.Flags())
+	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
 }
@@ -1324,33 +1324,33 @@ func TestExponentialHistogramDataPoint_Max(t *testing.T) {
 	assert.Equal(t, float64(182.55), ms.Max())
 }
 
-func TestBuckets_MoveTo(t *testing.T) {
-	ms := Buckets(internal.GenerateTestBuckets())
-	dest := NewBuckets()
+func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
+	ms := ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets())
+	dest := NewExponentialHistogramDataPointBuckets()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewBuckets(), ms)
-	assert.Equal(t, Buckets(internal.GenerateTestBuckets()), dest)
+	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms)
+	assert.Equal(t, ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets()), dest)
 }
 
-func TestBuckets_CopyTo(t *testing.T) {
-	ms := NewBuckets()
-	orig := NewBuckets()
+func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
+	ms := NewExponentialHistogramDataPointBuckets()
+	orig := NewExponentialHistogramDataPointBuckets()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Buckets(internal.GenerateTestBuckets())
+	orig = ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
 
-func TestBuckets_Offset(t *testing.T) {
-	ms := NewBuckets()
+func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
+	ms := NewExponentialHistogramDataPointBuckets()
 	assert.Equal(t, int32(0), ms.Offset())
 	ms.SetOffset(int32(909))
 	assert.Equal(t, int32(909), ms.Offset())
 }
 
-func TestBuckets_BucketCounts(t *testing.T) {
-	ms := NewBuckets()
+func TestExponentialHistogramDataPointBuckets_BucketCounts(t *testing.T) {
+	ms := NewExponentialHistogramDataPointBuckets()
 	assert.Equal(t, []uint64(nil), ms.BucketCounts().AsRaw())
 	ms.BucketCounts().FromRaw([]uint64{1, 2, 3})
 	assert.Equal(t, []uint64{1, 2, 3}, ms.BucketCounts().AsRaw())
@@ -1523,54 +1523,54 @@ func TestSummaryDataPoint_Sum(t *testing.T) {
 
 func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.Equal(t, NewValueAtQuantileSlice(), ms.QuantileValues())
-	internal.FillTestValueAtQuantileSlice(internal.ValueAtQuantileSlice(ms.QuantileValues()))
-	assert.Equal(t, ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice()), ms.QuantileValues())
+	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
+	internal.FillTestSummaryDataPointValueAtQuantileSlice(internal.SummaryDataPointValueAtQuantileSlice(ms.QuantileValues()))
+	assert.Equal(t, SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice()), ms.QuantileValues())
 }
 
 func TestSummaryDataPoint_Flags(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.Equal(t, MetricDataPointFlags(0), ms.Flags())
-	testValFlags := MetricDataPointFlags(1)
+	assert.Equal(t, DataPointFlags(0), ms.Flags())
+	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
 }
 
-func TestValueAtQuantileSlice(t *testing.T) {
-	es := NewValueAtQuantileSlice()
+func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
+	es := NewSummaryDataPointValueAtQuantileSlice()
 	assert.Equal(t, 0, es.Len())
-	es = newValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+	es = newSummaryDataPointValueAtQuantileSlice(&[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	assert.Equal(t, 0, es.Len())
 
 	es.EnsureCapacity(7)
-	emptyVal := newValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
-	testVal := ValueAtQuantile(internal.GenerateTestValueAtQuantile())
+	emptyVal := newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+	testVal := SummaryDataPointValueAtQuantile(internal.GenerateTestSummaryDataPointValueAtQuantile())
 	assert.Equal(t, 7, cap(*es.getOrig()))
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestValueAtQuantile(internal.ValueAtQuantile(el))
+		internal.FillTestSummaryDataPointValueAtQuantile(internal.SummaryDataPointValueAtQuantile(el))
 		assert.Equal(t, testVal, el)
 	}
 }
 
-func TestValueAtQuantileSlice_CopyTo(t *testing.T) {
-	dest := NewValueAtQuantileSlice()
+func TestSummaryDataPointValueAtQuantileSlice_CopyTo(t *testing.T) {
+	dest := NewSummaryDataPointValueAtQuantileSlice()
 	// Test CopyTo to empty
-	NewValueAtQuantileSlice().CopyTo(dest)
-	assert.Equal(t, NewValueAtQuantileSlice(), dest)
+	NewSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
+	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), dest)
 
 	// Test CopyTo larger slice
-	ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice()).CopyTo(dest)
-	assert.Equal(t, ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice()), dest)
+	SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice()).CopyTo(dest)
+	assert.Equal(t, SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice()), dest)
 
 	// Test CopyTo same size slice
-	ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice()).CopyTo(dest)
-	assert.Equal(t, ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice()), dest)
+	SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice()).CopyTo(dest)
+	assert.Equal(t, SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice()), dest)
 }
 
-func TestValueAtQuantileSlice_EnsureCapacity(t *testing.T) {
-	es := ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice())
+func TestSummaryDataPointValueAtQuantileSlice_EnsureCapacity(t *testing.T) {
+	es := SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice())
 	// Test ensure smaller capacity.
 	const ensureSmallLen = 4
 	expectedEs := make(map[*otlpmetrics.SummaryDataPoint_ValueAtQuantile]bool)
@@ -1603,24 +1603,24 @@ func TestValueAtQuantileSlice_EnsureCapacity(t *testing.T) {
 	assert.Equal(t, expectedEs, foundEs)
 }
 
-func TestValueAtQuantileSlice_MoveAndAppendTo(t *testing.T) {
+func TestSummaryDataPointValueAtQuantileSlice_MoveAndAppendTo(t *testing.T) {
 	// Test MoveAndAppendTo to empty
-	expectedSlice := ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice())
-	dest := NewValueAtQuantileSlice()
-	src := ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice())
+	expectedSlice := SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice())
+	dest := NewSummaryDataPointValueAtQuantileSlice()
+	src := SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice())
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice()), dest)
+	assert.Equal(t, SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice()), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo empty slice
 	src.MoveAndAppendTo(dest)
-	assert.Equal(t, ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice()), dest)
+	assert.Equal(t, SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice()), dest)
 	assert.Equal(t, 0, src.Len())
 	assert.Equal(t, expectedSlice.Len(), dest.Len())
 
 	// Test MoveAndAppendTo not empty slice
-	ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice()).MoveAndAppendTo(dest)
+	SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice()).MoveAndAppendTo(dest)
 	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
 	for i := 0; i < expectedSlice.Len(); i++ {
 		assert.Equal(t, expectedSlice.At(i), dest.At(i))
@@ -1628,51 +1628,51 @@ func TestValueAtQuantileSlice_MoveAndAppendTo(t *testing.T) {
 	}
 }
 
-func TestValueAtQuantileSlice_RemoveIf(t *testing.T) {
+func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 	// Test RemoveIf on empty slice
-	emptySlice := NewValueAtQuantileSlice()
-	emptySlice.RemoveIf(func(el ValueAtQuantile) bool {
+	emptySlice := NewSummaryDataPointValueAtQuantileSlice()
+	emptySlice.RemoveIf(func(el SummaryDataPointValueAtQuantile) bool {
 		t.Fail()
 		return false
 	})
 
 	// Test RemoveIf
-	filtered := ValueAtQuantileSlice(internal.GenerateTestValueAtQuantileSlice())
+	filtered := SummaryDataPointValueAtQuantileSlice(internal.GenerateTestSummaryDataPointValueAtQuantileSlice())
 	pos := 0
-	filtered.RemoveIf(func(el ValueAtQuantile) bool {
+	filtered.RemoveIf(func(el SummaryDataPointValueAtQuantile) bool {
 		pos++
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
 }
 
-func TestValueAtQuantile_MoveTo(t *testing.T) {
-	ms := ValueAtQuantile(internal.GenerateTestValueAtQuantile())
-	dest := NewValueAtQuantile()
+func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
+	ms := SummaryDataPointValueAtQuantile(internal.GenerateTestSummaryDataPointValueAtQuantile())
+	dest := NewSummaryDataPointValueAtQuantile()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewValueAtQuantile(), ms)
-	assert.Equal(t, ValueAtQuantile(internal.GenerateTestValueAtQuantile()), dest)
+	assert.Equal(t, NewSummaryDataPointValueAtQuantile(), ms)
+	assert.Equal(t, SummaryDataPointValueAtQuantile(internal.GenerateTestSummaryDataPointValueAtQuantile()), dest)
 }
 
-func TestValueAtQuantile_CopyTo(t *testing.T) {
-	ms := NewValueAtQuantile()
-	orig := NewValueAtQuantile()
+func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
+	ms := NewSummaryDataPointValueAtQuantile()
+	orig := NewSummaryDataPointValueAtQuantile()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ValueAtQuantile(internal.GenerateTestValueAtQuantile())
+	orig = SummaryDataPointValueAtQuantile(internal.GenerateTestSummaryDataPointValueAtQuantile())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
 
-func TestValueAtQuantile_Quantile(t *testing.T) {
-	ms := NewValueAtQuantile()
+func TestSummaryDataPointValueAtQuantile_Quantile(t *testing.T) {
+	ms := NewSummaryDataPointValueAtQuantile()
 	assert.Equal(t, float64(0.0), ms.Quantile())
 	ms.SetQuantile(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.Quantile())
 }
 
-func TestValueAtQuantile_Value(t *testing.T) {
-	ms := NewValueAtQuantile()
+func TestSummaryDataPointValueAtQuantile_Value(t *testing.T) {
+	ms := NewSummaryDataPointValueAtQuantile()
 	assert.Equal(t, float64(0.0), ms.Value())
 	ms.SetValue(float64(17.13))
 	assert.Equal(t, float64(17.13), ms.Value())
@@ -1807,7 +1807,7 @@ func TestExemplar_Timestamp(t *testing.T) {
 
 func TestExemplar_ValueType(t *testing.T) {
 	tv := NewExemplar()
-	assert.Equal(t, ExemplarValueTypeNone, tv.ValueType())
+	assert.Equal(t, ExemplarValueTypeEmpty, tv.ValueType())
 }
 
 func TestExemplar_DoubleValue(t *testing.T) {

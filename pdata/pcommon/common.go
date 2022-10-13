@@ -48,21 +48,21 @@ const (
 func (avt ValueType) String() string {
 	switch avt {
 	case ValueTypeEmpty:
-		return "EMPTY"
+		return "Empty"
 	case ValueTypeStr:
-		return "STRING"
+		return "Str"
 	case ValueTypeBool:
-		return "BOOL"
+		return "Bool"
 	case ValueTypeInt:
-		return "INT"
+		return "Int"
 	case ValueTypeDouble:
-		return "DOUBLE"
+		return "Double"
 	case ValueTypeMap:
-		return "MAP"
+		return "Map"
 	case ValueTypeSlice:
-		return "SLICE"
+		return "Slice"
 	case ValueTypeBytes:
-		return "BYTES"
+		return "Bytes"
 	}
 	return ""
 }
@@ -95,7 +95,7 @@ func NewValueStr(v string) Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}})
 }
 
-// Deprecated: [0.62.0] Use NewValueStr instead.
+// Deprecated: [v0.62.0] Use NewValueStr instead.
 var NewValueString = NewValueStr
 
 // NewValueInt creates a new Value with the given int64 value.
@@ -653,7 +653,7 @@ func (m Map) PutStr(k string, v string) {
 // PutString performs the Insert or Update action. The Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-// Deprecated: [0.62.0] Use PutStr instead.
+// Deprecated: [v0.62.0] Use PutStr instead.
 func (m Map) PutString(k string, v string) {
 	m.PutStr(k, v)
 }
