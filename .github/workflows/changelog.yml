@@ -20,19 +20,63 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
-      - name: Check for CHANGELOG changes
+      - name: Ensure no changes to the CHANGELOG
         run: |
-          # Only the latest commit of the feature branch is available
-          # automatically. To diff with the base branch, we need to
-          # fetch that too (and we only need its latest commit).
-          git fetch origin ${{ github.base_ref }} --depth=1
-          if [[ $(git diff --name-only FETCH_HEAD | grep CHANGELOG) ]]
+          if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./CHANGELOG.md) ]]
           then
-            echo "A CHANGELOG was modified. Looks good!"
-          else
-            echo "No CHANGELOG was modified."
-            echo "Please add a CHANGELOG entry, or add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if not required."
+            echo "The CHANGELOG should not be directly modified."
+            echo "Please add a .yaml file to the ./.chloggen/ directory."
+            echo "See CONTRIBUTING.md for more details."
+            echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
             false
+          else
+            echo "The CHANGELOG was not modified."
           fi
+
+      - name: Ensure ./.chloggen/*.yaml addition(s)
+        run: |
+          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./.chloggen | grep -c \\.yaml) ]]
+          then
+            echo "No changelog entry was added to the ./.chloggen/ directory."
+            echo "Please add a .yaml file to the ./.chloggen/ directory."
+            echo "See CONTRIBUTING.md for more details."
+            echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
+            false
+          else
+            echo "A changelog entry was added to the ./.chloggen/ directory."
+          fi
+
+      - name: Validate ./.chloggen/*.yaml changes
+        run: |
+          make chlog-validate \
+            || { echo "New ./.chloggen/*.yaml file failed validation."; exit 1; }
+
+      # In order to validate any links in the yaml file, render the config to markdown
+      - name: Render .chloggen changelog entries
+        run: make chlog-preview > changelog_preview.md
+      - name: Install markdown-link-check
+        run: npm install -g markdown-link-check
+      - name: Run markdown-link-check
+        run: |
+          markdown-link-check \
+            --verbose \
+            --config .github/workflows/check_links_config.json \
+            changelog_preview.md \
+            || { echo "Check that anchor links are lowercase"; exit 1; }
