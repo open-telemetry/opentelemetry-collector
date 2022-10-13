@@ -605,10 +605,10 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 	prefix := "otelcol"
 
 	_, present := parsed[prefix+"_"+ocPrefix+counterName]
-	assert.True(t, present, "OpenCensus metrics should always be exported")
+	assert.True(t, present, "OpenCensus metric should always be exported")
 
 	_, present = parsed[prefix+"_"+otelPrefix+counterName]
-	assert.Equal(t, useOtelGo, present, "OpenTelemetry Go  metrics should only be exported when OTel Go is enabled")
+	assert.Equal(t, useOtelGo, present, "OpenTelemetry Go metric should only be exported when OTel Go is enabled")
 
 	for metricName, metricFamily := range parsed {
 		// require is used here so test fails with a single message.
