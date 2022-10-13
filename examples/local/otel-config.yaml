@@ -9,18 +9,7 @@ receivers:
     protocols:
       grpc:
       http:
-  otlp/debug:
-    protocols:
-      grpc:
-        endpoint: localhost:55333
-  otlp/backend-1:
-    protocols:
-      grpc:
-        endpoint: localhost:55690
-  otlp/backend-2:
-    protocols:
-      grpc:
-        endpoint: localhost:55700
+
 processors:
   batch:
   memory_limiter:
@@ -32,50 +21,17 @@ processors:
 
 exporters:
   logging:
-    #loglevel: debug
-  logging/debug:
     loglevel: debug
-  loadbalancing:
-    routing_key: "service"
-    protocol:
-      otlp:
-        # all options from the OTLP exporter are supported
-        # except the endpoint
-        timeout: 1s
-        tls:
-          insecure: true
-    resolver:
-      static:
-        hostnames:
-          - localhost:55690
-          - localhost:55700
+
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [logging, loadbalancing]
+      exporters: [logging]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [logging]
-
-    metrics/debug:
-      receivers: [otlp/debug]
-      exporters: [logging/debug]
-
-    traces/backend-1:
-      receivers:
-        - otlp/backend-1
-      processors: []
-      exporters:
-        - logging
-
-    traces/backend-2:
-      receivers:
-        - otlp/backend-2
-      processors: []
-      exporters:
-        - logging
 
   extensions: [memory_ballast, zpages]
