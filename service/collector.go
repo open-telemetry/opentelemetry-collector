@@ -158,6 +158,10 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
+	state := col.GetState()
+	if state == Closing || state == Closed {
+		return errors.New("collector has already been shutdown and cannot be run again")
+	}
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(Closed)
 		return err
