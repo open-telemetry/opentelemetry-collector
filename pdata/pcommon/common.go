@@ -323,7 +323,7 @@ func (v Value) SetEmptySlice() Slice {
 	return newSlice(&av.ArrayValue.Values)
 }
 
-// CopyTo copies the attribute to a destination.
+// CopyTo copies the Value instance overriding the destination.
 func (v Value) CopyTo(dest Value) {
 	destOrig := dest.getOrig()
 	switch ov := v.getOrig().Value.(type) {
@@ -760,7 +760,7 @@ func (m Map) Range(f func(k string, v Value) bool) {
 	}
 }
 
-// CopyTo copies all elements from the current map to the dest.
+// CopyTo copies all elements from the current map overriding the destination.
 func (m Map) CopyTo(dest Map) {
 	newLen := len(*m.getOrig())
 	oldCap := cap(*dest.getOrig())

@@ -87,13 +87,14 @@ func (ms ${structName}) Append(elms ...${itemType}) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
-// MoveTo moves ${structName} to another instance.
+// MoveTo moves all elements from the current slice overriding the destination and 
+// resetting the current instance to its zero value.
 func (ms ${structName}) MoveTo(dest ${structName}) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
-// CopyTo copies ${structName} to another instance.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (ms ${structName}) CopyTo(dest ${structName}) {
 	*dest.getOrig() = copy${structName}(*dest.getOrig(), *ms.getOrig())
 }

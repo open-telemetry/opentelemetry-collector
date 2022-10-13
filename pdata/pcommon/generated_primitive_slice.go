@@ -87,13 +87,14 @@ func (ms ByteSlice) Append(elms ...byte) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
-// MoveTo moves ByteSlice to another instance.
+// MoveTo moves all elements from the current slice overriding the destination and
+// resetting the current instance to its zero value.
 func (ms ByteSlice) MoveTo(dest ByteSlice) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
-// CopyTo copies ByteSlice to another instance.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (ms ByteSlice) CopyTo(dest ByteSlice) {
 	*dest.getOrig() = copyByteSlice(*dest.getOrig(), *ms.getOrig())
 }
@@ -171,13 +172,14 @@ func (ms Float64Slice) Append(elms ...float64) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
-// MoveTo moves Float64Slice to another instance.
+// MoveTo moves all elements from the current slice overriding the destination and
+// resetting the current instance to its zero value.
 func (ms Float64Slice) MoveTo(dest Float64Slice) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
-// CopyTo copies Float64Slice to another instance.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (ms Float64Slice) CopyTo(dest Float64Slice) {
 	*dest.getOrig() = copyFloat64Slice(*dest.getOrig(), *ms.getOrig())
 }
@@ -255,13 +257,14 @@ func (ms UInt64Slice) Append(elms ...uint64) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
-// MoveTo moves UInt64Slice to another instance.
+// MoveTo moves all elements from the current slice overriding the destination and
+// resetting the current instance to its zero value.
 func (ms UInt64Slice) MoveTo(dest UInt64Slice) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
-// CopyTo copies UInt64Slice to another instance.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
 	*dest.getOrig() = copyUInt64Slice(*dest.getOrig(), *ms.getOrig())
 }

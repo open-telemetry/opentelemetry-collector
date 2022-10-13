@@ -69,7 +69,7 @@ func (es ResourceLogsSlice) At(ix int) ResourceLogs {
 	return newResourceLogs((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -192,7 +192,7 @@ func NewResourceLogs() ResourceLogs {
 	return newResourceLogs(&otlplogs.ResourceLogs{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	*dest.getOrig() = *ms.getOrig()
@@ -219,7 +219,7 @@ func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
 	return ScopeLogsSlice(internal.NewScopeLogsSlice(&ms.getOrig().ScopeLogs))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -269,7 +269,7 @@ func (es ScopeLogsSlice) At(ix int) ScopeLogs {
 	return newScopeLogs((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -392,7 +392,7 @@ func NewScopeLogs() ScopeLogs {
 	return newScopeLogs(&otlplogs.ScopeLogs{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
 	*dest.getOrig() = *ms.getOrig()
@@ -419,7 +419,7 @@ func (ms ScopeLogs) LogRecords() LogRecordSlice {
 	return LogRecordSlice(internal.NewLogRecordSlice(&ms.getOrig().LogRecords))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -469,7 +469,7 @@ func (es LogRecordSlice) At(ix int) LogRecord {
 	return newLogRecord((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -593,7 +593,7 @@ func NewLogRecord() LogRecord {
 	return newLogRecord(&otlplogs.LogRecord{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms LogRecord) MoveTo(dest LogRecord) {
 	*dest.getOrig() = *ms.getOrig()
@@ -690,7 +690,7 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.SetObservedTimestamp(ms.ObservedTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
