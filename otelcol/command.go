@@ -55,8 +55,11 @@ func newCollectorWithFlags(set CollectorSettings, flags *flag.FlagSet) (*Collect
 			return nil, errors.New("at least one config flag must be provided")
 		}
 
+		providerSettings := newDefaultConfigProviderSettings(configFlags)
+		providerSettings.ResolverSettings.EnableConfigWatch = getWatchConfigFlag(flags)
+
 		var err error
-		set.ConfigProvider, err = NewConfigProvider(newDefaultConfigProviderSettings(configFlags))
+		set.ConfigProvider, err = NewConfigProvider(providerSettings)
 		if err != nil {
 			return nil, err
 		}

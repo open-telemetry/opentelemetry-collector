@@ -41,8 +41,9 @@ func (m *mockProvider) Retrieve(_ context.Context, _ string, watcher WatcherFunc
 	if m.retM == nil {
 		return NewRetrieved(nil)
 	}
-
-	watcher(&ChangeEvent{Error: m.errW})
+	if watcher != nil {
+		watcher(&ChangeEvent{Error: m.errW})
+	}
 	return NewRetrieved(m.retM, WithRetrievedClose(func(ctx context.Context) error { return m.errC }))
 }
 
@@ -173,7 +174,12 @@ func TestResolverErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resolver, err := NewResolver(ResolverSettings{URIs: tt.locations, Providers: makeMapProvidersMap(tt.providers...), Converters: tt.converters})
+			resolver, err := NewResolver(ResolverSettings{
+				URIs:              tt.locations,
+				Providers:         makeMapProvidersMap(tt.providers...),
+				Converters:        tt.converters,
+				EnableConfigWatch: true,
+			})
 			if tt.expectBuildErr {
 				assert.Error(t, err)
 				return
@@ -268,11 +274,13 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 	}
 }
 
-func TestResolver(t *testing.T) {
+func TestResolverEnableWatch(t *testing.T) {
 	resolver, err := NewResolver(ResolverSettings{
-		URIs:       []string{"mock:"},
-		Providers:  makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
-		Converters: nil})
+		URIs:              []string{"mock:"},
+		Providers:         makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
+		Converters:        nil,
+		EnableConfigWatch: true,
+	})
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
 	assert.NoError(t, errN)
@@ -298,6 +306,29 @@ func TestResolverNewLinesInOpaqueValue(t *testing.T) {
 		Providers:  makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
 		Converters: nil})
 	assert.NoError(t, err)
+}
+func TestResolverDisableWatch(t *testing.T) {
+	resolver, err := NewResolver(ResolverSettings{
+		URIs:              []string{"mock:"},
+		Providers:         makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
+		Converters:        nil,
+		EnableConfigWatch: false,
+	})
+	require.NoError(t, err)
+	_, errN := resolver.Resolve(context.Background())
+	assert.NoError(t, errN)
+
+	assert.Empty(t, resolver.Watch())
+
+	// Repeat Resolve/Watch.
+
+	_, errN = resolver.Resolve(context.Background())
+	assert.NoError(t, errN)
+
+	assert.Empty(t, resolver.Watch())
+
+	errC := resolver.Shutdown(context.Background())
+	assert.NoError(t, errC)
 }
 
 func TestResolverNoLocations(t *testing.T) {

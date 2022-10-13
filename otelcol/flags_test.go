@@ -78,3 +78,46 @@ func TestSetFlag(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigFlag(t *testing.T) {
+	tests := []struct {
+		name          string
+		args          []string
+		expectedValue bool
+		expectedErr   string
+	}{
+		{
+			name:          "flag set",
+			args:          []string{"--watch-config"},
+			expectedValue: true,
+		},
+		{
+			name:          "flag set by value",
+			args:          []string{"--watch-config=true"},
+			expectedValue: true,
+		},
+		{
+			name:          "flag not set",
+			args:          []string{},
+			expectedValue: false,
+		},
+		{
+			name:        "invalid value",
+			args:        []string{"--watch-config=somevalue"},
+			expectedErr: `invalid boolean value "somevalue" for -watch-config: parse error`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flgs := flags()
+			err := flgs.Parse(tt.args)
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedValue, getWatchConfigFlag(flgs))
+		})
+	}
+}

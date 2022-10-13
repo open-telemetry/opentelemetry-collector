@@ -25,6 +25,7 @@ import (
 const (
 	configFlag       = "config"
 	featureGatesFlag = "feature-gates"
+	watchConfigFlag  = "watch-config"
 )
 
 type configFlagValue struct {
@@ -64,6 +65,13 @@ func flags() *flag.FlagSet {
 	flagSet.Var(featuregate.FlagValue{}, featureGatesFlag,
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
+	flagSet.BoolVar(
+		new(bool),
+		watchConfigFlag,
+		false,
+		"Enable config watch for configuration sources.",
+	)
+
 	return flagSet
 }
 
@@ -74,4 +82,8 @@ func getConfigFlag(flagSet *flag.FlagSet) []string {
 
 func getFeatureGatesFlag(flagSet *flag.FlagSet) featuregate.FlagValue {
 	return flagSet.Lookup(featureGatesFlag).Value.(featuregate.FlagValue)
+}
+
+func getWatchConfigFlag(flagSet *flag.FlagSet) bool {
+	return flagSet.Lookup(watchConfigFlag).Value.(flag.Getter).Get().(bool)
 }

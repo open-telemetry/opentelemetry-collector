@@ -61,6 +61,8 @@ type Resolver struct {
 
 	closers []CloseFunc
 	watcher chan error
+
+	enableConfigWatch bool
 }
 
 // ResolverSettings are the settings to configure the behavior of the Resolver.
@@ -75,6 +77,9 @@ type ResolverSettings struct {
 
 	// MapConverters is a slice of Converter.
 	Converters []Converter
+
+	// EnableConfigWatch enables reloading configuration when a provider reports a change
+	EnableConfigWatch bool
 }
 
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
@@ -132,10 +137,11 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	copy(convertersCopy, set.Converters)
 
 	return &Resolver{
-		uris:       uris,
-		providers:  providersCopy,
-		converters: convertersCopy,
-		watcher:    make(chan error, 1),
+		uris:              uris,
+		providers:         providersCopy,
+		converters:        convertersCopy,
+		watcher:           make(chan error, 1),
+		enableConfigWatch: set.EnableConfigWatch,
 	}, nil
 }
 
@@ -348,5 +354,11 @@ func (mr *Resolver) retrieveValue(ctx context.Context, uri location) (*Retrieved
 	if !ok {
 		return nil, fmt.Errorf("scheme %q is not supported for uri %q", uri.scheme, uri.asString())
 	}
-	return p.Retrieve(ctx, uri.asString(), mr.onChange)
+	var watcherFunc WatcherFunc
+	if mr.enableConfigWatch {
+		watcherFunc = mr.onChange
+	} else {
+		watcherFunc = nil
+	}
+	return p.Retrieve(ctx, uri.asString(), watcherFunc)
 }
