@@ -434,12 +434,13 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 
 	// Creates a OpenCensus counter
 	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)
-	view.Register(&view.View{
+	err = view.Register(&view.View{
 		Name:        ocCounter.Name(),
 		Description: ocCounter.Description(),
 		Measure:     ocCounter,
 		Aggregation: view.Sum(),
 	})
+	require.NoError(t, err)
 	stats.Record(context.Background(), stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
 }
 
