@@ -5,6 +5,7 @@
 ### 💡 Enhancements 💡
 
 - Instrument `obsreport.Receiver` metrics with otel-go (#6222)
+- Share the same `prometheus.Registerer` for the OpenCensus and OpenTelemetry Go prometheus exporters to act as a bridge for internal telemetry (#6297)
 
 ## v0.62.0 Beta
 
