@@ -16,18 +16,20 @@ package service
 
 import (
 	"context"
-	"github.com/prometheus/client_model/go"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	"net/http"
-	"net/http/httptest"
-	"testing"
+
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 
 	"github.com/stretchr/testify/assert"
 
