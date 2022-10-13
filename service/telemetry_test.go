@@ -22,18 +22,16 @@ import (
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-
-	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/component"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/telemetry"
 )

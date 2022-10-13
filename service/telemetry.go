@@ -93,12 +93,14 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 			}
 
 			err = tel.initOnce(buildInfo, logger, cfg)
+			if err == nil {
+				go func() {
+					if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+						asyncErrorChannel <- serveErr
+					}
+				}()
+			}
 
-			go func() {
-				if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
-					asyncErrorChannel <- serveErr
-				}
-			}()
 		},
 	)
 	return err
