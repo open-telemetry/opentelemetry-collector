@@ -15,7 +15,9 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/featuregate"
@@ -23,7 +25,6 @@ import (
 
 const (
 	configFlag = "config"
-	setFlag    = "set"
 )
 
 var (
@@ -47,13 +48,21 @@ func (s *stringArrayValue) String() string {
 func flags() *flag.FlagSet {
 	flagSet := new(flag.FlagSet)
 
-	flagSet.Var(new(stringArrayValue), configFlag, "Locations to the config file(s), note that only a"+
+	cfgs := new(stringArrayValue)
+	flagSet.Var(cfgs, configFlag, "Locations to the config file(s), note that only a"+
 		" single location can be set per flag entry e.g. `--config=file:/path/to/first --config=file:path/to/second`.")
 
-	flagSet.Var(new(stringArrayValue), setFlag,
-		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+
-			" has a higher precedence. Array config properties are overridden and maps are joined, note that only a single"+
-			" (first) array property can be set e.g. --set=processors.attributes.actions.key=some_key. Example --set=processors.batch.timeout=2s")
+	flagSet.Func("set",
+		`Deprecated: use "--config=yaml:processors::batch::timeout: 2s" instead of "--set=processors.batch.timeout=2s"`, func(s string) error {
+			idx := strings.Index(s, "=")
+			if idx == -1 {
+				// No need for more context, see TestSetFlag/invalid_set.
+				return errors.New("missing equal sign")
+			}
+			cfgFlag := "yaml:" + strings.TrimSpace(strings.ReplaceAll(s[:idx], ".", "::")) + ": " + strings.TrimSpace(s[idx+1:])
+			_, _ = fmt.Fprint(flagSet.Output(), "--set flag is deprecated, replace `--set=", s, "` with `--config=", cfgFlag, "`\n")
+			return cfgs.Set(cfgFlag)
+		})
 
 	flagSet.Var(
 		gatesList,
@@ -65,8 +74,4 @@ func flags() *flag.FlagSet {
 
 func getConfigFlag(flagSet *flag.FlagSet) []string {
 	return flagSet.Lookup(configFlag).Value.(*stringArrayValue).values
-}
-
-func getSetFlag(flagSet *flag.FlagSet) []string {
-	return flagSet.Lookup(setFlag).Value.(*stringArrayValue).values
 }

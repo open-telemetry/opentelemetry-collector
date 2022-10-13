@@ -1,0 +1,11 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: deprecation
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: service
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Deprecate `--set` flag, users can check the console for instructions on how to replace every call, e.g. `--set=processors.batch.timeout=2s` => `--config=yaml:processors::batch::timeout: 2s`."
+
+# One or more tracking issues or pull requests related to the change
+issues: [6294]
