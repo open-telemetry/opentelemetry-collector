@@ -289,9 +289,9 @@ func ownMetricsTestCases(version string, useOtelGo bool) []ownMetricsTestCase {
 			//
 			// For OpenTelemetry Metrics,
 			// Resource attributes are added to a `target_info` info metric which can be joined
-			// with other metrics using the `job` and `instance` attributes
-			// see more for context: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#resource-attributes-1
-			// TODO: this should be tested when otel-go implements this https://github.com/open-telemetry/opentelemetry-go/issues/3166
+			// with other metrics using the `job` and `instance` attributes.
+			// read more at: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#resource-attributes-1
+			// TODO: this should be tested when OTel go implements this https://github.com/open-telemetry/opentelemetry-go/issues/3166
 			expectedLabels: map[string]labelValue{
 				"service_instance_id": {state: labelAnyValue},
 				"service_version":     {label: version, state: labelSpecificValue},
@@ -632,7 +632,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 
 			for k, v := range expectedLabels {
 				if isOtelGoMetric {
-					// TODO: add test for resource attributes and `target_info` metric when otel-go
+					// TODO: add test for resource attributes and `target_info` metric when OTel go
 					//  implements this https://github.com/open-telemetry/opentelemetry-go/issues/3166
 					_, present := labelMap[k]
 					assert.Falsef(t, present, "label %q must not be present for otel go metrics", k)
