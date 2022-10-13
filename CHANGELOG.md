@@ -48,6 +48,7 @@
 ### 🧰 Bug fixes 🧰
 
 - Fixed bug where `telemetryInitializer` is not cleaned up when `newService` errors (#6239)
+- Fixed collector attempting startup when `ShutDown` is called before `Run` (#6279)
 
 ## v0.61.0 Beta
 
