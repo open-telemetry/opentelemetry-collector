@@ -4,6 +4,10 @@
 
 <!-- next version -->
 
+## v0.62.1 Beta
+
+- Fix support for new line in config URI location. (#6306)
+
 ## v0.62.0 Beta
 
 ### 🛑 Breaking changes 🛑
