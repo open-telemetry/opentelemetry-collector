@@ -30,9 +30,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -264,7 +261,6 @@ type labelValue struct {
 
 type ownMetricsTestCase struct {
 	name                string
-	useOtelGo           bool
 	userDefinedResource map[string]*string
 	expectedLabels      map[string]labelValue
 }
@@ -273,33 +269,24 @@ var testResourceAttrValue = "resource_attr_test_value"
 var testInstanceID = "test_instance_id"
 var testServiceVersion = "2022-05-20"
 
-func ownMetricsTestCases(version string, useOtelGo bool) []ownMetricsTestCase {
+func ownMetricsTestCases(version string) []ownMetricsTestCase {
 	return []ownMetricsTestCase{
 		{
 			name:                "no resource",
-			useOtelGo:           useOtelGo,
 			userDefinedResource: nil,
-			// For OpenCensus Metrics,
 			// All labels added to all collector metrics by default are listed below.
 			// These labels are hard coded here in order to avoid inadvertent changes:
 			// at this point changing labels should be treated as a breaking changing
 			// and requires a good justification. The reason is that changes to metric
 			// names or labels can break alerting, dashboards, etc that are used to
 			// monitor the Collector in production deployments.
-			//
-			// For OpenTelemetry Metrics,
-			// Resource attributes are added to a `target_info` info metric which can be joined
-			// with other metrics using the `job` and `instance` attributes.
-			// read more at: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#resource-attributes-1
-			// TODO: this should be tested when OTel go implements this https://github.com/open-telemetry/opentelemetry-go/issues/3166
 			expectedLabels: map[string]labelValue{
 				"service_instance_id": {state: labelAnyValue},
 				"service_version":     {label: version, state: labelSpecificValue},
 			},
 		},
 		{
-			name:      "resource with custom attr",
-			useOtelGo: useOtelGo,
+			name: "resource with custom attr",
 			userDefinedResource: map[string]*string{
 				"custom_resource_attr": &testResourceAttrValue,
 			},
@@ -310,8 +297,7 @@ func ownMetricsTestCases(version string, useOtelGo bool) []ownMetricsTestCase {
 			},
 		},
 		{
-			name:      "override service.instance.id",
-			useOtelGo: useOtelGo,
+			name: "override service.instance.id",
 			userDefinedResource: map[string]*string{
 				"service.instance.id": &testInstanceID,
 			},
@@ -321,8 +307,7 @@ func ownMetricsTestCases(version string, useOtelGo bool) []ownMetricsTestCase {
 			},
 		},
 		{
-			name:      "suppress service.instance.id",
-			useOtelGo: useOtelGo,
+			name: "suppress service.instance.id",
 			userDefinedResource: map[string]*string{
 				"service.instance.id": nil, // nil value in config is used to suppress attributes.
 			},
@@ -332,8 +317,7 @@ func ownMetricsTestCases(version string, useOtelGo bool) []ownMetricsTestCase {
 			},
 		},
 		{
-			name:      "override service.version",
-			useOtelGo: useOtelGo,
+			name: "override service.version",
 			userDefinedResource: map[string]*string{
 				"service.version": &testServiceVersion,
 			},
@@ -343,8 +327,7 @@ func ownMetricsTestCases(version string, useOtelGo bool) []ownMetricsTestCase {
 			},
 		},
 		{
-			name:      "suppress service.version",
-			useOtelGo: useOtelGo,
+			name: "suppress service.version",
 			userDefinedResource: map[string]*string{
 				"service.version": nil, // nil value in config is used to suppress attributes.
 			},
@@ -355,12 +338,6 @@ func ownMetricsTestCases(version string, useOtelGo bool) []ownMetricsTestCase {
 		},
 	}
 }
-
-const (
-	otelPrefix  = "otel_go_sdk_"
-	ocPrefix    = "oc_sdk_"
-	counterName = "test_counter"
-)
 
 func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc ownMetricsTestCase) {
 	factories, err := componenttest.NopFactories()
@@ -414,9 +391,7 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 	}, 2*time.Second, 200*time.Millisecond)
 	assert.True(t, loggingHookCalled)
 
-	createTestMetrics(t, col.set.telemetry.mp)
-
-	assertMetrics(t, metricsAddr, tc.expectedLabels, tc.useOtelGo)
+	assertMetrics(t, metricsAddr, tc.expectedLabels)
 
 	assertZPages(t)
 
@@ -426,26 +401,8 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 	assert.Equal(t, Closed, col.GetState())
 }
 
-func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
-	// Creates a OTel Go counter
-	counter, err := mp.Meter("collector_test").SyncInt64().Counter(otelPrefix + counterName)
-	require.NoError(t, err)
-	counter.Add(context.Background(), 13)
-
-	// Creates a OpenCensus counter
-	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)
-	err = view.Register(&view.View{
-		Name:        ocCounter.Name(),
-		Description: ocCounter.Description(),
-		Measure:     ocCounter,
-		Aggregation: view.Sum(),
-	})
-	require.NoError(t, err)
-	stats.Record(context.Background(), stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
-}
-
 func TestCollectorStartWithOpenCensusMetrics(t *testing.T) {
-	for _, tc := range ownMetricsTestCases("test version", false) {
+	for _, tc := range ownMetricsTestCases("test version") {
 		t.Run(tc.name, func(t *testing.T) {
 			testCollectorStartHelper(t, newColTelemetry(featuregate.NewRegistry()), tc)
 		})
@@ -453,7 +410,7 @@ func TestCollectorStartWithOpenCensusMetrics(t *testing.T) {
 }
 
 func TestCollectorStartWithOpenTelemetryMetrics(t *testing.T) {
-	for _, tc := range ownMetricsTestCases("test version", true) {
+	for _, tc := range ownMetricsTestCases("test version") {
 		t.Run(tc.name, func(t *testing.T) {
 			registry := featuregate.NewRegistry()
 			obsreportconfig.RegisterInternalMetricFeatureGate(registry)
@@ -589,7 +546,7 @@ func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
-func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]labelValue, useOtelGo bool) {
+func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]labelValue) {
 	client := &http.Client{}
 	resp, err := client.Get("http://" + metricsAddr + "/metrics")
 	require.NoError(t, err)
@@ -604,13 +561,6 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 	require.NoError(t, err)
 
 	prefix := "otelcol"
-
-	_, present := parsed[prefix+"_"+ocPrefix+counterName]
-	assert.True(t, present, "OpenCensus metric should always be exported")
-
-	_, present = parsed[prefix+"_"+otelPrefix+counterName]
-	assert.Equal(t, useOtelGo, present, "OpenTelemetry Go metric should only be exported when OTel Go is enabled")
-
 	for metricName, metricFamily := range parsed {
 		// require is used here so test fails with a single message.
 		require.True(
@@ -620,11 +570,6 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 			prefix,
 			metricName[:len(prefix)+1]+"...")
 
-		isOtelGoMetric := strings.HasPrefix(metricName, prefix+"_"+otelPrefix)
-		if !useOtelGo && isOtelGoMetric {
-			assert.Failf(t, "OpenTelemetry Go %q metrics should only be exported when OTel Go is enabled", metricName)
-		}
-
 		for _, metric := range metricFamily.Metric {
 			labelMap := map[string]string{}
 			for _, labelPair := range metric.Label {
@@ -632,21 +577,14 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 			}
 
 			for k, v := range expectedLabels {
-				if isOtelGoMetric {
-					// TODO: add test for resource attributes and `target_info` metric when OTel go
-					//  implements this https://github.com/open-telemetry/opentelemetry-go/issues/3166
+				switch v.state {
+				case labelNotPresent:
 					_, present := labelMap[k]
-					assert.Falsef(t, present, "label %q must not be present for otel go metrics", k)
-				} else {
-					switch v.state {
-					case labelNotPresent:
-						_, present := labelMap[k]
-						assert.Falsef(t, present, "label %q must not be present", k)
-					case labelSpecificValue:
-						require.Equalf(t, v.label, labelMap[k], "mandatory label %q value mismatch", k)
-					case labelAnyValue:
-						assert.NotEmptyf(t, labelMap[k], "mandatory label %q not present", k)
-					}
+					assert.Falsef(t, present, "label %q must not be present", k)
+				case labelSpecificValue:
+					require.Equalf(t, v.label, labelMap[k], "mandatory label %q value mismatch", k)
+				case labelAnyValue:
+					assert.NotEmptyf(t, labelMap[k], "mandatory label %q not present", k)
 				}
 			}
 		}

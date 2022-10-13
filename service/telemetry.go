@@ -83,22 +83,28 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 	var err error
 	tel.doInitOnce.Do(
 		func() {
-			err = tel.initOnce(buildInfo, logger, cfg, asyncErrorChannel)
+			if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
+				logger.Info(
+					"Skipping telemetry setup.",
+					zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
+					zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
+				)
+				return
+			}
+
+			err = tel.initOnce(buildInfo, logger, cfg)
+
+			go func() {
+				if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+					asyncErrorChannel <- serveErr
+				}
+			}()
 		},
 	)
 	return err
 }
 
-func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
-	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
-		logger.Info(
-			"Skipping telemetry setup.",
-			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
-			zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
-		)
-		return nil
-	}
-
+func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config) error {
 	logger.Info("Setting up own telemetry...")
 
 	// Construct telemetry attributes from build info and config's resource attributes.
@@ -142,12 +148,6 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 		Addr:    cfg.Metrics.Address,
 		Handler: mux,
 	}
-
-	go func() {
-		if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
-			asyncErrorChannel <- serveErr
-		}
-	}()
 
 	return nil
 }
