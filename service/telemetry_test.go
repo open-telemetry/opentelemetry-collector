@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -134,7 +135,6 @@ func TestTelemetryInit(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-
 			registry := featuregate.NewRegistry()
 			obsreportconfig.RegisterInternalMetricFeatureGate(registry)
 			require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: tc.useOtel}))
@@ -149,8 +149,17 @@ func TestTelemetryInit(t *testing.T) {
 
 			err := tel.initOnce(buildInfo, zap.NewNop(), cfg)
 			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, tel.shutdown())
+			}()
 
 			v := createTestMetrics(t, tel.mp)
+			defer func() {
+				view.Unregister(v)
+			}()
+
+			// Wait some time because OpenCensus can take sometime to set up and collect a measure.
+			time.Sleep(10 * time.Millisecond)
 
 			metrics := getMetricsFromPrometheus(t, tel.server.Handler)
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
@@ -158,7 +167,7 @@ func TestTelemetryInit(t *testing.T) {
 			for metricName, metricValue := range tc.expectedMetrics {
 				mf, present := metrics[metricName]
 				require.True(t, present, "expected metric %q was not present", metricName)
-				require.Len(t, mf.Metric, 1)
+				require.Len(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
 
 				labels := make(map[string]string)
 				for _, pair := range mf.Metric[0].Label {
@@ -168,10 +177,6 @@ func TestTelemetryInit(t *testing.T) {
 				require.Equal(t, metricValue.labels, labels, "labels for metric %q was different than expected", metricName)
 				require.Equal(t, metricValue.value, mf.Metric[0].Counter.GetValue(), "value for metric %q was different than expected", metricName)
 			}
-
-			err = tel.shutdown()
-			view.Unregister(v)
-			require.NoError(t, err)
 		})
 
 	}
