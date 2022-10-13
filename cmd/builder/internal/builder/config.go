@@ -88,7 +88,7 @@ func NewDefaultConfig() Config {
 	}
 }
 
-// ValidateAndSetGoPath checks whether the current configuration is valid
+// ValidateAndSetGoPath checks whether the current configuration is valid and sets go path
 func (c *Config) ValidateAndSetGoPath() error {
 	if !c.SkipCompilation || !c.SkipGetModules {
 		// #nosec G204
