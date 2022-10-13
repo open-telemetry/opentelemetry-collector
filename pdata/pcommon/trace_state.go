@@ -39,13 +39,14 @@ func (ms TraceState) FromRaw(v string) {
 	*ms.getOrig() = v
 }
 
-// MoveTo moves TraceState to another instance.
+// MoveTo moves the TraceState instance overriding the destination
+// and resetting the current instance to its zero value.
 func (ms TraceState) MoveTo(dest TraceState) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = ""
 }
 
-// CopyTo copies TraceState to another instance.
+// CopyTo copies the TraceState instance overriding the destination.
 func (ms TraceState) CopyTo(dest TraceState) {
 	*dest.getOrig() = *ms.getOrig()
 }

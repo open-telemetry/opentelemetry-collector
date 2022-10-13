@@ -228,6 +228,19 @@ func TestConfigValidate(t *testing.T) {
 			},
 			expected: fmt.Errorf(`extension "nop" has invalid configuration: %w`, errInvalidExtConfig),
 		},
+		{
+			name: "invalid-service-pipeline-type",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Service.Pipelines[config.NewComponentID("wrongtype")] = &ConfigServicePipeline{
+					Receivers:  []config.ComponentID{config.NewComponentID("nop")},
+					Processors: []config.ComponentID{config.NewComponentID("nop")},
+					Exporters:  []config.ComponentID{config.NewComponentID("nop")},
+				}
+				return cfg
+			},
+			expected: errors.New(`unknown pipeline datatype "wrongtype" for wrongtype`),
+		},
 	}
 
 	for _, test := range testCases {

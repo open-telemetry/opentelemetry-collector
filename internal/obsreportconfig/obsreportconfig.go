@@ -20,8 +20,29 @@ import (
 	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
+
+const (
+	// UseOtelForInternalMetricsfeatureGateID is the feature gate ID that controls whether the collector uses open
+	// telemetrySettings for internal metrics.
+	UseOtelForInternalMetricsfeatureGateID = "telemetry.useOtelForInternalMetrics"
+)
+
+func init() {
+	// register feature gate
+	RegisterInternalMetricFeatureGate(featuregate.GetRegistry())
+}
+
+// RegisterInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
+func RegisterInternalMetricFeatureGate(registry *featuregate.Registry) {
+	registry.MustRegister(featuregate.Gate{
+		ID:          UseOtelForInternalMetricsfeatureGateID,
+		Description: "controls whether the collector uses OpenTelemetry for internal metrics",
+		Enabled:     false,
+	})
+}
 
 // ObsMetrics wraps OpenCensus View for Collector observability metrics
 type ObsMetrics struct {
@@ -43,19 +64,11 @@ func Configure(level configtelemetry.Level) *ObsMetrics {
 // allViews return the list of all views that needs to be configured.
 func allViews() []*view.View {
 	var views []*view.View
+	var measures []*stats.Int64Measure
+	var tagKeys []tag.Key
+
 	// Receiver views.
-	measures := []*stats.Int64Measure{
-		obsmetrics.ReceiverAcceptedSpans,
-		obsmetrics.ReceiverRefusedSpans,
-		obsmetrics.ReceiverAcceptedMetricPoints,
-		obsmetrics.ReceiverRefusedMetricPoints,
-		obsmetrics.ReceiverAcceptedLogRecords,
-		obsmetrics.ReceiverRefusedLogRecords,
-	}
-	tagKeys := []tag.Key{
-		obsmetrics.TagKeyReceiver, obsmetrics.TagKeyTransport,
-	}
-	views = append(views, genViews(measures, tagKeys, view.Sum())...)
+	views = append(views, receiverViews()...)
 
 	// Scraper views.
 	measures = []*stats.Int64Measure{
@@ -101,6 +114,26 @@ func allViews() []*view.View {
 	views = append(views, genViews(measures, tagKeys, view.Sum())...)
 
 	return views
+}
+
+func receiverViews() []*view.View {
+	if featuregate.GetRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
+		return nil
+	}
+
+	measures := []*stats.Int64Measure{
+		obsmetrics.ReceiverAcceptedSpans,
+		obsmetrics.ReceiverRefusedSpans,
+		obsmetrics.ReceiverAcceptedMetricPoints,
+		obsmetrics.ReceiverRefusedMetricPoints,
+		obsmetrics.ReceiverAcceptedLogRecords,
+		obsmetrics.ReceiverRefusedLogRecords,
+	}
+	tagKeys := []tag.Key{
+		obsmetrics.TagKeyReceiver, obsmetrics.TagKeyTransport,
+	}
+
+	return genViews(measures, tagKeys, view.Sum())
 }
 
 func genViews(

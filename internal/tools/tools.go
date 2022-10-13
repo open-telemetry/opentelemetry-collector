@@ -32,6 +32,7 @@ import (
 	_ "github.com/tcnksm/ghr"
 	_ "github.com/wadey/gocovmerge"
 	_ "go.opentelemetry.io/build-tools/checkdoc"
+	_ "go.opentelemetry.io/build-tools/chloggen"
 	_ "go.opentelemetry.io/build-tools/crosslink"
 	_ "go.opentelemetry.io/build-tools/multimod"
 	_ "go.opentelemetry.io/build-tools/semconvgen"

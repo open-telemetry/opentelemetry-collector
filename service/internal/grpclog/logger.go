@@ -12,52 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetrylogs // import "go.opentelemetry.io/collector/service/internal/telemetrylogs"
+package grpclog // import "go.opentelemetry.io/collector/service/internal/grpclog"
 
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zapgrpc"
 	"google.golang.org/grpc/grpclog"
-
-	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-func NewLogger(cfg telemetry.LogsConfig, options []zap.Option) (*zap.Logger, error) {
-	// Copied from NewProductionConfig.
-	zapCfg := &zap.Config{
-		Level:       zap.NewAtomicLevelAt(cfg.Level),
-		Development: cfg.Development,
-		Sampling: &zap.SamplingConfig{
-			Initial:    100,
-			Thereafter: 100,
-		},
-		Encoding:          cfg.Encoding,
-		EncoderConfig:     zap.NewProductionEncoderConfig(),
-		OutputPaths:       cfg.OutputPaths,
-		ErrorOutputPaths:  cfg.ErrorOutputPaths,
-		DisableCaller:     cfg.DisableCaller,
-		DisableStacktrace: cfg.DisableStacktrace,
-		InitialFields:     cfg.InitialFields,
-	}
-
-	if zapCfg.Encoding == "console" {
-		// Human-readable timestamps for console format of logs.
-		zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	}
-
-	logger, err := zapCfg.Build(options...)
-	if err != nil {
-		return nil, err
-	}
-
-	return logger, nil
-}
-
-// SetColGRPCLogger constructs a zapgrpc.Logger instance, and installs it as grpc logger, cloned from baseLogger with
+// SetLogger constructs a zapgrpc.Logger instance, and installs it as grpc logger, cloned from baseLogger with
 // exact configuration. The minimum level of gRPC logs is set to WARN should the loglevel of the collector is set to
 // INFO to avoid copious logging from grpc framework.
-func SetColGRPCLogger(baseLogger *zap.Logger, loglevel zapcore.Level) *zapgrpc.Logger {
+func SetLogger(baseLogger *zap.Logger, loglevel zapcore.Level) *zapgrpc.Logger {
 	logger := zapgrpc.NewLogger(baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		var c zapcore.Core
 		var err error

@@ -40,7 +40,6 @@ const (
 	errUnmarshalReceiver
 	errUnmarshalProcessor
 	errUnmarshalExporter
-	errUnmarshalService
 )
 
 type configError struct {
@@ -64,9 +63,6 @@ const (
 
 	// processorsKeyName is the configuration key name for processors section.
 	processorsKeyName = "processors"
-
-	// pipelinesKeyName is the configuration key name for pipelines section.
-	pipelinesKeyName = "pipelines"
 )
 
 type configSettings struct {
@@ -74,7 +70,7 @@ type configSettings struct {
 	Processors map[config.ComponentID]map[string]interface{} `mapstructure:"processors"`
 	Exporters  map[config.ComponentID]map[string]interface{} `mapstructure:"exporters"`
 	Extensions map[config.ComponentID]map[string]interface{} `mapstructure:"extensions"`
-	Service    map[string]interface{}                        `mapstructure:"service"`
+	Service    config.Service                                `mapstructure:"service"`
 }
 
 type ConfigUnmarshaler struct{}
@@ -88,10 +84,28 @@ func New() ConfigUnmarshaler {
 // Unmarshal the config.Config from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
 func (ConfigUnmarshaler) Unmarshal(v *confmap.Conf, factories component.Factories) (*config.Config, error) {
-	var cfg config.Config
-
 	// Unmarshal top level sections and validate.
-	rawCfg := configSettings{}
+	rawCfg := configSettings{
+		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
+		Service: config.Service{
+			Telemetry: telemetry.Config{
+				Logs: telemetry.LogsConfig{
+					Level:             zapcore.InfoLevel,
+					Development:       false,
+					Encoding:          "console",
+					OutputPaths:       []string{"stderr"},
+					ErrorOutputPaths:  []string{"stderr"},
+					DisableCaller:     false,
+					DisableStacktrace: false,
+					InitialFields:     map[string]interface{}(nil),
+				},
+				Metrics: telemetry.MetricsConfig{
+					Level:   configtelemetry.LevelBasic,
+					Address: ":8888",
+				},
+			},
+		},
+	}
 	if err := v.Unmarshal(&rawCfg, confmap.WithErrorUnused()); err != nil {
 		return nil, configError{
 			error: fmt.Errorf("error reading top level configuration sections: %w", err),
@@ -99,6 +113,7 @@ func (ConfigUnmarshaler) Unmarshal(v *confmap.Conf, factories component.Factorie
 		}
 	}
 
+	var cfg config.Config
 	var err error
 	if cfg.Extensions, err = unmarshalExtensions(rawCfg.Extensions, factories.Extensions); err != nil {
 		return nil, configError{
@@ -128,12 +143,7 @@ func (ConfigUnmarshaler) Unmarshal(v *confmap.Conf, factories component.Factorie
 		}
 	}
 
-	if cfg.Service, err = unmarshalService(rawCfg.Service); err != nil {
-		return nil, configError{
-			error: err,
-			code:  errUnmarshalService,
-		}
-	}
+	cfg.Service = rawCfg.Service
 
 	return &cfg, nil
 }
@@ -164,44 +174,6 @@ func unmarshalExtensions(exts map[config.ComponentID]map[string]interface{}, fac
 	}
 
 	return extensions, nil
-}
-
-func unmarshalService(srvRaw map[string]interface{}) (config.Service, error) {
-	// Setup default telemetry values as in service/logger.go.
-	// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
-	srv := config.Service{
-		Telemetry: telemetry.Config{
-			Logs: telemetry.LogsConfig{
-				Level:             zapcore.InfoLevel,
-				Development:       false,
-				Encoding:          "console",
-				OutputPaths:       []string{"stderr"},
-				ErrorOutputPaths:  []string{"stderr"},
-				DisableCaller:     false,
-				DisableStacktrace: false,
-				InitialFields:     map[string]interface{}(nil),
-			},
-			Metrics: defaultServiceTelemetryMetricsSettings(),
-		},
-	}
-
-	if err := confmap.NewFromStringMap(srvRaw).Unmarshal(&srv, confmap.WithErrorUnused()); err != nil {
-		return srv, fmt.Errorf("error reading service configuration: %w", err)
-	}
-
-	for id := range srv.Pipelines {
-		if id.Type() != config.TracesDataType && id.Type() != config.MetricsDataType && id.Type() != config.LogsDataType {
-			return srv, fmt.Errorf("unknown %q datatype %q for %v", pipelinesKeyName, id.Type(), id)
-		}
-	}
-	return srv, nil
-}
-
-func defaultServiceTelemetryMetricsSettings() telemetry.MetricsConfig {
-	return telemetry.MetricsConfig{
-		Level:   configtelemetry.LevelBasic,
-		Address: ":8888",
-	}
 }
 
 // LoadReceiver loads a receiver config from componentConfig using the provided factories.

@@ -37,12 +37,12 @@ func NewMetrics() Metrics {
 	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{})
 }
 
-// CopyTo copies all metrics from ms to dest.
+// CopyTo copies the Metrics instance overriding the destination.
 func (ms Metrics) CopyTo(dest Metrics) {
 	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Metrics instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Metrics) MoveTo(dest Metrics) {
 	*dest.getOrig() = *ms.getOrig()

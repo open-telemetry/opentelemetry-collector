@@ -37,14 +37,14 @@ func NewLogs() Logs {
 	return newLogs(&otlpcollectorlog.ExportLogsServiceRequest{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Logs instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Logs) MoveTo(dest Logs) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcollectorlog.ExportLogsServiceRequest{}
 }
 
-// CopyTo copies all logs from ms to dest.
+// CopyTo copies the Logs instance overriding the destination.
 func (ms Logs) CopyTo(dest Logs) {
 	ms.ResourceLogs().CopyTo(dest.ResourceLogs())
 }
