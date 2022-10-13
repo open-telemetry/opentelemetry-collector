@@ -34,7 +34,8 @@ var (
 
 	// Scheme name consist of a sequence of characters beginning with a letter and followed by any
 	// combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
-	locationRegexp = regexp.MustCompile(`^(?P<Scheme>[A-Za-z][A-Za-z0-9+.-]+):(?P<OpaqueValue>.*)$`)
+	// Need to match new line as well in the OpaqueValue, so setting the "s" flag. See https://pkg.go.dev/regexp/syntax.
+	locationRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>[A-Za-z][A-Za-z0-9+.-]+):(?P<OpaqueValue>.*)$)`)
 
 	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
 )
