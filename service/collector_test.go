@@ -270,21 +270,20 @@ var testInstanceID = "test_instance_id"
 var testServiceVersion = "2022-05-20"
 
 func ownMetricsTestCases(version string) []ownMetricsTestCase {
-	return []ownMetricsTestCase{
-		{
-			name:                "no resource",
-			userDefinedResource: nil,
-			// All labels added to all collector metrics by default are listed below.
-			// These labels are hard coded here in order to avoid inadvertent changes:
-			// at this point changing labels should be treated as a breaking changing
-			// and requires a good justification. The reason is that changes to metric
-			// names or labels can break alerting, dashboards, etc that are used to
-			// monitor the Collector in production deployments.
-			expectedLabels: map[string]labelValue{
-				"service_instance_id": {state: labelAnyValue},
-				"service_version":     {label: version, state: labelSpecificValue},
-			},
+	return []ownMetricsTestCase{{
+		name:                "no resource",
+		userDefinedResource: nil,
+		// All labels added to all collector metrics by default are listed below.
+		// These labels are hard coded here in order to avoid inadvertent changes:
+		// at this point changing labels should be treated as a breaking changing
+		// and requires a good justification. The reason is that changes to metric
+		// names or labels can break alerting, dashboards, etc that are used to
+		// monitor the Collector in production deployments.
+		expectedLabels: map[string]labelValue{
+			"service_instance_id": {state: labelAnyValue},
+			"service_version":     {label: version, state: labelSpecificValue},
 		},
+	},
 		{
 			name: "resource with custom attr",
 			userDefinedResource: map[string]*string{
@@ -335,8 +334,7 @@ func ownMetricsTestCases(version string) []ownMetricsTestCase {
 				"service_instance_id": {state: labelAnyValue},
 				"service_version":     {state: labelNotPresent},
 			},
-		},
-	}
+		}}
 }
 
 func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc ownMetricsTestCase) {

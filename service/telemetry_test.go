@@ -115,6 +115,8 @@ func TestTelemetryInit(t *testing.T) {
 		{
 			name:    "UseOpenTelemetryForInternalMetrics",
 			useOtel: true,
+			// TODO: add a test to verify that OTel is emitting a `target_info`
+			// 	info metric with resource attributes https://github.com/open-telemetry/opentelemetry-go/issues/3166
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + ocPrefix + counterName: {
 					value: 13,
