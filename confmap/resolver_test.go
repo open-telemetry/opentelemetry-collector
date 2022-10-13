@@ -280,6 +280,14 @@ func TestResolver(t *testing.T) {
 	assert.NoError(t, errC)
 }
 
+func TestResolverNewLinesInOpaqueValue(t *testing.T) {
+	_, err := NewResolver(ResolverSettings{
+		URIs:       []string{"mock:receivers:\n nop:\n"},
+		Providers:  makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
+		Converters: nil})
+	assert.NoError(t, err)
+}
+
 func TestResolverNoLocations(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:       []string{},
