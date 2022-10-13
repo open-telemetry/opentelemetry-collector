@@ -12,6 +12,7 @@ require (
 	github.com/tcnksm/ghr v0.16.0
 	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad
 	go.opentelemetry.io/build-tools/checkdoc v0.1.0
+	go.opentelemetry.io/build-tools/chloggen v0.1.0
 	go.opentelemetry.io/build-tools/crosslink v0.1.0
 	go.opentelemetry.io/build-tools/multimod v0.1.0
 	go.opentelemetry.io/build-tools/semconvgen v0.1.0
