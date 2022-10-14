@@ -37,9 +37,3 @@ func (ms DataPointFlags) WithNoRecordedValue(b bool) DataPointFlags {
 	}
 	return DataPointFlags(orig)
 }
-
-// Deprecated: [0.62.0] Use DefaultDataPointFlags instead.
-var DefaultMetricDataPointFlags = DefaultDataPointFlags
-
-// Deprecated: [0.62.0] Use DataPointFlags instead.
-type MetricDataPointFlags = DataPointFlags

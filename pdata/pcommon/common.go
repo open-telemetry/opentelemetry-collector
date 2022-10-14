@@ -95,9 +95,6 @@ func NewValueStr(v string) Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}})
 }
 
-// Deprecated: [v0.62.0] Use NewValueStr instead.
-var NewValueString = NewValueStr
-
 // NewValueInt creates a new Value with the given int64 value.
 func NewValueInt(v int64) Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: v}})
@@ -648,14 +645,6 @@ func (m Map) PutStr(k string, v string) {
 	} else {
 		*m.getOrig() = append(*m.getOrig(), newKeyValueString(k, v))
 	}
-}
-
-// PutString performs the Insert or Update action. The Value is
-// inserted to the map that did not originally have the key. The key/value is
-// updated to the map where the key already existed.
-// Deprecated: [v0.62.0] Use PutStr instead.
-func (m Map) PutString(k string, v string) {
-	m.PutStr(k, v)
 }
 
 // PutInt performs the Insert or Update action. The int Value is
