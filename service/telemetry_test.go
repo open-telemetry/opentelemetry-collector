@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -158,9 +157,6 @@ func TestTelemetryInit(t *testing.T) {
 				view.Unregister(v)
 			}()
 
-			// Wait some time because OpenCensus can take sometime to set up and collect a measure.
-			time.Sleep(10 * time.Millisecond)
-
 			metrics := getMetricsFromPrometheus(t, tel.server.Handler)
 			require.Equal(t, len(tc.expectedMetrics), len(metrics))
 
@@ -188,7 +184,7 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	require.NoError(t, err)
 	counter.Add(context.Background(), 13)
 
-	// Creates a OpenCensus counter
+	// Creates a OpenCensus measure
 	ocCounter := stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless)
 	v := &view.View{
 		Name:        ocPrefix + counterName,
@@ -198,7 +194,10 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 	}
 	err = view.Register(v)
 	require.NoError(t, err)
+
 	stats.Record(context.Background(), stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
+
+	_, _ = view.RetrieveData(ocPrefix + counterName)
 
 	return v
 }
