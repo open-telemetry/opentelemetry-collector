@@ -90,11 +90,6 @@ func (l *Conf) Unmarshal(result interface{}, opts ...UnmarshalOption) error {
 	return decodeConfig(l, result, set.errorUnused)
 }
 
-// Deprecated: [v0.62.0] use Unmarshal.
-func (l *Conf) UnmarshalExact(result interface{}) error {
-	return l.Unmarshal(result, WithErrorUnused())
-}
-
 type marshalOption struct{}
 
 type MarshalOption interface {
