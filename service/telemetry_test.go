@@ -197,6 +197,7 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) *view.View {
 
 	stats.Record(context.Background(), stats.Int64(ocPrefix+counterName, counterName, stats.UnitDimensionless).M(13))
 
+	// Forces a flush for the view data.
 	_, _ = view.RetrieveData(ocPrefix + counterName)
 
 	return v
