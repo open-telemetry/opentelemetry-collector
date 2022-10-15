@@ -17,23 +17,39 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"errors"
 	"flag"
-	"strings"
-
+	"fmt"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/featuregate"
+	"gopkg.in/yaml.v3"
+	"strings"
 )
 
 const (
-	configFlag = "config"
+	configFlag    = "config"
+	buildInfoFlag = "build-info"
 )
 
 var (
 	// Command-line flag that control the configuration file.
 	gatesList = featuregate.FlagValue{}
+	BuildFlag bool
 )
 
 type configFlagValue struct {
 	values []string
 	sets   []string
+}
+
+type componentsOutput struct {
+	Version string
+
+	Receivers []config.Type
+
+	Processors []config.Type
+
+	Exporters []config.Type
+
+	Extensions []config.Type
 }
 
 func (s *configFlagValue) Set(val string) error {
@@ -71,10 +87,40 @@ func flags() *flag.FlagSet {
 		"feature-gates",
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
+	flagSet.BoolVar(&BuildFlag, buildInfoFlag, false,
+		"Displays list of components available in collector distribution in yaml format",
+	)
+
 	return flagSet
 }
 
 func getConfigFlag(flagSet *flag.FlagSet) []string {
 	cfv := flagSet.Lookup(configFlag).Value.(*configFlagValue)
 	return append(cfv.values, cfv.sets...)
+}
+
+func getBuildInfo(set CollectorSettings) error {
+	components := componentsOutput{}
+	for ext, _ := range set.Factories.Extensions {
+		components.Extensions = append(components.Extensions, ext)
+	}
+	for prs, _ := range set.Factories.Processors {
+		components.Processors = append(components.Processors, prs)
+	}
+	for rcv, _ := range set.Factories.Receivers {
+		components.Receivers = append(components.Receivers, rcv)
+	}
+	for exp, _ := range set.Factories.Exporters {
+		components.Exporters = append(components.Exporters, exp)
+	}
+	components.Version = set.BuildInfo.Version
+
+	yamlData, err := yaml.Marshal(components)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(yamlData))
+	return nil
 }

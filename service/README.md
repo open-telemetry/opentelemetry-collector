@@ -35,3 +35,30 @@ For more technical details about how configuration is resolved you can read the 
 2. Merge a `config.yaml` file with the content of a yaml bytes configuration (overwrites the `exporters::logging::loglevel` config) and use the content as the config:
 
     `./otelcorecol --config=file:examples/local/otel-config.yaml --config="yaml:exporters::logging::loglevel: info"`
+
+# How to check components available in a distribution
+ 
+Use the flag --build-info. Below is an example:
+
+```bash
+   .\otelcol --build-info
+```
+Sample output:
+
+```yaml
+
+version: 0.62.1-dev
+receivers:
+   - otlp
+processors:
+   - memory_limiter
+   - batch
+exporters:
+   - logging
+   - otlp
+   - otlphttp
+extensions:
+   - memory_ballast
+   - zpages
+
+```

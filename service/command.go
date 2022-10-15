@@ -16,7 +16,6 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"errors"
-
 	"github.com/spf13/cobra"
 
 	"go.opentelemetry.io/collector/featuregate"
@@ -33,6 +32,10 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 			if err := featuregate.GetRegistry().Apply(gatesList); err != nil {
 				return err
 			}
+			if BuildFlag {
+				return getBuildInfo(set)
+			}
+
 			if set.ConfigProvider == nil {
 				var err error
 
