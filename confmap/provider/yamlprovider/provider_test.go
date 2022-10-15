@@ -92,6 +92,23 @@ func TestMapEntry(t *testing.T) {
 	assert.NoError(t, sp.Shutdown(context.Background()))
 }
 
+func TestArrayEntry(t *testing.T) {
+	sp := New()
+	ret, err := sp.Retrieve(context.Background(), "yaml:service::extensions: [zpages, zpages/foo]", nil)
+	assert.NoError(t, err)
+	retMap, err := ret.AsConf()
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"service": map[string]interface{}{
+			"extensions": []interface{}{
+				"zpages",
+				"zpages/foo",
+			},
+		},
+	}, retMap.ToStringMap())
+	assert.NoError(t, sp.Shutdown(context.Background()))
+}
+
 func TestNewLine(t *testing.T) {
 	sp := New()
 	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s\nprocessors::batch::timeout: 2s", nil)
