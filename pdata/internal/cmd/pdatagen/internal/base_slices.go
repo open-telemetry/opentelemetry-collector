@@ -139,7 +139,7 @@ func (es ${structName}) At(ix int) ${elementName} {
 	return new${elementName}((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ${structName}) CopyTo(dest ${structName}) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -340,7 +340,7 @@ func (es ${structName}) At(ix int) ${elementName} {
 	return new${elementName}(&(*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ${structName}) CopyTo(dest ${structName}) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())

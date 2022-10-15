@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/service/internal/telemetrylogs"
+	"go.opentelemetry.io/collector/service/internal/grpclog"
 )
 
 // State defines Collector's state.
@@ -145,7 +145,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if !col.set.SkipSettingGRPCLogger {
-		telemetrylogs.SetColGRPCLogger(col.service.telemetrySettings.Logger, cfg.Service.Telemetry.Logs.Level)
+		grpclog.SetLogger(col.service.telemetrySettings.Logger, cfg.Service.Telemetry.Logs.Level)
 	}
 
 	if err = col.service.Start(ctx); err != nil {

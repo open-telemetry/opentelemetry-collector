@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetrylogs
+package grpclog
 
 import (
 	"testing"
@@ -20,21 +20,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func TestGRPCLogger(t *testing.T) {
 	tests := []struct {
 		name       string
-		cfg        telemetry.LogsConfig
+		cfg        zap.Config
 		infoLogged bool
 		warnLogged bool
 	}{
 		{
 			"collector_info_level_grpc_log_warn",
-			telemetry.LogsConfig{
-				Level:    zapcore.InfoLevel,
+			zap.Config{
+				Level:    zap.NewAtomicLevelAt(zapcore.InfoLevel),
 				Encoding: "console",
 			},
 			false,
@@ -42,8 +40,8 @@ func TestGRPCLogger(t *testing.T) {
 		},
 		{
 			"collector_debug_level_grpc_log_debug",
-			telemetry.LogsConfig{
-				Level:    zapcore.DebugLevel,
+			zap.Config{
+				Level:    zap.NewAtomicLevelAt(zapcore.DebugLevel),
 				Encoding: "console",
 			},
 			true,
@@ -51,9 +49,9 @@ func TestGRPCLogger(t *testing.T) {
 		},
 		{
 			"collector_warn_level_grpc_log_warn",
-			telemetry.LogsConfig{
+			zap.Config{
 				Development: false, // this must set the grpc loggerV2 to loggerV2
-				Level:       zapcore.WarnLevel,
+				Level:       zap.NewAtomicLevelAt(zapcore.WarnLevel),
 				Encoding:    "console",
 			},
 			false,
@@ -74,11 +72,11 @@ func TestGRPCLogger(t *testing.T) {
 			})
 
 			// create new collector zap logger
-			logger, err := NewLogger(test.cfg, []zap.Option{hook})
+			logger, err := test.cfg.Build(hook)
 			assert.NoError(t, err)
 
 			// create colGRPCLogger
-			glogger := SetColGRPCLogger(logger, test.cfg.Level)
+			glogger := SetLogger(logger, test.cfg.Level.Level())
 			assert.NotNil(t, glogger)
 
 			glogger.Info(test.name)

@@ -19,6 +19,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const (
+	scopeName = "go.opentelemetry.io/collector/obsreport"
+
+	nameSep = "/"
+)
+
 func recordError(span trace.Span, err error) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())

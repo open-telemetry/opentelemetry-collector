@@ -14,7 +14,7 @@
 
 module-sets:
   collector-core:
-    version: v0.61.0
+    version: v0.62.1
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder

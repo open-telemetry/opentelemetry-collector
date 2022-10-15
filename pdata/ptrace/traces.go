@@ -37,14 +37,14 @@ func NewTraces() Traces {
 	return newTraces(&otlpcollectortrace.ExportTraceServiceRequest{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Traces instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Traces) MoveTo(dest Traces) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcollectortrace.ExportTraceServiceRequest{}
 }
 
-// CopyTo copies all logs from ms to dest.
+// CopyTo copies the Traces instance overriding the destination.
 func (ms Traces) CopyTo(dest Traces) {
 	ms.ResourceSpans().CopyTo(dest.ResourceSpans())
 }

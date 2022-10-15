@@ -55,9 +55,8 @@ var resourceLogs = &messageValueStruct{
 		resourceField,
 		schemaURLField,
 		&sliceField{
-			fieldName:       "ScopeLogs",
-			originFieldName: "ScopeLogs",
-			returnSlice:     scopeLogsSlice,
+			fieldName:   "ScopeLogs",
+			returnSlice: scopeLogsSlice,
 		},
 	},
 }
@@ -75,9 +74,8 @@ var scopeLogs = &messageValueStruct{
 		scopeField,
 		schemaURLField,
 		&sliceField{
-			fieldName:       "LogRecords",
-			originFieldName: "LogRecords",
-			returnSlice:     logSlice,
+			fieldName:   "LogRecords",
+			returnSlice: logSlice,
 		},
 	},
 }
@@ -105,8 +103,7 @@ var logRecord = &messageValueStruct{
 		traceIDField,
 		spanIDField,
 		&primitiveTypedField{
-			fieldName:       "Flags",
-			originFieldName: "Flags",
+			fieldName: "Flags",
 			returnType: &primitiveType{
 				structName: "LogRecordFlags",
 				rawType:    "uint32",
@@ -115,15 +112,13 @@ var logRecord = &messageValueStruct{
 			},
 		},
 		&primitiveField{
-			fieldName:       "SeverityText",
-			originFieldName: "SeverityText",
-			returnType:      "string",
-			defaultVal:      `""`,
-			testVal:         `"INFO"`,
+			fieldName:  "SeverityText",
+			returnType: "string",
+			defaultVal: `""`,
+			testVal:    `"INFO"`,
 		},
 		&primitiveTypedField{
-			fieldName:       "SeverityNumber",
-			originFieldName: "SeverityNumber",
+			fieldName: "SeverityNumber",
 			returnType: &primitiveType{
 				structName: "SeverityNumber",
 				rawType:    "otlplogs.SeverityNumber",
@@ -138,7 +133,6 @@ var logRecord = &messageValueStruct{
 }
 
 var bodyField = &messageValueField{
-	fieldName:       "Body",
-	originFieldName: "Body",
-	returnMessage:   anyValue,
+	fieldName:     "Body",
+	returnMessage: anyValue,
 }

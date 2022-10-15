@@ -557,8 +557,8 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 
 func TestSpan_Status(t *testing.T) {
 	ms := NewSpan()
-	internal.FillTestSpanStatus(internal.SpanStatus(ms.Status()))
-	assert.Equal(t, SpanStatus(internal.GenerateTestSpanStatus()), ms.Status())
+	internal.FillTestStatus(internal.Status(ms.Status()))
+	assert.Equal(t, Status(internal.GenerateTestStatus()), ms.Status())
 }
 
 func TestSpanEventSlice(t *testing.T) {
@@ -882,34 +882,34 @@ func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
 }
 
-func TestSpanStatus_MoveTo(t *testing.T) {
-	ms := SpanStatus(internal.GenerateTestSpanStatus())
-	dest := NewSpanStatus()
+func TestStatus_MoveTo(t *testing.T) {
+	ms := Status(internal.GenerateTestStatus())
+	dest := NewStatus()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewSpanStatus(), ms)
-	assert.Equal(t, SpanStatus(internal.GenerateTestSpanStatus()), dest)
+	assert.Equal(t, NewStatus(), ms)
+	assert.Equal(t, Status(internal.GenerateTestStatus()), dest)
 }
 
-func TestSpanStatus_CopyTo(t *testing.T) {
-	ms := NewSpanStatus()
-	orig := NewSpanStatus()
+func TestStatus_CopyTo(t *testing.T) {
+	ms := NewStatus()
+	orig := NewStatus()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = SpanStatus(internal.GenerateTestSpanStatus())
+	orig = Status(internal.GenerateTestStatus())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
 
-func TestSpanStatus_Code(t *testing.T) {
-	ms := NewSpanStatus()
+func TestStatus_Code(t *testing.T) {
+	ms := NewStatus()
 	assert.Equal(t, StatusCode(0), ms.Code())
 	testValCode := StatusCode(1)
 	ms.SetCode(testValCode)
 	assert.Equal(t, testValCode, ms.Code())
 }
 
-func TestSpanStatus_Message(t *testing.T) {
-	ms := NewSpanStatus()
+func TestStatus_Message(t *testing.T) {
+	ms := NewStatus()
 	assert.Equal(t, "", ms.Message())
 	ms.SetMessage("cancelled")
 	assert.Equal(t, "cancelled", ms.Message())

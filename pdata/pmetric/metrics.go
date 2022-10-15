@@ -37,12 +37,12 @@ func NewMetrics() Metrics {
 	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{})
 }
 
-// CopyTo copies all metrics from ms to dest.
+// CopyTo copies the Metrics instance overriding the destination.
 func (ms Metrics) CopyTo(dest Metrics) {
 	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Metrics instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Metrics) MoveTo(dest Metrics) {
 	*dest.getOrig() = *ms.getOrig()
@@ -102,7 +102,8 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 type MetricType int32
 
 const (
-	MetricTypeNone MetricType = iota
+	// MetricTypeEmpty means that metric type is unset.
+	MetricTypeEmpty MetricType = iota
 	MetricTypeGauge
 	MetricTypeSum
 	MetricTypeHistogram
@@ -113,8 +114,8 @@ const (
 // String returns the string representation of the MetricType.
 func (mdt MetricType) String() string {
 	switch mdt {
-	case MetricTypeNone:
-		return "None"
+	case MetricTypeEmpty:
+		return "Empty"
 	case MetricTypeGauge:
 		return "Gauge"
 	case MetricTypeSum:
@@ -155,25 +156,12 @@ func (at AggregationTemporality) String() string {
 	return ""
 }
 
-// Deprecated: [0.62.0] Use AggregationTemporality instead.
-type MetricAggregationTemporality = AggregationTemporality
-
-const (
-	// Deprecated: [0.62.0] Use AggregationTemporalityUnspecified instead.
-	MetricAggregationTemporalityUnspecified = AggregationTemporalityUnspecified
-
-	// Deprecated: [0.62.0] Use AggregationTemporalityDelta instead.
-	MetricAggregationTemporalityDelta = AggregationTemporalityDelta
-
-	// Deprecated: [0.62.0] Use AggregationTemporalityCumulative instead.
-	MetricAggregationTemporalityCumulative = AggregationTemporalityCumulative
-)
-
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType int32
 
 const (
-	NumberDataPointValueTypeNone NumberDataPointValueType = iota
+	// NumberDataPointValueTypeEmpty means that data point value is unset.
+	NumberDataPointValueTypeEmpty NumberDataPointValueType = iota
 	NumberDataPointValueTypeInt
 	NumberDataPointValueTypeDouble
 )
@@ -181,8 +169,8 @@ const (
 // String returns the string representation of the NumberDataPointValueType.
 func (nt NumberDataPointValueType) String() string {
 	switch nt {
-	case NumberDataPointValueTypeNone:
-		return "None"
+	case NumberDataPointValueTypeEmpty:
+		return "Empty"
 	case NumberDataPointValueTypeInt:
 		return "Int"
 	case NumberDataPointValueTypeDouble:
@@ -195,7 +183,8 @@ func (nt NumberDataPointValueType) String() string {
 type ExemplarValueType int32
 
 const (
-	ExemplarValueTypeNone ExemplarValueType = iota
+	// ExemplarValueTypeEmpty means that exemplar value is unset.
+	ExemplarValueTypeEmpty ExemplarValueType = iota
 	ExemplarValueTypeInt
 	ExemplarValueTypeDouble
 )
@@ -203,8 +192,8 @@ const (
 // String returns the string representation of the ExemplarValueType.
 func (nt ExemplarValueType) String() string {
 	switch nt {
-	case ExemplarValueTypeNone:
-		return "None"
+	case ExemplarValueTypeEmpty:
+		return "Empty"
 	case ExemplarValueTypeInt:
 		return "Int"
 	case ExemplarValueTypeDouble:

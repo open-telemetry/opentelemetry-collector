@@ -13,7 +13,7 @@ has a `<scheme>` associated with it, and will provide configs for `configURI` th
 This format is compatible with the URI definition (see [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)).
 The `<scheme>` MUST be always included in the `configURI`. The scheme for any `Provider` MUST be at least 2
 characters long to avoid conflicting with a driver-letter identifier as specified in
-[file URI syntax](https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax).
+[file URI syntax](https://datatracker.ietf.org/doc/html/rfc8089#section-2).
 
 ## Converter
 
@@ -36,6 +36,9 @@ that can be used by code that is oblivious to the usage of `Providers` and `Conv
 `Providers` are used to provide an entire configuration when the `configURI` is given directly to the `Resolver`,
 or an individual value (partial configuration) when the `configURI` is embedded into the `Conf` as a values using
 the syntax `${configURI}`.
+
+**Limitation:** when embed a `${configURI}` the uri cannot contain dollar sign ("$") character. This is to allow the
+current implementation to evolve in the future to support embedded uri within uri, e.g. `${http://my.domain.com?os=${OS}}`.
 
 ```terminal
               Resolver                   Provider

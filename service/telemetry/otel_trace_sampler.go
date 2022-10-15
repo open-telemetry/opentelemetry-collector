@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "go.opentelemetry.io/collector/service/internal"
+package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -28,7 +28,7 @@ func (r recordSampler) Description() string {
 	return "Always record sampler"
 }
 
-func AlwaysRecord() sdktrace.Sampler {
+func alwaysRecord() sdktrace.Sampler {
 	rs := &recordSampler{}
 	return sdktrace.ParentBased(
 		rs,

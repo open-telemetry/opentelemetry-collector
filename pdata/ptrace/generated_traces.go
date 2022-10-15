@@ -69,7 +69,7 @@ func (es ResourceSpansSlice) At(ix int) ResourceSpans {
 	return newResourceSpans((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -192,7 +192,7 @@ func NewResourceSpans() ResourceSpans {
 	return newResourceSpans(&otlptrace.ResourceSpans{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
 	*dest.getOrig() = *ms.getOrig()
@@ -219,7 +219,7 @@ func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
 	return ScopeSpansSlice(internal.NewScopeSpansSlice(&ms.getOrig().ScopeSpans))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -269,7 +269,7 @@ func (es ScopeSpansSlice) At(ix int) ScopeSpans {
 	return newScopeSpans((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -392,7 +392,7 @@ func NewScopeSpans() ScopeSpans {
 	return newScopeSpans(&otlptrace.ScopeSpans{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeSpans) MoveTo(dest ScopeSpans) {
 	*dest.getOrig() = *ms.getOrig()
@@ -419,7 +419,7 @@ func (ms ScopeSpans) Spans() SpanSlice {
 	return SpanSlice(internal.NewSpanSlice(&ms.getOrig().Spans))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeSpans) CopyTo(dest ScopeSpans) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -469,7 +469,7 @@ func (es SpanSlice) At(ix int) Span {
 	return newSpan((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanSlice) CopyTo(dest SpanSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -593,7 +593,7 @@ func NewSpan() Span {
 	return newSpan(&otlptrace.Span{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Span) MoveTo(dest Span) {
 	*dest.getOrig() = *ms.getOrig()
@@ -721,11 +721,11 @@ func (ms Span) SetDroppedLinksCount(v uint32) {
 }
 
 // Status returns the status associated with this Span.
-func (ms Span) Status() SpanStatus {
-	return SpanStatus(internal.NewSpanStatus(&ms.getOrig().Status))
+func (ms Span) Status() Status {
+	return Status(internal.NewStatus(&ms.getOrig().Status))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Span) CopyTo(dest Span) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
@@ -787,7 +787,7 @@ func (es SpanEventSlice) At(ix int) SpanEvent {
 	return newSpanEvent((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -911,7 +911,7 @@ func NewSpanEvent() SpanEvent {
 	return newSpanEvent(&otlptrace.Span_Event{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SpanEvent) MoveTo(dest SpanEvent) {
 	*dest.getOrig() = *ms.getOrig()
@@ -953,7 +953,7 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetName(ms.Name())
@@ -1004,7 +1004,7 @@ func (es SpanLinkSlice) At(ix int) SpanLink {
 	return newSpanLink((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -1129,7 +1129,7 @@ func NewSpanLink() SpanLink {
 	return newSpanLink(&otlptrace.Span_Link{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SpanLink) MoveTo(dest SpanLink) {
 	*dest.getOrig() = *ms.getOrig()
@@ -1176,7 +1176,7 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
@@ -1185,62 +1185,62 @@ func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }
 
-// SpanStatus is an optional final status for this span. Semantically, when Status was not
+// Status is an optional final status for this span. Semantically, when Status was not
 // set, that means the span ended without errors and to assume Status.Ok (code = 0).
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewSpanStatus function to create new instances.
+// Must use NewStatus function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 
-type SpanStatus internal.SpanStatus
+type Status internal.Status
 
-func newSpanStatus(orig *otlptrace.Status) SpanStatus {
-	return SpanStatus(internal.NewSpanStatus(orig))
+func newStatus(orig *otlptrace.Status) Status {
+	return Status(internal.NewStatus(orig))
 }
 
-func (ms SpanStatus) getOrig() *otlptrace.Status {
-	return internal.GetOrigSpanStatus(internal.SpanStatus(ms))
+func (ms Status) getOrig() *otlptrace.Status {
+	return internal.GetOrigStatus(internal.Status(ms))
 }
 
-// NewSpanStatus creates a new empty SpanStatus.
+// NewStatus creates a new empty Status.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSpanStatus() SpanStatus {
-	return newSpanStatus(&otlptrace.Status{})
+func NewStatus() Status {
+	return newStatus(&otlptrace.Status{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms SpanStatus) MoveTo(dest SpanStatus) {
+func (ms Status) MoveTo(dest Status) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlptrace.Status{}
 }
 
-// Code returns the code associated with this SpanStatus.
-func (ms SpanStatus) Code() StatusCode {
+// Code returns the code associated with this Status.
+func (ms Status) Code() StatusCode {
 	return StatusCode(ms.getOrig().Code)
 }
 
-// SetCode replaces the code associated with this SpanStatus.
-func (ms SpanStatus) SetCode(v StatusCode) {
+// SetCode replaces the code associated with this Status.
+func (ms Status) SetCode(v StatusCode) {
 	ms.getOrig().Code = otlptrace.Status_StatusCode(v)
 }
 
-// Message returns the message associated with this SpanStatus.
-func (ms SpanStatus) Message() string {
+// Message returns the message associated with this Status.
+func (ms Status) Message() string {
 	return ms.getOrig().Message
 }
 
-// SetMessage replaces the message associated with this SpanStatus.
-func (ms SpanStatus) SetMessage(v string) {
+// SetMessage replaces the message associated with this Status.
+func (ms Status) SetMessage(v string) {
 	ms.getOrig().Message = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
-func (ms SpanStatus) CopyTo(dest SpanStatus) {
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms Status) CopyTo(dest Status) {
 	dest.SetCode(ms.Code())
 	dest.SetMessage(ms.Message())
 }
