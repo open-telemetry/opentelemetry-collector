@@ -454,32 +454,30 @@ func TestSpan_CopyTo(t *testing.T) {
 
 func TestSpan_TraceID(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, pcommon.NewTraceID(data.NewTraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.NewTraceID(data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
 func TestSpan_SpanID(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, pcommon.NewSpanID(data.NewSpanID([8]byte{})), ms.SpanID())
-	testValSpanID := pcommon.NewSpanID(data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
 func TestSpan_TraceState(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, TraceState(""), ms.TraceState())
-	testValTraceState := TraceState("congo=congos")
-	ms.SetTraceState(testValTraceState)
-	assert.Equal(t, testValTraceState, ms.TraceState())
+	internal.FillTestTraceState(internal.TraceState(ms.TraceState()))
+	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
 }
 
 func TestSpan_ParentSpanID(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, pcommon.NewSpanID(data.NewSpanID([8]byte{})), ms.ParentSpanID())
-	testValParentSpanID := pcommon.NewSpanID(data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.ParentSpanID())
+	testValParentSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetParentSpanID(testValParentSpanID)
 	assert.Equal(t, testValParentSpanID, ms.ParentSpanID())
 }
@@ -559,8 +557,8 @@ func TestSpan_DroppedLinksCount(t *testing.T) {
 
 func TestSpan_Status(t *testing.T) {
 	ms := NewSpan()
-	internal.FillTestSpanStatus(internal.SpanStatus(ms.Status()))
-	assert.Equal(t, SpanStatus(internal.GenerateTestSpanStatus()), ms.Status())
+	internal.FillTestStatus(internal.Status(ms.Status()))
+	assert.Equal(t, Status(internal.GenerateTestStatus()), ms.Status())
 }
 
 func TestSpanEventSlice(t *testing.T) {
@@ -850,26 +848,24 @@ func TestSpanLink_CopyTo(t *testing.T) {
 
 func TestSpanLink_TraceID(t *testing.T) {
 	ms := NewSpanLink()
-	assert.Equal(t, pcommon.NewTraceID(data.NewTraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.NewTraceID(data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
 func TestSpanLink_SpanID(t *testing.T) {
 	ms := NewSpanLink()
-	assert.Equal(t, pcommon.NewSpanID(data.NewSpanID([8]byte{})), ms.SpanID())
-	testValSpanID := pcommon.NewSpanID(data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetSpanID(testValSpanID)
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
 func TestSpanLink_TraceState(t *testing.T) {
 	ms := NewSpanLink()
-	assert.Equal(t, TraceState(""), ms.TraceState())
-	testValTraceState := TraceState("congo=congos")
-	ms.SetTraceState(testValTraceState)
-	assert.Equal(t, testValTraceState, ms.TraceState())
+	internal.FillTestTraceState(internal.TraceState(ms.TraceState()))
+	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
 }
 
 func TestSpanLink_Attributes(t *testing.T) {
@@ -886,34 +882,34 @@ func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
 }
 
-func TestSpanStatus_MoveTo(t *testing.T) {
-	ms := SpanStatus(internal.GenerateTestSpanStatus())
-	dest := NewSpanStatus()
+func TestStatus_MoveTo(t *testing.T) {
+	ms := Status(internal.GenerateTestStatus())
+	dest := NewStatus()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewSpanStatus(), ms)
-	assert.Equal(t, SpanStatus(internal.GenerateTestSpanStatus()), dest)
+	assert.Equal(t, NewStatus(), ms)
+	assert.Equal(t, Status(internal.GenerateTestStatus()), dest)
 }
 
-func TestSpanStatus_CopyTo(t *testing.T) {
-	ms := NewSpanStatus()
-	orig := NewSpanStatus()
+func TestStatus_CopyTo(t *testing.T) {
+	ms := NewStatus()
+	orig := NewStatus()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = SpanStatus(internal.GenerateTestSpanStatus())
+	orig = Status(internal.GenerateTestStatus())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
 
-func TestSpanStatus_Code(t *testing.T) {
-	ms := NewSpanStatus()
+func TestStatus_Code(t *testing.T) {
+	ms := NewStatus()
 	assert.Equal(t, StatusCode(0), ms.Code())
 	testValCode := StatusCode(1)
 	ms.SetCode(testValCode)
 	assert.Equal(t, testValCode, ms.Code())
 }
 
-func TestSpanStatus_Message(t *testing.T) {
-	ms := NewSpanStatus()
+func TestStatus_Message(t *testing.T) {
+	ms := NewStatus()
 	assert.Equal(t, "", ms.Message())
 	ms.SetMessage("cancelled")
 	assert.Equal(t, "cancelled", ms.Message())

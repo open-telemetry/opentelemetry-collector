@@ -79,7 +79,7 @@ func TestRequestJSON(t *testing.T) {
 func TestGrpc(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
-	RegisterServer(s, &fakeMetricsServer{t: t})
+	RegisterGRPCServer(s, &fakeMetricsServer{t: t})
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -112,7 +112,7 @@ func TestGrpc(t *testing.T) {
 func TestGrpcError(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
-	RegisterServer(s, &fakeMetricsServer{t: t, err: errors.New("my error")})
+	RegisterGRPCServer(s, &fakeMetricsServer{t: t, err: errors.New("my error")})
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -159,7 +159,6 @@ func generateMetricsRequest() Request {
 	md := pmetric.NewMetrics()
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("test_metric")
-	m.SetDataType(pmetric.MetricDataTypeGauge)
-	m.Gauge().DataPoints().AppendEmpty()
+	m.SetEmptyGauge().DataPoints().AppendEmpty()
 	return NewRequestFromMetrics(md)
 }

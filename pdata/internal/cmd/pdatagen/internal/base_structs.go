@@ -45,14 +45,14 @@ func New${structName}() ${structName} {
 	return new${structName}(&${originName}{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ${structName}) MoveTo(dest ${structName}) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = ${originName}{}
 }`
 
-const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
+const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ${structName}) CopyTo(dest ${structName}) {`
 
 const messageValueCopyToFooterTemplate = `}`

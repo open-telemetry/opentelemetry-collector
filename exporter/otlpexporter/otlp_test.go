@@ -115,7 +115,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 	}
 
 	// Now run it as a gRPC server
-	ptraceotlp.RegisterServer(rcv.srv, rcv)
+	ptraceotlp.RegisterGRPCServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -155,7 +155,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	plogotlp.RegisterServer(rcv.srv, rcv)
+	plogotlp.RegisterGRPCServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -195,7 +195,7 @@ func otlpMetricsReceiverOnGRPCServer(ln net.Listener) *mockMetricsReceiver {
 	}
 
 	// Now run it as a gRPC server
-	pmetricotlp.RegisterServer(rcv.srv, rcv)
+	pmetricotlp.RegisterGRPCServer(rcv.srv, rcv)
 	go func() {
 		_ = rcv.srv.Serve(ln)
 	}()
@@ -593,7 +593,8 @@ func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td pt
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Clone the request and store as expected.
-	expectedData := td.Clone()
+	expectedData := ptrace.NewTraces()
+	td.CopyTo(expectedData)
 
 	// Resend the request, this should succeed.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

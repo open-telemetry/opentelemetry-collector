@@ -1,31 +1,32 @@
 #!/bin/bash -ex
 
-git config user.name $GITHUB_ACTOR
-git config user.email $GITHUB_ACTOR@users.noreply.github.com
+git config user.name "$GITHUB_ACTOR"
+git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-PR_NAME=dependabot-prs/`date +'%Y-%m-%dT%H%M%S'`
-git checkout -b $PR_NAME
+# shellcheck disable=SC2006
+PR_NAME=dependabot-prs/$(date +'%Y-%m-%dT%H%M%S')
+git checkout -b "$PR_NAME"
 
 IFS=$'\n'
-requests=$(gh pr list --search "author:app/dependabot" --json number,title --template '{{range .}}{{tablerow .title}}{{end}}')
+requests=$( gh pr list --search "author:app/dependabot" --json title --jq '.[].title' | sort )
 message=""
-dirs=`find . -type f -name "go.mod" -exec dirname {} \; | sort `
+dirs=$(find . -type f -name "go.mod" -exec dirname {} \; | sort )
 
 for line in $requests; do
-    if [[ $line != Bump* ]]; then 
+    if [[ $line != Bump* ]]; then
         continue
     fi
 
-    module=$(echo $line | cut -f 2 -d " ")
+    module=$(echo "$line" | cut -f 2 -d " ")
     if [[ $module == go.opentelemetry.io/collector* ]]; then
         continue
     fi
-    version=$(echo $line | cut -f 6 -d " ")
+    version=$(echo "$line" | cut -f 6 -d " ")
     
-    topdir=`pwd`
+    topdir=$(pwd)
     for dir in $dirs; do
         echo "checking $dir"
-        cd $dir && if grep -q "$module " go.mod; then go get "$module"@v"$version"; fi
+        cd "$dir" && if grep -q "$module " go.mod; then go get "$module"@v"$version"; fi
         cd $topdir
     done
     message+=$line
@@ -36,8 +37,8 @@ make gotidy
 make genotelcorecol
 
 git add --all
-git commit -m "dependabot updates `date`
+git commit -m "dependabot updates $(date)
 $message"
-git push origin $PR_NAME
+git push origin "$PR_NAME"
 
-gh pr create --title "[chore] dependabot updates `date`" --body "$message" -l "dependencies"
+gh pr create --title "[chore] dependabot updates $(date)" --body "$message" -l "dependencies"

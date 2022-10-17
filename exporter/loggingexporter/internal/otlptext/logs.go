@@ -47,12 +47,13 @@ func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 				lr := logs.At(k)
 				buf.logEntry("ObservedTimestamp: %s", lr.ObservedTimestamp())
 				buf.logEntry("Timestamp: %s", lr.Timestamp())
-				buf.logEntry("Severity: %s", lr.SeverityText())
-				buf.logEntry("Body: %s", attributeValueToString(lr.Body()))
+				buf.logEntry("SeverityText: %s", lr.SeverityText())
+				buf.logEntry("SeverityNumber: %s(%d)", lr.SeverityNumber(), lr.SeverityNumber())
+				buf.logEntry("Body: %s", valueToString(lr.Body()))
 				buf.logAttributes("Attributes", lr.Attributes())
 				buf.logEntry("Trace ID: %s", lr.TraceID().HexString())
 				buf.logEntry("Span ID: %s", lr.SpanID().HexString())
-				buf.logEntry("Flags: %d", lr.FlagsStruct())
+				buf.logEntry("Flags: %d", lr.Flags())
 			}
 		}
 	}

@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/service/featuregate"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
 
@@ -90,6 +90,53 @@ func TestServiceGetExporters(t *testing.T) {
 	assert.Contains(t, expMap[config.MetricsDataType], config.NewComponentID("nop"))
 	assert.Len(t, expMap[config.LogsDataType], 1)
 	assert.Contains(t, expMap[config.LogsDataType], config.NewComponentID("nop"))
+}
+
+// TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
+// and another service with a valid config can be started right after.
+func TestServiceTelemetryCleanupOnError(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	// Read invalid yaml config from file
+	invalidConf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-invalid.yaml"))
+	require.NoError(t, err)
+	invalidCfg, err := configunmarshaler.New().Unmarshal(invalidConf, factories)
+	require.NoError(t, err)
+
+	// Read valid yaml config from file
+	validConf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
+	require.NoError(t, err)
+	validCfg, err := configunmarshaler.New().Unmarshal(validConf, factories)
+	require.NoError(t, err)
+
+	// Create a service with an invalid config and expect an error
+	telemetryOne := newColTelemetry(featuregate.NewRegistry())
+	_, err = newService(&settings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		Config:    invalidCfg,
+		telemetry: telemetryOne,
+	})
+	require.Error(t, err)
+
+	// Create a service with a valid config and expect no error
+	telemetryTwo := newColTelemetry(featuregate.NewRegistry())
+	srv, err := newService(&settings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		Config:    validCfg,
+		telemetry: telemetryTwo,
+	})
+	require.NoError(t, err)
+
+	// For safety ensure everything is cleaned up
+	t.Cleanup(func() {
+		assert.NoError(t, telemetryOne.shutdown())
+		assert.NoError(t, telemetryTwo.shutdown())
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
 }
 
 func createExampleService(t *testing.T, factories component.Factories) *service {

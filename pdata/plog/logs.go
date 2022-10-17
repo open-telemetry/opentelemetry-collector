@@ -37,18 +37,16 @@ func NewLogs() Logs {
 	return newLogs(&otlpcollectorlog.ExportLogsServiceRequest{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Logs instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Logs) MoveTo(dest Logs) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcollectorlog.ExportLogsServiceRequest{}
 }
 
-// Clone returns a copy of Logs.
-func (ms Logs) Clone() Logs {
-	cloneLd := NewLogs()
-	ms.ResourceLogs().CopyTo(cloneLd.ResourceLogs())
-	return cloneLd
+// CopyTo copies the Logs instance overriding the destination.
+func (ms Logs) CopyTo(dest Logs) {
+	ms.ResourceLogs().CopyTo(dest.ResourceLogs())
 }
 
 // LogRecordCount calculates the total number of log records.
@@ -75,119 +73,32 @@ func (ms Logs) ResourceLogs() ResourceLogsSlice {
 type SeverityNumber int32
 
 const (
-	SeverityNumberUndefined = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED)
-	SeverityNumberTrace     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_TRACE)
-	SeverityNumberTrace2    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_TRACE2)
-	SeverityNumberTrace3    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_TRACE3)
-	SeverityNumberTrace4    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_TRACE4)
-	SeverityNumberDebug     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_DEBUG)
-	SeverityNumberDebug2    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_DEBUG2)
-	SeverityNumberDebug3    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_DEBUG3)
-	SeverityNumberDebug4    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_DEBUG4)
-	SeverityNumberInfo      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO)
-	SeverityNumberInfo2     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO2)
-	SeverityNumberInfo3     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO3)
-	SeverityNumberInfo4     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO4)
-	SeverityNumberWarn      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN)
-	SeverityNumberWarn2     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN2)
-	SeverityNumberWarn3     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN3)
-	SeverityNumberWarn4     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN4)
-	SeverityNumberError     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR)
-	SeverityNumberError2    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR2)
-	SeverityNumberError3    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR3)
-	SeverityNumberError4    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR4)
-	SeverityNumberFatal     = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL)
-	SeverityNumberFatal2    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL2)
-	SeverityNumberFatal3    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL3)
-	SeverityNumberFatal4    = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL4)
-)
-
-const (
-	// Deprecated: [0.59.0] Use SeverityNumberUndefined instead
-	SeverityNumberUNDEFINED = SeverityNumberUndefined
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace instead
-	SeverityNumberTRACE = SeverityNumberTrace
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace2 instead
-	SeverityNumberTRACE2 = SeverityNumberTrace2
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace3 instead
-	SeverityNumberTRACE3 = SeverityNumberTrace3
-
-	// Deprecated: [0.59.0] Use SeverityNumberTrace4 instead
-	SeverityNumberTRACE4 = SeverityNumberTrace4
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug instead
-	SeverityNumberDEBUG = SeverityNumberDebug
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug2 instead
-	SeverityNumberDEBUG2 = SeverityNumberDebug2
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug3 instead
-	SeverityNumberDEBUG3 = SeverityNumberDebug3
-
-	// Deprecated: [0.59.0] Use SeverityNumberDebug4 instead
-	SeverityNumberDEBUG4 = SeverityNumberDebug4
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo instead
-	SeverityNumberINFO = SeverityNumberInfo
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo2 instead
-	SeverityNumberINFO2 = SeverityNumberInfo2
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo3 instead
-	SeverityNumberINFO3 = SeverityNumberInfo3
-
-	// Deprecated: [0.59.0] Use SeverityNumberInfo4 instead
-	SeverityNumberINFO4 = SeverityNumberInfo4
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn instead
-	SeverityNumberWARN = SeverityNumberWarn
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn2 instead
-	SeverityNumberWARN2 = SeverityNumberWarn2
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn3 instead
-	SeverityNumberWARN3 = SeverityNumberWarn3
-
-	// Deprecated: [0.59.0] Use SeverityNumberWarn4 instead
-	SeverityNumberWARN4 = SeverityNumberWarn4
-
-	// Deprecated: [0.59.0] Use SeverityNumberError instead
-	SeverityNumberERROR = SeverityNumberError
-
-	// Deprecated: [0.59.0] Use SeverityNumberError2 instead
-	SeverityNumberERROR2 = SeverityNumberError2
-
-	// Deprecated: [0.59.0] Use SeverityNumberError3 instead
-	SeverityNumberERROR3 = SeverityNumberError3
-
-	// Deprecated: [0.59.0] Use SeverityNumberError4 instead
-	SeverityNumberERROR4 = SeverityNumberError4
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal instead
-	SeverityNumberFATAL = SeverityNumberFatal
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal2 instead
-	SeverityNumberFATAL2 = SeverityNumberFatal2
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal3 instead
-	SeverityNumberFATAL3 = SeverityNumberFatal3
-
-	// Deprecated: [0.59.0] Use SeverityNumberFatal4 instead
-	SeverityNumberFATAL4 = SeverityNumberFatal4
+	SeverityNumberUnspecified = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED)
+	SeverityNumberTrace       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_TRACE)
+	SeverityNumberTrace2      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_TRACE2)
+	SeverityNumberTrace3      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_TRACE3)
+	SeverityNumberTrace4      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_TRACE4)
+	SeverityNumberDebug       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_DEBUG)
+	SeverityNumberDebug2      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_DEBUG2)
+	SeverityNumberDebug3      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_DEBUG3)
+	SeverityNumberDebug4      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_DEBUG4)
+	SeverityNumberInfo        = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO)
+	SeverityNumberInfo2       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO2)
+	SeverityNumberInfo3       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO3)
+	SeverityNumberInfo4       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_INFO4)
+	SeverityNumberWarn        = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN)
+	SeverityNumberWarn2       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN2)
+	SeverityNumberWarn3       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN3)
+	SeverityNumberWarn4       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_WARN4)
+	SeverityNumberError       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR)
+	SeverityNumberError2      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR2)
+	SeverityNumberError3      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR3)
+	SeverityNumberError4      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_ERROR4)
+	SeverityNumberFatal       = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL)
+	SeverityNumberFatal2      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL2)
+	SeverityNumberFatal3      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL3)
+	SeverityNumberFatal4      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL4)
 )
 
 // String returns the string representation of the SeverityNumber.
 func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }
-
-// Deprecated: [v0.59.0] use FlagsStruct().
-func (ms LogRecord) Flags() uint32 {
-	return ms.getOrig().Flags
-}
-
-// Deprecated: [v0.59.0] use FlagsStruct().
-func (ms LogRecord) SetFlags(v uint32) {
-	ms.getOrig().Flags = v
-}

@@ -22,18 +22,16 @@ import (
 
 const spanIDSize = 8
 
-var errInvalidSpanIDSize = errors.New("invalid length for SpanID")
+var (
+	errMarshalSpanID   = errors.New("marshal: invalid buffer length for SpanID")
+	errUnmarshalSpanID = errors.New("unmarshal: invalid SpanID length")
+)
 
 // SpanID is a custom data type that is used for all span_id fields in OTLP
 // Protobuf messages.
 type SpanID [spanIDSize]byte
 
 var _ proto.Sizer = (*SpanID)(nil)
-
-// NewSpanID creates a SpanID from a byte slice.
-func NewSpanID(bytes [spanIDSize]byte) SpanID {
-	return bytes
-}
 
 // Size returns the size of the data to serialize.
 func (sid SpanID) Size() int {
@@ -53,7 +51,12 @@ func (sid SpanID) MarshalTo(data []byte) (n int, err error) {
 	if sid.IsEmpty() {
 		return 0, nil
 	}
-	return marshalBytes(data, sid[:])
+
+	if len(data) < spanIDSize {
+		return 0, errMarshalSpanID
+	}
+
+	return copy(data, sid[:]), nil
 }
 
 // Unmarshal inflates this trace ID from binary representation. Called by Protobuf serialization.
@@ -64,7 +67,7 @@ func (sid *SpanID) Unmarshal(data []byte) error {
 	}
 
 	if len(data) != spanIDSize {
-		return errInvalidSpanIDSize
+		return errUnmarshalSpanID
 	}
 
 	copy(sid[:], data)

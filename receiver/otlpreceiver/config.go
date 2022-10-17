@@ -44,7 +44,7 @@ type Config struct {
 }
 
 var _ config.Receiver = (*Config)(nil)
-var _ config.Unmarshallable = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
@@ -61,7 +61,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return errors.New("empty config for OTLP receiver")
 	}
 	// first load the config normally
-	err := componentParser.UnmarshalExact(cfg)
+	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}

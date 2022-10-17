@@ -48,14 +48,14 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 
 	requestCount := 1000
 	spansPerRequest := 100
-	traceDataSlice := make([]ptrace.Traces, 0, requestCount)
+	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
-		traceDataSlice = append(traceDataSlice, td.Clone())
+		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
 		assert.NoError(t, batcher.ConsumeTraces(context.Background(), td))
 	}
 
@@ -69,7 +69,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	receivedTraces := sink.AllTraces()
 	spansReceivedByName := spansReceivedByName(receivedTraces)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		spans := traceDataSlice[requestNum].ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+		spans := sentResourceSpans.At(requestNum).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			require.EqualValues(t,
 				spans.At(spanIndex),
@@ -327,7 +327,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-	metricDataSlice := make([]pmetric.Metrics, 0, requestCount)
+	sentResourceMetrics := pmetric.NewMetrics().ResourceMetrics()
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		md := testdata.GenerateMetrics(metricsPerRequest)
@@ -335,7 +335,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
 			metrics.At(metricIndex).SetName(getTestMetricName(requestNum, metricIndex))
 		}
-		metricDataSlice = append(metricDataSlice, md.Clone())
+		md.ResourceMetrics().At(0).CopyTo(sentResourceMetrics.AppendEmpty())
 		assert.NoError(t, batcher.ConsumeMetrics(context.Background(), md))
 	}
 
@@ -349,7 +349,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	receivedMds := sink.AllMetrics()
 	metricsReceivedByName := metricsReceivedByName(receivedMds)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		metrics := metricDataSlice[requestNum].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+		metrics := sentResourceMetrics.At(requestNum).ScopeMetrics().At(0).Metrics()
 		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
 			require.EqualValues(t,
 				metrics.At(metricIndex),
@@ -645,7 +645,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
-	logDataSlice := make([]plog.Logs, 0, requestCount)
+	sentResourceLogs := plog.NewLogs().ResourceLogs()
 
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ld := testdata.GenerateLogs(logsPerRequest)
@@ -653,7 +653,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			logs.At(logIndex).SetSeverityText(getTestLogSeverityText(requestNum, logIndex))
 		}
-		logDataSlice = append(logDataSlice, ld.Clone())
+		ld.ResourceLogs().At(0).CopyTo(sentResourceLogs.AppendEmpty())
 		assert.NoError(t, batcher.ConsumeLogs(context.Background(), ld))
 	}
 
@@ -667,7 +667,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	receivedMds := sink.AllLogs()
 	logsReceivedBySeverityText := logsReceivedBySeverityText(receivedMds)
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		logs := logDataSlice[requestNum].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+		logs := sentResourceLogs.At(requestNum).ScopeLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
 			require.EqualValues(t,
 				logs.At(logIndex),

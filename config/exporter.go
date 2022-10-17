@@ -27,7 +27,7 @@ type Exporter interface {
 }
 
 // UnmarshalExporter helper function to unmarshal an Exporter config.
-// It checks if the config implements Unmarshallable and uses that if available,
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
 func UnmarshalExporter(conf *confmap.Conf, cfg Exporter) error {
 	return unmarshal(conf, cfg)

@@ -71,9 +71,7 @@ func (ts *testScrapeMetrics) scrape(_ context.Context) (pmetric.Metrics, error) 
 	}
 
 	md := pmetric.NewMetrics()
-	metric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	metric.Gauge().DataPoints().AppendEmpty()
+	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
 	return md, nil
 }
 

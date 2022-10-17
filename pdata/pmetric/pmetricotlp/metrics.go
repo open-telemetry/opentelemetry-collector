@@ -25,6 +25,7 @@ import (
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
 
 var jsonMarshaler = &jsonpb.Marshaler{}
@@ -103,21 +104,17 @@ func (mr Request) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls Request from JSON bytes.
 func (mr Request) UnmarshalJSON(data []byte) error {
-	if err := jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig); err != nil {
-		return err
-	}
-	otlp.MigrateMetrics(mr.orig.ResourceMetrics)
-	return nil
+	return pmetricjson.UnmarshalExportMetricsServiceRequest(data, mr.orig)
 }
 
 func (mr Request) Metrics() pmetric.Metrics {
 	return pmetric.Metrics(internal.NewMetrics(mr.orig))
 }
 
-// Client is the client API for OTLP-GRPC Metrics service.
+// GRPCClient is the client API for OTLP-GRPC Metrics service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type Client interface {
+type GRPCClient interface {
 	// Export pmetric.Metrics to the server.
 	//
 	// For performance reasons, it is recommended to keep this RPC
@@ -130,7 +127,7 @@ type metricsClient struct {
 }
 
 // NewClient returns a new Client connected using the given connection.
-func NewClient(cc *grpc.ClientConn) Client {
+func NewClient(cc *grpc.ClientConn) GRPCClient {
 	return &metricsClient{rawClient: otlpcollectormetrics.NewMetricsServiceClient(cc)}
 }
 
@@ -139,8 +136,8 @@ func (c *metricsClient) Export(ctx context.Context, request Request, opts ...grp
 	return Response{orig: rsp}, err
 }
 
-// Server is the server API for OTLP gRPC MetricsService service.
-type Server interface {
+// GRPCServer is the server API for OTLP gRPC MetricsService service.
+type GRPCServer interface {
 	// Export is called every time a new request is received.
 	//
 	// For performance reasons, it is recommended to keep this RPC
@@ -148,13 +145,13 @@ type Server interface {
 	Export(context.Context, Request) (Response, error)
 }
 
-// RegisterServer registers the Server to the grpc.Server.
-func RegisterServer(s *grpc.Server, srv Server) {
+// RegisterGRPCServer registers the GRPCServer to the grpc.Server.
+func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
 	otlpcollectormetrics.RegisterMetricsServiceServer(s, &rawMetricsServer{srv: srv})
 }
 
 type rawMetricsServer struct {
-	srv Server
+	srv GRPCServer
 }
 
 func (s rawMetricsServer) Export(ctx context.Context, request *otlpcollectormetrics.ExportMetricsServiceRequest) (*otlpcollectormetrics.ExportMetricsServiceResponse, error) {

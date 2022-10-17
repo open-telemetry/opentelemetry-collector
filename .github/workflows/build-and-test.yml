@@ -104,6 +104,10 @@ jobs:
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genotelcorecol" and commit the changes in this PR.' && exit 1)
       - name: Multimod verify
         run: make multimod-verify
+      - name: crosslink
+        run: |
+          make crosslink
+          git diff -s --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
 
   unittest:
     strategy:

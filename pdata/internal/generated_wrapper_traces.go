@@ -142,16 +142,16 @@ func NewSpanLink(orig *otlptrace.Span_Link) SpanLink {
 	return SpanLink{orig: orig}
 }
 
-type SpanStatus struct {
+type Status struct {
 	orig *otlptrace.Status
 }
 
-func GetOrigSpanStatus(ms SpanStatus) *otlptrace.Status {
+func GetOrigStatus(ms Status) *otlptrace.Status {
 	return ms.orig
 }
 
-func NewSpanStatus(orig *otlptrace.Status) SpanStatus {
-	return SpanStatus{orig: orig}
+func NewStatus(orig *otlptrace.Status) Status {
+	return Status{orig: orig}
 }
 
 func GenerateTestResourceSpansSlice() ResourceSpansSlice {
@@ -233,10 +233,10 @@ func GenerateTestSpan() Span {
 }
 
 func FillTestSpan(tv Span) {
-	tv.orig.TraceId = data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	tv.orig.TraceState = "congo=congos"
-	tv.orig.ParentSpanId = data.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	FillTestTraceState(NewTraceState(&tv.orig.TraceState))
+	tv.orig.ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.Name = "test_name"
 	tv.orig.Kind = otlptrace.Span_SpanKind(3)
 	tv.orig.StartTimeUnixNano = 1234567890
@@ -247,7 +247,7 @@ func FillTestSpan(tv Span) {
 	tv.orig.DroppedEventsCount = uint32(17)
 	FillTestSpanLinkSlice(NewSpanLinkSlice(&tv.orig.Links))
 	tv.orig.DroppedLinksCount = uint32(17)
-	FillTestSpanStatus(NewSpanStatus(&tv.orig.Status))
+	FillTestStatus(NewStatus(&tv.orig.Status))
 }
 
 func GenerateTestSpanEventSlice() SpanEventSlice {
@@ -302,21 +302,21 @@ func GenerateTestSpanLink() SpanLink {
 }
 
 func FillTestSpanLink(tv SpanLink) {
-	tv.orig.TraceId = data.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	tv.orig.TraceState = "congo=congos"
+	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	FillTestTraceState(NewTraceState(&tv.orig.TraceState))
 	FillTestMap(NewMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }
 
-func GenerateTestSpanStatus() SpanStatus {
+func GenerateTestStatus() Status {
 	orig := otlptrace.Status{}
-	tv := NewSpanStatus(&orig)
-	FillTestSpanStatus(tv)
+	tv := NewStatus(&orig)
+	FillTestStatus(tv)
 	return tv
 }
 
-func FillTestSpanStatus(tv SpanStatus) {
+func FillTestStatus(tv Status) {
 	tv.orig.Code = 1
 	tv.orig.Message = "cancelled"
 }

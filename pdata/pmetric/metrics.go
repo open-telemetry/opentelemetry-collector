@@ -37,14 +37,12 @@ func NewMetrics() Metrics {
 	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{})
 }
 
-// Clone returns a copy of MetricData.
-func (ms Metrics) Clone() Metrics {
-	cloneMd := NewMetrics()
-	ms.ResourceMetrics().CopyTo(cloneMd.ResourceMetrics())
-	return cloneMd
+// CopyTo copies the Metrics instance overriding the destination.
+func (ms Metrics) CopyTo(dest Metrics) {
+	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Metrics instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Metrics) MoveTo(dest Metrics) {
 	*dest.getOrig() = *ms.getOrig()
@@ -82,16 +80,16 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 			ms := ilm.Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				switch m.DataType() {
-				case MetricDataTypeGauge:
+				switch m.Type() {
+				case MetricTypeGauge:
 					dataPointCount += m.Gauge().DataPoints().Len()
-				case MetricDataTypeSum:
+				case MetricTypeSum:
 					dataPointCount += m.Sum().DataPoints().Len()
-				case MetricDataTypeHistogram:
+				case MetricTypeHistogram:
 					dataPointCount += m.Histogram().DataPoints().Len()
-				case MetricDataTypeExponentialHistogram:
+				case MetricTypeExponentialHistogram:
 					dataPointCount += m.ExponentialHistogram().DataPoints().Len()
-				case MetricDataTypeSummary:
+				case MetricTypeSummary:
 					dataPointCount += m.Summary().DataPoints().Len()
 				}
 			}
@@ -100,135 +98,70 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 	return
 }
 
-// MetricDataType specifies the type of data in a Metric.
-type MetricDataType int32
+// MetricType specifies the type of data in a Metric.
+type MetricType int32
 
 const (
-	MetricDataTypeNone MetricDataType = iota
-	MetricDataTypeGauge
-	MetricDataTypeSum
-	MetricDataTypeHistogram
-	MetricDataTypeExponentialHistogram
-	MetricDataTypeSummary
+	// MetricTypeEmpty means that metric type is unset.
+	MetricTypeEmpty MetricType = iota
+	MetricTypeGauge
+	MetricTypeSum
+	MetricTypeHistogram
+	MetricTypeExponentialHistogram
+	MetricTypeSummary
 )
 
-// String returns the string representation of the MetricDataType.
-func (mdt MetricDataType) String() string {
+// String returns the string representation of the MetricType.
+func (mdt MetricType) String() string {
 	switch mdt {
-	case MetricDataTypeNone:
-		return "None"
-	case MetricDataTypeGauge:
+	case MetricTypeEmpty:
+		return "Empty"
+	case MetricTypeGauge:
 		return "Gauge"
-	case MetricDataTypeSum:
+	case MetricTypeSum:
 		return "Sum"
-	case MetricDataTypeHistogram:
+	case MetricTypeHistogram:
 		return "Histogram"
-	case MetricDataTypeExponentialHistogram:
+	case MetricTypeExponentialHistogram:
 		return "ExponentialHistogram"
-	case MetricDataTypeSummary:
+	case MetricTypeSummary:
 		return "Summary"
 	}
 	return ""
 }
 
-// SetDataType clears any existing data and initialize it with an empty data of the given type.
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetDataType(ty MetricDataType) {
-	switch ty {
-	case MetricDataTypeGauge:
-		ms.getOrig().Data = &otlpmetrics.Metric_Gauge{Gauge: &otlpmetrics.Gauge{}}
-	case MetricDataTypeSum:
-		ms.getOrig().Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	case MetricDataTypeHistogram:
-		ms.getOrig().Data = &otlpmetrics.Metric_Histogram{Histogram: &otlpmetrics.Histogram{}}
-	case MetricDataTypeExponentialHistogram:
-		ms.getOrig().Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: &otlpmetrics.ExponentialHistogram{}}
-	case MetricDataTypeSummary:
-		ms.getOrig().Data = &otlpmetrics.Metric_Summary{Summary: &otlpmetrics.Summary{}}
-	}
-}
-
-// MetricAggregationTemporality defines how a metric aggregator reports aggregated values.
+// AggregationTemporality defines how a metric aggregator reports aggregated values.
 // It describes how those values relate to the time interval over which they are aggregated.
-type MetricAggregationTemporality int32
+type AggregationTemporality int32
 
 const (
-	// MetricAggregationTemporalityUnspecified is the default MetricAggregationTemporality, it MUST NOT be used.
-	MetricAggregationTemporalityUnspecified = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
-	// MetricAggregationTemporalityDelta is a MetricAggregationTemporality for a metric aggregator which reports changes since last report time.
-	MetricAggregationTemporalityDelta = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
-	// MetricAggregationTemporalityCumulative is a MetricAggregationTemporality for a metric aggregator which reports changes since a fixed start time.
-	MetricAggregationTemporalityCumulative = MetricAggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
+	// AggregationTemporalityUnspecified is the default AggregationTemporality, it MUST NOT be used.
+	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
+	// AggregationTemporalityDelta is a AggregationTemporality for a metric aggregator which reports changes since last report time.
+	AggregationTemporalityDelta = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
+	// AggregationTemporalityCumulative is a AggregationTemporality for a metric aggregator which reports changes since a fixed start time.
+	AggregationTemporalityCumulative = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
 )
 
-// String returns the string representation of the MetricAggregationTemporality.
-func (at MetricAggregationTemporality) String() string {
-	return otlpmetrics.AggregationTemporality(at).String()
-}
-
-// MetricDataPointFlags defines how a metric aggregator reports aggregated values.
-// It describes how those values relate to the time interval over which they are aggregated.
-//
-// This is a reference type, if passed by value and callee modifies it the
-// caller will see the modification.
-//
-// Must use NewMetricDataPointFlagsStruct function to create new instances.
-// Important: zero-initialized instance is not valid for use.
-type MetricDataPointFlags internal.MetricDataPointFlags
-
-func newMetricDataPointFlags(orig *uint32) MetricDataPointFlags {
-	return MetricDataPointFlags(internal.NewMetricDataPointFlags(orig))
-}
-
-func (ms MetricDataPointFlags) getOrig() *uint32 {
-	return internal.GetOrigMetricDataPointFlags(internal.MetricDataPointFlags(ms))
-}
-
-// NewMetricDataPointFlags creates a new empty MetricDataPointFlags.
-//
-// This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
-// OR directly access the member if this is embedded in another struct.
-func NewMetricDataPointFlags() MetricDataPointFlags {
-	return newMetricDataPointFlags(new(uint32))
-}
-
-// MoveTo moves all properties from the current struct to dest
-// resetting the current instance to its zero value
-func (ms MetricDataPointFlags) MoveTo(dest MetricDataPointFlags) {
-	*dest.getOrig() = *ms.getOrig()
-	*ms.getOrig() = uint32(otlpmetrics.DataPointFlags_FLAG_NONE)
-}
-
-// CopyTo copies all properties from the current struct to the dest.
-func (ms MetricDataPointFlags) CopyTo(dest MetricDataPointFlags) {
-	*dest.getOrig() = *ms.getOrig()
-}
-
-// NoRecordedValue returns true if the MetricDataPointFlags contains the NO_RECORDED_VALUE flag.
-func (ms MetricDataPointFlags) NoRecordedValue() bool {
-	return *ms.getOrig()&uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE) != 0
-}
-
-// SetNoRecordedValue sets the FLAG_NO_RECORDED_VALUE flag if true and removes it if false.
-// Setting this Flag when it is already set will change nothing.
-func (ms MetricDataPointFlags) SetNoRecordedValue(b bool) {
-	if b {
-		*ms.getOrig() |= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
-	} else {
-		*ms.getOrig() &^= uint32(otlpmetrics.DataPointFlags_FLAG_NO_RECORDED_VALUE)
+// String returns the string representation of the AggregationTemporality.
+func (at AggregationTemporality) String() string {
+	switch at {
+	case AggregationTemporalityUnspecified:
+		return "Unspecified"
+	case AggregationTemporalityDelta:
+		return "Delta"
+	case AggregationTemporalityCumulative:
+		return "Cumulative"
 	}
-}
-
-// AsRaw converts MetricDataPointFlags to the OTLP uint32 representation.
-func (ms MetricDataPointFlags) AsRaw() uint32 {
-	return *ms.getOrig()
+	return ""
 }
 
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType int32
 
 const (
-	NumberDataPointValueTypeNone NumberDataPointValueType = iota
+	// NumberDataPointValueTypeEmpty means that data point value is unset.
+	NumberDataPointValueTypeEmpty NumberDataPointValueType = iota
 	NumberDataPointValueTypeInt
 	NumberDataPointValueTypeDouble
 )
@@ -236,8 +169,8 @@ const (
 // String returns the string representation of the NumberDataPointValueType.
 func (nt NumberDataPointValueType) String() string {
 	switch nt {
-	case NumberDataPointValueTypeNone:
-		return "None"
+	case NumberDataPointValueTypeEmpty:
+		return "Empty"
 	case NumberDataPointValueTypeInt:
 		return "Int"
 	case NumberDataPointValueTypeDouble:
@@ -250,7 +183,8 @@ func (nt NumberDataPointValueType) String() string {
 type ExemplarValueType int32
 
 const (
-	ExemplarValueTypeNone ExemplarValueType = iota
+	// ExemplarValueTypeEmpty means that exemplar value is unset.
+	ExemplarValueTypeEmpty ExemplarValueType = iota
 	ExemplarValueTypeInt
 	ExemplarValueTypeDouble
 )
@@ -258,30 +192,11 @@ const (
 // String returns the string representation of the ExemplarValueType.
 func (nt ExemplarValueType) String() string {
 	switch nt {
-	case ExemplarValueTypeNone:
-		return "None"
+	case ExemplarValueTypeEmpty:
+		return "Empty"
 	case ExemplarValueTypeInt:
 		return "Int"
 	case ExemplarValueTypeDouble:
-		return "Double"
-	}
-	return ""
-}
-
-// OptionalType wraps optional fields into oneof fields
-type OptionalType int32
-
-const (
-	OptionalTypeNone OptionalType = iota
-	OptionalTypeDouble
-)
-
-// String returns the string representation of the OptionalType.
-func (ot OptionalType) String() string {
-	switch ot {
-	case OptionalTypeNone:
-		return "None"
-	case OptionalTypeDouble:
 		return "Double"
 	}
 	return ""

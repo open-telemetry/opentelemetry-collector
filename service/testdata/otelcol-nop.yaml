@@ -11,6 +11,9 @@ extensions:
   nop:
 
 service:
+  telemetry:
+    metrics:
+      address: localhost:8888
   extensions: [nop]
   pipelines:
     traces:

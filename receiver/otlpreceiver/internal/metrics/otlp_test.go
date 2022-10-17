@@ -35,9 +35,6 @@ import (
 
 func TestExport(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
-	// Keep metric data to compare the test result against it
-	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	metricData := md.Clone()
 	req := pmetricotlp.NewRequestFromMetrics(md)
 
 	metricSink := new(consumertest.MetricsSink)
@@ -49,7 +46,7 @@ func TestExport(t *testing.T) {
 
 	mds := metricSink.AllMetrics()
 	require.Len(t, mds, 1)
-	assert.EqualValues(t, metricData, mds[0])
+	assert.EqualValues(t, md, mds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
@@ -70,7 +67,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.Equal(t, pmetricotlp.Response{}, resp)
 }
 
-func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.Client {
+func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, mc)
 
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
@@ -93,7 +90,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 	r := New(config.NewComponentIDWithName("otlp", "metrics"), mc, componenttest.NewNopReceiverCreateSettings())
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
-	pmetricotlp.RegisterServer(srv, r)
+	pmetricotlp.RegisterGRPCServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()

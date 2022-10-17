@@ -35,9 +35,6 @@ import (
 
 func TestExport(t *testing.T) {
 	ld := testdata.GenerateLogs(1)
-	// Keep log data to compare the test result against it
-	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	logData := ld.Clone()
 	req := plogotlp.NewRequestFromLogs(ld)
 
 	logSink := new(consumertest.LogsSink)
@@ -48,7 +45,7 @@ func TestExport(t *testing.T) {
 
 	lds := logSink.AllLogs()
 	require.Len(t, lds, 1)
-	assert.EqualValues(t, logData, lds[0])
+	assert.EqualValues(t, ld, lds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
@@ -70,7 +67,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.Equal(t, plogotlp.Response{}, resp)
 }
 
-func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.Client {
+func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, lc)
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
@@ -92,7 +89,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 	r := New(config.NewComponentIDWithName("otlp", "log"), lc, componenttest.NewNopReceiverCreateSettings())
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
-	plogotlp.RegisterServer(srv, r)
+	plogotlp.RegisterGRPCServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()

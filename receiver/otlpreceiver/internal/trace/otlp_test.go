@@ -35,9 +35,6 @@ import (
 
 func TestExport(t *testing.T) {
 	td := testdata.GenerateTraces(1)
-	// Keep trace data to compare the test result against it
-	// Clone needed because OTLP proto XXX_ fields are altered in the GRPC downstream
-	traceData := td.Clone()
 	req := ptraceotlp.NewRequestFromTraces(td)
 
 	traceSink := new(consumertest.TracesSink)
@@ -47,7 +44,7 @@ func TestExport(t *testing.T) {
 	require.NotNil(t, resp, "The response is missing")
 
 	require.Len(t, traceSink.AllTraces(), 1)
-	assert.EqualValues(t, traceData, traceSink.AllTraces()[0])
+	assert.EqualValues(t, td, traceSink.AllTraces()[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
@@ -68,7 +65,7 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	assert.Equal(t, ptraceotlp.Response{}, resp)
 }
 
-func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.Client {
+func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, tc)
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
@@ -90,7 +87,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
 	r := New(config.NewComponentIDWithName("otlp", "trace"), tc, componenttest.NewNopReceiverCreateSettings())
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
-	ptraceotlp.RegisterServer(srv, r)
+	ptraceotlp.RegisterGRPCServer(srv, r)
 	go func() {
 		_ = srv.Serve(ln)
 	}()

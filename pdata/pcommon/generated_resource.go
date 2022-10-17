@@ -48,7 +48,7 @@ func NewResource() Resource {
 	return newResource(&otlpresource.Resource{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Resource) MoveTo(dest Resource) {
 	*dest.getOrig() = *ms.getOrig()
@@ -70,7 +70,7 @@ func (ms Resource) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Resource) CopyTo(dest Resource) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())

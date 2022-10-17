@@ -21,6 +21,7 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -68,7 +69,7 @@ func (es ResourceLogsSlice) At(ix int) ResourceLogs {
 	return newResourceLogs((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -191,7 +192,7 @@ func NewResourceLogs() ResourceLogs {
 	return newResourceLogs(&otlplogs.ResourceLogs{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	*dest.getOrig() = *ms.getOrig()
@@ -218,7 +219,7 @@ func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
 	return ScopeLogsSlice(internal.NewScopeLogsSlice(&ms.getOrig().ScopeLogs))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -268,7 +269,7 @@ func (es ScopeLogsSlice) At(ix int) ScopeLogs {
 	return newScopeLogs((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -391,7 +392,7 @@ func NewScopeLogs() ScopeLogs {
 	return newScopeLogs(&otlplogs.ScopeLogs{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
 	*dest.getOrig() = *ms.getOrig()
@@ -418,7 +419,7 @@ func (ms ScopeLogs) LogRecords() LogRecordSlice {
 	return LogRecordSlice(internal.NewLogRecordSlice(&ms.getOrig().LogRecords))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -468,7 +469,7 @@ func (es LogRecordSlice) At(ix int) LogRecord {
 	return newLogRecord((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -592,7 +593,7 @@ func NewLogRecord() LogRecord {
 	return newLogRecord(&otlplogs.LogRecord{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms LogRecord) MoveTo(dest LogRecord) {
 	*dest.getOrig() = *ms.getOrig()
@@ -621,31 +622,31 @@ func (ms LogRecord) SetTimestamp(v pcommon.Timestamp) {
 
 // TraceID returns the traceid associated with this LogRecord.
 func (ms LogRecord) TraceID() pcommon.TraceID {
-	return pcommon.NewTraceID(ms.getOrig().TraceId)
+	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
 // SetTraceID replaces the traceid associated with this LogRecord.
 func (ms LogRecord) SetTraceID(v pcommon.TraceID) {
-	ms.getOrig().TraceId = v.Bytes()
+	ms.getOrig().TraceId = data.TraceID(v)
 }
 
 // SpanID returns the spanid associated with this LogRecord.
 func (ms LogRecord) SpanID() pcommon.SpanID {
-	return pcommon.NewSpanID(ms.getOrig().SpanId)
+	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
 // SetSpanID replaces the spanid associated with this LogRecord.
 func (ms LogRecord) SetSpanID(v pcommon.SpanID) {
-	ms.getOrig().SpanId = v.Bytes()
+	ms.getOrig().SpanId = data.SpanID(v)
 }
 
-// FlagsStruct returns the flagsstruct associated with this LogRecord.
-func (ms LogRecord) FlagsStruct() LogRecordFlags {
+// Flags returns the flags associated with this LogRecord.
+func (ms LogRecord) Flags() LogRecordFlags {
 	return LogRecordFlags(ms.getOrig().Flags)
 }
 
-// SetFlagsStruct replaces the flagsstruct associated with this LogRecord.
-func (ms LogRecord) SetFlagsStruct(v LogRecordFlags) {
+// SetFlags replaces the flags associated with this LogRecord.
+func (ms LogRecord) SetFlags(v LogRecordFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -689,13 +690,13 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.SetObservedTimestamp(ms.ObservedTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
-	dest.SetFlagsStruct(ms.FlagsStruct())
+	dest.SetFlags(ms.Flags())
 	dest.SetSeverityText(ms.SeverityText())
 	dest.SetSeverityNumber(ms.SeverityNumber())
 	ms.Body().CopyTo(dest.Body())

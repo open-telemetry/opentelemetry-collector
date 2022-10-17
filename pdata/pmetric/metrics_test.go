@@ -35,25 +35,32 @@ const (
 	endTime   = uint64(12578940000000054321)
 )
 
-func TestMetricDataTypeString(t *testing.T) {
-	assert.Equal(t, "None", MetricDataTypeNone.String())
-	assert.Equal(t, "Gauge", MetricDataTypeGauge.String())
-	assert.Equal(t, "Sum", MetricDataTypeSum.String())
-	assert.Equal(t, "Histogram", MetricDataTypeHistogram.String())
-	assert.Equal(t, "ExponentialHistogram", MetricDataTypeExponentialHistogram.String())
-	assert.Equal(t, "Summary", MetricDataTypeSummary.String())
-	assert.Equal(t, "", (MetricDataTypeSummary + 1).String())
+func TestMetricTypeString(t *testing.T) {
+	assert.Equal(t, "Empty", MetricTypeEmpty.String())
+	assert.Equal(t, "Gauge", MetricTypeGauge.String())
+	assert.Equal(t, "Sum", MetricTypeSum.String())
+	assert.Equal(t, "Histogram", MetricTypeHistogram.String())
+	assert.Equal(t, "ExponentialHistogram", MetricTypeExponentialHistogram.String())
+	assert.Equal(t, "Summary", MetricTypeSummary.String())
+	assert.Equal(t, "", (MetricTypeSummary + 1).String())
+}
+
+func TestAggregationTemporalityString(t *testing.T) {
+	assert.Equal(t, "Unspecified", AggregationTemporalityUnspecified.String())
+	assert.Equal(t, "Delta", AggregationTemporalityDelta.String())
+	assert.Equal(t, "Cumulative", AggregationTemporalityCumulative.String())
+	assert.Equal(t, "", (AggregationTemporalityCumulative + 1).String())
 }
 
 func TestNumberDataPointValueTypeString(t *testing.T) {
-	assert.Equal(t, "None", NumberDataPointValueTypeNone.String())
+	assert.Equal(t, "Empty", NumberDataPointValueTypeEmpty.String())
 	assert.Equal(t, "Int", NumberDataPointValueTypeInt.String())
 	assert.Equal(t, "Double", NumberDataPointValueTypeDouble.String())
 	assert.Equal(t, "", (NumberDataPointValueTypeDouble + 1).String())
 }
 
 func TestExemplarValueTypeString(t *testing.T) {
-	assert.Equal(t, "None", ExemplarValueTypeNone.String())
+	assert.Equal(t, "Empty", ExemplarValueTypeEmpty.String())
 	assert.Equal(t, "Int", ExemplarValueTypeInt.String())
 	assert.Equal(t, "Double", ExemplarValueTypeDouble.String())
 	assert.Equal(t, "", (ExemplarValueTypeDouble + 1).String())
@@ -142,8 +149,7 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	ilms.At(0).Metrics().AppendEmpty()
 	dps = md.DataPointCount()
 	assert.EqualValues(t, 0, dps)
-	ilms.At(0).Metrics().At(0).SetDataType(MetricDataTypeSum)
-	intSum := ilms.At(0).Metrics().At(0).Sum()
+	intSum := ilms.At(0).Metrics().At(0).SetEmptySum()
 	intSum.DataPoints().AppendEmpty()
 	intSum.DataPoints().AppendEmpty()
 	intSum.DataPoints().AppendEmpty()
@@ -162,24 +168,19 @@ func TestMetricAndDataPointCount(t *testing.T) {
 	}
 	assert.EqualValues(t, 0, md.DataPointCount())
 
-	ilm.At(0).SetDataType(MetricDataTypeGauge)
-	ilm.At(0).Gauge().DataPoints().AppendEmpty()
+	ilm.At(0).SetEmptyGauge().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 1, md.DataPointCount())
 
-	ilm.At(1).SetDataType(MetricDataTypeSum)
-	ilm.At(1).Sum().DataPoints().AppendEmpty()
+	ilm.At(1).SetEmptySum().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 2, md.DataPointCount())
 
-	ilm.At(2).SetDataType(MetricDataTypeHistogram)
-	ilm.At(2).Histogram().DataPoints().AppendEmpty()
+	ilm.At(2).SetEmptyHistogram().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 3, md.DataPointCount())
 
-	ilm.At(3).SetDataType(MetricDataTypeExponentialHistogram)
-	ilm.At(3).ExponentialHistogram().DataPoints().AppendEmpty()
+	ilm.At(3).SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 4, md.DataPointCount())
 
-	ilm.At(4).SetDataType(MetricDataTypeSummary)
-	ilm.At(4).Summary().DataPoints().AppendEmpty()
+	ilm.At(4).SetEmptySummary().DataPoints().AppendEmpty()
 	assert.EqualValues(t, 5, md.DataPointCount())
 }
 
@@ -193,12 +194,11 @@ func TestDataPointCountWithEmpty(t *testing.T) {
 func TestDataPointCountWithNilDataPoints(t *testing.T) {
 	metrics := NewMetrics()
 	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	doubleGauge := ilm.Metrics().AppendEmpty()
-	doubleGauge.SetDataType(MetricDataTypeGauge)
-	doubleHistogram := ilm.Metrics().AppendEmpty()
-	doubleHistogram.SetDataType(MetricDataTypeHistogram)
-	doubleSum := ilm.Metrics().AppendEmpty()
-	doubleSum.SetDataType(MetricDataTypeSum)
+	ilm.Metrics().AppendEmpty().SetEmptyGauge()
+	ilm.Metrics().AppendEmpty().SetEmptySum()
+	ilm.Metrics().AppendEmpty().SetEmptyHistogram()
+	ilm.Metrics().AppendEmpty().SetEmptyExponentialHistogram()
+	ilm.Metrics().AppendEmpty().SetEmptySummary()
 	assert.EqualValues(t, 0, metrics.DataPointCount())
 }
 
@@ -206,8 +206,7 @@ func TestHistogramWithNilSum(t *testing.T) {
 	metrics := NewMetrics()
 	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	histo := ilm.Metrics().AppendEmpty()
-	histo.SetDataType(MetricDataTypeHistogram)
-	histogramDataPoints := histo.Histogram().DataPoints()
+	histogramDataPoints := histo.SetEmptyHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	dest := ilm.Metrics().AppendEmpty()
 	histo.CopyTo(dest)
@@ -218,8 +217,7 @@ func TestHistogramWithValidSum(t *testing.T) {
 	metrics := NewMetrics()
 	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	histo := ilm.Metrics().AppendEmpty()
-	histo.SetDataType(MetricDataTypeHistogram)
-	histogramDataPoints := histo.Histogram().DataPoints()
+	histogramDataPoints := histo.SetEmptyHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	histogramDataPoints.At(0).SetSum(10)
 	dest := ilm.Metrics().AppendEmpty()
@@ -254,9 +252,9 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, 1, resourceMetrics.Len())
 
 	resourceMetric := resourceMetrics.At(0)
-	assert.EqualValues(t, pcommon.NewMapFromRaw(map[string]interface{}{
+	assert.EqualValues(t, map[string]interface{}{
 		"string": "string-resource",
-	}), resourceMetric.Resource().Attributes())
+	}, resourceMetric.Resource().Attributes().AsRaw())
 	metrics := resourceMetric.ScopeMetrics().At(0).Metrics()
 	assert.EqualValues(t, 3, metrics.Len())
 
@@ -265,62 +263,62 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 	assert.EqualValues(t, "my_metric_int", metricInt.Name())
 	assert.EqualValues(t, "My metric", metricInt.Description())
 	assert.EqualValues(t, "ms", metricInt.Unit())
-	assert.EqualValues(t, MetricDataTypeGauge, metricInt.DataType())
+	assert.EqualValues(t, MetricTypeGauge, metricInt.Type())
 	gaugeDataPoints := metricInt.Gauge().DataPoints()
 	assert.EqualValues(t, 2, gaugeDataPoints.Len())
 	// First point
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(0).Timestamp())
-	assert.EqualValues(t, 123.1, gaugeDataPoints.At(0).DoubleVal())
-	assert.EqualValues(t, pcommon.NewMapFromRaw(map[string]interface{}{"key0": "value0"}), gaugeDataPoints.At(0).Attributes())
+	assert.EqualValues(t, 123.1, gaugeDataPoints.At(0).DoubleValue())
+	assert.EqualValues(t, map[string]interface{}{"key0": "value0"}, gaugeDataPoints.At(0).Attributes().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, gaugeDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, gaugeDataPoints.At(1).Timestamp())
-	assert.EqualValues(t, 456.1, gaugeDataPoints.At(1).DoubleVal())
-	assert.EqualValues(t, pcommon.NewMapFromRaw(map[string]interface{}{"key1": "value1"}), gaugeDataPoints.At(1).Attributes())
+	assert.EqualValues(t, 456.1, gaugeDataPoints.At(1).DoubleValue())
+	assert.EqualValues(t, map[string]interface{}{"key1": "value1"}, gaugeDataPoints.At(1).Attributes().AsRaw())
 
 	// Check double metric
 	metricDouble := metrics.At(1)
 	assert.EqualValues(t, "my_metric_double", metricDouble.Name())
 	assert.EqualValues(t, "My metric", metricDouble.Description())
 	assert.EqualValues(t, "ms", metricDouble.Unit())
-	assert.EqualValues(t, MetricDataTypeSum, metricDouble.DataType())
+	assert.EqualValues(t, MetricTypeSum, metricDouble.Type())
 	dsd := metricDouble.Sum()
-	assert.EqualValues(t, MetricAggregationTemporalityCumulative, dsd.AggregationTemporality())
+	assert.EqualValues(t, AggregationTemporalityCumulative, dsd.AggregationTemporality())
 	sumDataPoints := dsd.DataPoints()
 	assert.EqualValues(t, 2, sumDataPoints.Len())
 	// First point
 	assert.EqualValues(t, startTime, sumDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(0).Timestamp())
-	assert.EqualValues(t, 123.1, sumDataPoints.At(0).DoubleVal())
-	assert.EqualValues(t, pcommon.NewMapFromRaw(map[string]interface{}{"key0": "value0"}), sumDataPoints.At(0).Attributes())
+	assert.EqualValues(t, 123.1, sumDataPoints.At(0).DoubleValue())
+	assert.EqualValues(t, map[string]interface{}{"key0": "value0"}, sumDataPoints.At(0).Attributes().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, sumDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, sumDataPoints.At(1).Timestamp())
-	assert.EqualValues(t, 456.1, sumDataPoints.At(1).DoubleVal())
-	assert.EqualValues(t, pcommon.NewMapFromRaw(map[string]interface{}{"key1": "value1"}), sumDataPoints.At(1).Attributes())
+	assert.EqualValues(t, 456.1, sumDataPoints.At(1).DoubleValue())
+	assert.EqualValues(t, map[string]interface{}{"key1": "value1"}, sumDataPoints.At(1).Attributes().AsRaw())
 
 	// Check histogram metric
 	metricHistogram := metrics.At(2)
 	assert.EqualValues(t, "my_metric_histogram", metricHistogram.Name())
 	assert.EqualValues(t, "My metric", metricHistogram.Description())
 	assert.EqualValues(t, "ms", metricHistogram.Unit())
-	assert.EqualValues(t, MetricDataTypeHistogram, metricHistogram.DataType())
+	assert.EqualValues(t, MetricTypeHistogram, metricHistogram.Type())
 	dhd := metricHistogram.Histogram()
-	assert.EqualValues(t, MetricAggregationTemporalityDelta, dhd.AggregationTemporality())
+	assert.EqualValues(t, AggregationTemporalityDelta, dhd.AggregationTemporality())
 	histogramDataPoints := dhd.DataPoints()
 	assert.EqualValues(t, 2, histogramDataPoints.Len())
 	// First point
 	assert.EqualValues(t, startTime, histogramDataPoints.At(0).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(0).Timestamp())
 	assert.EqualValues(t, []float64{1, 2}, histogramDataPoints.At(0).ExplicitBounds().AsRaw())
-	assert.EqualValues(t, pcommon.NewMapFromRaw(map[string]interface{}{"key0": "value0"}), histogramDataPoints.At(0).Attributes())
+	assert.EqualValues(t, map[string]interface{}{"key0": "value0"}, histogramDataPoints.At(0).Attributes().AsRaw())
 	assert.EqualValues(t, []uint64{10, 15, 1}, histogramDataPoints.At(0).BucketCounts().AsRaw())
 	// Second point
 	assert.EqualValues(t, startTime, histogramDataPoints.At(1).StartTimestamp())
 	assert.EqualValues(t, endTime, histogramDataPoints.At(1).Timestamp())
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(1).ExplicitBounds().AsRaw())
-	assert.EqualValues(t, pcommon.NewMapFromRaw(map[string]interface{}{"key1": "value1"}), histogramDataPoints.At(1).Attributes())
+	assert.EqualValues(t, map[string]interface{}{"key1": "value1"}, histogramDataPoints.At(1).Attributes().AsRaw())
 	assert.EqualValues(t, []uint64{10, 1}, histogramDataPoints.At(1).BucketCounts().AsRaw())
 }
 
@@ -355,7 +353,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 }
 
 func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
-	newAttributes := pcommon.NewMapFromRaw(map[string]interface{}{"k": "v"})
+	newAttributes := map[string]interface{}{"k": "v"}
 
 	md := newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -382,19 +380,18 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 	// Mutate DataPoints
 	igd := metric.Gauge()
 	assert.EqualValues(t, 2, igd.DataPoints().Len())
-	metric.SetDataType(MetricDataTypeGauge)
-	gaugeDataPoints := metric.Gauge().DataPoints()
+	gaugeDataPoints := metric.SetEmptyGauge().DataPoints()
 	gaugeDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, gaugeDataPoints.Len())
 	gaugeDataPoints.At(0).SetStartTimestamp(pcommon.Timestamp(startTime + 1))
 	assert.EqualValues(t, startTime+1, gaugeDataPoints.At(0).StartTimestamp())
 	gaugeDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, gaugeDataPoints.At(0).Timestamp())
-	gaugeDataPoints.At(0).SetDoubleVal(124.1)
-	assert.EqualValues(t, 124.1, gaugeDataPoints.At(0).DoubleVal())
+	gaugeDataPoints.At(0).SetDoubleValue(124.1)
+	assert.EqualValues(t, 124.1, gaugeDataPoints.At(0).DoubleValue())
 	gaugeDataPoints.At(0).Attributes().Remove("key0")
-	gaugeDataPoints.At(0).Attributes().UpsertString("k", "v")
-	assert.EqualValues(t, newAttributes, gaugeDataPoints.At(0).Attributes())
+	gaugeDataPoints.At(0).Attributes().PutStr("k", "v")
+	assert.EqualValues(t, newAttributes, gaugeDataPoints.At(0).Attributes().AsRaw())
 
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
@@ -438,7 +435,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalSumMutating(t *testing.T) {
-	newAttributes := pcommon.NewMapFromRaw(map[string]interface{}{"k": "v"})
+	newAttributes := map[string]interface{}{"k": "v"}
 
 	md := newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -465,20 +462,19 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 	// Mutate DataPoints
 	dsd := metric.Sum()
 	assert.EqualValues(t, 2, dsd.DataPoints().Len())
-	metric.SetDataType(MetricDataTypeSum)
+	metric.SetEmptySum().SetAggregationTemporality(AggregationTemporalityCumulative)
 	doubleDataPoints := metric.Sum().DataPoints()
-	metric.Sum().SetAggregationTemporality(MetricAggregationTemporalityCumulative)
 	doubleDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, doubleDataPoints.Len())
 	doubleDataPoints.At(0).SetStartTimestamp(pcommon.Timestamp(startTime + 1))
 	assert.EqualValues(t, startTime+1, doubleDataPoints.At(0).StartTimestamp())
 	doubleDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, doubleDataPoints.At(0).Timestamp())
-	doubleDataPoints.At(0).SetDoubleVal(124.1)
-	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).DoubleVal())
+	doubleDataPoints.At(0).SetDoubleValue(124.1)
+	assert.EqualValues(t, 124.1, doubleDataPoints.At(0).DoubleValue())
 	doubleDataPoints.At(0).Attributes().Remove("key0")
-	doubleDataPoints.At(0).Attributes().UpsertString("k", "v")
-	assert.EqualValues(t, newAttributes, doubleDataPoints.At(0).Attributes())
+	doubleDataPoints.At(0).Attributes().PutStr("k", "v")
+	assert.EqualValues(t, newAttributes, doubleDataPoints.At(0).Attributes().AsRaw())
 
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
@@ -523,7 +519,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
-	newAttributes := pcommon.NewMapFromRaw(map[string]interface{}{"k": "v"})
+	newAttributes := map[string]interface{}{"k": "v"}
 
 	md := newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -550,8 +546,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	// Mutate DataPoints
 	dhd := metric.Histogram()
 	assert.EqualValues(t, 2, dhd.DataPoints().Len())
-	metric.SetDataType(MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
+	metric.SetEmptyHistogram().SetAggregationTemporality(AggregationTemporalityDelta)
 	histogramDataPoints := metric.Histogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, histogramDataPoints.Len())
@@ -560,11 +555,11 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 	histogramDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
 	histogramDataPoints.At(0).Attributes().Remove("key0")
-	histogramDataPoints.At(0).Attributes().UpsertString("k", "v")
-	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes())
-	histogramDataPoints.At(0).SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1}))
+	histogramDataPoints.At(0).Attributes().PutStr("k", "v")
+	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes().AsRaw())
+	histogramDataPoints.At(0).ExplicitBounds().FromRaw([]float64{1})
 	assert.EqualValues(t, []float64{1}, histogramDataPoints.At(0).ExplicitBounds().AsRaw())
-	histogramDataPoints.At(0).SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{21, 32}))
+	histogramDataPoints.At(0).BucketCounts().FromRaw([]uint64{21, 32})
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -607,7 +602,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 }
 
 func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
-	newAttributes := pcommon.NewMapFromRaw(map[string]interface{}{"k": "v"})
+	newAttributes := map[string]interface{}{"k": "v"}
 
 	md := newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -634,8 +629,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	// Mutate DataPoints
 	dhd := metric.Histogram()
 	assert.EqualValues(t, 2, dhd.DataPoints().Len())
-	metric.SetDataType(MetricDataTypeExponentialHistogram)
-	metric.ExponentialHistogram().SetAggregationTemporality(MetricAggregationTemporalityDelta)
+	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(AggregationTemporalityDelta)
 	histogramDataPoints := metric.ExponentialHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
 	assert.EqualValues(t, 1, histogramDataPoints.Len())
@@ -644,8 +638,8 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	histogramDataPoints.At(0).SetTimestamp(pcommon.Timestamp(endTime + 1))
 	assert.EqualValues(t, endTime+1, histogramDataPoints.At(0).Timestamp())
 	histogramDataPoints.At(0).Attributes().Remove("key0")
-	histogramDataPoints.At(0).Attributes().UpsertString("k", "v")
-	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes())
+	histogramDataPoints.At(0).Attributes().PutStr("k", "v")
+	assert.EqualValues(t, newAttributes, histogramDataPoints.At(0).Attributes().AsRaw())
 	// Test that everything is updated.
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -685,52 +679,12 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 	}, md.getOrig())
 }
 
-func TestMetricsClone(t *testing.T) {
+func TestMetricsCopyTo(t *testing.T) {
 	metrics := NewMetrics()
 	internal.FillTestResourceMetricsSlice(internal.ResourceMetricsSlice(metrics.ResourceMetrics()))
-	assert.EqualValues(t, metrics, metrics.Clone())
-}
-
-func TestMetricDataPointFlags(t *testing.T) {
-	flags := MetricDataPointFlags(internal.GenerateTestMetricDataPointFlags())
-	assert.False(t, flags.NoRecordedValue())
-	assert.Equal(t, uint32(0), flags.AsRaw())
-	flags.SetNoRecordedValue(true)
-	assert.True(t, flags.NoRecordedValue())
-	assert.Equal(t, uint32(1), flags.AsRaw())
-
-	flags.SetNoRecordedValue(false)
-	flags.SetNoRecordedValue(false)
-	assert.False(t, flags.NoRecordedValue())
-	assert.Equal(t, uint32(0), flags.AsRaw())
-
-	flags.SetNoRecordedValue(true)
-	flags.SetNoRecordedValue(true)
-	assert.True(t, flags.NoRecordedValue())
-	assert.Equal(t, uint32(1), flags.AsRaw())
-
-	moveFlags := NewMetricDataPointFlags()
-	assert.False(t, moveFlags.NoRecordedValue())
-
-	flags.MoveTo(moveFlags)
-	assert.False(t, flags.NoRecordedValue())
-	assert.True(t, moveFlags.NoRecordedValue())
-
-	moveFlags.CopyTo(flags)
-	assert.True(t, flags.NoRecordedValue())
-	assert.True(t, moveFlags.NoRecordedValue())
-}
-
-func BenchmarkMetricsClone(b *testing.B) {
-	metrics := NewMetrics()
-	internal.FillTestResourceMetricsSlice(internal.ResourceMetricsSlice(metrics.ResourceMetrics()))
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		clone := metrics.Clone()
-		if clone.ResourceMetrics().Len() != metrics.ResourceMetrics().Len() {
-			b.Fail()
-		}
-	}
+	metricsCopy := NewMetrics()
+	metrics.CopyTo(metricsCopy)
+	assert.EqualValues(t, metrics, metricsCopy)
 }
 
 func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
@@ -776,7 +730,8 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := newMetrics(req)
-		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
+		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().
+			PutStr("key0", "value2")
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -802,7 +757,8 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := newMetrics(req)
-		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
+		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().
+			PutStr("key0", "value2")
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -828,7 +784,8 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		md := newMetrics(req)
-		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().UpsertString("key0", "value2")
+		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().
+			PutStr("key0", "value2")
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()

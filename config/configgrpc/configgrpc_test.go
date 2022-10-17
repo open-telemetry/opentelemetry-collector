@@ -566,7 +566,7 @@ func TestHttpReception(t *testing.T) {
 			opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 			s := grpc.NewServer(opts...)
-			ptraceotlp.RegisterServer(s, &grpcTraceServer{})
+			ptraceotlp.RegisterGRPCServer(s, &grpcTraceServer{})
 
 			go func() {
 				_ = s.Serve(ln)
@@ -615,7 +615,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	s := grpc.NewServer(opts...)
-	ptraceotlp.RegisterServer(s, &grpcTraceServer{})
+	ptraceotlp.RegisterGRPCServer(s, &grpcTraceServer{})
 
 	go func() {
 		_ = s.Serve(ln)
@@ -782,13 +782,13 @@ func (ms *mockedStream) Context() context.Context {
 func TestClientInfoInterceptors(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		tester func(context.Context, ptraceotlp.Client)
+		tester func(context.Context, ptraceotlp.GRPCClient)
 	}{
 		{
 			// we only have unary services, we don't have any clients we could use
 			// to test with streaming services
 			desc: "unary",
-			tester: func(ctx context.Context, cl ptraceotlp.Client) {
+			tester: func(ctx context.Context, cl ptraceotlp.GRPCClient) {
 				resp, errResp := cl.Export(ctx, ptraceotlp.NewRequest())
 				require.NoError(t, errResp)
 				require.NotNil(t, resp)
@@ -811,7 +811,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 				opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 				require.NoError(t, err)
 				srv := grpc.NewServer(opts...)
-				ptraceotlp.RegisterServer(srv, mock)
+				ptraceotlp.RegisterGRPCServer(srv, mock)
 
 				defer srv.Stop()
 

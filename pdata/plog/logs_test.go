@@ -126,20 +126,10 @@ func TestLogsMoveTo(t *testing.T) {
 	assert.EqualValues(t, ResourceLogsSlice(internal.GenerateTestResourceLogsSlice()), dest.ResourceLogs())
 }
 
-func TestLogsClone(t *testing.T) {
+func TestLogsCopyTo(t *testing.T) {
 	logs := NewLogs()
 	internal.FillTestResourceLogsSlice(internal.ResourceLogsSlice(logs.ResourceLogs()))
-	assert.EqualValues(t, logs, logs.Clone())
-}
-
-func BenchmarkLogsClone(b *testing.B) {
-	logs := NewLogs()
-	internal.FillTestResourceLogsSlice(internal.ResourceLogsSlice(logs.ResourceLogs()))
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		clone := logs.Clone()
-		if clone.ResourceLogs().Len() != logs.ResourceLogs().Len() {
-			b.Fail()
-		}
-	}
+	logsCopy := NewLogs()
+	logs.CopyTo(logsCopy)
+	assert.EqualValues(t, logs, logsCopy)
 }

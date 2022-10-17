@@ -37,18 +37,16 @@ func NewTraces() Traces {
 	return newTraces(&otlpcollectortrace.ExportTraceServiceRequest{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Traces instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Traces) MoveTo(dest Traces) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcollectortrace.ExportTraceServiceRequest{}
 }
 
-// Clone returns a copy of Traces.
-func (ms Traces) Clone() Traces {
-	cloneTd := NewTraces()
-	ms.ResourceSpans().CopyTo(cloneTd.ResourceSpans())
-	return cloneTd
+// CopyTo copies the Traces instance overriding the destination.
+func (ms Traces) CopyTo(dest Traces) {
+	ms.ResourceSpans().CopyTo(dest.ResourceSpans())
 }
 
 // SpanCount calculates the total number of spans.
@@ -69,14 +67,6 @@ func (ms Traces) SpanCount() int {
 func (ms Traces) ResourceSpans() ResourceSpansSlice {
 	return newResourceSpansSlice(&ms.getOrig().ResourceSpans)
 }
-
-// TraceState is a string representing the tracestate in w3c-trace-context format: https://www.w3.org/TR/trace-context/#tracestate-header
-type TraceState string
-
-const (
-	// TraceStateEmpty represents the empty TraceState.
-	TraceStateEmpty TraceState = ""
-)
 
 // SpanKind is the type of span. Can be used to specify additional relationships between spans
 // in addition to a parent/child relationship.

@@ -18,17 +18,15 @@ import (
 	"testing"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 
-	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var tracesOTLP = func() Traces {
 	td := NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().UpsertString("host.name", "testHost")
+	rs.Resource().Attributes().PutStr("host.name", "testHost")
 	il := rs.ScopeSpans().AppendEmpty()
 	il.Scope().SetName("name")
 	il.Scope().SetVersion("version")
@@ -59,15 +57,15 @@ func TestTracesJSON_Marshal(t *testing.T) {
 }
 
 var tracesOTLPFull = func() Traces {
-	traceID := pcommon.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-	spanID := pcommon.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+	traceID := pcommon.TraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 	td := NewTraces()
 	// Add ResourceSpans.
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.SetSchemaUrl("schemaURL")
 	// Add resource.
-	rs.Resource().Attributes().UpsertString("host.name", "testHost")
-	rs.Resource().Attributes().UpsertString("service.name", "testService")
+	rs.Resource().Attributes().PutStr("host.name", "testHost")
+	rs.Resource().Attributes().PutStr("service.name", "testService")
 	rs.Resource().SetDroppedAttributesCount(1)
 	// Add ScopeSpans.
 	il := rs.ScopeSpans().AppendEmpty()
@@ -86,42 +84,42 @@ var tracesOTLPFull = func() Traces {
 	sp.SetDroppedLinksCount(1)
 	sp.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	sp.SetParentSpanID(spanID)
-	sp.SetTraceState("state")
+	sp.TraceState().FromRaw("state")
 	sp.Status().SetCode(StatusCodeOk)
 	sp.Status().SetMessage("message")
 	// Add attributes.
-	sp.Attributes().UpsertString("string", "value")
-	sp.Attributes().UpsertBool("bool", true)
-	sp.Attributes().UpsertInt("int", 1)
-	sp.Attributes().UpsertDouble("double", 1.1)
-	sp.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
-	arr := sp.Attributes().UpsertEmptySlice("array")
-	arr.AppendEmpty().SetIntVal(1)
-	arr.AppendEmpty().SetStringVal("str")
-	kvList := sp.Attributes().UpsertEmptyMap("kvList")
-	kvList.UpsertInt("int", 1)
-	kvList.UpsertString("string", "string")
+	sp.Attributes().PutStr("string", "value")
+	sp.Attributes().PutBool("bool", true)
+	sp.Attributes().PutInt("int", 1)
+	sp.Attributes().PutDouble("double", 1.1)
+	sp.Attributes().PutEmptyBytes("bytes").FromRaw([]byte("foo"))
+	arr := sp.Attributes().PutEmptySlice("array")
+	arr.AppendEmpty().SetInt(1)
+	arr.AppendEmpty().SetStr("str")
+	kvList := sp.Attributes().PutEmptyMap("kvList")
+	kvList.PutInt("int", 1)
+	kvList.PutStr("string", "string")
 	// Add events.
 	event := sp.Events().AppendEmpty()
 	event.SetName("eventName")
 	event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	event.SetDroppedAttributesCount(1)
-	event.Attributes().UpsertString("string", "value")
-	event.Attributes().UpsertBool("bool", true)
-	event.Attributes().UpsertInt("int", 1)
-	event.Attributes().UpsertDouble("double", 1.1)
-	event.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
+	event.Attributes().PutStr("string", "value")
+	event.Attributes().PutBool("bool", true)
+	event.Attributes().PutInt("int", 1)
+	event.Attributes().PutDouble("double", 1.1)
+	event.Attributes().PutEmptyBytes("bytes").FromRaw([]byte("foo"))
 	// Add links.
 	link := sp.Links().AppendEmpty()
-	link.SetTraceState("state")
+	link.TraceState().FromRaw("state")
 	link.SetTraceID(traceID)
 	link.SetSpanID(spanID)
 	link.SetDroppedAttributesCount(1)
-	link.Attributes().UpsertString("string", "value")
-	link.Attributes().UpsertBool("bool", true)
-	link.Attributes().UpsertInt("int", 1)
-	link.Attributes().UpsertDouble("double", 1.1)
-	link.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("foo")))
+	link.Attributes().PutStr("string", "value")
+	link.Attributes().PutBool("bool", true)
+	link.Attributes().PutInt("int", 1)
+	link.Attributes().PutDouble("double", 1.1)
+	link.Attributes().PutEmptyBytes("bytes").FromRaw([]byte("foo"))
 	// Add another span.
 	sp2 := il.Spans().AppendEmpty()
 	sp2.SetName("testSpan2")
@@ -154,126 +152,4 @@ func BenchmarkJSONUnmarshal(b *testing.B) {
 			assert.NoError(b, err)
 		}
 	})
-}
-
-func TestReadTraceDataUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readTraceData(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, otlptrace.TracesData{}, val)
-}
-
-func TestReadResourceSpansUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readResourceSpans(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
-}
-
-func TestReadResourceSpansUnknownResourceField(t *testing.T) {
-	jsonStr := `{"resource":{"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readResourceSpans(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
-}
-
-func TestReadScopeSpansUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readScopeSpans(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.ScopeSpans{}, val)
-}
-
-func TestReadSpanUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readSpan(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.Span{}, val)
-}
-
-func TestReadSpanUnknownStatusField(t *testing.T) {
-	jsonStr := `{"status":{"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readSpan(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.Span{}, val)
-}
-
-func TestReadSpanInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse trace_id")
-	}
-}
-
-func TestReadSpanInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse span_id")
-	}
-}
-
-func TestReadSpanInvalidParentSpanIDField(t *testing.T) {
-	jsonStr := `{"parent_span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpan(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse parent_span_id")
-	}
-}
-
-func TestReadSpanLinkUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readSpanLink(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.Span_Link{}, val)
-}
-
-func TestReadSpanLinkInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpanLink(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse trace_id")
-	}
-}
-
-func TestReadSpanLinkInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	readSpanLink(iter)
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "parse span_id")
-	}
-}
-
-func TestReadSpanEventUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	val := readSpanEvent(iter)
-	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.Span_Event{}, val)
 }

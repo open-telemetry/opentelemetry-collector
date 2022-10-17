@@ -54,10 +54,3 @@ func unmarshalJSON(dst []byte, src []byte) error {
 	}
 	return nil
 }
-
-func marshalBytes(dst []byte, src []byte) (n int, err error) {
-	if len(dst) < len(src) {
-		return 0, errors.New("buffer is too short")
-	}
-	return copy(dst, src), nil
-}

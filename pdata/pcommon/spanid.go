@@ -19,27 +19,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 )
 
-// EmptySpanID represents the empty (all zero bytes) SpanID.
-var EmptySpanID = NewSpanID([8]byte{})
+var emptySpanID = SpanID([8]byte{})
 
 // SpanID is span identifier.
-type SpanID struct {
-	orig [8]byte
-}
+type SpanID [8]byte
 
-// Deprecated: [v0.59.0] use EmptySpanID.
-func InvalidSpanID() SpanID {
-	return EmptySpanID
-}
-
-// NewSpanID returns a new SpanID from the given byte array.
-func NewSpanID(bytes [8]byte) SpanID {
-	return SpanID{orig: bytes}
-}
-
-// Bytes returns the byte array representation of the SpanID.
-func (ms SpanID) Bytes() [8]byte {
-	return ms.orig
+// NewSpanIDEmpty returns a new empty (all zero bytes) SpanID.
+func NewSpanIDEmpty() SpanID {
+	return emptySpanID
 }
 
 // HexString returns hex representation of the SpanID.
@@ -47,10 +34,10 @@ func (ms SpanID) HexString() string {
 	if ms.IsEmpty() {
 		return ""
 	}
-	return hex.EncodeToString(ms.orig[:])
+	return hex.EncodeToString(ms[:])
 }
 
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (ms SpanID) IsEmpty() bool {
-	return data.SpanID(ms.orig).IsEmpty()
+	return data.SpanID(ms).IsEmpty()
 }

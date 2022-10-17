@@ -202,7 +202,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	assert.Equal(t, 1, gaugeDouble.Gauge().DataPoints().Len())
 	assert.Equal(t, "test-metric-int-0-1", gaugeDouble.Name())
 	assert.Equal(t, 1, sumInt.Sum().DataPoints().Len())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, sumInt.Sum().AggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, sumInt.Sum().AggregationTemporality())
 	assert.Equal(t, true, sumInt.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-2", sumInt.Name())
 
@@ -212,11 +212,11 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	sumInt = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	sumDouble := split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1)
 	assert.Equal(t, 1, sumInt.Sum().DataPoints().Len())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, sumInt.Sum().AggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, sumInt.Sum().AggregationTemporality())
 	assert.Equal(t, true, sumInt.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-2", sumInt.Name())
 	assert.Equal(t, 1, sumDouble.Sum().DataPoints().Len())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, sumDouble.Sum().AggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, sumDouble.Sum().AggregationTemporality())
 	assert.Equal(t, true, sumDouble.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-3", sumDouble.Name())
 
@@ -226,11 +226,11 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	sumDouble = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	histogram := split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1)
 	assert.Equal(t, 1, sumDouble.Sum().DataPoints().Len())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, sumDouble.Sum().AggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, sumDouble.Sum().AggregationTemporality())
 	assert.Equal(t, true, sumDouble.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-3", sumDouble.Name())
 	assert.Equal(t, 1, histogram.Histogram().DataPoints().Len())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, histogram.Histogram().AggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, histogram.Histogram().AggregationTemporality())
 	assert.Equal(t, "test-metric-int-0-4", histogram.Name())
 
 	split = splitMetrics(splitSize, md)
@@ -239,10 +239,10 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	histogram = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	exponentialHistogram := split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1)
 	assert.Equal(t, 1, histogram.Histogram().DataPoints().Len())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, histogram.Histogram().AggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, histogram.Histogram().AggregationTemporality())
 	assert.Equal(t, "test-metric-int-0-4", histogram.Name())
 	assert.Equal(t, 1, exponentialHistogram.ExponentialHistogram().DataPoints().Len())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, exponentialHistogram.ExponentialHistogram().AggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, exponentialHistogram.ExponentialHistogram().AggregationTemporality())
 	assert.Equal(t, "test-metric-int-0-5", exponentialHistogram.Name())
 
 	split = splitMetrics(splitSize, md)
@@ -251,7 +251,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	exponentialHistogram = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	summary := split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1)
 	assert.Equal(t, 1, exponentialHistogram.ExponentialHistogram().DataPoints().Len())
-	assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, exponentialHistogram.ExponentialHistogram().AggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, exponentialHistogram.ExponentialHistogram().AggregationTemporality())
 	assert.Equal(t, "test-metric-int-0-5", exponentialHistogram.Name())
 	assert.Equal(t, 1, summary.Summary().DataPoints().Len())
 	assert.Equal(t, "test-metric-int-0-6", summary.Name())
@@ -324,35 +324,4 @@ func TestSplitMetricsMultipleILM(t *testing.T) {
 	assert.Equal(t, 20, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Name())
-}
-
-func BenchmarkSplitMetrics(b *testing.B) {
-	md := pmetric.NewMetrics()
-	rms := md.ResourceMetrics()
-	for i := 0; i < 20; i++ {
-		testdata.GenerateMetrics(20).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-		ms := rms.At(rms.Len() - 1).ScopeMetrics().At(0).Metrics()
-		for i := 0; i < ms.Len(); i++ {
-			ms.At(i).SetName(getTestMetricName(1, i))
-		}
-	}
-
-	if b.N > 100000 {
-		b.Skipf("SKIP: b.N too high, set -benchtime=<n>x with n < 100000")
-	}
-
-	dataPointCount := metricDPC(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
-	clones := make([]pmetric.Metrics, b.N)
-	for n := 0; n < b.N; n++ {
-		clones[n] = md.Clone()
-	}
-	b.ReportAllocs()
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		cloneReq := clones[n]
-		split := splitMetrics(128*dataPointCount, cloneReq)
-		if split.MetricCount() != 128 || cloneReq.MetricCount() != 400-128 {
-			b.Fail()
-		}
-	}
 }

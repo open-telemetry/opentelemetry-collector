@@ -66,9 +66,9 @@ func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
 				}
 
 				// If possible to move all points do that.
-				srcMetricDataPointCount := metricDPC(srcMetric)
-				if srcMetricDataPointCount+totalCopiedDataPoints <= size {
-					totalCopiedDataPoints += srcMetricDataPointCount
+				srcMetricPointCount := metricDPC(srcMetric)
+				if srcMetricPointCount+totalCopiedDataPoints <= size {
+					totalCopiedDataPoints += srcMetricPointCount
 					srcMetric.MoveTo(destIlm.Metrics().AppendEmpty())
 					return true
 				}
@@ -108,16 +108,16 @@ func scopeMetricsDPC(ilm pmetric.ScopeMetrics) int {
 
 // metricDPC calculates the total number of data points in the pmetric.Metric.
 func metricDPC(ms pmetric.Metric) int {
-	switch ms.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch ms.Type() {
+	case pmetric.MetricTypeGauge:
 		return ms.Gauge().DataPoints().Len()
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		return ms.Sum().DataPoints().Len()
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		return ms.Histogram().DataPoints().Len()
-	case pmetric.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
 		return ms.ExponentialHistogram().DataPoints().Len()
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		return ms.Summary().DataPoints().Len()
 	}
 	return 0
@@ -126,26 +126,28 @@ func metricDPC(ms pmetric.Metric) int {
 // splitMetric removes metric points from the input data and moves data of the specified size to destination.
 // Returns size of moved data and boolean describing, whether the metric should be removed from original slice.
 func splitMetric(ms, dest pmetric.Metric, size int) (int, bool) {
-	dest.SetDataType(ms.DataType())
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
 
-	switch ms.DataType() {
-	case pmetric.MetricDataTypeGauge:
-		return splitNumberDataPoints(ms.Gauge().DataPoints(), dest.Gauge().DataPoints(), size)
-	case pmetric.MetricDataTypeSum:
-		dest.Sum().SetAggregationTemporality(ms.Sum().AggregationTemporality())
-		dest.Sum().SetIsMonotonic(ms.Sum().IsMonotonic())
-		return splitNumberDataPoints(ms.Sum().DataPoints(), dest.Sum().DataPoints(), size)
-	case pmetric.MetricDataTypeHistogram:
-		dest.Histogram().SetAggregationTemporality(ms.Histogram().AggregationTemporality())
-		return splitHistogramDataPoints(ms.Histogram().DataPoints(), dest.Histogram().DataPoints(), size)
-	case pmetric.MetricDataTypeExponentialHistogram:
-		dest.ExponentialHistogram().SetAggregationTemporality(ms.ExponentialHistogram().AggregationTemporality())
-		return splitExponentialHistogramDataPoints(ms.ExponentialHistogram().DataPoints(), dest.ExponentialHistogram().DataPoints(), size)
-	case pmetric.MetricDataTypeSummary:
-		return splitSummaryDataPoints(ms.Summary().DataPoints(), dest.Summary().DataPoints(), size)
+	switch ms.Type() {
+	case pmetric.MetricTypeGauge:
+		return splitNumberDataPoints(ms.Gauge().DataPoints(), dest.SetEmptyGauge().DataPoints(), size)
+	case pmetric.MetricTypeSum:
+		destSum := dest.SetEmptySum()
+		destSum.SetAggregationTemporality(ms.Sum().AggregationTemporality())
+		destSum.SetIsMonotonic(ms.Sum().IsMonotonic())
+		return splitNumberDataPoints(ms.Sum().DataPoints(), destSum.DataPoints(), size)
+	case pmetric.MetricTypeHistogram:
+		destHistogram := dest.SetEmptyHistogram()
+		destHistogram.SetAggregationTemporality(ms.Histogram().AggregationTemporality())
+		return splitHistogramDataPoints(ms.Histogram().DataPoints(), destHistogram.DataPoints(), size)
+	case pmetric.MetricTypeExponentialHistogram:
+		destHistogram := dest.SetEmptyExponentialHistogram()
+		destHistogram.SetAggregationTemporality(ms.ExponentialHistogram().AggregationTemporality())
+		return splitExponentialHistogramDataPoints(ms.ExponentialHistogram().DataPoints(), destHistogram.DataPoints(), size)
+	case pmetric.MetricTypeSummary:
+		return splitSummaryDataPoints(ms.Summary().DataPoints(), dest.SetEmptySummary().DataPoints(), size)
 	}
 	return size, false
 }

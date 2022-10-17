@@ -14,8 +14,8 @@
 
 package plog // import "go.opentelemetry.io/collector/pdata/plog"
 
-// MarshalerSizer is the interface that groups the basic Marshal and Size methods
-type MarshalerSizer interface {
+// MarshalSizer is the interface that groups the basic Marshal and Size methods
+type MarshalSizer interface {
 	Marshaler
 	Sizer
 }
