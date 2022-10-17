@@ -447,7 +447,7 @@ crosslink:
 chlog-install:
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
 
-FILENAME?=$(shell git branch --show-current)
+FILENAME?=$(shell git branch --show-current).yaml
 .PHONY: chlog-new
 chlog-new: chlog-install
 	chloggen new --filename $(FILENAME)
