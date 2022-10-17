@@ -5,8 +5,8 @@ package main
 import (
 	"go.opentelemetry.io/collector/component"
 	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
-	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	otlpgrpcexporter "go.opentelemetry.io/collector/exporters/otlpgrpcexporter"
+	otlphttpexporter "go.opentelemetry.io/collector/exporters/otlphttpexporter"
 	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
 	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
 	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
