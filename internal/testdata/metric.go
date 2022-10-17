@@ -71,7 +71,7 @@ func GenerateMetricsAllTypesEmpty() pmetric.Metrics {
 
 func GenerateMetricsMetricTypeInvalid() pmetric.Metrics {
 	md := generateMetricsOneEmptyInstrumentationScope()
-	initMetric(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty(), TestSumIntMetricName, pmetric.MetricTypeNone)
+	initMetric(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty(), TestSumIntMetricName, pmetric.MetricTypeEmpty)
 	return md
 }
 

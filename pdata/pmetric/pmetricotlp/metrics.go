@@ -150,9 +150,6 @@ func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
 	otlpcollectormetrics.RegisterMetricsServiceServer(s, &rawMetricsServer{srv: srv})
 }
 
-// Deprecated: [0.62.0] Use RegisterGRPCServer instead
-var RegisterServer = RegisterGRPCServer
-
 type rawMetricsServer struct {
 	srv GRPCServer
 }

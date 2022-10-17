@@ -69,7 +69,7 @@ func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
 	return newResourceMetrics((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -192,7 +192,7 @@ func NewResourceMetrics() ResourceMetrics {
 	return newResourceMetrics(&otlpmetrics.ResourceMetrics{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
 	*dest.getOrig() = *ms.getOrig()
@@ -219,7 +219,7 @@ func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
 	return ScopeMetricsSlice(internal.NewScopeMetricsSlice(&ms.getOrig().ScopeMetrics))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -269,7 +269,7 @@ func (es ScopeMetricsSlice) At(ix int) ScopeMetrics {
 	return newScopeMetrics((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -392,7 +392,7 @@ func NewScopeMetrics() ScopeMetrics {
 	return newScopeMetrics(&otlpmetrics.ScopeMetrics{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
 	*dest.getOrig() = *ms.getOrig()
@@ -419,7 +419,7 @@ func (ms ScopeMetrics) Metrics() MetricSlice {
 	return MetricSlice(internal.NewMetricSlice(&ms.getOrig().Metrics))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeMetrics) CopyTo(dest ScopeMetrics) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -469,7 +469,7 @@ func (es MetricSlice) At(ix int) Metric {
 	return newMetric((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es MetricSlice) CopyTo(dest MetricSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -593,7 +593,7 @@ func NewMetric() Metric {
 	return newMetric(&otlpmetrics.Metric{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Metric) MoveTo(dest Metric) {
 	*dest.getOrig() = *ms.getOrig()
@@ -645,7 +645,7 @@ func (ms Metric) Type() MetricType {
 	case *otlpmetrics.Metric_Summary:
 		return MetricTypeSummary
 	}
-	return MetricTypeNone
+	return MetricTypeEmpty
 }
 
 // Gauge returns the gauge associated with this Metric.
@@ -773,7 +773,7 @@ func (ms Metric) SetEmptySummary() Summary {
 	return newSummary(val)
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Metric) CopyTo(dest Metric) {
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
@@ -819,7 +819,7 @@ func NewGauge() Gauge {
 	return newGauge(&otlpmetrics.Gauge{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Gauge) MoveTo(dest Gauge) {
 	*dest.getOrig() = *ms.getOrig()
@@ -831,7 +831,7 @@ func (ms Gauge) DataPoints() NumberDataPointSlice {
 	return NumberDataPointSlice(internal.NewNumberDataPointSlice(&ms.getOrig().DataPoints))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Gauge) CopyTo(dest Gauge) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
@@ -862,7 +862,7 @@ func NewSum() Sum {
 	return newSum(&otlpmetrics.Sum{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Sum) MoveTo(dest Sum) {
 	*dest.getOrig() = *ms.getOrig()
@@ -894,7 +894,7 @@ func (ms Sum) DataPoints() NumberDataPointSlice {
 	return NumberDataPointSlice(internal.NewNumberDataPointSlice(&ms.getOrig().DataPoints))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sum) CopyTo(dest Sum) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	dest.SetIsMonotonic(ms.IsMonotonic())
@@ -927,7 +927,7 @@ func NewHistogram() Histogram {
 	return newHistogram(&otlpmetrics.Histogram{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Histogram) MoveTo(dest Histogram) {
 	*dest.getOrig() = *ms.getOrig()
@@ -949,7 +949,7 @@ func (ms Histogram) DataPoints() HistogramDataPointSlice {
 	return HistogramDataPointSlice(internal.NewHistogramDataPointSlice(&ms.getOrig().DataPoints))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Histogram) CopyTo(dest Histogram) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
@@ -982,7 +982,7 @@ func NewExponentialHistogram() ExponentialHistogram {
 	return newExponentialHistogram(&otlpmetrics.ExponentialHistogram{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
 	*dest.getOrig() = *ms.getOrig()
@@ -1004,7 +1004,7 @@ func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
 	return ExponentialHistogramDataPointSlice(internal.NewExponentialHistogramDataPointSlice(&ms.getOrig().DataPoints))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
@@ -1036,7 +1036,7 @@ func NewSummary() Summary {
 	return newSummary(&otlpmetrics.Summary{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Summary) MoveTo(dest Summary) {
 	*dest.getOrig() = *ms.getOrig()
@@ -1048,7 +1048,7 @@ func (ms Summary) DataPoints() SummaryDataPointSlice {
 	return SummaryDataPointSlice(internal.NewSummaryDataPointSlice(&ms.getOrig().DataPoints))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Summary) CopyTo(dest Summary) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
@@ -1096,7 +1096,7 @@ func (es NumberDataPointSlice) At(ix int) NumberDataPoint {
 	return newNumberDataPoint((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -1219,7 +1219,7 @@ func NewNumberDataPoint() NumberDataPoint {
 	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
 	*dest.getOrig() = *ms.getOrig()
@@ -1260,7 +1260,7 @@ func (ms NumberDataPoint) ValueType() NumberDataPointValueType {
 	case *otlpmetrics.NumberDataPoint_AsInt:
 		return NumberDataPointValueTypeInt
 	}
-	return NumberDataPointValueTypeNone
+	return NumberDataPointValueTypeEmpty
 }
 
 // DoubleValue returns the double associated with this NumberDataPoint.
@@ -1293,16 +1293,16 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(ms.getOrig().Flags)
+func (ms NumberDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetFlags(v MetricDataPointFlags) {
+func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
@@ -1361,7 +1361,7 @@ func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
 	return newHistogramDataPoint((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -1484,7 +1484,7 @@ func NewHistogramDataPoint() HistogramDataPoint {
 	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
 	*dest.getOrig() = *ms.getOrig()
@@ -1558,12 +1558,12 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(ms.getOrig().Flags)
+func (ms HistogramDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetFlags(v MetricDataPointFlags) {
+func (ms HistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -1599,7 +1599,7 @@ func (ms HistogramDataPoint) SetMax(v float64) {
 	ms.getOrig().Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
@@ -1666,7 +1666,7 @@ func (es ExponentialHistogramDataPointSlice) At(ix int) ExponentialHistogramData
 	return newExponentialHistogramDataPoint((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -1792,7 +1792,7 @@ func NewExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
 	return newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoint) {
 	*dest.getOrig() = *ms.getOrig()
@@ -1871,13 +1871,13 @@ func (ms ExponentialHistogramDataPoint) SetZeroCount(v uint64) {
 }
 
 // Positive returns the positive associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Positive() Buckets {
-	return Buckets(internal.NewBuckets(&ms.getOrig().Positive))
+func (ms ExponentialHistogramDataPoint) Positive() ExponentialHistogramDataPointBuckets {
+	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(&ms.getOrig().Positive))
 }
 
 // Negative returns the negative associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Negative() Buckets {
-	return Buckets(internal.NewBuckets(&ms.getOrig().Negative))
+func (ms ExponentialHistogramDataPoint) Negative() ExponentialHistogramDataPointBuckets {
+	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(&ms.getOrig().Negative))
 }
 
 // Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
@@ -1886,12 +1886,12 @@ func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
 }
 
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(ms.getOrig().Flags)
+func (ms ExponentialHistogramDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetFlags(v MetricDataPointFlags) {
+func (ms ExponentialHistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
@@ -1927,7 +1927,7 @@ func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
 	ms.getOrig().Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
@@ -1953,56 +1953,56 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 
 }
 
-// Buckets are a set of bucket counts, encoded in a contiguous array of counts.
+// ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewBuckets function to create new instances.
+// Must use NewExponentialHistogramDataPointBuckets function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 
-type Buckets internal.Buckets
+type ExponentialHistogramDataPointBuckets internal.ExponentialHistogramDataPointBuckets
 
-func newBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) Buckets {
-	return Buckets(internal.NewBuckets(orig))
+func newExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ExponentialHistogramDataPointBuckets {
+	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(orig))
 }
 
-func (ms Buckets) getOrig() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
-	return internal.GetOrigBuckets(internal.Buckets(ms))
+func (ms ExponentialHistogramDataPointBuckets) getOrig() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	return internal.GetOrigExponentialHistogramDataPointBuckets(internal.ExponentialHistogramDataPointBuckets(ms))
 }
 
-// NewBuckets creates a new empty Buckets.
+// NewExponentialHistogramDataPointBuckets creates a new empty ExponentialHistogramDataPointBuckets.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewBuckets() Buckets {
-	return newBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
+func NewExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
+	return newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Buckets) MoveTo(dest Buckets) {
+func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramDataPointBuckets) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 }
 
-// Offset returns the offset associated with this Buckets.
-func (ms Buckets) Offset() int32 {
+// Offset returns the offset associated with this ExponentialHistogramDataPointBuckets.
+func (ms ExponentialHistogramDataPointBuckets) Offset() int32 {
 	return ms.getOrig().Offset
 }
 
-// SetOffset replaces the offset associated with this Buckets.
-func (ms Buckets) SetOffset(v int32) {
+// SetOffset replaces the offset associated with this ExponentialHistogramDataPointBuckets.
+func (ms ExponentialHistogramDataPointBuckets) SetOffset(v int32) {
 	ms.getOrig().Offset = v
 }
 
-// BucketCounts returns the bucketcounts associated with this Buckets.
-func (ms Buckets) BucketCounts() pcommon.UInt64Slice {
+// BucketCounts returns the bucketcounts associated with this ExponentialHistogramDataPointBuckets.
+func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
-func (ms Buckets) CopyTo(dest Buckets) {
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.SetOffset(ms.Offset())
 	ms.BucketCounts().CopyTo(dest.BucketCounts())
 }
@@ -2050,7 +2050,7 @@ func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
 	return newSummaryDataPoint((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -2173,7 +2173,7 @@ func NewSummaryDataPoint() SummaryDataPoint {
 	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
 	*dest.getOrig() = *ms.getOrig()
@@ -2226,21 +2226,21 @@ func (ms SummaryDataPoint) SetSum(v float64) {
 }
 
 // QuantileValues returns the QuantileValues associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) QuantileValues() ValueAtQuantileSlice {
-	return ValueAtQuantileSlice(internal.NewValueAtQuantileSlice(&ms.getOrig().QuantileValues))
+func (ms SummaryDataPoint) QuantileValues() SummaryDataPointValueAtQuantileSlice {
+	return SummaryDataPointValueAtQuantileSlice(internal.NewSummaryDataPointValueAtQuantileSlice(&ms.getOrig().QuantileValues))
 }
 
 // Flags returns the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) Flags() MetricDataPointFlags {
-	return MetricDataPointFlags(ms.getOrig().Flags)
+func (ms SummaryDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
 }
 
 // SetFlags replaces the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetFlags(v MetricDataPointFlags) {
+func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
@@ -2251,34 +2251,34 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.SetFlags(ms.Flags())
 }
 
-// ValueAtQuantileSlice logically represents a slice of ValueAtQuantile.
+// SummaryDataPointValueAtQuantileSlice logically represents a slice of SummaryDataPointValueAtQuantile.
 //
 // This is a reference type. If passed by value and callee modifies it, the
 // caller will see the modification.
 //
-// Must use NewValueAtQuantileSlice function to create new instances.
+// Must use NewSummaryDataPointValueAtQuantileSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-type ValueAtQuantileSlice internal.ValueAtQuantileSlice
+type SummaryDataPointValueAtQuantileSlice internal.SummaryDataPointValueAtQuantileSlice
 
-func newValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) ValueAtQuantileSlice {
-	return ValueAtQuantileSlice(internal.NewValueAtQuantileSlice(orig))
+func newSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantileSlice {
+	return SummaryDataPointValueAtQuantileSlice(internal.NewSummaryDataPointValueAtQuantileSlice(orig))
 }
 
-func (ms ValueAtQuantileSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return internal.GetOrigValueAtQuantileSlice(internal.ValueAtQuantileSlice(ms))
+func (ms SummaryDataPointValueAtQuantileSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return internal.GetOrigSummaryDataPointValueAtQuantileSlice(internal.SummaryDataPointValueAtQuantileSlice(ms))
 }
 
-// NewValueAtQuantileSlice creates a ValueAtQuantileSlice with 0 elements.
+// NewSummaryDataPointValueAtQuantileSlice creates a SummaryDataPointValueAtQuantileSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewValueAtQuantileSlice() ValueAtQuantileSlice {
+func NewSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
 	orig := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile(nil)
-	return newValueAtQuantileSlice(&orig)
+	return newSummaryDataPointValueAtQuantileSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
-// Returns "0" for a newly instance created with "NewValueAtQuantileSlice()".
-func (es ValueAtQuantileSlice) Len() int {
+// Returns "0" for a newly instance created with "NewSummaryDataPointValueAtQuantileSlice()".
+func (es SummaryDataPointValueAtQuantileSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -2290,18 +2290,18 @@ func (es ValueAtQuantileSlice) Len() int {
 //	    e := es.At(i)
 //	    ... // Do something with the element
 //	}
-func (es ValueAtQuantileSlice) At(ix int) ValueAtQuantile {
-	return newValueAtQuantile((*es.getOrig())[ix])
+func (es SummaryDataPointValueAtQuantileSlice) At(ix int) SummaryDataPointValueAtQuantile {
+	return newSummaryDataPointValueAtQuantile((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
-func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newValueAtQuantile((*es.getOrig())[i]).CopyTo(newValueAtQuantile((*dest.getOrig())[i]))
+			newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newSummaryDataPointValueAtQuantile((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -2309,7 +2309,7 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 	wrappers := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newValueAtQuantile((*es.getOrig())[i]).CopyTo(newValueAtQuantile(wrappers[i]))
+		newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
 }
@@ -2318,15 +2318,15 @@ func (es ValueAtQuantileSlice) CopyTo(dest ValueAtQuantileSlice) {
 // 1. If the newCap <= cap then no change in capacity.
 // 2. If the newCap > cap then the slice capacity will be expanded to equal newCap.
 //
-// Here is how a new ValueAtQuantileSlice can be initialized:
+// Here is how a new SummaryDataPointValueAtQuantileSlice can be initialized:
 //
-//	es := NewValueAtQuantileSlice()
+//	es := NewSummaryDataPointValueAtQuantileSlice()
 //	es.EnsureCapacity(4)
 //	for i := 0; i < 4; i++ {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ValueAtQuantileSlice) EnsureCapacity(newCap int) {
+func (es SummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -2337,31 +2337,31 @@ func (es ValueAtQuantileSlice) EnsureCapacity(newCap int) {
 	*es.getOrig() = newOrig
 }
 
-// AppendEmpty will append to the end of the slice an empty ValueAtQuantile.
-// It returns the newly added ValueAtQuantile.
-func (es ValueAtQuantileSlice) AppendEmpty() ValueAtQuantile {
+// AppendEmpty will append to the end of the slice an empty SummaryDataPointValueAtQuantile.
+// It returns the newly added SummaryDataPointValueAtQuantile.
+func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointValueAtQuantile {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	return es.At(es.Len() - 1)
 }
 
-// Sort sorts the ValueAtQuantile elements within ValueAtQuantileSlice given the
-// provided less function so that two instances of ValueAtQuantileSlice
+// Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the
+// provided less function so that two instances of SummaryDataPointValueAtQuantileSlice
 // can be compared.
 //
 // Returns the same instance to allow nicer code like:
 //
-//	lessFunc := func(a, b ValueAtQuantile) bool {
+//	lessFunc := func(a, b SummaryDataPointValueAtQuantile) bool {
 //	  return a.Name() < b.Name() // choose any comparison here
 //	}
 //	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ValueAtQuantileSlice) Sort(less func(a, b ValueAtQuantile) bool) ValueAtQuantileSlice {
+func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) SummaryDataPointValueAtQuantileSlice {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
+func (es SummaryDataPointValueAtQuantileSlice) MoveAndAppendTo(dest SummaryDataPointValueAtQuantileSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -2373,7 +2373,7 @@ func (es ValueAtQuantileSlice) MoveAndAppendTo(dest ValueAtQuantileSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ValueAtQuantileSlice) RemoveIf(f func(ValueAtQuantile) bool) {
+func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointValueAtQuantile) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -2391,61 +2391,61 @@ func (es ValueAtQuantileSlice) RemoveIf(f func(ValueAtQuantile) bool) {
 	*es.getOrig() = (*es.getOrig())[:newLen]
 }
 
-// ValueAtQuantile is a quantile value within a Summary data point.
+// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewValueAtQuantile function to create new instances.
+// Must use NewSummaryDataPointValueAtQuantile function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 
-type ValueAtQuantile internal.ValueAtQuantile
+type SummaryDataPointValueAtQuantile internal.SummaryDataPointValueAtQuantile
 
-func newValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) ValueAtQuantile {
-	return ValueAtQuantile(internal.NewValueAtQuantile(orig))
+func newSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
+	return SummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(orig))
 }
 
-func (ms ValueAtQuantile) getOrig() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	return internal.GetOrigValueAtQuantile(internal.ValueAtQuantile(ms))
+func (ms SummaryDataPointValueAtQuantile) getOrig() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return internal.GetOrigSummaryDataPointValueAtQuantile(internal.SummaryDataPointValueAtQuantile(ms))
 }
 
-// NewValueAtQuantile creates a new empty ValueAtQuantile.
+// NewSummaryDataPointValueAtQuantile creates a new empty SummaryDataPointValueAtQuantile.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewValueAtQuantile() ValueAtQuantile {
-	return newValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+func NewSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
+	return newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ValueAtQuantile) MoveTo(dest ValueAtQuantile) {
+func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQuantile) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 }
 
-// Quantile returns the quantile associated with this ValueAtQuantile.
-func (ms ValueAtQuantile) Quantile() float64 {
+// Quantile returns the quantile associated with this SummaryDataPointValueAtQuantile.
+func (ms SummaryDataPointValueAtQuantile) Quantile() float64 {
 	return ms.getOrig().Quantile
 }
 
-// SetQuantile replaces the quantile associated with this ValueAtQuantile.
-func (ms ValueAtQuantile) SetQuantile(v float64) {
+// SetQuantile replaces the quantile associated with this SummaryDataPointValueAtQuantile.
+func (ms SummaryDataPointValueAtQuantile) SetQuantile(v float64) {
 	ms.getOrig().Quantile = v
 }
 
-// Value returns the value associated with this ValueAtQuantile.
-func (ms ValueAtQuantile) Value() float64 {
+// Value returns the value associated with this SummaryDataPointValueAtQuantile.
+func (ms SummaryDataPointValueAtQuantile) Value() float64 {
 	return ms.getOrig().Value
 }
 
-// SetValue replaces the value associated with this ValueAtQuantile.
-func (ms ValueAtQuantile) SetValue(v float64) {
+// SetValue replaces the value associated with this SummaryDataPointValueAtQuantile.
+func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
 	ms.getOrig().Value = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
-func (ms ValueAtQuantile) CopyTo(dest ValueAtQuantile) {
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQuantile) {
 	dest.SetQuantile(ms.Quantile())
 	dest.SetValue(ms.Value())
 }
@@ -2493,7 +2493,7 @@ func (es ExemplarSlice) At(ix int) Exemplar {
 	return newExemplar(&(*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -2599,7 +2599,7 @@ func NewExemplar() Exemplar {
 	return newExemplar(&otlpmetrics.Exemplar{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Exemplar) MoveTo(dest Exemplar) {
 	*dest.getOrig() = *ms.getOrig()
@@ -2625,7 +2625,7 @@ func (ms Exemplar) ValueType() ExemplarValueType {
 	case *otlpmetrics.Exemplar_AsInt:
 		return ExemplarValueTypeInt
 	}
-	return ExemplarValueTypeNone
+	return ExemplarValueTypeEmpty
 }
 
 // DoubleValue returns the double associated with this Exemplar.
@@ -2677,7 +2677,7 @@ func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
 	ms.getOrig().SpanId = data.SpanID(v)
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {

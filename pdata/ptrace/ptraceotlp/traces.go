@@ -155,9 +155,6 @@ func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
 	otlpcollectortrace.RegisterTraceServiceServer(s, &rawTracesServer{srv: srv})
 }
 
-// Deprecated: [0.62.0] Use RegisterGRPCServer instead
-var RegisterServer = RegisterGRPCServer
-
 type rawTracesServer struct {
 	srv GRPCServer
 }

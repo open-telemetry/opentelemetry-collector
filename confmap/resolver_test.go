@@ -95,6 +95,11 @@ func (m *mockConverter) Convert(context.Context, *Conf) error {
 	return errors.New("converter_err")
 }
 
+func TestNewResolverInvalidScheme(t *testing.T) {
+	_, err := NewResolver(ResolverSettings{URIs: []string{"s_3:has invalid char"}, Providers: makeMapProvidersMap(&mockProvider{scheme: "s_3"})})
+	assert.EqualError(t, err, `invalid uri: "s_3:has invalid char"`)
+}
+
 func TestResolverErrors(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -108,7 +113,7 @@ func TestResolverErrors(t *testing.T) {
 	}{
 		{
 			name:             "unsupported location scheme",
-			locations:        []string{"mock:", "not_supported:"},
+			locations:        []string{"mock:", "notsupported:"},
 			providers:        []Provider{&mockProvider{}},
 			expectResolveErr: true,
 		},
@@ -275,6 +280,14 @@ func TestResolver(t *testing.T) {
 	assert.NoError(t, errC)
 }
 
+func TestResolverNewLinesInOpaqueValue(t *testing.T) {
+	_, err := NewResolver(ResolverSettings{
+		URIs:       []string{"mock:receivers:\n nop:\n"},
+		Providers:  makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
+		Converters: nil})
+	assert.NoError(t, err)
+}
+
 func TestResolverNoLocations(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:       []string{},
@@ -345,7 +358,7 @@ func TestResolverExpandEnvVars(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			resolver, err := NewResolver(ResolverSettings{URIs: []string{filepath.Join("testdata", test.name)}, Providers: makeMapProvidersMap(fileProvider, envProvider), Converters: nil})
 			require.NoError(t, err)
-			resolver.enableExpand = true
+
 			// Test that expanded configs are the same with the simple config with no env vars.
 			cfgMap, err := resolver.Resolve(context.Background())
 			require.NoError(t, err)
@@ -368,7 +381,7 @@ func TestResolverDoneNotExpandOldEnvVars(t *testing.T) {
 
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"test:"}, Providers: makeMapProvidersMap(fileProvider, envProvider, emptySchemeProvider), Converters: nil})
 	require.NoError(t, err)
-	resolver.enableExpand = true
+
 	// Test that expanded configs are the same with the simple config with no env vars.
 	cfgMap, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
@@ -389,7 +402,6 @@ func TestResolverExpandMapAndSliceValues(t *testing.T) {
 
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
 	require.NoError(t, err)
-	resolver.enableExpand = true
 
 	cfgMap, err := resolver.Resolve(context.Background())
 	require.NoError(t, err)
@@ -411,10 +423,9 @@ func TestResolverInfiniteExpand(t *testing.T) {
 
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
 	require.NoError(t, err)
-	resolver.enableExpand = true
 
 	_, err = resolver.Resolve(context.Background())
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, errTooManyRecursiveExpansions)
 }
 
 func TestResolverExpandSliceValueError(t *testing.T) {
@@ -428,10 +439,9 @@ func TestResolverExpandSliceValueError(t *testing.T) {
 
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
 	require.NoError(t, err)
-	resolver.enableExpand = true
 
 	_, err = resolver.Resolve(context.Background())
-	assert.Error(t, err)
+	assert.EqualError(t, err, "unsupported type=*errors.errorString for retrieved config")
 }
 
 func TestResolverExpandMapValueError(t *testing.T) {
@@ -445,10 +455,42 @@ func TestResolverExpandMapValueError(t *testing.T) {
 
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
 	require.NoError(t, err)
-	resolver.enableExpand = true
 
 	_, err = resolver.Resolve(context.Background())
-	assert.Error(t, err)
+	assert.EqualError(t, err, "unsupported type=*errors.errorString for retrieved config")
+}
+
+func TestResolverExpandInvalidScheme(t *testing.T) {
+	const receiverValue = "${g_c_s:VALUE}"
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(map[string]interface{}{"test": receiverValue})
+	})
+
+	testProvider := newFakeProvider("g_c_s", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(receiverValue)
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	require.NoError(t, err)
+
+	_, err = resolver.Resolve(context.Background())
+	assert.EqualError(t, err, `invalid uri: "g_c_s:VALUE"`)
+}
+
+func TestResolverExpandInvalidOpaqueValue(t *testing.T) {
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(map[string]interface{}{"test": []interface{}{map[string]interface{}{"test": "${test:$VALUE}"}}})
+	})
+
+	testProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(errors.New("invalid value"))
+	})
+
+	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, Providers: makeMapProvidersMap(provider, testProvider), Converters: nil})
+	require.NoError(t, err)
+
+	_, err = resolver.Resolve(context.Background())
+	assert.EqualError(t, err, `the uri "test:$VALUE" contains unsupported characters ('$')`)
 }
 
 func makeMapProvidersMap(providers ...Provider) map[string]Provider {

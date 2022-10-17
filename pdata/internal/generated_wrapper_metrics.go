@@ -226,16 +226,16 @@ func NewExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramData
 	return ExponentialHistogramDataPoint{orig: orig}
 }
 
-type Buckets struct {
+type ExponentialHistogramDataPointBuckets struct {
 	orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets
 }
 
-func GetOrigBuckets(ms Buckets) *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+func GetOrigExponentialHistogramDataPointBuckets(ms ExponentialHistogramDataPointBuckets) *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
 	return ms.orig
 }
 
-func NewBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) Buckets {
-	return Buckets{orig: orig}
+func NewExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ExponentialHistogramDataPointBuckets {
+	return ExponentialHistogramDataPointBuckets{orig: orig}
 }
 
 type SummaryDataPointSlice struct {
@@ -262,28 +262,28 @@ func NewSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
 	return SummaryDataPoint{orig: orig}
 }
 
-type ValueAtQuantileSlice struct {
+type SummaryDataPointValueAtQuantileSlice struct {
 	orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
-func GetOrigValueAtQuantileSlice(ms ValueAtQuantileSlice) *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+func GetOrigSummaryDataPointValueAtQuantileSlice(ms SummaryDataPointValueAtQuantileSlice) *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return ms.orig
 }
 
-func NewValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) ValueAtQuantileSlice {
-	return ValueAtQuantileSlice{orig: orig}
+func NewSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantileSlice {
+	return SummaryDataPointValueAtQuantileSlice{orig: orig}
 }
 
-type ValueAtQuantile struct {
+type SummaryDataPointValueAtQuantile struct {
 	orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
-func GetOrigValueAtQuantile(ms ValueAtQuantile) *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+func GetOrigSummaryDataPointValueAtQuantile(ms SummaryDataPointValueAtQuantile) *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return ms.orig
 }
 
-func NewValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) ValueAtQuantile {
-	return ValueAtQuantile{orig: orig}
+func NewSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
+	return SummaryDataPointValueAtQuantile{orig: orig}
 }
 
 type ExemplarSlice struct {
@@ -552,22 +552,22 @@ func FillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Scale = int32(4)
 	tv.orig.ZeroCount = uint64(201)
-	FillTestBuckets(NewBuckets(&tv.orig.Positive))
-	FillTestBuckets(NewBuckets(&tv.orig.Negative))
+	FillTestExponentialHistogramDataPointBuckets(NewExponentialHistogramDataPointBuckets(&tv.orig.Positive))
+	FillTestExponentialHistogramDataPointBuckets(NewExponentialHistogramDataPointBuckets(&tv.orig.Negative))
 	FillTestExemplarSlice(NewExemplarSlice(&tv.orig.Exemplars))
 	tv.orig.Flags = 1
 	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(182.55)}
 }
 
-func GenerateTestBuckets() Buckets {
+func GenerateTestExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
 	orig := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-	tv := NewBuckets(&orig)
-	FillTestBuckets(tv)
+	tv := NewExponentialHistogramDataPointBuckets(&orig)
+	FillTestExponentialHistogramDataPointBuckets(tv)
 	return tv
 }
 
-func FillTestBuckets(tv Buckets) {
+func FillTestExponentialHistogramDataPointBuckets(tv ExponentialHistogramDataPointBuckets) {
 	tv.orig.Offset = int32(909)
 	tv.orig.BucketCounts = []uint64{1, 2, 3}
 }
@@ -600,33 +600,33 @@ func FillTestSummaryDataPoint(tv SummaryDataPoint) {
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
 	tv.orig.Sum = float64(17.13)
-	FillTestValueAtQuantileSlice(NewValueAtQuantileSlice(&tv.orig.QuantileValues))
+	FillTestSummaryDataPointValueAtQuantileSlice(NewSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues))
 	tv.orig.Flags = 1
 }
 
-func GenerateTestValueAtQuantileSlice() ValueAtQuantileSlice {
+func GenerateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
 	orig := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	tv := NewValueAtQuantileSlice(&orig)
-	FillTestValueAtQuantileSlice(tv)
+	tv := NewSummaryDataPointValueAtQuantileSlice(&orig)
+	FillTestSummaryDataPointValueAtQuantileSlice(tv)
 	return tv
 }
 
-func FillTestValueAtQuantileSlice(tv ValueAtQuantileSlice) {
+func FillTestSummaryDataPointValueAtQuantileSlice(tv SummaryDataPointValueAtQuantileSlice) {
 	*tv.orig = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		FillTestValueAtQuantile(NewValueAtQuantile((*tv.orig)[i]))
+		FillTestSummaryDataPointValueAtQuantile(NewSummaryDataPointValueAtQuantile((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestValueAtQuantile() ValueAtQuantile {
+func GenerateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
 	orig := otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	tv := NewValueAtQuantile(&orig)
-	FillTestValueAtQuantile(tv)
+	tv := NewSummaryDataPointValueAtQuantile(&orig)
+	FillTestSummaryDataPointValueAtQuantile(tv)
 	return tv
 }
 
-func FillTestValueAtQuantile(tv ValueAtQuantile) {
+func FillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
 	tv.orig.Quantile = float64(17.13)
 	tv.orig.Value = float64(17.13)
 }

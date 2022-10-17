@@ -21,7 +21,7 @@ import (
 )
 
 func TestLogRecordFlags(t *testing.T) {
-	flags := MetricDataPointFlags(1)
+	flags := DataPointFlags(1)
 	assert.True(t, flags.NoRecordedValue())
 	assert.EqualValues(t, uint32(1), flags)
 
@@ -35,7 +35,7 @@ func TestLogRecordFlags(t *testing.T) {
 }
 
 func TestDefaultLogRecordFlags(t *testing.T) {
-	flags := DefaultMetricDataPointFlags
+	flags := DefaultDataPointFlags
 	assert.False(t, flags.NoRecordedValue())
 	assert.EqualValues(t, uint32(0), flags)
 }
