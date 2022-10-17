@@ -49,6 +49,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
+				warnLogLevel:       true,
 			},
 		},
 		{
@@ -59,6 +60,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelNormal,
 				SamplingInitial:    2,
 				SamplingThereafter: 500,
+				warnLogLevel:       true,
 			},
 		},
 		{
