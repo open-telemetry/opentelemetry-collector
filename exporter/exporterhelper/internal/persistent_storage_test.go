@@ -67,7 +67,8 @@ func newFakeTracesRequest(td ptrace.Traces) *fakeTracesRequest {
 }
 
 func (fd *fakeTracesRequest) Marshal() ([]byte, error) {
-	return ptrace.NewProtoMarshaler().MarshalTraces(fd.td)
+	marshaler := &ptrace.ProtoMarshaler{}
+	return marshaler.MarshalTraces(fd.td)
 }
 
 func (fd *fakeTracesRequest) OnProcessingFinished() {
@@ -82,7 +83,8 @@ func (fd *fakeTracesRequest) SetOnProcessingFinished(callback func()) {
 
 func newFakeTracesRequestUnmarshalerFunc() RequestUnmarshaler {
 	return func(bytes []byte) (Request, error) {
-		traces, err := ptrace.NewProtoUnmarshaler().UnmarshalTraces(bytes)
+		unmarshaler := ptrace.ProtoUnmarshaler{}
+		traces, err := unmarshaler.UnmarshalTraces(bytes)
 		if err != nil {
 			return nil, err
 		}

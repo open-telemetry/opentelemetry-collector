@@ -19,42 +19,35 @@ import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
-// NewProtoMarshaler returns a MarshalSizer.
-// Marshals to OTLP binary protobuf bytes and calculates the size of the marshaled Logs.
+// Deprecated: [v0.63.0] use &ProtoMarshaler{}
 func NewProtoMarshaler() MarshalSizer {
-	return newPbMarshaler()
+	return &ProtoMarshaler{}
 }
 
-type pbMarshaler struct{}
+var _ MarshalSizer = (*ProtoMarshaler)(nil)
 
-func newPbMarshaler() *pbMarshaler {
-	return &pbMarshaler{}
-}
+type ProtoMarshaler struct{}
 
-var _ Sizer = (*pbMarshaler)(nil)
-
-func (e *pbMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
+func (e *ProtoMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 	pb := internal.LogsToProto(internal.Logs(ld))
 	return pb.Marshal()
 }
 
-func (e *pbMarshaler) LogsSize(ld Logs) int {
+func (e *ProtoMarshaler) LogsSize(ld Logs) int {
 	pb := internal.LogsToProto(internal.Logs(ld))
 	return pb.Size()
 }
 
-type pbUnmarshaler struct{}
+var _ Unmarshaler = (*ProtoUnmarshaler)(nil)
 
-// NewProtoUnmarshaler returns a model.Unmarshaler. Unmarshals from OTLP binary protobuf bytes.
+type ProtoUnmarshaler struct{}
+
+// Deprecated: [v0.63.0] use &ProtoUnmarshaler{}
 func NewProtoUnmarshaler() Unmarshaler {
-	return newPbUnmarshaler()
+	return &ProtoUnmarshaler{}
 }
 
-func newPbUnmarshaler() *pbUnmarshaler {
-	return &pbUnmarshaler{}
-}
-
-func (d *pbUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
+func (d *ProtoUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	pb := otlplogs.LogsData{}
 	err := pb.Unmarshal(buf)
 	return Logs(internal.LogsFromProto(pb)), err

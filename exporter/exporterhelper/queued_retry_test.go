@@ -611,7 +611,8 @@ func (m *mockRequest) Export(ctx context.Context) error {
 }
 
 func (m *mockRequest) Marshal() ([]byte, error) {
-	return ptrace.NewProtoMarshaler().MarshalTraces(ptrace.NewTraces())
+	marshaler := &ptrace.ProtoMarshaler{}
+	return marshaler.MarshalTraces(ptrace.NewTraces())
 }
 
 func (m *mockRequest) OnError(error) internal.Request {
