@@ -26,7 +26,9 @@ import (
 
 // NewJSONMarshaler returns a model.Marshaler. Marshals to OTLP json bytes.
 func NewJSONMarshaler() Marshaler {
-	return &jsonMarshaler{delegate: jsonpb.Marshaler{}}
+	return &jsonMarshaler{delegate: jsonpb.Marshaler{
+		EnumsAsInts: true,
+	}}
 }
 
 type jsonMarshaler struct {
