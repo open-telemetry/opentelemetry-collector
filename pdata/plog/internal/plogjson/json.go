@@ -63,6 +63,21 @@ func UnmarshalExportLogsServiceRequest(buf []byte, dest *otlpcollectorlog.Export
 	return iter.Error
 }
 
+func UnmarshalExportLogsServiceResponse(buf []byte, dest *otlpcollectorlog.ExportLogsServiceResponse) error {
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "partial_success", "partialSuccess":
+			dest.PartialSuccess = readExportLogsPartialSuccess(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return iter.Error
+}
+
 func readResourceLogs(iter *jsoniter.Iterator) *otlplogs.ResourceLogs {
 	rs := &otlplogs.ResourceLogs{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
@@ -147,4 +162,20 @@ func readLog(iter *jsoniter.Iterator) *otlplogs.LogRecord {
 
 func readSeverityNumber(iter *jsoniter.Iterator) otlplogs.SeverityNumber {
 	return otlplogs.SeverityNumber(json.ReadEnumValue(iter, otlplogs.SeverityNumber_value))
+}
+
+func readExportLogsPartialSuccess(iter *jsoniter.Iterator) *otlpcollectorlog.ExportLogsPartialSuccess {
+	lpr := &otlpcollectorlog.ExportLogsPartialSuccess{}
+	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "rejected_log_records", "rejectedLogRecords":
+			lpr.RejectedLogRecords = json.ReadInt64(iter)
+		case "error_message", "errorMessage":
+			lpr.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return lpr
 }
