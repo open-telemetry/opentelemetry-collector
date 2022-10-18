@@ -33,7 +33,8 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 				return err
 			}
 			if BuildFlag {
-				return getBuildInfo(set)
+				err, _ := getBuildInfo(set)
+				return err
 			}
 
 			if set.ConfigProvider == nil {

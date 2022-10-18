@@ -64,7 +64,6 @@
 - Add prometheus metric prefix to Collector's own telemetry when using OpenTelemetry for internal telemetry (#6223)
 - `exporter/logging`: Apply consistent rendering of map values (#6244)
 - Add support in the confmap.Resolver to expand embedded config URIs inside configuration. (#6276)
-- Added build flag to output components in collector distribution in YAML format (#6322)
 ### 🧰 Bug fixes 🧰
 
 - Fixed bug where `telemetryInitializer` is not cleaned up when `newService` errors (#6239)

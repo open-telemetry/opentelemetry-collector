@@ -99,7 +99,7 @@ func getConfigFlag(flagSet *flag.FlagSet) []string {
 	return append(cfv.values, cfv.sets...)
 }
 
-func getBuildInfo(set CollectorSettings) error {
+func getBuildInfo(set CollectorSettings) (error, []byte) {
 	components := componentsOutput{}
 	for ext, _ := range set.Factories.Extensions {
 		components.Extensions = append(components.Extensions, ext)
@@ -118,9 +118,9 @@ func getBuildInfo(set CollectorSettings) error {
 	yamlData, err := yaml.Marshal(components)
 
 	if err != nil {
-		return err
+		return err, nil
 	}
 
 	fmt.Println(string(yamlData))
-	return nil
+	return nil, yamlData
 }
