@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var tracesMarshaler = ptrace.NewProtoMarshaler()
-var tracesUnmarshaler = ptrace.NewProtoUnmarshaler()
+var tracesMarshaler = &ptrace.ProtoMarshaler{}
+var tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
 
 type tracesRequest struct {
 	baseRequest

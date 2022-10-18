@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var metricsMarshaler = pmetric.NewProtoMarshaler()
-var metricsUnmarshaler = pmetric.NewProtoUnmarshaler()
+var metricsMarshaler = &pmetric.ProtoMarshaler{}
+var metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
 
 type metricsRequest struct {
 	baseRequest

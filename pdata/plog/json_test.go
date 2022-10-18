@@ -68,21 +68,25 @@ func TestLogsJSON(t *testing.T) {
 			},
 		},
 	}
+	oldDelegate := delegate
+	t.Cleanup(func() {
+		delegate = oldDelegate
+	})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, opEnumsAsInts := range []bool{true, false} {
 				for _, opEmitDefaults := range []bool{true, false} {
 					for _, opOrigName := range []bool{true, false} {
-						marshaller := &jsonMarshaler{
-							delegate: jsonpb.Marshaler{
-								EnumsAsInts:  opEnumsAsInts,
-								EmitDefaults: opEmitDefaults,
-								OrigName:     opOrigName,
-							}}
+						delegate = &jsonpb.Marshaler{
+							EnumsAsInts:  opEnumsAsInts,
+							EmitDefaults: opEmitDefaults,
+							OrigName:     opOrigName,
+						}
+						encoder := &JSONMarshaler{}
 						ld := tt.args.logFunc()
-						jsonBuf, err := marshaller.MarshalLogs(ld)
+						jsonBuf, err := encoder.MarshalLogs(ld)
 						assert.NoError(t, err)
-						decoder := NewJSONUnmarshaler()
+						decoder := &JSONUnmarshaler{}
 						var got interface{}
 						got, err = decoder.UnmarshalLogs(jsonBuf)
 						assert.NoError(t, err)
@@ -97,7 +101,7 @@ func TestLogsJSON(t *testing.T) {
 var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":""}]}]}]}`
 
 func TestLogsJSON_WithoutTraceIdAndSpanId(t *testing.T) {
-	decoder := NewJSONUnmarshaler()
+	decoder := &JSONUnmarshaler{}
 	_, err := decoder.UnmarshalLogs([]byte(logsJSON))
 	assert.NoError(t, err)
 }
@@ -105,7 +109,7 @@ func TestLogsJSON_WithoutTraceIdAndSpanId(t *testing.T) {
 var logsJSONWrongTraceID = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"--","spanId":""}]}]}]}`
 
 func TestLogsJSON_WrongTraceID(t *testing.T) {
-	decoder := NewJSONUnmarshaler()
+	decoder := &JSONUnmarshaler{}
 	_, err := decoder.UnmarshalLogs([]byte(logsJSONWrongTraceID))
 	assert.Error(t, err)
 	if assert.Error(t, err) {
@@ -116,15 +120,10 @@ func TestLogsJSON_WrongTraceID(t *testing.T) {
 var logsJSONWrongSpanID = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeLogs":[{"scope":{"name":"name","version":"version"},"logRecords":[{"severityText":"Error","body":{},"traceId":"","spanId":"--"}]}]}]}`
 
 func TestLogsJSON_WrongSpanID(t *testing.T) {
-	decoder := NewJSONUnmarshaler()
+	decoder := &JSONUnmarshaler{}
 	_, err := decoder.UnmarshalLogs([]byte(logsJSONWrongSpanID))
 	assert.Error(t, err)
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "parse span_id")
 	}
-}
-
-func TestLogsJSON_MarshalJSON(t *testing.T) {
-	marshal := NewJSONMarshaler()
-	assert.NotNil(t, marshal)
 }
