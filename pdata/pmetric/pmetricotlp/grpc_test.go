@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package plogotlp
+package pmetricotlp
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net"
-	"strings"
 	"sync"
 	"testing"
 
@@ -31,59 +29,13 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
-
-var _ json.Unmarshaler = Response{}
-var _ json.Marshaler = Response{}
-
-var _ json.Unmarshaler = Request{}
-var _ json.Marshaler = Request{}
-
-var logsRequestJSON = []byte(`
-	{
-		"resourceLogs": [
-		{
-			"resource": {},
-			"scopeLogs": [
-				{
-					"scope": {},
-					"logRecords": [
-						{
-							"body": {
-								"stringValue": "test_log_record"
-							},
-							"traceId": "",
-							"spanId": ""
-						}
-					]
-				}
-			]
-		}
-		]
-	}`)
-
-func TestRequestToPData(t *testing.T) {
-	tr := NewRequest()
-	assert.Equal(t, tr.Logs().LogRecordCount(), 0)
-	tr.Logs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	assert.Equal(t, tr.Logs().LogRecordCount(), 1)
-}
-
-func TestRequestJSON(t *testing.T) {
-	lr := NewRequest()
-	assert.NoError(t, lr.UnmarshalJSON(logsRequestJSON))
-	assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
-
-	got, err := lr.MarshalJSON()
-	assert.NoError(t, err)
-	assert.Equal(t, strings.Join(strings.Fields(string(logsRequestJSON)), ""), string(got))
-}
 
 func TestGrpc(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
-	RegisterGRPCServer(s, &fakeLogsServer{t: t})
+	RegisterGRPCServer(s, &fakeMetricsServer{t: t})
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -108,7 +60,7 @@ func TestGrpc(t *testing.T) {
 
 	logClient := NewClient(cc)
 
-	resp, err := logClient.Export(context.Background(), generateLogsRequest())
+	resp, err := logClient.Export(context.Background(), generateMetricsRequest())
 	assert.NoError(t, err)
 	assert.Equal(t, NewResponse(), resp)
 }
@@ -116,7 +68,7 @@ func TestGrpc(t *testing.T) {
 func TestGrpcError(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
-	RegisterGRPCServer(s, &fakeLogsServer{t: t, err: errors.New("my error")})
+	RegisterGRPCServer(s, &fakeMetricsServer{t: t, err: errors.New("my error")})
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -140,7 +92,7 @@ func TestGrpcError(t *testing.T) {
 	})
 
 	logClient := NewClient(cc)
-	resp, err := logClient.Export(context.Background(), generateLogsRequest())
+	resp, err := logClient.Export(context.Background(), generateMetricsRequest())
 	require.Error(t, err)
 	st, okSt := status.FromError(err)
 	require.True(t, okSt)
@@ -149,18 +101,20 @@ func TestGrpcError(t *testing.T) {
 	assert.Equal(t, Response{}, resp)
 }
 
-type fakeLogsServer struct {
+type fakeMetricsServer struct {
 	t   *testing.T
 	err error
 }
 
-func (f fakeLogsServer) Export(_ context.Context, request Request) (Response, error) {
-	assert.Equal(f.t, generateLogsRequest(), request)
+func (f fakeMetricsServer) Export(_ context.Context, request Request) (Response, error) {
+	assert.Equal(f.t, generateMetricsRequest(), request)
 	return NewResponse(), f.err
 }
 
-func generateLogsRequest() Request {
-	ld := plog.NewLogs()
-	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("test_log_record")
-	return NewRequestFromLogs(ld)
+func generateMetricsRequest() Request {
+	md := pmetric.NewMetrics()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge().DataPoints().AppendEmpty()
+	return NewRequestFromMetrics(md)
 }

@@ -17,16 +17,12 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 import (
 	"bytes"
 
-	"github.com/gogo/protobuf/jsonpb"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
 
-var delegate = &jsonpb.Marshaler{
-	EnumsAsInts: true,
-}
+var delegate = pmetricjson.JSONMarshaler
 
 // Deprecated: [v0.63.0] use &JSONMarshaler{}
 func NewJSONMarshaler() Marshaler {

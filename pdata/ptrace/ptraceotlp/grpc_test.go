@@ -16,10 +16,8 @@ package ptraceotlp
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net"
-	"strings"
 	"sync"
 	"testing"
 
@@ -33,52 +31,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
-
-var _ json.Unmarshaler = Response{}
-var _ json.Marshaler = Response{}
-
-var _ json.Unmarshaler = Request{}
-var _ json.Marshaler = Request{}
-
-var tracesRequestJSON = []byte(`
-	{
-		"resourceSpans": [
-			{
-				"resource": {},
-				"scopeSpans": [
-					{
-						"scope": {},
-						"spans": [
-							{
-								"traceId": "",
-								"spanId":"",
-								"parentSpanId":"",
-								"name": "test_span",
-								"status": {}
-							}
-						]
-					}
-				]
-			}
-		]
-	}`)
-
-func TestRequestToPData(t *testing.T) {
-	tr := NewRequest()
-	assert.Equal(t, tr.Traces().SpanCount(), 0)
-	tr.Traces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	assert.Equal(t, tr.Traces().SpanCount(), 1)
-}
-
-func TestRequestJSON(t *testing.T) {
-	tr := NewRequest()
-	assert.NoError(t, tr.UnmarshalJSON(tracesRequestJSON))
-	assert.Equal(t, "test_span", tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
-
-	got, err := tr.MarshalJSON()
-	assert.NoError(t, err)
-	assert.Equal(t, strings.Join(strings.Fields(string(tracesRequestJSON)), ""), string(got))
-}
 
 func TestGrpc(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)

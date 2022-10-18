@@ -17,16 +17,12 @@ package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 import (
 	"bytes"
 
-	"github.com/gogo/protobuf/jsonpb"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/ptrace/internal/ptracejson"
 )
 
-var delegate = &jsonpb.Marshaler{
-	EnumsAsInts: true,
-}
+var delegate = ptracejson.JSONMarshaler
 
 // Deprecated: [v0.63.0] use &JSONMarshaler{}
 func NewJSONMarshaler() Marshaler {

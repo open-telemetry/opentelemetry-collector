@@ -17,16 +17,12 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 import (
 	"bytes"
 
-	"github.com/gogo/protobuf/jsonpb"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/plog/internal/plogjson"
 )
 
-var delegate = &jsonpb.Marshaler{
-	EnumsAsInts: true,
-}
+var delegate = plogjson.JSONMarshaler
 
 // Deprecated: [v0.63.0] use &JSONMarshaler{}
 func NewJSONMarshaler() Marshaler {

@@ -17,6 +17,7 @@ package ptracejson // import "go.opentelemetry.io/collector/pdata/ptrace/interna
 import (
 	"fmt"
 
+	"github.com/gogo/protobuf/jsonpb"
 	jsoniter "github.com/json-iterator/go"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
@@ -24,6 +25,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
+
+var JSONMarshaler = &jsonpb.Marshaler{
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/2758
+	EnumsAsInts: true,
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/2829
+	OrigName: false,
+}
 
 func UnmarshalTraceData(buf []byte, dest *otlptrace.TracesData) error {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
