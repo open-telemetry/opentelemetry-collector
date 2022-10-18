@@ -22,7 +22,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"time"
 
 	"go.uber.org/zap"
@@ -57,6 +56,11 @@ func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeReques
 		return false, 1501 // 1501: ERROR_EVENTLOG_CANT_START
 	}
 
+	// Parse all the flags manually.
+	if err = s.flags.Parse(args[1:]); err != nil {
+		return false, 1639 // 1639: ERROR_INVALID_COMMAND_LINE
+	}
+
 	colErrorChannel := make(chan error, 1)
 
 	changes <- svc.Status{State: svc.StartPending}
@@ -89,11 +93,7 @@ func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeReques
 }
 
 func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
-	// Parse all the args manually.
-	if err := s.flags.Parse(os.Args[1:]); err != nil {
-		return err
-	}
-	if err := featuregate.GetRegistry().Apply(gatesList); err != nil {
+	if err := featuregate.GetRegistry().Apply(getFeatureGatesFlag(s.flags)); err != nil {
 		return err
 	}
 	var err error
