@@ -390,7 +390,8 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -s=true -b=false -v ./versions.yaml -m collector-core
+	multimod prerelease -s=true -b=false -v ./versions.yaml -m stable
+	multimod prerelease -s=true -b=false -v ./versions.yaml -m beta
 	$(MAKE) gotidy
 
 .PHONY: prepare-release
