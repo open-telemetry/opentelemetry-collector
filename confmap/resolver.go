@@ -118,6 +118,9 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		if err != nil {
 			return nil, err
 		}
+		if _, ok := set.Providers[lURI.scheme]; !ok {
+			return nil, fmt.Errorf("unsupported scheme on URI %q", uri)
+		}
 		uris[i] = lURI
 	}
 	providersCopy := make(map[string]Provider, len(set.Providers))
