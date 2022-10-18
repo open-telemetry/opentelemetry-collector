@@ -63,6 +63,21 @@ func UnmarshalExportMetricsServiceRequest(buf []byte, dest *otlpcollectormetrics
 	return iter.Error
 }
 
+func UnmarshalExportMetricsServiceResponse(buf []byte, dest *otlpcollectormetrics.ExportMetricsServiceResponse) error {
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "partial_success", "partialSuccess":
+			dest.PartialSuccess = readExportMetricsPartialSuccess(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return iter.Error
+}
+
 func readResourceMetrics(iter *jsoniter.Iterator) *otlpmetrics.ResourceMetrics {
 	rs := &otlpmetrics.ResourceMetrics{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
@@ -485,4 +500,20 @@ func readQuantileValue(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint_Va
 
 func readAggregationTemporality(iter *jsoniter.Iterator) otlpmetrics.AggregationTemporality {
 	return otlpmetrics.AggregationTemporality(json.ReadEnumValue(iter, otlpmetrics.AggregationTemporality_value))
+}
+
+func readExportMetricsPartialSuccess(iter *jsoniter.Iterator) *otlpcollectormetrics.ExportMetricsPartialSuccess {
+	lpr := &otlpcollectormetrics.ExportMetricsPartialSuccess{}
+	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "rejected_data_points", "rejectedDataPoints":
+			lpr.RejectedDataPoints = json.ReadInt64(iter)
+		case "error_message", "errorMessage":
+			lpr.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return lpr
 }

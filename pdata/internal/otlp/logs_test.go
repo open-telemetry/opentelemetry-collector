@@ -12,19 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlp // import "go.opentelemetry.io/collector/pdata/internal/otlp"
+package otlp
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
-// MigrateLogs implements any translation needed due to deprecation in OTLP logs protocol.
-// Any plog.Unmarshaler implementation from OTLP (proto/json) MUST call this, and the gRPC Server implementation.
-func MigrateLogs(rls []*otlplogs.ResourceLogs) {
-	for _, rl := range rls {
-		if len(rl.ScopeLogs) == 0 {
-			rl.ScopeLogs = rl.DeprecatedScopeLogs
-		}
-		rl.DeprecatedScopeLogs = nil
+func TestDeprecatedScopeLogs(t *testing.T) {
+	sl := new(otlplogs.ScopeLogs)
+	rls := []*otlplogs.ResourceLogs{
+		{
+			ScopeLogs:           []*otlplogs.ScopeLogs{sl},
+			DeprecatedScopeLogs: []*otlplogs.ScopeLogs{sl},
+		},
+		{
+			ScopeLogs:           []*otlplogs.ScopeLogs{},
+			DeprecatedScopeLogs: []*otlplogs.ScopeLogs{sl},
+		},
 	}
+
+	MigrateLogs(rls)
+	assert.Same(t, sl, rls[0].ScopeLogs[0])
+	assert.Same(t, sl, rls[1].ScopeLogs[0])
+	assert.Nil(t, rls[0].DeprecatedScopeLogs)
+	assert.Nil(t, rls[0].DeprecatedScopeLogs)
 }

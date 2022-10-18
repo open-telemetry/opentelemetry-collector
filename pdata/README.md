@@ -1,0 +1,236 @@
+# Pipeline data (pdata)
+
+Pipeline data (pdata) implements data structures that represent telemetry data in-memory. All data received 
+is converted into this format, travels through the pipeline in this format, and is converted from this format by 
+exporters when sending.
+
+Current implementation primarily uses OTLP protobuf structs as the underlying data structures for many of the 
+declared structs. We keep a pointer to OTLP protobuf in the "orig" member field. This allows efficient translation 
+to/from OTLP wire protocol. The underlying data structure is kept private so that we are free to make changes to it 
+in the future.
+
+The pdata API is designed to avoid mutable data sharing and bugs that stem from that. Each pdata instance cannot 
+contain a reference to an object that is used in another pdata instance.
+
+## API naming convention
+
+### Package names
+
+Names of pdata packages don't follow names of the protobuf packages. The pdata has a package per telemetry type 
+starting with `p`, e.g. `ptrace`, and `pcommon` package which includes pdata API for protobuf definitions from 
+`common` and `resource` protobuf packages.
+
+### Protobuf message representation in pdata
+
+Pipeline data structs SHOULD be based on the names of the underlying OTLP protobuf messages. Data types for 
+protobuf messages defined as part of another message SHOULD include the owner's name as a prefix. The following 
+examples are two pdata structs based on protobuf messages defined at the package level and as part of another 
+message: 
+
+- `pmetric.NumberDataPoint` based on a `NumberDataPoint` protobuf message defined in 
+  [metrics.proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto)
+  package.
+- `pmetric.ExponentialHistogramDataPointBuckets` based on a `Buckets` protobuf message defined in 
+  `ExponentialHistogramDataPoint` message of
+  [metrics.proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto)
+  package. 
+
+Exceptions to the naming rules are possible, but not encouraged. Another name can be chosen for brevity or if the 
+struct provides a different interface to manipulate the underlying data. The following exceptions are currently 
+accepted:
+
+- `plog.Logs` based on `LogsData` protobuf message.
+- `pmetric.Metrics` based on `MetricsData` protobuf message.
+- `ptrace.Traces` based on `TracesData` protobuf message.
+- `pcommon.Slice` based on `ArrayValue` protobuf message.
+- `pcommon.Map` based on `KeyValueList` protobuf message.
+- `pcommon.Value` based on `AnyValue` protobuf message.
+
+Each pdata struct MUST have an initialization function starting with `New` prefix. Usage of zero-initialized values is 
+prohibited and can cause a panic. Each pdata struct MUST provide the following methods:
+
+- `MoveTo(<type>)`: moves all the data from one struct instance to another. The destination instance is overwritten and the 
+  source instance is re-initialized as a new empty instance.
+- `CopyTo(<type>)`: deep copies all the data from one struct instance to another. The destination instance is 
+  overwritten and the source instance is not modified.
+
+Each pdata struct based on a protobuf message SHOULD have getter methods for every protobuf field. Exceptions to
+this rule are allowed if exposing a field is not desirable in pdata. For example, a deprecated protobuf field MAY
+not be exposed in pdata. Also, pdata MAY provide a different interface to manipulate protobuf fields without
+exposing them explicitly as is done with `pcommon.Map`.
+
+### Protobuf fields representation in pdata
+
+#### Singular fields
+
+Name of a pdata getter methods representing singular protobuf fields SHOULD match the name the protobuf field but 
+written in CamelCase aligned with Go naming conventions. If a protobuf field is of scalar or enum type, the 
+corresponding pdata struct MUST provide a setter method with `Set` prefix.
+
+Some fields of scalar type in a protobuf message MAY be represented by another pdata type providing an additional 
+interface, for example `pcommon.Timestamp` is another type that wraps `uint64` value and provides an additional
+interface to work with timestamps. pdata fields returning `pcommon.Timestamp` don't follow the recommended naming
+schema, `Timestamp` word is used instead of `TimeUnixNano` to represent protobuf fields that contain
+`time_unix_nano`, for example `StartTimestamp` pdata field is used for `start_time_unix_nano` protobuf fields.
+
+#### Optional fields
+
+Each optional field in a protobuf message exposed in pdata MUST have an additional method with `Has` prefix to
+determine if the field is set.
+
+#### OneOf fields
+
+A pdata struct representing a protobuf message with an exposed oneof field MUST provide getter and setter methods for 
+each option of the oneof field. Name of each setter and getter SHOULD be called the same as the protobuf oneof field 
+options. The following exception is adopted in pdata for numeric oneof protobuf fields for brevity:
+
+```protobuf
+oneof value {
+  double as_double = 4;
+  sfixed64 as_int = 6;
+}
+```
+
+is represented in pdata in a shorter form of the following methods:
+
+```golang
+DoubleValue() float64
+SetDoubleValue(float64)
+IntValue() int64
+SetIntValue(v int64)
+```
+
+If a oneof field option is another protobuf message, the setter name MUST include `Empty` in its name. Such setter 
+MUST set the oneof field to an empty initialized struct and return it. The following conditions define whether the 
+name of the oneof field must be included in the setter and getter method names:
+
+1. If a oneof field represents the whole protobuf message, name of the oneof field itself MAY be omitted in setter 
+   and getter methods. For example:
+
+```go
+func (ms Metric) Sum() Sum
+func (ms Metric) SetEmptySum() Sum
+```
+
+2. If a oneof field is relevant only to a particular field of the message, the pdata getter and setter methods MUST 
+   include name of the oneof field along with name of the option. For example:
+
+```go
+func (ms NumberDataPoint) IntValue() int64
+func (ms NumberDataPoint) SetIntValue(v int64)
+```
+
+Additionally, the pdata struct MUST provide a type getter for every exposed oneof protobuf field. Name of the getter 
+MUST be `Type` for oneof fields representing the whole protobuf message (1), or `<oneof field>Type` for oneof fields 
+relevant only to a particular field. The function MUST return an `int32` enum type called `<struct name>Type` for (1) 
+and `<struct name><oneof field>Type` for (2). For example:
+
+- `func (ms Metric) Type() MetricType` (1)
+- `func (ms NumberDataPoint) ValueType() NumberDataPointValueType` (2)
+
+The enum constants MUST be called the same as the type with a suffix named after the oneof option, e.g.: 
+
+- `MetricTypeSum` (1)
+- `NumberDataPointValueTypeString` (2)
+
+An unset oneof protobuf value MUST be represented by a pdata constant with `Empty` suffix, e.g.:
+
+- `MetricTypeEmpty` (1)
+- `NumberDataPointValueTypeEmpty` (2)
+
+The pdata enum type SHOULD have `String()` method returning a string value of the corresponding oneof field option. 
+
+#### Repeated protobuf fields
+
+Each repeated protobuf message field exposed in pdata MUST be represented as another pdata struct that SHOULD be 
+called the same as the underlying protobuf field with `Slice` suffix. An exception example is `pdata.Map` that 
+provides a different interface to manipulate the underlying protobuf data.
+
+#### Repeated scalar fields
+
+Each repeated scalar protobuf field exposed in pdata MUST be represented as another pdata type wrapping a native go 
+slice. Name of the type SHOULD include name of the primitive data type ending with `Slice` suffix, e.g. `UInt64Slice`.
+
+#### Enum fields
+
+Each protobuf enum field exposed in pdata MUST have a type declared with underlying `int64` type. Name of the type 
+SHOULD follow the same rules as for struct type names representing protobuf messages:
+
+- If a protobuf enum is defined on the package level, pdata type SHOULD have the same name.
+- If a protobuf enum is defined as part of another message, pdata type SHOULD include the protobuf message name as a 
+  prefix.
+
+Constants defined for the pdata int64 type MUST have the same names and numeric values defined in protobuf. Names 
+of the constants must be translated from ALL_CAPS_SNAKE_CASE to CamelCase.
+
+The pdata enum type SHOULD have `String()` method returning a string value for each constant.
+
+Example of a protobuf enum definition in pdata:
+
+```golang
+type AggregationTemporality int32
+const (
+	AggregationTemporalityUnspecified = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED)
+	AggregationTemporalityDelta = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA)
+	AggregationTemporalityCumulative = AggregationTemporality(otlpmetrics.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE)
+)
+```
+
+### Flags
+
+Flags fields are typically defined in protobuf as `uint32` fields representing 32 distinct boolean flags. The 
+exposed protobuf flags fields MUST be defined as new types with `uint32` underlying type and called according to 
+the same rules as struct names representing protobuf messages and other enum types. Each pdata flags type MUST have 
+an empty variable of the fields type with `Default` prefix. Each flag MUST have a getter method returning a 
+particular flag and a setter method with `With` prefix returning a new instance of the pdata flags type. Any instance 
+of the pdata type is immutable since it's just a wrapper over `uint32`.
+
+The following pdata type is used for log record flags field:
+
+```golang
+type LogRecordFlags uint32
+var DefaultLogRecordFlags = LogRecordFlags(0)
+func (ms LogRecordFlags) IsSampled() bool
+func (ms LogRecordFlags) WithIsSampled(b bool) LogRecordFlags 
+```
+
+### Examples
+
+The following protobuf message: 
+
+```protobuf
+message NumberDataPoint {
+  reserved 1;
+  repeated opentelemetry.proto.common.v1.KeyValue attributes = 7;
+  fixed64 start_time_unix_nano = 2;
+  fixed64 time_unix_nano = 3;
+  oneof value {
+    double as_double = 4;
+    sfixed64 as_int = 6;
+  }
+  repeated Exemplar exemplars = 5;
+  uint32 flags = 8;
+}
+```
+
+is represented by the following pdata API
+
+```go
+type NumberDataPoint
+func NewNumberDataPoint() NumberDataPoint 
+func (ms NumberDataPoint) MoveTo(dest NumberDataPoint)
+func (ms NumberDataPoint) CopyTo(dest NumberDataPoint)
+func (ms NumberDataPoint) Attributes() pcommon.Map
+func (ms NumberDataPoint) StartTimestamp() pcommon.Timestamp
+func (ms NumberDataPoint) SetStartTimestamp(v pcommon.Timestamp)
+func (ms NumberDataPoint) Timestamp() pcommon.Timestamp
+func (ms NumberDataPoint) SetTimestamp(v pcommon.Timestamp)
+func (ms NumberDataPoint) ValueType() NumberDataPointValueType
+func (ms NumberDataPoint) DoubleValue() float64
+func (ms NumberDataPoint) SetDoubleValue(v float64)
+func (ms NumberDataPoint) IntValue() int64
+func (ms NumberDataPoint) SetIntValue(v int64)
+func (ms NumberDataPoint) Exemplars() ExemplarSlice 
+func (ms NumberDataPoint) Flags() DataPointFlags
+func (ms NumberDataPoint) SetFlags(v DataPointFlags)
+```

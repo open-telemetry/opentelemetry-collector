@@ -28,8 +28,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
 
-var jsonMarshaler = &jsonpb.Marshaler{}
-var jsonUnmarshaler = &jsonpb.Unmarshaler{}
+var jsonMarshaler = &jsonpb.Marshaler{
+	EnumsAsInts: true,
+}
 
 // Response represents the response for gRPC/HTTP client/server.
 type Response struct {
@@ -62,7 +63,7 @@ func (mr Response) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON unmarshalls Response from JSON bytes.
 func (mr Response) UnmarshalJSON(data []byte) error {
-	return jsonUnmarshaler.Unmarshal(bytes.NewReader(data), mr.orig)
+	return pmetricjson.UnmarshalExportMetricsServiceResponse(data, mr.orig)
 }
 
 // Request represents the request for gRPC/HTTP client/server.

@@ -12,19 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otlp // import "go.opentelemetry.io/collector/pdata/internal/otlp"
+package otlp
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-// MigrateTraces implements any translation needed due to deprecation in OTLP traces protocol.
-// Any ptrace.Unmarshaler implementation from OTLP (proto/json) MUST call this, and the gRPC Server implementation.
-func MigrateTraces(rss []*otlptrace.ResourceSpans) {
-	for _, rs := range rss {
-		if len(rs.ScopeSpans) == 0 {
-			rs.ScopeSpans = rs.DeprecatedScopeSpans
-		}
-		rs.DeprecatedScopeSpans = nil
+func TestDeprecatedScopeSpans(t *testing.T) {
+	ss := new(otlptrace.ScopeSpans)
+	rss := []*otlptrace.ResourceSpans{
+		{
+			ScopeSpans:           []*otlptrace.ScopeSpans{ss},
+			DeprecatedScopeSpans: []*otlptrace.ScopeSpans{ss},
+		},
+		{
+			ScopeSpans:           []*otlptrace.ScopeSpans{},
+			DeprecatedScopeSpans: []*otlptrace.ScopeSpans{ss},
+		},
 	}
+
+	MigrateTraces(rss)
+	assert.Same(t, ss, rss[0].ScopeSpans[0])
+	assert.Same(t, ss, rss[1].ScopeSpans[0])
+	assert.Nil(t, rss[0].DeprecatedScopeSpans)
+	assert.Nil(t, rss[0].DeprecatedScopeSpans)
 }
