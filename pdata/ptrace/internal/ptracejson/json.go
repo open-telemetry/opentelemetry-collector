@@ -63,6 +63,21 @@ func UnmarshalExportTraceServiceRequest(buf []byte, dest *otlpcollectortrace.Exp
 	return iter.Error
 }
 
+func UnmarshalExportTraceServiceResponse(buf []byte, dest *otlpcollectortrace.ExportTraceServiceResponse) error {
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "partial_success", "partialSuccess":
+			dest.PartialSuccess = readExportTracePartialSuccess(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return iter.Error
+}
+
 func readResourceSpans(iter *jsoniter.Iterator) *otlptrace.ResourceSpans {
 	rs := &otlptrace.ResourceSpans{}
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
@@ -226,4 +241,20 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 		return true
 	})
 	return event
+}
+
+func readExportTracePartialSuccess(iter *jsoniter.Iterator) *otlpcollectortrace.ExportTracePartialSuccess {
+	lpr := &otlpcollectortrace.ExportTracePartialSuccess{}
+	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "rejected_spans", "rejectedSpans":
+			lpr.RejectedSpans = json.ReadInt64(iter)
+		case "error_message", "errorMessage":
+			lpr.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return lpr
 }
