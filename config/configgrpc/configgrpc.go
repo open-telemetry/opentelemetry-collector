@@ -284,7 +284,7 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 				"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
 				zap.String(
 					"documentation",
-					"https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md#safeguards-against-denial-of-service-attacks",
+					"https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md#safeguards-against-denial-of-service-attacks",
 				),
 			)
 		}
