@@ -520,6 +520,39 @@ func TestCollectorShutdownBeforeRun(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
+func TestCollectorShutdownBeforeRunMessage(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	// Calling shutdown before collector is running should cause it to return quickly
+	require.NotPanics(t, func() { col.Shutdown() })
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.EqualError(t, col.Run(context.Background()), "collector has already been shutdown and cannot be run again")
+	}()
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+}
+
 func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
