@@ -15,7 +15,7 @@ issues: [6343]
 # Use pipe (|) for multiline entries.
 subtext: |-
   The import path for these exporters can now be access directly:
-  - `go.opentelemetry.io/collector/exporters/loggingexporter`
-  - `go.opentelemetry.io/collector/exporters/otlpexporter`
-  - `go.opentelemetry.io/collector/exporters/otlphttpexporter`
+  - `go.opentelemetry.io/collector/exporter/loggingexporter`
+  - `go.opentelemetry.io/collector/exporter/otlpexporter`
+  - `go.opentelemetry.io/collector/exporter/otlphttpexporter`
 
