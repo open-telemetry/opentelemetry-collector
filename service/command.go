@@ -32,7 +32,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 			if err := featuregate.GetRegistry().Apply(gatesList); err != nil {
 				return err
 			}
-			if BuildFlag {
+			if buildFlag {
 				err, _ := getBuildInfo(set)
 				return err
 			}

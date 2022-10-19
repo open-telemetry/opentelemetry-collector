@@ -83,24 +83,16 @@ func TestBuildInfoFlag(t *testing.T) {
 		telemetry:      newColTelemetry(featuregate.NewRegistry()),
 	}
 	ExpectedYamlStruct := componentsOutput{
-		Version: "latest",
-
-		Receivers: []config.Type{"nop"},
-
+		Version:    "latest",
+		Receivers:  []config.Type{"nop"},
 		Processors: []config.Type{"nop"},
-
-		Exporters: []config.Type{"nop"},
-
+		Exporters:  []config.Type{"nop"},
 		Extensions: []config.Type{"nop"},
 	}
 	ExpectedOutput, err := yaml.Marshal(ExpectedYamlStruct)
-
 	require.NoError(t, err)
-
 	err, Output := getBuildInfo(set)
-
 	require.NoError(t, err)
-
 	assert.Equal(t, ExpectedOutput, Output)
 
 }

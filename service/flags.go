@@ -32,7 +32,7 @@ const (
 var (
 	// Command-line flag that control the configuration file.
 	gatesList = featuregate.FlagValue{}
-	BuildFlag bool
+	buildFlag bool
 )
 
 type configFlagValue struct {
@@ -41,14 +41,10 @@ type configFlagValue struct {
 }
 
 type componentsOutput struct {
-	Version string
-
-	Receivers []config.Type
-
+	Version    string
+	Receivers  []config.Type
 	Processors []config.Type
-
-	Exporters []config.Type
-
+	Exporters  []config.Type
 	Extensions []config.Type
 }
 
@@ -87,7 +83,7 @@ func flags() *flag.FlagSet {
 		"feature-gates",
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
-	flagSet.BoolVar(&BuildFlag, buildInfoFlag, false,
+	flagSet.BoolVar(&buildFlag, buildInfoFlag, false,
 		"Displays list of components available in collector distribution in yaml format",
 	)
 
@@ -114,13 +110,10 @@ func getBuildInfo(set CollectorSettings) (error, []byte) {
 		components.Exporters = append(components.Exporters, exp)
 	}
 	components.Version = set.BuildInfo.Version
-
 	yamlData, err := yaml.Marshal(components)
-
 	if err != nil {
 		return err, nil
 	}
-
 	fmt.Println(string(yamlData))
 	return nil, yamlData
 }
