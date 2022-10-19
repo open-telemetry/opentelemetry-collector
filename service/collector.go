@@ -153,6 +153,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if err = col.service.Start(ctx); err != nil {
+		if shutdownErr := col.service.Shutdown(ctx); shutdownErr != nil {
+			return multierr.Append(err, fmt.Errorf("failed to shutdown service after error: %w", shutdownErr))
+		}
 		return err
 	}
 	col.setCollectorState(Running)
@@ -221,11 +224,6 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 	if err := col.service.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service: %w", err))
-	}
-
-	// TODO: Move this as part of the service shutdown.
-	if err := col.service.telemetryInitializer.shutdown(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 
 	col.setCollectorState(Closed)
