@@ -87,7 +87,7 @@ func flags() *flag.FlagSet {
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
 	flagSet.BoolVar(&BuildFlag, buildInfoFlag, false,
-		"Displays list of components available in collector distribution in yaml format",
+		"Displays a list of components available in collector distribution",
 	)
 
 	return flagSet
