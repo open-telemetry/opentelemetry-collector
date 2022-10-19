@@ -34,10 +34,13 @@ type GRPCClient interface {
 	Export(ctx context.Context, request Request, opts ...grpc.CallOption) (Response, error)
 }
 
-// NewClient returns a new Client connected using the given connection.
-func NewClient(cc *grpc.ClientConn) GRPCClient {
+// NewGRPCClient returns a new GRPCClient connected using the given connection.
+func NewGRPCClient(cc *grpc.ClientConn) GRPCClient {
 	return &grpcClient{rawClient: otlpcollectortrace.NewTraceServiceClient(cc)}
 }
+
+// Deprecated: [v0.63.0]: use NewGRPCClient.
+var NewClient = NewGRPCClient
 
 type grpcClient struct {
 	rawClient otlpcollectortrace.TraceServiceClient

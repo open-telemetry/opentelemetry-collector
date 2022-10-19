@@ -58,7 +58,7 @@ func TestGrpc(t *testing.T) {
 		assert.NoError(t, cc.Close())
 	})
 
-	logClient := NewClient(cc)
+	logClient := NewGRPCClient(cc)
 
 	resp, err := logClient.Export(context.Background(), generateMetricsRequest())
 	assert.NoError(t, err)
@@ -91,7 +91,7 @@ func TestGrpcError(t *testing.T) {
 		assert.NoError(t, cc.Close())
 	})
 
-	logClient := NewClient(cc)
+	logClient := NewGRPCClient(cc)
 	resp, err := logClient.Export(context.Background(), generateMetricsRequest())
 	require.Error(t, err)
 	st, okSt := status.FromError(err)

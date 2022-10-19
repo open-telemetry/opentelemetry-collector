@@ -76,7 +76,7 @@ func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRP
 		require.NoError(t, cc.Close())
 	})
 
-	return pmetricotlp.NewClient(cc)
+	return pmetricotlp.NewGRPCClient(cc)
 }
 
 func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
