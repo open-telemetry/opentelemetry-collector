@@ -73,7 +73,7 @@ func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCCli
 		require.NoError(t, cc.Close())
 	})
 
-	return ptraceotlp.NewClient(cc)
+	return ptraceotlp.NewGRPCClient(cc)
 }
 
 func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {

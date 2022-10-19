@@ -580,7 +580,7 @@ func TestHttpReception(t *testing.T) {
 			assert.NoError(t, errClient)
 			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 			assert.NoError(t, errDial)
-			client := ptraceotlp.NewClient(grpcClientConn)
+			client := ptraceotlp.NewGRPCClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 			resp, errResp := client.Export(ctx, ptraceotlp.NewRequest(), grpc.WaitForReady(true))
 			if test.hasError {
@@ -631,7 +631,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	assert.NoError(t, errClient)
 	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 	assert.NoError(t, errDial)
-	client := ptraceotlp.NewClient(grpcClientConn)
+	client := ptraceotlp.NewGRPCClient(grpcClientConn)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 	resp, errResp := client.Export(ctx, ptraceotlp.NewRequest(), grpc.WaitForReady(true))
 	assert.NoError(t, errResp)
@@ -844,7 +844,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 				grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 				require.NoError(t, errDial)
 
-				cl := ptraceotlp.NewClient(grpcClientConn)
+				cl := ptraceotlp.NewGRPCClient(grpcClientConn)
 				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancelFunc()
 

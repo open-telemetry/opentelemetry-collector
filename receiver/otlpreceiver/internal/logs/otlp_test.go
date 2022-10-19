@@ -75,7 +75,7 @@ func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
 		require.NoError(t, cc.Close())
 	})
 
-	return plogotlp.NewClient(cc)
+	return plogotlp.NewGRPCClient(cc)
 }
 
 func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
