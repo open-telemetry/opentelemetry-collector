@@ -47,7 +47,6 @@ type Exporter struct {
 	spanNamePrefix string
 	mutators       []tag.Mutator
 	tracer         trace.Tracer
-	meter          metric.Meter
 	logger         *zap.Logger
 
 	useOtelForMetrics        bool
@@ -73,7 +72,6 @@ func NewExporter(cfg ExporterSettings) *Exporter {
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
-		meter:          cfg.ExporterCreateSettings.MeterProvider.Meter(exporterScope),
 		logger:         cfg.ExporterCreateSettings.Logger,
 
 		useOtelForMetrics: featuregate.GetRegistry().IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
@@ -81,12 +79,13 @@ func NewExporter(cfg ExporterSettings) *Exporter {
 			attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()),
 		},
 	}
-	exp.createOtelMetrics()
+	meter := cfg.ExporterCreateSettings.MeterProvider.Meter(exporterScope)
+	exp.createOtelMetrics(meter)
 
 	return exp
 }
 
-func (exp *Exporter) createOtelMetrics() {
+func (exp *Exporter) createOtelMetrics(meter metric.Meter) {
 	if !exp.useOtelForMetrics {
 		return
 	}
@@ -97,37 +96,37 @@ func (exp *Exporter) createOtelMetrics() {
 			exp.logger.Warn("failed to create otel instrument", zap.Error(err), zap.String("metric", metricName))
 		}
 	}
-	exp.sentSpans, err = exp.meter.SyncInt64().Counter(
+	exp.sentSpans, err = meter.SyncInt64().Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentSpansKey,
 		instrument.WithDescription("Number of spans successfully sent to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	handleError(obsmetrics.ExporterPrefix+obsmetrics.SentSpansKey, err)
 
-	exp.failedToSendSpans, err = exp.meter.SyncInt64().Counter(
+	exp.failedToSendSpans, err = meter.SyncInt64().Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendSpansKey,
 		instrument.WithDescription("Number of spans in failed attempts to send to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	handleError(obsmetrics.ExporterPrefix+obsmetrics.FailedToSendSpansKey, err)
 
-	exp.sentMetricPoints, err = exp.meter.SyncInt64().Counter(
+	exp.sentMetricPoints, err = meter.SyncInt64().Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully sent to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	handleError(obsmetrics.ExporterPrefix+obsmetrics.SentMetricPointsKey, err)
 
-	exp.failedToSendMetricPoints, err = exp.meter.SyncInt64().Counter(
+	exp.failedToSendMetricPoints, err = meter.SyncInt64().Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendMetricPointsKey,
 		instrument.WithDescription("Number of metric points in failed attempts to send to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	handleError(obsmetrics.ExporterPrefix+obsmetrics.FailedToSendMetricPointsKey, err)
 
-	exp.sentLogRecords, err = exp.meter.SyncInt64().Counter(
+	exp.sentLogRecords, err = meter.SyncInt64().Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.SentLogRecordsKey,
 		instrument.WithDescription("Number of log record successfully sent to destination."),
 		instrument.WithUnit(unit.Dimensionless))
 	handleError(obsmetrics.ExporterPrefix+obsmetrics.SentLogRecordsKey, err)
 
-	exp.failedToSendLogRecords, err = exp.meter.SyncInt64().Counter(
+	exp.failedToSendLogRecords, err = meter.SyncInt64().Counter(
 		obsmetrics.ExporterPrefix+obsmetrics.FailedToSendLogRecordsKey,
 		instrument.WithDescription("Number of log records in failed attempts to send to destination."),
 		instrument.WithUnit(unit.Dimensionless))
@@ -221,10 +220,10 @@ func (exp *Exporter) recordWithOC(ctx context.Context, dataType config.DataType,
 		sentMeasure = obsmetrics.ExporterSentSpans
 		failedMeasure = obsmetrics.ExporterFailedToSendSpans
 	case config.MetricsDataType:
-		sentMeasure = obsmetrics.ReceiverAcceptedMetricPoints
+		sentMeasure = obsmetrics.ExporterSentMetricPoints
 		failedMeasure = obsmetrics.ExporterFailedToSendMetricPoints
 	case config.LogsDataType:
-		sentMeasure = obsmetrics.ReceiverAcceptedLogRecords
+		sentMeasure = obsmetrics.ExporterSentLogRecords
 		failedMeasure = obsmetrics.ExporterFailedToSendLogRecords
 	}
 
