@@ -26,6 +26,8 @@ type converter struct{}
 // New returns a confmap.Converter, that expands all environment variables for a given confmap.Conf.
 //
 // Notice: This API is experimental.
+//
+// Notice: This component will not be removed without Anthony's approval of the plan.
 func New() confmap.Converter {
 	return converter{}
 }
