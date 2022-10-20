@@ -88,8 +88,13 @@ func NewDefaultConfig() Config {
 	}
 }
 
-// ValidateAndSetGoPath checks whether the current configuration is valid and sets go path
-func (c *Config) ValidateAndSetGoPath() error {
+// Validate checks whether the current configuration is valid
+func (c *Config) Validate() error {
+	return multierr.Combine(validateModules(c.Extensions), validateModules(c.Receivers), validateModules(c.Exporters), validateModules(c.Processors))
+}
+
+// SetGoPath sets go path
+func (c *Config) SetGoPath() error {
 	if !c.SkipCompilation || !c.SkipGetModules {
 		// #nosec G204
 		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
@@ -99,11 +104,9 @@ func (c *Config) ValidateAndSetGoPath() error {
 			}
 			c.Distribution.Go = path
 		}
-
 		c.Logger.Info("Using go", zap.String("go-executable", c.Distribution.Go))
 	}
-
-	return multierr.Combine(validateModules(c.Extensions), validateModules(c.Receivers), validateModules(c.Exporters), validateModules(c.Processors))
+	return nil
 }
 
 // ParseModules will parse the Modules entries and populate the missing values
