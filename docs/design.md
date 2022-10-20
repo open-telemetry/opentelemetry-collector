@@ -15,7 +15,7 @@ Data receiving, processing, and exporting is done using [Pipelines](#pipelines).
 - a series of optional [Processors](#processors) that get the data from receivers and process it
 - a set of [Exporters](#exporters) which get the data from processors and send it further outside the Collector.
 
-The same receiver can feed data to multiple pipelines and multiple pipelines can feed data into the same Exporter.
+The same receiver can be included in multiple pipelines and multiple pipelines can include the same Exporter.
 
 ## Pipelines
 
@@ -27,7 +27,7 @@ Pipelines can operate on 3 telemetry data types: traces, metrics, and logs. The 
 
 There can be one or more receivers in a pipeline. Data from all receivers is pushed to the first processor, which performs a processing on it and then pushes it to the next processor (or it may drop the data, e.g. if it is a “sampling” processor) and so on until the last processor in the pipeline pushes the data to the exporters. Each exporter gets a copy of each data element. The last processor uses a `fanoutconsumer` to fan out the data to multiple exporters.
 
-The pipeline is constructed during Collector startup based on pipeline definition in the config file.
+The pipeline is constructed during Collector startup based on pipeline definition in the configuration.
 
 A pipeline configuration typically looks like this:
 
@@ -78,7 +78,7 @@ Important: when the same receiver is referenced in more than one pipeline the Co
 
 ### Exporters
 
-Exporters typically forward the data they get to a destination on a network (but they can also send it elsewhere, e.g `logging` exporter writes the telemetry data to a standard out).
+Exporters typically forward the data they get to a destination on a network (but they can also send it elsewhere, e.g `logging` exporter writes the telemetry data to the logging destination).
 
 The configuration allows to have multiple exporters of the same type, even in the same pipeline. For example one can have 2 `otlp` exporters defined each one sending to a different OTLP endpoint, e.g.:
 
@@ -122,7 +122,7 @@ A pipeline can contain sequentially connected processors. The first processor ge
 
 Processors can transform the data before forwarding it (i.e. add or remove attributes from spans), they can drop the data simply by deciding not to forward it (this is for example how the `probabilisticsampler` processor works), they can also generate new data. This is how a `spanmetrics` processor can produce metrics for spans processed by the pipeline.
 
-The same name of the processor can be referenced in the `processors` key of multiple pipelines. In this case the same configuration will be used for each of these processors however each pipeline will always get its own instance of the processor. Each of these processors will have its own state, the processors are never shared between pipelines. For example if `batch` processor is used in several pipelines each pipeline will have its own batch processor (although the batch processor will be configured exactly the same way if the reference the same key in the config file). As an example, given the following config:
+The same name of the processor can be referenced in the `processors` key of multiple pipelines. In this case the same configuration will be used for each of these processors however each pipeline will always get its own instance of the processor. Each of these processors will have its own state, the processors are never shared between pipelines. For example if `batch` processor is used in several pipelines each pipeline will have its own batch processor (although each batch processor will be configured exactly the same way if they reference the same key in the configuration). As an example, given the following configuration:
 
 ```yaml
 processors:
@@ -153,7 +153,7 @@ Note that each `batch` processor is an independent instance, although both are c
 
 On a typical VM/container, there are user applications running in some
 processes/pods with OpenTelemetry Library (Library). Previously, Library did
-all the recording, collecting, sampling and aggregation on spans/metrics/logs,
+all the recording, collecting, sampling and aggregation on traces/metrics/logs,
 and exported them to other persistent storage backends via the Library
 exporters, or displayed them on local zpages. This pattern has several
 drawbacks, for example:
@@ -174,7 +174,7 @@ drawbacks, for example:
 To resolve the issues above, you can run OpenTelemetry Collector as an Agent.
 The Agent runs as a daemon in the VM/container and can be deployed independent
 of Library. Once Agent is deployed and running, it should be able to retrieve
-spans/metrics/logs from Library, export them to other backends. We MAY also
+traces/metrics/logs from Library, export them to other backends. We MAY also
 give Agent the ability to push configurations (e.g sampling probability) to
 Library. For those languages that cannot do stats aggregation in process, they
 should also be able to send raw measurements and have Agent do the aggregation.
@@ -183,7 +183,7 @@ should also be able to send raw measurements and have Agent do the aggregation.
 ![agent-architecture](images/design-collector-agent.png)
 
 For developers/maintainers of other libraries: Agent can also
-accept spans/metrics/logs from other tracing/monitoring libraries, such as
+accept traces/metrics/logs from other tracing/monitoring libraries, such as
 Zipkin, Prometheus, etc. This is done by adding specific receivers. See
 [Receivers](#receivers) for details.
 
