@@ -54,3 +54,6 @@ s+Buckets \(.*\)tive = \(.*\);+Buckets \1tive = \2\
 
 # optional fixed64 foo = 1 -> oneof foo_ { fixed64 foo = 1;}
 s+optional \(.*\) \(.*\) = \(.*\);+ oneof \2_ { \1 \2 = \3;}+g
+
+s+\(.*\)PartialSuccess partial_success = \(.*\);+\1PartialSuccess partial_success = \2\
+  [ (gogoproto.nullable) = false ];+g

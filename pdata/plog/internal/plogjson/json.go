@@ -172,8 +172,8 @@ func readSeverityNumber(iter *jsoniter.Iterator) otlplogs.SeverityNumber {
 	return otlplogs.SeverityNumber(json.ReadEnumValue(iter, otlplogs.SeverityNumber_value))
 }
 
-func readExportLogsPartialSuccess(iter *jsoniter.Iterator) *otlpcollectorlog.ExportLogsPartialSuccess {
-	lpr := &otlpcollectorlog.ExportLogsPartialSuccess{}
+func readExportLogsPartialSuccess(iter *jsoniter.Iterator) otlpcollectorlog.ExportLogsPartialSuccess {
+	lpr := otlpcollectorlog.ExportLogsPartialSuccess{}
 	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "rejected_log_records", "rejectedLogRecords":

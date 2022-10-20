@@ -510,8 +510,8 @@ func readAggregationTemporality(iter *jsoniter.Iterator) otlpmetrics.Aggregation
 	return otlpmetrics.AggregationTemporality(json.ReadEnumValue(iter, otlpmetrics.AggregationTemporality_value))
 }
 
-func readExportMetricsPartialSuccess(iter *jsoniter.Iterator) *otlpcollectormetrics.ExportMetricsPartialSuccess {
-	lpr := &otlpcollectormetrics.ExportMetricsPartialSuccess{}
+func readExportMetricsPartialSuccess(iter *jsoniter.Iterator) otlpcollectormetrics.ExportMetricsPartialSuccess {
+	lpr := otlpcollectormetrics.ExportMetricsPartialSuccess{}
 	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "rejected_data_points", "rejectedDataPoints":
