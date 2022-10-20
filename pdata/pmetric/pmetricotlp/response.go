@@ -21,41 +21,47 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
 
-// Response represents the response for gRPC/HTTP client/server.
-type Response struct {
+// ExportResponse represents the response for gRPC/HTTP client/server.
+type ExportResponse struct {
 	orig *otlpcollectormetrics.ExportMetricsServiceResponse
 }
 
-// NewResponse returns an empty Response.
-func NewResponse() Response {
-	return Response{orig: &otlpcollectormetrics.ExportMetricsServiceResponse{}}
+// NewExportResponse returns an empty ExportResponse.
+func NewExportResponse() ExportResponse {
+	return ExportResponse{orig: &otlpcollectormetrics.ExportMetricsServiceResponse{}}
 }
 
-// MarshalProto marshals Response into proto bytes.
-func (mr Response) MarshalProto() ([]byte, error) {
-	return mr.orig.Marshal()
+// MarshalProto marshals ExportResponse into proto bytes.
+func (ms ExportResponse) MarshalProto() ([]byte, error) {
+	return ms.orig.Marshal()
 }
 
-// UnmarshalProto unmarshalls Response from proto bytes.
-func (mr Response) UnmarshalProto(data []byte) error {
-	return mr.orig.Unmarshal(data)
+// UnmarshalProto unmarshalls ExportResponse from proto bytes.
+func (ms ExportResponse) UnmarshalProto(data []byte) error {
+	return ms.orig.Unmarshal(data)
 }
 
-// MarshalJSON marshals Response into JSON bytes.
-func (mr Response) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals ExportResponse into JSON bytes.
+func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	if err := pmetricjson.JSONMarshaler.Marshal(&buf, mr.orig); err != nil {
+	if err := pmetricjson.JSONMarshaler.Marshal(&buf, ms.orig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-// UnmarshalJSON unmarshalls Response from JSON bytes.
-func (mr Response) UnmarshalJSON(data []byte) error {
-	return pmetricjson.UnmarshalExportMetricsServiceResponse(data, mr.orig)
+// UnmarshalJSON unmarshalls ExportResponse from JSON bytes.
+func (ms ExportResponse) UnmarshalJSON(data []byte) error {
+	return pmetricjson.UnmarshalExportMetricsServiceResponse(data, ms.orig)
 }
 
-// PartialSuccess returns the ExportLogsPartialSuccess associated with this Response.
-func (mr Response) PartialSuccess() ExportMetricsPartialSuccess {
-	return ExportMetricsPartialSuccess(internal.NewExportMetricsPartialSuccess(&mr.orig.PartialSuccess))
+// PartialSuccess returns the ExportLogsPartialSuccess associated with this ExportResponse.
+func (ms ExportResponse) PartialSuccess() ExportMetricsPartialSuccess {
+	return ExportMetricsPartialSuccess(internal.NewExportMetricsPartialSuccess(&ms.orig.PartialSuccess))
 }
+
+// Deprecated: [v0.63.0] use ExportResponse.
+type Response = ExportResponse
+
+// Deprecated: [v0.63.0] use NewExportResponse.
+var NewResponse = NewExportResponse

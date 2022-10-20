@@ -24,52 +24,61 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/internal/plogjson"
 )
 
-// Request represents the request for gRPC/HTTP client/server.
+// ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for plog.Logs data.
-type Request struct {
+type ExportRequest struct {
 	orig *otlpcollectorlog.ExportLogsServiceRequest
 }
 
-// NewRequest returns an empty Request.
-func NewRequest() Request {
-	return Request{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
+// NewExportRequest returns an empty ExportRequest.
+func NewExportRequest() ExportRequest {
+	return ExportRequest{orig: &otlpcollectorlog.ExportLogsServiceRequest{}}
 }
 
-// NewRequestFromLogs returns a Request from plog.Logs.
-// Because Request is a wrapper for plog.Logs,
-// any changes to the provided Logs struct will be reflected in the Request and vice versa.
-func NewRequestFromLogs(ld plog.Logs) Request {
-	return Request{orig: internal.GetOrigLogs(internal.Logs(ld))}
+// NewExportRequestFromLogs returns a ExportRequest from plog.Logs.
+// Because ExportRequest is a wrapper for plog.Logs,
+// any changes to the provided Logs struct will be reflected in the ExportRequest and vice versa.
+func NewExportRequestFromLogs(ld plog.Logs) ExportRequest {
+	return ExportRequest{orig: internal.GetOrigLogs(internal.Logs(ld))}
 }
 
-// MarshalProto marshals Request into proto bytes.
-func (lr Request) MarshalProto() ([]byte, error) {
-	return lr.orig.Marshal()
+// MarshalProto marshals ExportRequest into proto bytes.
+func (ms ExportRequest) MarshalProto() ([]byte, error) {
+	return ms.orig.Marshal()
 }
 
-// UnmarshalProto unmarshalls Request from proto bytes.
-func (lr Request) UnmarshalProto(data []byte) error {
-	if err := lr.orig.Unmarshal(data); err != nil {
+// UnmarshalProto unmarshalls ExportRequest from proto bytes.
+func (ms ExportRequest) UnmarshalProto(data []byte) error {
+	if err := ms.orig.Unmarshal(data); err != nil {
 		return err
 	}
-	otlp.MigrateLogs(lr.orig.ResourceLogs)
+	otlp.MigrateLogs(ms.orig.ResourceLogs)
 	return nil
 }
 
-// MarshalJSON marshals Request into JSON bytes.
-func (lr Request) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals ExportRequest into JSON bytes.
+func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	if err := plogjson.JSONMarshaler.Marshal(&buf, lr.orig); err != nil {
+	if err := plogjson.JSONMarshaler.Marshal(&buf, ms.orig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-// UnmarshalJSON unmarshalls Request from JSON bytes.
-func (lr Request) UnmarshalJSON(data []byte) error {
-	return plogjson.UnmarshalExportLogsServiceRequest(data, lr.orig)
+// UnmarshalJSON unmarshalls ExportRequest from JSON bytes.
+func (ms ExportRequest) UnmarshalJSON(data []byte) error {
+	return plogjson.UnmarshalExportLogsServiceRequest(data, ms.orig)
 }
 
-func (lr Request) Logs() plog.Logs {
-	return plog.Logs(internal.NewLogs(lr.orig))
+func (ms ExportRequest) Logs() plog.Logs {
+	return plog.Logs(internal.NewLogs(ms.orig))
 }
+
+// Deprecated: [v0.63.0] use ExportRequest.
+type Request = ExportRequest
+
+// Deprecated: [v0.63.0] use NewExportRequest.
+var NewRequest = NewExportRequest
+
+// Deprecated: [v0.63.0] use NewExportRequestFromLogs.
+var NewRequestFromLogs = NewExportRequestFromLogs

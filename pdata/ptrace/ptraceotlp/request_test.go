@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var _ json.Unmarshaler = Request{}
-var _ json.Marshaler = Request{}
+var _ json.Unmarshaler = ExportRequest{}
+var _ json.Marshaler = ExportRequest{}
 
 var tracesRequestJSON = []byte(`
 	{
@@ -49,14 +49,14 @@ var tracesRequestJSON = []byte(`
 	}`)
 
 func TestRequestToPData(t *testing.T) {
-	tr := NewRequest()
+	tr := NewExportRequest()
 	assert.Equal(t, tr.Traces().SpanCount(), 0)
 	tr.Traces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	assert.Equal(t, tr.Traces().SpanCount(), 1)
 }
 
 func TestRequestJSON(t *testing.T) {
-	tr := NewRequest()
+	tr := NewExportRequest()
 	assert.NoError(t, tr.UnmarshalJSON(tracesRequestJSON))
 	assert.Equal(t, "test_span", tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 

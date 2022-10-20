@@ -21,41 +21,47 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/internal/ptracejson"
 )
 
-// Response represents the response for gRPC/HTTP client/server.
-type Response struct {
+// ExportResponse represents the response for gRPC/HTTP client/server.
+type ExportResponse struct {
 	orig *otlpcollectortrace.ExportTraceServiceResponse
 }
 
-// NewResponse returns an empty Response.
-func NewResponse() Response {
-	return Response{orig: &otlpcollectortrace.ExportTraceServiceResponse{}}
+// NewExportResponse returns an empty ExportResponse.
+func NewExportResponse() ExportResponse {
+	return ExportResponse{orig: &otlpcollectortrace.ExportTraceServiceResponse{}}
 }
 
-// MarshalProto marshals Response into proto bytes.
-func (tr Response) MarshalProto() ([]byte, error) {
-	return tr.orig.Marshal()
+// MarshalProto marshals ExportResponse into proto bytes.
+func (ms ExportResponse) MarshalProto() ([]byte, error) {
+	return ms.orig.Marshal()
 }
 
-// UnmarshalProto unmarshalls Response from proto bytes.
-func (tr Response) UnmarshalProto(data []byte) error {
-	return tr.orig.Unmarshal(data)
+// UnmarshalProto unmarshalls ExportResponse from proto bytes.
+func (ms ExportResponse) UnmarshalProto(data []byte) error {
+	return ms.orig.Unmarshal(data)
 }
 
-// MarshalJSON marshals Response into JSON bytes.
-func (tr Response) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals ExportResponse into JSON bytes.
+func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	if err := ptracejson.JSONMarshaler.Marshal(&buf, tr.orig); err != nil {
+	if err := ptracejson.JSONMarshaler.Marshal(&buf, ms.orig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-// UnmarshalJSON unmarshalls Response from JSON bytes.
-func (tr Response) UnmarshalJSON(data []byte) error {
-	return ptracejson.UnmarshalExportTraceServiceResponse(data, tr.orig)
+// UnmarshalJSON unmarshalls ExportResponse from JSON bytes.
+func (ms ExportResponse) UnmarshalJSON(data []byte) error {
+	return ptracejson.UnmarshalExportTraceServiceResponse(data, ms.orig)
 }
 
-// PartialSuccess returns the ExportLogsPartialSuccess associated with this Response.
-func (tr Response) PartialSuccess() ExportTracePartialSuccess {
-	return ExportTracePartialSuccess(internal.NewExportTracePartialSuccess(&tr.orig.PartialSuccess))
+// PartialSuccess returns the ExportLogsPartialSuccess associated with this ExportResponse.
+func (ms ExportResponse) PartialSuccess() ExportTracePartialSuccess {
+	return ExportTracePartialSuccess(internal.NewExportTracePartialSuccess(&ms.orig.PartialSuccess))
 }
+
+// Deprecated: [v0.63.0] use ExportResponse.
+type Response = ExportResponse
+
+// Deprecated: [v0.63.0] use NewExportResponse.
+var NewResponse = NewExportResponse

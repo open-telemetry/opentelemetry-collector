@@ -48,16 +48,16 @@ func New(id config.ComponentID, nextConsumer consumer.Logs, set component.Receiv
 }
 
 // Export implements the service Export logs func.
-func (r *Receiver) Export(ctx context.Context, req plogotlp.Request) (plogotlp.Response, error) {
+func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	ld := req.Logs()
 	numSpans := ld.LogRecordCount()
 	if numSpans == 0 {
-		return plogotlp.NewResponse(), nil
+		return plogotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartLogsOp(ctx)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
 	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return plogotlp.NewResponse(), err
+	return plogotlp.NewExportResponse(), err
 }

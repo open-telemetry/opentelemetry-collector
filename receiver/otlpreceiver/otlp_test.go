@@ -366,7 +366,7 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 	allTraces := sink.AllTraces()
 	if expectedErr == nil {
 		assert.Equal(t, 200, resp.StatusCode)
-		tr := ptraceotlp.NewResponse()
+		tr := ptraceotlp.NewExportResponse()
 		assert.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
 
 		require.Len(t, allTraces, 1)
@@ -489,7 +489,7 @@ func testHTTPProtobufRequest(
 	if expectedErr == nil {
 		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
 
-		tr := ptraceotlp.NewResponse()
+		tr := ptraceotlp.NewExportResponse()
 		assert.NoError(t, tr.UnmarshalProto(respBytes), "Unable to unmarshal response to Response")
 
 		require.Len(t, allTraces, 1)
@@ -1003,7 +1003,7 @@ loop:
 
 func exportTraces(cc *grpc.ClientConn, td ptrace.Traces) error {
 	acc := ptraceotlp.NewGRPCClient(cc)
-	req := ptraceotlp.NewRequestFromTraces(td)
+	req := ptraceotlp.NewExportRequestFromTraces(td)
 	_, err := acc.Export(context.Background(), req)
 
 	return err
