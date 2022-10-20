@@ -279,7 +279,7 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
 		if host, _, err := net.SplitHostPort(gss.NetAddr.Endpoint); err != nil {
 			return nil, fmt.Errorf("failed to parse endpoint: %w", err)
-		} else if host == "0.0.0.0" || host == "::" {
+		} else if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
 			settings.Logger.Warn(
 				"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
 				zap.String(

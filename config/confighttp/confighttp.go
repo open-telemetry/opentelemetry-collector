@@ -263,7 +263,7 @@ func WithErrorHandler(e errorHandler) ToServerOption {
 func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	if host, _, err := net.SplitHostPort(hss.Endpoint); err != nil {
 		return nil, fmt.Errorf("failed to parse endpoint: %w", err)
-	} else if host == "0.0.0.0" || host == "::" {
+	} else if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
 		settings.Logger.Warn(
 			"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
 			zap.String(
