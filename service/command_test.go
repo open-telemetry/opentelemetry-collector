@@ -15,8 +15,17 @@
 package service
 
 import (
+	"bytes"
+	"io"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,4 +56,55 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 
 	cmd := NewCommand(CollectorSettings{Factories: factories, ConfigProvider: cfgProvider})
 	require.Error(t, cmd.Execute())
+}
+
+func TestBuildSubCommand(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	}
+	cmd := NewCommand(set)
+	cmd.SetArgs([]string{"build-info"})
+
+	ExpectedYamlStruct := componentsOutput{
+		Version:    "latest",
+		Receivers:  []config.Type{"nop"},
+		Processors: []config.Type{"nop"},
+		Exporters:  []config.Type{"nop"},
+		Extensions: []config.Type{"nop"},
+	}
+	ExpectedOutput, err := yaml.Marshal(ExpectedYamlStruct)
+	require.NoError(t, err)
+
+	backup := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err = cmd.Execute()
+	require.NoError(t, err)
+
+	bufChan := make(chan string)
+
+	go func() {
+		var buf bytes.Buffer
+		_, err = io.Copy(&buf, r)
+		require.NoError(t, err)
+		bufChan <- buf.String()
+	}()
+
+	err = w.Close()
+	require.NoError(t, err)
+	defer func() { os.Stdout = backup }()
+	output := <-bufChan
+
+	assert.Equal(t, strings.Trim(output, "\n"), strings.Trim(string(ExpectedOutput), "\n"))
+
 }
