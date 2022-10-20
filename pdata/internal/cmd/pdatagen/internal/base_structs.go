@@ -15,8 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
+	"bytes"
 	"os"
-	"strings"
 )
 
 const messageValueTemplate = `${description}
@@ -106,13 +106,13 @@ type baseStruct interface {
 
 	getPackageName() string
 
-	generateStruct(sb *strings.Builder)
+	generateStruct(sb *bytes.Buffer)
 
-	generateTests(sb *strings.Builder)
+	generateTests(sb *bytes.Buffer)
 
-	generateTestValueHelpers(sb *strings.Builder)
+	generateTestValueHelpers(sb *bytes.Buffer)
 
-	generateInternal(sb *strings.Builder)
+	generateInternal(sb *bytes.Buffer)
 }
 
 type messageValueStruct struct {
@@ -131,7 +131,7 @@ func (ms *messageValueStruct) getPackageName() string {
 	return ms.packageName
 }
 
-func (ms *messageValueStruct) generateStruct(sb *strings.Builder) {
+func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -169,7 +169,7 @@ func (ms *messageValueStruct) generateStruct(sb *strings.Builder) {
 	}))
 }
 
-func (ms *messageValueStruct) generateTests(sb *strings.Builder) {
+func (ms *messageValueStruct) generateTests(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -186,7 +186,7 @@ func (ms *messageValueStruct) generateTests(sb *strings.Builder) {
 	}
 }
 
-func (ms *messageValueStruct) generateTestValueHelpers(sb *strings.Builder) {
+func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueGenerateTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -217,7 +217,7 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *strings.Builder) {
 	}))
 }
 
-func (ms *messageValueStruct) generateInternal(sb *strings.Builder) {
+func (ms *messageValueStruct) generateInternal(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueAliasTemplate, func(name string) string {
 		switch name {
 		case "structName":

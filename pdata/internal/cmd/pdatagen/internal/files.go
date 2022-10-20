@@ -15,9 +15,9 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const header = `// Copyright The OpenTelemetry Authors
@@ -59,12 +59,7 @@ type File struct {
 
 // GenerateFile generates the configured data structures for this File.
 func (f *File) GenerateFile() error {
-	fp, err := os.Create(filepath.Join(".", "pdata", f.PackageName, generateFileName(f.Name)))
-	if err != nil {
-		return err
-	}
-
-	var sb strings.Builder
+	var sb bytes.Buffer
 	generateHeader(&sb, f.PackageName)
 
 	// Add imports
@@ -85,21 +80,14 @@ func (f *File) GenerateFile() error {
 	}
 	sb.WriteString(newLine)
 
-	_, err = fp.WriteString(sb.String())
-	if err != nil {
-		return err
-	}
-	return fp.Close()
+	// ignore gosec complain about permissions being `0644`.
+	//nolint:gosec
+	return os.WriteFile(filepath.Join("pdata", f.PackageName, generateFileName(f.Name)), sb.Bytes(), 0644)
 }
 
 // GenerateTestFile generates tests for the configured data structures for this File.
 func (f *File) GenerateTestFile() error {
-	fp, err := os.Create(filepath.Join(".", "pdata", f.PackageName, generateTestFileName(f.Name)))
-	if err != nil {
-		return err
-	}
-
-	var sb strings.Builder
+	var sb bytes.Buffer
 	generateHeader(&sb, f.PackageName)
 
 	// Add imports
@@ -119,21 +107,14 @@ func (f *File) GenerateTestFile() error {
 		s.generateTests(&sb)
 	}
 
-	_, err = fp.WriteString(sb.String())
-	if err != nil {
-		return err
-	}
-	return fp.Close()
+	// ignore gosec complain about permissions being `0644`.
+	//nolint:gosec
+	return os.WriteFile(filepath.Join("pdata", f.PackageName, generateTestFileName(f.Name)), sb.Bytes(), 0644)
 }
 
 // GenerateInternalFile generates the internal pdata structures for this File.
 func (f *File) GenerateInternalFile() error {
-	fp, err := os.Create(filepath.Join(".", "pdata", "internal", generateInternalFileName(f.Name)))
-	if err != nil {
-		return err
-	}
-
-	var sb strings.Builder
+	var sb bytes.Buffer
 	generateHeader(&sb, "internal")
 
 	// Add imports
@@ -160,11 +141,9 @@ func (f *File) GenerateInternalFile() error {
 	}
 	sb.WriteString(newLine)
 
-	_, err = fp.WriteString(sb.String())
-	if err != nil {
-		return err
-	}
-	return fp.Close()
+	// ignore gosec complain about permissions being `0644`.
+	//nolint:gosec
+	return os.WriteFile(filepath.Join("pdata", "internal", generateInternalFileName(f.Name)), sb.Bytes(), 0644)
 }
 
 func generateFileName(fileName string) string {
@@ -179,7 +158,7 @@ func generateTestFileName(fileName string) string {
 	return "generated_" + fileName + "_test.go"
 }
 
-func generateHeader(sb *strings.Builder, packageName string) {
+func generateHeader(sb *bytes.Buffer, packageName string) {
 	sb.WriteString(header)
 	sb.WriteString(newLine + newLine)
 	sb.WriteString("package " + packageName)
