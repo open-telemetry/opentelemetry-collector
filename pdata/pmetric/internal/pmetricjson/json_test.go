@@ -42,7 +42,7 @@ func TestReadExportMetricsServiceResponse(t *testing.T) {
 	jsonStr := `{"extra":"", "partialSuccess": {}}`
 	value := &otlpcollectormetrics.ExportMetricsServiceResponse{}
 	assert.NoError(t, UnmarshalExportMetricsServiceResponse([]byte(jsonStr), value))
-	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceResponse{PartialSuccess: &otlpcollectormetrics.ExportMetricsPartialSuccess{}}, value)
+	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceResponse{}, value)
 }
 
 func TestReadResourceMetrics(t *testing.T) {
@@ -281,5 +281,5 @@ func TestReadExportMetricsPartialSuccess(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := readExportMetricsPartialSuccess(iter)
 	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlpcollectormetrics.ExportMetricsPartialSuccess{RejectedDataPoints: 1, ErrorMessage: "nothing"}, value)
+	assert.Equal(t, otlpcollectormetrics.ExportMetricsPartialSuccess{RejectedDataPoints: 1, ErrorMessage: "nothing"}, value)
 }

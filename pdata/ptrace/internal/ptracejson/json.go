@@ -251,8 +251,8 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 	return event
 }
 
-func readExportTracePartialSuccess(iter *jsoniter.Iterator) *otlpcollectortrace.ExportTracePartialSuccess {
-	lpr := &otlpcollectortrace.ExportTracePartialSuccess{}
+func readExportTracePartialSuccess(iter *jsoniter.Iterator) otlpcollectortrace.ExportTracePartialSuccess {
+	lpr := otlpcollectortrace.ExportTracePartialSuccess{}
 	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "rejected_spans", "rejectedSpans":
