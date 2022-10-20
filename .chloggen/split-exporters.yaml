@@ -18,4 +18,6 @@ subtext: |-
   - `go.opentelemetry.io/collector/exporter/loggingexporter`
   - `go.opentelemetry.io/collector/exporter/otlpexporter`
   - `go.opentelemetry.io/collector/exporter/otlphttpexporter`
-
+  
+  If using these exporters, modify your Collector builder configuration to use `gomod` directly, such as:
+  -  `gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.63.0`
