@@ -84,9 +84,10 @@ func TestBuildSubCommand(t *testing.T) {
 	ExpectedOutput, err := yaml.Marshal(ExpectedYamlStruct)
 	require.NoError(t, err)
 
-	backup := os.Stdout
+	// Obtaining StdOutput of cmd.Execute()
+	oldStdOut := os.Stdout
 	r, w, _ := os.Pipe()
-	os.Stdout = w
+	os.Stdout = w //Write to os.StdOut
 
 	err = cmd.Execute()
 	require.NoError(t, err)
@@ -102,9 +103,10 @@ func TestBuildSubCommand(t *testing.T) {
 
 	err = w.Close()
 	require.NoError(t, err)
-	defer func() { os.Stdout = backup }()
+	defer func() { os.Stdout = oldStdOut }() //Restore os.Stdout to old value after test
 	output := <-bufChan
-
+	//Trim new line at the end of the two strings to make a better comparison as string() adds an extra new
+	//line that makes the test fail.
 	assert.Equal(t, strings.Trim(output, "\n"), strings.Trim(string(ExpectedOutput), "\n"))
 
 }
