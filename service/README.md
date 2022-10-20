@@ -38,10 +38,10 @@ For more technical details about how configuration is resolved you can read the 
 
 # How to check components available in a distribution
  
-Use the flag --build-info. Below is an example:
+Use the sub command build-info. Below is an example:
 
 ```bash
-   .\otelcol --build-info
+   .\otelcol build-info
 ```
 Sample output:
 

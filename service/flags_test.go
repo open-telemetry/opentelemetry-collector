@@ -15,12 +15,6 @@
 package service
 
 import (
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/featuregate"
-	"gopkg.in/yaml.v3"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,31 +62,4 @@ func TestSetFlag(t *testing.T) {
 			assert.Equal(t, tt.expectedConfigs, getConfigFlag(flgs))
 		})
 	}
-}
-func TestBuildInfoFlag(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-
-	set := CollectorSettings{
-		BuildInfo:      component.NewDefaultBuildInfo(),
-		Factories:      factories,
-		ConfigProvider: cfgProvider,
-		telemetry:      newColTelemetry(featuregate.NewRegistry()),
-	}
-	ExpectedYamlStruct := componentsOutput{
-		Version:    "latest",
-		Receivers:  []config.Type{"nop"},
-		Processors: []config.Type{"nop"},
-		Exporters:  []config.Type{"nop"},
-		Extensions: []config.Type{"nop"},
-	}
-	ExpectedOutput, err := yaml.Marshal(ExpectedYamlStruct)
-	require.NoError(t, err)
-	err, Output := getBuildInfo(set)
-	require.NoError(t, err)
-	assert.Equal(t, ExpectedOutput, Output)
-
 }
