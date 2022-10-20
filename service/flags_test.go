@@ -29,24 +29,39 @@ func TestSetFlag(t *testing.T) {
 		expectedErr     string
 	}{
 		{
-			name:            "single set",
-			args:            []string{"--set=processors.batch.timeout=2s"},
-			expectedConfigs: []string{"yaml:processors::batch::timeout: 2s"},
+			name:            "simple set",
+			args:            []string{"--set=key=value"},
+			expectedConfigs: []string{"yaml:key: value"},
+		},
+		{
+			name:            "complex nested key",
+			args:            []string{"--set=outer.inner=value"},
+			expectedConfigs: []string{"yaml:outer::inner: value"},
+		},
+		{
+			name:            "set array",
+			args:            []string{"--set=key=[a, b, c]"},
+			expectedConfigs: []string{"yaml:key: [a, b, c]"},
+		},
+		{
+			name:            "set map",
+			args:            []string{"--set=key={a: c}"},
+			expectedConfigs: []string{"yaml:key: {a: c}"},
 		},
 		{
 			name:            "set and config",
-			args:            []string{"--set=processors.batch.timeout=2s", "--config=file:testdata/otelcol-nop.yaml"},
-			expectedConfigs: []string{"file:testdata/otelcol-nop.yaml", "yaml:processors::batch::timeout: 2s"},
+			args:            []string{"--set=key=value", "--config=file:testdata/otelcol-nop.yaml"},
+			expectedConfigs: []string{"file:testdata/otelcol-nop.yaml", "yaml:key: value"},
 		},
 		{
 			name:            "config and set",
-			args:            []string{"--config=file:testdata/otelcol-nop.yaml", "--set=processors.batch.timeout=2s"},
-			expectedConfigs: []string{"file:testdata/otelcol-nop.yaml", "yaml:processors::batch::timeout: 2s"},
+			args:            []string{"--config=file:testdata/otelcol-nop.yaml", "--set=key=value"},
+			expectedConfigs: []string{"file:testdata/otelcol-nop.yaml", "yaml:key: value"},
 		},
 		{
 			name:        "invalid set",
-			args:        []string{"--set=processors.batch.timeout:2s"},
-			expectedErr: `invalid value "processors.batch.timeout:2s" for flag -set: missing equal sign`,
+			args:        []string{"--set=key:name"},
+			expectedErr: `invalid value "key:name" for flag -set: missing equal sign`,
 		},
 	}
 
