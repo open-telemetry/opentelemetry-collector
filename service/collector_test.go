@@ -226,10 +226,6 @@ func TestCollectorFailedShutdown(t *testing.T) {
 		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
 	}()
 
-	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
-	}, 2*time.Second, 200*time.Millisecond)
-
 	col.Shutdown()
 
 	wg.Wait()
@@ -545,10 +541,7 @@ func TestCollectorShutdownBeforeRunMessage(t *testing.T) {
 		defer wg.Done()
 		assert.EqualError(t, col.Run(context.Background()), "collector has already been shutdown and cannot be run again")
 	}()
-	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
-	}, 2*time.Second, 200*time.Millisecond)
-	col.Shutdown()
+
 	wg.Wait()
 	assert.Equal(t, Closed, col.GetState())
 }
