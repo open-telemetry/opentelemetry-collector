@@ -15,11 +15,13 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var logFile = &File{
+	Path:        "pdata",
 	Name:        "logs",
 	PackageName: "plog",
 	imports: []string{
 		`"sort"`,
 		``,
+		`"go.opentelemetry.io/collector/pdata/internal"`,
 		`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 	},
 	testImports: []string{

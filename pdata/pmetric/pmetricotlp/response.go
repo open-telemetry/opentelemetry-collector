@@ -16,6 +16,7 @@ package pmetricotlp // import "go.opentelemetry.io/collector/pdata/pmetric/pmetr
 import (
 	"bytes"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
@@ -52,4 +53,9 @@ func (mr Response) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshalls Response from JSON bytes.
 func (mr Response) UnmarshalJSON(data []byte) error {
 	return pmetricjson.UnmarshalExportMetricsServiceResponse(data, mr.orig)
+}
+
+// PartialSuccess returns the ExportLogsPartialSuccess associated with this Response.
+func (mr Response) PartialSuccess() ExportMetricsPartialSuccess {
+	return ExportMetricsPartialSuccess(internal.NewExportMetricsPartialSuccess(&mr.orig.PartialSuccess))
 }

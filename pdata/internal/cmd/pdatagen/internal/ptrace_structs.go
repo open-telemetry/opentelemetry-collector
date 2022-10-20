@@ -15,6 +15,7 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var traceFile = &File{
+	Path:        "pdata",
 	Name:        "traces",
 	PackageName: "ptrace",
 	imports: []string{

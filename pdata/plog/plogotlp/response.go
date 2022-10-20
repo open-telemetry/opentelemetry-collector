@@ -16,6 +16,7 @@ package plogotlp // import "go.opentelemetry.io/collector/pdata/plog/plogotlp"
 import (
 	"bytes"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/plog/internal/plogjson"
 )
@@ -52,4 +53,9 @@ func (lr Response) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshalls Response from JSON bytes.
 func (lr Response) UnmarshalJSON(data []byte) error {
 	return plogjson.UnmarshalExportLogsServiceResponse(data, lr.orig)
+}
+
+// PartialSuccess returns the ExportLogsPartialSuccess associated with this Response.
+func (lr Response) PartialSuccess() ExportLogsPartialSuccess {
+	return ExportLogsPartialSuccess(internal.NewExportLogsPartialSuccess(&lr.orig.PartialSuccess))
 }
