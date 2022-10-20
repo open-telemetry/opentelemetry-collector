@@ -42,7 +42,7 @@ func TestUnmarshalConfig(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			filename: "config.yaml",
+			filename: "config_loglevel.yaml",
 			cfg: &Config{
 				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 				LogLevel:           zapcore.DebugLevel,
@@ -50,6 +50,16 @@ func TestUnmarshalConfig(t *testing.T) {
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
 				warnLogLevel:       true,
+			},
+		},
+		{
+			filename: "config_verbosity.yaml",
+			cfg: &Config{
+				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+				LogLevel:           zapcore.InfoLevel,
+				Verbosity:          configtelemetry.LevelDetailed,
+				SamplingInitial:    10,
+				SamplingThereafter: 50,
 			},
 		},
 		{
@@ -100,18 +110,21 @@ func TestValidate(t *testing.T) {
 			expectedErr: "verbosity level \"none\" is not supported",
 		},
 		{
-			name: "verbosity loglevel mismatch",
+			name: "verbosity detailed",
 			cfg: &Config{
 				Verbosity: configtelemetry.LevelDetailed,
-				LogLevel:  zapcore.InfoLevel,
 			},
-			expectedErr: "verbosity \"detailed\" does not match loglevel \"info\"",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualError(t, tt.cfg.Validate(), tt.expectedErr)
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

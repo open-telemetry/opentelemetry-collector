@@ -97,14 +97,5 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("verbosity level %q is not supported", cfg.Verbosity)
 	}
 
-	expected, err := mapLevel(cfg.LogLevel)
-	if err != nil {
-		return fmt.Errorf("failed to map 'loglevel': %w", err)
-	}
-
-	if cfg.Verbosity != expected {
-		return fmt.Errorf("verbosity %q does not match loglevel %q", cfg.Verbosity, cfg.LogLevel)
-	}
-
 	return nil
 }
