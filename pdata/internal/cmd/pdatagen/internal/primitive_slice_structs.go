@@ -223,6 +223,7 @@ func (iss *primitiveSliceStruct) generateInternal(sb *bytes.Buffer) {
 }
 
 var primitiveSliceFile = &File{
+	Path:        "pdata",
 	Name:        "primitive_slice",
 	PackageName: "pcommon",
 	testImports: []string{

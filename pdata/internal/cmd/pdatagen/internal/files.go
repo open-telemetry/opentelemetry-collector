@@ -41,14 +41,18 @@ const header = `// Copyright The OpenTelemetry Authors
 var AllFiles = []*File{
 	commonFile,
 	metricsFile,
+	metricsOtlpFile,
 	resourceFile,
 	primitiveSliceFile,
 	traceFile,
+	traceOtlpFile,
 	logFile,
+	logOtlpFile,
 }
 
 // File represents the struct for one generated file.
 type File struct {
+	Path        string
 	Name        string
 	PackageName string
 	imports     []string
@@ -82,7 +86,7 @@ func (f *File) GenerateFile() error {
 
 	// ignore gosec complain about permissions being `0644`.
 	//nolint:gosec
-	return os.WriteFile(filepath.Join("pdata", f.PackageName, generateFileName(f.Name)), sb.Bytes(), 0644)
+	return os.WriteFile(filepath.Join(f.Path, f.PackageName, generateFileName(f.Name)), sb.Bytes(), 0644)
 }
 
 // GenerateTestFile generates tests for the configured data structures for this File.
@@ -109,7 +113,7 @@ func (f *File) GenerateTestFile() error {
 
 	// ignore gosec complain about permissions being `0644`.
 	//nolint:gosec
-	return os.WriteFile(filepath.Join("pdata", f.PackageName, generateTestFileName(f.Name)), sb.Bytes(), 0644)
+	return os.WriteFile(filepath.Join(f.Path, f.PackageName, generateTestFileName(f.Name)), sb.Bytes(), 0644)
 }
 
 // GenerateInternalFile generates the internal pdata structures for this File.

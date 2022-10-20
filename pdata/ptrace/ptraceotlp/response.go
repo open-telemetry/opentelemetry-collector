@@ -16,6 +16,7 @@ package ptraceotlp // import "go.opentelemetry.io/collector/pdata/ptrace/ptraceo
 import (
 	"bytes"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/ptrace/internal/ptracejson"
 )
@@ -52,4 +53,9 @@ func (tr Response) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshalls Response from JSON bytes.
 func (tr Response) UnmarshalJSON(data []byte) error {
 	return ptracejson.UnmarshalExportTraceServiceResponse(data, tr.orig)
+}
+
+// PartialSuccess returns the ExportLogsPartialSuccess associated with this Response.
+func (tr Response) PartialSuccess() ExportTracePartialSuccess {
+	return ExportTracePartialSuccess(internal.NewExportTracePartialSuccess(&tr.orig.PartialSuccess))
 }
