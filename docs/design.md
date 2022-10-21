@@ -36,7 +36,7 @@ service:
 
 The above example defines a pipeline for “traces” type of telemetry data, with 3 receivers, 2 processors and 3 exporters.
 
-For details of config file format see [this document](https://docs.google.com/document/d/1NeheFG7DmcUYo_h2vLtNRlia9x5wOJMlV4QKEK05FhQ/edit#).
+For details of config file format see [OpenTelemetry Collector Configuration Format](./configuration-format.md).
 
 ### Receivers
 
