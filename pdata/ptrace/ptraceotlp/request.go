@@ -23,52 +23,61 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/internal/ptracejson"
 )
 
-// Request represents the request for gRPC/HTTP client/server.
+// ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for ptrace.Traces data.
-type Request struct {
+type ExportRequest struct {
 	orig *otlpcollectortrace.ExportTraceServiceRequest
 }
 
-// NewRequest returns an empty Request.
-func NewRequest() Request {
-	return Request{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
+// NewExportRequest returns an empty ExportRequest.
+func NewExportRequest() ExportRequest {
+	return ExportRequest{orig: &otlpcollectortrace.ExportTraceServiceRequest{}}
 }
 
-// NewRequestFromTraces returns a Request from ptrace.Traces.
-// Because Request is a wrapper for ptrace.Traces,
-// any changes to the provided Traces struct will be reflected in the Request and vice versa.
-func NewRequestFromTraces(td ptrace.Traces) Request {
-	return Request{orig: internal.GetOrigTraces(internal.Traces(td))}
+// NewExportRequestFromTraces returns a ExportRequest from ptrace.Traces.
+// Because ExportRequest is a wrapper for ptrace.Traces,
+// any changes to the provided Traces struct will be reflected in the ExportRequest and vice versa.
+func NewExportRequestFromTraces(td ptrace.Traces) ExportRequest {
+	return ExportRequest{orig: internal.GetOrigTraces(internal.Traces(td))}
 }
 
-// MarshalProto marshals Request into proto bytes.
-func (tr Request) MarshalProto() ([]byte, error) {
-	return tr.orig.Marshal()
+// MarshalProto marshals ExportRequest into proto bytes.
+func (ms ExportRequest) MarshalProto() ([]byte, error) {
+	return ms.orig.Marshal()
 }
 
-// UnmarshalProto unmarshalls Request from proto bytes.
-func (tr Request) UnmarshalProto(data []byte) error {
-	if err := tr.orig.Unmarshal(data); err != nil {
+// UnmarshalProto unmarshalls ExportRequest from proto bytes.
+func (ms ExportRequest) UnmarshalProto(data []byte) error {
+	if err := ms.orig.Unmarshal(data); err != nil {
 		return err
 	}
-	otlp.MigrateTraces(tr.orig.ResourceSpans)
+	otlp.MigrateTraces(ms.orig.ResourceSpans)
 	return nil
 }
 
-// MarshalJSON marshals Request into JSON bytes.
-func (tr Request) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals ExportRequest into JSON bytes.
+func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	if err := ptracejson.JSONMarshaler.Marshal(&buf, tr.orig); err != nil {
+	if err := ptracejson.JSONMarshaler.Marshal(&buf, ms.orig); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-// UnmarshalJSON unmarshalls Request from JSON bytes.
-func (tr Request) UnmarshalJSON(data []byte) error {
-	return ptracejson.UnmarshalExportTraceServiceRequest(data, tr.orig)
+// UnmarshalJSON unmarshalls ExportRequest from JSON bytes.
+func (ms ExportRequest) UnmarshalJSON(data []byte) error {
+	return ptracejson.UnmarshalExportTraceServiceRequest(data, ms.orig)
 }
 
-func (tr Request) Traces() ptrace.Traces {
-	return ptrace.Traces(internal.NewTraces(tr.orig))
+func (ms ExportRequest) Traces() ptrace.Traces {
+	return ptrace.Traces(internal.NewTraces(ms.orig))
 }
+
+// Deprecated: [v0.63.0] use ExportRequest.
+type Request = ExportRequest
+
+// Deprecated: [v0.63.0] use NewExportRequest.
+var NewRequest = NewExportRequest
+
+// Deprecated: [v0.63.0] use NewExportRequestFromTraces.
+var NewRequestFromTraces = NewExportRequestFromTraces

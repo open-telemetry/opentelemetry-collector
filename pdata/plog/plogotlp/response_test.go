@@ -18,5 +18,5 @@ import (
 	"encoding/json"
 )
 
-var _ json.Unmarshaler = Response{}
-var _ json.Marshaler = Response{}
+var _ json.Unmarshaler = ExportResponse{}
+var _ json.Marshaler = ExportResponse{}

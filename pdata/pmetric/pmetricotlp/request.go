@@ -23,36 +23,36 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
 
-// Request represents the request for gRPC/HTTP client/server.
+// ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for pmetric.Metrics data.
-type Request struct {
+type ExportRequest struct {
 	orig *otlpcollectormetrics.ExportMetricsServiceRequest
 }
 
-// NewRequest returns an empty Request.
-func NewRequest() Request {
-	return Request{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
+// NewExportRequest returns an empty ExportRequest.
+func NewExportRequest() ExportRequest {
+	return ExportRequest{orig: &otlpcollectormetrics.ExportMetricsServiceRequest{}}
 }
 
-// NewRequestFromMetrics returns a Request from pmetric.Metrics.
-// Because Request is a wrapper for pmetric.Metrics,
-// any changes to the provided Metrics struct will be reflected in the Request and vice versa.
-func NewRequestFromMetrics(md pmetric.Metrics) Request {
-	return Request{orig: internal.GetOrigMetrics(internal.Metrics(md))}
+// NewExportRequestFromMetrics returns a ExportRequest from pmetric.Metrics.
+// Because ExportRequest is a wrapper for pmetric.Metrics,
+// any changes to the provided Metrics struct will be reflected in the ExportRequest and vice versa.
+func NewExportRequestFromMetrics(md pmetric.Metrics) ExportRequest {
+	return ExportRequest{orig: internal.GetOrigMetrics(internal.Metrics(md))}
 }
 
-// MarshalProto marshals Request into proto bytes.
-func (mr Request) MarshalProto() ([]byte, error) {
+// MarshalProto marshals ExportRequest into proto bytes.
+func (mr ExportRequest) MarshalProto() ([]byte, error) {
 	return mr.orig.Marshal()
 }
 
-// UnmarshalProto unmarshalls Request from proto bytes.
-func (mr Request) UnmarshalProto(data []byte) error {
+// UnmarshalProto unmarshalls ExportRequest from proto bytes.
+func (mr ExportRequest) UnmarshalProto(data []byte) error {
 	return mr.orig.Unmarshal(data)
 }
 
-// MarshalJSON marshals Request into JSON bytes.
-func (mr Request) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals ExportRequest into JSON bytes.
+func (mr ExportRequest) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	if err := pmetricjson.JSONMarshaler.Marshal(&buf, mr.orig); err != nil {
 		return nil, err
@@ -60,11 +60,20 @@ func (mr Request) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// UnmarshalJSON unmarshalls Request from JSON bytes.
-func (mr Request) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON unmarshalls ExportRequest from JSON bytes.
+func (mr ExportRequest) UnmarshalJSON(data []byte) error {
 	return pmetricjson.UnmarshalExportMetricsServiceRequest(data, mr.orig)
 }
 
-func (mr Request) Metrics() pmetric.Metrics {
+func (mr ExportRequest) Metrics() pmetric.Metrics {
 	return pmetric.Metrics(internal.NewMetrics(mr.orig))
 }
+
+// Deprecated: [v0.63.0] use ExportRequest.
+type Request = ExportRequest
+
+// Deprecated: [v0.63.0] use NewExportRequest.
+var NewRequest = NewExportRequest
+
+// Deprecated: [v0.63.0] use NewExportRequestFromMetrics.
+var NewRequestFromMetrics = NewExportRequestFromMetrics

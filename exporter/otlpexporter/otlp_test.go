@@ -73,7 +73,7 @@ type mockTracesReceiver struct {
 	lastRequest ptrace.Traces
 }
 
-func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
+func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	r.requestCount.Inc()
 	td := req.Traces()
 	r.totalItems.Add(int32(td.SpanCount()))
@@ -81,7 +81,7 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.Request)
 	defer r.mux.Unlock()
 	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return ptraceotlp.NewResponse(), r.exportError
+	return ptraceotlp.NewExportResponse(), r.exportError
 }
 
 func (r *mockTracesReceiver) getLastRequest() ptrace.Traces {
@@ -128,7 +128,7 @@ type mockLogsReceiver struct {
 	lastRequest plog.Logs
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.Request) (plogotlp.Response, error) {
+func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	r.requestCount.Inc()
 	ld := req.Logs()
 	r.totalItems.Add(int32(ld.LogRecordCount()))
@@ -136,7 +136,7 @@ func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.Request) (pl
 	defer r.mux.Unlock()
 	r.lastRequest = ld
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return plogotlp.NewResponse(), r.exportError
+	return plogotlp.NewExportResponse(), r.exportError
 }
 
 func (r *mockLogsReceiver) getLastRequest() plog.Logs {
@@ -168,7 +168,7 @@ type mockMetricsReceiver struct {
 	lastRequest pmetric.Metrics
 }
 
-func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.Request) (pmetricotlp.Response, error) {
+func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
 	md := req.Metrics()
 	r.requestCount.Inc()
 	r.totalItems.Add(int32(md.DataPointCount()))
@@ -176,7 +176,7 @@ func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.Reques
 	defer r.mux.Unlock()
 	r.lastRequest = md
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return pmetricotlp.NewResponse(), r.exportError
+	return pmetricotlp.NewExportResponse(), r.exportError
 }
 
 func (r *mockMetricsReceiver) getLastRequest() pmetric.Metrics {

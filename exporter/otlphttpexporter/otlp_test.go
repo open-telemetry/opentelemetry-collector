@@ -258,7 +258,7 @@ func TestIssue_4221(t *testing.T) {
 		assert.Equal(t, "CscBCkkKIAoMc2VydmljZS5uYW1lEhAKDnVvcC5zdGFnZS1ldS0xCiUKGW91dHN5c3RlbXMubW9kdWxlLnZlcnNpb24SCAoGOTAzMzg2EnoKEQoMdW9wX2NhbmFyaWVzEgExEmUKEEMDhT8Ib0+Mhs8Zi2VR34QSCOVRPDJ5XEG5IgA5QE41aASRrxZBQE41aASRrxZKEAoKc3Bhbl9pbmRleBICGANKHwoNY29kZS5mdW5jdGlvbhIOCgxteUZ1bmN0aW9uMzZ6AA==", base64Data)
 		unbase64Data, err := base64.StdEncoding.DecodeString(base64Data)
 		require.NoError(t, err)
-		tr := ptraceotlp.NewRequest()
+		tr := ptraceotlp.NewExportRequest()
 		require.NoError(t, tr.UnmarshalProto(unbase64Data))
 		span := tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
@@ -670,7 +670,6 @@ func TestUserAgent(t *testing.T) {
 				require.NoError(t, err)
 
 				srv.Close()
-
 			})
 		}
 	})

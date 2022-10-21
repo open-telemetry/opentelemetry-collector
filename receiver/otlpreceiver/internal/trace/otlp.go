@@ -48,17 +48,17 @@ func New(id config.ComponentID, nextConsumer consumer.Traces, set component.Rece
 }
 
 // Export implements the service Export traces func.
-func (r *Receiver) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
+func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
 	// We need to ensure that it propagates the receiver name as a tag
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
-		return ptraceotlp.NewResponse(), nil
+		return ptraceotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartTracesOp(ctx)
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return ptraceotlp.NewResponse(), err
+	return ptraceotlp.NewExportResponse(), err
 }

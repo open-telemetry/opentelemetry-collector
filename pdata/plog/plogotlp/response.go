@@ -21,28 +21,28 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/internal/plogjson"
 )
 
-// Response represents the response for gRPC/HTTP client/server.
-type Response struct {
+// ExportResponse represents the response for gRPC/HTTP client/server.
+type ExportResponse struct {
 	orig *otlpcollectorlog.ExportLogsServiceResponse
 }
 
-// NewResponse returns an empty Response.
-func NewResponse() Response {
-	return Response{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
+// NewExportResponse returns an empty ExportResponse.
+func NewExportResponse() ExportResponse {
+	return ExportResponse{orig: &otlpcollectorlog.ExportLogsServiceResponse{}}
 }
 
-// MarshalProto marshals Response into proto bytes.
-func (lr Response) MarshalProto() ([]byte, error) {
+// MarshalProto marshals ExportResponse into proto bytes.
+func (lr ExportResponse) MarshalProto() ([]byte, error) {
 	return lr.orig.Marshal()
 }
 
-// UnmarshalProto unmarshalls Response from proto bytes.
-func (lr Response) UnmarshalProto(data []byte) error {
+// UnmarshalProto unmarshalls ExportResponse from proto bytes.
+func (lr ExportResponse) UnmarshalProto(data []byte) error {
 	return lr.orig.Unmarshal(data)
 }
 
-// MarshalJSON marshals Response into JSON bytes.
-func (lr Response) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals ExportResponse into JSON bytes.
+func (lr ExportResponse) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	if err := plogjson.JSONMarshaler.Marshal(&buf, lr.orig); err != nil {
 		return nil, err
@@ -50,12 +50,18 @@ func (lr Response) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// UnmarshalJSON unmarshalls Response from JSON bytes.
-func (lr Response) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON unmarshalls ExportResponse from JSON bytes.
+func (lr ExportResponse) UnmarshalJSON(data []byte) error {
 	return plogjson.UnmarshalExportLogsServiceResponse(data, lr.orig)
 }
 
-// PartialSuccess returns the ExportLogsPartialSuccess associated with this Response.
-func (lr Response) PartialSuccess() ExportLogsPartialSuccess {
+// PartialSuccess returns the ExportLogsPartialSuccess associated with this ExportResponse.
+func (lr ExportResponse) PartialSuccess() ExportLogsPartialSuccess {
 	return ExportLogsPartialSuccess(internal.NewExportLogsPartialSuccess(&lr.orig.PartialSuccess))
 }
+
+// Deprecated: [v0.63.0] use ExportResponse.
+type Response = ExportResponse
+
+// Deprecated: [v0.63.0] use NewExportResponse.
+var NewResponse = NewExportResponse

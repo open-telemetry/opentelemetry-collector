@@ -31,7 +31,7 @@ type GRPCClient interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(ctx context.Context, request Request, opts ...grpc.CallOption) (Response, error)
+	Export(ctx context.Context, request ExportRequest, opts ...grpc.CallOption) (ExportResponse, error)
 }
 
 // NewGRPCClient returns a new GRPCClient connected using the given connection.
@@ -46,9 +46,9 @@ type grpcClient struct {
 	rawClient otlpcollectormetrics.MetricsServiceClient
 }
 
-func (c *grpcClient) Export(ctx context.Context, request Request, opts ...grpc.CallOption) (Response, error) {
+func (c *grpcClient) Export(ctx context.Context, request ExportRequest, opts ...grpc.CallOption) (ExportResponse, error) {
 	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
-	return Response{orig: rsp}, err
+	return ExportResponse{orig: rsp}, err
 }
 
 // GRPCServer is the server API for OTLP gRPC MetricsService service.
@@ -57,7 +57,7 @@ type GRPCServer interface {
 	//
 	// For performance reasons, it is recommended to keep this RPC
 	// alive for the entire life of the application.
-	Export(context.Context, Request) (Response, error)
+	Export(context.Context, ExportRequest) (ExportResponse, error)
 }
 
 // RegisterGRPCServer registers the GRPCServer to the grpc.Server.
@@ -71,6 +71,6 @@ type rawMetricsServer struct {
 
 func (s rawMetricsServer) Export(ctx context.Context, request *otlpcollectormetrics.ExportMetricsServiceRequest) (*otlpcollectormetrics.ExportMetricsServiceResponse, error) {
 	otlp.MigrateMetrics(request.ResourceMetrics)
-	rsp, err := s.srv.Export(ctx, Request{orig: request})
+	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request})
 	return rsp.orig, err
 }

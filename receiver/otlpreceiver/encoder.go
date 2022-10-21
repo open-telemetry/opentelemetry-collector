@@ -38,13 +38,13 @@ var (
 )
 
 type encoder interface {
-	unmarshalTracesRequest(buf []byte) (ptraceotlp.Request, error)
-	unmarshalMetricsRequest(buf []byte) (pmetricotlp.Request, error)
-	unmarshalLogsRequest(buf []byte) (plogotlp.Request, error)
+	unmarshalTracesRequest(buf []byte) (ptraceotlp.ExportRequest, error)
+	unmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error)
+	unmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error)
 
-	marshalTracesResponse(ptraceotlp.Response) ([]byte, error)
-	marshalMetricsResponse(pmetricotlp.Response) ([]byte, error)
-	marshalLogsResponse(plogotlp.Response) ([]byte, error)
+	marshalTracesResponse(ptraceotlp.ExportResponse) ([]byte, error)
+	marshalMetricsResponse(pmetricotlp.ExportResponse) ([]byte, error)
+	marshalLogsResponse(plogotlp.ExportResponse) ([]byte, error)
 
 	marshalStatus(rsp *spb.Status) ([]byte, error)
 
@@ -53,33 +53,33 @@ type encoder interface {
 
 type protoEncoder struct{}
 
-func (protoEncoder) unmarshalTracesRequest(buf []byte) (ptraceotlp.Request, error) {
-	req := ptraceotlp.NewRequest()
+func (protoEncoder) unmarshalTracesRequest(buf []byte) (ptraceotlp.ExportRequest, error) {
+	req := ptraceotlp.NewExportRequest()
 	err := req.UnmarshalProto(buf)
 	return req, err
 }
 
-func (protoEncoder) unmarshalMetricsRequest(buf []byte) (pmetricotlp.Request, error) {
-	req := pmetricotlp.NewRequest()
+func (protoEncoder) unmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error) {
+	req := pmetricotlp.NewExportRequest()
 	err := req.UnmarshalProto(buf)
 	return req, err
 }
 
-func (protoEncoder) unmarshalLogsRequest(buf []byte) (plogotlp.Request, error) {
-	req := plogotlp.NewRequest()
+func (protoEncoder) unmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error) {
+	req := plogotlp.NewExportRequest()
 	err := req.UnmarshalProto(buf)
 	return req, err
 }
 
-func (protoEncoder) marshalTracesResponse(resp ptraceotlp.Response) ([]byte, error) {
+func (protoEncoder) marshalTracesResponse(resp ptraceotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalProto()
 }
 
-func (protoEncoder) marshalMetricsResponse(resp pmetricotlp.Response) ([]byte, error) {
+func (protoEncoder) marshalMetricsResponse(resp pmetricotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalProto()
 }
 
-func (protoEncoder) marshalLogsResponse(resp plogotlp.Response) ([]byte, error) {
+func (protoEncoder) marshalLogsResponse(resp plogotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalProto()
 }
 
@@ -93,33 +93,33 @@ func (protoEncoder) contentType() string {
 
 type jsonEncoder struct{}
 
-func (jsonEncoder) unmarshalTracesRequest(buf []byte) (ptraceotlp.Request, error) {
-	req := ptraceotlp.NewRequest()
+func (jsonEncoder) unmarshalTracesRequest(buf []byte) (ptraceotlp.ExportRequest, error) {
+	req := ptraceotlp.NewExportRequest()
 	err := req.UnmarshalJSON(buf)
 	return req, err
 }
 
-func (jsonEncoder) unmarshalMetricsRequest(buf []byte) (pmetricotlp.Request, error) {
-	req := pmetricotlp.NewRequest()
+func (jsonEncoder) unmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error) {
+	req := pmetricotlp.NewExportRequest()
 	err := req.UnmarshalJSON(buf)
 	return req, err
 }
 
-func (jsonEncoder) unmarshalLogsRequest(buf []byte) (plogotlp.Request, error) {
-	req := plogotlp.NewRequest()
+func (jsonEncoder) unmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error) {
+	req := plogotlp.NewExportRequest()
 	err := req.UnmarshalJSON(buf)
 	return req, err
 }
 
-func (jsonEncoder) marshalTracesResponse(resp ptraceotlp.Response) ([]byte, error) {
+func (jsonEncoder) marshalTracesResponse(resp ptraceotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (jsonEncoder) marshalMetricsResponse(resp pmetricotlp.Response) ([]byte, error) {
+func (jsonEncoder) marshalMetricsResponse(resp pmetricotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (jsonEncoder) marshalLogsResponse(resp plogotlp.Response) ([]byte, error) {
+func (jsonEncoder) marshalLogsResponse(resp plogotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
