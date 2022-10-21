@@ -78,6 +78,10 @@ type ReceiverSettings struct {
 
 // NewReceiver creates a new Receiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
+	return newReceiver(cfg, featuregate.GetRegistry())
+}
+
+func newReceiver(cfg ReceiverSettings, registry *featuregate.Registry) *Receiver {
 	rec := &Receiver{
 		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
@@ -91,7 +95,7 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(receiverScope),
 		logger: cfg.ReceiverCreateSettings.Logger,
 
-		useOtelForMetrics: featuregate.GetRegistry().IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(obsmetrics.TransportKey, cfg.Transport),
