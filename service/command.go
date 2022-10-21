@@ -18,16 +18,18 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/spf13/cobra"
+
 	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/config"
-
 	"go.opentelemetry.io/collector/featuregate"
 )
 
 type componentsOutput struct {
-	Version    string
+	BuildInfo  component.BuildInfo
 	Receivers  []config.Type
 	Processors []config.Type
 	Exporters  []config.Type
@@ -38,7 +40,7 @@ type componentsOutput struct {
 func newBuildSubCommand(set CollectorSettings) *cobra.Command {
 	buildCmd := &cobra.Command{
 		Use:   "build-info",
-		Short: "Outputs available components in a given collector distribution",
+		Short: "Outputs available components in this collector distribution",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -55,14 +57,13 @@ func newBuildSubCommand(set CollectorSettings) *cobra.Command {
 			for exp := range set.Factories.Exporters {
 				components.Exporters = append(components.Exporters, exp)
 			}
-			components.Version = set.BuildInfo.Version
+			components.BuildInfo = set.BuildInfo
 			yamlData, err := yaml.Marshal(components)
 			if err != nil {
 				return err
 			}
 			fmt.Println(string(yamlData))
 			return nil
-
 		},
 	}
 	return buildCmd
