@@ -2,7 +2,7 @@
 
 The effective configuration that defines runtime behavior of the collector is calculated from 2 sources: the Default configuration which is hard-coded and the User-defined configuration which supplied by the user via various configuration sources. Default configuration defines reasonable defaults that most users will likely want to use. User-defined configuration can override the defaults and specify additional configuration. The effective configuration is calculated by [merging Default and User-defined configurations](#merging-rules).
 
-The top-level entities in the configuration file are receivers, processors, exporters, pipeline (more about each below in separate sections). Here is the top-level structure of the configuration:
+The top-level entities in the configuration file are receivers, processors, exporters, extensions, service (more about each below in separate sections). Here is the top-level structure of the configuration:
 
 ```yaml
 receivers:
@@ -94,7 +94,7 @@ The format and interpretation of `endpoint` is exporter specific but typically i
 
 The effective configuration specifies one or more Pipelines. A pipeline defines how data is received (via `receivers`), processed (via `processors`) and exported (via `exporters`).
 
-A pipeline can be one of the 3 types: `traces`, `metrics`, or `logs`. For a pipeline, `receivers` and `exporters` must be present for pipeline to be complete.
+A pipeline can be one of the 3 types: `traces`, `metrics`, or `logs`. The `receivers` and `exporters` must be present for pipeline to be complete.
 
 At least one complete pipeline must be defined otherwise the configuration is not valid.
 
