@@ -101,7 +101,9 @@ At least one complete pipeline must be defined otherwise the configuration is no
 Each pipeline has a name that must be unique within the set of pipelines of the same type (note: it is allowed to have same-named pipelines if they are of different types).
 Note that the configuration may specify receivers, processors and exporters which are not used (referenced) in any pipeline. This makes those receivers, processors and exporters inactive.
 
-Here is the configuration structure for a pipeline:
+Additionally, the service configuration allows users to configure extensions to enable as well as the telemetry to be produced by the Collector.
+
+Here is the configuration structure service configuration:
 
 ```yaml
 pipelines:  
