@@ -55,9 +55,9 @@ func (lr ExportResponse) UnmarshalJSON(data []byte) error {
 	return plogjson.UnmarshalExportLogsServiceResponse(data, lr.orig)
 }
 
-// PartialSuccess returns the ExportLogsPartialSuccess associated with this ExportResponse.
-func (lr ExportResponse) PartialSuccess() ExportLogsPartialSuccess {
-	return ExportLogsPartialSuccess(internal.NewExportLogsPartialSuccess(&lr.orig.PartialSuccess))
+// PartialSuccess returns the ExportPartialSuccess associated with this ExportResponse.
+func (lr ExportResponse) PartialSuccess() ExportPartialSuccess {
+	return ExportPartialSuccess(internal.NewLogsExportPartialSuccess(&lr.orig.PartialSuccess))
 }
 
 // Deprecated: [v0.63.0] use ExportResponse.

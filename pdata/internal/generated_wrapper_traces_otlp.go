@@ -21,26 +21,26 @@ import (
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 )
 
-type ExportTracePartialSuccess struct {
+type TracesExportPartialSuccess struct {
 	orig *otlpcollectortrace.ExportTracePartialSuccess
 }
 
-func GetOrigExportTracePartialSuccess(ms ExportTracePartialSuccess) *otlpcollectortrace.ExportTracePartialSuccess {
+func GetOrigTracesExportPartialSuccess(ms TracesExportPartialSuccess) *otlpcollectortrace.ExportTracePartialSuccess {
 	return ms.orig
 }
 
-func NewExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) ExportTracePartialSuccess {
-	return ExportTracePartialSuccess{orig: orig}
+func NewTracesExportPartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) TracesExportPartialSuccess {
+	return TracesExportPartialSuccess{orig: orig}
 }
 
-func GenerateTestExportTracePartialSuccess() ExportTracePartialSuccess {
+func GenerateTestTracesExportPartialSuccess() TracesExportPartialSuccess {
 	orig := otlpcollectortrace.ExportTracePartialSuccess{}
-	tv := NewExportTracePartialSuccess(&orig)
-	FillTestExportTracePartialSuccess(tv)
+	tv := NewTracesExportPartialSuccess(&orig)
+	FillTestTracesExportPartialSuccess(tv)
 	return tv
 }
 
-func FillTestExportTracePartialSuccess(tv ExportTracePartialSuccess) {
+func FillTestTracesExportPartialSuccess(tv TracesExportPartialSuccess) {
 	tv.orig.RejectedSpans = int64(13)
 	tv.orig.ErrorMessage = "error message"
 }

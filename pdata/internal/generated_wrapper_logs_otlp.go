@@ -21,26 +21,26 @@ import (
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
-type ExportLogsPartialSuccess struct {
+type LogsExportPartialSuccess struct {
 	orig *otlpcollectorlog.ExportLogsPartialSuccess
 }
 
-func GetOrigExportLogsPartialSuccess(ms ExportLogsPartialSuccess) *otlpcollectorlog.ExportLogsPartialSuccess {
+func GetOrigLogsExportPartialSuccess(ms LogsExportPartialSuccess) *otlpcollectorlog.ExportLogsPartialSuccess {
 	return ms.orig
 }
 
-func NewExportLogsPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) ExportLogsPartialSuccess {
-	return ExportLogsPartialSuccess{orig: orig}
+func NewLogsExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) LogsExportPartialSuccess {
+	return LogsExportPartialSuccess{orig: orig}
 }
 
-func GenerateTestExportLogsPartialSuccess() ExportLogsPartialSuccess {
+func GenerateTestLogsExportPartialSuccess() LogsExportPartialSuccess {
 	orig := otlpcollectorlog.ExportLogsPartialSuccess{}
-	tv := NewExportLogsPartialSuccess(&orig)
-	FillTestExportLogsPartialSuccess(tv)
+	tv := NewLogsExportPartialSuccess(&orig)
+	FillTestLogsExportPartialSuccess(tv)
 	return tv
 }
 
-func FillTestExportLogsPartialSuccess(tv ExportLogsPartialSuccess) {
+func FillTestLogsExportPartialSuccess(tv LogsExportPartialSuccess) {
 	tv.orig.RejectedLogRecords = int64(13)
 	tv.orig.ErrorMessage = "error message"
 }
