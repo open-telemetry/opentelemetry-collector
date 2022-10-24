@@ -101,13 +101,13 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	// Read invalid yaml config from file
 	invalidConf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-invalid.yaml"))
 	require.NoError(t, err)
-	invalidCfg, err := configunmarshaler.New().Unmarshal(invalidConf, factories)
+	invalidCfg, err := configunmarshaler.Unmarshal(invalidConf, factories)
 	require.NoError(t, err)
 
 	// Read valid yaml config from file
-	validConf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
+	validProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
-	validCfg, err := configunmarshaler.New().Unmarshal(validConf, factories)
+	validCfg, err := validProvider.Get(context.Background(), factories)
 	require.NoError(t, err)
 
 	// Create a service with an invalid config and expect an error
@@ -141,9 +141,9 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 
 func createExampleService(t *testing.T, factories component.Factories) *service {
 	// Read yaml config from file
-	conf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-nop.yaml"))
+	prov, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
-	cfg, err := configunmarshaler.New().Unmarshal(conf, factories)
+	cfg, err := prov.Get(context.Background(), factories)
 	require.NoError(t, err)
 
 	telemetry := newColTelemetry(featuregate.NewRegistry())

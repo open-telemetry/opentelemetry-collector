@@ -28,7 +28,7 @@ func LoadConfig(fileName string, factories component.Factories) (*config.Config,
 	if err != nil {
 		return nil, err
 	}
-	return configunmarshaler.New().Unmarshal(conf, factories)
+	return configunmarshaler.Unmarshal(conf, factories)
 }
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.
