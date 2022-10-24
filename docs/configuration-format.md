@@ -1,6 +1,6 @@
 # OpenTelemetry Collector Configuration Format
 
-The effective configuration that defines runtime behavior of the collector is calculated from 2 sources: the Default configuration which is hard-coded and the User-defined configuration which supplied by the user via various configuration sources. Default configuration defines reasonable defaults that most users will likely want to use. User-defined configuration can override the defaults and specify additional configuration. The effective configuration is calculated by merging Default and User-defined configurations (see merging rules in a separate section below).
+The effective configuration that defines runtime behavior of the collector is calculated from 2 sources: the Default configuration which is hard-coded and the User-defined configuration which supplied by the user via various configuration sources. Default configuration defines reasonable defaults that most users will likely want to use. User-defined configuration can override the defaults and specify additional configuration. The effective configuration is calculated by [merging Default and User-defined configurations](#merging-rules).
 
 The top-level entities in the configuration file are receivers, processors, exporters, pipeline (more about each below in separate sections). Here is the top-level structure of the configuration:
 
@@ -13,8 +13,8 @@ exporters:
   # map of exporters
 extensions:
   # map of extensions
-pipelines:
-  # map of pipelines
+service:
+  # configuration of telemetry pipelines and extensions
 ```
 
 ## Receivers
@@ -23,8 +23,7 @@ Each receiver has a name which is defined by the key of the mapping under receiv
 
 If more than one receiver is defined that listens on the same port it is treated as a fatal configuration error (note: it is valid for 2 receivers to listen on the same port number if they bind to different network interfaces).
 
-More than one pipeline can be associated with the same receiver definition. In that case the data from that receiver is copied (fanned out) to all associated pipelines. 
-The definition of receiver is specific for each type however at the minimum it will include a port number and the network interface address to bind to (defaults to `127.0.0.1`).
+More than one pipeline can be associated with the same receiver definition. The definition of receiver is specific for each type however at the minimum it will include a port number and the network interface address to bind to (defaults to `127.0.0.1`).
 
 There are 2 possible configuration structure for a receiver. First structure is for receivers that support only one protocol:
 
@@ -32,7 +31,6 @@ There are 2 possible configuration structure for a receiver. First structure is 
 receivers:
   <receiver name>:
     endpoint: <network interface and port to bind to, address:port>
-    enabled: <boolean, defaults to true>
     # other key/value pairs as needed by specific receiver type
 ```
 
@@ -44,7 +42,6 @@ receivers:
     protocols:
       <protocol name 1>: # key is string, protocol name, unique
         endpoint: <network interface and port to bind to, address:port>
-        enabled: <boolean, defaults to true>
         # other key/value pairs as needed by specific receiver type
       <protocol name 2>:
         # settings for protocol 2
@@ -72,7 +69,6 @@ The configuration structure of a top-level processor is the following:
 ```yaml
 processors:
   <processor name>: # key is string, unique name of processor
-    enabled: <boolean, defaults to true>
     # other key/value pairs as needed by specific processor type
 ```
 
@@ -89,13 +85,12 @@ The structure of exporter configuration is the following:
 ```yaml
 <exporter name>: # key is string, unique name of exporter
   endpoint: <network interface and port to bind to, address:port>
-  enabled: <boolean, defaults to true>
   # other key/value pairs as needed by specific exporter type
 ```
 
 The format and interpretation of `endpoint` is exporter specific but typically is a string in the form `address:port`.
 
-## Pipelines
+## Service
 
 The effective configuration specifies one or more Pipelines. A pipeline defines how data is received (via `receivers`), processed (via `processors`) and exported (via `exporters`).
 
@@ -109,10 +104,17 @@ Note that the configuration may specify receivers, processors and exporters whic
 Here is the configuration structure for a pipeline:
 
 ```yaml
-<pipeline name>: # key is string, unique name of pipeline
-  receivers: [receiver-name-1, receiver-name-2, ...]
-  processors: [processor-name-1, processor-name-2, ...]
-  exporters: [exporter-name-1, exporter-name-2, ...]
+pipelines:  
+  <pipeline name>: # key is string, unique name of pipeline
+    receivers: [receiver-name-1, receiver-name-2, ...]
+    processors: [processor-name-1, processor-name-2, ...]
+    exporters: [exporter-name-1, exporter-name-2, ...]
+# optionally enable extensions
+extensions: [extension-name-1, extension-name-2, ...]
+# optionally configure telemetry for the collector
+telemetry:
+  <signal name>:
+  # other key/value pairs as needed by specific signal
 ```
 
 The name should be in the form `type[/name]`, where type is the input type of the pipeline (either traces, metrics, or logs), and name suffix is optionally appended after a forward slash to ensure uniqueness of the full name of the pipeline. It is not allowed to define more than one pipeline with the same name.
@@ -120,14 +122,6 @@ The name should be in the form `type[/name]`, where type is the input type of th
 ## Pipeline Processors
 
 Pipeline `processors` define what processors will be performed on data after it is received. Each element in ordered-processors list references a processor that is defined in the `processors` section. The order in which processors are listed in `processors` is significant.
-
-## Enabling/Disabling Sections
-
-Each section of configuration can be enabled or disable via `enabled` key. If the effective value of enabled key is false, the entire section with all of its key/value pairs and all child sections is ignored as if it did not exist in the effective configuration.
-
-If `enabled` key is not present in the section the section is assumed to be enabled (the default value for `enabled` key is `false`).
-
-The Default configuration contains several defined sections with `enabled:false` and other key/value pairs defined that specify the default behavior for that entity. This allows the user to easily enable the entire section by simply specifying `enabled:true` for the corresponding section in the user-defined configuration, this also makes the other key/value pairs effective (and they can overridden like any key/value pair the Default).
 
 ## Merging Rules
 
@@ -144,7 +138,6 @@ For key/value present in either of Default or User-defined the effective configu
 | Default | User-defined | Effective |
 | --| --| -- |
 | `type: tags` <br/> `enabled: false`| `type: tags` <br/> `overwrite: true` | `type: tags` <br/> `overwrite: true` <br/> `enabled: false`|
-
 
 For key/value present in both Default and User-defined the effective configuration will contain that key/value from User-defined and the key/value from Default will be ignored. Example:
 
