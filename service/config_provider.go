@@ -106,7 +106,7 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 	}
 
 	var cfg *Config
-	if cfg, err = configunmarshaler.New().Unmarshal(retMap, factories); err != nil {
+	if cfg, err = configunmarshaler.Unmarshal(retMap, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 

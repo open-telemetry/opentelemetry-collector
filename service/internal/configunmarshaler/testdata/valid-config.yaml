@@ -1,18 +1,14 @@
 receivers:
   nop:
-  nop/myreceiver:
 
 processors:
   nop:
 
 exporters:
-  nop/myexporter:
   nop:
 
 extensions:
-  nop/0:
-  nop/disabled:
-  nop/1:
+  nop:
 
 service:
   telemetry:
@@ -29,10 +25,10 @@ service:
     metrics:
       level: "normal"
       address: ":8081"
-  extensions: [nop/0, nop/1]
+  extensions: [nop]
   pipelines:
     traces:
-      receivers: [nop/myreceiver]
+      receivers: [nop]
       processors: [nop]
-      exporters: [nop/myexporter]
+      exporters: [nop]
 
