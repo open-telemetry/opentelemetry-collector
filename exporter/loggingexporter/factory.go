@@ -16,6 +16,7 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -23,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -33,6 +35,8 @@ const (
 	defaultSamplingInitial    = 2
 	defaultSamplingThereafter = 500
 )
+
+var onceWarnLogLevel sync.Once
 
 // NewFactory creates a factory for Logging exporter
 func NewFactory() component.ExporterFactory {
@@ -49,6 +53,7 @@ func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		LogLevel:           zapcore.InfoLevel,
+		Verbosity:          configtelemetry.LevelNormal,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 	}
@@ -57,7 +62,7 @@ func createDefaultConfig() config.Exporter {
 func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
+	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewTracesExporter(ctx, set, cfg,
 		s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -72,7 +77,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
+	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
 		s.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -87,7 +92,7 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
+	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -100,6 +105,16 @@ func createLogsExporter(ctx context.Context, set component.ExporterCreateSetting
 }
 
 func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
+	if cfg.warnLogLevel {
+		onceWarnLogLevel.Do(func() {
+			logger.Warn(
+				"'loglevel' option is deprecated in favor of 'verbosity'. Set 'verbosity' to equivalent value to preserve behavior.",
+				zap.Stringer("loglevel", cfg.LogLevel),
+				zap.Stringer("equivalent verbosity level", cfg.Verbosity),
+			)
+		})
+	}
+
 	core := zapcore.NewSamplerWithOptions(
 		logger.Core(),
 		1*time.Second,

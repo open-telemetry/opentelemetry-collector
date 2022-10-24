@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -35,16 +36,95 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 }
 
 func TestUnmarshalConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalExporter(cm, cfg))
-	assert.Equal(t,
-		&Config{
-			ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-			LogLevel:           zapcore.DebugLevel,
-			SamplingInitial:    10,
-			SamplingThereafter: 50,
-		}, cfg)
+	tests := []struct {
+		filename    string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			filename: "config_loglevel.yaml",
+			cfg: &Config{
+				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+				LogLevel:           zapcore.DebugLevel,
+				Verbosity:          configtelemetry.LevelDetailed,
+				SamplingInitial:    10,
+				SamplingThereafter: 50,
+				warnLogLevel:       true,
+			},
+		},
+		{
+			filename: "config_verbosity.yaml",
+			cfg: &Config{
+				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+				LogLevel:           zapcore.InfoLevel,
+				Verbosity:          configtelemetry.LevelDetailed,
+				SamplingInitial:    10,
+				SamplingThereafter: 50,
+			},
+		},
+		{
+			filename: "loglevel_info.yaml",
+			cfg: &Config{
+				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+				LogLevel:           zapcore.InfoLevel,
+				Verbosity:          configtelemetry.LevelNormal,
+				SamplingInitial:    2,
+				SamplingThereafter: 500,
+				warnLogLevel:       true,
+			},
+		},
+		{
+			filename:    "invalid_verbosity_loglevel.yaml",
+			expectedErr: "'loglevel' and 'verbosity' are incompatible. Use only 'verbosity' instead",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filename, func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.filename))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			err = config.UnmarshalExporter(cm, cfg)
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.cfg, cfg)
+			}
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name        string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			name: "verbosity none",
+			cfg: &Config{
+				Verbosity: configtelemetry.LevelNone,
+			},
+			expectedErr: "verbosity level \"none\" is not supported",
+		},
+		{
+			name: "verbosity detailed",
+			cfg: &Config{
+				Verbosity: configtelemetry.LevelDetailed,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
