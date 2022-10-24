@@ -89,11 +89,15 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	switch cfg.Verbosity {
-	case configtelemetry.LevelBasic, configtelemetry.LevelNormal, configtelemetry.LevelDetailed:
-		// These are supported. Do nothing.
-	default:
-		// configtelemetry.LevelNone and future values are not supported.
+	// Supported configtelemetry.Level values for this exporter.
+	// configtelemetry.LevelNone and future values are not supported.
+	supportedLevels := map[configtelemetry.Level]struct{}{
+		configtelemetry.LevelBasic:    {},
+		configtelemetry.LevelNormal:   {},
+		configtelemetry.LevelDetailed: {},
+	}
+
+	if _, ok := supportedLevels[cfg.Verbosity]; !ok {
 		return fmt.Errorf("verbosity level %q is not supported", cfg.Verbosity)
 	}
 
