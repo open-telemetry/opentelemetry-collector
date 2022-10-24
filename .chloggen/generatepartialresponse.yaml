@@ -5,7 +5,7 @@ change_type: enhancement
 component: pdata
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Introduce partial success fields in ExportServiceResponse.
+note: Introduce partial success fields in ExportResponse.
 
 # One or more tracking issues or pull requests related to the change
 issues: [5815, 5816, 6365]
