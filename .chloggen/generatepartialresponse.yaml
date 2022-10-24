@@ -8,4 +8,4 @@ component: pdata
 note: Introduce partial success fields in ExportServiceResponse.
 
 # One or more tracking issues or pull requests related to the change
-issues: [5815, 5816]
+issues: [5815, 5816, 6365]

@@ -21,26 +21,26 @@ import (
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 )
 
-type ExportMetricsPartialSuccess struct {
+type MetricsExportPartialSuccess struct {
 	orig *otlpcollectormetrics.ExportMetricsPartialSuccess
 }
 
-func GetOrigExportMetricsPartialSuccess(ms ExportMetricsPartialSuccess) *otlpcollectormetrics.ExportMetricsPartialSuccess {
+func GetOrigMetricsExportPartialSuccess(ms MetricsExportPartialSuccess) *otlpcollectormetrics.ExportMetricsPartialSuccess {
 	return ms.orig
 }
 
-func NewExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) ExportMetricsPartialSuccess {
-	return ExportMetricsPartialSuccess{orig: orig}
+func NewMetricsExportPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) MetricsExportPartialSuccess {
+	return MetricsExportPartialSuccess{orig: orig}
 }
 
-func GenerateTestExportMetricsPartialSuccess() ExportMetricsPartialSuccess {
+func GenerateTestMetricsExportPartialSuccess() MetricsExportPartialSuccess {
 	orig := otlpcollectormetrics.ExportMetricsPartialSuccess{}
-	tv := NewExportMetricsPartialSuccess(&orig)
-	FillTestExportMetricsPartialSuccess(tv)
+	tv := NewMetricsExportPartialSuccess(&orig)
+	FillTestMetricsExportPartialSuccess(tv)
 	return tv
 }
 
-func FillTestExportMetricsPartialSuccess(tv ExportMetricsPartialSuccess) {
+func FillTestMetricsExportPartialSuccess(tv MetricsExportPartialSuccess) {
 	tv.orig.RejectedDataPoints = int64(13)
 	tv.orig.ErrorMessage = "error message"
 }
