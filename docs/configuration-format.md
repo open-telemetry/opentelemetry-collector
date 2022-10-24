@@ -30,8 +30,7 @@ There are 2 possible configuration structure for a receiver. First structure is 
 ```yaml
 receivers:
   <receiver name>:
-    endpoint: <network interface and port to bind to, address:port>
-    # other key/value pairs as needed by specific receiver type
+    # key/value pairs as needed by specific receiver type
 ```
 
 For receivers that support more than one protocol the structure is the following:
@@ -41,8 +40,7 @@ receivers:
   <receiver name>:
     protocols:
       <protocol name 1>: # key is string, protocol name, unique
-        endpoint: <network interface and port to bind to, address:port>
-        # other key/value pairs as needed by specific receiver type
+        # key/value pairs as needed by specific receiver type
       <protocol name 2>:
         # settings for protocol 2
       ...
@@ -69,7 +67,7 @@ The configuration structure of a top-level processor is the following:
 ```yaml
 processors:
   <processor name>: # key is string, unique name of processor
-    # other key/value pairs as needed by specific processor type
+    # key/value pairs as needed by specific processor type
 ```
 
 The name should be in the form `type[/name]`, where `type` is the type of the processor (e.g. `batching`), and `name` suffix is optionally appended after a forward slash to ensure uniqueness of the full name. It is not allowed to define more than one processor with the same name.
@@ -79,16 +77,13 @@ The name should be in the form `type[/name]`, where `type` is the type of the pr
 Each exporter has a name which is defined by the key of the mapping under exporters top level-key. The name should be in the form `type[/name]`, where type is the type of the exporter (e.g. `otlp`), and `name` suffix is optionally appended after a forward slash to ensure uniqueness of the full name of the exporter. It is not allowed to define more than one exporter with the same name.
 
 Multiple pipelines can be associated with the same exporter. When this happens the data processed by these pipelines is directed to that exporter for further delivery.
-The definition of exporter is specific for each type however at the minimum it will include an endpoint string (which normally includes the destination address and port).
-The structure of exporter configuration is the following:
+The definition of exporter is specific for each type. The structure of exporter configuration is the following:
 
 ```yaml
-<exporter name>: # key is string, unique name of exporter
-  endpoint: <network interface and port to bind to, address:port>
-  # other key/value pairs as needed by specific exporter type
+exporters:
+  <exporter name>: # key is string, unique name of exporter
+    # key/value pairs as needed by specific exporter type
 ```
-
-The format and interpretation of `endpoint` is exporter specific but typically is a string in the form `address:port`.
 
 ## Service
 
@@ -106,17 +101,18 @@ Additionally, the service configuration allows users to configure extensions to 
 Here is the configuration structure service configuration:
 
 ```yaml
-pipelines:  
-  <pipeline name>: # key is string, unique name of pipeline
-    receivers: [receiver-name-1, receiver-name-2, ...]
-    processors: [processor-name-1, processor-name-2, ...]
-    exporters: [exporter-name-1, exporter-name-2, ...]
-# optionally enable extensions
-extensions: [extension-name-1, extension-name-2, ...]
-# optionally configure telemetry for the collector
-telemetry:
-  <signal name>:
-  # other key/value pairs as needed by specific signal
+service:
+  pipelines:  
+    <pipeline name>: # key is string, unique name of pipeline
+      receivers: [receiver-name-1, receiver-name-2, ...]
+      processors: [processor-name-1, processor-name-2, ...]
+      exporters: [exporter-name-1, exporter-name-2, ...]
+  # optionally enable extensions
+  extensions: [extension-name-1, extension-name-2, ...]
+  # optionally configure telemetry for the collector
+  telemetry:
+    <signal name>:
+    # key/value pairs as needed by specific signal
 ```
 
 The name should be in the form `type[/name]`, where type is the input type of the pipeline (either traces, metrics, or logs), and name suffix is optionally appended after a forward slash to ensure uniqueness of the full name of the pipeline. It is not allowed to define more than one pipeline with the same name.
