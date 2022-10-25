@@ -404,6 +404,15 @@ func TestGRPCServerWarning(t *testing.T) {
 			},
 			len: 0,
 		},
+		{
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:1234",
+					Transport: "unix",
+				},
+			},
+			len: 0,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

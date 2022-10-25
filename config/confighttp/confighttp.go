@@ -17,7 +17,6 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -25,13 +24,13 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/config/internal"
 )
 
 const headerContentEncoding = "Content-Encoding"
@@ -261,19 +260,8 @@ func WithErrorHandler(e errorHandler) ToServerOption {
 
 // ToServer creates an http.Server from settings object.
 func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	endpointHost, _, err := net.SplitHostPort(hss.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse endpoint: %w", err)
-	}
-
-	if ip := net.ParseIP(endpointHost); ip != nil && ip.IsUnspecified() {
-		settings.Logger.Warn(
-			"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
-			zap.String(
-				"documentation",
-				"https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md#safeguards-against-denial-of-service-attacks",
-			),
-		)
+	if err := internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint); err != nil {
+		return nil, err
 	}
 
 	serverOpts := &toServerOptions{}

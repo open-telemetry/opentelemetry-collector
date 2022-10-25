@@ -27,7 +27,6 @@ import (
 	"github.com/mostynb/go-grpc-compression/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials"
@@ -43,6 +42,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/config/internal"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
@@ -277,19 +277,8 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 
 	switch gss.NetAddr.Transport {
 	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
-		host, _, err := net.SplitHostPort(gss.NetAddr.Endpoint)
-		if err != nil {
+		if err := internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint); err != nil {
 			return nil, fmt.Errorf("failed to parse endpoint: %w", err)
-		}
-
-		if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
-			settings.Logger.Warn(
-				"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
-				zap.String(
-					"documentation",
-					"https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md#safeguards-against-denial-of-service-attacks",
-				),
-			)
 		}
 	}
 
