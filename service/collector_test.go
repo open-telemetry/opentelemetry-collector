@@ -236,6 +236,23 @@ func TestCollectorFailedShutdown(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
+func TestCollectorStartInvalidConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
+	require.NoError(t, err)
+
+	col, err := New(CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	})
+	require.NoError(t, err)
+	assert.Error(t, col.Run(context.Background()))
+}
+
 // mapConverter applies extraMap of config settings. Useful for overriding the config
 // for testing purposes. Keys must use "::" delimiter between levels.
 type mapConverter struct {

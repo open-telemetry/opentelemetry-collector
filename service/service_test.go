@@ -25,9 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
 
 func TestService_GetFactory(t *testing.T) {
@@ -99,9 +97,9 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	require.NoError(t, err)
 
 	// Read invalid yaml config from file
-	invalidConf, err := confmaptest.LoadConf(filepath.Join("testdata", "otelcol-invalid.yaml"))
+	invalidProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
 	require.NoError(t, err)
-	invalidCfg, err := configunmarshaler.Unmarshal(invalidConf, factories)
+	invalidCfg, err := invalidProvider.Get(context.Background(), factories)
 	require.NoError(t, err)
 
 	// Read valid yaml config from file

@@ -110,10 +110,6 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
-	if err = cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid configuration: %w", err)
-	}
-
 	return cfg, nil
 }
 

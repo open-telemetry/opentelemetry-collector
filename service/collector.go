@@ -132,6 +132,10 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
+	if err = cfg.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	col.service, err = newService(&settings{
 		BuildInfo:         col.set.BuildInfo,
 		Factories:         col.set.Factories,

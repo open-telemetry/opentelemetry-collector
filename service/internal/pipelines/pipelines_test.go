@@ -26,11 +26,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestBuild(t *testing.T) {
@@ -87,8 +88,7 @@ func TestBuild(t *testing.T) {
 			factories, err := testcomponents.ExampleComponents()
 			assert.NoError(t, err)
 
-			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.name), factories)
-			require.NoError(t, err)
+			cfg := loadConfigAndValidate(t, filepath.Join("testdata", test.name), factories)
 
 			// Build the pipeline
 			pipelines, err := Build(context.Background(), toSettings(factories, cfg))
@@ -249,15 +249,14 @@ func TestBuildErrors(t *testing.T) {
 			}
 
 			// Need the unknown factories to do unmarshalling.
-			cfg, err := servicetest.LoadConfig(filepath.Join("testdata", test.configFile), factories)
-			require.NoError(t, err)
+			cfg := loadConfig(t, filepath.Join("testdata", test.configFile), factories)
 
 			// Remove the unknown factories, so they are NOT available during building.
 			delete(factories.Exporters, "unknown")
 			delete(factories.Processors, "unknown")
 			delete(factories.Receivers, "unknown")
 
-			_, err = Build(context.Background(), toSettings(factories, cfg))
+			_, err := Build(context.Background(), toSettings(factories, cfg))
 			assert.Error(t, err)
 		})
 	}
@@ -463,4 +462,19 @@ func (e errComponent) Start(context.Context, component.Host) error {
 
 func (e errComponent) Shutdown(context.Context) error {
 	return errors.New("my error")
+}
+
+func loadConfig(t *testing.T, fileName string, factories component.Factories) *config.Config {
+	// Read yaml config from file
+	conf, err := confmaptest.LoadConf(fileName)
+	require.NoError(t, err)
+	cfg, err := configunmarshaler.Unmarshal(conf, factories)
+	require.NoError(t, err)
+	return cfg
+}
+
+func loadConfigAndValidate(t *testing.T, fileName string, factories component.Factories) *config.Config {
+	cfg := loadConfig(t, fileName, factories)
+	require.NoError(t, cfg.Validate())
+	return cfg
 }
