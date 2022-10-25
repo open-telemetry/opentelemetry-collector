@@ -136,7 +136,6 @@ func TestInvalidModule(t *testing.T) {
 	}
 
 	for _, test := range configurations {
-		assert.True(t, errors.Is(test.cfg.SetGoPath(), test.err))
 		assert.True(t, errors.Is(test.cfg.Validate(), test.err))
 	}
 }
