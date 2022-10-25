@@ -153,16 +153,9 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if err = col.service.Start(ctx); err != nil {
-		errs := err
-		if shutdownErr := col.service.Shutdown(ctx); shutdownErr != nil {
-			errs = multierr.Append(err, fmt.Errorf("failed to shutdown service after error: %w", shutdownErr))
+		if shutdownErr := col.shutdownServiceAndTelemetry(ctx); shutdownErr != nil {
+			return multierr.Append(err, shutdownErr)
 		}
-
-		// TODO: Move this as part of the service shutdown.
-		if shutdownErr := col.service.telemetryInitializer.shutdown(); shutdownErr != nil {
-			errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
-		}
-		return errs
 	}
 	col.setCollectorState(Running)
 	return nil
@@ -228,17 +221,30 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
 	}
 
-	if err := col.service.Shutdown(ctx); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service: %w", err))
-	}
-
-	// TODO: Move this as part of the service shutdown.
-	if err := col.service.telemetryInitializer.shutdown(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
+	if err := col.shutdownServiceAndTelemetry(ctx); err != nil {
+		errs = multierr.Append(errs, err)
 	}
 
 	col.setCollectorState(Closed)
 
+	return errs
+}
+
+// shutdownServiceAndTelemetry bundles shutting down the service and telemetryInitializer.
+// Returned error will be in multierr form and wrapped.
+func (col *Collector) shutdownServiceAndTelemetry(ctx context.Context) error {
+	var errs error
+
+	// shutdown service
+	if err := col.service.Shutdown(ctx); err != nil {
+		errs = multierr.Append(err, fmt.Errorf("failed to shutdown service after error: %w", err))
+	}
+
+	// TODO: Move this as part of the service shutdown.
+	// shutdown telemetryInitializer
+	if err := col.service.telemetryInitializer.shutdown(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
+	}
 	return errs
 }
 
