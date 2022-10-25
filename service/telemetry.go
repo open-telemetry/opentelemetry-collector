@@ -234,16 +234,15 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 		return fmt.Errorf("error creating otel resources: %w", err)
 	}
 
-	exporter := otelprom.New()
+	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
+	exporter, err := otelprom.New(otelprom.WithRegisterer(wrappedRegisterer))
+	if err != nil {
+		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
+	}
 	tel.mp = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
 		sdkmetric.WithReader(exporter),
 	)
-
-	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
-	if err := wrappedRegisterer.Register(exporter.Collector); err != nil {
-		return fmt.Errorf("failed to register prometheus collector: %w", err)
-	}
 
 	return nil
 }
