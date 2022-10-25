@@ -22,6 +22,9 @@ module-sets:
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/cmd/builder
+      - go.opentelemetry.io/collector/exporter/loggingexporter
+      - go.opentelemetry.io/collector/exporter/otlpexporter
+      - go.opentelemetry.io/collector/exporter/otlphttpexporter
       - go.opentelemetry.io/collector/semconv
 
 excluded-modules:
