@@ -73,12 +73,9 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	// Copied from NewProductionConfig.
 	zapCfg := &zap.Config{
-		Level:       zap.NewAtomicLevelAt(cfg.Level),
-		Development: cfg.Development,
-		Sampling: &zap.SamplingConfig{
-			Initial:    100,
-			Thereafter: 100,
-		},
+		Level:             zap.NewAtomicLevelAt(cfg.Level),
+		Development:       cfg.Development,
+		Sampling:          toSamplingConfig(cfg.Sampling),
 		Encoding:          cfg.Encoding,
 		EncoderConfig:     zap.NewProductionEncoderConfig(),
 		OutputPaths:       cfg.OutputPaths,
@@ -101,8 +98,17 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	return logger, nil
 }
 
-type nopSpanProcessor struct {
+func toSamplingConfig(sc *LogsSamplingConfig) *zap.SamplingConfig {
+	if sc == nil {
+		return nil
+	}
+	return &zap.SamplingConfig{
+		Initial:    sc.Initial,
+		Thereafter: sc.Thereafter,
+	}
 }
+
+type nopSpanProcessor struct{}
 
 func (n nopSpanProcessor) OnStart(context.Context, sdktrace.ReadWriteSpan) {}
 
