@@ -29,6 +29,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -392,6 +394,45 @@ func TestHTTPServerSettingsError(t *testing.T) {
 	}
 }
 
+func TestHTTPServerWarning(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings HTTPServerSettings
+		len      int
+	}{
+		{
+			settings: HTTPServerSettings{
+				Endpoint: "0.0.0.0:0",
+			},
+			len: 1,
+		},
+		{
+			settings: HTTPServerSettings{
+				Endpoint: "127.0.0.1:0",
+			},
+			len: 0,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			set := componenttest.NewNopTelemetrySettings()
+			logger, observed := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
+
+			_, err := test.settings.ToServer(
+				componenttest.NewNopHost(),
+				set,
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					_, errWrite := fmt.Fprint(w, "test")
+					assert.NoError(t, errWrite)
+				}))
+			require.NoError(t, err)
+			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
+		})
+	}
+
+}
+
 func TestHttpReception(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -687,6 +728,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 
 func TestHttpCorsWithAuthentication(t *testing.T) {
 	hss := &HTTPServerSettings{
+		Endpoint: "localhost:0",
 		CORS: &CORSSettings{
 			AllowedOrigins: []string{"*"},
 		},
@@ -884,6 +926,7 @@ func TestServerAuth(t *testing.T) {
 	// prepare
 	authCalled := false
 	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
 			AuthenticatorID: config.NewComponentID("mock"),
 		},
@@ -931,6 +974,7 @@ func TestInvalidServerAuth(t *testing.T) {
 func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
 			AuthenticatorID: config.NewComponentID("mock"),
 		},
