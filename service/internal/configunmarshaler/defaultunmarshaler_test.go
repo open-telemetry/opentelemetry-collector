@@ -75,47 +75,38 @@ func TestUnmarshal(t *testing.T) {
 	cfg, err := loadConfigFile(t, filepath.Join("testdata", "valid-config.yaml"), factories)
 	require.NoError(t, err, "Unable to load config")
 
+	assert.Equal(t, map[config.ComponentID]config.Receiver{config.NewComponentID("nop"): factories.Receivers["nop"].CreateDefaultConfig()}, cfg.Receivers.GetReceivers())
+	assert.Equal(t, map[config.ComponentID]config.Processor{config.NewComponentID("nop"): factories.Processors["nop"].CreateDefaultConfig()}, cfg.Processors.GetProcessors())
+	assert.Equal(t, map[config.ComponentID]config.Exporter{config.NewComponentID("nop"): factories.Exporters["nop"].CreateDefaultConfig()}, cfg.Exporters.GetExporters())
+	assert.Equal(t, map[config.ComponentID]config.Extension{config.NewComponentID("nop"): factories.Extensions["nop"].CreateDefaultConfig()}, cfg.Extensions.GetExtensions())
+
 	assert.Equal(t,
-		&config.Config{
-			Receivers: map[config.ComponentID]config.Receiver{
-				config.NewComponentID("nop"): factories.Receivers["nop"].CreateDefaultConfig(),
-			},
-			Exporters: map[config.ComponentID]config.Exporter{
-				config.NewComponentID("nop"): factories.Exporters["nop"].CreateDefaultConfig(),
-			},
-			Processors: map[config.ComponentID]config.Processor{
-				config.NewComponentID("nop"): factories.Processors["nop"].CreateDefaultConfig(),
-			},
-			Extensions: map[config.ComponentID]config.Extension{
-				config.NewComponentID("nop"): factories.Extensions["nop"].CreateDefaultConfig(),
-			},
-			Service: config.Service{
-				Extensions: []config.ComponentID{config.NewComponentID("nop")},
-				Pipelines: map[config.ComponentID]*config.Pipeline{
-					config.NewComponentID("traces"): {
-						Receivers:  []config.ComponentID{config.NewComponentID("nop")},
-						Processors: []config.ComponentID{config.NewComponentID("nop")},
-						Exporters:  []config.ComponentID{config.NewComponentID("nop")},
-					},
-				},
-				Telemetry: telemetry.Config{
-					Logs: telemetry.LogsConfig{
-						Level:             zapcore.DebugLevel,
-						Development:       true,
-						Encoding:          "console",
-						DisableCaller:     true,
-						DisableStacktrace: true,
-						OutputPaths:       []string{"stderr", "./output-logs"},
-						ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
-						InitialFields:     map[string]interface{}{"field_key": "filed_value"},
-					},
-					Metrics: telemetry.MetricsConfig{
-						Level:   configtelemetry.LevelNormal,
-						Address: ":8081",
-					},
+		config.Service{
+			Extensions: []config.ComponentID{config.NewComponentID("nop")},
+			Pipelines: map[config.ComponentID]*config.Pipeline{
+				config.NewComponentID("traces"): {
+					Receivers:  []config.ComponentID{config.NewComponentID("nop")},
+					Processors: []config.ComponentID{config.NewComponentID("nop")},
+					Exporters:  []config.ComponentID{config.NewComponentID("nop")},
 				},
 			},
-		}, cfg)
+			Telemetry: telemetry.Config{
+				Logs: telemetry.LogsConfig{
+					Level:             zapcore.DebugLevel,
+					Development:       true,
+					Encoding:          "console",
+					DisableCaller:     true,
+					DisableStacktrace: true,
+					OutputPaths:       []string{"stderr", "./output-logs"},
+					ErrorOutputPaths:  []string{"stderr", "./error-output-logs"},
+					InitialFields:     map[string]interface{}{"field_key": "filed_value"},
+				},
+				Metrics: telemetry.MetricsConfig{
+					Level:   configtelemetry.LevelNormal,
+					Address: ":8081",
+				},
+			},
+		}, cfg.Service)
 }
 
 func TestUnmarshalError(t *testing.T) {
@@ -157,7 +148,7 @@ func TestUnmarshalError(t *testing.T) {
 	}
 }
 
-func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*config.Config, error) {
+func loadConfigFile(t *testing.T, fileName string, factories component.Factories) (*Config, error) {
 	cm, err := confmaptest.LoadConf(fileName)
 	require.NoError(t, err)
 

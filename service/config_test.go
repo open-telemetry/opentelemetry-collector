@@ -28,10 +28,6 @@ import (
 )
 
 var (
-	errMissingExporters        = errors.New("no enabled exporters specified in config")
-	errMissingReceivers        = errors.New("no enabled receivers specified in config")
-	errMissingServicePipelines = errors.New("service must have at least one pipeline")
-
 	errInvalidRecvConfig = errors.New("invalid receiver config")
 	errInvalidExpConfig  = errors.New("invalid exporter config")
 	errInvalidProcConfig = errors.New("invalid processor config")

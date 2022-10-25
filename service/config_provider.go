@@ -100,17 +100,23 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*Config, error) {
-	retMap, err := cm.mapResolver.Resolve(ctx)
+	conf, err := cm.mapResolver.Resolve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
 
-	var cfg *Config
-	if cfg, err = configunmarshaler.Unmarshal(retMap, factories); err != nil {
+	cfg, err := configunmarshaler.Unmarshal(conf, factories)
+	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
-	return cfg, nil
+	return &Config{
+		Receivers:  cfg.Receivers.GetReceivers(),
+		Processors: cfg.Processors.GetProcessors(),
+		Exporters:  cfg.Exporters.GetExporters(),
+		Extensions: cfg.Extensions.GetExtensions(),
+		Service:    cfg.Service,
+	}, nil
 }
 
 func (cm *configProvider) Watch() <-chan error {
