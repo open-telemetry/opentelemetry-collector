@@ -161,7 +161,7 @@ func TestServiceTelemetryReusable(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Setup tu curl the telemetry URL to ensure it works
+	// URL of the telemetry service metrics endpoint
 	telemetryURL := fmt.Sprintf("http://%s/metrics", telemetry.server.Addr)
 
 	// Start the service
