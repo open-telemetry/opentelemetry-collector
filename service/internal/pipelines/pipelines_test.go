@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -434,7 +435,7 @@ func newErrExporterFactory() component.ExporterFactory {
 	)
 }
 
-func toSettings(factories component.Factories, cfg *configunmarshaler.Config) Settings {
+func toSettings(factories component.Factories, cfg *configSettings) Settings {
 	return Settings{
 		Telemetry:          componenttest.NewNopTelemetrySettings(),
 		BuildInfo:          component.NewDefaultBuildInfo(),
@@ -464,11 +465,27 @@ func (e errComponent) Shutdown(context.Context) error {
 	return errors.New("my error")
 }
 
-func loadConfig(t *testing.T, fileName string, factories component.Factories) *configunmarshaler.Config {
+// TODO: Remove this by not reading the input from the files, or by providing something similar outside service package.
+type configSettings struct {
+	Receivers  *configunmarshaler.Receivers  `mapstructure:"receivers"`
+	Processors *configunmarshaler.Processors `mapstructure:"processors"`
+	Exporters  *configunmarshaler.Exporters  `mapstructure:"exporters"`
+	Service    *serviceSettings              `mapstructure:"service"`
+}
+
+type serviceSettings struct {
+	Pipelines map[config.ComponentID]*config.Pipeline `mapstructure:"pipelines"`
+}
+
+func loadConfig(t *testing.T, fileName string, factories component.Factories) *configSettings {
 	// Read yaml config from file
 	conf, err := confmaptest.LoadConf(fileName)
 	require.NoError(t, err)
-	cfg, err := configunmarshaler.Unmarshal(conf, factories)
-	require.NoError(t, err)
+	cfg := &configSettings{
+		Receivers:  configunmarshaler.NewReceivers(factories.Receivers),
+		Processors: configunmarshaler.NewProcessors(factories.Processors),
+		Exporters:  configunmarshaler.NewExporters(factories.Exporters),
+	}
+	require.NoError(t, conf.Unmarshal(cfg, confmap.WithErrorUnused()))
 	return cfg
 }
