@@ -137,6 +137,56 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 
 }
 
+// TestServiceTelemetryReusable tests that a single telemetryInitializer can be reused in multiple services
+func TestServiceTelemetryReusable(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	// Read valid yaml config from file
+	validProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+	validCfg, err := validProvider.Get(context.Background(), factories)
+	require.NoError(t, err)
+
+	// Create a service
+	telemetry := newColTelemetry(featuregate.NewRegistry())
+	srvOne, err := newService(&settings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		Config:    validCfg,
+		telemetry: telemetry,
+	})
+	require.NoError(t, err)
+
+	// Start the service
+	require.NoError(t, srvOne.Start(context.Background()))
+
+	// Shutdown the service
+	require.NoError(t, srvOne.Shutdown(context.Background()))
+
+	// Create a new service with the same telemetry
+	srvTwo, err := newService(&settings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		Config:    validCfg,
+		telemetry: telemetry,
+	})
+	require.NoError(t, err)
+
+	// For safety ensure everything is cleaned up
+	t.Cleanup(func() {
+		assert.NoError(t, telemetry.shutdown())
+		assert.NoError(t, srvOne.Shutdown(context.Background()))
+		assert.NoError(t, srvTwo.Shutdown(context.Background()))
+	})
+
+	// Start the new service
+	require.NoError(t, srvTwo.Start(context.Background()))
+
+	// Shutdown the new service
+	require.NoError(t, srvTwo.Shutdown(context.Background()))
+}
+
 func createExampleService(t *testing.T, factories component.Factories) *service {
 	// Read yaml config from file
 	prov, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
