@@ -42,25 +42,29 @@ For more technical details about how configuration is resolved you can read the 
 Use the sub command build-info. Below is an example:
 
 ```bash
-   .\otelcol build-info
+   ./otelcorecol build-info
 ```
 Sample output:
 
 ```yaml
 
-version: 0.62.1-dev
+buildinfo:
+   command: otelcorecol
+   description: Local OpenTelemetry Collector binary, testing only.
+   version: 0.62.1-dev
 receivers:
    - otlp
 processors:
    - memory_limiter
    - batch
 exporters:
-   - logging
    - otlp
    - otlphttp
+   - logging
 extensions:
-   - memory_ballast
    - zpages
+   - memory_ballast
+
 
 ```
 ## How to override config properties?
@@ -122,4 +126,3 @@ key:
 1. Does not support setting a key that contains a dot `.`.
 2. Does not support setting a key that contains a equal sign `=`.
 3. The configuration key separator inside the value part of the property is "::". For example `--set "name={a::b: c}"` is equivalent with `--set name.a.b=c`.
-

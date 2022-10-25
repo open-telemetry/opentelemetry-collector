@@ -5,10 +5,10 @@ processors:
   nop:
 
 exporters:
-  nop:
+  nop: l
 
 extensions:
-  nop:
+  nop: 9
 
 service:
   telemetry:
