@@ -132,9 +132,6 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
 	}
 
-	if err := srv.telemetryInitializer.shutdown(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry initializer: %w", err))
-	}
 	// TODO: Shutdown MeterProvider.
 	return errs
 }

@@ -16,6 +16,8 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"path/filepath"
 	"testing"
 
@@ -150,6 +152,7 @@ func TestServiceTelemetryReusable(t *testing.T) {
 
 	// Create a service
 	telemetry := newColTelemetry(featuregate.NewRegistry())
+
 	srvOne, err := newService(&settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
@@ -158,8 +161,19 @@ func TestServiceTelemetryReusable(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// Setup tu curl the telemetry URL to ensure it works
+	telemetryURL := fmt.Sprintf("http://%s/metrics", telemetry.server.Addr)
+
 	// Start the service
 	require.NoError(t, srvOne.Start(context.Background()))
+
+	// check telemetry server to ensure we get a response
+	var resp *http.Response
+
+	// #nosec G107
+	resp, err = http.Get(telemetryURL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Shutdown the service
 	require.NoError(t, srvOne.Shutdown(context.Background()))
@@ -182,6 +196,12 @@ func TestServiceTelemetryReusable(t *testing.T) {
 
 	// Start the new service
 	require.NoError(t, srvTwo.Start(context.Background()))
+
+	// check telemetry server to ensure we get a response
+	// #nosec G107
+	resp, err = http.Get(telemetryURL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Shutdown the new service
 	require.NoError(t, srvTwo.Shutdown(context.Background()))
