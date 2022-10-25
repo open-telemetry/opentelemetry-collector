@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/config/internal"
 )
 
 const headerContentEncoding = "Content-Encoding"
@@ -260,10 +259,6 @@ func WithErrorHandler(e errorHandler) ToServerOption {
 
 // ToServer creates an http.Server from settings object.
 func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	if err := internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint); err != nil {
-		return nil, err
-	}
-
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {
 		o(serverOpts)
