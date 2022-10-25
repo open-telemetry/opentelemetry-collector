@@ -26,6 +26,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -162,7 +164,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
-	gss := &GRPCServerSettings{}
+	gss := &GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint: "0.0.0.0:1234",
+		},
+	}
 	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	_ = grpc.NewServer(opts...)
 
@@ -206,7 +212,11 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
-	gss := &GRPCServerSettings{}
+	gss := &GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint: "0.0.0.0:1234",
+		},
+	}
 
 	// sanity check
 	_, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
@@ -368,6 +378,57 @@ func TestUseSecure(t *testing.T) {
 	dialOpts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
 	assert.Len(t, dialOpts, 3)
+}
+
+func TestGRPCServerWarning(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings GRPCServerSettings
+		len      int
+	}{
+		{
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:1234",
+					Transport: "tcp",
+				},
+			},
+			len: 1,
+		},
+		{
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "127.0.0.1:1234",
+					Transport: "tcp",
+				},
+			},
+			len: 0,
+		},
+		{
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:1234",
+					Transport: "unix",
+				},
+			},
+			len: 0,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			set := componenttest.NewNopTelemetrySettings()
+			logger, observed := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
+
+			opts, err := test.settings.ToServerOption(componenttest.NewNopHost(), set)
+			require.NoError(t, err)
+			require.NotNil(t, opts)
+			_ = grpc.NewServer(opts...)
+
+			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
+		})
+	}
+
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {

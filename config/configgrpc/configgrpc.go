@@ -42,6 +42,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/config/internal"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
@@ -273,6 +274,14 @@ func (gss *GRPCServerSettings) ToListener() (net.Listener, error) {
 
 // ToServerOption maps configgrpc.GRPCServerSettings to a slice of server options for gRPC.
 func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings component.TelemetrySettings) ([]grpc.ServerOption, error) {
+
+	switch gss.NetAddr.Transport {
+	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
+		if err := internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint); err != nil {
+			return nil, fmt.Errorf("failed to parse endpoint: %w", err)
+		}
+	}
+
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
