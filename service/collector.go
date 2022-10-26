@@ -233,7 +233,7 @@ func (col *Collector) shutdownServiceAndTelemetry(ctx context.Context) error {
 
 	// shutdown service
 	if err := col.service.Shutdown(ctx); err != nil {
-		errs = multierr.Append(err, fmt.Errorf("failed to shutdown service after error: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service after error: %w", err))
 	}
 
 	// TODO: Move this as part of the service shutdown.
