@@ -60,6 +60,7 @@
 - `pdata`: Because of wrong deprecation/rename in proto, services still send the fake 1000 proto id. See https://github.com/open-telemetry/opentelemetry-proto/issues/431 (#6342)
 - `confmap`: When a sub-config implements Unmarshaler, do not reinitialized it unless necessary. (#6392)
 - `pdata`: Enable enums as ints for otlp messages, switch to jsoniter for responses. (#6345)
+- `collector`: Fixed collector service not cleaning up if it failed during Start (#6352)
 
 ## v0.62.1 Beta
 
