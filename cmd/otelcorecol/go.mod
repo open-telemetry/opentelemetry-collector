@@ -6,10 +6,10 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.62.1
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.62.1
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.62.1
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.62.1
+	go.opentelemetry.io/collector v0.63.0
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.0
 	golang.org/x/sys v0.1.0
 )
 
@@ -57,8 +57,8 @@ require (
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.62.1 // indirect
-	go.opentelemetry.io/collector/semconv v0.62.1 // indirect
+	go.opentelemetry.io/collector/pdata v0.63.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.63.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect

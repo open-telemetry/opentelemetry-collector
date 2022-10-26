@@ -1,4 +1,0 @@
-change_type: breaking
-component: confmap
-note: "Remove deprecated `confmap.Conf.UnmarshalExact` API in 0.62.0"
-issues: [6315]
