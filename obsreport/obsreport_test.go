@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -50,149 +52,165 @@ type testParams struct {
 	err   error
 }
 
+func testTelemetry(t *testing.T, testFunc func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry)) {
+	t.Run("WithOC", func(t *testing.T) {
+		tt, err := obsreporttest.SetupTelemetry()
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+		testFunc(tt, featuregate.NewRegistry())
+	})
+
+	t.Run("WithOTel", func(t *testing.T) {
+		registry := featuregate.NewRegistry()
+		obsreportconfig.RegisterInternalMetricFeatureGate(registry)
+		require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
+
+		tt, err := obsreporttest.SetupTelemetry()
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+		testFunc(tt, registry)
+	})
+}
+
 func TestReceiveTraceDataOp(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		defer parentSpan.End()
 
-	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
-	defer parentSpan.End()
-
-	params := []testParams{
-		{items: 13, err: errFake},
-		{items: 42, err: nil},
-	}
-	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{
-			ReceiverID:             receiver,
-			Transport:              transport,
-			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
-		})
-		ctx := rec.StartTracesOp(parentCtx)
-		assert.NotNil(t, ctx)
-		rec.EndTracesOp(ctx, format, params[i].items, param.err)
-	}
-
-	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
-
-	var acceptedSpans, refusedSpans int
-	for i, span := range spans {
-		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name())
-		switch {
-		case params[i].err == nil:
-			acceptedSpans += params[i].items
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(0)})
-			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errors.Is(params[i].err, errFake):
-			refusedSpans += params[i].items
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(0)})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
-			assert.Equal(t, codes.Error, span.Status().Code)
-			assert.Equal(t, params[i].err.Error(), span.Status().Description)
-		default:
-			t.Fatalf("unexpected param: %v", params[i])
+		params := []testParams{
+			{items: 13, err: errFake},
+			{items: 42, err: nil},
 		}
-	}
-	require.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiver, transport, int64(acceptedSpans), int64(refusedSpans)))
+		for i, param := range params {
+			rec := newReceiver(ReceiverSettings{
+				ReceiverID:             receiver,
+				Transport:              transport,
+				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+			}, registry)
+			ctx := rec.StartTracesOp(parentCtx)
+			assert.NotNil(t, ctx)
+			rec.EndTracesOp(ctx, format, params[i].items, param.err)
+		}
+
+		spans := tt.SpanRecorder.Ended()
+		require.Equal(t, len(params), len(spans))
+
+		var acceptedSpans, refusedSpans int
+		for i, span := range spans {
+			assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name())
+			switch {
+			case params[i].err == nil:
+				acceptedSpans += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(0)})
+				assert.Equal(t, codes.Unset, span.Status().Code)
+			case errors.Is(params[i].err, errFake):
+				refusedSpans += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				assert.Equal(t, codes.Error, span.Status().Code)
+				assert.Equal(t, params[i].err.Error(), span.Status().Description)
+			default:
+				t.Fatalf("unexpected param: %v", params[i])
+			}
+		}
+		require.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiver, transport, int64(acceptedSpans), int64(refusedSpans)))
+	})
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		defer parentSpan.End()
 
-	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
-	defer parentSpan.End()
-
-	params := []testParams{
-		{items: 13, err: errFake},
-		{items: 42, err: nil},
-	}
-	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{
-			ReceiverID:             receiver,
-			Transport:              transport,
-			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
-		})
-		ctx := rec.StartLogsOp(parentCtx)
-		assert.NotNil(t, ctx)
-		rec.EndLogsOp(ctx, format, params[i].items, param.err)
-	}
-
-	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
-
-	var acceptedLogRecords, refusedLogRecords int
-	for i, span := range spans {
-		assert.Equal(t, "receiver/"+receiver.String()+"/LogsReceived", span.Name())
-		switch {
-		case params[i].err == nil:
-			acceptedLogRecords += params[i].items
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
-			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errors.Is(params[i].err, errFake):
-			refusedLogRecords += params[i].items
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
-			assert.Equal(t, codes.Error, span.Status().Code)
-			assert.Equal(t, params[i].err.Error(), span.Status().Description)
-		default:
-			t.Fatalf("unexpected param: %v", params[i])
+		params := []testParams{
+			{items: 13, err: errFake},
+			{items: 42, err: nil},
 		}
-	}
-	require.NoError(t, obsreporttest.CheckReceiverLogs(tt, receiver, transport, int64(acceptedLogRecords), int64(refusedLogRecords)))
+		for i, param := range params {
+			rec := newReceiver(ReceiverSettings{
+				ReceiverID:             receiver,
+				Transport:              transport,
+				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+			}, registry)
+			ctx := rec.StartLogsOp(parentCtx)
+			assert.NotNil(t, ctx)
+			rec.EndLogsOp(ctx, format, params[i].items, param.err)
+		}
+
+		spans := tt.SpanRecorder.Ended()
+		require.Equal(t, len(params), len(spans))
+
+		var acceptedLogRecords, refusedLogRecords int
+		for i, span := range spans {
+			assert.Equal(t, "receiver/"+receiver.String()+"/LogsReceived", span.Name())
+			switch {
+			case params[i].err == nil:
+				acceptedLogRecords += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
+				assert.Equal(t, codes.Unset, span.Status().Code)
+			case errors.Is(params[i].err, errFake):
+				refusedLogRecords += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				assert.Equal(t, codes.Error, span.Status().Code)
+				assert.Equal(t, params[i].err.Error(), span.Status().Description)
+			default:
+				t.Fatalf("unexpected param: %v", params[i])
+			}
+		}
+		require.NoError(t, obsreporttest.CheckReceiverLogs(tt, receiver, transport, int64(acceptedLogRecords), int64(refusedLogRecords)))
+	})
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		defer parentSpan.End()
 
-	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
-	defer parentSpan.End()
-
-	params := []testParams{
-		{items: 23, err: errFake},
-		{items: 29, err: nil},
-	}
-	for i, param := range params {
-		rec := NewReceiver(ReceiverSettings{
-			ReceiverID:             receiver,
-			Transport:              transport,
-			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
-		})
-		ctx := rec.StartMetricsOp(parentCtx)
-		assert.NotNil(t, ctx)
-		rec.EndMetricsOp(ctx, format, params[i].items, param.err)
-	}
-
-	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
-
-	var acceptedMetricPoints, refusedMetricPoints int
-	for i, span := range spans {
-		assert.Equal(t, "receiver/"+receiver.String()+"/MetricsReceived", span.Name())
-		switch {
-		case params[i].err == nil:
-			acceptedMetricPoints += params[i].items
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
-			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errors.Is(params[i].err, errFake):
-			refusedMetricPoints += params[i].items
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-			assert.Equal(t, codes.Error, span.Status().Code)
-			assert.Equal(t, params[i].err.Error(), span.Status().Description)
-		default:
-			t.Fatalf("unexpected param: %v", params[i])
+		params := []testParams{
+			{items: 23, err: errFake},
+			{items: 29, err: nil},
 		}
-	}
+		for i, param := range params {
+			rec := newReceiver(ReceiverSettings{
+				ReceiverID:             receiver,
+				Transport:              transport,
+				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+			}, registry)
+			ctx := rec.StartMetricsOp(parentCtx)
+			assert.NotNil(t, ctx)
+			rec.EndMetricsOp(ctx, format, params[i].items, param.err)
+		}
 
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, receiver, transport, int64(acceptedMetricPoints), int64(refusedMetricPoints)))
+		spans := tt.SpanRecorder.Ended()
+		require.Equal(t, len(params), len(spans))
+
+		var acceptedMetricPoints, refusedMetricPoints int
+		for i, span := range spans {
+			assert.Equal(t, "receiver/"+receiver.String()+"/MetricsReceived", span.Name())
+			switch {
+			case params[i].err == nil:
+				acceptedMetricPoints += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
+				assert.Equal(t, codes.Unset, span.Status().Code)
+			case errors.Is(params[i].err, errFake):
+				refusedMetricPoints += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				assert.Equal(t, codes.Error, span.Status().Code)
+				assert.Equal(t, params[i].err.Error(), span.Status().Description)
+			default:
+				t.Fatalf("unexpected param: %v", params[i])
+			}
+		}
+
+		require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, receiver, transport, int64(acceptedMetricPoints), int64(refusedMetricPoints)))
+	})
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
