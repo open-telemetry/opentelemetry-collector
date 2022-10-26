@@ -123,6 +123,9 @@ func SetupTelemetry() (TestTelemetry, error) {
 	view.RegisterExporter(settings.ocExporter)
 
 	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits())
+	if err != nil {
+		return settings, err
+	}
 
 	settings.meterProvider = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(resource.Empty()),
