@@ -37,7 +37,7 @@ For more technical details about how configuration is resolved you can read the 
     `./otelcorecol --config=file:examples/local/otel-config.yaml --config="yaml:exporters::logging::loglevel: info"`
 
 
-# How to check components available in a distribution
+## How to check components available in a distribution
  
 Use the sub command build-info. Below is an example:
 
