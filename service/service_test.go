@@ -16,6 +16,8 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"path/filepath"
 	"testing"
 
@@ -135,6 +137,71 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
+}
+
+// TestServiceTelemetryReusable tests that a single telemetryInitializer can be reused in multiple services
+func TestServiceTelemetryReusable(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	// Read valid yaml config from file
+	validProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+	validCfg, err := validProvider.Get(context.Background(), factories)
+	require.NoError(t, err)
+
+	// Create a service
+	telemetry := newColTelemetry(featuregate.NewRegistry())
+	// For safety ensure everything is cleaned up
+	t.Cleanup(func() {
+		assert.NoError(t, telemetry.shutdown())
+	})
+
+	srvOne, err := newService(&settings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		Config:    validCfg,
+		telemetry: telemetry,
+	})
+	require.NoError(t, err)
+
+	// URL of the telemetry service metrics endpoint
+	telemetryURL := fmt.Sprintf("http://%s/metrics", telemetry.server.Addr)
+
+	// Start the service
+	require.NoError(t, srvOne.Start(context.Background()))
+
+	// check telemetry server to ensure we get a response
+	var resp *http.Response
+
+	// #nosec G107
+	resp, err = http.Get(telemetryURL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Shutdown the service
+	require.NoError(t, srvOne.Shutdown(context.Background()))
+
+	// Create a new service with the same telemetry
+	srvTwo, err := newService(&settings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		Config:    validCfg,
+		telemetry: telemetry,
+	})
+	require.NoError(t, err)
+
+	// Start the new service
+	require.NoError(t, srvTwo.Start(context.Background()))
+
+	// check telemetry server to ensure we get a response
+	// #nosec G107
+	resp, err = http.Get(telemetryURL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Shutdown the new service
+	require.NoError(t, srvTwo.Shutdown(context.Background()))
 }
 
 func createExampleService(t *testing.T, factories component.Factories) *service {
