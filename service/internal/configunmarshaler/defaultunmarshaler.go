@@ -54,7 +54,7 @@ type Config struct {
 	Service    config.Service `mapstructure:"service"`
 }
 
-// Unmarshal the config.Config from a confmap.Conf.
+// Unmarshal the Config from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
 func Unmarshal(v *confmap.Conf, factories component.Factories) (*Config, error) {
 	// Unmarshal top level sections and validate.
