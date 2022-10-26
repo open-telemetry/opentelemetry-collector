@@ -46,7 +46,7 @@ type configError struct {
 	code configErrorCode
 }
 
-type configSettings struct {
+type Config struct {
 	Receivers  *Receivers     `mapstructure:"receivers"`
 	Processors *Processors    `mapstructure:"processors"`
 	Exporters  *Exporters     `mapstructure:"exporters"`
@@ -54,11 +54,11 @@ type configSettings struct {
 	Service    config.Service `mapstructure:"service"`
 }
 
-// Unmarshal the config.Config from a confmap.Conf.
+// Unmarshal the Config from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
-func Unmarshal(v *confmap.Conf, factories component.Factories) (*config.Config, error) {
+func Unmarshal(v *confmap.Conf, factories component.Factories) (*Config, error) {
 	// Unmarshal top level sections and validate.
-	rawCfg := configSettings{
+	cfg := &Config{
 		Receivers:  NewReceivers(factories.Receivers),
 		Processors: NewProcessors(factories.Processors),
 		Exporters:  NewExporters(factories.Exporters),
@@ -83,19 +83,11 @@ func Unmarshal(v *confmap.Conf, factories component.Factories) (*config.Config, 
 			},
 		},
 	}
-	if err := v.Unmarshal(&rawCfg, confmap.WithErrorUnused()); err != nil {
+	if err := v.Unmarshal(&cfg, confmap.WithErrorUnused()); err != nil {
 		return nil, configError{
 			error: fmt.Errorf("error reading top level configuration sections: %w", err),
 			code:  errUnmarshalTopLevelStructure,
 		}
-	}
-
-	cfg := &config.Config{
-		Receivers:  rawCfg.Receivers.GetReceivers(),
-		Processors: rawCfg.Processors.GetProcessors(),
-		Exporters:  rawCfg.Exporters.GetExporters(),
-		Extensions: rawCfg.Extensions.GetExtensions(),
-		Service:    rawCfg.Service,
 	}
 
 	return cfg, nil

@@ -88,7 +88,7 @@ func TestBuild(t *testing.T) {
 			factories, err := testcomponents.ExampleComponents()
 			assert.NoError(t, err)
 
-			cfg := loadConfigAndValidate(t, filepath.Join("testdata", test.name), factories)
+			cfg := loadConfig(t, filepath.Join("testdata", test.name), factories)
 
 			// Build the pipeline
 			pipelines, err := Build(context.Background(), toSettings(factories, cfg))
@@ -434,16 +434,16 @@ func newErrExporterFactory() component.ExporterFactory {
 	)
 }
 
-func toSettings(factories component.Factories, cfg *config.Config) Settings {
+func toSettings(factories component.Factories, cfg *configunmarshaler.Config) Settings {
 	return Settings{
 		Telemetry:          componenttest.NewNopTelemetrySettings(),
 		BuildInfo:          component.NewDefaultBuildInfo(),
 		ReceiverFactories:  factories.Receivers,
-		ReceiverConfigs:    cfg.Receivers,
+		ReceiverConfigs:    cfg.Receivers.GetReceivers(),
 		ProcessorFactories: factories.Processors,
-		ProcessorConfigs:   cfg.Processors,
+		ProcessorConfigs:   cfg.Processors.GetProcessors(),
 		ExporterFactories:  factories.Exporters,
-		ExporterConfigs:    cfg.Exporters,
+		ExporterConfigs:    cfg.Exporters.GetExporters(),
 		PipelineConfigs:    cfg.Service.Pipelines,
 	}
 }
@@ -464,17 +464,11 @@ func (e errComponent) Shutdown(context.Context) error {
 	return errors.New("my error")
 }
 
-func loadConfig(t *testing.T, fileName string, factories component.Factories) *config.Config {
+func loadConfig(t *testing.T, fileName string, factories component.Factories) *configunmarshaler.Config {
 	// Read yaml config from file
 	conf, err := confmaptest.LoadConf(fileName)
 	require.NoError(t, err)
 	cfg, err := configunmarshaler.Unmarshal(conf, factories)
 	require.NoError(t, err)
-	return cfg
-}
-
-func loadConfigAndValidate(t *testing.T, fileName string, factories component.Factories) *config.Config {
-	cfg := loadConfig(t, fileName, factories)
-	require.NoError(t, cfg.Validate())
 	return cfg
 }

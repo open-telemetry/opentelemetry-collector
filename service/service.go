@@ -163,7 +163,7 @@ func (srv *service) initExtensionsAndPipeline(set *settings) error {
 		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
 
-	if set.Config.Telemetry.Metrics.Level != configtelemetry.LevelNone && set.Config.Telemetry.Metrics.Address != "" {
+	if set.Config.Service.Telemetry.Metrics.Level != configtelemetry.LevelNone && set.Config.Service.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
 		if err = proctelemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, getBallastSize(srv.host)); err != nil {
 			return fmt.Errorf("failed to register process metrics: %w", err)
