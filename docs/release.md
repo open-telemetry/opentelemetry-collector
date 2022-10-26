@@ -129,10 +129,10 @@ The OpenTelemetry Collector maintainers will ultimately have the responsibility 
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-09-28 | v0.61.0 | @codeboten      |
-| 2022-10-12 | v0.62.0 | @tigrannajaryan |
 | 2022-10-26 | v0.63.0 | @dmitryax       |
 | 2022-11-09 | v0.64.0 | @jpkrohling     |
-| 2022-11-23 | v0.65.0 | @bogdandrutu    |
+| 2022-11-23 | v0.65.0 | @tigrannajaryan |
 | 2022-12-07 | v0.66.0 | @Aneurysm9      |
 | 2022-12-21 | v0.67.0 | @mx-psi         |
+| 2023-01-04 | v0.68.0 | @codeboten      |
+| 2023-01-16 | v0.69.0 | @bogdandrutu    |
