@@ -127,12 +127,8 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
 func attributesForReceiverMetrics(receiver config.ComponentID, transport string) []attribute.KeyValue {
-	attrs := make([]attribute.KeyValue, 0, 2)
-
-	attrs = append(attrs, attribute.String(receiverTag.Name(), receiver.String()))
-	if transport != "" {
-		attrs = append(attrs, attribute.String(transportTag.Name(), transport))
+	return []attribute.KeyValue{
+		attribute.String(receiverTag.Name(), receiver.String()),
+		attribute.String(transportTag.Name(), transport),
 	}
-
-	return attrs
 }
