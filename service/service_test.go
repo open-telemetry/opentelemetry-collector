@@ -152,6 +152,10 @@ func TestServiceTelemetryReusable(t *testing.T) {
 
 	// Create a service
 	telemetry := newColTelemetry(featuregate.NewRegistry())
+	// For safety ensure everything is cleaned up
+	t.Cleanup(func() {
+		assert.NoError(t, telemetry.shutdown())
+	})
 
 	srvOne, err := newService(&settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
@@ -186,13 +190,6 @@ func TestServiceTelemetryReusable(t *testing.T) {
 		telemetry: telemetry,
 	})
 	require.NoError(t, err)
-
-	// For safety ensure everything is cleaned up
-	t.Cleanup(func() {
-		assert.NoError(t, telemetry.shutdown())
-		assert.NoError(t, srvOne.Shutdown(context.Background()))
-		assert.NoError(t, srvTwo.Shutdown(context.Background()))
-	})
 
 	// Start the new service
 	require.NoError(t, srvTwo.Start(context.Background()))

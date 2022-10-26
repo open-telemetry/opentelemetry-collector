@@ -153,9 +153,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if err = col.service.Start(ctx); err != nil {
-		if shutdownErr := col.shutdownServiceAndTelemetry(ctx); shutdownErr != nil {
-			return multierr.Append(err, shutdownErr)
-		}
+		return multierr.Append(err, col.shutdownServiceAndTelemetry(ctx))
 	}
 	col.setCollectorState(Running)
 	return nil
@@ -221,9 +219,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
 	}
 
-	if err := col.shutdownServiceAndTelemetry(ctx); err != nil {
-		errs = multierr.Append(errs, err)
-	}
+	errs = multierr.Append(errs, col.shutdownServiceAndTelemetry(ctx))
 
 	col.setCollectorState(Closed)
 
