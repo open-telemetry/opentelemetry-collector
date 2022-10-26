@@ -20,7 +20,7 @@
   - Remove deprecated `pmetric.MetricTypeNone`
   - Remove deprecated `pmetric.NumberDataPointValueTypeNone`
   - Remove deprecated `pmetric.ExemplarValueTypeNone`
-  - Remove deprecated `pmetric.[New]?Buckets
+  - Remove deprecated `pmetric.[New]?Buckets`
   - Remove deprecated `pmetric.[New]?ValueAtQuantile`
   - Remove deprecated `pmetric.[New]?ValueAtQuantileSlice`
   - Remove deprecated `ptrace.[New]?SpanStatus`
