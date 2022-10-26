@@ -59,9 +59,3 @@ func (ms ExportResponse) UnmarshalJSON(data []byte) error {
 func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 	return ExportPartialSuccess(internal.NewTracesExportPartialSuccess(&ms.orig.PartialSuccess))
 }
-
-// Deprecated: [v0.63.0] use ExportResponse.
-type Response = ExportResponse
-
-// Deprecated: [v0.63.0] use NewExportResponse.
-var NewResponse = NewExportResponse
