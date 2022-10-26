@@ -83,7 +83,6 @@ func (pc *prometheusChecker) getMetric(expectedName string, expectedType io_prom
 	metricFamily, ok := parsed[expectedName]
 	if !ok {
 		// OTel Go adds `_total` suffix for all monotonic sum.
-		// TODO: once remove support for OpenCensus, we should always check for metrics with the `_total` suffix for prometheus counter metrics.
 		metricFamily, ok = parsed[expectedName+"_total"]
 		if !ok {
 			return nil, fmt.Errorf("metric '%s' not found", expectedName)
