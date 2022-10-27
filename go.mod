@@ -20,12 +20,13 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.23.0
+	go.opentelemetry.io/collector/extension/ballastextension v0.63.1
+	go.opentelemetry.io/collector/extension/zpagesextension v0.63.1
 	go.opentelemetry.io/collector/pdata v0.63.1
 	go.opentelemetry.io/collector/semconv v0.63.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1
-	go.opentelemetry.io/contrib/zpages v0.36.4
 	go.opentelemetry.io/otel v1.11.1
 	go.opentelemetry.io/otel/exporters/prometheus v0.33.0
 	go.opentelemetry.io/otel/metric v0.33.0
@@ -71,6 +72,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	go.opentelemetry.io/contrib/zpages v0.36.4 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
@@ -80,6 +82,10 @@ require (
 replace go.opentelemetry.io/collector/semconv => ./semconv
 
 replace go.opentelemetry.io/collector/pdata => ./pdata
+
+replace go.opentelemetry.io/collector/extension/ballastextension => ./extension/ballastextension
+
+replace go.opentelemetry.io/collector/extension/zpagesextension => ./extension/zpagesextension
 
 retract (
 	v0.57.1 // Release failed, use v0.57.2
