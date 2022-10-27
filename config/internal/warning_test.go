@@ -18,19 +18,35 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestWarnOnUnspecifiedHost(t *testing.T) {
+func TestShouldWarn(t *testing.T) {
 	tests := []struct {
 		endpoint string
 		warn     bool
-		err      string
 	}{
 		{
 			endpoint: "0.0.0.0:0",
+			warn:     true,
+		},
+		{
+			endpoint: ":0",
+			warn:     true,
+		},
+		{
+			// Valid input for net.Listen
+			endpoint: ":+0",
+			warn:     true,
+		},
+		{
+			// Valid input for net.Listen
+			endpoint: ":-0",
+			warn:     true,
+		},
+		{
+			// Valid input for net.Listen, same as zero port.
+			// https://github.com/golang/go/issues/13610
+			endpoint: ":",
 			warn:     true,
 		},
 		{
@@ -40,27 +56,13 @@ func TestWarnOnUnspecifiedHost(t *testing.T) {
 			endpoint: "localhost:0",
 		},
 		{
+			// invalid, don't warn
 			endpoint: "localhost::0",
-			err:      "too many colons in address",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.endpoint, func(t *testing.T) {
-			core, observed := observer.New(zap.DebugLevel)
-			logger := zap.New(core)
-			err := WarnOnUnspecifiedHost(logger, test.endpoint)
-			if test.err != "" {
-				assert.ErrorContains(t, err, test.err)
-				return
-			}
-
-			require.NoError(t, err)
-
-			var len int
-			if test.warn {
-				len = 1
-			}
-			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), len)
+			assert.Equal(t, shouldWarn(test.endpoint), test.warn)
 		})
 	}
 

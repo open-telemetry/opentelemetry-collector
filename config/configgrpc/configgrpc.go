@@ -277,9 +277,7 @@ func (gss *GRPCServerSettings) ToServerOption(host component.Host, settings comp
 
 	switch gss.NetAddr.Transport {
 	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
-		if err := internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint); err != nil {
-			return nil, fmt.Errorf("failed to parse endpoint: %w", err)
-		}
+		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
 	}
 
 	var opts []grpc.ServerOption

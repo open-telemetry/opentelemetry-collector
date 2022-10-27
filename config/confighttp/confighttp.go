@@ -260,9 +260,7 @@ func WithErrorHandler(e errorHandler) ToServerOption {
 
 // ToServer creates an http.Server from settings object.
 func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
-	if err := internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint); err != nil {
-		return nil, err
-	}
+	internal.WarnOnUnspecifiedHost(settings.Logger, hss.Endpoint)
 
 	serverOpts := &toServerOptions{}
 	for _, o := range opts {

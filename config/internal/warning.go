@@ -15,20 +15,44 @@
 package internal // import "go.opentelemetry.io/collector/config/internal"
 
 import (
-	"fmt"
 	"net"
+	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 )
 
-// WarnOnUnspecifiedHost emits a warning if an endpoint has an unspecified host.
-func WarnOnUnspecifiedHost(logger *zap.Logger, endpoint string) error {
-	host, _, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		return fmt.Errorf("failed to parse endpoint: %w", err)
+func shouldWarn(endpoint string) bool {
+	switch {
+	case endpoint == ":":
+		// : (aka 0.0.0.0:0)
+		return true
+	case strings.HasPrefix(endpoint, ":"):
+		// :<port> (aka 0.0.0.0:<port>)
+		_, err := strconv.ParseInt(endpoint[1:], 10, 64)
+		if err != nil { // Probably invalid, don't warn
+			return false
+		}
+		return true
+	default:
+		// <host>:<port>
+		host, _, err := net.SplitHostPort(endpoint)
+		if err != nil { // Probably invalid, don't warn.
+			return false
+		}
+
+		if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
+			// not an ip or no unspecified, don't warn.
+			return true
+		}
 	}
 
-	if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
+	return false
+}
+
+// WarnOnUnspecifiedHost emits a warning if an endpoint has an unspecified host.
+func WarnOnUnspecifiedHost(logger *zap.Logger, endpoint string) {
+	if shouldWarn(endpoint) {
 		logger.Warn(
 			"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks",
 			zap.String(
@@ -37,6 +61,4 @@ func WarnOnUnspecifiedHost(logger *zap.Logger, endpoint string) error {
 			),
 		)
 	}
-
-	return nil
 }
