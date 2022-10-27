@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
 
 // ConfigProvider provides the service configuration.
@@ -105,8 +104,8 @@ func (cm *configProvider) Get(ctx context.Context, factories component.Factories
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
 
-	cfg, err := configunmarshaler.Unmarshal(conf, factories)
-	if err != nil {
+	var cfg *configSettings
+	if cfg, err = unmarshal(conf, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 

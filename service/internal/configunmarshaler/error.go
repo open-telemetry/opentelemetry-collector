@@ -12,15 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package configunmarshaler // import "go.opentelemetry.io/collector/service/internal/configunmarshaler"
 
-// Pipeline defines a single pipeline.
-// Deprecated: [v0.52.0] Use service.ConfigServicePipeline
-type Pipeline struct {
-	Receivers  []ComponentID `mapstructure:"receivers"`
-	Processors []ComponentID `mapstructure:"processors"`
-	Exporters  []ComponentID `mapstructure:"exporters"`
+import (
+	"fmt"
+	"reflect"
+
+	"go.opentelemetry.io/collector/config"
+)
+
+func errorUnknownType(component string, id config.ComponentID, factories []reflect.Value) error {
+	return fmt.Errorf("unknown %s type: %q for id: %q (valid values: %v)", component, id.Type(), id, factories)
 }
 
-// Deprecated: [v0.52.0] will be removed soon.
-type Pipelines = map[ComponentID]*Pipeline
+func errorUnmarshalError(component string, id config.ComponentID, err error) error {
+	return fmt.Errorf("error reading %s configuration for %q: %w", component, id, err)
+}
