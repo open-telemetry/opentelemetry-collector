@@ -26,7 +26,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -69,7 +68,7 @@ func TestServiceGetExtensions(t *testing.T) {
 	extMap := srv.host.GetExtensions()
 
 	assert.Len(t, extMap, 1)
-	assert.Contains(t, extMap, config.NewComponentID("nop"))
+	assert.Contains(t, extMap, component.NewID("nop"))
 }
 
 func TestServiceGetExporters(t *testing.T) {
@@ -84,12 +83,12 @@ func TestServiceGetExporters(t *testing.T) {
 
 	expMap := srv.host.GetExporters()
 	assert.Len(t, expMap, 3)
-	assert.Len(t, expMap[config.TracesDataType], 1)
-	assert.Contains(t, expMap[config.TracesDataType], config.NewComponentID("nop"))
-	assert.Len(t, expMap[config.MetricsDataType], 1)
-	assert.Contains(t, expMap[config.MetricsDataType], config.NewComponentID("nop"))
-	assert.Len(t, expMap[config.LogsDataType], 1)
-	assert.Contains(t, expMap[config.LogsDataType], config.NewComponentID("nop"))
+	assert.Len(t, expMap[component.TracesDataType], 1)
+	assert.Contains(t, expMap[component.TracesDataType], component.NewID("nop"))
+	assert.Len(t, expMap[component.MetricsDataType], 1)
+	assert.Contains(t, expMap[component.MetricsDataType], component.NewID("nop"))
+	assert.Len(t, expMap[component.LogsDataType], 1)
+	assert.Contains(t, expMap[component.LogsDataType], component.NewID("nop"))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up

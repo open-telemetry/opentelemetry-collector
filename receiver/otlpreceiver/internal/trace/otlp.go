@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -36,7 +35,7 @@ type Receiver struct {
 }
 
 // New creates a new Receiver reference.
-func New(id config.ComponentID, nextConsumer consumer.Traces, set component.ReceiverCreateSettings) *Receiver {
+func New(id component.ID, nextConsumer consumer.Traces, set component.ReceiverCreateSettings) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{

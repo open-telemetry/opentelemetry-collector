@@ -20,16 +20,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 func TestNewProcessorFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewProcessorSettings(config.NewComponentID(typeStr))
+	defaultCfg := NewProcessorConfigSettings(NewID(typeStr))
 	factory := NewProcessorFactory(
 		typeStr,
-		func() config.Processor { return &defaultCfg })
+		func() ProcessorConfig { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 	_, err := factory.CreateTracesProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
@@ -42,10 +41,10 @@ func TestNewProcessorFactory(t *testing.T) {
 
 func TestNewProcessorFactory_WithOptions(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewProcessorSettings(config.NewComponentID(typeStr))
+	defaultCfg := NewProcessorConfigSettings(NewID(typeStr))
 	factory := NewProcessorFactory(
 		typeStr,
-		func() config.Processor { return &defaultCfg },
+		func() ProcessorConfig { return &defaultCfg },
 		WithTracesProcessor(createTracesProcessor, StabilityLevelAlpha),
 		WithMetricsProcessor(createMetricsProcessor, StabilityLevelBeta),
 		WithLogsProcessor(createLogsProcessor, StabilityLevelUnmaintained))
@@ -65,14 +64,14 @@ func TestNewProcessorFactory_WithOptions(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func createTracesProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Traces) (TracesProcessor, error) {
+func createTracesProcessor(context.Context, ProcessorCreateSettings, ProcessorConfig, consumer.Traces) (TracesProcessor, error) {
 	return nil, nil
 }
 
-func createMetricsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
+func createMetricsProcessor(context.Context, ProcessorCreateSettings, ProcessorConfig, consumer.Metrics) (MetricsProcessor, error) {
 	return nil, nil
 }
 
-func createLogsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Logs) (LogsProcessor, error) {
+func createLogsProcessor(context.Context, ProcessorCreateSettings, ProcessorConfig, consumer.Logs) (LogsProcessor, error) {
 	return nil, nil
 }

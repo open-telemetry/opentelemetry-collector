@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -288,7 +287,7 @@ func assertReceiverViews(t *testing.T, tt obsreporttest.TestTelemetry, sink *con
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
 	}
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, config.NewComponentID("receiver"), "", int64(dataPointCount), 0))
+	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, component.NewID("receiver"), "", int64(dataPointCount), 0))
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
@@ -324,7 +323,7 @@ func assertScraperViews(t *testing.T, tt obsreporttest.TestTelemetry, expectedEr
 		}
 	}
 
-	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, config.NewComponentID("receiver"), config.NewComponentID("scraper"), expectedScraped, expectedErrored))
+	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, component.NewID("receiver"), component.NewID("scraper"), expectedScraped, expectedErrored))
 }
 
 func TestSingleScrapePerTick(t *testing.T) {

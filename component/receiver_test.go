@@ -20,16 +20,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 func TestNewReceiverFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewReceiverSettings(config.NewComponentID(typeStr))
+	defaultCfg := NewReceiverConfigSettings(NewID(typeStr))
 	factory := NewReceiverFactory(
 		typeStr,
-		func() config.Receiver { return &defaultCfg })
+		func() ReceiverConfig { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 	_, err := factory.CreateTracesReceiver(context.Background(), ReceiverCreateSettings{}, &defaultCfg, nil)
@@ -42,10 +41,10 @@ func TestNewReceiverFactory(t *testing.T) {
 
 func TestNewReceiverFactory_WithOptions(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewReceiverSettings(config.NewComponentID(typeStr))
+	defaultCfg := NewReceiverConfigSettings(NewID(typeStr))
 	factory := NewReceiverFactory(
 		typeStr,
-		func() config.Receiver { return &defaultCfg },
+		func() ReceiverConfig { return &defaultCfg },
 		WithTracesReceiver(createTracesReceiver, StabilityLevelDeprecated),
 		WithMetricsReceiver(createMetricsReceiver, StabilityLevelAlpha),
 		WithLogsReceiver(createLogsReceiver, StabilityLevelStable))
@@ -65,14 +64,14 @@ func TestNewReceiverFactory_WithOptions(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func createTracesReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Traces) (TracesReceiver, error) {
+func createTracesReceiver(context.Context, ReceiverCreateSettings, ReceiverConfig, consumer.Traces) (TracesReceiver, error) {
 	return nil, nil
 }
 
-func createMetricsReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Metrics) (MetricsReceiver, error) {
+func createMetricsReceiver(context.Context, ReceiverCreateSettings, ReceiverConfig, consumer.Metrics) (MetricsReceiver, error) {
 	return nil, nil
 }
 
-func createLogsReceiver(context.Context, ReceiverCreateSettings, config.Receiver, consumer.Logs) (LogsReceiver, error) {
+func createLogsReceiver(context.Context, ReceiverCreateSettings, ReceiverConfig, consumer.Logs) (LogsReceiver, error) {
 	return nil, nil
 }

@@ -17,7 +17,7 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
@@ -38,12 +38,12 @@ type Protocols struct {
 
 // Config defines configuration for OTLP receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	component.ReceiverConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
 }
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.ReceiverConfig = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid

@@ -19,16 +19,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 func TestNewExporterFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewExporterSettings(config.NewComponentID(typeStr))
+	defaultCfg := NewExporterConfigSettings(NewID(typeStr))
 	factory := NewExporterFactory(
 		typeStr,
-		func() config.Exporter { return &defaultCfg })
+		func() ExporterConfig { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 	_, err := factory.CreateTracesExporter(context.Background(), ExporterCreateSettings{}, &defaultCfg)
@@ -41,10 +39,10 @@ func TestNewExporterFactory(t *testing.T) {
 
 func TestNewExporterFactory_WithOptions(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewExporterSettings(config.NewComponentID(typeStr))
+	defaultCfg := NewExporterConfigSettings(NewID(typeStr))
 	factory := NewExporterFactory(
 		typeStr,
-		func() config.Exporter { return &defaultCfg },
+		func() ExporterConfig { return &defaultCfg },
 		WithTracesExporter(createTracesExporter, StabilityLevelInDevelopment),
 		WithMetricsExporter(createMetricsExporter, StabilityLevelAlpha),
 		WithLogsExporter(createLogsExporter, StabilityLevelDeprecated))
@@ -64,14 +62,14 @@ func TestNewExporterFactory_WithOptions(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func createTracesExporter(context.Context, ExporterCreateSettings, config.Exporter) (TracesExporter, error) {
+func createTracesExporter(context.Context, ExporterCreateSettings, ExporterConfig) (TracesExporter, error) {
 	return nil, nil
 }
 
-func createMetricsExporter(context.Context, ExporterCreateSettings, config.Exporter) (MetricsExporter, error) {
+func createMetricsExporter(context.Context, ExporterCreateSettings, ExporterConfig) (MetricsExporter, error) {
 	return nil, nil
 }
 
-func createLogsExporter(context.Context, ExporterCreateSettings, config.Exporter) (LogsExporter, error) {
+func createLogsExporter(context.Context, ExporterCreateSettings, ExporterConfig) (LogsExporter, error) {
 	return nil, nil
 }

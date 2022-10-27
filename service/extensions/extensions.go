@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
@@ -34,7 +33,7 @@ const zExtensionName = "zextensionname"
 // Extensions is a map of extensions created from extension configs.
 type Extensions struct {
 	telemetry component.TelemetrySettings
-	extMap    map[config.ComponentID]component.Extension
+	extMap    map[component.ID]component.Extension
 }
 
 // Start starts all extensions.
@@ -84,8 +83,8 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	return errs
 }
 
-func (bes *Extensions) GetExtensions() map[config.ComponentID]component.Extension {
-	result := make(map[config.ComponentID]component.Extension, len(bes.extMap))
+func (bes *Extensions) GetExtensions() map[component.ID]component.Extension {
+	result := make(map[component.ID]component.Extension, len(bes.extMap))
 	for extID, v := range bes.extMap {
 		result[extID] = v
 	}
@@ -123,18 +122,18 @@ type Settings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	// Configs is a map of config.ComponentID to config.Extension.
-	Configs map[config.ComponentID]config.Extension
+	// Configs is a map of component.ID to component.ExtensionConfig.
+	Configs map[component.ID]component.ExtensionConfig
 
 	// Factories maps extension type names in the config to the respective component.ExtensionFactory.
-	Factories map[config.Type]component.ExtensionFactory
+	Factories map[component.Type]component.ExtensionFactory
 }
 
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	exts := &Extensions{
 		telemetry: set.Telemetry,
-		extMap:    make(map[config.ComponentID]component.Extension),
+		extMap:    make(map[component.ID]component.Extension),
 	}
 	for _, extID := range cfg {
 		extCfg, existsCfg := set.Configs[extID]
@@ -169,7 +168,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	return exts, nil
 }
 
-func extensionLogger(logger *zap.Logger, id config.ComponentID) *zap.Logger {
+func extensionLogger(logger *zap.Logger, id component.ID) *zap.Logger {
 	return logger.With(
 		zap.String(components.ZapKindKey, components.ZapKindExtension),
 		zap.String(components.ZapNameKey, id.String()))

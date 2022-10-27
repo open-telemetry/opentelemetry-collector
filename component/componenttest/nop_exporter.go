@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
@@ -31,16 +30,16 @@ func NewNopExporterCreateSettings() component.ExporterCreateSettings {
 }
 
 type nopExporterConfig struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	component.ExporterConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
 // NewNopExporterFactory returns a component.ExporterFactory that constructs nop exporters.
 func NewNopExporterFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		"nop",
-		func() config.Exporter {
+		func() component.ExporterConfig {
 			return &nopExporterConfig{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID("nop")),
+				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID("nop")),
 			}
 		},
 		component.WithTracesExporter(createTracesExporter, component.StabilityLevelStable),
@@ -49,15 +48,15 @@ func NewNopExporterFactory() component.ExporterFactory {
 	)
 }
 
-func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {
 	return nopExporterInstance, nil
 }
 
-func createMetricsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.MetricsExporter, error) {
 	return nopExporterInstance, nil
 }
 
-func createLogsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.LogsExporter, error) {
 	return nopExporterInstance, nil
 }
 

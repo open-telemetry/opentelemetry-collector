@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -49,17 +48,17 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-		LogLevel:           zapcore.InfoLevel,
-		Verbosity:          configtelemetry.LevelNormal,
-		SamplingInitial:    defaultSamplingInitial,
-		SamplingThereafter: defaultSamplingThereafter,
+		ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+		LogLevel:               zapcore.InfoLevel,
+		Verbosity:              configtelemetry.LevelNormal,
+		SamplingInitial:        defaultSamplingInitial,
+		SamplingThereafter:     defaultSamplingThereafter,
 	}
 }
 
-func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
@@ -74,7 +73,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 	)
 }
 
-func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
@@ -89,7 +88,7 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	)
 }
 
-func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)

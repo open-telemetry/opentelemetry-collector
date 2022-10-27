@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -41,18 +40,18 @@ func NewFactory() component.ProcessorFactory {
 		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelStable))
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		SendBatchSize:     defaultSendBatchSize,
-		Timeout:           defaultTimeout,
+		ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID(typeStr)),
+		SendBatchSize:           defaultSendBatchSize,
+		Timeout:                 defaultTimeout,
 	}
 }
 
 func createTracesProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	level := set.MetricsLevel
@@ -62,7 +61,7 @@ func createTracesProcessor(
 func createMetricsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	level := set.MetricsLevel
@@ -72,7 +71,7 @@ func createMetricsProcessor(
 func createLogsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	level := set.MetricsLevel

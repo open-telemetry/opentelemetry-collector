@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 )
 
-func errorUnknownType(component string, id config.ComponentID, factories []reflect.Value) error {
+func errorUnknownType(component string, id component.ID, factories []reflect.Value) error {
 	return fmt.Errorf("unknown %s type: %q for id: %q (valid values: %v)", component, id.Type(), id, factories)
 }
 
-func errorUnmarshalError(component string, id config.ComponentID, err error) error {
+func errorUnmarshalError(component string, id component.ID, err error) error {
 	return fmt.Errorf("error reading %s configuration for %q: %w", component, id, err)
 }

@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/multierr"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 )
 
 // prometheusChecker is used to assert exported metrics from a prometheus handler.
@@ -34,21 +34,21 @@ type prometheusChecker struct {
 	promHandler http.Handler
 }
 
-func (pc *prometheusChecker) checkReceiverTraces(receiver config.ComponentID, protocol string, acceptedSpans, droppedSpans int64) error {
+func (pc *prometheusChecker) checkReceiverTraces(receiver component.ID, protocol string, acceptedSpans, droppedSpans int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
 		pc.checkCounter("receiver_accepted_spans", acceptedSpans, receiverAttrs),
 		pc.checkCounter("receiver_refused_spans", droppedSpans, receiverAttrs))
 }
 
-func (pc *prometheusChecker) checkReceiverLogs(receiver config.ComponentID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
+func (pc *prometheusChecker) checkReceiverLogs(receiver component.ID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
 		pc.checkCounter("receiver_accepted_log_records", acceptedLogRecords, receiverAttrs),
 		pc.checkCounter("receiver_refused_log_records", droppedLogRecords, receiverAttrs))
 }
 
-func (pc *prometheusChecker) checkReceiverMetrics(receiver config.ComponentID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
+func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
 		pc.checkCounter("receiver_accepted_metric_points", acceptedMetricPoints, receiverAttrs),
@@ -146,7 +146,7 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
-func attributesForReceiverMetrics(receiver config.ComponentID, transport string) []attribute.KeyValue {
+func attributesForReceiverMetrics(receiver component.ID, transport string) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.String(receiverTag.Name(), receiver.String()),
 		attribute.String(transportTag.Name(), transport),

@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -32,16 +31,16 @@ func NewNopProcessorCreateSettings() component.ProcessorCreateSettings {
 }
 
 type nopProcessorConfig struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	component.ProcessorConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
 // NewNopProcessorFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopProcessorFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		"nop",
-		func() config.Processor {
+		func() component.ProcessorConfig {
 			return &nopProcessorConfig{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop")),
+				ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID("nop")),
 			}
 		},
 		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelStable),
@@ -50,15 +49,15 @@ func NewNopProcessorFactory() component.ProcessorFactory {
 	)
 }
 
-func createTracesProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Traces) (component.TracesProcessor, error) {
 	return nopProcessorInstance, nil
 }
 
-func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Metrics) (component.MetricsProcessor, error) {
 	return nopProcessorInstance, nil
 }
 
-func createLogsProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Logs) (component.LogsProcessor, error) {
 	return nopProcessorInstance, nil
 }
 

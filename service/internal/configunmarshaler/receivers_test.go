@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -38,9 +38,9 @@ func TestReceiversUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Receivers["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myreceiver")
-	assert.Equal(t, map[config.ComponentID]config.Receiver{
-		config.NewComponentID("nop"):                       factories.Receivers["nop"].CreateDefaultConfig(),
-		config.NewComponentIDWithName("nop", "myreceiver"): cfgWithName,
+	assert.Equal(t, map[component.ID]component.ReceiverConfig{
+		component.NewID("nop"):                       factories.Receivers["nop"].CreateDefaultConfig(),
+		component.NewIDWithName("nop", "myreceiver"): cfgWithName,
 	}, recvs.GetReceivers())
 }
 

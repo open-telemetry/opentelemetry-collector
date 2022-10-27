@@ -25,14 +25,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var (
-	defaultExporterCfg  = config.NewExporterSettings(config.NewComponentID("test"))
+	defaultExporterCfg  = component.NewExporterConfigSettings(component.NewID("test"))
 	exporterTag, _      = tag.NewKey("exporter")
 	defaultExporterTags = []tag.Tag{
 		{Key: exporterTag, Value: "test"},

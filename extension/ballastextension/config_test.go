@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -29,7 +29,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalExtension(confmap.New(), cfg))
+	assert.NoError(t, component.UnmarshalExtensionConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -38,12 +38,12 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalExtension(cm, cfg))
+	assert.NoError(t, component.UnmarshalExtensionConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-			SizeMiB:           123,
-			SizeInPercentage:  20,
+			ExtensionConfigSettings: component.NewExtensionConfigSettings(component.NewID(typeStr)),
+			SizeMiB:                 123,
+			SizeInPercentage:        20,
 		}, cfg)
 }
 

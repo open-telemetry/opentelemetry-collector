@@ -12,57 +12,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package component // import "go.opentelemetry.io/collector/component"
+
 import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// Exporter is the configuration of a component.Exporter. Specific extensions must implement
+// ExporterConfig is the configuration of a component.Exporter. Specific extensions must implement
 // this interface and must embed ExporterSettings struct or a struct that extends it.
-type Exporter interface {
+type ExporterConfig interface {
 	identifiable
 	validatable
 
 	privateConfigExporter()
 }
 
-// UnmarshalExporter helper function to unmarshal an Exporter config.
+// UnmarshalExporterConfig helper function to unmarshal an ExporterConfig.
 // It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalExporter(conf *confmap.Conf, cfg Exporter) error {
+func UnmarshalExporterConfig(conf *confmap.Conf, cfg ExporterConfig) error {
 	return unmarshal(conf, cfg)
 }
 
-// ExporterSettings defines common settings for a component.Exporter configuration.
+// ExporterConfigSettings defines common settings for a component.Exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
 //
 // It is highly recommended to "override" the Validate() function.
 //
 // When embedded in the exporter config, it must be with `mapstructure:",squash"` tag.
-type ExporterSettings struct {
-	id ComponentID `mapstructure:"-"`
+type ExporterConfigSettings struct {
+	id ID `mapstructure:"-"`
 }
 
-// NewExporterSettings return a new ExporterSettings with the given ComponentID.
-func NewExporterSettings(id ComponentID) ExporterSettings {
-	return ExporterSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
+// NewExporterConfigSettings return a new ExporterSettings with the given ComponentID.
+func NewExporterConfigSettings(id ID) ExporterConfigSettings {
+	return ExporterConfigSettings{id: ID{typeVal: id.Type(), nameVal: id.Name()}}
 }
 
-var _ Exporter = (*ExporterSettings)(nil)
+var _ ExporterConfig = (*ExporterConfigSettings)(nil)
 
 // ID returns the receiver ComponentID.
-func (es *ExporterSettings) ID() ComponentID {
+func (es *ExporterConfigSettings) ID() ID {
 	return es.id
 }
 
 // SetIDName sets the receiver name.
-func (es *ExporterSettings) SetIDName(idName string) {
+func (es *ExporterConfigSettings) SetIDName(idName string) {
 	es.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (es *ExporterSettings) Validate() error {
+func (es *ExporterConfigSettings) Validate() error {
 	return nil
 }
 
-func (es *ExporterSettings) privateConfigExporter() {}
+func (es *ExporterConfigSettings) privateConfigExporter() {}

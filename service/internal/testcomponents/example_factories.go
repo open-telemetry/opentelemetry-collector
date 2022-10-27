@@ -16,19 +16,18 @@ package testcomponents // import "go.opentelemetry.io/collector/service/internal
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 // ExampleComponents registers example factories. This is only used by tests.
 func ExampleComponents() (component.Factories, error) {
 	return component.Factories{
-		Receivers: map[config.Type]component.ReceiverFactory{
+		Receivers: map[component.Type]component.ReceiverFactory{
 			ExampleReceiverFactory.Type(): ExampleReceiverFactory,
 		},
-		Processors: map[config.Type]component.ProcessorFactory{
+		Processors: map[component.Type]component.ProcessorFactory{
 			ExampleProcessorFactory.Type(): ExampleProcessorFactory,
 		},
-		Exporters: map[config.Type]component.ExporterFactory{
+		Exporters: map[component.Type]component.ExporterFactory{
 			ExampleExporterFactory.Type(): ExampleExporterFactory,
 		},
 	}, nil

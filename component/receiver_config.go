@@ -12,57 +12,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package component // import "go.opentelemetry.io/collector/component"
+
 import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// Receiver is the configuration of a component.Receiver. Specific extensions must implement
-// this interface and must embed ReceiverSettings struct or a struct that extends it.
-type Receiver interface {
+// ReceiverConfig is the configuration of a component.Receiver. Specific extensions must implement
+// this interface and must embed ReceiverConfigSettings struct or a struct that extends it.
+type ReceiverConfig interface {
 	identifiable
 	validatable
 
 	privateConfigReceiver()
 }
 
-// UnmarshalReceiver helper function to unmarshal a Receiver config.
+// UnmarshalReceiverConfig helper function to unmarshal a ReceiverConfig.
 // It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalReceiver(conf *confmap.Conf, cfg Receiver) error {
+func UnmarshalReceiverConfig(conf *confmap.Conf, cfg ReceiverConfig) error {
 	return unmarshal(conf, cfg)
 }
 
-// ReceiverSettings defines common settings for a component.Receiver configuration.
+// ReceiverConfigSettings defines common settings for a component.Receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 //
 // It is highly recommended to "override" the Validate() function.
 //
 // When embedded in the receiver config it must be with `mapstructure:",squash"` tag.
-type ReceiverSettings struct {
-	id ComponentID `mapstructure:"-"`
+type ReceiverConfigSettings struct {
+	id ID `mapstructure:"-"`
 }
 
-// NewReceiverSettings return a new ReceiverSettings with the given ComponentID.
-func NewReceiverSettings(id ComponentID) ReceiverSettings {
-	return ReceiverSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
+// NewReceiverConfigSettings return a new ReceiverConfigSettings with the given ID.
+func NewReceiverConfigSettings(id ID) ReceiverConfigSettings {
+	return ReceiverConfigSettings{id: ID{typeVal: id.Type(), nameVal: id.Name()}}
 }
 
-var _ Receiver = (*ReceiverSettings)(nil)
+var _ ReceiverConfig = (*ReceiverConfigSettings)(nil)
 
-// ID returns the receiver ComponentID.
-func (rs *ReceiverSettings) ID() ComponentID {
+// ID returns the receiver ID.
+func (rs *ReceiverConfigSettings) ID() ID {
 	return rs.id
 }
 
 // SetIDName sets the receiver name.
-func (rs *ReceiverSettings) SetIDName(idName string) {
+func (rs *ReceiverConfigSettings) SetIDName(idName string) {
 	rs.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (rs *ReceiverSettings) Validate() error {
+func (rs *ReceiverConfigSettings) Validate() error {
 	return nil
 }
 
-func (rs *ReceiverSettings) privateConfigReceiver() {}
+func (rs *ReceiverConfigSettings) privateConfigReceiver() {}

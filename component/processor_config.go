@@ -12,57 +12,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package component // import "go.opentelemetry.io/collector/component"
+
 import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// Processor is the configuration of a component.Processor. Specific extensions must implement
-// this interface and must embed ProcessorSettings struct or a struct that extends it.
-type Processor interface {
+// ProcessorConfig is the configuration of a component.Processor. Specific extensions must implement
+// this interface and must embed ProcessorConfigSettings struct or a struct that extends it.
+type ProcessorConfig interface {
 	identifiable
 	validatable
 
 	privateConfigProcessor()
 }
 
-// UnmarshalProcessor helper function to unmarshal a Processor config.
+// UnmarshalProcessorConfig helper function to unmarshal a ProcessorConfig.
 // It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalProcessor(conf *confmap.Conf, cfg Processor) error {
+func UnmarshalProcessorConfig(conf *confmap.Conf, cfg ProcessorConfig) error {
 	return unmarshal(conf, cfg)
 }
 
-// ProcessorSettings defines common settings for a component.Processor configuration.
+// ProcessorConfigSettings defines common settings for a component.Processor configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 //
 // It is highly recommended to "override" the Validate() function.
 //
 // When embedded in the processor config it must be with `mapstructure:",squash"` tag.
-type ProcessorSettings struct {
-	id ComponentID `mapstructure:"-"`
+type ProcessorConfigSettings struct {
+	id ID `mapstructure:"-"`
 }
 
-// NewProcessorSettings return a new ProcessorSettings with the given ComponentID.
-func NewProcessorSettings(id ComponentID) ProcessorSettings {
-	return ProcessorSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
+// NewProcessorConfigSettings return a new ProcessorConfigSettings with the given ComponentID.
+func NewProcessorConfigSettings(id ID) ProcessorConfigSettings {
+	return ProcessorConfigSettings{id: ID{typeVal: id.Type(), nameVal: id.Name()}}
 }
 
-var _ Processor = (*ProcessorSettings)(nil)
+var _ ProcessorConfig = (*ProcessorConfigSettings)(nil)
 
 // ID returns the receiver ComponentID.
-func (ps *ProcessorSettings) ID() ComponentID {
+func (ps *ProcessorConfigSettings) ID() ID {
 	return ps.id
 }
 
 // SetIDName sets the receiver name.
-func (ps *ProcessorSettings) SetIDName(idName string) {
+func (ps *ProcessorConfigSettings) SetIDName(idName string) {
 	ps.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (ps *ProcessorSettings) Validate() error {
+func (ps *ProcessorConfigSettings) Validate() error {
 	return nil
 }
 
-func (ps *ProcessorSettings) privateConfigProcessor() {}
+func (ps *ProcessorConfigSettings) privateConfigProcessor() {}

@@ -20,12 +20,12 @@ package memorylimiterprocessor // import "go.opentelemetry.io/collector/processo
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 )
 
 // Config defines configuration for memory memoryLimiter processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	component.ProcessorConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// CheckInterval is the time between measurements of memory usage for the
 	// purposes of avoiding going over the limits. Defaults to zero, so no
@@ -49,7 +49,7 @@ type Config struct {
 	MemorySpikePercentage uint32 `mapstructure:"spike_limit_percentage"`
 }
 
-var _ config.Processor = (*Config)(nil)
+var _ component.ProcessorConfig = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {

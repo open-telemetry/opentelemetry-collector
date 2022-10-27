@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -31,7 +31,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalExporter(confmap.New(), cfg))
+	assert.NoError(t, component.UnmarshalExporterConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -44,33 +44,33 @@ func TestUnmarshalConfig(t *testing.T) {
 		{
 			filename: "config_loglevel.yaml",
 			cfg: &Config{
-				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-				LogLevel:           zapcore.DebugLevel,
-				Verbosity:          configtelemetry.LevelDetailed,
-				SamplingInitial:    10,
-				SamplingThereafter: 50,
-				warnLogLevel:       true,
+				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				LogLevel:               zapcore.DebugLevel,
+				Verbosity:              configtelemetry.LevelDetailed,
+				SamplingInitial:        10,
+				SamplingThereafter:     50,
+				warnLogLevel:           true,
 			},
 		},
 		{
 			filename: "config_verbosity.yaml",
 			cfg: &Config{
-				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-				LogLevel:           zapcore.InfoLevel,
-				Verbosity:          configtelemetry.LevelDetailed,
-				SamplingInitial:    10,
-				SamplingThereafter: 50,
+				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				LogLevel:               zapcore.InfoLevel,
+				Verbosity:              configtelemetry.LevelDetailed,
+				SamplingInitial:        10,
+				SamplingThereafter:     50,
 			},
 		},
 		{
 			filename: "loglevel_info.yaml",
 			cfg: &Config{
-				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-				LogLevel:           zapcore.InfoLevel,
-				Verbosity:          configtelemetry.LevelNormal,
-				SamplingInitial:    2,
-				SamplingThereafter: 500,
-				warnLogLevel:       true,
+				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				LogLevel:               zapcore.InfoLevel,
+				Verbosity:              configtelemetry.LevelNormal,
+				SamplingInitial:        2,
+				SamplingThereafter:     500,
+				warnLogLevel:           true,
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			require.NoError(t, err)
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
-			err = config.UnmarshalExporter(cm, cfg)
+			err = component.UnmarshalExporterConfig(cm, cfg)
 			if tt.expectedErr != "" {
 				assert.EqualError(t, err, tt.expectedErr)
 			} else {

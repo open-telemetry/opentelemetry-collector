@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -38,9 +38,9 @@ func TestProcessorsUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Processors["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myprocessor")
-	assert.Equal(t, map[config.ComponentID]config.Processor{
-		config.NewComponentID("nop"):                        factories.Processors["nop"].CreateDefaultConfig(),
-		config.NewComponentIDWithName("nop", "myprocessor"): cfgWithName,
+	assert.Equal(t, map[component.ID]component.ProcessorConfig{
+		component.NewID("nop"):                        factories.Processors["nop"].CreateDefaultConfig(),
+		component.NewIDWithName("nop", "myprocessor"): cfgWithName,
 	}, procs.procs)
 }
 

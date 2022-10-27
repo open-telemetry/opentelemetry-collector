@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -32,18 +31,18 @@ import (
 
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
-// of config.ReceiverSettings, and extend it with more fields if needed.
+// of component.ReceiverConfigSettings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	CollectionInterval      time.Duration            `mapstructure:"collection_interval"`
+	component.ReceiverConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	CollectionInterval               time.Duration            `mapstructure:"collection_interval"`
 }
 
 // NewDefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-func NewDefaultScraperControllerSettings(cfgType config.Type) ScraperControllerSettings {
+func NewDefaultScraperControllerSettings(cfgType component.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(cfgType)),
-		CollectionInterval: time.Minute,
+		ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(cfgType)),
+		CollectionInterval:     time.Minute,
 	}
 }
 
@@ -71,7 +70,7 @@ func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
 }
 
 type controller struct {
-	id                 config.ComponentID
+	id                 component.ID
 	logger             *zap.Logger
 	collectionInterval time.Duration
 	nextConsumer       consumer.Metrics

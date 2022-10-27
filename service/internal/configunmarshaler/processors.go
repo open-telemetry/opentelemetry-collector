@@ -18,7 +18,6 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -26,23 +25,23 @@ import (
 const processorsKeyName = "processors"
 
 type Processors struct {
-	procs map[config.ComponentID]config.Processor
+	procs map[component.ID]component.ProcessorConfig
 
-	factories map[config.Type]component.ProcessorFactory
+	factories map[component.Type]component.ProcessorFactory
 }
 
-func NewProcessors(factories map[config.Type]component.ProcessorFactory) *Processors {
+func NewProcessors(factories map[component.Type]component.ProcessorFactory) *Processors {
 	return &Processors{factories: factories}
 }
 
 func (p *Processors) Unmarshal(conf *confmap.Conf) error {
-	rawProcs := make(map[config.ComponentID]map[string]interface{})
+	rawProcs := make(map[component.ID]map[string]interface{})
 	if err := conf.Unmarshal(&rawProcs, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 
 	// Prepare resulting map.
-	p.procs = make(map[config.ComponentID]config.Processor)
+	p.procs = make(map[component.ID]component.ProcessorConfig)
 	// Iterate over processors and create a config for each.
 	for id, value := range rawProcs {
 		// Find processor factory based on "type" that we read from config source.
@@ -57,7 +56,7 @@ func (p *Processors) Unmarshal(conf *confmap.Conf) error {
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := config.UnmarshalProcessor(confmap.NewFromStringMap(value), processorCfg); err != nil {
+		if err := component.UnmarshalProcessorConfig(confmap.NewFromStringMap(value), processorCfg); err != nil {
 			return errorUnmarshalError(processorsKeyName, id, err)
 		}
 
@@ -67,6 +66,6 @@ func (p *Processors) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (p *Processors) GetProcessors() map[config.ComponentID]config.Processor {
+func (p *Processors) GetProcessors() map[component.ID]component.ProcessorConfig {
 	return p.procs
 }

@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -31,16 +32,16 @@ var (
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
 	// Receivers is a map of ComponentID to Receivers.
-	Receivers map[config.ComponentID]config.Receiver
+	Receivers map[component.ID]component.ReceiverConfig
 
 	// Exporters is a map of ComponentID to Exporters.
-	Exporters map[config.ComponentID]config.Exporter
+	Exporters map[component.ID]component.ExporterConfig
 
 	// Processors is a map of ComponentID to Processors.
-	Processors map[config.ComponentID]config.Processor
+	Processors map[component.ID]component.ProcessorConfig
 
 	// Extensions is a map of ComponentID to extensions.
-	Extensions map[config.ComponentID]config.Extension
+	Extensions map[component.ID]component.ExtensionConfig
 
 	Service ConfigService
 }
@@ -111,7 +112,7 @@ func (cfg *Config) validateService() error {
 	// Check that all pipelines have at least one receiver and one exporter, and they reference
 	// only configured components.
 	for pipelineID, pipeline := range cfg.Service.Pipelines {
-		if pipelineID.Type() != config.TracesDataType && pipelineID.Type() != config.MetricsDataType && pipelineID.Type() != config.LogsDataType {
+		if pipelineID.Type() != component.TracesDataType && pipelineID.Type() != component.MetricsDataType && pipelineID.Type() != component.LogsDataType {
 			return fmt.Errorf("unknown pipeline datatype %q for %v", pipelineID.Type(), pipelineID)
 		}
 
@@ -158,10 +159,10 @@ type ConfigService struct {
 	Telemetry telemetry.Config `mapstructure:"telemetry"`
 
 	// Extensions are the ordered list of extensions configured for the service.
-	Extensions []config.ComponentID `mapstructure:"extensions"`
+	Extensions []component.ID `mapstructure:"extensions"`
 
 	// Pipelines are the set of data pipelines configured for the service.
-	Pipelines map[config.ComponentID]*ConfigServicePipeline `mapstructure:"pipelines"`
+	Pipelines map[component.ID]*ConfigServicePipeline `mapstructure:"pipelines"`
 }
 
 type ConfigServicePipeline = config.Pipeline

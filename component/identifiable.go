@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"errors"
@@ -26,57 +26,48 @@ const typeAndNameSeparator = "/"
 // identifiable is an interface that all components configurations MUST embed.
 type identifiable interface {
 	// ID returns the ID of the component that this configuration belongs to.
-	ID() ComponentID
+	ID() ID
 	// SetIDName updates the name part of the ID for the component that this configuration belongs to.
 	SetIDName(idName string)
 }
 
-// ComponentID represents the identity for a component. It combines two values:
+// ID represents the identity for a component. It combines two values:
 // * type - the Type of the component.
 // * name - the name of that component.
-// The component ComponentID (combination type + name) is unique for a given component.Kind.
-type ComponentID struct {
+// The component ID (combination type + name) is unique for a given component.Kind.
+type ID struct {
 	typeVal Type   `mapstructure:"-"`
 	nameVal string `mapstructure:"-"`
 }
 
-// NewComponentID returns a new ComponentID with the given Type and empty name.
-func NewComponentID(typeVal Type) ComponentID {
-	return ComponentID{typeVal: typeVal}
+// NewID returns a new ID with the given Type and empty name.
+func NewID(typeVal Type) ID {
+	return ID{typeVal: typeVal}
 }
 
-// NewComponentIDWithName returns a new ComponentID with the given Type and name.
-func NewComponentIDWithName(typeVal Type, nameVal string) ComponentID {
-	return ComponentID{typeVal: typeVal, nameVal: nameVal}
-}
-
-// NewComponentIDFromString decodes a string in type[/name] format into ComponentID.
-// The type and name components will have spaces trimmed, the "type" part must be present,
-// the forward slash and "name" are optional.
-// The returned ComponentID will be invalid if err is not-nil.
-func NewComponentIDFromString(idStr string) (ComponentID, error) {
-	id := ComponentID{}
-	return id, id.UnmarshalText([]byte(idStr))
+// NewIDWithName returns a new ID with the given Type and name.
+func NewIDWithName(typeVal Type, nameVal string) ID {
+	return ID{typeVal: typeVal, nameVal: nameVal}
 }
 
 // Type returns the type of the component.
-func (id ComponentID) Type() Type {
+func (id ID) Type() Type {
 	return id.typeVal
 }
 
 // Name returns the custom name of the component.
-func (id ComponentID) Name() string {
+func (id ID) Name() string {
 	return id.nameVal
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.
 // This marshals the type and name as one string in the config.
-func (id ComponentID) MarshalText() (text []byte, err error) {
+func (id ID) MarshalText() (text []byte, err error) {
 	return []byte(id.String()), nil
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
-func (id *ComponentID) UnmarshalText(text []byte) error {
+func (id *ID) UnmarshalText(text []byte) error {
 	idStr := string(text)
 	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
 	if len(items) >= 1 {
@@ -102,8 +93,8 @@ func (id *ComponentID) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// String returns the ComponentID string representation as "type[/name]" format.
-func (id ComponentID) String() string {
+// String returns the ID string representation as "type[/name]" format.
+func (id ID) String() string {
 	if id.nameVal == "" {
 		return string(id.typeVal)
 	}

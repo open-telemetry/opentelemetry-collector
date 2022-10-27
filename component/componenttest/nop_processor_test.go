@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -32,9 +32,9 @@ import (
 func TestNewNopProcessorFactory(t *testing.T) {
 	factory := NewNopProcessorFactory()
 	require.NotNil(t, factory)
-	assert.Equal(t, config.Type("nop"), factory.Type())
+	assert.Equal(t, component.Type("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &nopProcessorConfig{ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop"))}, cfg)
+	assert.Equal(t, &nopProcessorConfig{ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID("nop"))}, cfg)
 
 	traces, err := factory.CreateTracesProcessor(context.Background(), NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)

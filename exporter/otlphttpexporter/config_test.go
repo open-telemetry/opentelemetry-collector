@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -33,7 +33,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalExporter(confmap.New(), cfg))
+	assert.NoError(t, component.UnmarshalExporterConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	// Default/Empty config is invalid.
 	assert.Error(t, cfg.Validate())
@@ -44,10 +44,10 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalExporter(cm, cfg))
+	assert.NoError(t, component.UnmarshalExporterConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+			ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,

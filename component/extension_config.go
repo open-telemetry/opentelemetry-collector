@@ -12,57 +12,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package component // import "go.opentelemetry.io/collector/component"
+
 import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// Extension is the configuration of a component.Extension. Specific extensions must implement
-// this interface and must embed ExtensionSettings struct or a struct that extends it.
-type Extension interface {
+// ExtensionConfig is the configuration of a component.Extension. Specific extensions must implement
+// this interface and must embed ExtensionConfigSettings struct or a struct that extends it.
+type ExtensionConfig interface {
 	identifiable
 	validatable
 
 	privateConfigExtension()
 }
 
-// UnmarshalExtension helper function to unmarshal an Extension config.
+// UnmarshalExtensionConfig helper function to unmarshal an ExtensionConfig.
 // It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalExtension(conf *confmap.Conf, cfg Extension) error {
+func UnmarshalExtensionConfig(conf *confmap.Conf, cfg ExtensionConfig) error {
 	return unmarshal(conf, cfg)
 }
 
-// ExtensionSettings defines common settings for a component.Extension configuration.
+// ExtensionConfigSettings defines common settings for a component.Extension configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 //
 // It is highly recommended to "override" the Validate() function.
 //
 // When embedded in the extension config, it must be with `mapstructure:",squash"` tag.
-type ExtensionSettings struct {
-	id ComponentID `mapstructure:"-"`
+type ExtensionConfigSettings struct {
+	id ID `mapstructure:"-"`
 }
 
-// NewExtensionSettings return a new ExtensionSettings with the given ComponentID.
-func NewExtensionSettings(id ComponentID) ExtensionSettings {
-	return ExtensionSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
+// NewExtensionConfigSettings return a new ExtensionConfigSettings with the given ID.
+func NewExtensionConfigSettings(id ID) ExtensionConfigSettings {
+	return ExtensionConfigSettings{id: ID{typeVal: id.Type(), nameVal: id.Name()}}
 }
 
-var _ Extension = (*ExtensionSettings)(nil)
+var _ ExtensionConfig = (*ExtensionConfigSettings)(nil)
 
-// ID returns the receiver ComponentID.
-func (es *ExtensionSettings) ID() ComponentID {
+// ID returns the receiver ID.
+func (es *ExtensionConfigSettings) ID() ID {
 	return es.id
 }
 
 // SetIDName sets the receiver name.
-func (es *ExtensionSettings) SetIDName(idName string) {
+func (es *ExtensionConfigSettings) SetIDName(idName string) {
 	es.id.nameVal = idName
 }
 
 // Validate validates the configuration and returns an error if invalid.
-func (es *ExtensionSettings) Validate() error {
+func (es *ExtensionConfigSettings) Validate() error {
 	return nil
 }
 
-func (es *ExtensionSettings) privateConfigExtension() {}
+func (es *ExtensionConfigSettings) privateConfigExtension() {}

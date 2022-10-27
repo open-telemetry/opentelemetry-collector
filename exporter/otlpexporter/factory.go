@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
@@ -41,12 +40,12 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+		TimeoutSettings:        exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:          exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:          exporterhelper.NewDefaultQueueSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 			// Default to gzip compression
@@ -60,7 +59,7 @@ func createDefaultConfig() config.Exporter {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {
@@ -80,7 +79,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.MetricsExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {
@@ -101,7 +100,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.LogsExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {

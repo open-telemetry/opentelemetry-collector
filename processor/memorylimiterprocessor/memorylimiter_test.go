@@ -27,7 +27,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -123,7 +122,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processMetrics,
@@ -194,7 +193,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processTraces,
@@ -265,7 +264,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processLogs,
@@ -448,7 +447,7 @@ func (be *ballastExtension) GetBallastSize() uint64 {
 
 func newObsReport() *obsreport.Processor {
 	set := obsreport.ProcessorSettings{
-		ProcessorID:             config.NewComponentID(typeStr),
+		ProcessorID:             component.NewID(typeStr),
 		ProcessorCreateSettings: componenttest.NewNopProcessorCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone

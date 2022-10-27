@@ -17,17 +17,17 @@ package otlphttpexporter // import "go.opentelemetry.io/collector/exporter/otlph
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	component.ExporterConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confighttp.HTTPClientSettings    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings     `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings     `mapstructure:"retry_on_failure"`
 
 	// The URL to send traces to. If omitted the Endpoint + "/v1/traces" will be used.
 	TracesEndpoint string `mapstructure:"traces_endpoint"`
@@ -39,7 +39,7 @@ type Config struct {
 	LogsEndpoint string `mapstructure:"logs_endpoint"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.ExporterConfig = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

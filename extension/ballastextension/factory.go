@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/iruntime"
 )
 
@@ -35,12 +34,12 @@ func NewFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionConfigSettings: component.NewExtensionConfigSettings(component.NewID(typeStr)),
 	}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
 	return newMemoryBallast(cfg.(*Config), set.Logger, memHandler), nil
 }

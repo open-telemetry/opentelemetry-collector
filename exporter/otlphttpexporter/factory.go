@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -44,11 +43,11 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+		RetrySettings:          exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:          exporterhelper.NewDefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
@@ -79,7 +78,7 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {
@@ -105,7 +104,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.MetricsExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {
@@ -131,7 +130,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.LogsExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {

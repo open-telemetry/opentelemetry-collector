@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -42,8 +41,8 @@ const (
 )
 
 var (
-	fakeTracesExporterName   = config.NewComponentIDWithName("fake_traces_exporter", "with_name")
-	fakeTracesExporterConfig = config.NewExporterSettings(fakeTracesExporterName)
+	fakeTracesExporterName   = component.NewIDWithName("fake_traces_exporter", "with_name")
+	fakeTracesExporterConfig = component.NewExporterConfigSettings(fakeTracesExporterName)
 )
 
 func TestTracesRequest(t *testing.T) {

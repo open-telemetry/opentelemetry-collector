@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -83,7 +82,7 @@ type metricsExporter struct {
 func NewMetricsExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 	pusher consumer.ConsumeMetricsFunc,
 	options ...Option,
 ) (component.MetricsExporter, error) {
@@ -100,7 +99,7 @@ func NewMetricsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set, bs, config.MetricsDataType, newMetricsRequestUnmarshalerFunc(pusher))
+	be := newBaseExporter(cfg, set, bs, component.MetricsDataType, newMetricsRequestUnmarshalerFunc(pusher))
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
 			obsrep:     be.obsrep,

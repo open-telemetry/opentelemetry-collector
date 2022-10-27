@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -41,10 +40,10 @@ const (
 	fakeLogsParentSpanName = "fake_logs_parent_span_name"
 )
 
-var fakeLogsExporterName = config.NewComponentIDWithName("fake_logs_exporter", "with_name")
+var fakeLogsExporterName = component.NewIDWithName("fake_logs_exporter", "with_name")
 
 var (
-	fakeLogsExporterConfig = config.NewExporterSettings(fakeLogsExporterName)
+	fakeLogsExporterConfig = component.NewExporterConfigSettings(fakeLogsExporterName)
 )
 
 func TestLogsRequest(t *testing.T) {
