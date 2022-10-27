@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	otelview "go.opentelemetry.io/otel/sdk/metric/view"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
@@ -229,6 +230,14 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 		resAttrs = append(resAttrs, attribute.String(k, v))
 	}
 
+	var views []otelview.View
+
+	batchViews, err := batchprocessor.OtelMetricsViews()
+	if err != nil {
+		return fmt.Errorf("error creating otel metrics views for batch processor: %w", err)
+	}
+	views = append(views, batchViews...)
+
 	res, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
 	if err != nil {
 		return fmt.Errorf("error creating otel resources: %w", err)
@@ -241,7 +250,7 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 	}
 	tel.mp = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
-		sdkmetric.WithReader(exporter),
+		sdkmetric.WithReader(exporter, views...),
 	)
 
 	return nil
