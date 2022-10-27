@@ -42,7 +42,7 @@ func shouldWarn(endpoint string) bool {
 		}
 
 		if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
-			// not an ip or no unspecified, don't warn.
+			// unspecified ip
 			return true
 		}
 	}
