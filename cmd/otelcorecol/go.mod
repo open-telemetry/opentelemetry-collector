@@ -12,6 +12,8 @@ require (
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.1
 	go.opentelemetry.io/collector/extension/ballastextension v0.63.1
 	go.opentelemetry.io/collector/extension/zpagesextension v0.63.1
+	go.opentelemetry.io/collector/processor/batchprocessor v0.63.1
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.63.1
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.63.1
 	golang.org/x/sys v0.1.0
 )
@@ -96,8 +98,12 @@ replace go.opentelemetry.io/collector/extension/ballastextension => ../../extens
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 
+replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
+
+replace go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
+
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
-
-replace go.opentelemetry.io/collector/pdata => ../../pdata

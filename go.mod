@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/extension/ballastextension v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/extension/zpagesextension v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v0.63.1
+	go.opentelemetry.io/collector/processor/batchprocessor v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/semconv v0.63.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
@@ -86,6 +87,8 @@ replace go.opentelemetry.io/collector/pdata => ./pdata
 replace go.opentelemetry.io/collector/extension/ballastextension => ./extension/ballastextension
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ./extension/zpagesextension
+
+replace go.opentelemetry.io/collector/processor/batchprocessor => ./processor/batchprocessor
 
 retract (
 	v0.57.1 // Release failed, use v0.57.2

@@ -331,6 +331,8 @@ check-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension/ballastextension=$(CURDIR)/extension/ballastextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/receiver/otlpreceiver=$(CURDIR)/receiver/otlpreceiver"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/semconv=$(CURDIR)/semconv"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
@@ -350,6 +352,8 @@ restore-contrib:
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension/ballastextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension/zpagestextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/pdata"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/processor/batchprocessor"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/receiver/otlpreceiver"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/semconv"
 	@$(MAKE) -C $(CONTRIB_PATH) -j2 gotidy
