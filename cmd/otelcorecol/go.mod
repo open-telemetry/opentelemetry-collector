@@ -10,6 +10,7 @@ require (
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.1
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.1
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.1
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.63.1
 	golang.org/x/sys v0.1.0
 )
 
@@ -72,9 +73,9 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
-	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
-	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20221018160656-63c7b68cfc55 // indirect
+	golang.org/x/net v0.0.0-20221014081412-f15817d10f9b // indirect
+	golang.org/x/text v0.3.8 // indirect
+	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -90,5 +91,7 @@ replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/ot
 replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
+
+replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
