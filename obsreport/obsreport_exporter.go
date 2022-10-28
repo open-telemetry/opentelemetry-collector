@@ -20,7 +20,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
@@ -65,8 +64,12 @@ type ExporterSettings struct {
 	ExporterCreateSettings component.ExporterCreateSettings
 }
 
-// NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) *Exporter {
+	return newExporter(cfg, featuregate.GetRegistry())
+}
+
+// NewExporter creates a new Exporter.
+func newExporter(cfg ExporterSettings, registry *featuregate.Registry) *Exporter {
 	exp := &Exporter{
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
@@ -74,21 +77,22 @@ func NewExporter(cfg ExporterSettings) *Exporter {
 		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
 		logger:         cfg.ExporterCreateSettings.Logger,
 
-		useOtelForMetrics: featuregate.GetRegistry().IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ExporterKey, cfg.ExporterID.String()),
 		},
 	}
-	meter := cfg.ExporterCreateSettings.MeterProvider.Meter(exporterScope)
-	exp.createOtelMetrics(meter)
+
+	exp.createOtelMetrics(cfg)
 
 	return exp
 }
 
-func (exp *Exporter) createOtelMetrics(meter metric.Meter) {
+func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) {
 	if !exp.useOtelForMetrics {
 		return
 	}
+	meter := cfg.ExporterCreateSettings.MeterProvider.Meter(exporterScope)
 
 	var err error
 	handleError := func(metricName string, err error) {
