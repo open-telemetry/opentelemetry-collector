@@ -23,31 +23,26 @@ import (
 )
 
 func shouldWarn(endpoint string) bool {
-	switch {
-	case endpoint == ":":
+	if endpoint == ":" {
 		// : (aka 0.0.0.0:0)
 		return true
-	case strings.HasPrefix(endpoint, ":"):
-		// :<port> (aka 0.0.0.0:<port>)
-		_, err := strconv.ParseInt(endpoint[1:], 10, 64)
-		if err != nil { // Probably invalid, don't warn
-			return false
-		}
-		return true
-	default:
-		// <host>:<port>
-		host, _, err := net.SplitHostPort(endpoint)
-		if err != nil { // Probably invalid, don't warn.
-			return false
-		}
-
-		if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
-			// unspecified ip
-			return true
-		}
 	}
 
-	return false
+	if strings.HasPrefix(endpoint, ":") {
+		// :<port> (aka 0.0.0.0:<port>)
+		_, err := strconv.ParseInt(endpoint[1:], 10, 64)
+		// If it's not a number, it's probably invalid, don't warn.
+		return err == nil
+	}
+
+	// <host>:<port>
+	host, _, err := net.SplitHostPort(endpoint)
+	if err != nil { // Probably invalid, don't warn.
+		return false
+	}
+
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsUnspecified()
 }
 
 // WarnOnUnspecifiedHost emits a warning if an endpoint has an unspecified host.
