@@ -52,7 +52,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+	opts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
@@ -154,7 +154,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			opts, err := test.settings.ToDialOptions(test.host, tt.TelemetrySettings)
+			opts, err := test.settings.toDialOptions(test.host, tt.TelemetrySettings)
 			assert.NoError(t, err)
 			assert.Len(t, opts, 9)
 		})
@@ -163,9 +163,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
-	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-	_ = grpc.NewServer(opts...)
-
+	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 2)
 }
@@ -198,21 +196,13 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-	_ = grpc.NewServer(opts...)
-
+	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 9)
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
 	gss := &GRPCServerSettings{}
-
-	// sanity check
-	_, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
-	// test
 	gss.Auth = &configauth.Authentication{
 		AuthenticatorID: config.NewComponentID("mock"),
 	}
@@ -221,12 +211,9 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 			config.NewComponentID("mock"): configauth.NewServerAuthenticator(),
 		},
 	}
-	opts, err := gss.ToServerOption(host, componenttest.NewNopTelemetrySettings())
-	_ = grpc.NewServer(opts...)
-
-	// verify
+	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
-	assert.NotNil(t, opts)
+	assert.NotNil(t, srv)
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
@@ -345,8 +332,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToDialOptions(test.host, tt.TelemetrySettings)
-			assert.Nil(t, opts)
+			_, err := test.settings.ToClientConn(context.Background(), test.host, tt.TelemetrySettings)
 			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)
 		})
@@ -365,7 +351,7 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+	dialOpts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
 	assert.Len(t, dialOpts, 3)
 }
@@ -418,9 +404,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-			_ = grpc.NewServer(opts...)
-
+			_, err := test.settings.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -563,9 +547,8 @@ func TestHttpReception(t *testing.T) {
 			}
 			ln, err := gss.ToListener()
 			assert.NoError(t, err)
-			opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			s, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
-			s := grpc.NewServer(opts...)
 			ptraceotlp.RegisterGRPCServer(s, &grpcTraceServer{})
 
 			go func() {
@@ -576,13 +559,11 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   ln.Addr().String(),
 				TLSSetting: *test.tlsClientCreds,
 			}
-			clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+			grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 			assert.NoError(t, errClient)
-			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
-			assert.NoError(t, errDial)
-			client := ptraceotlp.NewGRPCClient(grpcClientConn)
+			c := ptraceotlp.NewGRPCClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-			resp, errResp := client.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
+			resp, errResp := c.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
 			if test.hasError {
 				assert.Error(t, errResp)
 			} else {
@@ -612,13 +593,12 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	ln, err := gss.ToListener()
 	assert.NoError(t, err)
-	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	srv, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
-	s := grpc.NewServer(opts...)
-	ptraceotlp.RegisterGRPCServer(s, &grpcTraceServer{})
+	ptraceotlp.RegisterGRPCServer(srv, &grpcTraceServer{})
 
 	go func() {
-		_ = s.Serve(ln)
+		_ = srv.Serve(ln)
 	}()
 
 	gcs := &GRPCClientSettings{
@@ -627,17 +607,15 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, errClient)
-	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
-	assert.NoError(t, errDial)
-	client := ptraceotlp.NewGRPCClient(grpcClientConn)
+	c := ptraceotlp.NewGRPCClient(grpcClientConn)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-	resp, errResp := client.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
+	resp, errResp := c.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
 	assert.NoError(t, errResp)
 	assert.NotNil(t, resp)
 	cancelFunc()
-	s.Stop()
+	srv.Stop()
 }
 
 func TestContextWithClient(t *testing.T) {
@@ -808,9 +786,8 @@ func TestClientInfoInterceptors(t *testing.T) {
 						Transport: "tcp",
 					},
 				}
-				opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+				srv, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 				require.NoError(t, err)
-				srv := grpc.NewServer(opts...)
 				ptraceotlp.RegisterGRPCServer(srv, mock)
 
 				defer srv.Stop()
@@ -838,11 +815,8 @@ func TestClientInfoInterceptors(t *testing.T) {
 					require.NoError(t, tt.Shutdown(context.Background()))
 				}()
 
-				clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 				require.NoError(t, errClient)
-
-				grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
-				require.NoError(t, errDial)
 
 				cl := ptraceotlp.NewGRPCClient(grpcClientConn)
 				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)

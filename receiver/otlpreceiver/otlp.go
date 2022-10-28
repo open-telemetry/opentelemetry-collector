@@ -106,12 +106,10 @@ func (r *otlpReceiver) startHTTPServer(cfg *confighttp.HTTPServerSettings, host 
 func (r *otlpReceiver) startProtocolServers(host component.Host) error {
 	var err error
 	if r.cfg.GRPC != nil {
-		var opts []grpc.ServerOption
-		opts, err = r.cfg.GRPC.ToServerOption(host, r.settings.TelemetrySettings)
+		r.serverGRPC, err = r.cfg.GRPC.ToServer(host, r.settings.TelemetrySettings)
 		if err != nil {
 			return err
 		}
-		r.serverGRPC = grpc.NewServer(opts...)
 
 		if r.traceReceiver != nil {
 			ptraceotlp.RegisterGRPCServer(r.serverGRPC, r.traceReceiver)
