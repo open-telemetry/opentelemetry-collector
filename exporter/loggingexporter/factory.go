@@ -52,7 +52,6 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-		LogLevel:           zapcore.InfoLevel,
 		Verbosity:          configtelemetry.LevelNormal,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
@@ -109,7 +108,6 @@ func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
 		onceWarnLogLevel.Do(func() {
 			logger.Warn(
 				"'loglevel' option is deprecated in favor of 'verbosity'. Set 'verbosity' to equivalent value to preserve behavior.",
-				zap.Stringer("loglevel", cfg.LogLevel),
 				zap.Stringer("equivalent verbosity level", cfg.Verbosity),
 			)
 		})

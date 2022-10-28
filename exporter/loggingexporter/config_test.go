@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -45,7 +44,6 @@ func TestUnmarshalConfig(t *testing.T) {
 			filename: "config_loglevel.yaml",
 			cfg: &Config{
 				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-				LogLevel:           zapcore.DebugLevel,
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
@@ -56,7 +54,6 @@ func TestUnmarshalConfig(t *testing.T) {
 			filename: "config_verbosity.yaml",
 			cfg: &Config{
 				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-				LogLevel:           zapcore.InfoLevel,
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
@@ -66,7 +63,6 @@ func TestUnmarshalConfig(t *testing.T) {
 			filename: "loglevel_info.yaml",
 			cfg: &Config{
 				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-				LogLevel:           zapcore.InfoLevel,
 				Verbosity:          configtelemetry.LevelNormal,
 				SamplingInitial:    2,
 				SamplingThereafter: 500,

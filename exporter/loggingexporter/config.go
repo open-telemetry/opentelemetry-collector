@@ -24,23 +24,17 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-var (
-	// supportedLevels in this exporter's configuration.
-	// configtelemetry.LevelNone and other future values are not supported.
-	supportedLevels map[configtelemetry.Level]struct{} = map[configtelemetry.Level]struct{}{
-		configtelemetry.LevelBasic:    {},
-		configtelemetry.LevelNormal:   {},
-		configtelemetry.LevelDetailed: {},
-	}
-)
+// supportedLevels in this exporter's configuration.
+// configtelemetry.LevelNone and other future values are not supported.
+var supportedLevels = map[configtelemetry.Level]struct{}{
+	configtelemetry.LevelBasic:    {},
+	configtelemetry.LevelNormal:   {},
+	configtelemetry.LevelDetailed: {},
+}
 
 // Config defines configuration for logging exporter.
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
-	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
-	// Deprecated: Use `Verbosity` instead.
-	LogLevel zapcore.Level `mapstructure:"loglevel"`
 
 	// Verbosity defines the logging exporter verbosity.
 	Verbosity configtelemetry.Level `mapstructure:"verbosity"`
@@ -78,12 +72,12 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return fmt.Errorf("'loglevel' and 'verbosity' are incompatible. Use only 'verbosity' instead")
 	}
 
-	if err := conf.Unmarshal(cfg, confmap.WithErrorUnused()); err != nil {
-		return err
-	}
-
 	if conf.IsSet("loglevel") {
-		verbosity, err := mapLevel(cfg.LogLevel)
+		ll, err := zapcore.ParseLevel(conf.Get("loglevel").(string))
+		if err != nil {
+			return fmt.Errorf("failed to parce 'loglevel': %w", err)
+		}
+		verbosity, err := mapLevel(ll)
 		if err != nil {
 			return fmt.Errorf("failed to map 'loglevel': %w", err)
 		}
@@ -92,6 +86,10 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		// Override default verbosity.
 		cfg.Verbosity = verbosity
 		cfg.warnLogLevel = true
+	}
+
+	if err := conf.Unmarshal(cfg, confmap.WithErrorUnused()); err != nil {
+		return err
 	}
 
 	return nil
