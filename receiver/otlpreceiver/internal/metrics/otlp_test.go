@@ -35,7 +35,7 @@ import (
 
 func TestExport(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
-	req := pmetricotlp.NewRequestFromMetrics(md)
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
 	metricSink := new(consumertest.MetricsSink)
 	metricsClient := makeMetricsServiceClient(t, metricSink)
@@ -52,19 +52,19 @@ func TestExport(t *testing.T) {
 func TestExport_EmptyRequest(t *testing.T) {
 	metricSink := new(consumertest.MetricsSink)
 	metricsClient := makeMetricsServiceClient(t, metricSink)
-	resp, err := metricsClient.Export(context.Background(), pmetricotlp.NewRequest())
+	resp, err := metricsClient.Export(context.Background(), pmetricotlp.NewExportRequest())
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
-	req := pmetricotlp.NewRequestFromMetrics(md)
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
 	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Equal(t, pmetricotlp.Response{}, resp)
+	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }
 
 func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRPCClient {
@@ -76,7 +76,7 @@ func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRP
 		require.NoError(t, cc.Close())
 	})
 
-	return pmetricotlp.NewClient(cc)
+	return pmetricotlp.NewGRPCClient(cc)
 }
 
 func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {

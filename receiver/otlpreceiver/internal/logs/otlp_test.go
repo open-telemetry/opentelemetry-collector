@@ -35,7 +35,7 @@ import (
 
 func TestExport(t *testing.T) {
 	ld := testdata.GenerateLogs(1)
-	req := plogotlp.NewRequestFromLogs(ld)
+	req := plogotlp.NewExportRequestFromLogs(ld)
 
 	logSink := new(consumertest.LogsSink)
 	logClient := makeLogsServiceClient(t, logSink)
@@ -52,19 +52,19 @@ func TestExport_EmptyRequest(t *testing.T) {
 	logSink := new(consumertest.LogsSink)
 
 	logClient := makeLogsServiceClient(t, logSink)
-	resp, err := logClient.Export(context.Background(), plogotlp.NewRequest())
+	resp, err := logClient.Export(context.Background(), plogotlp.NewExportRequest())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
 	ld := testdata.GenerateLogs(1)
-	req := plogotlp.NewRequestFromLogs(ld)
+	req := plogotlp.NewExportRequestFromLogs(ld)
 
 	logClient := makeLogsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := logClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Equal(t, plogotlp.Response{}, resp)
+	assert.Equal(t, plogotlp.ExportResponse{}, resp)
 }
 
 func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
@@ -75,7 +75,7 @@ func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
 		require.NoError(t, cc.Close())
 	})
 
-	return plogotlp.NewClient(cc)
+	return plogotlp.NewGRPCClient(cc)
 }
 
 func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {

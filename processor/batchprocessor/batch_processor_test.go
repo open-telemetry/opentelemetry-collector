@@ -122,7 +122,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
-	sizer := ptrace.NewProtoMarshaler()
+	sizer := &ptrace.ProtoMarshaler{}
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -359,7 +359,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchMetricProcessor_BatchSize(t *testing.T) {
-	sizer := pmetric.NewProtoMarshaler()
+	sizer := &pmetric.ProtoMarshaler{}
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -564,7 +564,7 @@ func getTestMetricName(requestNum, index int) string {
 }
 
 func BenchmarkTraceSizeBytes(b *testing.B) {
-	sizer := ptrace.NewProtoMarshaler()
+	sizer := &ptrace.ProtoMarshaler{}
 	td := testdata.GenerateTraces(8192)
 	for n := 0; n < b.N; n++ {
 		fmt.Println(sizer.TracesSize(td))
@@ -677,7 +677,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
-	sizer := plog.NewProtoMarshaler()
+	sizer := &plog.ProtoMarshaler{}
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)

@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var logsMarshaler = plog.NewProtoMarshaler()
-var logsUnmarshaler = plog.NewProtoUnmarshaler()
+var logsMarshaler = &plog.ProtoMarshaler{}
+var logsUnmarshaler = &plog.ProtoUnmarshaler{}
 
 type logsRequest struct {
 	baseRequest

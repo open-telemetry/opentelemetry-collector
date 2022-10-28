@@ -198,5 +198,6 @@ func TestUnmarshalConfigEmptyProtocols(t *testing.T) {
 func TestUnmarshalConfigEmpty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, config.UnmarshalReceiver(confmap.New(), cfg), "empty config for OTLP receiver")
+	assert.NoError(t, config.UnmarshalReceiver(confmap.New(), cfg))
+	assert.EqualError(t, cfg.Validate(), "must specify at least one protocol when using the OTLP receiver")
 }

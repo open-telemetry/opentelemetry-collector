@@ -580,9 +580,9 @@ func TestHttpReception(t *testing.T) {
 			assert.NoError(t, errClient)
 			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 			assert.NoError(t, errDial)
-			client := ptraceotlp.NewClient(grpcClientConn)
+			client := ptraceotlp.NewGRPCClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-			resp, errResp := client.Export(ctx, ptraceotlp.NewRequest(), grpc.WaitForReady(true))
+			resp, errResp := client.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
 			if test.hasError {
 				assert.Error(t, errResp)
 			} else {
@@ -631,9 +631,9 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	assert.NoError(t, errClient)
 	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 	assert.NoError(t, errDial)
-	client := ptraceotlp.NewClient(grpcClientConn)
+	client := ptraceotlp.NewGRPCClient(grpcClientConn)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-	resp, errResp := client.Export(ctx, ptraceotlp.NewRequest(), grpc.WaitForReady(true))
+	resp, errResp := client.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
 	assert.NoError(t, errResp)
 	assert.NotNil(t, resp)
 	cancelFunc()
@@ -789,7 +789,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 			// to test with streaming services
 			desc: "unary",
 			tester: func(ctx context.Context, cl ptraceotlp.GRPCClient) {
-				resp, errResp := cl.Export(ctx, ptraceotlp.NewRequest())
+				resp, errResp := cl.Export(ctx, ptraceotlp.NewExportRequest())
 				require.NoError(t, errResp)
 				require.NotNil(t, resp)
 			},
@@ -844,7 +844,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 				grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
 				require.NoError(t, errDial)
 
-				cl := ptraceotlp.NewClient(grpcClientConn)
+				cl := ptraceotlp.NewGRPCClient(grpcClientConn)
 				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancelFunc()
 
@@ -1024,9 +1024,9 @@ type grpcTraceServer struct {
 	recordedContext context.Context
 }
 
-func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.Request) (ptraceotlp.Response, error) {
+func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	gts.recordedContext = ctx
-	return ptraceotlp.NewResponse(), nil
+	return ptraceotlp.NewExportResponse(), nil
 }
 
 // tempSocketName provides a temporary Unix socket name for testing.

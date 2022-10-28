@@ -33,21 +33,6 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-func TestConfigProviderValidationError(t *testing.T) {
-	factories, errF := componenttest.NopFactories()
-	require.NoError(t, errF)
-
-	set := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")})
-
-	cfgW, err := NewConfigProvider(set)
-	assert.NoError(t, err)
-
-	_, err = cfgW.Get(context.Background(), factories)
-	assert.Error(t, err)
-
-	assert.NoError(t, cfgW.Shutdown(context.Background()))
-}
-
 var configNop = &Config{
 	Receivers:  map[config.ComponentID]config.Receiver{config.NewComponentID("nop"): componenttest.NewNopReceiverFactory().CreateDefaultConfig()},
 	Processors: map[config.ComponentID]config.Processor{config.NewComponentID("nop"): componenttest.NewNopProcessorFactory().CreateDefaultConfig()},

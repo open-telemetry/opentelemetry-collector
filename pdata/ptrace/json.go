@@ -17,39 +17,37 @@ package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 import (
 	"bytes"
 
-	"github.com/gogo/protobuf/jsonpb"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/ptrace/internal/ptracejson"
 )
 
-// NewJSONMarshaler returns a model.Marshaler. Marshals to OTLP json bytes.
+var delegate = ptracejson.JSONMarshaler
+
+// Deprecated: [v0.63.0] use &JSONMarshaler{}
 func NewJSONMarshaler() Marshaler {
-	return &jsonMarshaler{delegate: jsonpb.Marshaler{
-		EnumsAsInts: true,
-	}}
+	return &JSONMarshaler{}
 }
 
-type jsonMarshaler struct {
-	delegate jsonpb.Marshaler
-}
+var _ Marshaler = (*JSONMarshaler)(nil)
 
-func (e *jsonMarshaler) MarshalTraces(td Traces) ([]byte, error) {
+type JSONMarshaler struct{}
+
+func (*JSONMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 	buf := bytes.Buffer{}
 	pb := internal.TracesToProto(internal.Traces(td))
-	err := e.delegate.Marshal(&buf, &pb)
+	err := delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
 
-// NewJSONUnmarshaler returns a model.Unmarshaler. Unmarshalls from OTLP json bytes.
+type JSONUnmarshaler struct{}
+
+// Deprecated: [v0.63.0] use &JSONUnmarshaler{}
 func NewJSONUnmarshaler() Unmarshaler {
-	return &jsonUnmarshaler{}
+	return &JSONUnmarshaler{}
 }
 
-type jsonUnmarshaler struct{}
-
-func (jsonUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
+func (*JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	var td otlptrace.TracesData
 	if err := ptracejson.UnmarshalTraceData(buf, &td); err != nil {
 		return Traces{}, err

@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Contains(t, cfg.Exporters, config.NewComponentID("nop"))
 	assert.Contains(t, cfg.Exporters, config.NewComponentIDWithName("nop", "myexporter"))
 
-	// Verify Processors
+	// Verify procs
 	assert.Len(t, cfg.Processors, 2)
 	assert.Contains(t, cfg.Processors, config.NewComponentID("nop"))
 	assert.Contains(t, cfg.Processors, config.NewComponentIDWithName("nop", "myprocessor"))

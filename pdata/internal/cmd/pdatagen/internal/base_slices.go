@@ -15,8 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
+	"bytes"
 	"os"
-	"strings"
 )
 
 const commonSliceTemplate = `
@@ -489,17 +489,17 @@ func (ss *sliceOfPtrs) getPackageName() string {
 	return ss.packageName
 }
 
-func (ss *sliceOfPtrs) generateStruct(sb *strings.Builder) {
+func (ss *sliceOfPtrs) generateStruct(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(slicePtrTemplate, ss.templateFields()))
 	sb.WriteString(os.Expand(commonSliceTemplate, ss.templateFields()))
 }
 
-func (ss *sliceOfPtrs) generateTests(sb *strings.Builder) {
+func (ss *sliceOfPtrs) generateTests(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(slicePtrTestTemplate, ss.templateFields()))
 	sb.WriteString(os.Expand(commonSliceTestTemplate, ss.templateFields()))
 }
 
-func (ss *sliceOfPtrs) generateTestValueHelpers(sb *strings.Builder) {
+func (ss *sliceOfPtrs) generateTestValueHelpers(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(slicePtrGenerateTest, ss.templateFields()))
 }
 
@@ -518,7 +518,7 @@ func (ss *sliceOfPtrs) templateFields() func(name string) string {
 	}
 }
 
-func (ss *sliceOfPtrs) generateInternal(sb *strings.Builder) {
+func (ss *sliceOfPtrs) generateInternal(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(slicePtrInternalTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -549,17 +549,17 @@ func (ss *sliceOfValues) getPackageName() string {
 	return ss.packageName
 }
 
-func (ss *sliceOfValues) generateStruct(sb *strings.Builder) {
+func (ss *sliceOfValues) generateStruct(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(sliceValueTemplate, ss.templateFields()))
 	sb.WriteString(os.Expand(commonSliceTemplate, ss.templateFields()))
 }
 
-func (ss *sliceOfValues) generateTests(sb *strings.Builder) {
+func (ss *sliceOfValues) generateTests(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(sliceValueTestTemplate, ss.templateFields()))
 	sb.WriteString(os.Expand(commonSliceTestTemplate, ss.templateFields()))
 }
 
-func (ss *sliceOfValues) generateTestValueHelpers(sb *strings.Builder) {
+func (ss *sliceOfValues) generateTestValueHelpers(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(sliceValueGenerateTest, ss.templateFields()))
 }
 
@@ -578,7 +578,7 @@ func (ss *sliceOfValues) templateFields() func(name string) string {
 	}
 }
 
-func (ss *sliceOfValues) generateInternal(sb *strings.Builder) {
+func (ss *sliceOfValues) generateInternal(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(sliceValueInternalTemplate, func(name string) string {
 		switch name {
 		case "structName":

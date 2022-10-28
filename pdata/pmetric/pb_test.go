@@ -24,14 +24,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func TestProtoMetricsUnmarshaler_error(t *testing.T) {
-	p := NewProtoUnmarshaler()
+func TestProtoMetricsUnmarshalerError(t *testing.T) {
+	p := &ProtoUnmarshaler{}
 	_, err := p.UnmarshalMetrics([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestProtoSizer(t *testing.T) {
-	marshaler := NewProtoMarshaler()
+	marshaler := &ProtoMarshaler{}
 	md := NewMetrics()
 	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 
@@ -42,14 +42,13 @@ func TestProtoSizer(t *testing.T) {
 	assert.Equal(t, len(bytes), size)
 }
 
-func TestProtoSizer_withNil(t *testing.T) {
-	sizer := NewProtoMarshaler().(Sizer)
-
+func TestProtoSizerEmptyMetrics(t *testing.T) {
+	sizer := &ProtoMarshaler{}
 	assert.Equal(t, 0, sizer.MetricsSize(NewMetrics()))
 }
 
 func BenchmarkMetricsToProto(b *testing.B) {
-	marshaler := NewProtoMarshaler()
+	marshaler := &ProtoMarshaler{}
 	metrics := generateBenchmarkMetrics(128)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -60,8 +59,8 @@ func BenchmarkMetricsToProto(b *testing.B) {
 }
 
 func BenchmarkMetricsFromProto(b *testing.B) {
-	marshaler := NewProtoMarshaler()
-	unmarshaler := NewProtoUnmarshaler()
+	marshaler := &ProtoMarshaler{}
+	unmarshaler := &ProtoUnmarshaler{}
 	baseMetrics := generateBenchmarkMetrics(128)
 	buf, err := marshaler.MarshalMetrics(baseMetrics)
 	require.NoError(b, err)

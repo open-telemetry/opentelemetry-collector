@@ -42,7 +42,7 @@ func TestReadExportTraceServiceResponse(t *testing.T) {
 	jsonStr := `{"extra":"", "partialSuccess": {}}`
 	value := &otlpcollectortrace.ExportTraceServiceResponse{}
 	assert.NoError(t, UnmarshalExportTraceServiceResponse([]byte(jsonStr), value))
-	assert.Equal(t, &otlpcollectortrace.ExportTraceServiceResponse{PartialSuccess: &otlpcollectortrace.ExportTracePartialSuccess{}}, value)
+	assert.Equal(t, &otlpcollectortrace.ExportTraceServiceResponse{}, value)
 }
 
 func TestReadResourceSpans(t *testing.T) {
@@ -155,5 +155,5 @@ func TestReadExportTracePartialSuccess(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := readExportTracePartialSuccess(iter)
 	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlpcollectortrace.ExportTracePartialSuccess{RejectedSpans: 1, ErrorMessage: "nothing"}, value)
+	assert.Equal(t, otlpcollectortrace.ExportTracePartialSuccess{RejectedSpans: 1, ErrorMessage: "nothing"}, value)
 }

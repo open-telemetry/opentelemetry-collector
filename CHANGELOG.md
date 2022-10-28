@@ -4,6 +4,64 @@
 
 <!-- next version -->
 
+## v0.63.0
+
+### 🛑 Breaking changes 🛑
+
+- `pdata`: JSON marshaler emits enums as ints per spec reuqirements. This may be a breaking change if receivers were not confirming with the spec. (#6338)
+- `confmap`: Remove deprecated `confmap.Conf.UnmarshalExact` API in 0.62.0 (#6315)
+- `pdata`: Remove API deprecated in 0.62.0 (#6314)
+  - Remove deprecated `pcommon.NewValueString`
+  - Remove deprecated `pcommon.Map.PutString`
+  - Remove deprecated `plog.SeverityNumberUndefined`
+  - Remove deprecated `p[metric|log|trace]otlp.RegisterServer`
+  - Remove deprecated `pmetric.[Default]?MetricDataPointFlags`
+  - Remove deprecated `pmetric.MetricAggregationTemporality*`
+  - Remove deprecated `pmetric.MetricTypeNone`
+  - Remove deprecated `pmetric.NumberDataPointValueTypeNone`
+  - Remove deprecated `pmetric.ExemplarValueTypeNone`
+  - Remove deprecated `pmetric.[New]?Buckets`
+  - Remove deprecated `pmetric.[New]?ValueAtQuantile`
+  - Remove deprecated `pmetric.[New]?ValueAtQuantileSlice`
+  - Remove deprecated `ptrace.[New]?SpanStatus`
+  
+- `exporter`: Splitting otlp, otlphttp and logging exporters into their own modules (#6343)
+  The import path for these exporters can now be access directly:
+  - `go.opentelemetry.io/collector/exporter/loggingexporter`
+  - `go.opentelemetry.io/collector/exporter/otlpexporter`
+  - `go.opentelemetry.io/collector/exporter/otlphttpexporter`
+  
+  If using these exporters, modify your Collector builder configuration to use `gomod` directly, such as:
+  - `gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.63.0`
+
+### 🚩 Deprecations 🚩
+
+- `overwritepropertiesconverter`: Deprecate `overwritepropertiesconverter`, only used by non builder distributions. (#6294)
+- `pdata`: Add `Export` prefix to `p[trace|metric|log]otlp.[Request|Response]` (#6365)
+  - Deprecate `p[trace|metric|log]otlp.[Request|Response]` in favor of `p[trace|metric|log]otlp.Export[Request|Response]`
+  - Deprecate `p[trace|metric|log]otlp.New[Request|Response]` in favor of `p[trace|metric|log]otlp.NewExport[Request|Response]`
+  - Deprecate `p[trace|metric|log]otlp.NewRequestFrom[Traces|Metrics|Logs]` in favor of 
+    `p[trace|metric|log]otlp.NewExportRequestFrom[Traces|Metrics|Logs]`
+  
+- `pdata`: Deprecate `p[trace|metric|log]otlp.NewClient` in favor of `p[trace|metric|log]otlp.NewGRPCClient` (#6350)
+- `exporter/logging`: Deprecate 'loglevel' in favor of 'verbosity' option (#5878)
+- `pdata`: Deprecate `New[JSON|Proto][Marshaler|Unmarshale]` in favor of exposing the underlying structs (#6340)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Introduce partial success fields in ExportResponse. (#5815, #5816, #6365)
+- `obsreport`: Instrument `obsreport.Receiver` metrics with otel-go (#6222)
+- `service/telemetry`: Move logging and tracing initialization to service/telemetry (#5564)
+- `confmap`: Fail fast when a resolver has URIs with unsupported schemes. (#6274)
+- `service`: Use the same `prometheus.Registry` for the OpenCensus and OpenTelemetry Go prometheus exporters to act as a bridge for internal telemetry (#6297)
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Because of wrong deprecation/rename in proto, services still send the fake 1000 proto id. See https://github.com/open-telemetry/opentelemetry-proto/issues/431 (#6342)
+- `confmap`: When a sub-config implements Unmarshaler, do not reinitialized it unless necessary. (#6392)
+- `pdata`: Enable enums as ints for otlp messages, switch to jsoniter for responses. (#6345)
+- `collector`: Fixed collector service not cleaning up if it failed during Start (#6352)
+
 ## v0.62.1 Beta
 
 - Fix support for new line in config URI location. (#6306)
