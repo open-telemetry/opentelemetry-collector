@@ -18,6 +18,7 @@
 package service
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -30,6 +31,10 @@ import (
 )
 
 func TestNewSvcHandler(t *testing.T) {
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+	os.Args = []string{"otelcol", "--config", filepath.Join("testdata", "otelcol-nop.yaml")}
+
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
@@ -40,7 +45,7 @@ func TestNewSvcHandler(t *testing.T) {
 	changes := make(chan svc.Status)
 	go func() {
 		defer close(colDone)
-		ssec, errno := s.Execute([]string{"otelcol", "--config", filepath.Join("testdata", "otelcol-nop.yaml")}, requests, changes)
+		ssec, errno := s.Execute([]string{"svc name"}, requests, changes)
 		assert.Equal(t, uint32(0), errno)
 		assert.False(t, ssec)
 	}()
