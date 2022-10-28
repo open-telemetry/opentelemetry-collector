@@ -23,8 +23,12 @@ import (
 )
 
 const (
-	configFlag       = "config"
-	featureGatesFlag = "feature-gates"
+	configFlag = "config"
+)
+
+var (
+	// Command-line flag that control the configuration file.
+	gatesList = featuregate.FlagValue{}
 )
 
 type configFlagValue struct {
@@ -61,7 +65,9 @@ func flags() *flag.FlagSet {
 			return nil
 		})
 
-	flagSet.Var(featuregate.FlagValue{}, featureGatesFlag,
+	flagSet.Var(
+		gatesList,
+		"feature-gates",
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
 	return flagSet
@@ -70,8 +76,4 @@ func flags() *flag.FlagSet {
 func getConfigFlag(flagSet *flag.FlagSet) []string {
 	cfv := flagSet.Lookup(configFlag).Value.(*configFlagValue)
 	return append(cfv.values, cfv.sets...)
-}
-
-func getFeatureGatesFlag(flagSet *flag.FlagSet) featuregate.FlagValue {
-	return flagSet.Lookup(featureGatesFlag).Value.(featuregate.FlagValue)
 }
