@@ -24,11 +24,6 @@ import (
 
 var delegate = plogjson.JSONMarshaler
 
-// Deprecated: [v0.63.0] use &JSONMarshaler{}
-func NewJSONMarshaler() Marshaler {
-	return &JSONMarshaler{}
-}
-
 var _ Marshaler = (*JSONMarshaler)(nil)
 
 type JSONMarshaler struct{}
@@ -43,11 +38,6 @@ func (*JSONMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 var _ Unmarshaler = (*JSONUnmarshaler)(nil)
 
 type JSONUnmarshaler struct{}
-
-// Deprecated: [v0.63.0] use &JSONUnmarshaler{}
-func NewJSONUnmarshaler() Unmarshaler {
-	return &JSONUnmarshaler{}
-}
 
 func (*JSONUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	var ld otlplogs.LogsData

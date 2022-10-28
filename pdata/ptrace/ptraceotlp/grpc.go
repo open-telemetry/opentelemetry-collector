@@ -39,9 +39,6 @@ func NewGRPCClient(cc *grpc.ClientConn) GRPCClient {
 	return &grpcClient{rawClient: otlpcollectortrace.NewTraceServiceClient(cc)}
 }
 
-// Deprecated: [v0.63.0]: use NewGRPCClient.
-var NewClient = NewGRPCClient
-
 type grpcClient struct {
 	rawClient otlpcollectortrace.TraceServiceClient
 }
