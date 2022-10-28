@@ -18,7 +18,7 @@ type componentsOutput struct {
 	Extensions []config.Type
 }
 
-// newBuildCommand constructs a new cobra.Command sub command using the given CollectorSettings.
+// newBuildSubCommand constructs a new cobra.Command sub command using the given CollectorSettings.
 func newBuildSubCommand(set CollectorSettings) *cobra.Command {
 	buildCmd := &cobra.Command{
 		Use:   "build-info",
