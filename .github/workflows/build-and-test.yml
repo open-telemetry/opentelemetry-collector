@@ -222,9 +222,8 @@ jobs:
           GOARCH: ${{matrix.goarch}}
         run: |
           make otelcorecol
-      - name:Upload binaries
+      - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
           name: otelcorecol-${{matrix.goos}}-${{matrix.goarch}}
-            path: |
-              bin
+          path: bin
