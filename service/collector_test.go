@@ -531,19 +531,14 @@ func TestCollectorShutdownBeforeRunMessage(t *testing.T) {
 	}
 	col, err := New(set)
 	require.NoError(t, err)
-
 	// Calling shutdown before collector is running should cause it to return quickly
 	require.NotPanics(t, func() { col.Shutdown() })
 
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.EqualError(t, col.Run(context.Background()), "collector has already been shutdown and cannot be run again")
-	}()
+	wg := startCollector(context.Background(), t, col)
 
 	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+	// Running collector fails with an error because collector state is "closing" because of previous Shutdown call
+	assert.Equal(t, col.Run(context.Background()), errors.New("collector has already been shutdown and cannot be run again"))
 }
 
 func TestCollectorClosedStateOnStartUpError(t *testing.T) {
