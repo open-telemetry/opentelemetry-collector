@@ -172,6 +172,11 @@ func (col *Collector) Run(ctx context.Context) error {
 		signal.Notify(col.signalsChannel, os.Interrupt, syscall.SIGTERM)
 	}
 
+	if col.set.DryRun {
+		col.service.telemetrySettings.Logger.Info("Dry run complete, terminating process")
+		return col.shutdown(ctx)
+	}
+
 LOOP:
 	for {
 		select {

@@ -106,6 +106,30 @@ func TestCollectorCancelContext(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
+func TestCollectorDryRun(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+		DryRun:         true,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	}
+	col, err := New(set)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := startCollector(ctx, t, col)
+	wg.Wait()
+	assert.Equal(t, Closed, col.GetState())
+	cancel()
+}
+
 type mockCfgProvider struct {
 	ConfigProvider
 	watcher chan error

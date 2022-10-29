@@ -55,6 +55,9 @@ type CollectorSettings struct {
 	// and manually handle the signals to shutdown the collector.
 	DisableGracefulShutdown bool
 
+	// DryRun shuts downthe collector immediately after components have been setup.
+	DryRun bool
+
 	// ConfigProvider provides the service configuration.
 	// If the provider watches for configuration change, collector may reload the new configuration upon changes.
 	ConfigProvider ConfigProvider

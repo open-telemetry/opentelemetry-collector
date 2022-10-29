@@ -30,6 +30,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		Version:      set.BuildInfo.Version,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			set.DryRun = getDryRunFlag(flagSet)
 			if err := featuregate.GetRegistry().Apply(getFeatureGatesFlag(flagSet)); err != nil {
 				return err
 			}

@@ -24,6 +24,7 @@ import (
 
 const (
 	configFlag       = "config"
+	dryRunFlag       = "dry-run"
 	featureGatesFlag = "feature-gates"
 )
 
@@ -48,6 +49,8 @@ func flags() *flag.FlagSet {
 	flagSet.Var(cfgs, configFlag, "Locations to the config file(s), note that only a"+
 		" single location can be set per flag entry e.g. `--config=file:/path/to/first --config=file:path/to/second`.")
 
+	flagSet.BoolVar(new(bool), dryRunFlag, false, "Dry run, setup components but don't run.")
+
 	flagSet.Func("set",
 		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+
 			" has a higher precedence. Array config properties are overridden and maps are joined. Example --set=processors.batch.timeout=2s",
@@ -70,6 +73,10 @@ func flags() *flag.FlagSet {
 func getConfigFlag(flagSet *flag.FlagSet) []string {
 	cfv := flagSet.Lookup(configFlag).Value.(*configFlagValue)
 	return append(cfv.values, cfv.sets...)
+}
+
+func getDryRunFlag(flagSet *flag.FlagSet) bool {
+	return flagSet.Lookup(dryRunFlag).Value.(flag.Getter).Get().(bool)
 }
 
 func getFeatureGatesFlag(flagSet *flag.FlagSet) featuregate.FlagValue {
