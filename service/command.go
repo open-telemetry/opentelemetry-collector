@@ -50,6 +50,9 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if dryRun {
+				return col.DryRun(cmd.Context())
+			}
 			return col.Run(cmd.Context())
 		},
 	}

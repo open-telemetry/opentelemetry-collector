@@ -81,31 +81,32 @@ func New() ConfigUnmarshaler {
 	return ConfigUnmarshaler{}
 }
 
+var rawCfg = configSettings{
+	// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
+	Service: config.Service{
+		Telemetry: telemetry.Config{
+			Logs: telemetry.LogsConfig{
+				Level:             zapcore.InfoLevel,
+				Development:       false,
+				Encoding:          "console",
+				OutputPaths:       []string{"stderr"},
+				ErrorOutputPaths:  []string{"stderr"},
+				DisableCaller:     false,
+				DisableStacktrace: false,
+				InitialFields:     map[string]interface{}(nil),
+			},
+			Metrics: telemetry.MetricsConfig{
+				Level:   configtelemetry.LevelBasic,
+				Address: ":8888",
+			},
+		},
+	},
+}
+
 // Unmarshal the config.Config from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
 func (ConfigUnmarshaler) Unmarshal(v *confmap.Conf, factories component.Factories) (*config.Config, error) {
 	// Unmarshal top level sections and validate.
-	rawCfg := configSettings{
-		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
-		Service: config.Service{
-			Telemetry: telemetry.Config{
-				Logs: telemetry.LogsConfig{
-					Level:             zapcore.InfoLevel,
-					Development:       false,
-					Encoding:          "console",
-					OutputPaths:       []string{"stderr"},
-					ErrorOutputPaths:  []string{"stderr"},
-					DisableCaller:     false,
-					DisableStacktrace: false,
-					InitialFields:     map[string]interface{}(nil),
-				},
-				Metrics: telemetry.MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Address: ":8888",
-				},
-			},
-		},
-	}
 	if err := v.Unmarshal(&rawCfg, confmap.WithErrorUnused()); err != nil {
 		return nil, configError{
 			error: fmt.Errorf("error reading top level configuration sections: %w", err),

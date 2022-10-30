@@ -25,7 +25,10 @@ import (
 const (
 	configFlag       = "config"
 	featureGatesFlag = "feature-gates"
+	dryRunFlag       = "dry-run"
 )
+
+var dryRun bool
 
 type configFlagValue struct {
 	values []string
@@ -64,6 +67,7 @@ func flags() *flag.FlagSet {
 	flagSet.Var(featuregate.FlagValue{}, featureGatesFlag,
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
+	flagSet.BoolVar(&dryRun, dryRunFlag, false, "Validate configuration without running the calculator, must be used with the config flag!")
 	return flagSet
 }
 
