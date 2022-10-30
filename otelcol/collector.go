@@ -194,6 +194,21 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
+
+func (col *Collector) DryRun(ctx context.Context) error {
+	_, err, errorcheck := col.set.ConfigProvider.DryRunGet(ctx, col.set.Factories)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
+
+	if errorcheck {
+		ExtensionValidateErrors, ExportersValidateErrors, ReceiversValidateErrors, ProcessorsValidateErrors := configunmarshaler.ReturnValidateErrors()
+		printMarshalErrors(ExtensionValidateErrors, ExportersValidateErrors, ReceiversValidateErrors, ProcessorsValidateErrors)
+		return nil
+	}
+	return nil
+}
+
 func (col *Collector) Run(ctx context.Context) error {
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
