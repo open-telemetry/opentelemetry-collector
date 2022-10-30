@@ -95,3 +95,9 @@ key:
 1. Does not support setting a key that contains a dot `.`.
 2. Does not support setting a key that contains a equal sign `=`.
 3. The configuration key separator inside the value part of the property is "::". For example `--set "name={a::b: c}"` is equivalent with `--set name.a.b=c`.
+
+## How to validate configuration file and return all errors without running collector
+
+```bash
+   ./otelcorecol --config=file:examples/local/otel-config.yaml  --dry-run
+```
