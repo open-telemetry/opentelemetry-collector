@@ -86,10 +86,10 @@ func (cg *CGroup) readFirstLine(param string) (string, error) {
 }
 
 // readInt parses the first line from a cgroup param file as int.
-func (cg *CGroup) readInt(param string) (int, error) {
+func (cg *CGroup) readInt(param string) (int64, error) {
 	text, err := cg.readFirstLine(param)
 	if err != nil {
 		return 0, err
 	}
-	return strconv.Atoi(text)
+	return strconv.ParseInt(text, 10, 64)
 }
