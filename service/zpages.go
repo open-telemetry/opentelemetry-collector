@@ -72,9 +72,12 @@ func getFeaturesTableData() zpages.FeatureGateTableData {
 	data := zpages.FeatureGateTableData{}
 	for _, g := range featuregate.GetRegistry().List() {
 		data.Rows = append(data.Rows, zpages.FeatureGateTableRowData{
-			ID:          g.ID,
-			Enabled:     g.Enabled,
-			Description: g.Description,
+			ID:             g.GetID(),
+			Enabled:        g.IsEnabled(),
+			Description:    g.GetDescription(),
+			ReferenceURL:   g.GetReferenceURL(),
+			Stage:          g.GetStage().String(),
+			RemovalVersion: g.GetRemovalVersion(),
 		})
 	}
 
