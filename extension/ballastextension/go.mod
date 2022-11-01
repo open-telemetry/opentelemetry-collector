@@ -45,3 +45,5 @@ replace go.opentelemetry.io/collector => ../../
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
+
+replace go.opentelemetry.io/collector/extension/zpagesextension => ../zpagesextension
