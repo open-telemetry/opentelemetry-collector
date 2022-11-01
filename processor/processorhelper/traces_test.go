@@ -24,12 +24,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var testTracesCfg = component.NewProcessorConfigSettings(component.NewID("test"))
+var testTracesCfg = config.NewProcessorSettings(component.NewID("test"))
 
 func TestNewTracesProcessor(t *testing.T) {
 	tp, err := NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))

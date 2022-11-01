@@ -37,6 +37,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -480,8 +481,8 @@ func TestErrorResponses(t *testing.T) {
 			}()
 
 			cfg := &Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
-				TracesEndpoint:         fmt.Sprintf("http://%s/v1/traces", addr),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
 				// Create without QueueSettings and RetrySettings so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
@@ -557,8 +558,8 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
-					TracesEndpoint:         fmt.Sprintf("http://%s/v1/traces", addr),
+					ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+					TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
 					},
@@ -602,8 +603,8 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
-					MetricsEndpoint:        fmt.Sprintf("http://%s/v1/metrics", addr),
+					ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+					MetricsEndpoint:  fmt.Sprintf("http://%s/v1/metrics", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
 					},
@@ -647,8 +648,8 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
-					LogsEndpoint:           fmt.Sprintf("http://%s/v1/logs", addr),
+					ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+					LogsEndpoint:     fmt.Sprintf("http://%s/v1/logs", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
 					},

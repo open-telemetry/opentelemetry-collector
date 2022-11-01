@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -36,7 +37,7 @@ var (
 
 // Config defines configuration for logging exporter.
 type Config struct {
-	component.ExporterConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
 	// Deprecated: Use `Verbosity` instead.

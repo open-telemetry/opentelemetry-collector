@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -42,9 +43,9 @@ func NewFactory() component.ProcessorFactory {
 
 func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID(typeStr)),
-		SendBatchSize:           defaultSendBatchSize,
-		Timeout:                 defaultTimeout,
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
+		SendBatchSize:     defaultSendBatchSize,
+		Timeout:           defaultTimeout,
 	}
 }
 

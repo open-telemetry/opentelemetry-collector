@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -42,7 +43,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalExtensionConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ExtensionConfigSettings: component.NewExtensionConfigSettings(component.NewID(typeStr)),
+			ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:56888",
 			},

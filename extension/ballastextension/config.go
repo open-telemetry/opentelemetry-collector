@@ -17,12 +17,12 @@ package ballastextension // import "go.opentelemetry.io/collector/extension/ball
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config has the configuration for the ballast extension.
 type Config struct {
-	component.ExtensionConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// SizeMiB is the size, in MiB, of the memory ballast
 	// to be created for this process.

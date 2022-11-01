@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -54,7 +55,7 @@ func NewFactory() component.ProcessorFactory {
 // that the default configuration is expected to fail for this processor.
 func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 	}
 }
 

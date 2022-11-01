@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestBuildExtensions(t *testing.T) {
@@ -109,9 +110,9 @@ func newBadExtensionFactory() component.ExtensionFactory {
 		"bf",
 		func() component.ExtensionConfig {
 			return &struct {
-				component.ExtensionConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 			}{
-				ExtensionConfigSettings: component.NewExtensionConfigSettings(component.NewID("bf")),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID("bf")),
 			}
 		},
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {
@@ -126,9 +127,9 @@ func newCreateErrorExtensionFactory() component.ExtensionFactory {
 		"err",
 		func() component.ExtensionConfig {
 			return &struct {
-				component.ExtensionConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 			}{
-				ExtensionConfigSettings: component.NewExtensionConfigSettings(component.NewID("err")),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID("err")),
 			}
 		},
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {

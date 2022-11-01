@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -71,7 +72,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NoEndpoint",
 			config: Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 				},
@@ -81,7 +82,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -93,7 +94,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "Headers",
 			config: Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					Headers: map[string]string{
@@ -106,7 +107,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "CaCert",
 			config: Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -120,7 +121,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "CertPemFileError",
 			config: Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -136,7 +137,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NoneCompression",
 			config: Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint:    endpoint,
 					Compression: "none",
@@ -146,7 +147,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "GzipCompression",
 			config: Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Gzip,
@@ -156,7 +157,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "SnappyCompression",
 			config: Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Snappy,
@@ -166,7 +167,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "ZstdCompression",
 			config: Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Zstd,

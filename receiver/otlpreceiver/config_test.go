@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -96,7 +97,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalReceiverConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -153,7 +154,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	assert.NoError(t, component.UnmarshalReceiverConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Protocols: Protocols{
 				GRPC: &configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{

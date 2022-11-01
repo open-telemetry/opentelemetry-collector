@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -32,7 +33,7 @@ func TestNewNopExporterFactory(t *testing.T) {
 	require.NotNil(t, factory)
 	assert.Equal(t, component.Type("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &nopExporterConfig{ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID("nop"))}, cfg)
+	assert.Equal(t, &nopExporterConfig{ExporterSettings: config.NewExporterSettings(component.NewID("nop"))}, cfg)
 
 	traces, err := factory.CreateTracesExporter(context.Background(), NewNopExporterCreateSettings(), cfg)
 	require.NoError(t, err)

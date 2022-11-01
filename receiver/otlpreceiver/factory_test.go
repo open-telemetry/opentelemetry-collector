@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -74,7 +75,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: defaultHTTPSettings,
@@ -84,7 +85,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_port",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -100,7 +101,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "invalid_http_port",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -150,7 +151,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: defaultHTTPSettings,
@@ -160,7 +161,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_address",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -176,7 +177,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "invalid_http_address",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -227,7 +228,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: defaultHTTPSettings,
@@ -238,7 +239,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "invalid_grpc_address",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
@@ -255,7 +256,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "invalid_http_address",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -269,7 +270,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "no_next_consumer",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &confighttp.HTTPServerSettings{
@@ -283,8 +284,8 @@ func TestCreateLogReceiver(t *testing.T) {
 		{
 			name: "no_http_or_grcp_config",
 			cfg: &Config{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(typeStr)),
-				Protocols:              Protocols{},
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
+				Protocols:        Protocols{},
 			},
 			wantErr: false,
 			sink:    new(consumertest.LogsSink),

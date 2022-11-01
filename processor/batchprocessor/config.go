@@ -19,11 +19,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for batch processor.
 type Config struct {
-	component.ProcessorConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Timeout sets the time after which a batch will be sent regardless of size.
 	Timeout time.Duration `mapstructure:"timeout"`

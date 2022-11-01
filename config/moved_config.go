@@ -35,23 +35,11 @@ type Receiver = component.ReceiverConfig
 // Deprecated: [v0.64.0] use component.UnmarshalReceiverConfig.
 var UnmarshalReceiver = component.UnmarshalReceiverConfig
 
-// Deprecated: [v0.64.0] use component.ReceiverConfigSettings.
-type ReceiverSettings = component.ReceiverConfigSettings
-
-// Deprecated: [v0.64.0] use component.NewReceiverConfigSettings.
-var NewReceiverSettings = component.NewReceiverConfigSettings
-
 // Deprecated: [v0.64.0] use component.ProcessorConfig.
 type Processor = component.ProcessorConfig
 
 // Deprecated: [v0.64.0] use component.UnmarshalProcessorConfig.
 var UnmarshalProcessor = component.UnmarshalProcessorConfig
-
-// Deprecated: [v0.64.0] use component.ProcessorConfigSettings.
-type ProcessorSettings = component.ProcessorConfigSettings
-
-// Deprecated: [v0.64.0] use component.NewProcessorConfigSettings.
-var NewProcessorSettings = component.NewProcessorConfigSettings
 
 // Deprecated: [v0.64.0] use component.ExporterConfig.
 type Exporter = component.ExporterConfig
@@ -59,23 +47,11 @@ type Exporter = component.ExporterConfig
 // Deprecated: [v0.64.0] use component.UnmarshalExporterConfig.
 var UnmarshalExporter = component.UnmarshalExporterConfig
 
-// Deprecated: [v0.64.0] use component.ExporterConfigSettings.
-type ExporterSettings = component.ExporterConfigSettings
-
-// Deprecated: [v0.64.0] use component.NewExporterConfigSettings.
-var NewExporterSettings = component.NewExporterConfigSettings
-
 // Deprecated: [v0.64.0] use component.ExtensionConfig.
 type Extension = component.ExtensionConfig
 
 // Deprecated: [v0.64.0] use component.UnmarshalExtensionConfig.
 var UnmarshalExtension = component.UnmarshalExtensionConfig
-
-// Deprecated: [v0.64.0] use component.ExtensionConfigSettings.
-type ExtensionSettings = component.ExtensionConfigSettings
-
-// Deprecated: [v0.64.0] use component.NewExtensionConfigSettings.
-var NewExtensionSettings = component.NewExtensionConfigSettings
 
 // Deprecated: [v0.64.0] use component.Type.
 type Type = component.Type

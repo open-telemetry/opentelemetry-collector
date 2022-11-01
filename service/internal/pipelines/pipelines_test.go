@@ -348,9 +348,9 @@ func TestFailToStartAndShutdown(t *testing.T) {
 func newBadReceiverFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory("bf", func() component.ReceiverConfig {
 		return &struct {
-			component.ReceiverConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID("bf")),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID("bf")),
 		}
 	})
 }
@@ -358,9 +358,9 @@ func newBadReceiverFactory() component.ReceiverFactory {
 func newBadProcessorFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory("bf", func() component.ProcessorConfig {
 		return &struct {
-			component.ProcessorConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID("bf")),
+			ProcessorSettings: config.NewProcessorSettings(component.NewID("bf")),
 		}
 	})
 }
@@ -368,9 +368,9 @@ func newBadProcessorFactory() component.ProcessorFactory {
 func newBadExporterFactory() component.ExporterFactory {
 	return component.NewExporterFactory("bf", func() component.ExporterConfig {
 		return &struct {
-			component.ExporterConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID("bf")),
+			ExporterSettings: config.NewExporterSettings(component.NewID("bf")),
 		}
 	})
 }
@@ -378,9 +378,9 @@ func newBadExporterFactory() component.ExporterFactory {
 func newErrReceiverFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory("err", func() component.ReceiverConfig {
 		return &struct {
-			component.ReceiverConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID("bf")),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID("bf")),
 		}
 	},
 		component.WithTracesReceiver(func(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Traces) (component.TracesReceiver, error) {
@@ -398,9 +398,9 @@ func newErrReceiverFactory() component.ReceiverFactory {
 func newErrProcessorFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory("err", func() component.ProcessorConfig {
 		return &struct {
-			component.ProcessorConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID("bf")),
+			ProcessorSettings: config.NewProcessorSettings(component.NewID("bf")),
 		}
 	},
 		component.WithTracesProcessor(func(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Traces) (component.TracesProcessor, error) {
@@ -418,9 +418,9 @@ func newErrProcessorFactory() component.ProcessorFactory {
 func newErrExporterFactory() component.ExporterFactory {
 	return component.NewExporterFactory("err", func() component.ExporterConfig {
 		return &struct {
-			component.ExporterConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID("bf")),
+			ExporterSettings: config.NewExporterSettings(component.NewID("bf")),
 		}
 	},
 		component.WithTracesExporter(func(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {

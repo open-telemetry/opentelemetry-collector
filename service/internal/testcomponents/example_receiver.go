@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -25,7 +26,7 @@ const receiverType = component.Type("examplereceiver")
 
 // ExampleReceiverConfig config for ExampleReceiver.
 type ExampleReceiverConfig struct {
-	component.ReceiverConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
@@ -38,7 +39,7 @@ var ExampleReceiverFactory = component.NewReceiverFactory(
 
 func createReceiverDefaultConfig() component.ReceiverConfig {
 	return &ExampleReceiverConfig{
-		ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID(receiverType)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(receiverType)),
 	}
 }
 

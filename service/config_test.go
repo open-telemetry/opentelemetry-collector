@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -35,7 +36,7 @@ var (
 )
 
 type nopRecvConfig struct {
-	component.ReceiverConfigSettings
+	config.ReceiverSettings
 	validateErr error
 }
 
@@ -44,7 +45,7 @@ func (nc *nopRecvConfig) Validate() error {
 }
 
 type nopExpConfig struct {
-	component.ExporterConfigSettings
+	config.ExporterSettings
 	validateErr error
 }
 
@@ -53,7 +54,7 @@ func (nc *nopExpConfig) Validate() error {
 }
 
 type nopProcConfig struct {
-	component.ProcessorConfigSettings
+	config.ProcessorSettings
 	validateErr error
 }
 
@@ -62,7 +63,7 @@ func (nc *nopProcConfig) Validate() error {
 }
 
 type nopExtConfig struct {
-	component.ExtensionConfigSettings
+	config.ExtensionSettings
 	validateErr error
 }
 
@@ -181,8 +182,8 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Receivers[component.NewID("nop")] = &nopRecvConfig{
-					ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID("nop")),
-					validateErr:            errInvalidRecvConfig,
+					ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
+					validateErr:      errInvalidRecvConfig,
 				}
 				return cfg
 			},
@@ -193,8 +194,8 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Exporters[component.NewID("nop")] = &nopExpConfig{
-					ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID("nop")),
-					validateErr:            errInvalidExpConfig,
+					ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
+					validateErr:      errInvalidExpConfig,
 				}
 				return cfg
 			},
@@ -205,8 +206,8 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Processors[component.NewID("nop")] = &nopProcConfig{
-					ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID("nop")),
-					validateErr:             errInvalidProcConfig,
+					ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
+					validateErr:       errInvalidProcConfig,
 				}
 				return cfg
 			},
@@ -217,8 +218,8 @@ func TestConfigValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Extensions[component.NewID("nop")] = &nopExtConfig{
-					ExtensionConfigSettings: component.NewExtensionConfigSettings(component.NewID("nop")),
-					validateErr:             errInvalidExtConfig,
+					ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
+					validateErr:       errInvalidExtConfig,
 				}
 				return cfg
 			},
@@ -251,22 +252,22 @@ func generateConfig() *Config {
 	return &Config{
 		Receivers: map[component.ID]component.ReceiverConfig{
 			component.NewID("nop"): &nopRecvConfig{
-				ReceiverConfigSettings: component.NewReceiverConfigSettings(component.NewID("nop")),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
 			},
 		},
 		Exporters: map[component.ID]component.ExporterConfig{
 			component.NewID("nop"): &nopExpConfig{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID("nop")),
+				ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
 			},
 		},
 		Processors: map[component.ID]component.ProcessorConfig{
 			component.NewID("nop"): &nopProcConfig{
-				ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID("nop")),
+				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
 			},
 		},
 		Extensions: map[component.ID]component.ExtensionConfig{
 			component.NewID("nop"): &nopExtConfig{
-				ExtensionConfigSettings: component.NewExtensionConfigSettings(component.NewID("nop")),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
 			},
 		},
 		Service: ConfigService{

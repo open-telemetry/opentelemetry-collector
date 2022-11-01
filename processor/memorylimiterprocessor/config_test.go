@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -42,9 +43,9 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalProcessorConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID(typeStr)),
-			CheckInterval:           5 * time.Second,
-			MemoryLimitMiB:          4000,
-			MemorySpikeLimitMiB:     500,
+			ProcessorSettings:   config.NewProcessorSettings(component.NewID(typeStr)),
+			CheckInterval:       5 * time.Second,
+			MemoryLimitMiB:      4000,
+			MemorySpikeLimitMiB: 500,
 		}, cfg)
 }

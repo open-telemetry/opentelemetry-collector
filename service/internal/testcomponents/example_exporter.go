@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -31,7 +32,7 @@ const (
 
 // ExampleExporterConfig config for ExampleExporter.
 type ExampleExporterConfig struct {
-	component.ExporterConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
 // ExampleExporterFactory is factory for ExampleExporter.
@@ -45,7 +46,7 @@ var ExampleExporterFactory = component.NewExporterFactory(
 
 func createExporterDefaultConfig() component.ExporterConfig {
 	return &ExampleExporterConfig{
-		ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 	}
 }
 

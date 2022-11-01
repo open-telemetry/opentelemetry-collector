@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/internal/iruntime"
 )
 
@@ -36,7 +37,7 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionConfigSettings: component.NewExtensionConfigSettings(component.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}
 }
 

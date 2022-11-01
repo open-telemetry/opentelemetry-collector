@@ -16,7 +16,25 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
+
+	"go.opentelemetry.io/collector/confmap"
 )
+
+// ExtensionConfig is the configuration of a component.Extension. Specific extensions must implement
+// this interface and must embed config.ExtensionSettings struct or a struct that extends it.
+type ExtensionConfig interface {
+	identifiable
+	validatable
+
+	privateConfigExtension()
+}
+
+// UnmarshalExtensionConfig helper function to unmarshal an ExtensionConfig.
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalExtensionConfig(conf *confmap.Conf, cfg ExtensionConfig) error {
+	return unmarshal(conf, cfg)
+}
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality

@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -44,33 +45,33 @@ func TestUnmarshalConfig(t *testing.T) {
 		{
 			filename: "config_loglevel.yaml",
 			cfg: &Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
-				LogLevel:               zapcore.DebugLevel,
-				Verbosity:              configtelemetry.LevelDetailed,
-				SamplingInitial:        10,
-				SamplingThereafter:     50,
-				warnLogLevel:           true,
+				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
+				LogLevel:           zapcore.DebugLevel,
+				Verbosity:          configtelemetry.LevelDetailed,
+				SamplingInitial:    10,
+				SamplingThereafter: 50,
+				warnLogLevel:       true,
 			},
 		},
 		{
 			filename: "config_verbosity.yaml",
 			cfg: &Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
-				LogLevel:               zapcore.InfoLevel,
-				Verbosity:              configtelemetry.LevelDetailed,
-				SamplingInitial:        10,
-				SamplingThereafter:     50,
+				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
+				LogLevel:           zapcore.InfoLevel,
+				Verbosity:          configtelemetry.LevelDetailed,
+				SamplingInitial:    10,
+				SamplingThereafter: 50,
 			},
 		},
 		{
 			filename: "loglevel_info.yaml",
 			cfg: &Config{
-				ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
-				LogLevel:               zapcore.InfoLevel,
-				Verbosity:              configtelemetry.LevelNormal,
-				SamplingInitial:        2,
-				SamplingThereafter:     500,
-				warnLogLevel:           true,
+				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
+				LogLevel:           zapcore.InfoLevel,
+				Verbosity:          configtelemetry.LevelNormal,
+				SamplingInitial:    2,
+				SamplingThereafter: 500,
+				warnLogLevel:       true,
 			},
 		},
 		{

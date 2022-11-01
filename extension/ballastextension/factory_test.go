@@ -23,11 +23,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	assert.Equal(t, &Config{ExtensionConfigSettings: component.NewExtensionConfigSettings(component.NewID(typeStr))}, cfg)
+	assert.Equal(t, &Config{ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr))}, cfg)
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)

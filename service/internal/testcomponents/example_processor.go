@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -25,7 +26,7 @@ const procType = "exampleprocessor"
 
 // ExampleProcessorConfig config for ExampleProcessor.
 type ExampleProcessorConfig struct {
-	component.ProcessorConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
 // ExampleProcessorFactory is factory for ExampleProcessor.
@@ -39,7 +40,7 @@ var ExampleProcessorFactory = component.NewProcessorFactory(
 // CreateDefaultConfig creates the default configuration for the Processor.
 func createDefaultConfig() component.ProcessorConfig {
 	return &ExampleProcessorConfig{
-		ProcessorConfigSettings: component.NewProcessorConfigSettings(component.NewID(procType)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(procType)),
 	}
 }
 

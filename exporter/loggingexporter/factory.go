@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -50,11 +51,11 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterConfigSettings: component.NewExporterConfigSettings(component.NewID(typeStr)),
-		LogLevel:               zapcore.InfoLevel,
-		Verbosity:              configtelemetry.LevelNormal,
-		SamplingInitial:        defaultSamplingInitial,
-		SamplingThereafter:     defaultSamplingThereafter,
+		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
+		LogLevel:           zapcore.InfoLevel,
+		Verbosity:          configtelemetry.LevelNormal,
+		SamplingInitial:    defaultSamplingInitial,
+		SamplingThereafter: defaultSamplingThereafter,
 	}
 }
 
