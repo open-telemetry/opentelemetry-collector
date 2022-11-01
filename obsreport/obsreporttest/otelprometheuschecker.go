@@ -55,6 +55,27 @@ func (pc *prometheusChecker) checkReceiverMetrics(receiver config.ComponentID, p
 		pc.checkCounter("receiver_refused_metric_points", droppedMetricPoints, receiverAttrs))
 }
 
+func (pc *prometheusChecker) checkExporterTraces(exporter config.ComponentID, sentSpans, sendFailedSpans int64) error {
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	return multierr.Combine(
+		pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs),
+		pc.checkCounter("exporter_send_failed_spans", sendFailedSpans, exporterAttrs))
+}
+
+func (pc *prometheusChecker) checkExporterLogs(exporter config.ComponentID, sentLogRecords, sendFailedLogRecords int64) error {
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	return multierr.Combine(
+		pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs),
+		pc.checkCounter("exporter_send_failed_log_records", sendFailedLogRecords, exporterAttrs))
+}
+
+func (pc *prometheusChecker) checkExporterMetrics(exporter config.ComponentID, sentMetricPoints, sendFailedMetricPoints int64) error {
+	exporterAttrs := attributesForExporterMetrics(exporter)
+	return multierr.Combine(
+		pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs),
+		pc.checkCounter("exporter_send_failed_metric_points", sendFailedMetricPoints, exporterAttrs))
+}
+
 func (pc *prometheusChecker) checkCounter(expectedMetric string, value int64, attrs []attribute.KeyValue) error {
 	// Forces a flush for the opencensus view data.
 	_, _ = view.RetrieveData(expectedMetric)
@@ -129,5 +150,12 @@ func attributesForReceiverMetrics(receiver config.ComponentID, transport string)
 	return []attribute.KeyValue{
 		attribute.String(receiverTag.Name(), receiver.String()),
 		attribute.String(transportTag.Name(), transport),
+	}
+}
+
+// attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
+func attributesForExporterMetrics(exporter config.ComponentID) []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String(exporterTag.Name(), exporter.String()),
 	}
 }

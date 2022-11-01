@@ -140,38 +140,20 @@ func SetupTelemetry() (TestTelemetry, error) {
 
 // CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckExporterTraces(_ TestTelemetry, exporter config.ComponentID, sentSpans, sendFailedSpans int64) error {
-	exporterTags := tagsForExporterView(exporter)
-	if sendFailedSpans > 0 {
-		return multierr.Combine(
-			checkValueForView(exporterTags, sentSpans, "exporter/sent_spans"),
-			checkValueForView(exporterTags, sendFailedSpans, "exporter/send_failed_spans"))
-	}
-	return checkValueForView(exporterTags, sentSpans, "exporter/sent_spans")
+func CheckExporterTraces(tts TestTelemetry, exporter config.ComponentID, sentSpans, sendFailedSpans int64) error {
+	return tts.otelPrometheusChecker.checkExporterTraces(exporter, sentSpans, sendFailedSpans)
 }
 
 // CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckExporterMetrics(_ TestTelemetry, exporter config.ComponentID, sentMetricsPoints, sendFailedMetricsPoints int64) error {
-	exporterTags := tagsForExporterView(exporter)
-	if sendFailedMetricsPoints > 0 {
-		return multierr.Combine(
-			checkValueForView(exporterTags, sentMetricsPoints, "exporter/sent_metric_points"),
-			checkValueForView(exporterTags, sendFailedMetricsPoints, "exporter/send_failed_metric_points"))
-	}
-	return checkValueForView(exporterTags, sentMetricsPoints, "exporter/sent_metric_points")
+func CheckExporterMetrics(tts TestTelemetry, exporter config.ComponentID, sentMetricsPoints, sendFailedMetricsPoints int64) error {
+	return tts.otelPrometheusChecker.checkExporterMetrics(exporter, sentMetricsPoints, sendFailedMetricsPoints)
 }
 
 // CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckExporterLogs(_ TestTelemetry, exporter config.ComponentID, sentLogRecords, sendFailedLogRecords int64) error {
-	exporterTags := tagsForExporterView(exporter)
-	if sendFailedLogRecords > 0 {
-		return multierr.Combine(
-			checkValueForView(exporterTags, sentLogRecords, "exporter/sent_log_records"),
-			checkValueForView(exporterTags, sendFailedLogRecords, "exporter/send_failed_log_records"))
-	}
-	return checkValueForView(exporterTags, sentLogRecords, "exporter/sent_log_records")
+func CheckExporterLogs(tts TestTelemetry, exporter config.ComponentID, sentLogRecords, sendFailedLogRecords int64) error {
+	return tts.otelPrometheusChecker.checkExporterLogs(exporter, sentLogRecords, sendFailedLogRecords)
 }
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
@@ -268,13 +250,6 @@ func tagsForScraperView(receiver config.ComponentID, scraper config.ComponentID)
 func tagsForProcessorView(processor config.ComponentID) []tag.Tag {
 	return []tag.Tag{
 		{Key: processorTag, Value: processor.String()},
-	}
-}
-
-// tagsForExporterView returns the tags that are needed for the exporter views.
-func tagsForExporterView(exporter config.ComponentID) []tag.Tag {
-	return []tag.Tag{
-		{Key: exporterTag, Value: exporter.String()},
 	}
 }
 
