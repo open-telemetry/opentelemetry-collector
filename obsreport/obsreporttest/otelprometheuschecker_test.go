@@ -28,6 +28,24 @@ func newStubPromChecker() prometheusChecker {
 	return prometheusChecker{
 		promHandler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, _ = w.Write([]byte(`
+# HELP exporter_send_failed_spans Number of spans in failed attempts to send to destination.
+# TYPE exporter_send_failed_spans counter
+exporter_send_failed_spans{exporter="fakeExporter"} 14
+# HELP exporter_sent_spans Number of spans successfully sent to destination.
+# TYPE exporter_sent_spans counter
+exporter_sent_spans{exporter="fakeExporter"} 43
+# HELP exporter_send_failed_metric_points Number of metrics in failed attempts to send to destination.
+# TYPE exporter_send_failed_metric_points counter
+exporter_send_failed_metric_points{exporter="fakeExporter"} 42
+# HELP exporter_sent_metric_points Number of metrics successfully sent to destination.
+# TYPE exporter_sent_metric_points counter
+exporter_sent_metric_points{exporter="fakeExporter"} 8
+# HELP exporter_send_failed_log_records Number of logs in failed attempts to send to destination.
+# TYPE exporter_send_failed_log_records counter
+exporter_send_failed_log_records{exporter="fakeExporter"} 36
+# HELP exporter_sent_log_records Number of logs successfully sent to destination.
+# TYPE exporter_sent_log_records counter
+exporter_sent_log_records{exporter="fakeExporter"} 103
 # HELP receiver_accepted_log_records Number of log records successfully pushed into the pipeline.
 # TYPE receiver_accepted_log_records counter
 receiver_accepted_log_records{receiver="fakeReceiver",transport="fakeTransport"} 102
@@ -57,6 +75,7 @@ gauge_metric 49
 func TestPromChecker(t *testing.T) {
 	pc := newStubPromChecker()
 	receiver := config.NewComponentID("fakeReceiver")
+	exporter := config.NewComponentID("fakeExporter")
 	transport := "fakeTransport"
 
 	assert.NoError(t,
@@ -97,5 +116,20 @@ func TestPromChecker(t *testing.T) {
 	assert.NoError(t,
 		pc.checkReceiverLogs(receiver, transport, 102, 35),
 		"metrics from Receiver Logs should be valid",
+	)
+
+	assert.NoError(t,
+		pc.checkExporterTraces(exporter, 43, 14),
+		"metrics from Exporter Traces should be valid",
+	)
+
+	assert.NoError(t,
+		pc.checkExporterMetrics(exporter, 8, 42),
+		"metrics from Exporter Metrics should be valid",
+	)
+
+	assert.NoError(t,
+		pc.checkExporterLogs(exporter, 103, 36),
+		"metrics from Exporter Logs should be valid",
 	)
 }

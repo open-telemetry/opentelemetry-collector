@@ -64,11 +64,11 @@ type ExporterSettings struct {
 	ExporterCreateSettings component.ExporterCreateSettings
 }
 
+// NewExporter creates a new Exporter.
 func NewExporter(cfg ExporterSettings) *Exporter {
 	return newExporter(cfg, featuregate.GetRegistry())
 }
 
-// NewExporter creates a new Exporter.
 func newExporter(cfg ExporterSettings, registry *featuregate.Registry) *Exporter {
 	exp := &Exporter{
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
