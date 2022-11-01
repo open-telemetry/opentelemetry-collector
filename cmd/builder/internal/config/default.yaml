@@ -12,10 +12,8 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.63.1
   - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.1
 extensions:
-  - import: go.opentelemetry.io/collector/extension/ballastextension
-    gomod: go.opentelemetry.io/collector v0.63.1
-  - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.63.1
+  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.63.1
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.63.1
 processors:
   - import: go.opentelemetry.io/collector/processor/batchprocessor
     gomod: go.opentelemetry.io/collector v0.63.1

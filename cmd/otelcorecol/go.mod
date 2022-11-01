@@ -10,6 +10,8 @@ require (
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.63.1
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.63.1
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.63.1
+	go.opentelemetry.io/collector/extension/ballastextension v0.63.1
+	go.opentelemetry.io/collector/extension/zpagesextension v0.63.1
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.63.1
 	golang.org/x/sys v0.1.0
 )
@@ -89,6 +91,10 @@ replace go.opentelemetry.io/collector/exporter/loggingexporter => ../../exporter
 replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
 
 replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
+
+replace go.opentelemetry.io/collector/extension/ballastextension => ../../extension/ballastextension
+
+replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
