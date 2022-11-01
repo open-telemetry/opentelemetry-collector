@@ -18,5 +18,5 @@ subtext: |-
   - `go.opentelemetry.io/collector/extension/ballastextension`
   - `go.opentelemetry.io/collector/extension/zpagesextension`
   
-  If using this receiver, modify your Collector builder configuration to use `gomod` directly, such as:
+  If using one of these extensions, modify your Collector builder configuration to use `gomod` directly, such as:
   - `gomod: go.opentelemetry.io/collector/extension/ballastextension v0.64.0`
