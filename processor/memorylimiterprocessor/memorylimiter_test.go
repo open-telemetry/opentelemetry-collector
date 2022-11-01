@@ -430,9 +430,9 @@ type host struct {
 	component.Host
 }
 
-func (h *host) GetExtensions() map[config.ComponentID]component.Extension {
-	ret := make(map[config.ComponentID]component.Extension)
-	ret[config.NewComponentID("ballast")] = &ballastExtension{ballastSize: h.ballastSize}
+func (h *host) GetExtensions() map[component.ID]component.Extension {
+	ret := make(map[component.ID]component.Extension)
+	ret[component.NewID("ballast")] = &ballastExtension{ballastSize: h.ballastSize}
 	return ret
 }
 

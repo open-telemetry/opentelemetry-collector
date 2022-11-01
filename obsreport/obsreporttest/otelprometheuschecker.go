@@ -55,21 +55,21 @@ func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protoco
 		pc.checkCounter("receiver_refused_metric_points", droppedMetricPoints, receiverAttrs))
 }
 
-func (pc *prometheusChecker) checkExporterTraces(exporter config.ComponentID, sentSpans, sendFailedSpans int64) error {
+func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sentSpans, sendFailedSpans int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	return multierr.Combine(
 		pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs),
 		pc.checkCounter("exporter_send_failed_spans", sendFailedSpans, exporterAttrs))
 }
 
-func (pc *prometheusChecker) checkExporterLogs(exporter config.ComponentID, sentLogRecords, sendFailedLogRecords int64) error {
+func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sentLogRecords, sendFailedLogRecords int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	return multierr.Combine(
 		pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs),
 		pc.checkCounter("exporter_send_failed_log_records", sendFailedLogRecords, exporterAttrs))
 }
 
-func (pc *prometheusChecker) checkExporterMetrics(exporter config.ComponentID, sentMetricPoints, sendFailedMetricPoints int64) error {
+func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sentMetricPoints, sendFailedMetricPoints int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	return multierr.Combine(
 		pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs),
@@ -154,7 +154,7 @@ func attributesForReceiverMetrics(receiver component.ID, transport string) []att
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
-func attributesForExporterMetrics(exporter config.ComponentID) []attribute.KeyValue {
+func attributesForExporterMetrics(exporter component.ID) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.String(exporterTag.Name(), exporter.String()),
 	}
