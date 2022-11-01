@@ -71,12 +71,7 @@ func allViews() []*view.View {
 	views = append(views, receiverViews()...)
 
 	// Scraper views.
-	measures = []*stats.Int64Measure{
-		obsmetrics.ScraperScrapedMetricPoints,
-		obsmetrics.ScraperErroredMetricPoints,
-	}
-	tagKeys = []tag.Key{obsmetrics.TagKeyReceiver, obsmetrics.TagKeyScraper}
-	views = append(views, genViews(measures, tagKeys, view.Sum())...)
+	views = append(views, scraperViews()...)
 
 	// Exporter views.
 	measures = []*stats.Int64Measure{
@@ -132,6 +127,20 @@ func receiverViews() []*view.View {
 	tagKeys := []tag.Key{
 		obsmetrics.TagKeyReceiver, obsmetrics.TagKeyTransport,
 	}
+
+	return genViews(measures, tagKeys, view.Sum())
+}
+
+func scraperViews() []*view.View {
+	if featuregate.GetRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
+		return nil
+	}
+
+	measures := []*stats.Int64Measure{
+		obsmetrics.ScraperScrapedMetricPoints,
+		obsmetrics.ScraperErroredMetricPoints,
+	}
+	tagKeys := []tag.Key{obsmetrics.TagKeyReceiver, obsmetrics.TagKeyScraper}
 
 	return genViews(measures, tagKeys, view.Sum())
 }

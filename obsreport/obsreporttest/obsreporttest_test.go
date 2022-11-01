@@ -32,9 +32,30 @@ const (
 )
 
 var (
-	receiver = component.NewID("fakeReicever")
-	exporter = component.NewID("fakeExporter")
+	scraper = config.NewComponentID("fakeScraper")
+	receiver = config.NewComponentID("fakeReicever")
+	exporter = config.NewComponentID("fakeExporter")
 )
+
+func TestCheckScraperMetricsViews(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	s := obsreport.NewScraper(obsreport.ScraperSettings{
+		ReceiverID:             receiver,
+		Scraper:                scraper,
+		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+	})
+	ctx := s.StartMetricsOp(context.Background())
+	require.NotNil(t, ctx)
+	s.EndMetricsOp(ctx, 7, nil)
+
+	assert.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, 7, 0))
+	assert.Error(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, 7, 7))
+	assert.Error(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, 0, 0))
+	assert.Error(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, 0, 7))
+}
 
 func TestCheckReceiverTracesViews(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()

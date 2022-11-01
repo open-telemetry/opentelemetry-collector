@@ -219,62 +219,59 @@ func TestReceiveMetricsOp(t *testing.T) {
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+		defer parentSpan.End()
 
-	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
-	defer parentSpan.End()
-
-	params := []testParams{
-		{items: 23, err: partialErrFake},
-		{items: 29, err: errFake},
-		{items: 15, err: nil},
-	}
-	for i := range params {
-		scrp, serr := NewScraper(ScraperSettings{
-			ReceiverID:             receiver,
-			Scraper:                scraper,
-			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
-		})
-		require.NoError(t, serr)
-		ctx := scrp.StartMetricsOp(parentCtx)
-		assert.NotNil(t, ctx)
-		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
-	}
-
-	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
-
-	var scrapedMetricPoints, erroredMetricPoints int
-	for i, span := range spans {
-		assert.Equal(t, "scraper/"+receiver.String()+"/"+scraper.String()+"/MetricsScraped", span.Name())
-		switch {
-		case params[i].err == nil:
-			scrapedMetricPoints += params[i].items
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(0)})
-			assert.Equal(t, codes.Unset, span.Status().Code)
-		case errors.Is(params[i].err, errFake):
-			erroredMetricPoints += params[i].items
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(0)})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-			assert.Equal(t, codes.Error, span.Status().Code)
-			assert.Equal(t, params[i].err.Error(), span.Status().Description)
-
-		case errors.Is(params[i].err, partialErrFake):
-			scrapedMetricPoints += params[i].items
-			erroredMetricPoints++
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(1)})
-			assert.Equal(t, codes.Error, span.Status().Code)
-			assert.Equal(t, params[i].err.Error(), span.Status().Description)
-		default:
-			t.Fatalf("unexpected err param: %v", params[i].err)
+		params := []testParams{
+			{items: 23, err: partialErrFake},
+			{items: 29, err: errFake},
+			{items: 15, err: nil},
 		}
-	}
+		for i := range params {
+			scrp := newScraper(ScraperSettings{
+				ReceiverID:             receiver,
+				Scraper:                scraper,
+				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+			}, registry)
+			ctx := scrp.StartMetricsOp(parentCtx)
+			assert.NotNil(t, ctx)
+			scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
+		}
 
-	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
+		spans := tt.SpanRecorder.Ended()
+		require.Equal(t, len(params), len(spans))
+
+		var scrapedMetricPoints, erroredMetricPoints int
+		for i, span := range spans {
+			assert.Equal(t, "scraper/"+receiver.String()+"/"+scraper.String()+"/MetricsScraped", span.Name())
+			switch {
+			case params[i].err == nil:
+				scrapedMetricPoints += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(0)})
+				assert.Equal(t, codes.Unset, span.Status().Code)
+			case errors.Is(params[i].err, errFake):
+				erroredMetricPoints += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				assert.Equal(t, codes.Error, span.Status().Code)
+				assert.Equal(t, params[i].err.Error(), span.Status().Description)
+
+			case errors.Is(params[i].err, partialErrFake):
+				scrapedMetricPoints += params[i].items
+				erroredMetricPoints++
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(1)})
+				assert.Equal(t, codes.Error, span.Status().Code)
+				assert.Equal(t, params[i].err.Error(), span.Status().Description)
+			default:
+				t.Fatalf("unexpected err param: %v", params[i].err)
+			}
+		}
+
+		require.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
+	})
 }
 
 func TestExportTraceDataOp(t *testing.T) {
