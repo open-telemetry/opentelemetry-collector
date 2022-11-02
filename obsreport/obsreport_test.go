@@ -84,11 +84,12 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			{items: 42, err: nil},
 		}
 		for i, param := range params {
-			rec := newReceiver(ReceiverSettings{
+			rec, err := newReceiver(ReceiverSettings{
 				ReceiverID:             receiver,
 				Transport:              transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			}, registry)
+			require.NoError(t, err)
 			ctx := rec.StartTracesOp(parentCtx)
 			assert.NotNil(t, ctx)
 			rec.EndTracesOp(ctx, format, params[i].items, param.err)
@@ -130,11 +131,13 @@ func TestReceiveLogsOp(t *testing.T) {
 			{items: 42, err: nil},
 		}
 		for i, param := range params {
-			rec := newReceiver(ReceiverSettings{
+			rec, err := newReceiver(ReceiverSettings{
 				ReceiverID:             receiver,
 				Transport:              transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			}, registry)
+			require.NoError(t, err)
+
 			ctx := rec.StartLogsOp(parentCtx)
 			assert.NotNil(t, ctx)
 			rec.EndLogsOp(ctx, format, params[i].items, param.err)
@@ -176,11 +179,13 @@ func TestReceiveMetricsOp(t *testing.T) {
 			{items: 29, err: nil},
 		}
 		for i, param := range params {
-			rec := newReceiver(ReceiverSettings{
+			rec, err := newReceiver(ReceiverSettings{
 				ReceiverID:             receiver,
 				Transport:              transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			}, registry)
+			require.NoError(t, err)
+
 			ctx := rec.StartMetricsOp(parentCtx)
 			assert.NotNil(t, ctx)
 			rec.EndMetricsOp(ctx, format, params[i].items, param.err)
@@ -276,10 +281,11 @@ func TestExportTraceDataOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep := newExporter(ExporterSettings{
+		obsrep, err := newExporter(ExporterSettings{
 			ExporterID:             exporter,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, registry)
+		require.NoError(t, err)
 
 		params := []testParams{
 			{items: 22, err: nil},
@@ -324,10 +330,11 @@ func TestExportMetricsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep := newExporter(ExporterSettings{
+		obsrep, err := newExporter(ExporterSettings{
 			ExporterID:             exporter,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, registry)
+		require.NoError(t, err)
 
 		params := []testParams{
 			{items: 17, err: nil},
@@ -372,10 +379,11 @@ func TestExportLogsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep := newExporter(ExporterSettings{
+		obsrep, err := newExporter(ExporterSettings{
 			ExporterID:             exporter,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, registry)
+		require.NoError(t, err)
 
 		params := []testParams{
 			{items: 17, err: nil},
