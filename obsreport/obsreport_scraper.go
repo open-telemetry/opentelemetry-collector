@@ -46,8 +46,11 @@ type ScraperSettings struct {
 	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
-// NewScraper creates a new Scraper.
-func NewScraper(cfg ScraperSettings) *Scraper {
+// Deprecated: [v0.64.0] use MustNewScraper.
+var NewScraper = MustNewScraper
+
+// MustNewScraper creates a new Scraper.
+func MustNewScraper(cfg ScraperSettings) *Scraper {
 	return &Scraper{
 		level:      cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		receiverID: cfg.ReceiverID,

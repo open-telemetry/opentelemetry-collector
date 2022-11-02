@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -76,12 +77,26 @@ type ReceiverSettings struct {
 	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
-// NewReceiver creates a new Receiver.
+// Deprecated: [v0.64.0] use MustNewReceiver.
 func NewReceiver(cfg ReceiverSettings) *Receiver {
-	return newReceiver(cfg, featuregate.GetRegistry())
+	rcv, err := newReceiver(cfg, featuregate.GetRegistry())
+	if err != nil && cfg.ReceiverCreateSettings.Logger != nil {
+		cfg.ReceiverCreateSettings.Logger.Warn("Error creating an obsreport.Receiver", zap.Error(err))
+	}
+	return rcv
 }
 
-func newReceiver(cfg ReceiverSettings, registry *featuregate.Registry) *Receiver {
+// MustNewReceiver creates a new Receiver.
+func MustNewReceiver(cfg ReceiverSettings) *Receiver {
+	rcv, err := newReceiver(cfg, featuregate.GetRegistry())
+	if err != nil {
+		panic(err)
+	}
+
+	return rcv
+}
+
+func newReceiver(cfg ReceiverSettings, registry *featuregate.Registry) (*Receiver, error) {
 	rec := &Receiver{
 		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
@@ -102,64 +117,63 @@ func newReceiver(cfg ReceiverSettings, registry *featuregate.Registry) *Receiver
 		},
 	}
 
-	rec.createOtelMetrics()
+	if err := rec.createOtelMetrics(); err != nil {
+		return nil, err
+	}
 
-	return rec
+	return rec, nil
 }
 
-func (rec *Receiver) createOtelMetrics() {
+func (rec *Receiver) createOtelMetrics() error {
 	if !rec.useOtelForMetrics {
-		return
+		return nil
 	}
 
-	var err error
-	handleError := func(metricName string, err error) {
-		if err != nil {
-			rec.logger.Warn("failed to create otel instrument", zap.Error(err), zap.String("metric", metricName))
-		}
-	}
+	var errors, err error
 
 	rec.acceptedSpansCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedSpansKey,
 		instrument.WithDescription("Number of spans successfully pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.AcceptedSpansKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.refusedSpansCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey,
 		instrument.WithDescription("Number of spans that could not be pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.acceptedMetricPointsCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.refusedMetricPointsCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey,
 		instrument.WithDescription("Number of metric points that could not be pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.acceptedLogRecordsCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey,
 		instrument.WithDescription("Number of log records successfully pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.refusedLogRecordsCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey,
 		instrument.WithDescription("Number of log records that could not be pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey, err)
+	errors = multierr.Append(errors, err)
+
+	return errors
 }
 
 // StartTracesOp is called when a request is received from a client.

@@ -84,11 +84,12 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			{items: 42, err: nil},
 		}
 		for i, param := range params {
-			rec := newReceiver(ReceiverSettings{
+			rec, err := newReceiver(ReceiverSettings{
 				ReceiverID:             receiver,
 				Transport:              transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			}, registry)
+			require.NoError(t, err)
 			ctx := rec.StartTracesOp(parentCtx)
 			assert.NotNil(t, ctx)
 			rec.EndTracesOp(ctx, format, params[i].items, param.err)
@@ -130,11 +131,13 @@ func TestReceiveLogsOp(t *testing.T) {
 			{items: 42, err: nil},
 		}
 		for i, param := range params {
-			rec := newReceiver(ReceiverSettings{
+			rec, err := newReceiver(ReceiverSettings{
 				ReceiverID:             receiver,
 				Transport:              transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			}, registry)
+			require.NoError(t, err)
+
 			ctx := rec.StartLogsOp(parentCtx)
 			assert.NotNil(t, ctx)
 			rec.EndLogsOp(ctx, format, params[i].items, param.err)
@@ -176,11 +179,13 @@ func TestReceiveMetricsOp(t *testing.T) {
 			{items: 29, err: nil},
 		}
 		for i, param := range params {
-			rec := newReceiver(ReceiverSettings{
+			rec, err := newReceiver(ReceiverSettings{
 				ReceiverID:             receiver,
 				Transport:              transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			}, registry)
+			require.NoError(t, err)
+
 			ctx := rec.StartMetricsOp(parentCtx)
 			assert.NotNil(t, ctx)
 			rec.EndMetricsOp(ctx, format, params[i].items, param.err)
@@ -227,7 +232,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		scrp := NewScraper(ScraperSettings{
+		scrp := MustNewScraper(ScraperSettings{
 			ReceiverID:             receiver,
 			Scraper:                scraper,
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
@@ -276,10 +281,11 @@ func TestExportTraceDataOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep := newExporter(ExporterSettings{
+		obsrep, err := newExporter(ExporterSettings{
 			ExporterID:             exporter,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, registry)
+		require.NoError(t, err)
 
 		params := []testParams{
 			{items: 22, err: nil},
@@ -324,10 +330,11 @@ func TestExportMetricsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep := newExporter(ExporterSettings{
+		obsrep, err := newExporter(ExporterSettings{
 			ExporterID:             exporter,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, registry)
+		require.NoError(t, err)
 
 		params := []testParams{
 			{items: 17, err: nil},
@@ -372,10 +379,11 @@ func TestExportLogsOp(t *testing.T) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
-		obsrep := newExporter(ExporterSettings{
+		obsrep, err := newExporter(ExporterSettings{
 			ExporterID:             exporter,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, registry)
+		require.NoError(t, err)
 
 		params := []testParams{
 			{items: 17, err: nil},
@@ -430,7 +438,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for i := range params {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		rec := NewReceiver(ReceiverSettings{
+		rec := MustNewReceiver(ReceiverSettings{
 			ReceiverID:             receiver,
 			Transport:              transport,
 			LongLivedCtx:           true,
@@ -477,7 +485,7 @@ func TestProcessorTraceData(t *testing.T) {
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	obsrep := NewProcessor(ProcessorSettings{
+	obsrep := MustNewProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -497,7 +505,7 @@ func TestProcessorMetricsData(t *testing.T) {
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	obsrep := NewProcessor(ProcessorSettings{
+	obsrep := MustNewProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -539,7 +547,7 @@ func TestProcessorLogRecords(t *testing.T) {
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	obsrep := NewProcessor(ProcessorSettings{
+	obsrep := MustNewProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
