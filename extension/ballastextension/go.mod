@@ -23,7 +23,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/shirou/gopsutil/v3 v3.22.9 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opentelemetry.io/collector/pdata v0.63.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
