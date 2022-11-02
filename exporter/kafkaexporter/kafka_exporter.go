@@ -28,6 +28,15 @@ import (
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
+type kafkaErrors struct {
+	count int
+	err   string
+}
+
+func (ke kafkaErrors) Error() string {
+	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
+}
+
 // kafkaTracesProducer uses sarama to produce trace messages to Kafka.
 type kafkaTracesProducer struct {
 	producer   sarama.SyncProducer
@@ -73,6 +82,34 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Met
 }
 
 func (e *kafkaMetricsProducer) Close(context.Context) error {
+	return e.producer.Close()
+}
+
+// kafkaLogsProducer uses sarama to produce logs messages to kafka
+type kafkaLogsProducer struct {
+	producer   sarama.SyncProducer
+	topic      string
+	marshaller LogsMarshaller
+	logger     *zap.Logger
+}
+
+func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) (int, error) {
+	if value, exist := ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Get("metrics"); exist {
+		metricLen := value.ArrayVal().Len()
+		messages := make([]Message, metricLen)
+		for i := 0; i < value.ArrayVal().Len(); i++ {
+			messages[i].Value = []byte(value.ArrayVal().At(i).StringVal())
+		}
+
+		err := e.producer.SendMessages(producerMessages(messages, e.topic))
+		if err != nil {
+			return ld.LogRecordCount(), err
+		}
+	}
+	return 0, nil
+}
+
+func (e *kafkaLogsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
@@ -140,6 +177,26 @@ func newTracesExporter(config Config, params component.ExporterCreateParams, mar
 		marshaller: marshaller,
 		logger:     params.Logger,
 	}, nil
+}
+
+// newLogsExporter creates Kafka exporter.
+func newLogsExporter(config Config, params component.ExporterCreateParams, marshallers map[string]LogsMarshaller) (*kafkaLogsProducer, error) {
+	marshaller := marshallers[config.Encoding]
+	if marshaller == nil {
+		return nil, errUnrecognizedEncoding
+	}
+	producer, err := newSaramaProducer(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &kafkaLogsProducer{
+		producer:   producer,
+		topic:      config.Topic,
+		marshaller: marshaller,
+		logger:     params.Logger,
+	}, nil
+
 }
 
 func producerMessages(messages []Message, topic string) []*sarama.ProducerMessage {
