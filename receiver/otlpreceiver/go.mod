@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector v0.63.1
 	go.opentelemetry.io/collector/pdata v0.63.1
 	go.opentelemetry.io/collector/semconv v0.63.1
 	go.uber.org/zap v1.23.0
