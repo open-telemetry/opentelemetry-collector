@@ -58,3 +58,18 @@ func (m *otlpMetricsPbMarshaller) Marshal(metrics pdata.Metrics) ([]Message, err
 	}
 	return []Message{{Value: bts}}, nil
 }
+
+type otlpLogsPbMarshaller struct {
+}
+
+func (m *otlpLogsPbMarshaller) Encoding() string {
+	return defaultEncoding
+}
+
+func (m *otlpLogsPbMarshaller) Marshal(ld pdata.Logs) ([]Message, error) {
+	bts, err := ld.ToOtlpProtoBytes()
+	if err != nil {
+		return nil, err
+	}
+	return []Message{{Value: bts}}, nil
+}
