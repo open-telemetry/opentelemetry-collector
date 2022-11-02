@@ -64,8 +64,11 @@ type ExporterSettings struct {
 	ExporterCreateSettings component.ExporterCreateSettings
 }
 
-// NewExporter creates a new Exporter.
-func NewExporter(cfg ExporterSettings) *Exporter {
+// Deprecated: [v0.64.0] use MustNewExporter.
+var NewExporter = MustNewExporter
+
+// MustNewExporter creates a new Exporter.
+func MustNewExporter(cfg ExporterSettings) *Exporter {
 	return newExporter(cfg, featuregate.GetRegistry())
 }
 

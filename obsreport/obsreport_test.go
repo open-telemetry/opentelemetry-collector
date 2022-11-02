@@ -227,7 +227,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		scrp := NewScraper(ScraperSettings{
+		scrp := MustNewScraper(ScraperSettings{
 			ReceiverID:             receiver,
 			Scraper:                scraper,
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
@@ -430,7 +430,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for i := range params {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		rec := NewReceiver(ReceiverSettings{
+		rec := MustNewReceiver(ReceiverSettings{
 			ReceiverID:             receiver,
 			Transport:              transport,
 			LongLivedCtx:           true,
@@ -477,7 +477,7 @@ func TestProcessorTraceData(t *testing.T) {
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	obsrep := NewProcessor(ProcessorSettings{
+	obsrep := MustNewProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -497,7 +497,7 @@ func TestProcessorMetricsData(t *testing.T) {
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	obsrep := NewProcessor(ProcessorSettings{
+	obsrep := MustNewProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
@@ -539,7 +539,7 @@ func TestProcessorLogRecords(t *testing.T) {
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	obsrep := NewProcessor(ProcessorSettings{
+	obsrep := MustNewProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})

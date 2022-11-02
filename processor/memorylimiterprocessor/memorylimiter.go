@@ -122,7 +122,7 @@ func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memo
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
 		forceDrop:      atomic.NewBool(false),
-		obsrep: obsreport.NewProcessor(obsreport.ProcessorSettings{
+		obsrep: obsreport.MustNewProcessor(obsreport.ProcessorSettings{
 			ProcessorID:             cfg.ID(),
 			ProcessorCreateSettings: set,
 		}),

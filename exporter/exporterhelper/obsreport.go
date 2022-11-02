@@ -99,7 +99,7 @@ func newObsExporter(cfg obsreport.ExporterSettings, insts *instruments) *obsExpo
 	failedToEnqueueLogRecordsEntry, _ := insts.failedToEnqueueLogRecords.GetEntry(labelValue)
 
 	return &obsExporter{
-		Exporter:                         obsreport.NewExporter(cfg),
+		Exporter:                         obsreport.MustNewExporter(cfg),
 		failedToEnqueueTraceSpansEntry:   failedToEnqueueTraceSpansEntry,
 		failedToEnqueueMetricPointsEntry: failedToEnqueueMetricPointsEntry,
 		failedToEnqueueLogRecordsEntry:   failedToEnqueueLogRecordsEntry,

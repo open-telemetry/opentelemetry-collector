@@ -76,8 +76,11 @@ type ReceiverSettings struct {
 	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
-// NewReceiver creates a new Receiver.
-func NewReceiver(cfg ReceiverSettings) *Receiver {
+// Deprecated: [v0.64.0] use MustNewReceiver.
+var NewReceiver = MustNewReceiver
+
+// MustNewReceiver creates a new Receiver.
+func MustNewReceiver(cfg ReceiverSettings) *Receiver {
 	return newReceiver(cfg, featuregate.GetRegistry())
 }
 
