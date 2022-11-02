@@ -49,3 +49,7 @@ replace go.opentelemetry.io/collector/extension/ballastextension => ../../extens
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/semconv => ../../semconv
+
+replace go.opentelemetry.io/collector/processor/batchprocessor => ../batchprocessor
+
+replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
