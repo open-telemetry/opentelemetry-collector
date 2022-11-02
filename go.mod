@@ -20,8 +20,8 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.63.1
-	go.opentelemetry.io/collector/extension/zpagesextension v0.63.1
+	go.opentelemetry.io/collector/extension/ballastextension v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/extension/zpagesextension v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v0.63.1
 	go.opentelemetry.io/collector/semconv v0.63.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4
