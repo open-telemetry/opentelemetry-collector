@@ -81,7 +81,7 @@ type ReceiverSettings struct {
 func NewReceiver(cfg ReceiverSettings) *Receiver {
 	rcv, err := newReceiver(cfg, featuregate.GetRegistry())
 	if err != nil && cfg.ReceiverCreateSettings.Logger != nil {
-		cfg.ReceiverCreateSettings.Logger.Warn("Error creating an obsreport.Exporter", zap.Error(err))
+		cfg.ReceiverCreateSettings.Logger.Warn("Error creating an obsreport.Receiver", zap.Error(err))
 	}
 	return rcv
 }
