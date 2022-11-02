@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRegistry(t *testing.T) {
@@ -155,9 +156,16 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			stage:     Stable,
 			shouldErr: true,
 		},
+		{
+			name:      "Duplicate gate",
+			id:        "existing-gate",
+			stage:     Stable,
+			shouldErr: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			r := NewRegistry()
+			require.NoError(t, r.RegisterID("existing-gate", Beta))
 			if tc.shouldErr {
 				assert.Error(t, r.RegisterID(tc.id, tc.stage, tc.opts...), "Must error when registering gate")
 				assert.Panics(t, func() {
