@@ -1542,6 +1542,11 @@ func (ms HistogramDataPoint) SetSum(v float64) {
 	ms.getOrig().Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
 
+// RemoveSum removes the sum associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) RemoveSum() {
+	ms.getOrig().Sum_ = nil
+}
+
 // BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
@@ -1583,6 +1588,11 @@ func (ms HistogramDataPoint) SetMin(v float64) {
 	ms.getOrig().Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
 }
 
+// RemoveMin removes the min associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) RemoveMin() {
+	ms.getOrig().Min_ = nil
+}
+
 // Max returns the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Max() float64 {
 	return ms.getOrig().GetMax()
@@ -1597,6 +1607,11 @@ func (ms HistogramDataPoint) HasMax() bool {
 // SetMax replaces the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) SetMax(v float64) {
 	ms.getOrig().Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
+}
+
+// RemoveMax removes the max associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) RemoveMax() {
+	ms.getOrig().Max_ = nil
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
@@ -1850,6 +1865,11 @@ func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
 	ms.getOrig().Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
 }
 
+// RemoveSum removes the sum associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) RemoveSum() {
+	ms.getOrig().Sum_ = nil
+}
+
 // Scale returns the scale associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Scale() int32 {
 	return ms.getOrig().Scale
@@ -1911,6 +1931,11 @@ func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
 	ms.getOrig().Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
 }
 
+// RemoveMin removes the min associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) RemoveMin() {
+	ms.getOrig().Min_ = nil
+}
+
 // Max returns the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Max() float64 {
 	return ms.getOrig().GetMax()
@@ -1925,6 +1950,11 @@ func (ms ExponentialHistogramDataPoint) HasMax() bool {
 // SetMax replaces the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
 	ms.getOrig().Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
+}
+
+// RemoveMax removes the max associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) RemoveMax() {
+	ms.getOrig().Max_ = nil
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
