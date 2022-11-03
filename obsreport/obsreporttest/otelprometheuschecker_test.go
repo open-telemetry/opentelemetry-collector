@@ -16,64 +16,37 @@ package obsreporttest // import "go.opentelemetry.io/collector/obsreport/obsrepo
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.opentelemetry.io/collector/config"
 )
 
-func newStubPromChecker() prometheusChecker {
+func newStubPromChecker() (prometheusChecker, error) {
+	promBytes, err := os.ReadFile(filepath.Join("testdata", "prometheus_response"))
+	if err != nil {
+		return prometheusChecker{}, err
+	}
+
+	promResponse := strings.ReplaceAll(string(promBytes), "\r\n", "\n")
+
 	return prometheusChecker{
 		promHandler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			_, _ = w.Write([]byte(`
-# HELP exporter_send_failed_spans Number of spans in failed attempts to send to destination.
-# TYPE exporter_send_failed_spans counter
-exporter_send_failed_spans{exporter="fakeExporter"} 14
-# HELP exporter_sent_spans Number of spans successfully sent to destination.
-# TYPE exporter_sent_spans counter
-exporter_sent_spans{exporter="fakeExporter"} 43
-# HELP exporter_send_failed_metric_points Number of metrics in failed attempts to send to destination.
-# TYPE exporter_send_failed_metric_points counter
-exporter_send_failed_metric_points{exporter="fakeExporter"} 42
-# HELP exporter_sent_metric_points Number of metrics successfully sent to destination.
-# TYPE exporter_sent_metric_points counter
-exporter_sent_metric_points{exporter="fakeExporter"} 8
-# HELP exporter_send_failed_log_records Number of logs in failed attempts to send to destination.
-# TYPE exporter_send_failed_log_records counter
-exporter_send_failed_log_records{exporter="fakeExporter"} 36
-# HELP exporter_sent_log_records Number of logs successfully sent to destination.
-# TYPE exporter_sent_log_records counter
-exporter_sent_log_records{exporter="fakeExporter"} 103
-# HELP receiver_accepted_log_records Number of log records successfully pushed into the pipeline.
-# TYPE receiver_accepted_log_records counter
-receiver_accepted_log_records{receiver="fakeReceiver",transport="fakeTransport"} 102
-# HELP receiver_accepted_metric_points Number of metric points successfully pushed into the pipeline.
-# TYPE receiver_accepted_metric_points counter
-receiver_accepted_metric_points{receiver="fakeReceiver",transport="fakeTransport"} 7
-# HELP receiver_accepted_spans Number of spans successfully pushed into the pipeline.
-# TYPE receiver_accepted_spans counter
-receiver_accepted_spans{receiver="fakeReceiver",transport="fakeTransport"} 42
-# HELP receiver_refused_log_records Number of log records that could not be pushed into the pipeline.
-# TYPE receiver_refused_log_records counter
-receiver_refused_log_records{receiver="fakeReceiver",transport="fakeTransport"} 35
-# HELP receiver_refused_metric_points Number of metric points that could not be pushed into the pipeline.
-# TYPE receiver_refused_metric_points counter
-receiver_refused_metric_points{receiver="fakeReceiver",transport="fakeTransport"} 41
-# HELP receiver_refused_spans Number of spans that could not be pushed into the pipeline.
-# TYPE receiver_refused_spans counter
-receiver_refused_spans{receiver="fakeReceiver",transport="fakeTransport"} 13
-# HELP gauge_metric A simple gauge metric
-# TYPE gauge_metric gauge
-gauge_metric 49
-`))
+			_, _ = w.Write([]byte(promResponse))
 		}),
-	}
+	}, nil
 }
 
 func TestPromChecker(t *testing.T) {
-	pc := newStubPromChecker()
+	pc, err := newStubPromChecker()
+	require.NoError(t, err)
+
 	receiver := config.NewComponentID("fakeReceiver")
 	exporter := config.NewComponentID("fakeExporter")
 	transport := "fakeTransport"
