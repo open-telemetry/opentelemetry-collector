@@ -406,7 +406,7 @@ func TestGRPCServerWarning(t *testing.T) {
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
-			opts, err := test.settings.ToServerOption(componenttest.NewNopHost(), set)
+			opts, err := test.settings.toServerOption(componenttest.NewNopHost(), set)
 			require.NoError(t, err)
 			require.NotNil(t, opts)
 			_ = grpc.NewServer(opts...)
