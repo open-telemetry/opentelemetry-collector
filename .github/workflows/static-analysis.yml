@@ -1,0 +1,24 @@
+name: Static Analysis
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  sonarqube-analysis:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Checkout Hypertrace actions
+        uses: actions/checkout@v3
+        with:
+          repository: hypertrace/github-actions
+          path: .github/actions
+
+      - name: GoSec Scanner
+        uses: ./.github/actions/gosec-scanner
