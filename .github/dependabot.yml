@@ -31,11 +31,23 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/ballastextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/zpagesextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/tools"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pdata"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/otlpreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

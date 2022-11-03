@@ -14,23 +14,6 @@
 
 package config // import "go.opentelemetry.io/collector/config"
 
-import (
-	"go.opentelemetry.io/collector/service/telemetry"
-)
-
-// Service defines the configurable components of the service.
-// Deprecated: [v0.52.0] Use service.ConfigService
-type Service struct {
-	// Telemetry is the configuration for collector's own telemetry.
-	Telemetry telemetry.Config `mapstructure:"telemetry"`
-
-	// Extensions are the ordered list of extensions configured for the service.
-	Extensions []ComponentID `mapstructure:"extensions"`
-
-	// Pipelines are the set of data pipelines configured for the service.
-	Pipelines map[ComponentID]*Pipeline `mapstructure:"pipelines"`
-}
-
 // Pipeline defines a single pipeline.
 // Deprecated: [v0.52.0] Use service.ConfigServicePipeline
 type Pipeline struct {

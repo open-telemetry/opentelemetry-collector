@@ -72,12 +72,3 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 func (ms ExportRequest) Traces() ptrace.Traces {
 	return ptrace.Traces(internal.NewTraces(ms.orig))
 }
-
-// Deprecated: [v0.63.0] use ExportRequest.
-type Request = ExportRequest
-
-// Deprecated: [v0.63.0] use NewExportRequest.
-var NewRequest = NewExportRequest
-
-// Deprecated: [v0.63.0] use NewExportRequestFromTraces.
-var NewRequestFromTraces = NewExportRequestFromTraces

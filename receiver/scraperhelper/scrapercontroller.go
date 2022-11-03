@@ -110,7 +110,7 @@ func NewScraperControllerReceiver(
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             cfg.ID(),
 			Transport:              "",
 			ReceiverCreateSettings: set,
@@ -185,7 +185,7 @@ func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 	metrics := pmetric.NewMetrics()
 
 	for _, scraper := range sc.scrapers {
-		scrp := obsreport.NewScraper(obsreport.ScraperSettings{
+		scrp := obsreport.MustNewScraper(obsreport.ScraperSettings{
 			ReceiverID:             sc.id,
 			Scraper:                scraper.ID(),
 			ReceiverCreateSettings: sc.recvSettings,

@@ -39,7 +39,7 @@ type Receiver struct {
 func New(id config.ComponentID, nextConsumer consumer.Logs, set component.ReceiverCreateSettings) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              receiverTransport,
 			ReceiverCreateSettings: set,

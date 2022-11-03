@@ -19,11 +19,6 @@ import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
-// Deprecated: [v0.63.0] use &ProtoMarshaler{}
-func NewProtoMarshaler() MarshalSizer {
-	return &ProtoMarshaler{}
-}
-
 var _ MarshalSizer = (*ProtoMarshaler)(nil)
 
 type ProtoMarshaler struct{}
@@ -41,11 +36,6 @@ func (e *ProtoMarshaler) LogsSize(ld Logs) int {
 var _ Unmarshaler = (*ProtoUnmarshaler)(nil)
 
 type ProtoUnmarshaler struct{}
-
-// Deprecated: [v0.63.0] use &ProtoUnmarshaler{}
-func NewProtoUnmarshaler() Unmarshaler {
-	return &ProtoUnmarshaler{}
-}
 
 func (d *ProtoUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	pb := otlplogs.LogsData{}

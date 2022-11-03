@@ -135,7 +135,7 @@ func (cg CGroups) MemoryQuota() (int64, bool, error) {
 	if defined := memLimitBytes > 0; err != nil || !defined {
 		return -1, defined, err
 	}
-	return int64(memLimitBytes), true, nil
+	return memLimitBytes, true, nil
 }
 
 // IsCGroupV2 returns true if the system supports and uses cgroup2.

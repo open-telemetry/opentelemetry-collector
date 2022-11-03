@@ -68,12 +68,3 @@ func (mr ExportRequest) UnmarshalJSON(data []byte) error {
 func (mr ExportRequest) Metrics() pmetric.Metrics {
 	return pmetric.Metrics(internal.NewMetrics(mr.orig))
 }
-
-// Deprecated: [v0.63.0] use ExportRequest.
-type Request = ExportRequest
-
-// Deprecated: [v0.63.0] use NewExportRequest.
-var NewRequest = NewExportRequest
-
-// Deprecated: [v0.63.0] use NewExportRequestFromMetrics.
-var NewRequestFromMetrics = NewExportRequestFromMetrics

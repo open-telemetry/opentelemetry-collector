@@ -4,6 +4,12 @@
 
 <!-- next version -->
 
+## v0.63.1
+
+### 🧰 Bug fixes 🧰
+
+- `service`: Fix running collector as a windows service. (#6433)
+
 ## v0.63.0
 
 ### 🛑 Breaking changes 🛑

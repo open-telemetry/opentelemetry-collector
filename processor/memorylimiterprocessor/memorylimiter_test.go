@@ -458,5 +458,5 @@ func newObsReport() *obsreport.Processor {
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone
 
-	return obsreport.NewProcessor(set)
+	return obsreport.MustNewProcessor(set)
 }

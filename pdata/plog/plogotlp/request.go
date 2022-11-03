@@ -73,12 +73,3 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 func (ms ExportRequest) Logs() plog.Logs {
 	return plog.Logs(internal.NewLogs(ms.orig))
 }
-
-// Deprecated: [v0.63.0] use ExportRequest.
-type Request = ExportRequest
-
-// Deprecated: [v0.63.0] use NewExportRequest.
-var NewRequest = NewExportRequest
-
-// Deprecated: [v0.63.0] use NewExportRequestFromLogs.
-var NewRequestFromLogs = NewExportRequestFromLogs
