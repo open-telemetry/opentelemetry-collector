@@ -16,8 +16,7 @@ receivers:
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.0
 
 processors:
-  - import: go.opentelemetry.io/collector/processor/batchprocessor
-    gomod: go.opentelemetry.io/collector v0.40.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.64.0
 EOF
 $ builder --config=otelcol-builder.yaml --output-path=/tmp/dist
 $ cat > /tmp/otelcol.yaml <<EOF

@@ -20,9 +20,10 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/extension/zpagesextension v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/extension/ballastextension v0.0.0-20221102221454-bfc45c16c979
+	go.opentelemetry.io/collector/extension/zpagesextension v0.0.0-20221102221454-bfc45c16c979
 	go.opentelemetry.io/collector/pdata v0.63.1
+	go.opentelemetry.io/collector/processor/batchprocessor v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/semconv v0.63.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
@@ -86,6 +87,8 @@ replace go.opentelemetry.io/collector/pdata => ./pdata
 replace go.opentelemetry.io/collector/extension/ballastextension => ./extension/ballastextension
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ./extension/zpagesextension
+
+replace go.opentelemetry.io/collector/processor/batchprocessor => ./processor/batchprocessor
 
 retract (
 	v0.57.1 // Release failed, use v0.57.2

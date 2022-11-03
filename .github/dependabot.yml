@@ -47,6 +47,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/processor/batchprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/memorylimiterprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/otlpreceiver"
     schedule:
       interval: "weekly"
