@@ -42,7 +42,7 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	s := obsreport.NewScraper(obsreport.ScraperSettings{
+	s := obsreport.MustNewScraper(obsreport.ScraperSettings{
 		ReceiverID:             receiver,
 		Scraper:                scraper,
 		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
