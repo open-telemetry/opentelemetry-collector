@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,17 +28,17 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-const testFolder = "testdata"
-
 func newStubPromChecker() (prometheusChecker, error) {
-	promResponse, err := os.ReadFile(filepath.Join(testFolder, "prometheus_response"))
+	promBytes, err := os.ReadFile(filepath.Join("testdata", "prometheus_response"))
 	if err != nil {
 		return prometheusChecker{}, err
 	}
 
+	promResponse := strings.ReplaceAll(string(promBytes), "\r\n", "\n")
+
 	return prometheusChecker{
 		promHandler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			_, _ = w.Write(promResponse)
+			_, _ = w.Write([]byte(promResponse))
 		}),
 	}, nil
 }
