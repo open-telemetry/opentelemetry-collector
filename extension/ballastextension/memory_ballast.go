@@ -24,7 +24,10 @@ import (
 
 const megaBytes = 1024 * 1024
 
-type MemoryBallast struct {
+// Deprecated: [v0.64.0] will be made private.
+type MemoryBallast = memoryBallast
+
+type memoryBallast struct {
 	cfg              *Config
 	logger           *zap.Logger
 	ballast          []byte
@@ -32,7 +35,7 @@ type MemoryBallast struct {
 	getTotalMem      func() (uint64, error)
 }
 
-func (m *MemoryBallast) Start(_ context.Context, _ component.Host) error {
+func (m *memoryBallast) Start(_ context.Context, _ component.Host) error {
 	// absolute value supersedes percentage setting
 	if m.cfg.SizeMiB > 0 {
 		m.ballastSizeBytes = m.cfg.SizeMiB * megaBytes
@@ -54,13 +57,13 @@ func (m *MemoryBallast) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (m *MemoryBallast) Shutdown(_ context.Context) error {
+func (m *memoryBallast) Shutdown(_ context.Context) error {
 	m.ballast = nil
 	return nil
 }
 
-func newMemoryBallast(cfg *Config, logger *zap.Logger, getTotalMem func() (uint64, error)) *MemoryBallast {
-	return &MemoryBallast{
+func newMemoryBallast(cfg *Config, logger *zap.Logger, getTotalMem func() (uint64, error)) *memoryBallast {
+	return &memoryBallast{
 		cfg:         cfg,
 		logger:      logger,
 		getTotalMem: getTotalMem,
@@ -68,6 +71,6 @@ func newMemoryBallast(cfg *Config, logger *zap.Logger, getTotalMem func() (uint6
 }
 
 // GetBallastSize returns the current ballast memory setting in bytes
-func (m *MemoryBallast) GetBallastSize() uint64 {
+func (m *memoryBallast) GetBallastSize() uint64 {
 	return m.ballastSizeBytes
 }
