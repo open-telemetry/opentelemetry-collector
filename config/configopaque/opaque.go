@@ -22,7 +22,7 @@ import (
 // String alias that is marshaled in an opaque way.
 type String string
 
-var _ encoding.TextMarshaler = (*String)(nil)
+var _ encoding.TextMarshaler = String("")
 
 // MarshalText marshals into a string of '*' of length equal to the opaque string.
 func (s String) MarshalText() ([]byte, error) {
