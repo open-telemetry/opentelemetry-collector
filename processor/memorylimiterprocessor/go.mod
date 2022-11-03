@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.63.1
-	go.opentelemetry.io/collector/extension/ballastextension v0.0.0-20221102221454-bfc45c16c979
 	go.opentelemetry.io/collector/pdata v0.63.1
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.23.0
@@ -43,8 +42,6 @@ require (
 )
 
 replace go.opentelemetry.io/collector => ../../
-
-replace go.opentelemetry.io/collector/extension/ballastextension => ../../extension/ballastextension
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 

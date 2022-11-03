@@ -46,6 +46,4 @@ replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 
-replace go.opentelemetry.io/collector/extension/ballastextension => ../../extension/ballastextension
-
 replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor

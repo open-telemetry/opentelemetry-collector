@@ -29,7 +29,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/internal/grpclog"
 )
@@ -253,7 +252,7 @@ func getBallastSize(host component.Host) uint64 {
 	var ballastSize uint64
 	extensions := host.GetExtensions()
 	for _, extension := range extensions {
-		if ext, ok := extension.(*ballastextension.MemoryBallast); ok {
+		if ext, ok := extension.(interface{ GetBallastSize() uint64 }); ok {
 			ballastSize = ext.GetBallastSize()
 			break
 		}
