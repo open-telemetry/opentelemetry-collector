@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
+	"go.opentelemetry.io/collector/extension/auth"
 )
 
 const headerContentEncoding = "Content-Encoding"
@@ -60,7 +61,7 @@ type HTTPClientSettings struct {
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
 	// Auth configuration for outgoing HTTP calls.
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *configauth.Settings `mapstructure:"auth"`
 
 	// The compression key for supported compression types within collector.
 	Compression configcompression.CompressionType `mapstructure:"compression"`
@@ -160,7 +161,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ext)
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClient(ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -211,7 +212,7 @@ type HTTPServerSettings struct {
 	CORS *CORSSettings `mapstructure:"cors"`
 
 	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *configauth.Settings `mapstructure:"auth"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
@@ -277,7 +278,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 	}
 
 	if hss.Auth != nil {
-		authenticator, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
+		authenticator, err := hss.Auth.GetServer(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
@@ -342,7 +343,7 @@ type CORSSettings struct {
 	MaxAge int `mapstructure:"max_age"`
 }
 
-func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc) http.Handler {
+func authInterceptor(next http.Handler, authenticate auth.AuthenticateFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := authenticate(r.Context(), r.Header)
 		if err != nil {

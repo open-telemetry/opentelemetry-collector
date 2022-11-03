@@ -22,39 +22,39 @@ import (
 )
 
 var (
-	errAuthenticatorNotFound  = errors.New("authenticator not found")
-	errNotClientAuthenticator = errors.New("requested authenticator is not a client authenticator")
-	errNotServerAuthenticator = errors.New("requested authenticator is not a server authenticator")
+	errAuthenticatorNotFound = errors.New("authenticator not found")
+	errNotClient             = errors.New("requested authenticator is not a client authenticator")
+	errNotServer             = errors.New("requested authenticator is not a server authenticator")
 )
 
-// Authentication defines the auth settings for the receiver.
-type Authentication struct {
+// Settings defines the auth settings for the receiver.
+type Settings struct {
 	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
 	AuthenticatorID component.ID `mapstructure:"authenticator"`
 }
 
-// GetServerAuthenticator attempts to select the appropriate ServerAuthenticator from the list of extensions,
+// GetServer attempts to select the appropriate Server from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.
-func (a Authentication) GetServerAuthenticator(extensions map[component.ID]component.Component) (ServerAuthenticator, error) {
+func (a Settings) GetServer(extensions map[component.ID]component.Component) (ServerAuthenticator, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if auth, ok := ext.(ServerAuthenticator); ok {
 			return auth, nil
 		}
-		return nil, errNotServerAuthenticator
+		return nil, errNotServer
 	}
 
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }
 
-// GetClientAuthenticator attempts to select the appropriate ClientAuthenticator from the list of extensions,
+// GetClient attempts to select the appropriate Client from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by HTTP clients.
-func (a Authentication) GetClientAuthenticator(extensions map[component.ID]component.Component) (ClientAuthenticator, error) {
+func (a Settings) GetClient(extensions map[component.ID]component.Component) (ClientAuthenticator, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if auth, ok := ext.(ClientAuthenticator); ok {
 			return auth, nil
 		}
-		return nil, errNotClientAuthenticator
+		return nil, errNotClient
 	}
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }

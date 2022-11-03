@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func TestGetServerAuthenticator(t *testing.T) {
+func TestGetServer(t *testing.T) {
 	testCases := []struct {
 		desc          string
 		authenticator component.Extension
@@ -35,21 +35,21 @@ func TestGetServerAuthenticator(t *testing.T) {
 		},
 		{
 			desc:          "not a server authenticator",
-			authenticator: &MockClientAuthenticator{},
-			expected:      errNotServerAuthenticator,
+			authenticator: NewClientAuthenticator(),
+			expected:      errNotServer,
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
-			cfg := &Authentication{
+			cfg := &Settings{
 				AuthenticatorID: component.NewID("mock"),
 			}
 			ext := map[component.ID]component.Component{
 				component.NewID("mock"): tC.authenticator,
 			}
 
-			authenticator, err := cfg.GetServerAuthenticator(ext)
+			authenticator, err := cfg.GetServer(ext)
 
 			// verify
 			if tC.expected != nil {
@@ -63,17 +63,17 @@ func TestGetServerAuthenticator(t *testing.T) {
 	}
 }
 
-func TestGetServerAuthenticatorFails(t *testing.T) {
-	cfg := &Authentication{
+func TestGetServerFails(t *testing.T) {
+	cfg := &Settings{
 		AuthenticatorID: component.NewID("does-not-exist"),
 	}
 
-	authenticator, err := cfg.GetServerAuthenticator(map[component.ID]component.Component{})
+	authenticator, err := cfg.GetServer(map[component.ID]component.Component{})
 	assert.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }
 
-func TestGetClientAuthenticator(t *testing.T) {
+func TestGetClient(t *testing.T) {
 	testCases := []struct {
 		desc          string
 		authenticator component.Extension
@@ -81,26 +81,26 @@ func TestGetClientAuthenticator(t *testing.T) {
 	}{
 		{
 			desc:          "obtain client authenticator",
-			authenticator: &MockClientAuthenticator{},
+			authenticator: NewClientAuthenticator(),
 			expected:      nil,
 		},
 		{
 			desc:          "not a client authenticator",
 			authenticator: NewServerAuthenticator(),
-			expected:      errNotClientAuthenticator,
+			expected:      errNotClient,
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
-			cfg := &Authentication{
+			cfg := &Settings{
 				AuthenticatorID: component.NewID("mock"),
 			}
 			ext := map[component.ID]component.Component{
 				component.NewID("mock"): tC.authenticator,
 			}
 
-			authenticator, err := cfg.GetClientAuthenticator(ext)
+			authenticator, err := cfg.GetClient(ext)
 
 			// verify
 			if tC.expected != nil {
@@ -114,11 +114,11 @@ func TestGetClientAuthenticator(t *testing.T) {
 	}
 }
 
-func TestGetClientAuthenticatorFails(t *testing.T) {
-	cfg := &Authentication{
+func TestGetClientFails(t *testing.T) {
+	cfg := &Settings{
 		AuthenticatorID: component.NewID("does-not-exist"),
 	}
-	authenticator, err := cfg.GetClientAuthenticator(map[component.ID]component.Component{})
+	authenticator, err := cfg.GetClient(map[component.ID]component.Component{})
 	assert.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }

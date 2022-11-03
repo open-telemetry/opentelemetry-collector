@@ -39,6 +39,8 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
@@ -88,11 +90,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
+				Auth:            &configauth.Settings{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -116,11 +118,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
+				Auth:            &configauth.Settings{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -144,11 +146,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
+				Auth:            &configauth.Settings{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -212,12 +214,12 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	gss.Auth = &configauth.Authentication{
+	gss.Auth = &configauth.Settings{
 		AuthenticatorID: component.NewID("mock"),
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			component.NewID("mock"): configauth.NewServerAuthenticator(),
+			component.NewID("mock"): auth.NewServer(),
 		},
 	}
 	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
@@ -293,7 +295,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
+				Auth:     &configauth.Settings{AuthenticatorID: component.NewID("doesntexist")},
 			},
 			host: &mockHost{ext: map[component.ID]component.Component{}},
 		},
@@ -301,7 +303,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "no extensions configuration available",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
+				Auth:     &configauth.Settings{AuthenticatorID: component.NewID("doesntexist")},
 			},
 			host: &mockHost{},
 		},

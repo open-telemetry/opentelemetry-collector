@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth
+package authtest
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 
 func TestNilStartAndShutdown(t *testing.T) {
 	// prepare
-	m := &MockClientAuthenticator{}
+	m := &MockClient{}
 
 	// test and verify
 	origCtx := context.Background()
@@ -47,12 +47,12 @@ func TestMockRoundTripper(t *testing.T) {
 	testcases := []struct {
 		name        string
 		expectedErr bool
-		clientAuth  MockClientAuthenticator
+		clientAuth  MockClient
 	}{
 		{
 			name:        "no_error",
 			expectedErr: false,
-			clientAuth: MockClientAuthenticator{
+			clientAuth: MockClient{
 				ResultRoundTripper: &customRoundTripper{},
 				MustError:          false,
 			},
@@ -60,7 +60,7 @@ func TestMockRoundTripper(t *testing.T) {
 		{
 			name:        "error",
 			expectedErr: true,
-			clientAuth: MockClientAuthenticator{
+			clientAuth: MockClient{
 				ResultRoundTripper: &customRoundTripper{},
 				MustError:          true,
 			},
@@ -99,12 +99,12 @@ func TestMockPerRPCCredential(t *testing.T) {
 	testcases := []struct {
 		name        string
 		expectedErr bool
-		clientAuth  MockClientAuthenticator
+		clientAuth  MockClient
 	}{
 		{
 			name:        "no_error",
 			expectedErr: false,
-			clientAuth: MockClientAuthenticator{
+			clientAuth: MockClient{
 				ResultPerRPCCredentials: &customPerRPCCredentials{},
 				MustError:               false,
 			},
@@ -112,7 +112,7 @@ func TestMockPerRPCCredential(t *testing.T) {
 		{
 			name:        "error",
 			expectedErr: true,
-			clientAuth: MockClientAuthenticator{
+			clientAuth: MockClient{
 				ResultPerRPCCredentials: &customPerRPCCredentials{},
 				MustError:               true,
 			},

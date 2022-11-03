@@ -43,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
+	"go.opentelemetry.io/collector/extension/auth"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
@@ -96,7 +97,7 @@ type GRPCClientSettings struct {
 	BalancerName string `mapstructure:"balancer_name"`
 
 	// Auth configuration for outgoing RPCs.
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *configauth.Settings `mapstructure:"auth"`
 }
 
 // KeepaliveServerConfig is the configuration for keepalive.
@@ -152,7 +153,7 @@ type GRPCServerSettings struct {
 	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive"`
 
 	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *configauth.Settings `mapstructure:"auth"`
 
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	// Experimental: *NOTE* this option is subject to change or removal in the future.
@@ -236,7 +237,7 @@ func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings compo
 			return nil, errors.New("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticator(host.GetExtensions())
+		grpcAuthenticator, cerr := gcs.Auth.GetClient(host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -357,7 +358,7 @@ func (gss *GRPCServerSettings) toServerOption(host component.Host, settings comp
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth != nil {
-		authenticator, err := gss.Auth.GetServerAuthenticator(host.GetExtensions())
+		authenticator, err := gss.Auth.GetServer(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
@@ -437,7 +438,7 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 	return client.NewContext(ctx, cl)
 }
 
-func authUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate configauth.AuthenticateFunc) (interface{}, error) {
+func authUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate auth.AuthenticateFunc) (interface{}, error) {
 	headers, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, errMetadataNotFound
@@ -451,7 +452,7 @@ func authUnaryServerInterceptor(ctx context.Context, req interface{}, _ *grpc.Un
 	return handler(ctx, req)
 }
 
-func authStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate configauth.AuthenticateFunc) error {
+func authStreamServerInterceptor(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate auth.AuthenticateFunc) error {
 	ctx := stream.Context()
 	headers, ok := metadata.FromIncomingContext(ctx)
 	if !ok {

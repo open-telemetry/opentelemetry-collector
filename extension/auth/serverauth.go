@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth // import "go.opentelemetry.io/collector/config/configauth"
+package auth // import "go.opentelemetry.io/collector/extension/auth"
 
 import (
 	"context"
@@ -20,12 +20,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// ServerAuthenticator is an Extension that can be used as an authenticator for the configauth.Authentication option.
+// Server is an Extension that can be used as an authenticator for the configauth.Authentication option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
-// names from the Authentication configuration. Each ServerAuthenticator is free to define its own behavior and configuration options,
+// names from the Authentication configuration. Each Server is free to define its own behavior and configuration options,
 // but note that the expectations that come as part of Extensions exist here as well. For instance, multiple instances of the same
 // authenticator should be possible to exist under different names.
-type ServerAuthenticator interface {
+type Server interface {
 	component.Extension
 
 	// Authenticate checks whether the given headers map contains valid auth data. Successfully authenticated calls will always return a nil error.
@@ -40,5 +40,5 @@ type ServerAuthenticator interface {
 }
 
 // AuthenticateFunc defines the signature for the function responsible for performing the authentication based on the given headers map.
-// See ServerAuthenticator.Authenticate.
+// See Server.Authenticate.
 type AuthenticateFunc func(ctx context.Context, headers map[string][]string) (context.Context, error)

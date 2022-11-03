@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth // import "go.opentelemetry.io/collector/config/configauth"
+package auth // import "go.opentelemetry.io/collector/extension/auth"
 
 import (
 	"context"
@@ -20,12 +20,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var _ ServerAuthenticator = (*defaultServerAuthenticator)(nil)
+var _ Server = (*defaultServer)(nil)
 
-// Option represents the possible options for NewServerAuthenticator.
-type Option func(*defaultServerAuthenticator)
+// Option represents the possible options for NewServer.
+type Option func(*defaultServer)
 
-type defaultServerAuthenticator struct {
+type defaultServer struct {
 	AuthenticateFunc
 	component.StartFunc
 	component.ShutdownFunc
@@ -33,7 +33,7 @@ type defaultServerAuthenticator struct {
 
 // WithAuthenticate specifies which function to use to perform the authentication.
 func WithAuthenticate(authenticateFunc AuthenticateFunc) Option {
-	return func(o *defaultServerAuthenticator) {
+	return func(o *defaultServer) {
 		o.AuthenticateFunc = authenticateFunc
 	}
 }
@@ -41,7 +41,7 @@ func WithAuthenticate(authenticateFunc AuthenticateFunc) Option {
 // WithStart overrides the default `Start` function for a component.Component.
 // The default always returns nil.
 func WithStart(startFunc component.StartFunc) Option {
-	return func(o *defaultServerAuthenticator) {
+	return func(o *defaultServer) {
 		o.StartFunc = startFunc
 	}
 }
@@ -49,14 +49,14 @@ func WithStart(startFunc component.StartFunc) Option {
 // WithShutdown overrides the default `Shutdown` function for a component.Component.
 // The default always returns nil.
 func WithShutdown(shutdownFunc component.ShutdownFunc) Option {
-	return func(o *defaultServerAuthenticator) {
+	return func(o *defaultServer) {
 		o.ShutdownFunc = shutdownFunc
 	}
 }
 
-// NewServerAuthenticator returns a ServerAuthenticator configured with the provided options.
-func NewServerAuthenticator(options ...Option) ServerAuthenticator {
-	bc := &defaultServerAuthenticator{
+// NewServer returns a Server configured with the provided options.
+func NewServer(options ...Option) Server {
+	bc := &defaultServer{
 		AuthenticateFunc: func(ctx context.Context, headers map[string][]string) (context.Context, error) { return ctx, nil },
 		StartFunc:        func(ctx context.Context, host component.Host) error { return nil },
 		ShutdownFunc:     func(ctx context.Context) error { return nil },
@@ -70,16 +70,16 @@ func NewServerAuthenticator(options ...Option) ServerAuthenticator {
 }
 
 // Authenticate performs the authentication.
-func (a *defaultServerAuthenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+func (a *defaultServer) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	return a.AuthenticateFunc(ctx, headers)
 }
 
 // Start the component.
-func (a *defaultServerAuthenticator) Start(ctx context.Context, host component.Host) error {
+func (a *defaultServer) Start(ctx context.Context, host component.Host) error {
 	return a.StartFunc(ctx, host)
 }
 
 // Shutdown stops the component.
-func (a *defaultServerAuthenticator) Shutdown(ctx context.Context) error {
+func (a *defaultServer) Shutdown(ctx context.Context) error {
 	return a.ShutdownFunc(ctx)
 }

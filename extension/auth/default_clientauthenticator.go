@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth // import "go.opentelemetry.io/collector/config/configauth"
+package auth // import "go.opentelemetry.io/collector/extension/auth"
 
 import (
 	"context"
@@ -23,12 +23,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var _ ClientAuthenticator = (*defaultClientAuthenticator)(nil)
+var _ Client = (*defaultClient)(nil)
 
 // Option represents the possible options for NewServerAuthenticator.
-type ClientOption func(*defaultClientAuthenticator)
+type ClientOption func(*defaultClient)
 
-type defaultClientAuthenticator struct {
+type defaultClient struct {
 	component.StartFunc
 	component.ShutdownFunc
 	roundTripperFunc      func(base http.RoundTripper) (http.RoundTripper, error)
@@ -38,7 +38,7 @@ type defaultClientAuthenticator struct {
 // WithClientStart overrides the default `Start` function for a component.Component.
 // The default always returns nil.
 func WithClientStart(startFunc component.StartFunc) ClientOption {
-	return func(o *defaultClientAuthenticator) {
+	return func(o *defaultClient) {
 		o.StartFunc = startFunc
 	}
 }
@@ -46,7 +46,7 @@ func WithClientStart(startFunc component.StartFunc) ClientOption {
 // WithClientShutdown overrides the default `Shutdown` function for a component.Component.
 // The default always returns nil.
 func WithClientShutdown(shutdownFunc component.ShutdownFunc) ClientOption {
-	return func(o *defaultClientAuthenticator) {
+	return func(o *defaultClient) {
 		o.ShutdownFunc = shutdownFunc
 	}
 }
@@ -54,7 +54,7 @@ func WithClientShutdown(shutdownFunc component.ShutdownFunc) ClientOption {
 // WithClientRoundTripper provides a `RoundTripper` function for this client authenticator.
 // The default round tripper is no-op.
 func WithClientRoundTripper(roundTripperFunc func(base http.RoundTripper) (http.RoundTripper, error)) ClientOption {
-	return func(o *defaultClientAuthenticator) {
+	return func(o *defaultClient) {
 		o.roundTripperFunc = roundTripperFunc
 	}
 }
@@ -62,14 +62,14 @@ func WithClientRoundTripper(roundTripperFunc func(base http.RoundTripper) (http.
 // WithPerRPCCredentials provides a `PerRPCCredentials` function for this client authenticator.
 // There's no default.
 func WithPerRPCCredentials(perRPCCredentialsFunc func() (credentials.PerRPCCredentials, error)) ClientOption {
-	return func(o *defaultClientAuthenticator) {
+	return func(o *defaultClient) {
 		o.perRPCCredentialsFunc = perRPCCredentialsFunc
 	}
 }
 
-// NewClientAuthenticator returns a ClientAuthenticator configured with the provided options.
-func NewClientAuthenticator(options ...ClientOption) ClientAuthenticator {
-	bc := &defaultClientAuthenticator{
+// NewClient returns a Client configured with the provided options.
+func NewClient(options ...ClientOption) Client {
+	bc := &defaultClient{
 		StartFunc:             func(ctx context.Context, host component.Host) error { return nil },
 		ShutdownFunc:          func(ctx context.Context) error { return nil },
 		roundTripperFunc:      func(base http.RoundTripper) (http.RoundTripper, error) { return base, nil },
@@ -84,21 +84,21 @@ func NewClientAuthenticator(options ...ClientOption) ClientAuthenticator {
 }
 
 // Start the component.
-func (a *defaultClientAuthenticator) Start(ctx context.Context, host component.Host) error {
+func (a *defaultClient) Start(ctx context.Context, host component.Host) error {
 	return a.StartFunc(ctx, host)
 }
 
 // Shutdown stops the component.
-func (a *defaultClientAuthenticator) Shutdown(ctx context.Context) error {
+func (a *defaultClient) Shutdown(ctx context.Context) error {
 	return a.ShutdownFunc(ctx)
 }
 
 // RoundTripper adds the base HTTP RoundTripper in this authenticator's round tripper.
-func (a *defaultClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (a *defaultClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return a.roundTripperFunc(base)
 }
 
 // PerRPCCredentials returns this authenticator's credentials.PerRPCCredentials implementation.
-func (a *defaultClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+func (a *defaultClient) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return a.perRPCCredentialsFunc()
 }

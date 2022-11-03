@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth
+package auth
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 
 func TestDefaultValues(t *testing.T) {
 	// prepare
-	e := NewServerAuthenticator()
+	e := NewServer()
 
 	// test
 	t.Run("start", func(t *testing.T) {
@@ -49,7 +49,7 @@ func TestDefaultValues(t *testing.T) {
 func TestWithAuthenticateFunc(t *testing.T) {
 	// prepare
 	authCalled := false
-	e := NewServerAuthenticator(
+	e := NewServer(
 		WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 			authCalled = true
 			return ctx, nil
@@ -66,7 +66,7 @@ func TestWithAuthenticateFunc(t *testing.T) {
 
 func TestWithStart(t *testing.T) {
 	called := false
-	e := NewServerAuthenticator(WithStart(func(c context.Context, h component.Host) error {
+	e := NewServer(WithStart(func(c context.Context, h component.Host) error {
 		called = true
 		return nil
 	}))
@@ -81,7 +81,7 @@ func TestWithStart(t *testing.T) {
 
 func TestWithShutdown(t *testing.T) {
 	called := false
-	e := NewServerAuthenticator(WithShutdown(func(c context.Context) error {
+	e := NewServer(WithShutdown(func(c context.Context) error {
 		called = true
 		return nil
 	}))
