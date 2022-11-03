@@ -73,7 +73,7 @@ func NewScraper(cfg ScraperSettings) *Scraper {
 	return scr
 }
 
-// MustNewReceiver creates a new Scraper.
+// MustNewScraper creates a new Scraper.
 func MustNewScraper(cfg ScraperSettings) *Scraper {
 	scr, err := newScraper(cfg, featuregate.GetRegistry())
 	if err != nil {
