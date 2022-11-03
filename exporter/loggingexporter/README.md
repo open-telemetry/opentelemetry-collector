@@ -14,9 +14,9 @@ Supported pipeline types: traces, metrics, logs
 
 The following settings are optional:
 
-- `loglevel` (default = `info`): the log level of the logging export
-  (debug|info|warn|error). When set to `debug`, pipeline data is verbosely
-  logged.
+- `verbosity` (default = `normal`): the verbosity of the logging export
+  (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
+  logged. Anything above loglevel `info` is mapped to verbosity level `basic`.
 - `sampling_initial` (default = `2`): number of messages initially logged each
   second.
 - `sampling_thereafter` (default = `500`): sampling rate after the initial
@@ -29,7 +29,7 @@ Example:
 ```yaml
 exporters:
   logging:
-    loglevel: debug
+    verbosity: detailed
     sampling_initial: 5
     sampling_thereafter: 200
 ```
