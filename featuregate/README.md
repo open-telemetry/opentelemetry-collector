@@ -10,17 +10,25 @@ based on flags at the component level.
 
 Feature gates must be defined and registered with the global registry in
 an `init()` function.  This makes the `Gate` available to be configured and 
-queried with a default value of its `Enabled` property.
+queried with the defined [`Stage`](#feature-lifecycle) default value.
+A `Gate` can have a list of associated issues that allow users to refer to
+the issue and report any additional problems or understand the context of the `Gate`.
+Once a `Gate` has been marked as `Stable`, it must have a `RemovalVersion` set.
 
 ```go
-const myFeatureGateID = "namespaced.uniqueIdentifier"
+const (
+	myFeatureGateID = "namespaced.uniqueIdentifier"
+	myFeatureStage  = featuregate.Stable
+)
 
 func init() {
-	featuregate.Register(featuregate.Gate{
-		ID:          myFeatureGateID,
-		Description: "A brief description of what the gate controls",
-		Enabled:     false,
-	})
+	featuregate.MustRegisterID(
+		myFeatureGateID, 
+		myFeatureStage, 
+		featuregate.WithRegisterDescription("A brief description of what the gate controls"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/6167"),
+		featuregate.WithRegisterRemovalVersion("v0.70.0"),
+	)
 }
 ```
 
