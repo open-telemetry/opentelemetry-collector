@@ -134,3 +134,20 @@ func TestTracesCopyTo(t *testing.T) {
 	traces.CopyTo(tracesCopy)
 	assert.EqualValues(t, traces, tracesCopy)
 }
+
+func TestSpanKindString(t *testing.T) {
+	assert.EqualValues(t, "Unspecified", SpanKindUnspecified.String())
+	assert.EqualValues(t, "Internal", SpanKindInternal.String())
+	assert.EqualValues(t, "Server", SpanKindServer.String())
+	assert.EqualValues(t, "Client", SpanKindClient.String())
+	assert.EqualValues(t, "Producer", SpanKindProducer.String())
+	assert.EqualValues(t, "Consumer", SpanKindConsumer.String())
+	assert.EqualValues(t, "", SpanKind(100).String())
+}
+
+func TestStatusCodeString(t *testing.T) {
+	assert.EqualValues(t, "Unset", StatusCodeUnset.String())
+	assert.EqualValues(t, "Ok", StatusCodeOk.String())
+	assert.EqualValues(t, "Error", StatusCodeError.String())
+	assert.EqualValues(t, "", StatusCode(100).String())
+}
