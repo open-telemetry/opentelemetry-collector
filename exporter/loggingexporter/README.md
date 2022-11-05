@@ -14,8 +14,10 @@ Supported pipeline types: traces, metrics, logs
 
 The following settings are optional:
 
-- [Deprecated] `loglevel` (default = `info`): the log level of the logging export
-  (debug|info|warn|error). When set to `debug`, pipeline data is verbosely
+// Deprecated: Use `verbosity` instead
+- `loglevel` (default = `info`): the log level of the logging export
+  (debug|info|warn|error). When set to `debug`, pipeline data is verbosely 
+  logged.
 - `verbosity` (default = `normal`): the verbosity of the logging export
   (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
   logged.
