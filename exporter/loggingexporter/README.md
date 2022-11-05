@@ -14,7 +14,6 @@ Supported pipeline types: traces, metrics, logs
 
 The following settings are optional:
 
-// Deprecated: Use `verbosity` instead
 - `loglevel` (default = `info`): the log level of the logging export
   (debug|info|warn|error). When set to `debug`, pipeline data is verbosely 
   logged.
@@ -27,6 +26,9 @@ The following settings are optional:
   messages are logged (every Mth message is logged). Refer to [Zap
   docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details.
   on how sampling parameters impact number of messages.
+
+### Note
+`loglevel` is deprecated, use `verbosity` instead.
 
 Example:
 
