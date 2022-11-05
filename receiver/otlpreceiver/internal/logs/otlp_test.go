@@ -25,8 +25,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -86,7 +86,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	r := New(config.NewComponentIDWithName("otlp", "log"), lc, componenttest.NewNopReceiverCreateSettings())
+	r := New(component.NewIDWithName("otlp", "log"), lc, componenttest.NewNopReceiverCreateSettings())
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	plogotlp.RegisterGRPCServer(srv, r)

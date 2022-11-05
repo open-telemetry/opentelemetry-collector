@@ -28,7 +28,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -61,7 +60,7 @@ type Exporter struct {
 
 // ExporterSettings are settings for creating an Exporter.
 type ExporterSettings struct {
-	ExporterID             config.ComponentID
+	ExporterID             component.ID
 	ExporterCreateSettings component.ExporterCreateSettings
 }
 
@@ -163,7 +162,7 @@ func (exp *Exporter) StartTracesOp(ctx context.Context) context.Context {
 // EndTracesOp completes the export operation that was started with StartTracesOp.
 func (exp *Exporter) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	exp.recordMetrics(ctx, config.TracesDataType, numSent, numFailedToSend)
+	exp.recordMetrics(ctx, component.TracesDataType, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
@@ -178,7 +177,7 @@ func (exp *Exporter) StartMetricsOp(ctx context.Context) context.Context {
 // StartMetricsOp.
 func (exp *Exporter) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	exp.recordMetrics(ctx, config.MetricsDataType, numSent, numFailedToSend)
+	exp.recordMetrics(ctx, component.MetricsDataType, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
@@ -192,7 +191,7 @@ func (exp *Exporter) StartLogsOp(ctx context.Context) context.Context {
 // EndLogsOp completes the export operation that was started with StartLogsOp.
 func (exp *Exporter) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	exp.recordMetrics(ctx, config.LogsDataType, numSent, numFailedToSend)
+	exp.recordMetrics(ctx, component.LogsDataType, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
@@ -204,7 +203,7 @@ func (exp *Exporter) startOp(ctx context.Context, operationSuffix string) contex
 	return ctx
 }
 
-func (exp *Exporter) recordMetrics(ctx context.Context, dataType config.DataType, numSent, numFailed int64) {
+func (exp *Exporter) recordMetrics(ctx context.Context, dataType component.DataType, numSent, numFailed int64) {
 	if exp.level == configtelemetry.LevelNone {
 		return
 	}
@@ -215,16 +214,16 @@ func (exp *Exporter) recordMetrics(ctx context.Context, dataType config.DataType
 	}
 }
 
-func (exp *Exporter) recordWithOtel(ctx context.Context, dataType config.DataType, sent int64, failed int64) {
+func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
 	var sentMeasure, failedMeasure syncint64.Counter
 	switch dataType {
-	case config.TracesDataType:
+	case component.TracesDataType:
 		sentMeasure = exp.sentSpans
 		failedMeasure = exp.failedToSendSpans
-	case config.MetricsDataType:
+	case component.MetricsDataType:
 		sentMeasure = exp.sentMetricPoints
 		failedMeasure = exp.failedToSendMetricPoints
-	case config.LogsDataType:
+	case component.LogsDataType:
 		sentMeasure = exp.sentLogRecords
 		failedMeasure = exp.failedToSendLogRecords
 	}
@@ -233,16 +232,16 @@ func (exp *Exporter) recordWithOtel(ctx context.Context, dataType config.DataTyp
 	failedMeasure.Add(ctx, failed, exp.otelAttrs...)
 }
 
-func (exp *Exporter) recordWithOC(ctx context.Context, dataType config.DataType, sent int64, failed int64) {
+func (exp *Exporter) recordWithOC(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
 	var sentMeasure, failedMeasure *stats.Int64Measure
 	switch dataType {
-	case config.TracesDataType:
+	case component.TracesDataType:
 		sentMeasure = obsmetrics.ExporterSentSpans
 		failedMeasure = obsmetrics.ExporterFailedToSendSpans
-	case config.MetricsDataType:
+	case component.MetricsDataType:
 		sentMeasure = obsmetrics.ExporterSentMetricPoints
 		failedMeasure = obsmetrics.ExporterFailedToSendMetricPoints
-	case config.LogsDataType:
+	case component.LogsDataType:
 		sentMeasure = obsmetrics.ExporterSentLogRecords
 		failedMeasure = obsmetrics.ExporterFailedToSendLogRecords
 	}

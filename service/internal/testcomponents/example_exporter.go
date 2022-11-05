@@ -44,21 +44,21 @@ var ExampleExporterFactory = component.NewExporterFactory(
 	component.WithLogsExporter(createLogsExporter, stability),
 )
 
-func createExporterDefaultConfig() config.Exporter {
+func createExporterDefaultConfig() component.ExporterConfig {
 	return &ExampleExporterConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 	}
 }
 
-func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {
 	return &ExampleExporter{}, nil
 }
 
-func createMetricsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.MetricsExporter, error) {
 	return &ExampleExporter{}, nil
 }
 
-func createLogsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.LogsExporter, error) {
 	return &ExampleExporter{}, nil
 }
 

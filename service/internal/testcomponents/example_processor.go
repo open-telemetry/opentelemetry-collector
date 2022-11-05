@@ -38,21 +38,21 @@ var ExampleProcessorFactory = component.NewProcessorFactory(
 	component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelInDevelopment))
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &ExampleProcessorConfig{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(procType)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(procType)),
 	}
 }
 
-func createTracesProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ component.ProcessorConfig, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	return &ExampleProcessor{Traces: nextConsumer}, nil
 }
 
-func createMetricsProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ config.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ component.ProcessorConfig, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	return &ExampleProcessor{Metrics: nextConsumer}, nil
 }
 
-func createLogsProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ config.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ component.ProcessorConfig, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	return &ExampleProcessor{Logs: nextConsumer}, nil
 }
 

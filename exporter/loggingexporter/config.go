@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
@@ -55,7 +56,7 @@ type Config struct {
 	warnLogLevel bool
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.ExporterConfig = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 func mapLevel(level zapcore.Level) (configtelemetry.Level, error) {

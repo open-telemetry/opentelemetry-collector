@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -38,9 +38,9 @@ func TestExportersUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Exporters["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myexporter")
-	assert.Equal(t, map[config.ComponentID]config.Exporter{
-		config.NewComponentID("nop"):                       factories.Exporters["nop"].CreateDefaultConfig(),
-		config.NewComponentIDWithName("nop", "myexporter"): cfgWithName,
+	assert.Equal(t, map[component.ID]component.ExporterConfig{
+		component.NewID("nop"):                       factories.Exporters["nop"].CreateDefaultConfig(),
+		component.NewIDWithName("nop", "myexporter"): cfgWithName,
 	}, exps.GetExporters())
 }
 

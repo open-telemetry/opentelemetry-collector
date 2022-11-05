@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -30,7 +31,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalProcessor(confmap.New(), cfg))
+	assert.NoError(t, component.UnmarshalProcessorConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -39,10 +40,10 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalProcessor(cm, cfg))
+	assert.NoError(t, component.UnmarshalProcessorConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ProcessorSettings:   config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorSettings:   config.NewProcessorSettings(component.NewID(typeStr)),
 			CheckInterval:       5 * time.Second,
 			MemoryLimitMiB:      4000,
 			MemorySpikeLimitMiB: 500,

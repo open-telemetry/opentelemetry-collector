@@ -44,9 +44,9 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
@@ -67,7 +67,7 @@ func createDefaultConfig() config.Receiver {
 func createTracesReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
@@ -84,7 +84,7 @@ func createTracesReceiver(
 func createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
@@ -101,7 +101,7 @@ func createMetricsReceiver(
 func createLogReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {

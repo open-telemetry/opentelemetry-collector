@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -38,7 +37,7 @@ func createStorageExtension(_ string) storage.Extension {
 }
 
 func createTestClient(extension storage.Extension) storage.Client {
-	client, err := extension.GetClient(context.Background(), component.KindReceiver, config.ComponentID{}, "")
+	client, err := extension.GetClient(context.Background(), component.KindReceiver, component.ID{}, "")
 	if err != nil {
 		panic(err)
 	}
@@ -459,7 +458,7 @@ func (m mockStorageExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id config.ComponentID, s string) (storage.Client, error) {
+func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
 	return newMockStorageClient(), nil
 }
 

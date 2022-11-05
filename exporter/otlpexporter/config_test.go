@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -34,7 +35,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalExporter(confmap.New(), cfg))
+	assert.NoError(t, component.UnmarshalExporterConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -43,10 +44,10 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalExporter(cm, cfg))
+	assert.NoError(t, component.UnmarshalExporterConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 10 * time.Second,
 			},
@@ -82,7 +83,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("nop")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("nop")},
 			},
 		}, cfg)
 }

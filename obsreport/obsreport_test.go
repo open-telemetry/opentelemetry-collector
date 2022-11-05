@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -38,10 +38,10 @@ const (
 )
 
 var (
-	receiver  = config.NewComponentID("fakeReceiver")
-	scraper   = config.NewComponentID("fakeScraper")
-	processor = config.NewComponentID("fakeProcessor")
-	exporter  = config.NewComponentID("fakeExporter")
+	receiver  = component.NewID("fakeReceiver")
+	scraper   = component.NewID("fakeScraper")
+	processor = component.NewID("fakeProcessor")
+	exporter  = component.NewID("fakeExporter")
 
 	errFake        = errors.New("errFake")
 	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)

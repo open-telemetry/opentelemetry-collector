@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -34,27 +34,27 @@ import (
 )
 
 var configNop = &Config{
-	Receivers:  map[config.ComponentID]config.Receiver{config.NewComponentID("nop"): componenttest.NewNopReceiverFactory().CreateDefaultConfig()},
-	Processors: map[config.ComponentID]config.Processor{config.NewComponentID("nop"): componenttest.NewNopProcessorFactory().CreateDefaultConfig()},
-	Exporters:  map[config.ComponentID]config.Exporter{config.NewComponentID("nop"): componenttest.NewNopExporterFactory().CreateDefaultConfig()},
-	Extensions: map[config.ComponentID]config.Extension{config.NewComponentID("nop"): componenttest.NewNopExtensionFactory().CreateDefaultConfig()},
+	Receivers:  map[component.ID]component.ReceiverConfig{component.NewID("nop"): componenttest.NewNopReceiverFactory().CreateDefaultConfig()},
+	Processors: map[component.ID]component.ProcessorConfig{component.NewID("nop"): componenttest.NewNopProcessorFactory().CreateDefaultConfig()},
+	Exporters:  map[component.ID]component.ExporterConfig{component.NewID("nop"): componenttest.NewNopExporterFactory().CreateDefaultConfig()},
+	Extensions: map[component.ID]component.ExtensionConfig{component.NewID("nop"): componenttest.NewNopExtensionFactory().CreateDefaultConfig()},
 	Service: ConfigService{
-		Extensions: []config.ComponentID{config.NewComponentID("nop")},
-		Pipelines: map[config.ComponentID]*ConfigServicePipeline{
-			config.NewComponentID("traces"): {
-				Receivers:  []config.ComponentID{config.NewComponentID("nop")},
-				Processors: []config.ComponentID{config.NewComponentID("nop")},
-				Exporters:  []config.ComponentID{config.NewComponentID("nop")},
+		Extensions: []component.ID{component.NewID("nop")},
+		Pipelines: map[component.ID]*ConfigServicePipeline{
+			component.NewID("traces"): {
+				Receivers:  []component.ID{component.NewID("nop")},
+				Processors: []component.ID{component.NewID("nop")},
+				Exporters:  []component.ID{component.NewID("nop")},
 			},
-			config.NewComponentID("metrics"): {
-				Receivers:  []config.ComponentID{config.NewComponentID("nop")},
-				Processors: []config.ComponentID{config.NewComponentID("nop")},
-				Exporters:  []config.ComponentID{config.NewComponentID("nop")},
+			component.NewID("metrics"): {
+				Receivers:  []component.ID{component.NewID("nop")},
+				Processors: []component.ID{component.NewID("nop")},
+				Exporters:  []component.ID{component.NewID("nop")},
 			},
-			config.NewComponentID("logs"): {
-				Receivers:  []config.ComponentID{config.NewComponentID("nop")},
-				Processors: []config.ComponentID{config.NewComponentID("nop")},
-				Exporters:  []config.ComponentID{config.NewComponentID("nop")},
+			component.NewID("logs"): {
+				Receivers:  []component.ID{component.NewID("nop")},
+				Processors: []component.ID{component.NewID("nop")},
+				Exporters:  []component.ID{component.NewID("nop")},
 			},
 		},
 		Telemetry: telemetry.Config{

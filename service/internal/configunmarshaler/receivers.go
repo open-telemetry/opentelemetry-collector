@@ -18,7 +18,6 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -26,23 +25,23 @@ import (
 const receiversKeyName = "receivers"
 
 type Receivers struct {
-	recvs map[config.ComponentID]config.Receiver
+	recvs map[component.ID]component.ReceiverConfig
 
-	factories map[config.Type]component.ReceiverFactory
+	factories map[component.Type]component.ReceiverFactory
 }
 
-func NewReceivers(factories map[config.Type]component.ReceiverFactory) *Receivers {
+func NewReceivers(factories map[component.Type]component.ReceiverFactory) *Receivers {
 	return &Receivers{factories: factories}
 }
 
 func (r *Receivers) Unmarshal(conf *confmap.Conf) error {
-	rawRecvs := make(map[config.ComponentID]map[string]interface{})
+	rawRecvs := make(map[component.ID]map[string]interface{})
 	if err := conf.Unmarshal(&rawRecvs, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 
 	// Prepare resulting map.
-	r.recvs = make(map[config.ComponentID]config.Receiver)
+	r.recvs = make(map[component.ID]component.ReceiverConfig)
 
 	// Iterate over input map and create a config for each.
 	for id, value := range rawRecvs {
@@ -58,7 +57,7 @@ func (r *Receivers) Unmarshal(conf *confmap.Conf) error {
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := config.UnmarshalReceiver(confmap.NewFromStringMap(value), receiverCfg); err != nil {
+		if err := component.UnmarshalReceiverConfig(confmap.NewFromStringMap(value), receiverCfg); err != nil {
 			return errorUnmarshalError(receiversKeyName, id, err)
 		}
 
@@ -68,6 +67,6 @@ func (r *Receivers) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (r *Receivers) GetReceivers() map[config.ComponentID]config.Receiver {
+func (r *Receivers) GetReceivers() map[component.ID]component.ReceiverConfig {
 	return r.recvs
 }

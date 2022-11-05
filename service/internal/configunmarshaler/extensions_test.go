@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -38,9 +38,9 @@ func TestExtensionsUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Extensions["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myextension")
-	assert.Equal(t, map[config.ComponentID]config.Extension{
-		config.NewComponentID("nop"):                        factories.Extensions["nop"].CreateDefaultConfig(),
-		config.NewComponentIDWithName("nop", "myextension"): cfgWithName,
+	assert.Equal(t, map[component.ID]component.ExtensionConfig{
+		component.NewID("nop"):                        factories.Extensions["nop"].CreateDefaultConfig(),
+		component.NewIDWithName("nop", "myextension"): cfgWithName,
 	}, exts.GetExtensions())
 }
 

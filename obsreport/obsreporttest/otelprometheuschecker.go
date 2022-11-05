@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/multierr"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 )
 
 // prometheusChecker is used to assert exported metrics from a prometheus handler.
@@ -34,42 +34,42 @@ type prometheusChecker struct {
 	promHandler http.Handler
 }
 
-func (pc *prometheusChecker) checkReceiverTraces(receiver config.ComponentID, protocol string, acceptedSpans, droppedSpans int64) error {
+func (pc *prometheusChecker) checkReceiverTraces(receiver component.ID, protocol string, acceptedSpans, droppedSpans int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
 		pc.checkCounter("receiver_accepted_spans", acceptedSpans, receiverAttrs),
 		pc.checkCounter("receiver_refused_spans", droppedSpans, receiverAttrs))
 }
 
-func (pc *prometheusChecker) checkReceiverLogs(receiver config.ComponentID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
+func (pc *prometheusChecker) checkReceiverLogs(receiver component.ID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
 		pc.checkCounter("receiver_accepted_log_records", acceptedLogRecords, receiverAttrs),
 		pc.checkCounter("receiver_refused_log_records", droppedLogRecords, receiverAttrs))
 }
 
-func (pc *prometheusChecker) checkReceiverMetrics(receiver config.ComponentID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
+func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
 		pc.checkCounter("receiver_accepted_metric_points", acceptedMetricPoints, receiverAttrs),
 		pc.checkCounter("receiver_refused_metric_points", droppedMetricPoints, receiverAttrs))
 }
 
-func (pc *prometheusChecker) checkExporterTraces(exporter config.ComponentID, sentSpans, sendFailedSpans int64) error {
+func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sentSpans, sendFailedSpans int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	return multierr.Combine(
 		pc.checkCounter("exporter_sent_spans", sentSpans, exporterAttrs),
 		pc.checkCounter("exporter_send_failed_spans", sendFailedSpans, exporterAttrs))
 }
 
-func (pc *prometheusChecker) checkExporterLogs(exporter config.ComponentID, sentLogRecords, sendFailedLogRecords int64) error {
+func (pc *prometheusChecker) checkExporterLogs(exporter component.ID, sentLogRecords, sendFailedLogRecords int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	return multierr.Combine(
 		pc.checkCounter("exporter_sent_log_records", sentLogRecords, exporterAttrs),
 		pc.checkCounter("exporter_send_failed_log_records", sendFailedLogRecords, exporterAttrs))
 }
 
-func (pc *prometheusChecker) checkExporterMetrics(exporter config.ComponentID, sentMetricPoints, sendFailedMetricPoints int64) error {
+func (pc *prometheusChecker) checkExporterMetrics(exporter component.ID, sentMetricPoints, sendFailedMetricPoints int64) error {
 	exporterAttrs := attributesForExporterMetrics(exporter)
 	return multierr.Combine(
 		pc.checkCounter("exporter_sent_metric_points", sentMetricPoints, exporterAttrs),
@@ -146,7 +146,7 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
-func attributesForReceiverMetrics(receiver config.ComponentID, transport string) []attribute.KeyValue {
+func attributesForReceiverMetrics(receiver component.ID, transport string) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.String(receiverTag.Name(), receiver.String()),
 		attribute.String(transportTag.Name(), transport),
@@ -154,7 +154,7 @@ func attributesForReceiverMetrics(receiver config.ComponentID, transport string)
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
-func attributesForExporterMetrics(exporter config.ComponentID) []attribute.KeyValue {
+func attributesForExporterMetrics(exporter component.ID) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		attribute.String(exporterTag.Name(), exporter.String()),
 	}

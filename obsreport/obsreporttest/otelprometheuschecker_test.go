@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 )
 
 func newStubPromChecker() (prometheusChecker, error) {
@@ -47,8 +47,8 @@ func TestPromChecker(t *testing.T) {
 	pc, err := newStubPromChecker()
 	require.NoError(t, err)
 
-	receiver := config.NewComponentID("fakeReceiver")
-	exporter := config.NewComponentID("fakeExporter")
+	receiver := component.NewID("fakeReceiver")
+	exporter := component.NewID("fakeExporter")
 	transport := "fakeTransport"
 
 	assert.NoError(t,

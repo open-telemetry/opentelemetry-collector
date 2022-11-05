@@ -14,9 +14,7 @@
 
 package extensions // import "go.opentelemetry.io/collector/service/extensions"
 
-import (
-	"go.opentelemetry.io/collector/config"
-)
+import "go.opentelemetry.io/collector/component"
 
 // Config represents the ordered list of extensions configured for the service.
-type Config []config.ComponentID
+type Config []component.ID

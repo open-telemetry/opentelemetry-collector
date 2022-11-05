@@ -42,7 +42,7 @@ const (
 )
 
 var (
-	fakeTracesExporterName   = config.NewComponentIDWithName("fake_traces_exporter", "with_name")
+	fakeTracesExporterName   = component.NewIDWithName("fake_traces_exporter", "with_name")
 	fakeTracesExporterConfig = config.NewExporterSettings(fakeTracesExporterName)
 )
 

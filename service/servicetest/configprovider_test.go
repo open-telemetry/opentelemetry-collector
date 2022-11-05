@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 )
@@ -34,35 +35,35 @@ func TestLoadConfig(t *testing.T) {
 
 	// Verify extensions.
 	require.Len(t, cfg.Extensions, 2)
-	assert.Contains(t, cfg.Extensions, config.NewComponentID("nop"))
-	assert.Contains(t, cfg.Extensions, config.NewComponentIDWithName("nop", "myextension"))
+	assert.Contains(t, cfg.Extensions, component.NewID("nop"))
+	assert.Contains(t, cfg.Extensions, component.NewIDWithName("nop", "myextension"))
 
 	// Verify receivers
 	require.Len(t, cfg.Receivers, 2)
-	assert.Contains(t, cfg.Receivers, config.NewComponentID("nop"))
-	assert.Contains(t, cfg.Receivers, config.NewComponentIDWithName("nop", "myreceiver"))
+	assert.Contains(t, cfg.Receivers, component.NewID("nop"))
+	assert.Contains(t, cfg.Receivers, component.NewIDWithName("nop", "myreceiver"))
 
 	// Verify exporters
 	assert.Len(t, cfg.Exporters, 2)
-	assert.Contains(t, cfg.Exporters, config.NewComponentID("nop"))
-	assert.Contains(t, cfg.Exporters, config.NewComponentIDWithName("nop", "myexporter"))
+	assert.Contains(t, cfg.Exporters, component.NewID("nop"))
+	assert.Contains(t, cfg.Exporters, component.NewIDWithName("nop", "myexporter"))
 
 	// Verify procs
 	assert.Len(t, cfg.Processors, 2)
-	assert.Contains(t, cfg.Processors, config.NewComponentID("nop"))
-	assert.Contains(t, cfg.Processors, config.NewComponentIDWithName("nop", "myprocessor"))
+	assert.Contains(t, cfg.Processors, component.NewID("nop"))
+	assert.Contains(t, cfg.Processors, component.NewIDWithName("nop", "myprocessor"))
 
 	// Verify service.
 	require.Len(t, cfg.Service.Extensions, 1)
-	assert.Contains(t, cfg.Service.Extensions, config.NewComponentID("nop"))
+	assert.Contains(t, cfg.Service.Extensions, component.NewID("nop"))
 	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
 		&config.Pipeline{
-			Receivers:  []config.ComponentID{config.NewComponentID("nop")},
-			Processors: []config.ComponentID{config.NewComponentID("nop")},
-			Exporters:  []config.ComponentID{config.NewComponentID("nop")},
+			Receivers:  []component.ID{component.NewID("nop")},
+			Processors: []component.ID{component.NewID("nop")},
+			Exporters:  []component.ID{component.NewID("nop")},
 		},
-		cfg.Service.Pipelines[config.NewComponentID("traces")],
+		cfg.Service.Pipelines[component.NewID("traces")],
 		"Did not load pipeline config correctly")
 }
 

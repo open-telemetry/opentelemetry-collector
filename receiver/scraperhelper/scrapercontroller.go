@@ -32,7 +32,7 @@ import (
 
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
-// of config.ReceiverSettings, and extend it with more fields if needed.
+// of component.ReceiverSettings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	CollectionInterval      time.Duration            `mapstructure:"collection_interval"`
@@ -40,9 +40,9 @@ type ScraperControllerSettings struct {
 
 // NewDefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-func NewDefaultScraperControllerSettings(cfgType config.Type) ScraperControllerSettings {
+func NewDefaultScraperControllerSettings(cfgType component.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(cfgType)),
+		ReceiverSettings:   config.NewReceiverSettings(component.NewID(cfgType)),
 		CollectionInterval: time.Minute,
 	}
 }
@@ -71,7 +71,7 @@ func WithTickerChannel(tickerCh <-chan time.Time) ScraperControllerOption {
 }
 
 type controller struct {
-	id                 config.ComponentID
+	id                 component.ID
 	logger             *zap.Logger
 	collectionInterval time.Duration
 	nextConsumer       consumer.Metrics

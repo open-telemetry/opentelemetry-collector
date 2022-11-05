@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package component
 
 import (
 	"testing"
@@ -20,23 +20,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIDFromString(t *testing.T) {
+func TestMarshalText(t *testing.T) {
+	id := NewIDWithName("test", "name")
+	got, err := id.MarshalText()
+	assert.NoError(t, err)
+	assert.Equal(t, id.String(), string(got))
+}
+
+func TestUnmarshalText(t *testing.T) {
 	var testCases = []struct {
 		idStr       string
 		expectedErr bool
-		expectedID  ComponentID
+		expectedID  ID
 	}{
 		{
 			idStr:      "valid_type",
-			expectedID: ComponentID{typeVal: "valid_type", nameVal: ""},
+			expectedID: ID{typeVal: "valid_type", nameVal: ""},
 		},
 		{
 			idStr:      "valid_type/valid_name",
-			expectedID: ComponentID{typeVal: "valid_type", nameVal: "valid_name"},
+			expectedID: ID{typeVal: "valid_type", nameVal: "valid_name"},
 		},
 		{
 			idStr:      "   valid_type   /   valid_name  ",
-			expectedID: ComponentID{typeVal: "valid_type", nameVal: "valid_name"},
+			expectedID: ID{typeVal: "valid_type", nameVal: "valid_name"},
 		},
 		{
 			idStr:       "/valid_name",
@@ -62,7 +69,8 @@ func TestIDFromString(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.idStr, func(t *testing.T) {
-			id, err := NewComponentIDFromString(test.idStr)
+			id := ID{}
+			err := id.UnmarshalText([]byte(test.idStr))
 			if test.expectedErr {
 				assert.Error(t, err)
 				return
@@ -75,11 +83,4 @@ func TestIDFromString(t *testing.T) {
 			assert.Equal(t, test.expectedID.String(), id.String())
 		})
 	}
-}
-
-func TestMarshalText(t *testing.T) {
-	id := NewComponentIDWithName("test", "name")
-	got, err := id.MarshalText()
-	assert.NoError(t, err)
-	assert.Equal(t, id.String(), string(got))
 }

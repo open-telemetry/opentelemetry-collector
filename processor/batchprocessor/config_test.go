@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -30,7 +31,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalProcessor(confmap.New(), cfg))
+	assert.NoError(t, component.UnmarshalProcessorConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -39,10 +40,10 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalProcessor(cm, cfg))
+	assert.NoError(t, component.UnmarshalProcessorConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 			SendBatchSize:     uint32(10000),
 			SendBatchMaxSize:  uint32(11000),
 			Timeout:           time.Second * 10,
@@ -51,7 +52,7 @@ func TestUnmarshalConfig(t *testing.T) {
 
 func TestValidateConfig_DefaultBatchMaxSize(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "2")),
+		ProcessorSettings: config.NewProcessorSettings(component.NewIDWithName(typeStr, "2")),
 		SendBatchSize:     100,
 		SendBatchMaxSize:  0,
 	}
@@ -60,7 +61,7 @@ func TestValidateConfig_DefaultBatchMaxSize(t *testing.T) {
 
 func TestValidateConfig_ValidBatchSizes(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "2")),
+		ProcessorSettings: config.NewProcessorSettings(component.NewIDWithName(typeStr, "2")),
 		SendBatchSize:     100,
 		SendBatchMaxSize:  1000,
 	}
@@ -70,7 +71,7 @@ func TestValidateConfig_ValidBatchSizes(t *testing.T) {
 
 func TestValidateConfig_InvalidBatchSize(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "2")),
+		ProcessorSettings: config.NewProcessorSettings(component.NewIDWithName(typeStr, "2")),
 		SendBatchSize:     1000,
 		SendBatchMaxSize:  100,
 	}

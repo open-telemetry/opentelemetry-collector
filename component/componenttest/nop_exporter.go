@@ -38,9 +38,9 @@ type nopExporterConfig struct {
 func NewNopExporterFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		"nop",
-		func() config.Exporter {
+		func() component.ExporterConfig {
 			return &nopExporterConfig{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID("nop")),
+				ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
 			}
 		},
 		component.WithTracesExporter(createTracesExporter, component.StabilityLevelStable),
@@ -49,15 +49,15 @@ func NewNopExporterFactory() component.ExporterFactory {
 	)
 }
 
-func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {
 	return nopExporterInstance, nil
 }
 
-func createMetricsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.MetricsExporter, error) {
 	return nopExporterInstance, nil
 }
 
-func createLogsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.LogsExporter, error) {
 	return nopExporterInstance, nil
 }
 

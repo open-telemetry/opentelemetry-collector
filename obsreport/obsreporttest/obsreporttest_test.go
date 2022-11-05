@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -32,8 +32,8 @@ const (
 )
 
 var (
-	receiver = config.NewComponentID("fakeReicever")
-	exporter = config.NewComponentID("fakeExporter")
+	receiver = component.NewID("fakeReicever")
+	exporter = component.NewID("fakeExporter")
 )
 
 func TestCheckReceiverTracesViews(t *testing.T) {

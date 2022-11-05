@@ -123,7 +123,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processMetrics,
@@ -194,7 +194,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processTraces,
@@ -265,7 +265,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processLogs,
@@ -430,9 +430,9 @@ type host struct {
 	component.Host
 }
 
-func (h *host) GetExtensions() map[config.ComponentID]component.Extension {
-	ret := make(map[config.ComponentID]component.Extension)
-	ret[config.NewComponentID("ballast")] = &ballastExtension{ballastSize: h.ballastSize}
+func (h *host) GetExtensions() map[component.ID]component.Extension {
+	ret := make(map[component.ID]component.Extension)
+	ret[component.NewID("ballast")] = &ballastExtension{ballastSize: h.ballastSize}
 	return ret
 }
 
@@ -448,7 +448,7 @@ func (be *ballastExtension) GetBallastSize() uint64 {
 
 func newObsReport() *obsreport.Processor {
 	set := obsreport.ProcessorSettings{
-		ProcessorID:             config.NewComponentID(typeStr),
+		ProcessorID:             component.NewID(typeStr),
 		ProcessorCreateSettings: componenttest.NewNopProcessorCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone

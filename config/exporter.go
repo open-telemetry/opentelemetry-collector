@@ -14,24 +14,8 @@
 
 package config // import "go.opentelemetry.io/collector/config"
 import (
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/component"
 )
-
-// Exporter is the configuration of a component.Exporter. Specific extensions must implement
-// this interface and must embed ExporterSettings struct or a struct that extends it.
-type Exporter interface {
-	identifiable
-	validatable
-
-	privateConfigExporter()
-}
-
-// UnmarshalExporter helper function to unmarshal an Exporter config.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalExporter(conf *confmap.Conf, cfg Exporter) error {
-	return unmarshal(conf, cfg)
-}
 
 // ExporterSettings defines common settings for a component.Exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
@@ -40,29 +24,28 @@ func UnmarshalExporter(conf *confmap.Conf, cfg Exporter) error {
 //
 // When embedded in the exporter config, it must be with `mapstructure:",squash"` tag.
 type ExporterSettings struct {
-	id ComponentID `mapstructure:"-"`
+	id component.ID `mapstructure:"-"`
+	component.ExporterConfig
 }
 
 // NewExporterSettings return a new ExporterSettings with the given ComponentID.
-func NewExporterSettings(id ComponentID) ExporterSettings {
-	return ExporterSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
+func NewExporterSettings(id component.ID) ExporterSettings {
+	return ExporterSettings{id: id}
 }
 
-var _ Exporter = (*ExporterSettings)(nil)
+var _ component.ExporterConfig = (*ExporterSettings)(nil)
 
-// ID returns the receiver ComponentID.
-func (es *ExporterSettings) ID() ComponentID {
+// ID returns the receiver component.ID.
+func (es *ExporterSettings) ID() component.ID {
 	return es.id
 }
 
 // SetIDName sets the receiver name.
 func (es *ExporterSettings) SetIDName(idName string) {
-	es.id.nameVal = idName
+	es.id = component.NewIDWithName(es.id.Type(), idName)
 }
 
 // Validate validates the configuration and returns an error if invalid.
 func (es *ExporterSettings) Validate() error {
 	return nil
 }
-
-func (es *ExporterSettings) privateConfigExporter() {}
