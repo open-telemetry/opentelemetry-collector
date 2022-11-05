@@ -18,7 +18,7 @@ The following settings are optional:
   (debug|info|warn|error). When set to `debug`, pipeline data is verbosely
 - `verbosity` (default = `normal`): the verbosity of the logging export
   (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
-  logged. Anything above loglevel `info` is mapped to verbosity level `basic`.
+  logged.
 - `sampling_initial` (default = `2`): number of messages initially logged each
   second.
 - `sampling_thereafter` (default = `500`): sampling rate after the initial
