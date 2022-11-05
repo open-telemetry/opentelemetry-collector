@@ -46,7 +46,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 		telemetry:      newColTelemetry(featuregate.NewRegistry()),
 	}
 	cmd := NewCommand(set)
-	cmd.SetArgs([]string{"build-info"})
+	cmd.SetArgs([]string{"components"})
 
 	ExpectedYamlStruct := componentsOutput{
 		BuildInfo:  component.NewDefaultBuildInfo(),
