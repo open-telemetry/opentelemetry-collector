@@ -77,9 +77,9 @@ func WithErrorUnused() UnmarshalOption {
 
 // WithDecodeHookFunc allows adding custom mapstucture.DecodeHookFunc to the decoder.
 // Can be called multiple times to add multiple hook functions.
-func WithDecodeHookFunc(fn mapstructure.DecodeHookFunc) UnmarshalOption {
+func WithDecodeHookFunc(fn ...mapstructure.DecodeHookFunc) UnmarshalOption {
 	return unmarshalOptionFunc(func(uo *unmarshalOption) {
-		uo.hookFuncs = append(uo.hookFuncs, fn)
+		uo.hookFuncs = append(uo.hookFuncs, fn...)
 	})
 }
 
@@ -101,9 +101,9 @@ func (l *Conf) Unmarshal(result interface{}, opts ...UnmarshalOption) error {
 
 // WithHookFunc allows adding custom mapstucture.DecodeHookFunc to the encoder.
 // Can be called multiple times to add multiple hook functions.
-func WithEncodeHookFunc(fn mapstructure.DecodeHookFunc) MarshalOption {
+func WithEncodeHookFunc(fn ...mapstructure.DecodeHookFunc) MarshalOption {
 	return marshalOptionFunc(func(uo *marshalOption) {
-		uo.hookFuncs = append(uo.hookFuncs, fn)
+		uo.hookFuncs = append(uo.hookFuncs, fn...)
 	})
 }
 
