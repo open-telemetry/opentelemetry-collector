@@ -18,6 +18,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -161,6 +162,28 @@ func TestUnmarshalWithErrorUnused(t *testing.T) {
 	}
 	conf := NewFromStringMap(stringMap)
 	assert.Error(t, conf.Unmarshal(&TestIDConfig{}, WithErrorUnused()))
+}
+
+func TestUnmarshalWithDecodeHookFunc(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"boolean": true,
+		"string":  "this is a string",
+	}
+	conf := NewFromStringMap(stringMap)
+	assert.Error(t, conf.Unmarshal(&TestIDConfig{}, WithDecodeHookFunc(func(f reflect.Kind, t reflect.Kind, data any) (any, error) {
+		return nil, errors.New("decode hook error")
+	})))
+}
+
+func TestMarshalWithEncodeHookFunc(t *testing.T) {
+	stringMap := map[string]interface{}{
+		"boolean": true,
+		"string":  "this is a string",
+	}
+	conf := NewFromStringMap(stringMap)
+	assert.Error(t, conf.Marshal(&TestIDConfig{}, WithEncodeHookFunc(func(f reflect.Kind, t reflect.Kind, data any) (any, error) {
+		return nil, errors.New("encode hook error")
+	})))
 }
 
 type TestConfig struct {

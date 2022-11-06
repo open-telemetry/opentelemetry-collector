@@ -63,6 +63,7 @@ type UnmarshalOption interface {
 
 type unmarshalOption struct {
 	errorUnused bool
+	hookFuncs   []mapstructure.DecodeHookFunc
 }
 
 // WithErrorUnused sets an option to error when there are existing
@@ -71,6 +72,14 @@ type unmarshalOption struct {
 func WithErrorUnused() UnmarshalOption {
 	return unmarshalOptionFunc(func(uo *unmarshalOption) {
 		uo.errorUnused = true
+	})
+}
+
+// WithDecodeHookFunc allows adding custom mapstucture.DecodeHookFunc to the decoder.
+// Can be called multiple times to add multiple hook functions.
+func WithDecodeHookFunc(fn mapstructure.DecodeHookFunc) UnmarshalOption {
+	return unmarshalOptionFunc(func(uo *unmarshalOption) {
+		uo.hookFuncs = append(uo.hookFuncs, fn)
 	})
 }
 
@@ -87,18 +96,38 @@ func (l *Conf) Unmarshal(result interface{}, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		opt.apply(&set)
 	}
-	return decodeConfig(l, result, set.errorUnused)
+	return decodeConfig(l, result, set.errorUnused, set.hookFuncs...)
 }
 
-type marshalOption struct{}
+// WithHookFunc allows adding custom mapstucture.DecodeHookFunc to the encoder.
+// Can be called multiple times to add multiple hook functions.
+func WithEncodeHookFunc(fn mapstructure.DecodeHookFunc) MarshalOption {
+	return marshalOptionFunc(func(uo *marshalOption) {
+		uo.hookFuncs = append(uo.hookFuncs, fn)
+	})
+}
 
 type MarshalOption interface {
 	apply(*marshalOption)
 }
 
+type marshalOption struct {
+	hookFuncs []mapstructure.DecodeHookFunc
+}
+
+type marshalOptionFunc func(*marshalOption)
+
+func (fn marshalOptionFunc) apply(set *marshalOption) {
+	fn(set)
+}
+
 // Marshal encodes the config and merges it into the Conf.
-func (l *Conf) Marshal(rawVal interface{}, _ ...MarshalOption) error {
-	enc := encoder.New(encoderConfig(rawVal))
+func (l *Conf) Marshal(rawVal interface{}, opts ...MarshalOption) error {
+	set := marshalOption{}
+	for _, opt := range opts {
+		opt.apply(&set)
+	}
+	enc := encoder.New(encoderConfig(rawVal, set.hookFuncs...))
 	data, err := enc.Encode(rawVal)
 	if err != nil {
 		return err
@@ -155,20 +184,23 @@ func (l *Conf) ToStringMap() map[string]interface{} {
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result interface{}, errorUnused bool) error {
+// Allows adding multiple custom mapstructure.DecodeHookFunc.
+func decodeConfig(m *Conf, result interface{}, errorUnused bool, hookFuncs ...mapstructure.DecodeHookFunc) error {
+	hookFuncs = append(hookFuncs,
+		// Default mapstructure hooks.
+		expandNilStructPointersHookFunc(),
+		mapstructure.StringToSliceHookFunc(","),
+		mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
+		mapstructure.StringToTimeDurationHookFunc(),
+		mapstructure.TextUnmarshallerHookFunc(),
+		unmarshalerHookFunc(result),
+	)
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
 		TagName:          "mapstructure",
 		WeaklyTypedInput: true,
-		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-			expandNilStructPointersHookFunc(),
-			mapstructure.StringToSliceHookFunc(","),
-			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
-			mapstructure.StringToTimeDurationHookFunc(),
-			mapstructure.TextUnmarshallerHookFunc(),
-			unmarshalerHookFunc(result),
-		),
+		DecodeHook:       mapstructure.ComposeDecodeHookFunc(hookFuncs...),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
@@ -179,13 +211,15 @@ func decodeConfig(m *Conf, result interface{}, errorUnused bool) error {
 
 // encoderConfig returns a default encoder.EncoderConfig that includes
 // an EncodeHook that handles both TextMarshaller and Marshaler
-// interfaces.
-func encoderConfig(rawVal interface{}) *encoder.EncoderConfig {
+// interfaces. Allows adding multiple custom mapstructure.DecodeHookFunc.
+func encoderConfig(rawVal interface{}, hookFuncs ...mapstructure.DecodeHookFunc) *encoder.EncoderConfig {
+	hookFuncs = append(hookFuncs,
+		// Default mapstructure hooks.
+		encoder.TextMarshalerHookFunc(),
+		marshalerHookFunc(rawVal),
+	)
 	return &encoder.EncoderConfig{
-		EncodeHook: mapstructure.ComposeDecodeHookFunc(
-			encoder.TextMarshalerHookFunc(),
-			marshalerHookFunc(rawVal),
-		),
+		EncodeHook: mapstructure.ComposeDecodeHookFunc(hookFuncs...),
 	}
 }
 
