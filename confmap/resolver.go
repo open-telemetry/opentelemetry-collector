@@ -44,11 +44,11 @@ const expandEnabled = "confmap.expandEnabled"
 
 func init() {
 	// TODO: Remove this if by v0.64.0 no complains from distros.
-	featuregate.GetRegistry().MustRegister(featuregate.Gate{
-		ID:          expandEnabled,
-		Description: "controls whether expending embedded external config providers URIs",
-		Enabled:     true,
-	})
+	featuregate.GetRegistry().MustRegisterID(
+		expandEnabled,
+		featuregate.Beta,
+		featuregate.WithRegisterDescription("controls whether expending embedded external config providers URIs"),
+	)
 }
 
 // Resolver resolves a configuration as a Conf.
