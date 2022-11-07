@@ -59,9 +59,13 @@ var configNop = &Config{
 		},
 		Telemetry: telemetry.Config{
 			Logs: telemetry.LogsConfig{
-				Level:             zapcore.InfoLevel,
-				Development:       false,
-				Encoding:          "console",
+				Level:       zapcore.InfoLevel,
+				Development: false,
+				Encoding:    "console",
+				Sampling: &telemetry.LogsSamplingConfig{
+					Initial:    100,
+					Thereafter: 100,
+				},
 				OutputPaths:       []string{"stderr"},
 				ErrorOutputPaths:  []string{"stderr"},
 				DisableCaller:     false,

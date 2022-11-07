@@ -63,6 +63,9 @@ type LogsConfig struct {
 	// (default = false)
 	DisableStacktrace bool `mapstructure:"disable_stacktrace"`
 
+	// Sampling sets a sampling policy. A nil SamplingConfig disables sampling.
+	Sampling *LogsSamplingConfig `mapstructure:"sampling"`
+
 	// OutputPaths is a list of URLs or file paths to write logging output to.
 	// The URLs could only be with "file" schema or without schema.
 	// The URLs with "file" schema must be an absolute path.
@@ -91,6 +94,14 @@ type LogsConfig struct {
 	//
 	// By default, there is no initial field.
 	InitialFields map[string]interface{} `mapstructure:"initial_fields"`
+}
+
+// LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
+// global CPU and I/O load that logging puts on your process while attempting
+// to preserve a representative subset of your logs.
+type LogsSamplingConfig struct {
+	Initial    int `mapstructure:"initial"`
+	Thereafter int `mapstructure:"thereafter"`
 }
 
 // MetricsConfig exposes the common Telemetry configuration for one component.
