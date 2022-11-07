@@ -149,6 +149,10 @@ func (cfg *Config) validateService() error {
 				return fmt.Errorf("pipeline %q references exporter %q which does not exist", pipelineID, ref)
 			}
 		}
+
+		if err := cfg.Service.Telemetry.Validate(); err != nil {
+			fmt.Printf("telemetry config validation failed, %v\n", err)
+		}
 	}
 	return nil
 }

@@ -86,7 +86,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "custom-service-telemetrySettings-encoding",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Service.Telemetry.Logs.Encoding = "test_encoding"
+				cfg.Service.Telemetry.Logs.Encoding = "json"
 				return cfg
 			},
 			expected: nil,
@@ -237,6 +237,16 @@ func TestConfigValidate(t *testing.T) {
 				return cfg
 			},
 			expected: errors.New(`unknown pipeline datatype "wrongtype" for wrongtype`),
+		},
+		{
+			name: "invalid-telemetry-metric-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Service.Telemetry.Metrics.Level = configtelemetry.LevelBasic
+				cfg.Service.Telemetry.Metrics.Address = ""
+				return cfg
+			},
+			expected: nil,
 		},
 	}
 
