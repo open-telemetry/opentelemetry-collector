@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 
 	"go.uber.org/multierr"
 
@@ -57,7 +56,6 @@ type Resolver struct {
 	providers  map[string]Provider
 	converters []Converter
 
-	sync.Mutex
 	closers []CloseFunc
 	watcher chan error
 }
