@@ -83,12 +83,12 @@ func TestServiceGetExporters(t *testing.T) {
 
 	expMap := srv.host.GetExporters()
 	assert.Len(t, expMap, 3)
-	assert.Len(t, expMap[component.TracesDataType], 1)
-	assert.Contains(t, expMap[component.TracesDataType], component.NewID("nop"))
-	assert.Len(t, expMap[component.MetricsDataType], 1)
-	assert.Contains(t, expMap[component.MetricsDataType], component.NewID("nop"))
-	assert.Len(t, expMap[component.LogsDataType], 1)
-	assert.Contains(t, expMap[component.LogsDataType], component.NewID("nop"))
+	assert.Len(t, expMap[component.DataTypeTraces], 1)
+	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID("nop"))
+	assert.Len(t, expMap[component.DataTypeMetrics], 1)
+	assert.Contains(t, expMap[component.DataTypeMetrics], component.NewID("nop"))
+	assert.Len(t, expMap[component.DataTypeLogs], 1)
+	assert.Contains(t, expMap[component.DataTypeLogs], component.NewID("nop"))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up

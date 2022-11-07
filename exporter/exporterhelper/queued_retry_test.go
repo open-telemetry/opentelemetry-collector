@@ -432,7 +432,7 @@ func TestGetRetrySettings(t *testing.T) {
 			ownerID := component.NewID("foo_exporter")
 
 			// execute
-			client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.TracesDataType)
+			client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
 
 			// verify
 			if tC.expectedError != nil {
@@ -462,7 +462,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	ownerID := component.NewID("foo_exporter")
 
 	// execute
-	client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.TracesDataType)
+	client, err := toStorageClient(context.Background(), storageID, host, ownerID, component.DataTypeTraces)
 
 	// we should get an error about the extension type
 	assert.ErrorIs(t, err, errWrongExtensionType)

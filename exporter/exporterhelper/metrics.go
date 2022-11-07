@@ -99,7 +99,7 @@ func NewMetricsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set, bs, component.MetricsDataType, newMetricsRequestUnmarshalerFunc(pusher))
+	be := newBaseExporter(cfg, set, bs, component.DataTypeMetrics, newMetricsRequestUnmarshalerFunc(pusher))
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &metricsSenderWithObservability{
 			obsrep:     be.obsrep,

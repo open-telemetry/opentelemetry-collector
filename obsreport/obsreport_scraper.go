@@ -102,7 +102,7 @@ func (s *Scraper) EndMetricsOp(
 	// end span according to errors
 	if span.IsRecording() {
 		span.SetAttributes(
-			attribute.String(obsmetrics.FormatKey, string(component.MetricsDataType)),
+			attribute.String(obsmetrics.FormatKey, string(component.DataTypeMetrics)),
 			attribute.Int64(obsmetrics.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
 			attribute.Int64(obsmetrics.ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)

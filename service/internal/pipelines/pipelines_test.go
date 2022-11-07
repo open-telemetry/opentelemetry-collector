@@ -99,51 +99,51 @@ func TestBuild(t *testing.T) {
 
 			// Verify exporters created, started and empty.
 			for _, expID := range test.exporterIDs {
-				traceExporter := pipelines.GetExporters()[component.TracesDataType][expID].(*testcomponents.ExampleExporter)
+				traceExporter := pipelines.GetExporters()[component.DataTypeTraces][expID].(*testcomponents.ExampleExporter)
 				assert.True(t, traceExporter.Started)
 				assert.Equal(t, len(traceExporter.Traces), 0)
 
 				// Validate metrics.
-				metricsExporter := pipelines.GetExporters()[component.MetricsDataType][expID].(*testcomponents.ExampleExporter)
+				metricsExporter := pipelines.GetExporters()[component.DataTypeMetrics][expID].(*testcomponents.ExampleExporter)
 				assert.True(t, metricsExporter.Started)
 				assert.Zero(t, len(metricsExporter.Traces))
 
 				// Validate logs.
-				logsExporter := pipelines.GetExporters()[component.LogsDataType][expID].(*testcomponents.ExampleExporter)
+				logsExporter := pipelines.GetExporters()[component.DataTypeLogs][expID].(*testcomponents.ExampleExporter)
 				assert.True(t, logsExporter.Started)
 				assert.Zero(t, len(logsExporter.Traces))
 			}
 
 			// Verify processors created in the given order and started.
 			for i, procID := range test.processorIDs {
-				traceProcessor := pipelines.pipelines[component.NewID(component.TracesDataType)].processors[i]
+				traceProcessor := pipelines.pipelines[component.NewID(component.DataTypeTraces)].processors[i]
 				assert.Equal(t, procID, traceProcessor.id)
 				assert.True(t, traceProcessor.comp.(*testcomponents.ExampleProcessor).Started)
 
 				// Validate metrics.
-				metricsProcessor := pipelines.pipelines[component.NewID(component.MetricsDataType)].processors[i]
+				metricsProcessor := pipelines.pipelines[component.NewID(component.DataTypeMetrics)].processors[i]
 				assert.Equal(t, procID, metricsProcessor.id)
 				assert.True(t, metricsProcessor.comp.(*testcomponents.ExampleProcessor).Started)
 
 				// Validate logs.
-				logsProcessor := pipelines.pipelines[component.NewID(component.LogsDataType)].processors[i]
+				logsProcessor := pipelines.pipelines[component.NewID(component.DataTypeLogs)].processors[i]
 				assert.Equal(t, procID, logsProcessor.id)
 				assert.True(t, logsProcessor.comp.(*testcomponents.ExampleProcessor).Started)
 			}
 
 			// Verify receivers created, started and send data to confirm pipelines correctly connected.
 			for _, recvID := range test.receiverIDs {
-				traceReceiver := pipelines.allReceivers[component.TracesDataType][recvID].(*testcomponents.ExampleReceiver)
+				traceReceiver := pipelines.allReceivers[component.DataTypeTraces][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, traceReceiver.Started)
 				// Send traces.
 				assert.NoError(t, traceReceiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 
-				metricsReceiver := pipelines.allReceivers[component.MetricsDataType][recvID].(*testcomponents.ExampleReceiver)
+				metricsReceiver := pipelines.allReceivers[component.DataTypeMetrics][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, metricsReceiver.Started)
 				// Send metrics.
 				assert.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 
-				logsReceiver := pipelines.allReceivers[component.LogsDataType][recvID].(*testcomponents.ExampleReceiver)
+				logsReceiver := pipelines.allReceivers[component.DataTypeLogs][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, logsReceiver.Started)
 				// Send logs.
 				assert.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
@@ -153,46 +153,46 @@ func TestBuild(t *testing.T) {
 
 			// Verify receivers shutdown.
 			for _, recvID := range test.receiverIDs {
-				traceReceiver := pipelines.allReceivers[component.TracesDataType][recvID].(*testcomponents.ExampleReceiver)
+				traceReceiver := pipelines.allReceivers[component.DataTypeTraces][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, traceReceiver.Stopped)
 
-				metricsReceiver := pipelines.allReceivers[component.MetricsDataType][recvID].(*testcomponents.ExampleReceiver)
+				metricsReceiver := pipelines.allReceivers[component.DataTypeMetrics][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, metricsReceiver.Stopped)
 
-				logsReceiver := pipelines.allReceivers[component.LogsDataType][recvID].(*testcomponents.ExampleReceiver)
+				logsReceiver := pipelines.allReceivers[component.DataTypeLogs][recvID].(*testcomponents.ExampleReceiver)
 				assert.True(t, logsReceiver.Stopped)
 			}
 
 			// Verify processors shutdown.
 			for i := range test.processorIDs {
-				traceProcessor := pipelines.pipelines[component.NewID(component.TracesDataType)].processors[i]
+				traceProcessor := pipelines.pipelines[component.NewID(component.DataTypeTraces)].processors[i]
 				assert.True(t, traceProcessor.comp.(*testcomponents.ExampleProcessor).Stopped)
 
 				// Validate metrics.
-				metricsProcessor := pipelines.pipelines[component.NewID(component.MetricsDataType)].processors[i]
+				metricsProcessor := pipelines.pipelines[component.NewID(component.DataTypeMetrics)].processors[i]
 				assert.True(t, metricsProcessor.comp.(*testcomponents.ExampleProcessor).Stopped)
 
 				// Validate logs.
-				logsProcessor := pipelines.pipelines[component.NewID(component.LogsDataType)].processors[i]
+				logsProcessor := pipelines.pipelines[component.NewID(component.DataTypeLogs)].processors[i]
 				assert.True(t, logsProcessor.comp.(*testcomponents.ExampleProcessor).Stopped)
 			}
 
 			// Now verify that exporters received data, and are shutdown.
 			for _, expID := range test.exporterIDs {
 				// Validate traces.
-				traceExporter := pipelines.GetExporters()[component.TracesDataType][expID].(*testcomponents.ExampleExporter)
+				traceExporter := pipelines.GetExporters()[component.DataTypeTraces][expID].(*testcomponents.ExampleExporter)
 				require.Len(t, traceExporter.Traces, test.expectedRequests)
 				assert.EqualValues(t, testdata.GenerateTraces(1), traceExporter.Traces[0])
 				assert.True(t, traceExporter.Stopped)
 
 				// Validate metrics.
-				metricsExporter := pipelines.GetExporters()[component.MetricsDataType][expID].(*testcomponents.ExampleExporter)
+				metricsExporter := pipelines.GetExporters()[component.DataTypeMetrics][expID].(*testcomponents.ExampleExporter)
 				require.Len(t, metricsExporter.Metrics, test.expectedRequests)
 				assert.EqualValues(t, testdata.GenerateMetrics(1), metricsExporter.Metrics[0])
 				assert.True(t, metricsExporter.Stopped)
 
 				// Validate logs.
-				logsExporter := pipelines.GetExporters()[component.LogsDataType][expID].(*testcomponents.ExampleExporter)
+				logsExporter := pipelines.GetExporters()[component.DataTypeLogs][expID].(*testcomponents.ExampleExporter)
 				require.Len(t, logsExporter.Logs, test.expectedRequests)
 				assert.EqualValues(t, testdata.GenerateLogs(1), logsExporter.Logs[0])
 				assert.True(t, logsExporter.Stopped)
@@ -300,7 +300,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 		},
 	}
 
-	for _, dt := range []component.DataType{component.TracesDataType, component.MetricsDataType, component.LogsDataType} {
+	for _, dt := range []component.DataType{component.DataTypeTraces, component.DataTypeMetrics, component.DataTypeLogs} {
 		t.Run(string(dt)+"/receiver", func(t *testing.T) {
 			set.PipelineConfigs = map[component.ID]*config.Pipeline{
 				component.NewID(dt): {

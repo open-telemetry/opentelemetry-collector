@@ -142,9 +142,9 @@ func (bps *Pipelines) ShutdownAll(ctx context.Context) error {
 func (bps *Pipelines) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
 	exportersMap := make(map[component.DataType]map[component.ID]component.Exporter)
 
-	exportersMap[component.TracesDataType] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.TracesDataType]))
-	exportersMap[component.MetricsDataType] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.MetricsDataType]))
-	exportersMap[component.LogsDataType] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.LogsDataType]))
+	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.DataTypeTraces]))
+	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.DataTypeMetrics]))
+	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.DataTypeLogs]))
 
 	for dt, expByID := range bps.allExporters {
 		for expID, exp := range expByID {
@@ -251,11 +251,11 @@ func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 
 		// Build a fan out consumer to all exporters.
 		switch pipelineID.Type() {
-		case component.TracesDataType:
+		case component.DataTypeTraces:
 			bp.lastConsumer = buildFanOutExportersTracesConsumer(bp.exporters)
-		case component.MetricsDataType:
+		case component.DataTypeMetrics:
 			bp.lastConsumer = buildFanOutExportersMetricsConsumer(bp.exporters)
-		case component.LogsDataType:
+		case component.DataTypeLogs:
 			bp.lastConsumer = buildFanOutExportersLogsConsumer(bp.exporters)
 		default:
 			return nil, fmt.Errorf("create fan-out exporter in pipeline %q, data type %q is not supported", pipelineID, pipelineID.Type())
@@ -281,11 +281,11 @@ func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 		// Some consumers may not correctly implement the Capabilities, and ignore the next consumer when calculated the Capabilities.
 		// Because of this wrap the first consumer if any consumers in the pipeline mutate the data and the first says that it doesn't.
 		switch pipelineID.Type() {
-		case component.TracesDataType:
+		case component.DataTypeTraces:
 			bp.lastConsumer = capTraces{Traces: bp.lastConsumer.(consumer.Traces), cap: consumer.Capabilities{MutatesData: mutatesConsumedData}}
-		case component.MetricsDataType:
+		case component.DataTypeMetrics:
 			bp.lastConsumer = capMetrics{Metrics: bp.lastConsumer.(consumer.Metrics), cap: consumer.Capabilities{MutatesData: mutatesConsumedData}}
-		case component.LogsDataType:
+		case component.DataTypeLogs:
 			bp.lastConsumer = capLogs{Logs: bp.lastConsumer.(consumer.Logs), cap: consumer.Capabilities{MutatesData: mutatesConsumedData}}
 		default:
 			return nil, fmt.Errorf("create cap consumer in pipeline %q, data type %q is not supported", pipelineID, pipelineID.Type())
@@ -367,13 +367,13 @@ func buildExporter(
 
 func createExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig, id component.ID, pipelineID component.ID, factory component.ExporterFactory) (component.Exporter, error) {
 	switch pipelineID.Type() {
-	case component.TracesDataType:
+	case component.DataTypeTraces:
 		return factory.CreateTracesExporter(ctx, set, cfg)
 
-	case component.MetricsDataType:
+	case component.DataTypeMetrics:
 		return factory.CreateMetricsExporter(ctx, set, cfg)
 
-	case component.LogsDataType:
+	case component.DataTypeLogs:
 		return factory.CreateLogsExporter(ctx, set, cfg)
 	}
 	return nil, fmt.Errorf("error creating exporter %q in pipeline %q, data type %q is not supported", id, pipelineID, pipelineID.Type())
@@ -415,11 +415,11 @@ func exporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 
 func getExporterStabilityLevel(factory component.ExporterFactory, dt component.DataType) component.StabilityLevel {
 	switch dt {
-	case component.TracesDataType:
+	case component.DataTypeTraces:
 		return factory.TracesExporterStability()
-	case component.MetricsDataType:
+	case component.DataTypeMetrics:
 		return factory.MetricsExporterStability()
-	case component.LogsDataType:
+	case component.DataTypeLogs:
 		return factory.LogsExporterStability()
 	}
 	return component.StabilityLevelUndefined
@@ -460,13 +460,13 @@ func buildProcessor(ctx context.Context,
 
 func createProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig, id component.ID, pipelineID component.ID, next baseConsumer, factory component.ProcessorFactory) (component.Processor, error) {
 	switch pipelineID.Type() {
-	case component.TracesDataType:
+	case component.DataTypeTraces:
 		return factory.CreateTracesProcessor(ctx, set, cfg, next.(consumer.Traces))
 
-	case component.MetricsDataType:
+	case component.DataTypeMetrics:
 		return factory.CreateMetricsProcessor(ctx, set, cfg, next.(consumer.Metrics))
 
-	case component.LogsDataType:
+	case component.DataTypeLogs:
 		return factory.CreateLogsProcessor(ctx, set, cfg, next.(consumer.Logs))
 	}
 	return nil, fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", id, pipelineID, pipelineID.Type())
@@ -481,11 +481,11 @@ func processorLogger(logger *zap.Logger, procID component.ID, pipelineID compone
 
 func getProcessorStabilityLevel(factory component.ProcessorFactory, dt component.DataType) component.StabilityLevel {
 	switch dt {
-	case component.TracesDataType:
+	case component.DataTypeTraces:
 		return factory.TracesProcessorStability()
-	case component.MetricsDataType:
+	case component.DataTypeMetrics:
 		return factory.MetricsProcessorStability()
-	case component.LogsDataType:
+	case component.DataTypeLogs:
 		return factory.LogsProcessorStability()
 	}
 	return component.StabilityLevelUndefined
@@ -527,19 +527,19 @@ func buildReceiver(ctx context.Context,
 
 func createReceiver(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory component.ReceiverFactory) (component.Receiver, error) {
 	switch pipelineID.Type() {
-	case component.TracesDataType:
+	case component.DataTypeTraces:
 		var consumers []consumer.Traces
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Traces))
 		}
 		return factory.CreateTracesReceiver(ctx, set, cfg, fanoutconsumer.NewTraces(consumers))
-	case component.MetricsDataType:
+	case component.DataTypeMetrics:
 		var consumers []consumer.Metrics
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Metrics))
 		}
 		return factory.CreateMetricsReceiver(ctx, set, cfg, fanoutconsumer.NewMetrics(consumers))
-	case component.LogsDataType:
+	case component.DataTypeLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Logs))
@@ -558,11 +558,11 @@ func receiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 
 func getReceiverStabilityLevel(factory component.ReceiverFactory, dt component.DataType) component.StabilityLevel {
 	switch dt {
-	case component.TracesDataType:
+	case component.DataTypeTraces:
 		return factory.TracesReceiverStability()
-	case component.MetricsDataType:
+	case component.DataTypeMetrics:
 		return factory.MetricsReceiverStability()
-	case component.LogsDataType:
+	case component.DataTypeLogs:
 		return factory.LogsReceiverStability()
 	}
 	return component.StabilityLevelUndefined

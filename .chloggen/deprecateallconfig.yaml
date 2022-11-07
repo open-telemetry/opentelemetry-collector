@@ -17,6 +17,7 @@ subtext: |
   - config.ComponentID => component.ID
   - config.Type => component.Type
   - config.DataType => component.DataType
+  - config.[Traces|Metrics|Logs]DataType => component.DataType[Traces|Metrics|Logs]
   - config.Receiver => component.ReceiverConfig
   - config.UnmarshalReceiver => component.UnmarshalReceiverConfig
   - config.Processor => component.ProcessorConfig

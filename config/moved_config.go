@@ -59,14 +59,14 @@ type Type = component.Type
 // Deprecated: [v0.64.0] use component.DataType.
 type DataType = component.DataType
 
-// Deprecated: [v0.64.0] use component.TracesDataType.
-const TracesDataType = component.TracesDataType
+// Deprecated: [v0.64.0] use component.DataTypeTraces.
+const TracesDataType = component.DataTypeTraces
 
-// Deprecated: [v0.64.0] use component.MetricsDataType.
-const MetricsDataType = component.MetricsDataType
+// Deprecated: [v0.64.0] use component.DataTypeMetrics.
+const MetricsDataType = component.DataTypeMetrics
 
-// Deprecated: [v0.64.0] use component.LogsDataType.
-const LogsDataType = component.LogsDataType
+// Deprecated: [v0.64.0] use component.DataTypeLogs.
+const LogsDataType = component.DataTypeLogs
 
 // Deprecated: [v0.64.0] use component.ID.
 type ComponentID = component.ID
