@@ -145,6 +145,8 @@ func TestNewDefaultConfig(t *testing.T) {
 	require.NoError(t, cfg.ParseModules())
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())
+	require.NoError(t, cfg.Validate())
+	assert.False(t, cfg.Distribution.DebugCompilation)
 }
 
 func TestNewBuiltinConfig(t *testing.T) {
@@ -188,4 +190,16 @@ func TestSkipGoInitialization(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())
 	assert.Zero(t, cfg.Distribution.Go)
+}
+
+func TestDebugOptionSetConfig(t *testing.T) {
+	cfg := Config{
+		Distribution: Distribution{
+			DebugCompilation: true,
+		},
+		SkipCompilation: true,
+		SkipGetModules:  true,
+	}
+	assert.NoError(t, cfg.Validate())
+	assert.True(t, cfg.Distribution.DebugCompilation)
 }
