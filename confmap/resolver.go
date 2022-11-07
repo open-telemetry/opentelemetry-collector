@@ -46,7 +46,7 @@ func init() {
 	// TODO: Remove this if by v0.64.0 no complains from distros.
 	featuregate.GetRegistry().MustRegisterID(
 		expandEnabled,
-		featuregate.Beta,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("controls whether expending embedded external config providers URIs"),
 	)
 }

@@ -23,31 +23,31 @@ import (
 type Stage int8
 
 const (
-	// Alpha is used when creating a new feature and the Gate must be explicitly enabled
+	// StageAlpha is used when creating a new feature and the Gate must be explicitly enabled
 	// by the operator.
 	//
 	// The Gate will be disabled by default.
-	Alpha Stage = iota
-	// Beta is used when the feature flag is well tested and is enabled by default,
+	StageAlpha Stage = iota
+	// StageBeta is used when the feature flag is well tested and is enabled by default,
 	// but can be disabled by a Gate.
 	//
 	// The Gate will be enabled by default.
-	Beta
-	// Stable is used when feature is permanently enabled and can not be disabled by a Gate.
+	StageBeta
+	// StageStable is used when feature is permanently enabled and can not be disabled by a Gate.
 	// This value is used to provide feedback to the user that the gate will be removed in the next version.
 	//
 	// The Gate will be enabled by default and will return an error if modified.
-	Stable
+	StageStable
 )
 
 func (s Stage) String() string {
 	switch s {
-	case Alpha:
-		return "Alpha"
-	case Beta:
-		return "Beta"
-	case Stable:
-		return "Stable"
+	case StageAlpha:
+		return "StageAlpha"
+	case StageBeta:
+		return "StageBeta"
+	case StageStable:
+		return "StageStable"
 	}
 	return "unknown"
 }
@@ -89,7 +89,7 @@ func WithRegisterReferenceURL(url string) RegistryOption {
 	}
 }
 
-// WithRegisterRemovalVersion is used when the `Gate` is considered `Stable`,
+// WithRegisterRemovalVersion is used when the `Gate` is considered `StageStable`,
 // to inform users that referencing the gate is no longer needed.
 func WithRegisterRemovalVersion(version string) RegistryOption {
 	return func(g *Gate) {
@@ -148,7 +148,7 @@ func (r *Registry) Apply(cfg map[string]bool) error {
 		if !ok {
 			return fmt.Errorf("feature gate %s is unregistered", id)
 		}
-		if g.stage == Stable {
+		if g.stage == StageStable {
 			return fmt.Errorf("feature gate %s is stable, can not be modified", id)
 		}
 		g.Enabled = val
@@ -206,14 +206,14 @@ func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) er
 		opt(&g)
 	}
 	switch g.stage {
-	case Alpha:
+	case StageAlpha:
 		g.Enabled = false
-	case Beta, Stable:
+	case StageBeta, StageStable:
 		g.Enabled = true
 	default:
 		return fmt.Errorf("unknown stage value %q for gate %q", stage, id)
 	}
-	if g.stage == Stable && g.removalVersion == "" {
+	if g.stage == StageStable && g.removalVersion == "" {
 		return fmt.Errorf("no removal version set for stable gate %q", id)
 	}
 	r.gates[id] = g
