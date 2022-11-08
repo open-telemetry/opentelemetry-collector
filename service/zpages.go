@@ -75,9 +75,9 @@ func getFeaturesTableData() zpages.FeatureGateTableData {
 			ID:             g.GetID(),
 			Enabled:        g.IsEnabled(),
 			Description:    g.GetDescription(),
-			ReferenceURL:   g.GetReferenceURL(),
-			Stage:          g.GetStage().String(),
-			RemovalVersion: g.GetRemovalVersion(),
+			ReferenceURL:   g.ReferenceURL(),
+			Stage:          g.Stage().String(),
+			RemovalVersion: g.RemovalVersion(),
 		})
 	}
 

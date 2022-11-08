@@ -192,9 +192,9 @@ func TestGateMethods(t *testing.T) {
 	assert.Equal(t, "test", g.GetID())
 	assert.Equal(t, "test gate", g.GetDescription())
 	assert.Equal(t, false, g.IsEnabled())
-	assert.Equal(t, Alpha, g.GetStage())
-	assert.Equal(t, "http://example.com", g.GetReferenceURL())
-	assert.Equal(t, "v0.64.0", g.GetRemovalVersion())
+	assert.Equal(t, Alpha, g.Stage())
+	assert.Equal(t, "http://example.com", g.ReferenceURL())
+	assert.Equal(t, "v0.64.0", g.RemovalVersion())
 }
 
 func TestStageNames(t *testing.T) {

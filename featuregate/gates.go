@@ -109,15 +109,15 @@ func (g *Gate) GetDescription() string {
 	return g.Description
 }
 
-func (g *Gate) GetStage() Stage {
+func (g *Gate) Stage() Stage {
 	return g.stage
 }
 
-func (g *Gate) GetReferenceURL() string {
+func (g *Gate) ReferenceURL() string {
 	return g.referenceURL
 }
 
-func (g *Gate) GetRemovalVersion() string {
+func (g *Gate) RemovalVersion() string {
 	return g.removalVersion
 }
 
