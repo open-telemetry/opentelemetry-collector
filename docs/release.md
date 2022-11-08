@@ -134,5 +134,5 @@ The OpenTelemetry Collector maintainers will ultimately have the responsibility 
 | 2022-12-07 | v0.66.0 | @Aneurysm9      |
 | 2022-12-21 | v0.67.0 | @mx-psi         |
 | 2023-01-04 | v0.68.0 | @dmitryax       |
-| 2023-01-16 | v0.69.0 | @bogdandrutu    |
-| 2022-01-30 | v0.70.0 | @codeboten      |
+| 2023-01-18 | v0.69.0 | @bogdandrutu    |
+| 2022-02-01 | v0.70.0 | @codeboten      |
