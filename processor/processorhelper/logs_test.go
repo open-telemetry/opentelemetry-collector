@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var testLogsCfg = config.NewProcessorSettings(config.NewComponentID("test"))
+var testLogsCfg = config.NewProcessorSettings(component.NewID("test"))
 
 func TestNewLogsProcessor(t *testing.T) {
 	lp, err := NewLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil))

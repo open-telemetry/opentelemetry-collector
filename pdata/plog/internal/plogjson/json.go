@@ -17,6 +17,7 @@ package plogjson // import "go.opentelemetry.io/collector/pdata/plog/internal/pl
 import (
 	"fmt"
 
+	"github.com/gogo/protobuf/jsonpb"
 	jsoniter "github.com/json-iterator/go"
 
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
@@ -24,6 +25,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
+
+var JSONMarshaler = &jsonpb.Marshaler{
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/2758
+	EnumsAsInts: true,
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/2829
+	OrigName: false,
+}
 
 func UnmarshalLogsData(buf []byte, dest *otlplogs.LogsData) error {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
@@ -60,6 +68,21 @@ func UnmarshalExportLogsServiceRequest(buf []byte, dest *otlpcollectorlog.Export
 		return true
 	})
 	otlp.MigrateLogs(dest.ResourceLogs)
+	return iter.Error
+}
+
+func UnmarshalExportLogsServiceResponse(buf []byte, dest *otlpcollectorlog.ExportLogsServiceResponse) error {
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "partial_success", "partialSuccess":
+			dest.PartialSuccess = readExportLogsPartialSuccess(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 	return iter.Error
 }
 
@@ -147,4 +170,20 @@ func readLog(iter *jsoniter.Iterator) *otlplogs.LogRecord {
 
 func readSeverityNumber(iter *jsoniter.Iterator) otlplogs.SeverityNumber {
 	return otlplogs.SeverityNumber(json.ReadEnumValue(iter, otlplogs.SeverityNumber_value))
+}
+
+func readExportLogsPartialSuccess(iter *jsoniter.Iterator) otlpcollectorlog.ExportLogsPartialSuccess {
+	lpr := otlpcollectorlog.ExportLogsPartialSuccess{}
+	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "rejected_log_records", "rejectedLogRecords":
+			lpr.RejectedLogRecords = json.ReadInt64(iter)
+		case "error_message", "errorMessage":
+			lpr.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return lpr
 }

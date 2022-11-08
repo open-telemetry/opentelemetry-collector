@@ -15,27 +15,47 @@
 package servicetest // import "go.opentelemetry.io/collector/service/servicetest"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
+	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/service"
 )
 
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
-func LoadConfig(fileName string, factories component.Factories) (*config.Config, error) {
+func LoadConfig(fileName string, factories component.Factories) (*service.Config, error) {
 	// Read yaml config from file
-	conf, err := confmaptest.LoadConf(fileName)
+	provider, err := service.NewConfigProvider(service.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:       []string{fileName},
+			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New()),
+			Converters: []confmap.Converter{expandconverter.New()},
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
-	return configunmarshaler.New().Unmarshal(conf, factories)
+	return provider.Get(context.Background(), factories)
 }
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.
-func LoadConfigAndValidate(fileName string, factories component.Factories) (*config.Config, error) {
+func LoadConfigAndValidate(fileName string, factories component.Factories) (*service.Config, error) {
 	cfg, err := LoadConfig(fileName, factories)
 	if err != nil {
 		return nil, err
 	}
 	return cfg, cfg.Validate()
+}
+
+func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
+	ret := make(map[string]confmap.Provider, len(providers))
+	for _, provider := range providers {
+		ret[provider.Scheme()] = provider
+	}
+	return ret
 }

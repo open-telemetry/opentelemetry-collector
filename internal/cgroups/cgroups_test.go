@@ -99,7 +99,7 @@ func TestNewCGroupsWithErrors(t *testing.T) {
 	}
 }
 
-func TestCGroupsCPUQuota(t *testing.T) {
+func TestCGroupsMemoryQuota(t *testing.T) {
 	testTable := []struct {
 		name            string
 		expectedQuota   int64
@@ -110,6 +110,12 @@ func TestCGroupsCPUQuota(t *testing.T) {
 			name:            "undefined",
 			expectedQuota:   int64(-1.0),
 			expectedDefined: false,
+			shouldHaveError: true,
+		},
+		{
+			name:            "memory",
+			expectedQuota:   int64(8796093018112),
+			expectedDefined: true,
 			shouldHaveError: false,
 		},
 	}
@@ -123,7 +129,7 @@ func TestCGroupsCPUQuota(t *testing.T) {
 
 	for _, tt := range testTable {
 		cgroupPath := filepath.Join(testDataCGroupsPath, tt.name)
-		cgroups[_cgroupSubsysCPU] = NewCGroup(cgroupPath)
+		cgroups[_cgroupSubsysMemory] = NewCGroup(cgroupPath)
 
 		quota, defined, err := cgroups.MemoryQuota()
 		assert.Equal(t, tt.expectedQuota, quota, tt.name)

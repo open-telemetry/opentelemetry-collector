@@ -258,7 +258,7 @@ func TestIssue_4221(t *testing.T) {
 		assert.Equal(t, "CscBCkkKIAoMc2VydmljZS5uYW1lEhAKDnVvcC5zdGFnZS1ldS0xCiUKGW91dHN5c3RlbXMubW9kdWxlLnZlcnNpb24SCAoGOTAzMzg2EnoKEQoMdW9wX2NhbmFyaWVzEgExEmUKEEMDhT8Ib0+Mhs8Zi2VR34QSCOVRPDJ5XEG5IgA5QE41aASRrxZBQE41aASRrxZKEAoKc3Bhbl9pbmRleBICGANKHwoNY29kZS5mdW5jdGlvbhIOCgxteUZ1bmN0aW9uMzZ6AA==", base64Data)
 		unbase64Data, err := base64.StdEncoding.DecodeString(base64Data)
 		require.NoError(t, err)
-		tr := ptraceotlp.NewRequest()
+		tr := ptraceotlp.NewExportRequest()
 		require.NoError(t, tr.UnmarshalProto(unbase64Data))
 		span := tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
@@ -328,7 +328,7 @@ func startLogsExporter(t *testing.T, baseURL string, overrideURL string) compone
 	return exp
 }
 
-func createExporterConfig(baseURL string, defaultCfg config.Exporter) *Config {
+func createExporterConfig(baseURL string, defaultCfg component.ExporterConfig) *Config {
 	cfg := defaultCfg.(*Config)
 	cfg.Endpoint = baseURL
 	cfg.QueueSettings.Enabled = false
@@ -360,7 +360,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	startAndCleanup(t, recv)
 }
 
-func createReceiverConfig(addr string, defaultCfg config.Receiver) *otlpreceiver.Config {
+func createReceiverConfig(addr string, defaultCfg component.ReceiverConfig) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
 	cfg.HTTP.Endpoint = addr
 	cfg.GRPC = nil
@@ -481,7 +481,7 @@ func TestErrorResponses(t *testing.T) {
 			}()
 
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
 				// Create without QueueSettings and RetrySettings so that ConsumeTraces
 				// returns the errors that we want to check immediately.
@@ -558,7 +558,7 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 					TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
@@ -603,7 +603,7 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 					MetricsEndpoint:  fmt.Sprintf("http://%s/v1/metrics", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
@@ -648,7 +648,7 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 					LogsEndpoint:     fmt.Sprintf("http://%s/v1/logs", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
@@ -670,7 +670,6 @@ func TestUserAgent(t *testing.T) {
 				require.NoError(t, err)
 
 				srv.Close()
-
 			})
 		}
 	})

@@ -20,4 +20,11 @@ import (
 
 // MigrateTraces implements any translation needed due to deprecation in OTLP traces protocol.
 // Any ptrace.Unmarshaler implementation from OTLP (proto/json) MUST call this, and the gRPC Server implementation.
-func MigrateTraces(_ []*otlptrace.ResourceSpans) {}
+func MigrateTraces(rss []*otlptrace.ResourceSpans) {
+	for _, rs := range rss {
+		if len(rs.ScopeSpans) == 0 {
+			rs.ScopeSpans = rs.DeprecatedScopeSpans
+		}
+		rs.DeprecatedScopeSpans = nil
+	}
+}

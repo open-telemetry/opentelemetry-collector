@@ -37,11 +37,11 @@ var tracesOTLP = func() Traces {
 var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeSpans":[{"scope":{"name":"name","version":"version"},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan","status":{}}]}]}]}`
 
 func TestTracesJSON(t *testing.T) {
-	encoder := NewJSONMarshaler()
+	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
 	assert.NoError(t, err)
 
-	decoder := NewJSONUnmarshaler()
+	decoder := &JSONUnmarshaler{}
 	var got interface{}
 	got, err = decoder.UnmarshalTraces(jsonBuf)
 	assert.NoError(t, err)
@@ -50,7 +50,7 @@ func TestTracesJSON(t *testing.T) {
 }
 
 func TestTracesJSON_Marshal(t *testing.T) {
-	encoder := NewJSONMarshaler()
+	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLP)
 	assert.NoError(t, err)
 	assert.Equal(t, tracesJSON, string(jsonBuf))
@@ -127,11 +127,11 @@ var tracesOTLPFull = func() Traces {
 }()
 
 func TestJSONFull(t *testing.T) {
-	encoder := NewJSONMarshaler()
+	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLPFull)
 	assert.NoError(t, err)
 
-	decoder := NewJSONUnmarshaler()
+	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalTraces(jsonBuf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, tracesOTLPFull, got)
@@ -140,10 +140,10 @@ func TestJSONFull(t *testing.T) {
 func BenchmarkJSONUnmarshal(b *testing.B) {
 	b.ReportAllocs()
 
-	encoder := NewJSONMarshaler()
+	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalTraces(tracesOTLPFull)
 	assert.NoError(b, err)
-	decoder := NewJSONUnmarshaler()
+	decoder := &JSONUnmarshaler{}
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

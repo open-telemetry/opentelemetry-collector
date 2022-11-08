@@ -23,12 +23,8 @@ import (
 )
 
 const (
-	configFlag = "config"
-)
-
-var (
-	// Command-line flag that control the configuration file.
-	gatesList = featuregate.FlagValue{}
+	configFlag       = "config"
+	featureGatesFlag = "feature-gates"
 )
 
 type configFlagValue struct {
@@ -54,8 +50,7 @@ func flags() *flag.FlagSet {
 
 	flagSet.Func("set",
 		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+
-			" has a higher precedence. Array config properties are overridden and maps are joined, note that only a single"+
-			" (first) array property can be set e.g. --set=processors.attributes.actions.key=some_key. Example --set=processors.batch.timeout=2s",
+			" has a higher precedence. Array config properties are overridden and maps are joined. Example --set=processors.batch.timeout=2s",
 		func(s string) error {
 			idx := strings.Index(s, "=")
 			if idx == -1 {
@@ -66,9 +61,7 @@ func flags() *flag.FlagSet {
 			return nil
 		})
 
-	flagSet.Var(
-		gatesList,
-		"feature-gates",
+	flagSet.Var(featuregate.FlagValue{}, featureGatesFlag,
 		"Comma-delimited list of feature gate identifiers. Prefix with '-' to disable the feature. '+' or no prefix will enable the feature.")
 
 	return flagSet
@@ -77,4 +70,8 @@ func flags() *flag.FlagSet {
 func getConfigFlag(flagSet *flag.FlagSet) []string {
 	cfv := flagSet.Lookup(configFlag).Value.(*configFlagValue)
 	return append(cfv.values, cfv.sets...)
+}
+
+func getFeatureGatesFlag(flagSet *flag.FlagSet) featuregate.FlagValue {
+	return flagSet.Lookup(featureGatesFlag).Value.(featuregate.FlagValue)
 }

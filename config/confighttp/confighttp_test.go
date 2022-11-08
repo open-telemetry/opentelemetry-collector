@@ -29,11 +29,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -49,8 +50,8 @@ func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, e
 
 func TestAllHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
-		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+		ext: map[component.ID]component.Extension{
+			component.NewID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 		},
 	}
 
@@ -159,8 +160,8 @@ func TestAllHTTPClientSettings(t *testing.T) {
 
 func TestPartialHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
-		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+		ext: map[component.ID]component.Extension{
+			component.NewID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 		},
 	}
 
@@ -210,7 +211,7 @@ func TestDefaultHTTPClientSettings(t *testing.T) {
 
 func TestHTTPClientSettingsError(t *testing.T) {
 	host := &mockHost{
-		ext: map[config.ComponentID]component.Extension{},
+		ext: map[component.ID]component.Extension{},
 	}
 	tests := []struct {
 		settings HTTPClientSettings
@@ -246,7 +247,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"dummy\": authenticator not found",
 			settings: HTTPClientSettings{
 				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 			},
 		},
 	}
@@ -273,8 +274,8 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: false,
 			host: &mockHost{
-				ext: map[config.ComponentID]component.Extension{
-					config.NewComponentID("mock"): &configauth.MockClientAuthenticator{
+				ext: map[component.ID]component.Extension{
+					component.NewID("mock"): &configauth.MockClientAuthenticator{
 						ResultRoundTripper: &customRoundTripper{},
 					},
 				},
@@ -284,12 +285,12 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 			},
 			shouldErr: true,
 			host: &mockHost{
-				ext: map[config.ComponentID]component.Extension{
-					config.NewComponentID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+				ext: map[component.ID]component.Extension{
+					component.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 				},
 			},
 		},
@@ -297,7 +298,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension_map",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("dummy")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 			},
 			shouldErr: true,
 			host:      componenttest.NewNopHost(),
@@ -306,12 +307,12 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("mock")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("mock")},
 			},
 			shouldErr: false,
 			host: &mockHost{
-				ext: map[config.ComponentID]component.Extension{
-					config.NewComponentID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
+				ext: map[component.ID]component.Extension{
+					component.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 				},
 			},
 		},
@@ -319,12 +320,12 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_err_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("mock")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("mock")},
 			},
 			shouldErr: true,
 			host: &mockHost{
-				ext: map[config.ComponentID]component.Extension{
-					config.NewComponentID("mock"): &configauth.MockClientAuthenticator{
+				ext: map[component.ID]component.Extension{
+					component.NewID("mock"): &configauth.MockClientAuthenticator{
 						ResultRoundTripper: &customRoundTripper{}, MustError: true},
 				},
 			},
@@ -390,6 +391,45 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			assert.Regexp(t, test.err, err)
 		})
 	}
+}
+
+func TestHTTPServerWarning(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings HTTPServerSettings
+		len      int
+	}{
+		{
+			settings: HTTPServerSettings{
+				Endpoint: "0.0.0.0:0",
+			},
+			len: 1,
+		},
+		{
+			settings: HTTPServerSettings{
+				Endpoint: "127.0.0.1:0",
+			},
+			len: 0,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			set := componenttest.NewNopTelemetrySettings()
+			logger, observed := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
+
+			_, err := test.settings.ToServer(
+				componenttest.NewNopHost(),
+				set,
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					_, errWrite := fmt.Fprint(w, "test")
+					assert.NoError(t, errWrite)
+				}))
+			require.NoError(t, err)
+			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
+		})
+	}
+
 }
 
 func TestHttpReception(t *testing.T) {
@@ -687,17 +727,18 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 
 func TestHttpCorsWithAuthentication(t *testing.T) {
 	hss := &HTTPServerSettings{
+		Endpoint: "localhost:0",
 		CORS: &CORSSettings{
 			AllowedOrigins: []string{"*"},
 		},
 		Auth: &configauth.Authentication{
-			AuthenticatorID: config.NewComponentID("mock"),
+			AuthenticatorID: component.NewID("mock"),
 		},
 	}
 
 	host := &mockHost{
-		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
+		ext: map[component.ID]component.Extension{
+			component.NewID("mock"): configauth.NewServerAuthenticator(
 				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					return ctx, errors.New("authentication failed")
 				}),
@@ -884,14 +925,15 @@ func TestServerAuth(t *testing.T) {
 	// prepare
 	authCalled := false
 	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
-			AuthenticatorID: config.NewComponentID("mock"),
+			AuthenticatorID: component.NewID("mock"),
 		},
 	}
 
 	host := &mockHost{
-		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
+		ext: map[component.ID]component.Extension{
+			component.NewID("mock"): configauth.NewServerAuthenticator(
 				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					authCalled = true
 					return ctx, nil
@@ -919,7 +961,7 @@ func TestServerAuth(t *testing.T) {
 func TestInvalidServerAuth(t *testing.T) {
 	hss := HTTPServerSettings{
 		Auth: &configauth.Authentication{
-			AuthenticatorID: config.NewComponentID("non-existing"),
+			AuthenticatorID: component.NewID("non-existing"),
 		},
 	}
 
@@ -931,13 +973,14 @@ func TestInvalidServerAuth(t *testing.T) {
 func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := HTTPServerSettings{
+		Endpoint: "localhost:0",
 		Auth: &configauth.Authentication{
-			AuthenticatorID: config.NewComponentID("mock"),
+			AuthenticatorID: component.NewID("mock"),
 		},
 	}
 	host := &mockHost{
-		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("mock"): configauth.NewServerAuthenticator(
+		ext: map[component.ID]component.Extension{
+			component.NewID("mock"): configauth.NewServerAuthenticator(
 				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					return ctx, errors.New("authentication failed")
 				}),
@@ -959,10 +1002,10 @@ func TestFailedServerAuth(t *testing.T) {
 
 type mockHost struct {
 	component.Host
-	ext map[config.ComponentID]component.Extension
+	ext map[component.ID]component.Extension
 }
 
-func (nh *mockHost) GetExtensions() map[config.ComponentID]component.Extension {
+func (nh *mockHost) GetExtensions() map[component.ID]component.Extension {
 	return nh.ext
 }
 

@@ -42,7 +42,7 @@ const (
 )
 
 var (
-	fakeMetricsExporterName   = config.NewComponentIDWithName("fake_metrics_exporter", "with_name")
+	fakeMetricsExporterName   = component.NewIDWithName("fake_metrics_exporter", "with_name")
 	fakeMetricsExporterConfig = config.NewExporterSettings(fakeMetricsExporterName)
 )
 

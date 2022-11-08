@@ -24,14 +24,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func TestProtoTracesUnmarshaler_error(t *testing.T) {
-	p := NewProtoUnmarshaler()
+func TestProtoTracesUnmarshalerError(t *testing.T) {
+	p := &ProtoUnmarshaler{}
 	_, err := p.UnmarshalTraces([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestProtoSizer(t *testing.T) {
-	marshaler := NewProtoMarshaler()
+	marshaler := &ProtoMarshaler{}
 	td := NewTraces()
 	rms := td.ResourceSpans()
 	rms.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
@@ -43,14 +43,13 @@ func TestProtoSizer(t *testing.T) {
 	assert.Equal(t, len(bytes), size)
 }
 
-func TestProtoSizer_withNil(t *testing.T) {
-	sizer := NewProtoMarshaler().(Sizer)
-
+func TestProtoSizerEmptyTraces(t *testing.T) {
+	sizer := &ProtoMarshaler{}
 	assert.Equal(t, 0, sizer.TracesSize(NewTraces()))
 }
 
 func BenchmarkTracesToProto(b *testing.B) {
-	marshaler := NewProtoMarshaler()
+	marshaler := &ProtoMarshaler{}
 	traces := generateBenchmarkTraces(128)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -61,8 +60,8 @@ func BenchmarkTracesToProto(b *testing.B) {
 }
 
 func BenchmarkTracesFromProto(b *testing.B) {
-	marshaler := NewProtoMarshaler()
-	unmarshaler := NewProtoUnmarshaler()
+	marshaler := &ProtoMarshaler{}
+	unmarshaler := &ProtoUnmarshaler{}
 	baseTraces := generateBenchmarkTraces(128)
 	buf, err := marshaler.MarshalTraces(baseTraces)
 	require.NoError(b, err)

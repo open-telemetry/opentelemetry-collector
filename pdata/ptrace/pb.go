@@ -19,42 +19,23 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-// NewProtoMarshaler returns a MarshalSizer.
-// Marshals to OTLP binary protobuf bytes and calculates the size of the marshaled Traces.
-func NewProtoMarshaler() MarshalSizer {
-	return newPbMarshaler()
-}
+var _ MarshalSizer = (*ProtoMarshaler)(nil)
 
-type pbMarshaler struct{}
+type ProtoMarshaler struct{}
 
-func newPbMarshaler() *pbMarshaler {
-	return &pbMarshaler{}
-}
-
-var _ Sizer = (*pbMarshaler)(nil)
-
-func (e *pbMarshaler) MarshalTraces(td Traces) ([]byte, error) {
+func (e *ProtoMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 	pb := internal.TracesToProto(internal.Traces(td))
 	return pb.Marshal()
 }
 
-func (e *pbMarshaler) TracesSize(td Traces) int {
+func (e *ProtoMarshaler) TracesSize(td Traces) int {
 	pb := internal.TracesToProto(internal.Traces(td))
 	return pb.Size()
 }
 
-type pbUnmarshaler struct{}
+type ProtoUnmarshaler struct{}
 
-// NewProtoUnmarshaler returns a model.Unmarshaler. Unmarshals from OTLP binary protobuf bytes.
-func NewProtoUnmarshaler() Unmarshaler {
-	return newPbUnmarshaler()
-}
-
-func newPbUnmarshaler() *pbUnmarshaler {
-	return &pbUnmarshaler{}
-}
-
-func (d *pbUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
+func (d *ProtoUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	pb := otlptrace.TracesData{}
 	err := pb.Unmarshal(buf)
 	return Traces(internal.TracesFromProto(pb)), err

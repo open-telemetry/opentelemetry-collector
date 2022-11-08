@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 )
@@ -32,8 +32,8 @@ const (
 )
 
 var (
-	receiver = config.NewComponentID("fakeReicever")
-	exporter = config.NewComponentID("fakeExporter")
+	receiver = component.NewID("fakeReicever")
+	exporter = component.NewID("fakeExporter")
 )
 
 func TestCheckReceiverTracesViews(t *testing.T) {
@@ -41,7 +41,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	rec := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             receiver,
 		Transport:              transport,
 		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
@@ -61,7 +61,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	rec := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             receiver,
 		Transport:              transport,
 		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
@@ -81,7 +81,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	rec := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	rec := obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             receiver,
 		Transport:              transport,
 		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
@@ -101,7 +101,7 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
+	obsrep := obsreport.MustNewExporter(obsreport.ExporterSettings{
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -120,7 +120,7 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
+	obsrep := obsreport.MustNewExporter(obsreport.ExporterSettings{
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})
@@ -139,7 +139,7 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep := obsreport.NewExporter(obsreport.ExporterSettings{
+	obsrep := obsreport.MustNewExporter(obsreport.ExporterSettings{
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	})

@@ -1,9 +1,9 @@
 # OpenTelemetry Collector Service
 
-## How to provide configuration
+## How to provide configuration?
 
-The `--config` flag accepts either a file path or values in the form of a config URI `"<scheme>:<opaque_data>"`. Currently, the
-OpenTelemetry Collector supports the following providers `scheme`:
+The `--config` flag accepts either a file path or values in the form of a config URI `"<scheme>:<opaque_data>"`.
+Currently, the OpenTelemetry Collector supports the following providers `scheme`:
 - [file](../confmap/provider/fileprovider/provider.go) - Reads configuration from a file. E.g. `file:path/to/config.yaml`.
 - [env](../confmap/provider/envprovider/provider.go) - Reads configuration from an environment variable. E.g. `env:MY_CONFIG_IN_AN_ENVVAR`.
 - [yaml](../confmap/provider/yamlprovider/provider.go) - Reads configuration from yaml bytes. E.g. `yaml:exporters::logging::loglevel: debug`.
@@ -35,3 +35,63 @@ For more technical details about how configuration is resolved you can read the 
 2. Merge a `config.yaml` file with the content of a yaml bytes configuration (overwrites the `exporters::logging::loglevel` config) and use the content as the config:
 
     `./otelcorecol --config=file:examples/local/otel-config.yaml --config="yaml:exporters::logging::loglevel: info"`
+
+## How to override config properties?
+
+The `--set` flag allows to set arbitrary config property. The `--set` values are merged into the final configuration
+after all the sources specified by the `--config` are resolved and merged.
+
+### The Format and Limitations of `--set`
+
+#### Simple property
+
+The `--set` option takes always one key/value pair, and it is used like this: `--set key=value`. The YAML equivalent of that is:
+
+```yaml
+key: value
+```
+
+#### Complex nested keys
+
+Use dot (`.`) in the pair's name as key separator to reference nested map values. For example, `--set outer.inner=value` is translated into this:
+
+```yaml
+outer:
+  inner: value
+```
+
+#### Multiple values
+
+To set multiple values specify multiple --set flags, so `--set a=b --set c=d` becomes:
+
+```yaml
+a: b
+c: d
+```
+
+
+#### Array values
+
+Arrays can be expressed by enclosing values in `[]`. For example, `--set "key=[a, b, c]"` translates to:
+
+```yaml
+key:
+  - a
+  - b
+  - c
+```
+
+#### Map values
+
+Maps can be expressed by enclosing values in `{}`. For example, `"--set "key={a: c}"` translates to:
+
+```yaml
+key:
+  a: c
+```
+
+#### Limitations
+
+1. Does not support setting a key that contains a dot `.`.
+2. Does not support setting a key that contains a equal sign `=`.
+3. The configuration key separator inside the value part of the property is "::". For example `--set "name={a::b: c}"` is equivalent with `--set name.a.b=c`.

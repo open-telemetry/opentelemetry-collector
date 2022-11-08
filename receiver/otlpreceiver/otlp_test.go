@@ -184,7 +184,7 @@ func TestJsonHttp(t *testing.T) {
 func TestHandleInvalidRequests(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols:        Protocols{HTTP: &confighttp.HTTPServerSettings{Endpoint: endpoint}},
 	}
 
@@ -366,7 +366,7 @@ func testHTTPJSONRequest(t *testing.T, url string, sink *errOrSinkConsumer, enco
 	allTraces := sink.AllTraces()
 	if expectedErr == nil {
 		assert.Equal(t, 200, resp.StatusCode)
-		tr := ptraceotlp.NewResponse()
+		tr := ptraceotlp.NewExportResponse()
 		assert.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
 
 		require.Len(t, allTraces, 1)
@@ -424,7 +424,8 @@ func TestProtoHttp(t *testing.T) {
 	<-time.After(10 * time.Millisecond)
 
 	td := testdata.GenerateTraces(1)
-	traceBytes, err := ptrace.NewProtoMarshaler().MarshalTraces(td)
+	marshaler := &ptrace.ProtoMarshaler{}
+	traceBytes, err := marshaler.MarshalTraces(td)
 	if err != nil {
 		t.Errorf("Error marshaling protobuf: %v", err)
 	}
@@ -488,7 +489,7 @@ func testHTTPProtobufRequest(
 	if expectedErr == nil {
 		require.Equal(t, 200, resp.StatusCode, "Unexpected return status")
 
-		tr := ptraceotlp.NewResponse()
+		tr := ptraceotlp.NewExportResponse()
 		assert.NoError(t, tr.UnmarshalProto(respBytes), "Unable to unmarshal response to Response")
 
 		require.Len(t, allTraces, 1)
@@ -699,7 +700,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				require.Equal(t, test.expectedReceivedBatches, len(sink.AllTraces()))
 
-				require.NoError(t, obsreporttest.CheckReceiverTraces(tt, config.NewComponentIDWithName(typeStr, exporter.receiverTag), "grpc", int64(test.expectedReceivedBatches), int64(test.expectedIngestionBlockedRPCs)))
+				require.NoError(t, obsreporttest.CheckReceiverTraces(tt, component.NewIDWithName(typeStr, exporter.receiverTag), "grpc", int64(test.expectedReceivedBatches), int64(test.expectedIngestionBlockedRPCs)))
 			})
 		}
 	}
@@ -707,7 +708,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
@@ -778,7 +779,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols: Protocols{
 			HTTP: &confighttp.HTTPServerSettings{
 				Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -807,7 +808,7 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols: Protocols{
 			HTTP: &confighttp.HTTPServerSettings{
 				Endpoint:           endpoint,
@@ -931,7 +932,8 @@ func TestShutdown(t *testing.T) {
 	}
 	senderHTTP := func(td ptrace.Traces) {
 		// Send request via OTLP/HTTP.
-		traceBytes, err2 := ptrace.NewProtoMarshaler().MarshalTraces(td)
+		marshaler := &ptrace.ProtoMarshaler{}
+		traceBytes, err2 := marshaler.MarshalTraces(td)
 		if err2 != nil {
 			t.Errorf("Error marshaling protobuf: %v", err2)
 		}
@@ -1000,8 +1002,8 @@ loop:
 }
 
 func exportTraces(cc *grpc.ClientConn, td ptrace.Traces) error {
-	acc := ptraceotlp.NewClient(cc)
-	req := ptraceotlp.NewRequestFromTraces(td)
+	acc := ptraceotlp.NewGRPCClient(cc)
+	req := ptraceotlp.NewExportRequestFromTraces(td)
 	_, err := acc.Export(context.Background(), req)
 
 	return err

@@ -17,9 +17,25 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 )
+
+// ProcessorConfig is the configuration of a component.Processor. Specific extensions must implement
+// this interface and must embed ProcessorSettings struct or a struct that extends it.
+type ProcessorConfig interface {
+	identifiable
+	validatable
+
+	privateConfigProcessor()
+}
+
+// UnmarshalProcessorConfig helper function to unmarshal a ProcessorConfig.
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalProcessorConfig(conf *confmap.Conf, cfg ProcessorConfig) error {
+	return unmarshal(conf, cfg)
+}
 
 // Processor defines the common functions that must be implemented by TracesProcessor
 // and MetricsProcessor.
@@ -65,14 +81,14 @@ type ProcessorFactory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Processor.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'configtest.CheckConfigStruct'. It is recommended to have these checks in the
+	// 'componenttest.CheckConfigStruct'. It is recommended to have these checks in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() config.Processor
+	CreateDefaultConfig() ProcessorConfig
 
 	// CreateTracesProcessor creates a TracesProcessor based on this config.
 	// If the processor type does not support tracing or if the config is not valid,
 	// an error will be returned instead.
-	CreateTracesProcessor(ctx context.Context, set ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (TracesProcessor, error)
+	CreateTracesProcessor(ctx context.Context, set ProcessorCreateSettings, cfg ProcessorConfig, nextConsumer consumer.Traces) (TracesProcessor, error)
 
 	// TracesProcessorStability gets the stability level of the TracesProcessor.
 	TracesProcessorStability() StabilityLevel
@@ -80,7 +96,7 @@ type ProcessorFactory interface {
 	// CreateMetricsProcessor creates a MetricsProcessor based on this config.
 	// If the processor type does not support metrics or if the config is not valid,
 	// an error will be returned instead.
-	CreateMetricsProcessor(ctx context.Context, set ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Metrics) (MetricsProcessor, error)
+	CreateMetricsProcessor(ctx context.Context, set ProcessorCreateSettings, cfg ProcessorConfig, nextConsumer consumer.Metrics) (MetricsProcessor, error)
 
 	// MetricsProcessorStability gets the stability level of the MetricsProcessor.
 	MetricsProcessorStability() StabilityLevel
@@ -88,17 +104,17 @@ type ProcessorFactory interface {
 	// CreateLogsProcessor creates a LogsProcessor based on the config.
 	// If the processor type does not support logs or if the config is not valid,
 	// an error will be returned instead.
-	CreateLogsProcessor(ctx context.Context, set ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Logs) (LogsProcessor, error)
+	CreateLogsProcessor(ctx context.Context, set ProcessorCreateSettings, cfg ProcessorConfig, nextConsumer consumer.Logs) (LogsProcessor, error)
 
 	// LogsProcessorStability gets the stability level of the LogsProcessor.
 	LogsProcessorStability() StabilityLevel
 }
 
 // ProcessorCreateDefaultConfigFunc is the equivalent of ProcessorFactory.CreateDefaultConfig().
-type ProcessorCreateDefaultConfigFunc func() config.Processor
+type ProcessorCreateDefaultConfigFunc func() ProcessorConfig
 
 // CreateDefaultConfig implements ProcessorFactory.CreateDefaultConfig().
-func (f ProcessorCreateDefaultConfigFunc) CreateDefaultConfig() config.Processor {
+func (f ProcessorCreateDefaultConfigFunc) CreateDefaultConfig() ProcessorConfig {
 	return f()
 }
 
@@ -118,13 +134,13 @@ func (f processorFactoryOptionFunc) applyProcessorFactoryOption(o *processorFact
 }
 
 // CreateTracesProcessorFunc is the equivalent of ProcessorFactory.CreateTracesProcessor().
-type CreateTracesProcessorFunc func(context.Context, ProcessorCreateSettings, config.Processor, consumer.Traces) (TracesProcessor, error)
+type CreateTracesProcessorFunc func(context.Context, ProcessorCreateSettings, ProcessorConfig, consumer.Traces) (TracesProcessor, error)
 
 // CreateTracesProcessor implements ProcessorFactory.CreateTracesProcessor().
 func (f CreateTracesProcessorFunc) CreateTracesProcessor(
 	ctx context.Context,
 	set ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg ProcessorConfig,
 	nextConsumer consumer.Traces) (TracesProcessor, error) {
 	if f == nil {
 		return nil, ErrDataTypeIsNotSupported
@@ -133,13 +149,13 @@ func (f CreateTracesProcessorFunc) CreateTracesProcessor(
 }
 
 // CreateMetricsProcessorFunc is the equivalent of ProcessorFactory.CreateMetricsProcessor().
-type CreateMetricsProcessorFunc func(context.Context, ProcessorCreateSettings, config.Processor, consumer.Metrics) (MetricsProcessor, error)
+type CreateMetricsProcessorFunc func(context.Context, ProcessorCreateSettings, ProcessorConfig, consumer.Metrics) (MetricsProcessor, error)
 
 // CreateMetricsProcessor implements ProcessorFactory.CreateMetricsProcessor().
 func (f CreateMetricsProcessorFunc) CreateMetricsProcessor(
 	ctx context.Context,
 	set ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg ProcessorConfig,
 	nextConsumer consumer.Metrics,
 ) (MetricsProcessor, error) {
 	if f == nil {
@@ -149,13 +165,13 @@ func (f CreateMetricsProcessorFunc) CreateMetricsProcessor(
 }
 
 // CreateLogsProcessorFunc is the equivalent of ProcessorFactory.CreateLogsProcessor().
-type CreateLogsProcessorFunc func(context.Context, ProcessorCreateSettings, config.Processor, consumer.Logs) (LogsProcessor, error)
+type CreateLogsProcessorFunc func(context.Context, ProcessorCreateSettings, ProcessorConfig, consumer.Logs) (LogsProcessor, error)
 
 // CreateLogsProcessor implements ProcessorFactory.CreateLogsProcessor().
 func (f CreateLogsProcessorFunc) CreateLogsProcessor(
 	ctx context.Context,
 	set ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg ProcessorConfig,
 	nextConsumer consumer.Logs,
 ) (LogsProcessor, error) {
 	if f == nil {
@@ -212,7 +228,7 @@ func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc, sl Stability
 }
 
 // NewProcessorFactory returns a ProcessorFactory.
-func NewProcessorFactory(cfgType config.Type, createDefaultConfig ProcessorCreateDefaultConfigFunc, options ...ProcessorFactoryOption) ProcessorFactory {
+func NewProcessorFactory(cfgType Type, createDefaultConfig ProcessorCreateDefaultConfigFunc, options ...ProcessorFactoryOption) ProcessorFactory {
 	f := &processorFactory{
 		baseFactory:                      baseFactory{cfgType: cfgType},
 		ProcessorCreateDefaultConfigFunc: createDefaultConfig,

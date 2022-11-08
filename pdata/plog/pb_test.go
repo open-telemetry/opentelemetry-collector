@@ -24,14 +24,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func TestProtoLogsUnmarshaler_error(t *testing.T) {
-	p := NewProtoUnmarshaler()
+func TestProtoLogsUnmarshalerError(t *testing.T) {
+	p := &ProtoUnmarshaler{}
 	_, err := p.UnmarshalLogs([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestProtoSizer(t *testing.T) {
-	marshaler := NewProtoMarshaler()
+	marshaler := &ProtoMarshaler{}
 	ld := NewLogs()
 	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText("error")
 
@@ -43,14 +43,13 @@ func TestProtoSizer(t *testing.T) {
 
 }
 
-func TestProtoSizer_withNil(t *testing.T) {
-	sizer := NewProtoMarshaler().(Sizer)
-
+func TestProtoSizerEmptyLogs(t *testing.T) {
+	sizer := &ProtoMarshaler{}
 	assert.Equal(t, 0, sizer.LogsSize(NewLogs()))
 }
 
 func BenchmarkLogsToProto(b *testing.B) {
-	marshaler := NewProtoMarshaler()
+	marshaler := &ProtoMarshaler{}
 	logs := generateBenchmarkLogs(128)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -61,8 +60,8 @@ func BenchmarkLogsToProto(b *testing.B) {
 }
 
 func BenchmarkLogsFromProto(b *testing.B) {
-	marshaler := NewProtoMarshaler()
-	unmarshaler := NewProtoUnmarshaler()
+	marshaler := &ProtoMarshaler{}
+	unmarshaler := &ProtoUnmarshaler{}
 	baseLogs := generateBenchmarkLogs(128)
 	buf, err := marshaler.MarshalLogs(baseLogs)
 	require.NoError(b, err)

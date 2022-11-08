@@ -37,11 +37,11 @@ func init() {
 
 // RegisterInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
 func RegisterInternalMetricFeatureGate(registry *featuregate.Registry) {
-	registry.MustRegister(featuregate.Gate{
-		ID:          UseOtelForInternalMetricsfeatureGateID,
-		Description: "controls whether the collector uses OpenTelemetry for internal metrics",
-		Enabled:     false,
-	})
+	registry.MustRegisterID(
+		UseOtelForInternalMetricsfeatureGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"),
+	)
 }
 
 // ObsMetrics wraps OpenCensus View for Collector observability metrics

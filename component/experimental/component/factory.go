@@ -20,7 +20,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	stableconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/experimental/config"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 )
@@ -44,7 +43,7 @@ type ConfigSourceFactory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Source.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'configtest.CheckConfigStruct'. It is recommended to have such check in the
+	// 'componenttest.CheckConfigStruct'. It is recommended to have such check in the
 	// tests of any implementation of the ConfigSourceFactory interface.
 	CreateDefaultConfig() config.Source
 
@@ -57,4 +56,4 @@ type ConfigSourceFactory interface {
 }
 
 // ConfigSourceFactories maps the type of a ConfigSource to the respective factory object.
-type ConfigSourceFactories map[stableconfig.Type]ConfigSourceFactory
+type ConfigSourceFactories map[component.Type]ConfigSourceFactory

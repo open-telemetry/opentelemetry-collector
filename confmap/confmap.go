@@ -273,20 +273,25 @@ func unmarshalerHookFunc(result interface{}) mapstructure.DecodeHookFuncValue {
 		}
 
 		toPtr := to.Addr().Interface()
-		if _, ok := toPtr.(Unmarshaler); !ok {
-			return from.Interface(), nil
-		}
-
-		if _, ok := from.Interface().(map[string]interface{}); !ok {
-			return from.Interface(), nil
-		}
-
 		// Need to ignore the top structure to avoid circular dependency.
 		if toPtr == result {
 			return from.Interface(), nil
 		}
 
-		unmarshaler := reflect.New(to.Type()).Interface().(Unmarshaler)
+		unmarshaler, ok := toPtr.(Unmarshaler)
+		if !ok {
+			return from.Interface(), nil
+		}
+
+		if _, ok = from.Interface().(map[string]interface{}); !ok {
+			return from.Interface(), nil
+		}
+
+		// Use the current object if not nil (to preserve other configs in the object), otherwise zero initialize.
+		if to.Addr().IsNil() {
+			unmarshaler = reflect.New(to.Type()).Interface().(Unmarshaler)
+		}
+
 		if err := unmarshaler.Unmarshal(NewFromStringMap(from.Interface().(map[string]interface{}))); err != nil {
 			return nil, err
 		}

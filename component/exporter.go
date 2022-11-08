@@ -17,9 +17,25 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 )
+
+// ExporterConfig is the configuration of a component.Exporter. Specific extensions must implement
+// this interface and must embed config.ExporterSettings struct or a struct that extends it.
+type ExporterConfig interface {
+	identifiable
+	validatable
+
+	privateConfigExporter()
+}
+
+// UnmarshalExporterConfig helper function to unmarshal an ExporterConfig.
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalExporterConfig(conf *confmap.Conf, cfg ExporterConfig) error {
+	return unmarshal(conf, cfg)
+}
 
 // Exporter exports telemetry data from the collector to a destination.
 type Exporter interface {
@@ -64,14 +80,14 @@ type ExporterFactory interface {
 	// configuration and should not cause side-effects that prevent the creation
 	// of multiple instances of the Exporter.
 	// The object returned by this method needs to pass the checks implemented by
-	// 'configtest.CheckConfigStruct'. It is recommended to have these checks in the
+	// 'componenttest.CheckConfigStruct'. It is recommended to have these checks in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() config.Exporter
+	CreateDefaultConfig() ExporterConfig
 
 	// CreateTracesExporter creates a TracesExporter based on this config.
 	// If the exporter type does not support tracing or if the config is not valid,
 	// an error will be returned instead.
-	CreateTracesExporter(ctx context.Context, set ExporterCreateSettings, cfg config.Exporter) (TracesExporter, error)
+	CreateTracesExporter(ctx context.Context, set ExporterCreateSettings, cfg ExporterConfig) (TracesExporter, error)
 
 	// TracesExporterStability gets the stability level of the TracesExporter.
 	TracesExporterStability() StabilityLevel
@@ -79,7 +95,7 @@ type ExporterFactory interface {
 	// CreateMetricsExporter creates a MetricsExporter based on this config.
 	// If the exporter type does not support metrics or if the config is not valid,
 	// an error will be returned instead.
-	CreateMetricsExporter(ctx context.Context, set ExporterCreateSettings, cfg config.Exporter) (MetricsExporter, error)
+	CreateMetricsExporter(ctx context.Context, set ExporterCreateSettings, cfg ExporterConfig) (MetricsExporter, error)
 
 	// MetricsExporterStability gets the stability level of the MetricsExporter.
 	MetricsExporterStability() StabilityLevel
@@ -87,7 +103,7 @@ type ExporterFactory interface {
 	// CreateLogsExporter creates a LogsExporter based on the config.
 	// If the exporter type does not support logs or if the config is not valid,
 	// an error will be returned instead.
-	CreateLogsExporter(ctx context.Context, set ExporterCreateSettings, cfg config.Exporter) (LogsExporter, error)
+	CreateLogsExporter(ctx context.Context, set ExporterCreateSettings, cfg ExporterConfig) (LogsExporter, error)
 
 	// LogsExporterStability gets the stability level of the LogsExporter.
 	LogsExporterStability() StabilityLevel
@@ -109,18 +125,18 @@ func (f exporterFactoryOptionFunc) applyExporterFactoryOption(o *exporterFactory
 }
 
 // ExporterCreateDefaultConfigFunc is the equivalent of ExporterFactory.CreateDefaultConfig().
-type ExporterCreateDefaultConfigFunc func() config.Exporter
+type ExporterCreateDefaultConfigFunc func() ExporterConfig
 
 // CreateDefaultConfig implements ExporterFactory.CreateDefaultConfig().
-func (f ExporterCreateDefaultConfigFunc) CreateDefaultConfig() config.Exporter {
+func (f ExporterCreateDefaultConfigFunc) CreateDefaultConfig() ExporterConfig {
 	return f()
 }
 
 // CreateTracesExporterFunc is the equivalent of ExporterFactory.CreateTracesExporter().
-type CreateTracesExporterFunc func(context.Context, ExporterCreateSettings, config.Exporter) (TracesExporter, error)
+type CreateTracesExporterFunc func(context.Context, ExporterCreateSettings, ExporterConfig) (TracesExporter, error)
 
 // CreateTracesExporter implements ExporterFactory.CreateTracesExporter().
-func (f CreateTracesExporterFunc) CreateTracesExporter(ctx context.Context, set ExporterCreateSettings, cfg config.Exporter) (TracesExporter, error) {
+func (f CreateTracesExporterFunc) CreateTracesExporter(ctx context.Context, set ExporterCreateSettings, cfg ExporterConfig) (TracesExporter, error) {
 	if f == nil {
 		return nil, ErrDataTypeIsNotSupported
 	}
@@ -128,10 +144,10 @@ func (f CreateTracesExporterFunc) CreateTracesExporter(ctx context.Context, set 
 }
 
 // CreateMetricsExporterFunc is the equivalent of ExporterFactory.CreateMetricsExporter().
-type CreateMetricsExporterFunc func(context.Context, ExporterCreateSettings, config.Exporter) (MetricsExporter, error)
+type CreateMetricsExporterFunc func(context.Context, ExporterCreateSettings, ExporterConfig) (MetricsExporter, error)
 
 // CreateMetricsExporter implements ExporterFactory.CreateMetricsExporter().
-func (f CreateMetricsExporterFunc) CreateMetricsExporter(ctx context.Context, set ExporterCreateSettings, cfg config.Exporter) (MetricsExporter, error) {
+func (f CreateMetricsExporterFunc) CreateMetricsExporter(ctx context.Context, set ExporterCreateSettings, cfg ExporterConfig) (MetricsExporter, error) {
 	if f == nil {
 		return nil, ErrDataTypeIsNotSupported
 	}
@@ -139,10 +155,10 @@ func (f CreateMetricsExporterFunc) CreateMetricsExporter(ctx context.Context, se
 }
 
 // CreateLogsExporterFunc is the equivalent of ExporterFactory.CreateLogsExporter().
-type CreateLogsExporterFunc func(context.Context, ExporterCreateSettings, config.Exporter) (LogsExporter, error)
+type CreateLogsExporterFunc func(context.Context, ExporterCreateSettings, ExporterConfig) (LogsExporter, error)
 
 // CreateLogsExporter implements ExporterFactory.CreateLogsExporter().
-func (f CreateLogsExporterFunc) CreateLogsExporter(ctx context.Context, set ExporterCreateSettings, cfg config.Exporter) (LogsExporter, error) {
+func (f CreateLogsExporterFunc) CreateLogsExporter(ctx context.Context, set ExporterCreateSettings, cfg ExporterConfig) (LogsExporter, error) {
 	if f == nil {
 		return nil, ErrDataTypeIsNotSupported
 	}
@@ -197,7 +213,7 @@ func WithLogsExporter(createLogsExporter CreateLogsExporterFunc, sl StabilityLev
 }
 
 // NewExporterFactory returns a ExporterFactory.
-func NewExporterFactory(cfgType config.Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
+func NewExporterFactory(cfgType Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
 	f := &exporterFactory{
 		baseFactory:                     baseFactory{cfgType: cfgType},
 		ExporterCreateDefaultConfigFunc: createDefaultConfig,

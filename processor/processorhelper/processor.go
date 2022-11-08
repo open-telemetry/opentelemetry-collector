@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
@@ -78,6 +77,6 @@ func fromOptions(options []Option) *baseSettings {
 	return opts
 }
 
-func spanAttributes(id config.ComponentID) trace.EventOption {
+func spanAttributes(id component.ID) trace.EventOption {
 	return trace.WithAttributes(attribute.String(obsmetrics.ProcessorKey, id.String()))
 }

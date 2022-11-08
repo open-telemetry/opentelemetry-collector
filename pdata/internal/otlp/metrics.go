@@ -20,4 +20,11 @@ import (
 
 // MigrateMetrics implements any translation needed due to deprecation in OTLP metrics protocol.
 // Any pmetric.Unmarshaler implementation from OTLP (proto/json) MUST call this, and the gRPC Server implementation.
-func MigrateMetrics(_ []*otlpmetrics.ResourceMetrics) {}
+func MigrateMetrics(rms []*otlpmetrics.ResourceMetrics) {
+	for _, rm := range rms {
+		if len(rm.ScopeMetrics) == 0 {
+			rm.ScopeMetrics = rm.DeprecatedScopeMetrics
+		}
+		rm.DeprecatedScopeMetrics = nil
+	}
+}
