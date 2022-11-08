@@ -59,11 +59,6 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 		// needed for supporting the zpages extension
 		sdktrace.WithSampler(alwaysRecord()),
 	)
-	// TODO: Remove when https://github.com/open-telemetry/opentelemetry-go/pull/3268 released.
-	//   For the moment, register and unregister so shutdown does not fail.
-	sp := &nopSpanProcessor{}
-	tp.RegisterSpanProcessor(sp)
-	tp.UnregisterSpanProcessor(sp)
 	return &Telemetry{
 		logger:         logger,
 		tracerProvider: tp,
@@ -106,18 +101,4 @@ func toSamplingConfig(sc *LogsSamplingConfig) *zap.SamplingConfig {
 		Initial:    sc.Initial,
 		Thereafter: sc.Thereafter,
 	}
-}
-
-type nopSpanProcessor struct{}
-
-func (n nopSpanProcessor) OnStart(context.Context, sdktrace.ReadWriteSpan) {}
-
-func (n nopSpanProcessor) OnEnd(sdktrace.ReadOnlySpan) {}
-
-func (n nopSpanProcessor) Shutdown(context.Context) error {
-	return nil
-}
-
-func (n nopSpanProcessor) ForceFlush(context.Context) error {
-	return nil
 }
