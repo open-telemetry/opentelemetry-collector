@@ -17,10 +17,10 @@ module go.opentelemetry.io/collector/cmd/builder
 go 1.18
 
 require (
-	github.com/knadh/koanf v1.4.3
-	github.com/spf13/cobra v1.6.0
+	github.com/knadh/koanf v1.4.4
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )

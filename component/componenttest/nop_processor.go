@@ -39,9 +39,9 @@ type nopProcessorConfig struct {
 func NewNopProcessorFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		"nop",
-		func() config.Processor {
+		func() component.ProcessorConfig {
 			return &nopProcessorConfig{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID("nop")),
+				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
 			}
 		},
 		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelStable),
@@ -50,15 +50,15 @@ func NewNopProcessorFactory() component.ProcessorFactory {
 	)
 }
 
-func createTracesProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Traces) (component.TracesProcessor, error) {
 	return nopProcessorInstance, nil
 }
 
-func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Metrics) (component.MetricsProcessor, error) {
 	return nopProcessorInstance, nil
 }
 
-func createLogsProcessor(context.Context, component.ProcessorCreateSettings, config.Processor, consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Logs) (component.LogsProcessor, error) {
 	return nopProcessorInstance, nil
 }
 

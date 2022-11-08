@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component
+// TODO: Move tests back to component package after config.*Settings are removed.
+
+package component_test
 
 import (
 	"context"
@@ -20,31 +22,32 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
 type nopExtension struct {
-	StartFunc
-	ShutdownFunc
+	component.StartFunc
+	component.ShutdownFunc
 }
 
 func TestNewExtensionFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewExtensionSettings(config.NewComponentID(typeStr))
+	defaultCfg := config.NewExtensionSettings(component.NewID(typeStr))
 	nopExtensionInstance := new(nopExtension)
 
-	factory := NewExtensionFactory(
+	factory := component.NewExtensionFactory(
 		typeStr,
-		func() config.Extension { return &defaultCfg },
-		func(ctx context.Context, settings ExtensionCreateSettings, extension config.Extension) (Extension, error) {
+		func() component.ExtensionConfig { return &defaultCfg },
+		func(ctx context.Context, settings component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {
 			return nopExtensionInstance, nil
 		},
-		StabilityLevelInDevelopment)
+		component.StabilityLevelInDevelopment)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, StabilityLevelInDevelopment, factory.ExtensionStability())
-	ext, err := factory.CreateExtension(context.Background(), ExtensionCreateSettings{}, &defaultCfg)
+	assert.Equal(t, component.StabilityLevelInDevelopment, factory.ExtensionStability())
+	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
 }

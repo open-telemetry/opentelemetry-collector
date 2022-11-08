@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -36,10 +35,10 @@ type Receiver struct {
 }
 
 // New creates a new Receiver reference.
-func New(id config.ComponentID, nextConsumer consumer.Traces, set component.ReceiverCreateSettings) *Receiver {
+func New(id component.ID, nextConsumer consumer.Traces, set component.ReceiverCreateSettings) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             id,
 			Transport:              receiverTransport,
 			ReceiverCreateSettings: set,
@@ -48,17 +47,17 @@ func New(id config.ComponentID, nextConsumer consumer.Traces, set component.Rece
 }
 
 // Export implements the service Export traces func.
-func (r *Receiver) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
+func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
 	// We need to ensure that it propagates the receiver name as a tag
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
-		return ptraceotlp.NewResponse(), nil
+		return ptraceotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartTracesOp(ctx)
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return ptraceotlp.NewResponse(), err
+	return ptraceotlp.NewExportResponse(), err
 }

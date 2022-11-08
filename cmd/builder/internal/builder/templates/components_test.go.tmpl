@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestValidateConfigs(t *testing.T) {
@@ -15,15 +15,15 @@ func TestValidateConfigs(t *testing.T) {
 	assert.NoError(t, err)
 
 	for _, factory := range factories.Receivers {
-		assert.NoError(t, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
+		assert.NoError(t, componenttest.CheckConfigStruct(factory.CreateDefaultConfig()))
 	}
 	for _, factory := range factories.Processors {
-		assert.NoError(t, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
+		assert.NoError(t, componenttest.CheckConfigStruct(factory.CreateDefaultConfig()))
 	}
 	for _, factory := range factories.Exporters {
-		assert.NoError(t, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
+		assert.NoError(t, componenttest.CheckConfigStruct(factory.CreateDefaultConfig()))
 	}
 	for _, factory := range factories.Extensions {
-		assert.NoError(t, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
+		assert.NoError(t, componenttest.CheckConfigStruct(factory.CreateDefaultConfig()))
 	}
 }

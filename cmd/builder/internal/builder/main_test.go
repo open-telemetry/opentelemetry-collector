@@ -53,6 +53,7 @@ func TestGenerateAndCompileDefault(t *testing.T) {
 	cfg.Distribution.OtelColVersion = "0.52.0"
 
 	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, cfg.SetGoPath())
 	require.NoError(t, GenerateAndCompile(cfg))
 
 	// Sleep for 1 second to make sure all processes using the files are completed

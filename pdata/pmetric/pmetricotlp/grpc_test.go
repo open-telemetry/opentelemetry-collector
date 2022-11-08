@@ -62,7 +62,7 @@ func TestGrpc(t *testing.T) {
 
 	resp, err := logClient.Export(context.Background(), generateMetricsRequest())
 	assert.NoError(t, err)
-	assert.Equal(t, NewResponse(), resp)
+	assert.Equal(t, NewExportResponse(), resp)
 }
 
 func TestGrpcError(t *testing.T) {
@@ -98,7 +98,7 @@ func TestGrpcError(t *testing.T) {
 	require.True(t, okSt)
 	assert.Equal(t, "my error", st.Message())
 	assert.Equal(t, codes.Unknown, st.Code())
-	assert.Equal(t, Response{}, resp)
+	assert.Equal(t, ExportResponse{}, resp)
 }
 
 type fakeMetricsServer struct {
@@ -106,15 +106,15 @@ type fakeMetricsServer struct {
 	err error
 }
 
-func (f fakeMetricsServer) Export(_ context.Context, request Request) (Response, error) {
+func (f fakeMetricsServer) Export(_ context.Context, request ExportRequest) (ExportResponse, error) {
 	assert.Equal(f.t, generateMetricsRequest(), request)
-	return NewResponse(), f.err
+	return NewExportResponse(), f.err
 }
 
-func generateMetricsRequest() Request {
+func generateMetricsRequest() ExportRequest {
 	md := pmetric.NewMetrics()
 	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetName("test_metric")
 	m.SetEmptyGauge().DataPoints().AppendEmpty()
-	return NewRequestFromMetrics(md)
+	return NewExportRequestFromMetrics(md)
 }

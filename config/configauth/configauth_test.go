@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 func TestGetServerAuthenticator(t *testing.T) {
@@ -44,10 +43,10 @@ func TestGetServerAuthenticator(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
 			cfg := &Authentication{
-				AuthenticatorID: config.NewComponentID("mock"),
+				AuthenticatorID: component.NewID("mock"),
 			}
-			ext := map[config.ComponentID]component.Extension{
-				config.NewComponentID("mock"): tC.authenticator,
+			ext := map[component.ID]component.Extension{
+				component.NewID("mock"): tC.authenticator,
 			}
 
 			authenticator, err := cfg.GetServerAuthenticator(ext)
@@ -66,10 +65,10 @@ func TestGetServerAuthenticator(t *testing.T) {
 
 func TestGetServerAuthenticatorFails(t *testing.T) {
 	cfg := &Authentication{
-		AuthenticatorID: config.NewComponentID("does-not-exist"),
+		AuthenticatorID: component.NewID("does-not-exist"),
 	}
 
-	authenticator, err := cfg.GetServerAuthenticator(map[config.ComponentID]component.Extension{})
+	authenticator, err := cfg.GetServerAuthenticator(map[component.ID]component.Extension{})
 	assert.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }
@@ -95,10 +94,10 @@ func TestGetClientAuthenticator(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
 			cfg := &Authentication{
-				AuthenticatorID: config.NewComponentID("mock"),
+				AuthenticatorID: component.NewID("mock"),
 			}
-			ext := map[config.ComponentID]component.Extension{
-				config.NewComponentID("mock"): tC.authenticator,
+			ext := map[component.ID]component.Extension{
+				component.NewID("mock"): tC.authenticator,
 			}
 
 			authenticator, err := cfg.GetClientAuthenticator(ext)
@@ -117,9 +116,9 @@ func TestGetClientAuthenticator(t *testing.T) {
 
 func TestGetClientAuthenticatorFails(t *testing.T) {
 	cfg := &Authentication{
-		AuthenticatorID: config.NewComponentID("does-not-exist"),
+		AuthenticatorID: component.NewID("does-not-exist"),
 	}
-	authenticator, err := cfg.GetClientAuthenticator(map[config.ComponentID]component.Extension{})
+	authenticator, err := cfg.GetClientAuthenticator(map[component.ID]component.Extension{})
 	assert.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }

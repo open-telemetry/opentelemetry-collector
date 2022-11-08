@@ -59,11 +59,6 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 		// needed for supporting the zpages extension
 		sdktrace.WithSampler(alwaysRecord()),
 	)
-	// TODO: Remove when https://github.com/open-telemetry/opentelemetry-go/pull/3268 released.
-	//   For the moment, register and unregister so shutdown does not fail.
-	sp := &nopSpanProcessor{}
-	tp.RegisterSpanProcessor(sp)
-	tp.UnregisterSpanProcessor(sp)
 	return &Telemetry{
 		logger:         logger,
 		tracerProvider: tp,
@@ -73,12 +68,9 @@ func New(_ context.Context, set Settings, cfg Config) (*Telemetry, error) {
 func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	// Copied from NewProductionConfig.
 	zapCfg := &zap.Config{
-		Level:       zap.NewAtomicLevelAt(cfg.Level),
-		Development: cfg.Development,
-		Sampling: &zap.SamplingConfig{
-			Initial:    100,
-			Thereafter: 100,
-		},
+		Level:             zap.NewAtomicLevelAt(cfg.Level),
+		Development:       cfg.Development,
+		Sampling:          toSamplingConfig(cfg.Sampling),
 		Encoding:          cfg.Encoding,
 		EncoderConfig:     zap.NewProductionEncoderConfig(),
 		OutputPaths:       cfg.OutputPaths,
@@ -101,17 +93,12 @@ func newLogger(cfg LogsConfig, options []zap.Option) (*zap.Logger, error) {
 	return logger, nil
 }
 
-type nopSpanProcessor struct {
-}
-
-func (n nopSpanProcessor) OnStart(context.Context, sdktrace.ReadWriteSpan) {}
-
-func (n nopSpanProcessor) OnEnd(sdktrace.ReadOnlySpan) {}
-
-func (n nopSpanProcessor) Shutdown(context.Context) error {
-	return nil
-}
-
-func (n nopSpanProcessor) ForceFlush(context.Context) error {
-	return nil
+func toSamplingConfig(sc *LogsSamplingConfig) *zap.SamplingConfig {
+	if sc == nil {
+		return nil
+	}
+	return &zap.SamplingConfig{
+		Initial:    sc.Initial,
+		Thereafter: sc.Thereafter,
+	}
 }

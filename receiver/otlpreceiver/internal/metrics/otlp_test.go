@@ -25,8 +25,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -35,7 +35,7 @@ import (
 
 func TestExport(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
-	req := pmetricotlp.NewRequestFromMetrics(md)
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
 	metricSink := new(consumertest.MetricsSink)
 	metricsClient := makeMetricsServiceClient(t, metricSink)
@@ -52,19 +52,19 @@ func TestExport(t *testing.T) {
 func TestExport_EmptyRequest(t *testing.T) {
 	metricSink := new(consumertest.MetricsSink)
 	metricsClient := makeMetricsServiceClient(t, metricSink)
-	resp, err := metricsClient.Export(context.Background(), pmetricotlp.NewRequest())
+	resp, err := metricsClient.Export(context.Background(), pmetricotlp.NewExportRequest())
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
-	req := pmetricotlp.NewRequestFromMetrics(md)
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
 	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Equal(t, pmetricotlp.Response{}, resp)
+	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }
 
 func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRPCClient {
@@ -87,7 +87,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	r := New(config.NewComponentIDWithName("otlp", "metrics"), mc, componenttest.NewNopReceiverCreateSettings())
+	r := New(component.NewIDWithName("otlp", "metrics"), mc, componenttest.NewNopReceiverCreateSettings())
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	pmetricotlp.RegisterGRPCServer(srv, r)

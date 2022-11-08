@@ -22,61 +22,61 @@ import (
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
-// ExportLogsPartialSuccess represents the details of a partially successful export request.
+// ExportPartialSuccess represents the details of a partially successful export request.
 //
 // This is a reference type, if passed by value and callee modifies it the
 // caller will see the modification.
 //
-// Must use NewExportLogsPartialSuccess function to create new instances.
+// Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 
-type ExportLogsPartialSuccess internal.ExportLogsPartialSuccess
+type ExportPartialSuccess internal.LogsExportPartialSuccess
 
-func newExportLogsPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) ExportLogsPartialSuccess {
-	return ExportLogsPartialSuccess(internal.NewExportLogsPartialSuccess(orig))
+func newExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) ExportPartialSuccess {
+	return ExportPartialSuccess(internal.NewLogsExportPartialSuccess(orig))
 }
 
-func (ms ExportLogsPartialSuccess) getOrig() *otlpcollectorlog.ExportLogsPartialSuccess {
-	return internal.GetOrigExportLogsPartialSuccess(internal.ExportLogsPartialSuccess(ms))
+func (ms ExportPartialSuccess) getOrig() *otlpcollectorlog.ExportLogsPartialSuccess {
+	return internal.GetOrigLogsExportPartialSuccess(internal.LogsExportPartialSuccess(ms))
 }
 
-// NewExportLogsPartialSuccess creates a new empty ExportLogsPartialSuccess.
+// NewExportPartialSuccess creates a new empty ExportPartialSuccess.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExportLogsPartialSuccess() ExportLogsPartialSuccess {
-	return newExportLogsPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{})
+func NewExportPartialSuccess() ExportPartialSuccess {
+	return newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ExportLogsPartialSuccess) MoveTo(dest ExportLogsPartialSuccess) {
+func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcollectorlog.ExportLogsPartialSuccess{}
 }
 
-// RejectedLogRecords returns the rejectedlogrecords associated with this ExportLogsPartialSuccess.
-func (ms ExportLogsPartialSuccess) RejectedLogRecords() int64 {
+// RejectedLogRecords returns the rejectedlogrecords associated with this ExportPartialSuccess.
+func (ms ExportPartialSuccess) RejectedLogRecords() int64 {
 	return ms.getOrig().RejectedLogRecords
 }
 
-// SetRejectedLogRecords replaces the rejectedlogrecords associated with this ExportLogsPartialSuccess.
-func (ms ExportLogsPartialSuccess) SetRejectedLogRecords(v int64) {
+// SetRejectedLogRecords replaces the rejectedlogrecords associated with this ExportPartialSuccess.
+func (ms ExportPartialSuccess) SetRejectedLogRecords(v int64) {
 	ms.getOrig().RejectedLogRecords = v
 }
 
-// ErrorMessage returns the errormessage associated with this ExportLogsPartialSuccess.
-func (ms ExportLogsPartialSuccess) ErrorMessage() string {
+// ErrorMessage returns the errormessage associated with this ExportPartialSuccess.
+func (ms ExportPartialSuccess) ErrorMessage() string {
 	return ms.getOrig().ErrorMessage
 }
 
-// SetErrorMessage replaces the errormessage associated with this ExportLogsPartialSuccess.
-func (ms ExportLogsPartialSuccess) SetErrorMessage(v string) {
+// SetErrorMessage replaces the errormessage associated with this ExportPartialSuccess.
+func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 	ms.getOrig().ErrorMessage = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ExportLogsPartialSuccess) CopyTo(dest ExportLogsPartialSuccess) {
+func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.SetRejectedLogRecords(ms.RejectedLogRecords())
 	dest.SetErrorMessage(ms.ErrorMessage())
 }

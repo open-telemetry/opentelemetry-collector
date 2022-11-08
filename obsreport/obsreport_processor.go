@@ -22,7 +22,6 @@ import (
 	"go.opencensus.io/tag"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
@@ -49,12 +48,15 @@ type Processor struct {
 
 // ProcessorSettings are settings for creating a Processor.
 type ProcessorSettings struct {
-	ProcessorID             config.ComponentID
+	ProcessorID             component.ID
 	ProcessorCreateSettings component.ProcessorCreateSettings
 }
 
-// NewProcessor creates a new Processor.
-func NewProcessor(cfg ProcessorSettings) *Processor {
+// Deprecated: [v0.64.0] use MustNewProcessor.
+var NewProcessor = MustNewProcessor
+
+// MustNewProcessor creates a new Processor.
+func MustNewProcessor(cfg ProcessorSettings) *Processor {
 	return &Processor{
 		level:    cfg.ProcessorCreateSettings.MetricsLevel,
 		mutators: []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},

@@ -19,11 +19,6 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-// Deprecated: [v0.63.0] use &ProtoMarshaler{}
-func NewProtoMarshaler() MarshalSizer {
-	return &ProtoMarshaler{}
-}
-
 var _ MarshalSizer = (*ProtoMarshaler)(nil)
 
 type ProtoMarshaler struct{}
@@ -39,11 +34,6 @@ func (e *ProtoMarshaler) TracesSize(td Traces) int {
 }
 
 type ProtoUnmarshaler struct{}
-
-// Deprecated: [v0.63.0] use &ProtoUnmarshaler{}
-func NewProtoUnmarshaler() Unmarshaler {
-	return &ProtoUnmarshaler{}
-}
 
 func (d *ProtoUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	pb := otlptrace.TracesData{}

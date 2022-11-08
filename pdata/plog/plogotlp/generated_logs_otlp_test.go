@@ -25,33 +25,33 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
-func TestExportLogsPartialSuccess_MoveTo(t *testing.T) {
-	ms := ExportLogsPartialSuccess(internal.GenerateTestExportLogsPartialSuccess())
-	dest := NewExportLogsPartialSuccess()
+func TestExportPartialSuccess_MoveTo(t *testing.T) {
+	ms := ExportPartialSuccess(internal.GenerateTestLogsExportPartialSuccess())
+	dest := NewExportPartialSuccess()
 	ms.MoveTo(dest)
-	assert.Equal(t, NewExportLogsPartialSuccess(), ms)
-	assert.Equal(t, ExportLogsPartialSuccess(internal.GenerateTestExportLogsPartialSuccess()), dest)
+	assert.Equal(t, NewExportPartialSuccess(), ms)
+	assert.Equal(t, ExportPartialSuccess(internal.GenerateTestLogsExportPartialSuccess()), dest)
 }
 
-func TestExportLogsPartialSuccess_CopyTo(t *testing.T) {
-	ms := NewExportLogsPartialSuccess()
-	orig := NewExportLogsPartialSuccess()
+func TestExportPartialSuccess_CopyTo(t *testing.T) {
+	ms := NewExportPartialSuccess()
+	orig := NewExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ExportLogsPartialSuccess(internal.GenerateTestExportLogsPartialSuccess())
+	orig = ExportPartialSuccess(internal.GenerateTestLogsExportPartialSuccess())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
 
-func TestExportLogsPartialSuccess_RejectedLogRecords(t *testing.T) {
-	ms := NewExportLogsPartialSuccess()
+func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
+	ms := NewExportPartialSuccess()
 	assert.Equal(t, int64(0), ms.RejectedLogRecords())
 	ms.SetRejectedLogRecords(int64(13))
 	assert.Equal(t, int64(13), ms.RejectedLogRecords())
 }
 
-func TestExportLogsPartialSuccess_ErrorMessage(t *testing.T) {
-	ms := NewExportLogsPartialSuccess()
+func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
+	ms := NewExportPartialSuccess()
 	assert.Equal(t, "", ms.ErrorMessage())
 	ms.SetErrorMessage("error message")
 	assert.Equal(t, "error message", ms.ErrorMessage())

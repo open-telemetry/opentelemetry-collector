@@ -98,7 +98,7 @@ func TestCGroupReadInt(t *testing.T) {
 	testTable := []struct {
 		name            string
 		paramName       string
-		expectedValue   int
+		expectedValue   int64
 		shouldHaveError bool
 	}{
 		{

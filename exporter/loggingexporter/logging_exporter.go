@@ -20,8 +20,8 @@ import (
 	"os"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/loggingexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -29,7 +29,7 @@ import (
 )
 
 type loggingExporter struct {
-	logLevel         zapcore.Level
+	verbosity        configtelemetry.Level
 	logger           *zap.Logger
 	logsMarshaler    plog.Marshaler
 	metricsMarshaler pmetric.Marshaler
@@ -38,7 +38,7 @@ type loggingExporter struct {
 
 func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
-	if s.logLevel != zapcore.DebugLevel {
+	if s.verbosity != configtelemetry.LevelDetailed {
 		return nil
 	}
 
@@ -52,8 +52,7 @@ func (s *loggingExporter) pushTraces(_ context.Context, td ptrace.Traces) error 
 
 func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
 	s.logger.Info("MetricsExporter", zap.Int("#metrics", md.MetricCount()))
-
-	if s.logLevel != zapcore.DebugLevel {
+	if s.verbosity != configtelemetry.LevelDetailed {
 		return nil
 	}
 
@@ -67,8 +66,7 @@ func (s *loggingExporter) pushMetrics(_ context.Context, md pmetric.Metrics) err
 
 func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	s.logger.Info("LogsExporter", zap.Int("#logs", ld.LogRecordCount()))
-
-	if s.logLevel != zapcore.DebugLevel {
+	if s.verbosity != configtelemetry.LevelDetailed {
 		return nil
 	}
 
@@ -80,9 +78,9 @@ func (s *loggingExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func newLoggingExporter(logger *zap.Logger, logLevel zapcore.Level) *loggingExporter {
+func newLoggingExporter(logger *zap.Logger, verbosity configtelemetry.Level) *loggingExporter {
 	return &loggingExporter{
-		logLevel:         logLevel,
+		verbosity:        verbosity,
 		logger:           logger,
 		logsMarshaler:    otlptext.NewTextLogsMarshaler(),
 		metricsMarshaler: otlptext.NewTextMetricsMarshaler(),

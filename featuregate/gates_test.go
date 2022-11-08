@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRegistry(t *testing.T) {
@@ -47,12 +48,18 @@ func TestRegistry(t *testing.T) {
 
 func TestRegistryWithErrorApply(t *testing.T) {
 	r := Registry{gates: map[string]Gate{}}
-	gate := Gate{
+
+	assert.NoError(t, r.Register(Gate{
 		ID:          "foo",
 		Description: "Test Gate",
-		Enabled:     true,
-	}
-	assert.NoError(t, r.Register(gate))
+		stage:       StageAlpha,
+	}))
+	assert.NoError(t, r.Register(Gate{
+		ID:             "stable-foo",
+		Description:    "Test Gate",
+		stage:          StageStable,
+		removalVersion: "next",
+	}))
 
 	tests := []struct {
 		name        string
@@ -72,6 +79,12 @@ func TestRegistryWithErrorApply(t *testing.T) {
 			enabled:     false,
 			shouldError: true,
 		},
+		{
+			name:        "stable gate modified",
+			gate:        "stable-foo",
+			enabled:     false,
+			shouldError: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -83,5 +96,114 @@ func TestRegistryWithErrorApply(t *testing.T) {
 			assert.NoError(t, r.Apply(map[string]bool{tt.gate: tt.enabled}))
 			assert.Equal(t, tt.enabled, r.IsEnabled(tt.gate))
 		})
+	}
+}
+
+func TestRegisterGateLifecycle(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		id        string
+		stage     Stage
+		opts      []RegistryOption
+		enabled   bool
+		shouldErr bool
+	}{
+		{
+			name:      "StageAlpha Flag",
+			id:        "test-gate",
+			stage:     StageAlpha,
+			enabled:   false,
+			shouldErr: false,
+		},
+		{
+			name:  "StageAlpha Flag with all options",
+			id:    "test-gate",
+			stage: StageAlpha,
+			opts: []RegistryOption{
+				WithRegisterDescription("test-gate"),
+				WithRegisterReferenceURL("http://example.com/issue/1"),
+				WithRegisterRemovalVersion(""),
+			},
+			enabled:   false,
+			shouldErr: false,
+		},
+		{
+			name:      "StageBeta Flag",
+			id:        "test-gate",
+			stage:     StageBeta,
+			enabled:   true,
+			shouldErr: false,
+		},
+		{
+			name:  "StageStable Flag",
+			id:    "test-gate",
+			stage: StageStable,
+			opts: []RegistryOption{
+				WithRegisterRemovalVersion("next"),
+			},
+			enabled:   true,
+			shouldErr: false,
+		},
+		{
+			name:      "Invalid stage",
+			id:        "test-gate",
+			stage:     Stage(-1),
+			shouldErr: true,
+		},
+		{
+			name:      "StageStable gate missing removal version",
+			id:        "test-gate",
+			stage:     StageStable,
+			shouldErr: true,
+		},
+		{
+			name:      "Duplicate gate",
+			id:        "existing-gate",
+			stage:     StageStable,
+			shouldErr: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := NewRegistry()
+			require.NoError(t, r.RegisterID("existing-gate", StageBeta))
+			if tc.shouldErr {
+				assert.Error(t, r.RegisterID(tc.id, tc.stage, tc.opts...), "Must error when registering gate")
+				assert.Panics(t, func() {
+					r.MustRegisterID(tc.id, tc.stage, tc.opts...)
+				})
+				return
+			}
+			assert.NoError(t, r.RegisterID(tc.id, tc.stage, tc.opts...), "Must not error when registering feature gate")
+			assert.Equal(t, tc.enabled, r.IsEnabled(tc.id), "Must match the expected enabled value")
+		})
+	}
+}
+
+func TestGateMethods(t *testing.T) {
+	g := &Gate{
+		ID:             "test",
+		Description:    "test gate",
+		Enabled:        false,
+		stage:          StageAlpha,
+		referenceURL:   "http://example.com",
+		removalVersion: "v0.64.0",
+	}
+
+	assert.Equal(t, "test", g.GetID())
+	assert.Equal(t, "test gate", g.GetDescription())
+	assert.Equal(t, false, g.IsEnabled())
+	assert.Equal(t, StageAlpha, g.Stage())
+	assert.Equal(t, "http://example.com", g.ReferenceURL())
+	assert.Equal(t, "v0.64.0", g.RemovalVersion())
+}
+
+func TestStageNames(t *testing.T) {
+	for expected, s := range map[string]Stage{
+		"StageAlpha":  StageAlpha,
+		"StageBeta":   StageBeta,
+		"StageStable": StageStable,
+		"unknown":     Stage(-1),
+	} {
+		assert.Equal(t, expected, s.String())
 	}
 }

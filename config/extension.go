@@ -14,24 +14,8 @@
 
 package config // import "go.opentelemetry.io/collector/config"
 import (
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/component"
 )
-
-// Extension is the configuration of a component.Extension. Specific extensions must implement
-// this interface and must embed ExtensionSettings struct or a struct that extends it.
-type Extension interface {
-	identifiable
-	validatable
-
-	privateConfigExtension()
-}
-
-// UnmarshalExtension helper function to unmarshal an Extension config.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalExtension(conf *confmap.Conf, cfg Extension) error {
-	return unmarshal(conf, cfg)
-}
 
 // ExtensionSettings defines common settings for a component.Extension configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
@@ -40,29 +24,28 @@ func UnmarshalExtension(conf *confmap.Conf, cfg Extension) error {
 //
 // When embedded in the extension config, it must be with `mapstructure:",squash"` tag.
 type ExtensionSettings struct {
-	id ComponentID `mapstructure:"-"`
+	id component.ID `mapstructure:"-"`
+	component.ExtensionConfig
 }
 
-// NewExtensionSettings return a new ExtensionSettings with the given ComponentID.
-func NewExtensionSettings(id ComponentID) ExtensionSettings {
-	return ExtensionSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
+// NewExtensionSettings return a new ExtensionSettings with the given ID.
+func NewExtensionSettings(id component.ID) ExtensionSettings {
+	return ExtensionSettings{id: id}
 }
 
-var _ Extension = (*ExtensionSettings)(nil)
+var _ component.ExtensionConfig = (*ExtensionSettings)(nil)
 
-// ID returns the receiver ComponentID.
-func (es *ExtensionSettings) ID() ComponentID {
+// ID returns the receiver ID.
+func (es *ExtensionSettings) ID() component.ID {
 	return es.id
 }
 
 // SetIDName sets the receiver name.
 func (es *ExtensionSettings) SetIDName(idName string) {
-	es.id.nameVal = idName
+	es.id = component.NewIDWithName(es.id.Type(), idName)
 }
 
 // Validate validates the configuration and returns an error if invalid.
 func (es *ExtensionSettings) Validate() error {
 	return nil
 }
-
-func (es *ExtensionSettings) privateConfigExtension() {}

@@ -62,7 +62,7 @@ func TestGrpc(t *testing.T) {
 
 	resp, err := logClient.Export(context.Background(), generateTracesRequest())
 	assert.NoError(t, err)
-	assert.Equal(t, NewResponse(), resp)
+	assert.Equal(t, NewExportResponse(), resp)
 }
 
 func TestGrpcError(t *testing.T) {
@@ -98,7 +98,7 @@ func TestGrpcError(t *testing.T) {
 	require.True(t, okSt)
 	assert.Equal(t, "my error", st.Message())
 	assert.Equal(t, codes.Unknown, st.Code())
-	assert.Equal(t, Response{}, resp)
+	assert.Equal(t, ExportResponse{}, resp)
 }
 
 type fakeTracesServer struct {
@@ -106,13 +106,13 @@ type fakeTracesServer struct {
 	err error
 }
 
-func (f fakeTracesServer) Export(_ context.Context, request Request) (Response, error) {
+func (f fakeTracesServer) Export(_ context.Context, request ExportRequest) (ExportResponse, error) {
 	assert.Equal(f.t, generateTracesRequest(), request)
-	return NewResponse(), f.err
+	return NewExportResponse(), f.err
 }
 
-func generateTracesRequest() Request {
+func generateTracesRequest() ExportRequest {
 	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("test_span")
-	return NewRequestFromTraces(td)
+	return NewExportRequestFromTraces(td)
 }

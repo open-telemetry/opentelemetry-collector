@@ -42,9 +42,10 @@ var traceOtlpFile = &File{
 }
 
 var exportTracePartialSuccess = &messageValueStruct{
-	structName:     "ExportTracePartialSuccess",
-	description:    "// ExportTracePartialSuccess represents the details of a partially successful export request.",
-	originFullName: "otlpcollectortrace.ExportTracePartialSuccess",
+	structName:         "ExportPartialSuccess",
+	internalStructName: "TracesExportPartialSuccess",
+	description:        "// ExportPartialSuccess represents the details of a partially successful export request.",
+	originFullName:     "otlpcollectortrace.ExportTracePartialSuccess",
 	fields: []baseField{
 		&primitiveField{
 			fieldName:  "RejectedSpans",

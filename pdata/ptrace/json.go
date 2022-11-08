@@ -24,11 +24,6 @@ import (
 
 var delegate = ptracejson.JSONMarshaler
 
-// Deprecated: [v0.63.0] use &JSONMarshaler{}
-func NewJSONMarshaler() Marshaler {
-	return &JSONMarshaler{}
-}
-
 var _ Marshaler = (*JSONMarshaler)(nil)
 
 type JSONMarshaler struct{}
@@ -41,11 +36,6 @@ func (*JSONMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 }
 
 type JSONUnmarshaler struct{}
-
-// Deprecated: [v0.63.0] use &JSONUnmarshaler{}
-func NewJSONUnmarshaler() Unmarshaler {
-	return &JSONUnmarshaler{}
-}
 
 func (*JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	var td otlptrace.TracesData

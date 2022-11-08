@@ -72,9 +72,6 @@ func (ms Traces) ResourceSpans() ResourceSpansSlice {
 // in addition to a parent/child relationship.
 type SpanKind int32
 
-// String returns the string representation of the SpanKind.
-func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String() }
-
 const (
 	// SpanKindUnspecified represents that the SpanKind is unspecified, it MUST NOT be used.
 	SpanKindUnspecified = SpanKind(otlptrace.Span_SPAN_KIND_UNSPECIFIED)
@@ -98,6 +95,25 @@ const (
 	SpanKindConsumer = SpanKind(otlptrace.Span_SPAN_KIND_CONSUMER)
 )
 
+// String returns the string representation of the SpanKind.
+func (sk SpanKind) String() string {
+	switch sk {
+	case SpanKindUnspecified:
+		return "Unspecified"
+	case SpanKindInternal:
+		return "Internal"
+	case SpanKindServer:
+		return "Server"
+	case SpanKindClient:
+		return "Client"
+	case SpanKindProducer:
+		return "Producer"
+	case SpanKindConsumer:
+		return "Consumer"
+	}
+	return ""
+}
+
 // StatusCode mirrors the codes defined at
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 type StatusCode int32
@@ -109,4 +125,14 @@ const (
 )
 
 // String returns the string representation of the StatusCode.
-func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).String() }
+func (sc StatusCode) String() string {
+	switch sc {
+	case StatusCodeUnset:
+		return "Unset"
+	case StatusCodeOk:
+		return "Ok"
+	case StatusCodeError:
+		return "Error"
+	}
+	return ""
+}

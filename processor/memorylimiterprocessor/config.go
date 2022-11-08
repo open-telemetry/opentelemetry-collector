@@ -20,6 +20,7 @@ package memorylimiterprocessor // import "go.opentelemetry.io/collector/processo
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -49,7 +50,7 @@ type Config struct {
 	MemorySpikePercentage uint32 `mapstructure:"spike_limit_percentage"`
 }
 
-var _ config.Processor = (*Config)(nil)
+var _ component.ProcessorConfig = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {

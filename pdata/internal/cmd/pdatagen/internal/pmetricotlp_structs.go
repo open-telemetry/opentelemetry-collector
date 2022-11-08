@@ -42,9 +42,10 @@ var metricsOtlpFile = &File{
 }
 
 var exportMetricsPartialSuccess = &messageValueStruct{
-	structName:     "ExportMetricsPartialSuccess",
-	description:    "// ExportMetricsPartialSuccess represents the details of a partially successful export request.",
-	originFullName: "otlpcollectormetrics.ExportMetricsPartialSuccess",
+	structName:         "ExportPartialSuccess",
+	internalStructName: "MetricsExportPartialSuccess",
+	description:        "// ExportPartialSuccess represents the details of a partially successful export request.",
+	originFullName:     "otlpcollectormetrics.ExportMetricsPartialSuccess",
 	fields: []baseField{
 		&primitiveField{
 			fieldName:  "RejectedDataPoints",

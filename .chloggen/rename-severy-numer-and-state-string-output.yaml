@@ -1,0 +1,8 @@
+change_type: breaking
+component: pdata
+note: "Change output of String() method of the following enum types to more a concise form:"
+subtext: |
+  - plog.SeverityNumber
+  - ptrace.SpanKind
+  - ptrace.StatusCode
+issues: [6251]

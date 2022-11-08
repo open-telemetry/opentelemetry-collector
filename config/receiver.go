@@ -14,24 +14,8 @@
 
 package config // import "go.opentelemetry.io/collector/config"
 import (
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/component"
 )
-
-// Receiver is the configuration of a component.Receiver. Specific extensions must implement
-// this interface and must embed ReceiverSettings struct or a struct that extends it.
-type Receiver interface {
-	identifiable
-	validatable
-
-	privateConfigReceiver()
-}
-
-// UnmarshalReceiver helper function to unmarshal a Receiver config.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalReceiver(conf *confmap.Conf, cfg Receiver) error {
-	return unmarshal(conf, cfg)
-}
 
 // ReceiverSettings defines common settings for a component.Receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
@@ -40,29 +24,28 @@ func UnmarshalReceiver(conf *confmap.Conf, cfg Receiver) error {
 //
 // When embedded in the receiver config it must be with `mapstructure:",squash"` tag.
 type ReceiverSettings struct {
-	id ComponentID `mapstructure:"-"`
+	id component.ID `mapstructure:"-"`
+	component.ReceiverConfig
 }
 
-// NewReceiverSettings return a new ReceiverSettings with the given ComponentID.
-func NewReceiverSettings(id ComponentID) ReceiverSettings {
-	return ReceiverSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
+// NewReceiverSettings return a new ReceiverSettings with the given ID.
+func NewReceiverSettings(id component.ID) ReceiverSettings {
+	return ReceiverSettings{id: id}
 }
 
-var _ Receiver = (*ReceiverSettings)(nil)
+var _ component.ReceiverConfig = (*ReceiverSettings)(nil)
 
-// ID returns the receiver ComponentID.
-func (rs *ReceiverSettings) ID() ComponentID {
+// ID returns the receiver ID.
+func (rs *ReceiverSettings) ID() component.ID {
 	return rs.id
 }
 
 // SetIDName sets the receiver name.
 func (rs *ReceiverSettings) SetIDName(idName string) {
-	rs.id.nameVal = idName
+	rs.id = component.NewIDWithName(rs.id.Type(), idName)
 }
 
 // Validate validates the configuration and returns an error if invalid.
 func (rs *ReceiverSettings) Validate() error {
 	return nil
 }
-
-func (rs *ReceiverSettings) privateConfigReceiver() {}
