@@ -25,12 +25,12 @@ import (
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -123,7 +123,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processMetrics,
@@ -194,7 +194,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processTraces,
@@ -265,7 +265,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		},
 		consumertest.NewNop(),
 		ml.processLogs,
@@ -414,49 +414,44 @@ func TestDropDecision(t *testing.T) {
 	}
 }
 
-func TestBallastSizeMiB(t *testing.T) {
-	ctx := context.Background()
-	ballastExtFactory := ballastextension.NewFactory()
-	ballastExtCfg := ballastExtFactory.CreateDefaultConfig().(*ballastextension.Config)
-	ballastExtCfg.SizeMiB = 100
-	extCreateSet := componenttest.NewNopExtensionCreateSettings()
+func TestBallastSize(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.CheckInterval = 10 * time.Second
+	cfg.MemoryLimitMiB = 1024
+	got, err := newMemoryLimiter(componenttest.NewNopProcessorCreateSettings(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, got.start(context.Background(), &host{ballastSize: 113}))
+	assert.Equal(t, uint64(113), got.ballastSize)
+	require.NoError(t, got.shutdown(context.Background()))
+}
 
-	tests := []struct {
-		name                          string
-		ballastExtBallastSizeSetting  uint64
-		expectedMemLimiterBallastSize uint64
-		expectResult                  bool
-	}{
-		{
-			name:                          "ballast size matched",
-			ballastExtBallastSizeSetting:  100,
-			expectedMemLimiterBallastSize: 100,
-			expectResult:                  true,
-		},
-		{
-			name:                          "ballast size not matched",
-			ballastExtBallastSizeSetting:  1000,
-			expectedMemLimiterBallastSize: 100,
-			expectResult:                  false,
-		},
-	}
+type host struct {
+	ballastSize uint64
+	component.Host
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ballastExtCfg.SizeMiB = tt.ballastExtBallastSizeSetting
-			ballastExt, _ := ballastExtFactory.CreateExtension(ctx, extCreateSet, ballastExtCfg)
-			require.NoError(t, ballastExt.Start(ctx, nil))
-			assert.Equal(t, tt.expectResult, tt.expectedMemLimiterBallastSize*mibBytes == ballastExt.(*ballastextension.MemoryBallast).GetBallastSize())
-		})
-	}
+func (h *host) GetExtensions() map[component.ID]component.Extension {
+	ret := make(map[component.ID]component.Extension)
+	ret[component.NewID("ballast")] = &ballastExtension{ballastSize: h.ballastSize}
+	return ret
+}
+
+type ballastExtension struct {
+	ballastSize uint64
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (be *ballastExtension) GetBallastSize() uint64 {
+	return be.ballastSize
 }
 
 func newObsReport() *obsreport.Processor {
 	set := obsreport.ProcessorSettings{
-		ProcessorID:             config.NewComponentID(typeStr),
+		ProcessorID:             component.NewID(typeStr),
 		ProcessorCreateSettings: componenttest.NewNopProcessorCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone
 
-	return obsreport.NewProcessor(set)
+	return obsreport.MustNewProcessor(set)
 }

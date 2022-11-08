@@ -17,37 +17,27 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 import (
 	"bytes"
 
-	"github.com/gogo/protobuf/jsonpb"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pmetric/internal/pmetricjson"
 )
 
-// NewJSONMarshaler returns a model.Marshaler. Marshals to OTLP json bytes.
-func NewJSONMarshaler() Marshaler {
-	return &jsonMarshaler{delegate: jsonpb.Marshaler{}}
-}
+var delegate = pmetricjson.JSONMarshaler
 
-type jsonMarshaler struct {
-	delegate jsonpb.Marshaler
-}
+var _ Marshaler = (*JSONMarshaler)(nil)
 
-func (e *jsonMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
+type JSONMarshaler struct{}
+
+func (*JSONMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
 	buf := bytes.Buffer{}
 	pb := internal.MetricsToProto(internal.Metrics(md))
-	err := e.delegate.Marshal(&buf, &pb)
+	err := delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
 
-type jsonUnmarshaler struct{}
+type JSONUnmarshaler struct{}
 
-// NewJSONUnmarshaler returns a model.Unmarshaler. Unmarshals from OTLP json bytes.
-func NewJSONUnmarshaler() Unmarshaler {
-	return &jsonUnmarshaler{}
-}
-
-func (jsonUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
+func (*JSONUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	var md otlpmetrics.MetricsData
 	if err := pmetricjson.UnmarshalMetricsData(buf, &md); err != nil {
 		return Metrics{}, err

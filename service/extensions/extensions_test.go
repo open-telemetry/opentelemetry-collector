@@ -38,54 +38,54 @@ func TestBuildExtensions(t *testing.T) {
 	tests := []struct {
 		name              string
 		factories         component.Factories
-		extensionsConfigs map[config.ComponentID]config.Extension
-		serviceExtensions []config.ComponentID
+		extensionsConfigs map[component.ID]component.ExtensionConfig
+		serviceExtensions []component.ID
 		wantErrMsg        string
 	}{
 		{
 			name: "extension_not_configured",
-			serviceExtensions: []config.ComponentID{
-				config.NewComponentID("myextension"),
+			serviceExtensions: []component.ID{
+				component.NewID("myextension"),
 			},
 			wantErrMsg: "extension \"myextension\" is not configured",
 		},
 		{
 			name: "missing_extension_factory",
-			extensionsConfigs: map[config.ComponentID]config.Extension{
-				config.NewComponentID("unknown"): nopExtensionConfig,
+			extensionsConfigs: map[component.ID]component.ExtensionConfig{
+				component.NewID("unknown"): nopExtensionConfig,
 			},
-			serviceExtensions: []config.ComponentID{
-				config.NewComponentID("unknown"),
+			serviceExtensions: []component.ID{
+				component.NewID("unknown"),
 			},
 			wantErrMsg: "extension factory for type \"unknown\" is not configured",
 		},
 		{
 			name: "error_on_create_extension",
 			factories: component.Factories{
-				Extensions: map[config.Type]component.ExtensionFactory{
+				Extensions: map[component.Type]component.ExtensionFactory{
 					errExtensionFactory.Type(): errExtensionFactory,
 				},
 			},
-			extensionsConfigs: map[config.ComponentID]config.Extension{
-				config.NewComponentID(errExtensionFactory.Type()): errExtensionConfig,
+			extensionsConfigs: map[component.ID]component.ExtensionConfig{
+				component.NewID(errExtensionFactory.Type()): errExtensionConfig,
 			},
-			serviceExtensions: []config.ComponentID{
-				config.NewComponentID(errExtensionFactory.Type()),
+			serviceExtensions: []component.ID{
+				component.NewID(errExtensionFactory.Type()),
 			},
 			wantErrMsg: "failed to create extension \"err\": cannot create \"err\" extension type",
 		},
 		{
 			name: "bad_factory",
 			factories: component.Factories{
-				Extensions: map[config.Type]component.ExtensionFactory{
+				Extensions: map[component.Type]component.ExtensionFactory{
 					badExtensionFactory.Type(): badExtensionFactory,
 				},
 			},
-			extensionsConfigs: map[config.ComponentID]config.Extension{
-				config.NewComponentID(badExtensionFactory.Type()): badExtensionCfg,
+			extensionsConfigs: map[component.ID]component.ExtensionConfig{
+				component.NewID(badExtensionFactory.Type()): badExtensionCfg,
 			},
-			serviceExtensions: []config.ComponentID{
-				config.NewComponentID(badExtensionFactory.Type()),
+			serviceExtensions: []component.ID{
+				component.NewID(badExtensionFactory.Type()),
 			},
 			wantErrMsg: "factory for \"bf\" produced a nil extension",
 		},
@@ -108,14 +108,14 @@ func TestBuildExtensions(t *testing.T) {
 func newBadExtensionFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(
 		"bf",
-		func() config.Extension {
+		func() component.ExtensionConfig {
 			return &struct {
 				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 			}{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("bf")),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID("bf")),
 			}
 		},
-		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
+		func(ctx context.Context, set component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {
 			return nil, nil
 		},
 		component.StabilityLevelInDevelopment,
@@ -125,14 +125,14 @@ func newBadExtensionFactory() component.ExtensionFactory {
 func newCreateErrorExtensionFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(
 		"err",
-		func() config.Extension {
+		func() component.ExtensionConfig {
 			return &struct {
 				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 			}{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("err")),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID("err")),
 			}
 		},
-		func(ctx context.Context, set component.ExtensionCreateSettings, extension config.Extension) (component.Extension, error) {
+		func(ctx context.Context, set component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
 		component.StabilityLevelInDevelopment,

@@ -23,10 +23,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 )
 
-var id = config.NewComponentID("test")
+var id = component.NewID("test")
 
 type baseComponent struct {
 	component.StartFunc

@@ -319,8 +319,8 @@ func newConfFromFile(t testing.TB, fileName string) map[string]interface{} {
 }
 
 type testConfig struct {
-	Next    nextConfig `mapstructure:"next"`
-	Another string     `mapstructure:"another"`
+	Next    *nextConfig `mapstructure:"next"`
+	Another string      `mapstructure:"another"`
 }
 
 func (tc *testConfig) Unmarshal(component *Conf) error {
@@ -332,7 +332,8 @@ func (tc *testConfig) Unmarshal(component *Conf) error {
 }
 
 type nextConfig struct {
-	String string `mapstructure:"string"`
+	String  string `mapstructure:"string"`
+	private string
 }
 
 func (nc *nextConfig) Unmarshal(component *Conf) error {
@@ -357,6 +358,23 @@ func TestUnmarshaler(t *testing.T) {
 	assert.Equal(t, "make sure this is called", tc.Next.String)
 }
 
+func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {
+	cfgMap := NewFromStringMap(map[string]interface{}{
+		"next": map[string]interface{}{
+			"string": "make sure this",
+		},
+		"another": "make sure this",
+	})
+
+	tc := &testConfig{Next: &nextConfig{
+		private: "keep already configured members",
+	}}
+	assert.NoError(t, cfgMap.Unmarshal(tc))
+	assert.Equal(t, "make sure this", tc.Another)
+	assert.Equal(t, "make sure this is called", tc.Next.String)
+	assert.Equal(t, "keep already configured members", tc.Next.private)
+}
+
 func TestDirectUnmarshaler(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]interface{}{
 		"next": map[string]interface{}{
@@ -365,10 +383,13 @@ func TestDirectUnmarshaler(t *testing.T) {
 		"another": "make sure this",
 	})
 
-	tc := &testConfig{}
+	tc := &testConfig{Next: &nextConfig{
+		private: "keep already configured members",
+	}}
 	assert.NoError(t, tc.Unmarshal(cfgMap))
 	assert.Equal(t, "make sure this is only called directly", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
+	assert.Equal(t, "keep already configured members", tc.Next.private)
 }
 
 type testErrConfig struct {

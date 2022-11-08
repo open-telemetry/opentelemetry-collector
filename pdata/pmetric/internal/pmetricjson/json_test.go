@@ -24,21 +24,194 @@ import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
 
-func TestReadMetricsDataUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
+func TestReadMetricsData(t *testing.T) {
+	jsonStr := `{"extra":"", "resourceMetrics": [{"extra":""}]}`
 	value := &otlpmetrics.MetricsData{}
 	assert.NoError(t, UnmarshalMetricsData([]byte(jsonStr), value))
-	assert.EqualValues(t, &otlpmetrics.MetricsData{}, value)
+	assert.EqualValues(t, &otlpmetrics.MetricsData{ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}}}, value)
 }
 
-func TestReadExportMetricsServiceRequestUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
+func TestReadExportMetricsServiceRequest(t *testing.T) {
+	jsonStr := `{"extra":"", "resourceMetrics": [{"extra":""}]}`
 	value := &otlpcollectormetrics.ExportMetricsServiceRequest{}
 	assert.NoError(t, UnmarshalExportMetricsServiceRequest([]byte(jsonStr), value))
-	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{}, value)
+	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceRequest{ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}}}, value)
 }
 
-func TestExemplarIntVal(t *testing.T) {
+func TestReadExportMetricsServiceResponse(t *testing.T) {
+	jsonStr := `{"extra":"", "partialSuccess": {}}`
+	value := &otlpcollectormetrics.ExportMetricsServiceResponse{}
+	assert.NoError(t, UnmarshalExportMetricsServiceResponse([]byte(jsonStr), value))
+	assert.EqualValues(t, &otlpcollectormetrics.ExportMetricsServiceResponse{}, value)
+}
+
+func TestReadResourceMetrics(t *testing.T) {
+	jsonStr := `{"extra":"", "resource": {}, "schemaUrl": "schema", "scopeMetrics": []}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readResourceMetrics(iter)
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, &otlpmetrics.ResourceMetrics{SchemaUrl: "schema"}, value)
+}
+
+func TestReadScopeMetrics(t *testing.T) {
+	jsonStr := `{"extra":"", "scope": {}, "metrics": [], "schemaUrl": "schema"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readScopeMetrics(iter)
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, &otlpmetrics.ScopeMetrics{SchemaUrl: "schema"}, value)
+}
+
+func TestReadMetric(t *testing.T) {
+	type args struct {
+		jsonStr string
+		want    *otlpmetrics.Metric
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "sum has unknown field",
+			args: args{
+				jsonStr: `{"sum":{"extra":""}}`,
+				want: &otlpmetrics.Metric{
+					Data: &otlpmetrics.Metric_Sum{
+						Sum: &otlpmetrics.Sum{},
+					},
+				},
+			},
+		},
+		{
+			name: "gauge has unknown field",
+			args: args{
+				want: &otlpmetrics.Metric{
+					Data: &otlpmetrics.Metric_Gauge{
+						Gauge: &otlpmetrics.Gauge{},
+					},
+				},
+				jsonStr: `{"gauge":{"extra":""}}`,
+			},
+		},
+		{
+			name: "histogram has unknown field",
+			args: args{
+				want: &otlpmetrics.Metric{
+					Data: &otlpmetrics.Metric_Histogram{
+						Histogram: &otlpmetrics.Histogram{},
+					},
+				},
+				jsonStr: `{"histogram":{"extra":""}}`,
+			},
+		},
+		{
+			name: "exponential_histogram has unknown field",
+			args: args{
+				want: &otlpmetrics.Metric{
+					Data: &otlpmetrics.Metric_ExponentialHistogram{
+						ExponentialHistogram: &otlpmetrics.ExponentialHistogram{},
+					},
+				},
+				jsonStr: `{"exponential_histogram":{"extra":""}}`,
+			},
+		},
+		{
+			name: "Summary has unknown field",
+			args: args{
+				want: &otlpmetrics.Metric{
+					Data: &otlpmetrics.Metric_Summary{
+						Summary: &otlpmetrics.Summary{},
+					},
+				},
+				jsonStr: `{"summary":{"extra":""}}`,
+			},
+		},
+		{
+			name: "Metrics has unknown field",
+			args: args{
+				want:    &otlpmetrics.Metric{},
+				jsonStr: `{"extra":""}`,
+			},
+		},
+	}
+	for _, tt := range tests {
+		iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.args.jsonStr))
+		jsoniter.ConfigFastest.ReturnIterator(iter)
+		value := readMetric(iter)
+		assert.NoError(t, iter.Error)
+		assert.EqualValues(t, tt.args.want, value)
+	}
+}
+
+func TestReadNumberDataPoint(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readNumberDataPoint(iter)
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, &otlpmetrics.NumberDataPoint{}, value)
+}
+
+func TestReadHistogramDataPoint(t *testing.T) {
+	jsonStr := `{"extra":"", "count":3}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readHistogramDataPoint(iter)
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, &otlpmetrics.HistogramDataPoint{
+		Count: 3,
+	}, value)
+}
+
+func TestReadExponentialHistogramDataPoint(t *testing.T) {
+	jsonStr := `{"extra":"", "count":3}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readExponentialHistogramDataPoint(iter)
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, &otlpmetrics.ExponentialHistogramDataPoint{
+		Count: 3,
+	}, value)
+}
+
+func TestReadExponentialHistogramDataPointBuckets(t *testing.T) {
+	jsonStr := `{"extra":"", "offset":3, "bucketCounts": [1, 2]}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readExponentialHistogramBuckets(iter)
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, otlpmetrics.ExponentialHistogramDataPoint_Buckets{
+		Offset:       3,
+		BucketCounts: []uint64{1, 2},
+	}, value)
+}
+
+func TestReadSummaryDataPoint(t *testing.T) {
+	jsonStr := `{"extra":"", "count":3, "sum": 3.14}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readSummaryDataPoint(iter)
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, &otlpmetrics.SummaryDataPoint{
+		Count: 3,
+		Sum:   3.14,
+	}, value)
+}
+
+func TestReadQuantileValue(t *testing.T) {
+	jsonStr := `{"extra":"", "quantile":0.314, "value":3}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readQuantileValue(iter)
+	assert.NoError(t, iter.Error)
+	assert.EqualValues(t, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{
+		Quantile: 0.314,
+		Value:    3,
+	}, value)
+}
+
+func TestExemplarVal(t *testing.T) {
 	tests := []struct {
 		name    string
 		jsonStr string
@@ -46,10 +219,19 @@ func TestExemplarIntVal(t *testing.T) {
 	}{
 		{
 			name:    "int",
-			jsonStr: `{"as_int":1}`,
+			jsonStr: `{"asInt":1}`,
 			want: otlpmetrics.Exemplar{
 				Value: &otlpmetrics.Exemplar_AsInt{
 					AsInt: 1,
+				},
+			},
+		},
+		{
+			name:    "double",
+			jsonStr: `{"asDouble":3.14}`,
+			want: otlpmetrics.Exemplar{
+				Value: &otlpmetrics.Exemplar_AsDouble{
+					AsDouble: 3.14,
 				},
 			},
 		},
@@ -84,8 +266,8 @@ func TestExemplarInvalidSpanID(t *testing.T) {
 	}
 }
 
-func TestExemplarUnknownField(t *testing.T) {
-	jsonStr := `{"exists":"true"}`
+func TestExemplar(t *testing.T) {
+	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := readExemplar(iter)
@@ -93,174 +275,11 @@ func TestExemplarUnknownField(t *testing.T) {
 	assert.EqualValues(t, otlpmetrics.Exemplar{}, value)
 }
 
-func TestReadResourceMetricsUnknownField(t *testing.T) {
-	jsonStr := `{"exists":"true"}`
+func TestReadExportMetricsPartialSuccess(t *testing.T) {
+	jsonStr := `{"extra":"", "rejectedDataPoints":1,"errorMessage":"nothing"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readResourceMetrics(iter)
+	value := readExportMetricsPartialSuccess(iter)
 	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpmetrics.ResourceMetrics{}, value)
-}
-
-func TestReadInstrumentationLibraryMetricsUnknownField(t *testing.T) {
-	jsonStr := `{"exists":"true"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readScopeMetrics(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpmetrics.ScopeMetrics{}, value)
-}
-
-func TestReadInstrumentationLibraryUnknownField(t *testing.T) {
-	jsonStr := `{"instrumentationLibrary":{"exists":"true"}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readScopeMetrics(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpmetrics.ScopeMetrics{}, value)
-}
-
-func TestReadMetricUnknownField(t *testing.T) {
-	type args struct {
-		jsonStr string
-		want    *otlpmetrics.Metric
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "sum has unknown field",
-			args: args{
-				jsonStr: `{"sum":{"exists":"true"}}`,
-				want: &otlpmetrics.Metric{
-					Data: &otlpmetrics.Metric_Sum{
-						Sum: &otlpmetrics.Sum{},
-					},
-				},
-			},
-		},
-		{
-			name: "gauge has unknown field",
-			args: args{
-				want: &otlpmetrics.Metric{
-					Data: &otlpmetrics.Metric_Gauge{
-						Gauge: &otlpmetrics.Gauge{},
-					},
-				},
-				jsonStr: `{"gauge":{"exists":"true"}}`,
-			},
-		},
-		{
-			name: "histogram has unknown field",
-			args: args{
-				want: &otlpmetrics.Metric{
-					Data: &otlpmetrics.Metric_Histogram{
-						Histogram: &otlpmetrics.Histogram{},
-					},
-				},
-				jsonStr: `{"histogram":{"exists":"true"}}`,
-			},
-		},
-		{
-			name: "exponential_histogram has unknown field",
-			args: args{
-				want: &otlpmetrics.Metric{
-					Data: &otlpmetrics.Metric_ExponentialHistogram{
-						ExponentialHistogram: &otlpmetrics.ExponentialHistogram{},
-					},
-				},
-				jsonStr: `{"exponential_histogram":{"exists":"true"}}`,
-			},
-		},
-		{
-			name: "Summary has unknown field",
-			args: args{
-				want: &otlpmetrics.Metric{
-					Data: &otlpmetrics.Metric_Summary{
-						Summary: &otlpmetrics.Summary{},
-					},
-				},
-				jsonStr: `{"summary":{"exists":"true"}}`,
-			},
-		},
-		{
-			name: "Metrics has unknown field",
-			args: args{
-				want:    &otlpmetrics.Metric{},
-				jsonStr: `{"exists":{"exists":"true"}}`,
-			},
-		},
-	}
-	for _, tt := range tests {
-		iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.args.jsonStr))
-		jsoniter.ConfigFastest.ReturnIterator(iter)
-		value := readMetric(iter)
-		assert.NoError(t, iter.Error)
-		assert.EqualValues(t, tt.args.want, value)
-	}
-}
-
-func TestReadNumberDataPointUnknownField(t *testing.T) {
-	jsonStr := `{"exists":{"exists":"true"}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readNumberDataPoint(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpmetrics.NumberDataPoint{}, value)
-}
-
-func TestReadHistogramDataPointUnknownField(t *testing.T) {
-	jsonStr := `{"exists":{"exists":"true"},"count":3}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readHistogramDataPoint(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpmetrics.HistogramDataPoint{
-		Count: 3,
-	}, value)
-}
-
-func TestReadExponentialHistogramDataPointUnknownField(t *testing.T) {
-	jsonStr := `{"exists":{"exists":"true"},"count":3}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readExponentialHistogramDataPoint(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpmetrics.ExponentialHistogramDataPoint{
-		Count: 3,
-	}, value)
-}
-
-func TestReadExponentialHistogramDataPointBucketsUnknownField(t *testing.T) {
-	jsonStr := `{"exists":{"exists":"true"},"offset":3}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readExponentialHistogramBuckets(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, otlpmetrics.ExponentialHistogramDataPoint_Buckets{
-		Offset: 3,
-	}, value)
-}
-
-func TestReadQuantileValue(t *testing.T) {
-	jsonStr := `{"exists":{"exists":"true"},"value":3}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readQuantileValue(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{
-		Value: 3,
-	}, value)
-}
-
-func TestReadSummaryDataPoint(t *testing.T) {
-	jsonStr := `{"exists":{"exists":"true"},"count":3}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readSummaryDataPoint(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpmetrics.SummaryDataPoint{
-		Count: 3,
-	}, value)
+	assert.Equal(t, otlpcollectormetrics.ExportMetricsPartialSuccess{RejectedDataPoints: 1, ErrorMessage: "nothing"}, value)
 }

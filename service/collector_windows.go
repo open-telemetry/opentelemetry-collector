@@ -89,11 +89,12 @@ func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeReques
 }
 
 func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
-	// Parse all the args manually.
+	// Parse all the flags manually.
 	if err := s.flags.Parse(os.Args[1:]); err != nil {
 		return err
 	}
-	if err := featuregate.GetRegistry().Apply(gatesList); err != nil {
+
+	if err := featuregate.GetRegistry().Apply(getFeatureGatesFlag(s.flags)); err != nil {
 		return err
 	}
 	var err error

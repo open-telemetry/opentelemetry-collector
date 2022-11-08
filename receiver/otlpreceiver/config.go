@@ -17,6 +17,7 @@ package otlpreceiver // import "go.opentelemetry.io/collector/receiver/otlprecei
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -25,8 +26,8 @@ import (
 
 const (
 	// Protocol values.
-	protoGRPC          = "grpc"
-	protoHTTP          = "http"
+	protoGRPC          = "protocols::grpc"
+	protoHTTP          = "protocols::http"
 	protocolsFieldName = "protocols"
 )
 
@@ -43,40 +44,30 @@ type Config struct {
 	Protocols `mapstructure:"protocols"`
 }
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.ReceiverConfig = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.GRPC == nil &&
-		cfg.HTTP == nil {
+	if cfg.GRPC == nil && cfg.HTTP == nil {
 		return errors.New("must specify at least one protocol when using the OTLP receiver")
 	}
 	return nil
 }
 
 // Unmarshal a confmap.Conf into the config struct.
-func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
-		return errors.New("empty config for OTLP receiver")
-	}
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	// first load the config normally
-	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
+	err := conf.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}
 
-	// next manually search for protocols in the confmap.Conf, if a protocol is not present it means it is disabled.
-	protocols, err := componentParser.Sub(protocolsFieldName)
-	if err != nil {
-		return err
-	}
-
-	if !protocols.IsSet(protoGRPC) {
+	if !conf.IsSet(protoGRPC) {
 		cfg.GRPC = nil
 	}
 
-	if !protocols.IsSet(protoHTTP) {
+	if !conf.IsSet(protoHTTP) {
 		cfg.HTTP = nil
 	}
 

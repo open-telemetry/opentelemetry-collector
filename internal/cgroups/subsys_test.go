@@ -70,6 +70,15 @@ func TestNewCGroupSubsysFromLine(t *testing.T) {
 				Name:       "/docker/1234567890abcdef",
 			},
 		},
+		{
+			name: "sophisticated-path",
+			line: "4:pids:/example.slice:extra-path-designator",
+			expectedSubsys: &CGroupSubsys{
+				ID:         4,
+				Subsystems: []string{"pids"},
+				Name:       "/example.slice:extra-path-designator",
+			},
+		},
 	}
 
 	for _, tt := range testTable {
@@ -82,7 +91,6 @@ func TestNewCGroupSubsysFromLine(t *testing.T) {
 func TestNewCGroupSubsysFromLineErr(t *testing.T) {
 	lines := []string{
 		"1:cpu",
-		"1:cpu,cpuacct:/:/necessary-field",
 		"not-a-number:cpu:/",
 	}
 	_, parseError := strconv.Atoi("not-a-number")
@@ -98,13 +106,8 @@ func TestNewCGroupSubsysFromLineErr(t *testing.T) {
 			expectedError: cgroupSubsysFormatInvalidError{lines[0]},
 		},
 		{
-			name:          "more-fields",
-			line:          lines[1],
-			expectedError: cgroupSubsysFormatInvalidError{lines[1]},
-		},
-		{
 			name:          "illegal-id",
-			line:          lines[2],
+			line:          lines[1],
 			expectedError: parseError,
 		},
 	}

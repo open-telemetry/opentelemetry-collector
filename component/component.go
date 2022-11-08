@@ -17,8 +17,6 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 	"errors"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 var (
@@ -162,17 +160,17 @@ func (sl StabilityLevel) LogMessage() string {
 // use the factory helpers for the appropriate component type.
 type Factory interface {
 	// Type gets the type of the component created by this factory.
-	Type() config.Type
+	Type() Type
 
 	unexportedFactoryFunc()
 }
 
 type baseFactory struct {
-	cfgType config.Type
+	cfgType Type
 }
 
 func (baseFactory) unexportedFactoryFunc() {}
 
-func (bf baseFactory) Type() config.Type {
+func (bf baseFactory) Type() Type {
 	return bf.cfgType
 }

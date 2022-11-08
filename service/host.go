@@ -16,7 +16,6 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/pipelines"
 )
@@ -39,7 +38,7 @@ func (host *serviceHost) ReportFatalError(err error) {
 	host.asyncErrorChannel <- err
 }
 
-func (host *serviceHost) GetFactory(kind component.Kind, componentType config.Type) component.Factory {
+func (host *serviceHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
 		return host.factories.Receivers[componentType]
@@ -53,10 +52,10 @@ func (host *serviceHost) GetFactory(kind component.Kind, componentType config.Ty
 	return nil
 }
 
-func (host *serviceHost) GetExtensions() map[config.ComponentID]component.Extension {
+func (host *serviceHost) GetExtensions() map[component.ID]component.Extension {
 	return host.extensions.GetExtensions()
 }
 
-func (host *serviceHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
+func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
 	return host.pipelines.GetExporters()
 }

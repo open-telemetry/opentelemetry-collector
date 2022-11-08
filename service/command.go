@@ -30,7 +30,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 		Version:      set.BuildInfo.Version,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := featuregate.GetRegistry().Apply(gatesList); err != nil {
+			if err := featuregate.GetRegistry().Apply(getFeatureGatesFlag(flagSet)); err != nil {
 				return err
 			}
 			if set.ConfigProvider == nil {

@@ -15,28 +15,28 @@
 package config // import "go.opentelemetry.io/collector/config/experimental/config"
 
 import (
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 )
 
 // SourceSettings defines common settings of a Source configuration.
 // Specific config sources can embed this struct and extend it with more fields if needed.
 // When embedded it must be with `mapstructure:",squash"` tag.
 type SourceSettings struct {
-	config.ComponentID `mapstructure:"-"`
+	id component.ID `mapstructure:"-"`
 }
 
 // ID returns the ID of the component that this configuration belongs to.
-func (s *SourceSettings) ID() config.ComponentID {
-	return s.ComponentID
+func (s *SourceSettings) ID() component.ID {
+	return s.id
 }
 
 // SetIDName updates the name part of the ID for the component that this configuration belongs to.
 func (s *SourceSettings) SetIDName(idName string) {
-	s.ComponentID = config.NewComponentIDWithName(s.ComponentID.Type(), idName)
+	s.id = component.NewIDWithName(s.id.Type(), idName)
 }
 
 // NewSourceSettings return a new config.SourceSettings struct with the given ComponentID.
-func NewSourceSettings(id config.ComponentID) SourceSettings {
+func NewSourceSettings(id component.ID) SourceSettings {
 	return SourceSettings{id}
 }
 
@@ -50,7 +50,7 @@ type Source interface {
 	// From config.identifiable:
 
 	// ID returns the ID of the component that this configuration belongs to.
-	ID() config.ComponentID
+	ID() component.ID
 	// SetIDName updates the name part of the ID for the component that this configuration belongs to.
 	SetIDName(idName string)
 

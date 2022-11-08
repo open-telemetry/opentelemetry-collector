@@ -236,6 +236,23 @@ func TestCollectorFailedShutdown(t *testing.T) {
 	assert.Equal(t, Closed, col.GetState())
 }
 
+func TestCollectorStartInvalidConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
+	require.NoError(t, err)
+
+	col, err := New(CollectorSettings{
+		BuildInfo:      component.NewDefaultBuildInfo(),
+		Factories:      factories,
+		ConfigProvider: cfgProvider,
+		telemetry:      newColTelemetry(featuregate.NewRegistry()),
+	})
+	require.NoError(t, err)
+	assert.Error(t, col.Run(context.Background()))
+}
+
 // mapConverter applies extraMap of config settings. Useful for overriding the config
 // for testing purposes. Keys must use "::" delimiter between levels.
 type mapConverter struct {
@@ -352,11 +369,12 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 	}
 
 	metricsAddr := testutil.GetAvailableLocalAddress(t)
+	zpagesAddr := testutil.GetAvailableLocalAddress(t)
 	// Prepare config properties to be merged with the main config.
 	extraCfgAsProps := map[string]interface{}{
 		// Setup the zpages extension.
-		"extensions::zpages":  nil,
-		"service::extensions": "nop, zpages",
+		"extensions::zpages::endpoint": zpagesAddr,
+		"service::extensions":          "nop, zpages",
 		// Set the metrics address to expose own metrics on.
 		"service::telemetry::metrics::address": metricsAddr,
 	}
@@ -391,7 +409,7 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 
 	assertMetrics(t, metricsAddr, tc.expectedLabels)
 
-	assertZPages(t)
+	assertZPages(t, zpagesAddr)
 
 	col.Shutdown()
 
@@ -589,7 +607,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 	}
 }
 
-func assertZPages(t *testing.T) {
+func assertZPages(t *testing.T, zpagesAddr string) {
 	paths := []string{
 		"/debug/tracez",
 		// TODO: enable this when otel-metrics is used and this page is available.
@@ -599,11 +617,9 @@ func assertZPages(t *testing.T) {
 		"/debug/extensionz",
 	}
 
-	const defaultZPagesPort = "55679"
-
 	testZPagePathFn := func(t *testing.T, path string) {
 		client := &http.Client{}
-		resp, err := client.Get("http://localhost:" + defaultZPagesPort + path)
+		resp, err := client.Get("http://" + zpagesAddr + path)
 		if !assert.NoError(t, err, "error retrieving zpage at %q", path) {
 			return
 		}

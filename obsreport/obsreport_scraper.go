@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -33,21 +32,24 @@ import (
 // Scraper is a helper to add observability to a component.Scraper.
 type Scraper struct {
 	level      configtelemetry.Level
-	receiverID config.ComponentID
-	scraper    config.ComponentID
+	receiverID component.ID
+	scraper    component.ID
 	mutators   []tag.Mutator
 	tracer     trace.Tracer
 }
 
 // ScraperSettings are settings for creating a Scraper.
 type ScraperSettings struct {
-	ReceiverID             config.ComponentID
-	Scraper                config.ComponentID
+	ReceiverID             component.ID
+	Scraper                component.ID
 	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
-// NewScraper creates a new Scraper.
-func NewScraper(cfg ScraperSettings) *Scraper {
+// Deprecated: [v0.64.0] use MustNewScraper.
+var NewScraper = MustNewScraper
+
+// MustNewScraper creates a new Scraper.
+func MustNewScraper(cfg ScraperSettings) *Scraper {
 	return &Scraper{
 		level:      cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		receiverID: cfg.ReceiverID,
@@ -100,7 +102,7 @@ func (s *Scraper) EndMetricsOp(
 	// end span according to errors
 	if span.IsRecording() {
 		span.SetAttributes(
-			attribute.String(obsmetrics.FormatKey, string(config.MetricsDataType)),
+			attribute.String(obsmetrics.FormatKey, string(component.DataTypeMetrics)),
 			attribute.Int64(obsmetrics.ScrapedMetricPointsKey, int64(numScrapedMetrics)),
 			attribute.Int64(obsmetrics.ErroredMetricPointsKey, int64(numErroredMetrics)),
 		)

@@ -15,6 +15,7 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
+	"bytes"
 	"os"
 	"strings"
 )
@@ -178,7 +179,7 @@ func (iss *primitiveSliceStruct) getPackageName() string {
 	return iss.packageName
 }
 
-func (iss *primitiveSliceStruct) generateStruct(sb *strings.Builder) {
+func (iss *primitiveSliceStruct) generateStruct(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(primitiveSliceTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -193,7 +194,7 @@ func (iss *primitiveSliceStruct) generateStruct(sb *strings.Builder) {
 	}))
 }
 
-func (iss *primitiveSliceStruct) generateTests(sb *strings.Builder) {
+func (iss *primitiveSliceStruct) generateTests(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(immutableSliceTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -206,9 +207,9 @@ func (iss *primitiveSliceStruct) generateTests(sb *strings.Builder) {
 	}))
 }
 
-func (iss *primitiveSliceStruct) generateTestValueHelpers(*strings.Builder) {}
+func (iss *primitiveSliceStruct) generateTestValueHelpers(*bytes.Buffer) {}
 
-func (iss *primitiveSliceStruct) generateInternal(sb *strings.Builder) {
+func (iss *primitiveSliceStruct) generateInternal(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(primitiveSliceInternalTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -222,6 +223,7 @@ func (iss *primitiveSliceStruct) generateInternal(sb *strings.Builder) {
 }
 
 var primitiveSliceFile = &File{
+	Path:        "pdata",
 	Name:        "primitive_slice",
 	PackageName: "pcommon",
 	testImports: []string{

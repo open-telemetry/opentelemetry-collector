@@ -17,37 +17,29 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 import (
 	"bytes"
 
-	"github.com/gogo/protobuf/jsonpb"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/plog/internal/plogjson"
 )
 
-// NewJSONMarshaler returns a Marshaler. Marshals to OTLP json bytes.
-func NewJSONMarshaler() Marshaler {
-	return &jsonMarshaler{delegate: jsonpb.Marshaler{}}
-}
+var delegate = plogjson.JSONMarshaler
 
-type jsonMarshaler struct {
-	delegate jsonpb.Marshaler
-}
+var _ Marshaler = (*JSONMarshaler)(nil)
 
-func (e *jsonMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
+type JSONMarshaler struct{}
+
+func (*JSONMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 	buf := bytes.Buffer{}
 	pb := internal.LogsToProto(internal.Logs(ld))
-	err := e.delegate.Marshal(&buf, &pb)
+	err := delegate.Marshal(&buf, &pb)
 	return buf.Bytes(), err
 }
 
-type jsonUnmarshaler struct{}
+var _ Unmarshaler = (*JSONUnmarshaler)(nil)
 
-// NewJSONUnmarshaler returns a model.Unmarshaler. Unmarshals from OTLP json bytes.
-func NewJSONUnmarshaler() Unmarshaler {
-	return &jsonUnmarshaler{}
-}
+type JSONUnmarshaler struct{}
 
-func (jsonUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
+func (*JSONUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	var ld otlplogs.LogsData
 	if err := plogjson.UnmarshalLogsData(buf, &ld); err != nil {
 		return Logs{}, err

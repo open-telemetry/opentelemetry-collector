@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -28,9 +29,9 @@ import (
 func TestNewNopReceiverFactory(t *testing.T) {
 	factory := NewNopReceiverFactory()
 	require.NotNil(t, factory)
-	assert.Equal(t, config.Type("nop"), factory.Type())
+	assert.Equal(t, component.Type("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &nopReceiverConfig{ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop"))}, cfg)
+	assert.Equal(t, &nopReceiverConfig{ReceiverSettings: config.NewReceiverSettings(component.NewID("nop"))}, cfg)
 
 	traces, err := factory.CreateTracesReceiver(context.Background(), NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)

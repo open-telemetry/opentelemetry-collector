@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component
+// TODO: Move tests back to component package after config.*Settings are removed.
+
+package component_test
 
 import (
 	"context"
@@ -20,59 +22,60 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 func TestNewProcessorFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewProcessorSettings(config.NewComponentID(typeStr))
-	factory := NewProcessorFactory(
+	defaultCfg := config.NewProcessorSettings(component.NewID(typeStr))
+	factory := component.NewProcessorFactory(
 		typeStr,
-		func() config.Processor { return &defaultCfg })
+		func() component.ProcessorConfig { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
 }
 
 func TestNewProcessorFactory_WithOptions(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewProcessorSettings(config.NewComponentID(typeStr))
-	factory := NewProcessorFactory(
+	defaultCfg := config.NewProcessorSettings(component.NewID(typeStr))
+	factory := component.NewProcessorFactory(
 		typeStr,
-		func() config.Processor { return &defaultCfg },
-		WithTracesProcessor(createTracesProcessor, StabilityLevelAlpha),
-		WithMetricsProcessor(createMetricsProcessor, StabilityLevelBeta),
-		WithLogsProcessor(createLogsProcessor, StabilityLevelUnmaintained))
+		func() component.ProcessorConfig { return &defaultCfg },
+		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelAlpha),
+		component.WithMetricsProcessor(createMetricsProcessor, component.StabilityLevelBeta),
+		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelUnmaintained))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, StabilityLevelAlpha, factory.TracesProcessorStability())
-	_, err := factory.CreateTracesProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesProcessorStability())
+	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	assert.Equal(t, StabilityLevelBeta, factory.MetricsProcessorStability())
-	_, err = factory.CreateMetricsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsProcessorStability())
+	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	assert.Equal(t, StabilityLevelUnmaintained, factory.LogsProcessorStability())
-	_, err = factory.CreateLogsProcessor(context.Background(), ProcessorCreateSettings{}, &defaultCfg, nil)
+	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsProcessorStability())
+	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
-func createTracesProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Traces) (TracesProcessor, error) {
+func createTracesProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Traces) (component.TracesProcessor, error) {
 	return nil, nil
 }
 
-func createMetricsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Metrics) (MetricsProcessor, error) {
+func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Metrics) (component.MetricsProcessor, error) {
 	return nil, nil
 }
 
-func createLogsProcessor(context.Context, ProcessorCreateSettings, config.Processor, consumer.Logs) (LogsProcessor, error) {
+func createLogsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Logs) (component.LogsProcessor, error) {
 	return nil, nil
 }

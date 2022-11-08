@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -34,12 +33,12 @@ import (
 func createTestQueue(extension storage.Extension, capacity int) *persistentQueue {
 	logger := zap.NewNop()
 
-	client, err := extension.GetClient(context.Background(), component.KindReceiver, config.ComponentID{}, "")
+	client, err := extension.GetClient(context.Background(), component.KindReceiver, component.ID{}, "")
 	if err != nil {
 		panic(err)
 	}
 
-	wq := NewPersistentQueue(context.Background(), "foo", config.TracesDataType, capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
+	wq := NewPersistentQueue(context.Background(), "foo", component.DataTypeTraces, capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
 	return wq.(*persistentQueue)
 }
 

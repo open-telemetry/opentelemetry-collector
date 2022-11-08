@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 )
 
 // ConfigProvider provides the service configuration.
@@ -100,21 +99,23 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 }
 
 func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*Config, error) {
-	retMap, err := cm.mapResolver.Resolve(ctx)
+	conf, err := cm.mapResolver.Resolve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)
 	}
 
-	var cfg *Config
-	if cfg, err = configunmarshaler.New().Unmarshal(retMap, factories); err != nil {
+	var cfg *configSettings
+	if cfg, err = unmarshal(conf, factories); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err)
 	}
 
-	if err = cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid configuration: %w", err)
-	}
-
-	return cfg, nil
+	return &Config{
+		Receivers:  cfg.Receivers.GetReceivers(),
+		Processors: cfg.Processors.GetProcessors(),
+		Exporters:  cfg.Exporters.GetExporters(),
+		Extensions: cfg.Extensions.GetExtensions(),
+		Service:    cfg.Service,
+	}, nil
 }
 
 func (cm *configProvider) Watch() <-chan error {
