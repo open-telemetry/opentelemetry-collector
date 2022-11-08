@@ -29,7 +29,7 @@ import (
 
 var (
 	// follows drive-letter specification:
-	// https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
+	// https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
 	driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
 	// Scheme name consist of a sequence of characters beginning with a letter and followed by any
