@@ -21,15 +21,14 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 type componentsOutput struct {
 	BuildInfo  component.BuildInfo
-	Receivers  []config.Type
-	Processors []config.Type
-	Exporters  []config.Type
-	Extensions []config.Type
+	Receivers  []component.Type
+	Processors []component.Type
+	Exporters  []component.Type
+	Extensions []component.Type
 }
 
 // newBuildSubCommand constructs a new cobra.Command sub command using the given CollectorSettings.
