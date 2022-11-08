@@ -52,12 +52,12 @@ func TestRegistryWithErrorApply(t *testing.T) {
 	assert.NoError(t, r.Register(Gate{
 		ID:          "foo",
 		Description: "Test Gate",
-		stage:       Alpha,
+		stage:       StageAlpha,
 	}))
 	assert.NoError(t, r.Register(Gate{
 		ID:             "stable-foo",
 		Description:    "Test Gate",
-		stage:          Stable,
+		stage:          StageStable,
 		removalVersion: "next",
 	}))
 
@@ -109,16 +109,16 @@ func TestRegisterGateLifecycle(t *testing.T) {
 		shouldErr bool
 	}{
 		{
-			name:      "Alpha Flag",
+			name:      "StageAlpha Flag",
 			id:        "test-gate",
-			stage:     Alpha,
+			stage:     StageAlpha,
 			enabled:   false,
 			shouldErr: false,
 		},
 		{
-			name:  "Alpha Flag with all options",
+			name:  "StageAlpha Flag with all options",
 			id:    "test-gate",
-			stage: Alpha,
+			stage: StageAlpha,
 			opts: []RegistryOption{
 				WithRegisterDescription("test-gate"),
 				WithRegisterReferenceURL("http://example.com/issue/1"),
@@ -128,16 +128,16 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			shouldErr: false,
 		},
 		{
-			name:      "Beta Flag",
+			name:      "StageBeta Flag",
 			id:        "test-gate",
-			stage:     Beta,
+			stage:     StageBeta,
 			enabled:   true,
 			shouldErr: false,
 		},
 		{
-			name:  "Stable Flag",
+			name:  "StageStable Flag",
 			id:    "test-gate",
-			stage: Stable,
+			stage: StageStable,
 			opts: []RegistryOption{
 				WithRegisterRemovalVersion("next"),
 			},
@@ -151,21 +151,21 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			name:      "Stable gate missing removal version",
+			name:      "StageStable gate missing removal version",
 			id:        "test-gate",
-			stage:     Stable,
+			stage:     StageStable,
 			shouldErr: true,
 		},
 		{
 			name:      "Duplicate gate",
 			id:        "existing-gate",
-			stage:     Stable,
+			stage:     StageStable,
 			shouldErr: true,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			r := NewRegistry()
-			require.NoError(t, r.RegisterID("existing-gate", Beta))
+			require.NoError(t, r.RegisterID("existing-gate", StageBeta))
 			if tc.shouldErr {
 				assert.Error(t, r.RegisterID(tc.id, tc.stage, tc.opts...), "Must error when registering gate")
 				assert.Panics(t, func() {
@@ -184,7 +184,7 @@ func TestGateMethods(t *testing.T) {
 		ID:             "test",
 		Description:    "test gate",
 		Enabled:        false,
-		stage:          Alpha,
+		stage:          StageAlpha,
 		referenceURL:   "http://example.com",
 		removalVersion: "v0.64.0",
 	}
@@ -192,17 +192,17 @@ func TestGateMethods(t *testing.T) {
 	assert.Equal(t, "test", g.GetID())
 	assert.Equal(t, "test gate", g.GetDescription())
 	assert.Equal(t, false, g.IsEnabled())
-	assert.Equal(t, Alpha, g.Stage())
+	assert.Equal(t, StageAlpha, g.Stage())
 	assert.Equal(t, "http://example.com", g.ReferenceURL())
 	assert.Equal(t, "v0.64.0", g.RemovalVersion())
 }
 
 func TestStageNames(t *testing.T) {
 	for expected, s := range map[string]Stage{
-		"Alpha":   Alpha,
-		"Beta":    Beta,
-		"Stable":  Stable,
-		"unknown": Stage(-1),
+		"StageAlpha":  StageAlpha,
+		"StageBeta":   StageBeta,
+		"StageStable": StageStable,
+		"unknown":     Stage(-1),
 	} {
 		assert.Equal(t, expected, s.String())
 	}

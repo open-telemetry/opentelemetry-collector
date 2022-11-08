@@ -39,7 +39,7 @@ func init() {
 func RegisterInternalMetricFeatureGate(registry *featuregate.Registry) {
 	registry.MustRegisterID(
 		UseOtelForInternalMetricsfeatureGateID,
-		featuregate.Alpha,
+		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"),
 	)
 }
