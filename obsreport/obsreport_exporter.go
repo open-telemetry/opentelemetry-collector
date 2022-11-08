@@ -162,7 +162,7 @@ func (exp *Exporter) StartTracesOp(ctx context.Context) context.Context {
 // EndTracesOp completes the export operation that was started with StartTracesOp.
 func (exp *Exporter) EndTracesOp(ctx context.Context, numSpans int, err error) {
 	numSent, numFailedToSend := toNumItems(numSpans, err)
-	exp.recordMetrics(ctx, component.TracesDataType, numSent, numFailedToSend)
+	exp.recordMetrics(ctx, component.DataTypeTraces, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentSpansKey, obsmetrics.FailedToSendSpansKey)
 }
 
@@ -177,7 +177,7 @@ func (exp *Exporter) StartMetricsOp(ctx context.Context) context.Context {
 // StartMetricsOp.
 func (exp *Exporter) EndMetricsOp(ctx context.Context, numMetricPoints int, err error) {
 	numSent, numFailedToSend := toNumItems(numMetricPoints, err)
-	exp.recordMetrics(ctx, component.MetricsDataType, numSent, numFailedToSend)
+	exp.recordMetrics(ctx, component.DataTypeMetrics, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentMetricPointsKey, obsmetrics.FailedToSendMetricPointsKey)
 }
 
@@ -191,7 +191,7 @@ func (exp *Exporter) StartLogsOp(ctx context.Context) context.Context {
 // EndLogsOp completes the export operation that was started with StartLogsOp.
 func (exp *Exporter) EndLogsOp(ctx context.Context, numLogRecords int, err error) {
 	numSent, numFailedToSend := toNumItems(numLogRecords, err)
-	exp.recordMetrics(ctx, component.LogsDataType, numSent, numFailedToSend)
+	exp.recordMetrics(ctx, component.DataTypeLogs, numSent, numFailedToSend)
 	endSpan(ctx, err, numSent, numFailedToSend, obsmetrics.SentLogRecordsKey, obsmetrics.FailedToSendLogRecordsKey)
 }
 
@@ -217,13 +217,13 @@ func (exp *Exporter) recordMetrics(ctx context.Context, dataType component.DataT
 func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
 	var sentMeasure, failedMeasure syncint64.Counter
 	switch dataType {
-	case component.TracesDataType:
+	case component.DataTypeTraces:
 		sentMeasure = exp.sentSpans
 		failedMeasure = exp.failedToSendSpans
-	case component.MetricsDataType:
+	case component.DataTypeMetrics:
 		sentMeasure = exp.sentMetricPoints
 		failedMeasure = exp.failedToSendMetricPoints
-	case component.LogsDataType:
+	case component.DataTypeLogs:
 		sentMeasure = exp.sentLogRecords
 		failedMeasure = exp.failedToSendLogRecords
 	}
@@ -235,13 +235,13 @@ func (exp *Exporter) recordWithOtel(ctx context.Context, dataType component.Data
 func (exp *Exporter) recordWithOC(ctx context.Context, dataType component.DataType, sent int64, failed int64) {
 	var sentMeasure, failedMeasure *stats.Int64Measure
 	switch dataType {
-	case component.TracesDataType:
+	case component.DataTypeTraces:
 		sentMeasure = obsmetrics.ExporterSentSpans
 		failedMeasure = obsmetrics.ExporterFailedToSendSpans
-	case component.MetricsDataType:
+	case component.DataTypeMetrics:
 		sentMeasure = obsmetrics.ExporterSentMetricPoints
 		failedMeasure = obsmetrics.ExporterFailedToSendMetricPoints
-	case component.LogsDataType:
+	case component.DataTypeLogs:
 		sentMeasure = obsmetrics.ExporterSentLogRecords
 		failedMeasure = obsmetrics.ExporterFailedToSendLogRecords
 	}
