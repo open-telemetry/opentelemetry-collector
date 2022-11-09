@@ -111,11 +111,11 @@ func NewLogsExporter(
 
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req := newLogsRequest(ctx, ld, pusher)
-		err := be.sender.send(req)
-		if errors.Is(err, errSendingQueueIsFull) {
+		serr := be.sender.send(req)
+		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.Count()))
 		}
-		return err
+		return serr
 	}, bs.consumerOptions...)
 
 	return &logsExporter{
