@@ -1,7 +1,0 @@
-change_type: bug_fix
-
-component: cgroups
-
-note: split line into exactly 3 parts while parsing /proc/{pid}/cgroup
-
-issues: [6389]

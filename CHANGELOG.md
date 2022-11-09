@@ -4,6 +4,80 @@
 
 <!-- next version -->
 
+## 0.64.0
+
+### 🛑 Breaking changes 🛑
+
+- `config`: Remove already deprecates `config.Service`. (#6395)
+- `pdata`: Change output of String() method of the following enum types to more a concise form: (#6251)
+  - plog.SeverityNumber
+  - ptrace.SpanKind
+  - ptrace.StatusCode
+  
+- `config`: Remove already deprecates `config.Config`. (#6394)
+- `pdata`: Remove deprecated code from pdata (#6417)
+  - `p[trace|metric|log]otlp.[Request|Response]`
+  - `p[trace|metric|log]otlp.New[Request|Response]`
+  - `p[trace|metric|log]otlp.NewRequestFrom[Traces|Metrics|Logs]`
+  - `p[trace|metric|log]otlp.NewClient`
+  - `p[trace|metric|log]New[JSON|Proto][Marshaler|Unmarshale]`
+  
+- `extension`: Splitting ballast/zpages extension into their own modules (#6191)
+  The import path for the extension modules can now be accessed directly:
+  - `go.opentelemetry.io/collector/extension/ballastextension`
+  - `go.opentelemetry.io/collector/extension/zpagesextension`
+  
+  If using one of these extensions, modify your Collector builder configuration to use `gomod` directly, such as:
+  - `gomod: go.opentelemetry.io/collector/extension/ballastextension v0.64.0`
+- `processor`: Splitting batch/memorylimiter processors into their own modules (#6188, #6192, #6193)
+  The import path for the processor modules can now be access directly:
+  - `go.opentelemetry.io/collector/processor/batchprocessor`
+  - `go.opentelemetry.io/collector/processor/memorylimiter`
+  
+  If using this processor, modify your Collector builder configuration to use `gomod` directly, such as:
+  - `gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.64.0`
+- `otlpreceiver`: Splitting otlp receiver into its own module (#6190)
+  The import path for the OTLP receiver can now be access directly:
+  - `go.opentelemetry.io/collector/receiver/otlpreceiver`
+  
+  If using this receiver, modify your Collector builder configuration to use `gomod` directly, such as:
+  - `gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.0`
+
+### 🚩 Deprecations 🚩
+
+- `config`: Deprecate multiple types and funcs in `config` package (#6422)
+  - config.ComponentID => component.ID
+  - config.Type => component.Type
+  - config.DataType => component.DataType
+  - config.[Traces|Metrics|Logs]DataType => component.DataType[Traces|Metrics|Logs]
+  - config.Receiver => component.ReceiverConfig
+  - config.UnmarshalReceiver => component.UnmarshalReceiverConfig
+  - config.Processor => component.ProcessorConfig
+  - config.UnmarshalProcessor => component.UnmarshalProcessorConfig
+  - config.Exporter => component.ExporterConfig
+  - config.UnmarshalExporter => component.UnmarshalExporterConfig
+  - config.Extension => component.ExtensionConfig
+  - config.UnmarshalExtension => component.UnmarshalExtensionConfig
+  
+- `obsreport`: deprecate `obsreport.New[Receiver|Scraper|Processor|Exporter]` in favor of `obsreport.MustNew[Receiver|Scraper|Processor|Exporter]` (#6458)
+- `config/configgrpc`: Provide better helpers for configgrpc, consistent with confighttp (#6441)
+  - Deprecate `GRPCClientSettings.ToDialOptions` in favor of `GRPCClientSettings.ToClientConn`.
+  - Deprecate `GRPCServerSettings.ToServerOption` in favor of `GRPCServerSettings.ToServer`.
+  
+
+### 💡 Enhancements 💡
+
+- `service/telemetry`: Allow to configure sampling config for logs. (#4554)
+- `featuregates`: Extend feature gate definition to include support for issue links and expected deprecated version (#6167)
+- `receiver/otlp`: Add warning when using unspecified (`0.0.0.0`) address on HTTP or gRPC servers (#6151)
+- `obsreport`: Instrument `obsreport.Exporter` metrics with otel-go (#6346)
+- `config`: Add validation for empty address [telemetry::metrics::address] (#5661)
+
+### 🧰 Bug fixes 🧰
+
+- `cgroups`: split line into exactly 3 parts while parsing /proc/{pid}/cgroup (#6389)
+- `cgroups`: Use int64 for cgroup v1 parsing (#6443)
+
 ## v0.63.1
 
 ### 🧰 Bug fixes 🧰
