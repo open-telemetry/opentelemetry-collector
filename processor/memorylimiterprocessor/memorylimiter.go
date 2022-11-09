@@ -114,6 +114,14 @@ func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memo
 		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit/mibBytes),
 		zap.Duration("check_interval", cfg.CheckInterval))
 
+	obsrep, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
+		ProcessorID:             cfg.ID(),
+		ProcessorCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	ml := &memoryLimiter{
 		usageChecker:   *usageChecker,
 		memCheckWait:   cfg.CheckInterval,
@@ -121,10 +129,7 @@ func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memo
 		readMemStatsFn: runtime.ReadMemStats,
 		logger:         logger,
 		forceDrop:      atomic.NewBool(false),
-		obsrep: obsreport.MustNewProcessor(obsreport.ProcessorSettings{
-			ProcessorID:             cfg.ID(),
-			ProcessorCreateSettings: set,
-		}),
+		obsrep:         obsrep,
 	}
 
 	return ml, nil

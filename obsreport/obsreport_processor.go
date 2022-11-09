@@ -52,15 +52,22 @@ type ProcessorSettings struct {
 	ProcessorCreateSettings component.ProcessorCreateSettings
 }
 
-// Deprecated: [v0.64.0] use MustNewProcessor.
-var NewProcessor = MustNewProcessor
-
-// MustNewProcessor creates a new Processor.
-func MustNewProcessor(cfg ProcessorSettings) *Processor {
+// NewProcessor creates a new Processor.
+func NewProcessor(cfg ProcessorSettings) (*Processor, error) {
 	return &Processor{
 		level:    cfg.ProcessorCreateSettings.MetricsLevel,
 		mutators: []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},
+	}, nil
+}
+
+// Deprecated: [v0.65.0] use NewProcessor.
+func MustNewProcessor(cfg ProcessorSettings) *Processor {
+	proc, err := NewProcessor(cfg)
+	if err != nil {
+		panic(err)
 	}
+
+	return proc
 }
 
 // TracesAccepted reports that the trace data was accepted.

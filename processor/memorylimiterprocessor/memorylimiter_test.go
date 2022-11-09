@@ -116,7 +116,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: newObsReport(),
+		obsrep: newObsReport(t),
 		logger: zap.NewNop(),
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
@@ -187,7 +187,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: newObsReport(),
+		obsrep: newObsReport(t),
 		logger: zap.NewNop(),
 	}
 	tp, err := processorhelper.NewTracesProcessor(
@@ -258,7 +258,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: newObsReport(),
+		obsrep: newObsReport(t),
 		logger: zap.NewNop(),
 	}
 	lp, err := processorhelper.NewLogsProcessor(
@@ -446,12 +446,15 @@ func (be *ballastExtension) GetBallastSize() uint64 {
 	return be.ballastSize
 }
 
-func newObsReport() *obsreport.Processor {
+func newObsReport(t *testing.T) *obsreport.Processor {
 	set := obsreport.ProcessorSettings{
 		ProcessorID:             component.NewID(typeStr),
 		ProcessorCreateSettings: componenttest.NewNopProcessorCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone
 
-	return obsreport.MustNewProcessor(set)
+	proc, err := obsreport.NewProcessor(set)
+	require.NoError(t, err)
+
+	return proc
 }

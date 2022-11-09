@@ -35,10 +35,11 @@ func TestExportEnqueueFailure(t *testing.T) {
 	exporter := component.NewID("fakeExporter")
 
 	insts := newInstruments(metric.NewRegistry())
-	obsrep := newObsExporter(obsreport.ExporterSettings{
+	obsrep, err := newObsExporter(obsreport.ExporterSettings{
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	}, insts)
+	require.NoError(t, err)
 
 	logRecords := int64(7)
 	obsrep.recordLogsEnqueueFailure(context.Background(), logRecords)
