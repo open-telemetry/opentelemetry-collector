@@ -43,6 +43,9 @@
   If using this receiver, modify your Collector builder configuration to use `gomod` directly, such as:
   - `gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.0`
 
+- `confmap`: Remove unused public member `sync.Mutex` from `confmap.Resolver`. (#6489)
+  This is an exception from the deprecation rule since this is not used anywhere and it is very unlikely that is used by external users.
+
 ### 🚩 Deprecations 🚩
 
 - `config`: Deprecate multiple types and funcs in `config` package (#6422)
