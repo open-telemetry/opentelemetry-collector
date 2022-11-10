@@ -64,19 +64,14 @@ type ExporterSettings struct {
 	ExporterCreateSettings component.ExporterCreateSettings
 }
 
-// Deprecated: [v0.64.0] use MustNewExporter.
-func NewExporter(cfg ExporterSettings) *Exporter {
-	exp, err := newExporter(cfg, featuregate.GetRegistry())
-	if err != nil && cfg.ExporterCreateSettings.Logger != nil {
-		cfg.ExporterCreateSettings.Logger.Warn("Error creating an obsreport.Exporter", zap.Error(err))
-	}
-
-	return exp
+// NewExporter creates a new Exporter.
+func NewExporter(cfg ExporterSettings) (*Exporter, error) {
+	return newExporter(cfg, featuregate.GetRegistry())
 }
 
-// MustNewExporter creates a new Exporter.
+// Deprecated: [v0.65.0] use NewExporter.
 func MustNewExporter(cfg ExporterSettings) *Exporter {
-	exp, err := newExporter(cfg, featuregate.GetRegistry())
+	exp, err := NewExporter(cfg)
 	if err != nil {
 		panic(err)
 	}

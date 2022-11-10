@@ -45,11 +45,8 @@ type ScraperSettings struct {
 	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
-// Deprecated: [v0.64.0] use MustNewScraper.
-var NewScraper = MustNewScraper
-
-// MustNewScraper creates a new Scraper.
-func MustNewScraper(cfg ScraperSettings) *Scraper {
+// NewScraper creates a new Scraper.
+func NewScraper(cfg ScraperSettings) (*Scraper, error) {
 	return &Scraper{
 		level:      cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		receiverID: cfg.ReceiverID,
@@ -58,7 +55,17 @@ func MustNewScraper(cfg ScraperSettings) *Scraper {
 			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
 			tag.Upsert(obsmetrics.TagKeyScraper, cfg.Scraper.String(), tag.WithTTL(tag.TTLNoPropagation))},
 		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
+	}, nil
+}
+
+// Deprecated: [v0.65.0] use NewScraper.
+func MustNewScraper(cfg ScraperSettings) *Scraper {
+	scrap, err := NewScraper(cfg)
+	if err != nil {
+		panic(err)
 	}
+
+	return scrap
 }
 
 // StartMetricsOp is called when a scrape operation is started. The

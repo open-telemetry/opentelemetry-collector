@@ -76,7 +76,8 @@ type controller struct {
 	collectionInterval time.Duration
 	nextConsumer       consumer.Metrics
 
-	scrapers []Scraper
+	scrapers    []Scraper
+	obsScrapers []*obsreport.Scraper
 
 	tickerCh <-chan time.Time
 
@@ -103,6 +104,15 @@ func NewScraperControllerReceiver(
 		return nil, errors.New("collection_interval must be a positive duration")
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             cfg.ID(),
+		Transport:              "",
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	sc := &controller{
 		id:                 cfg.ID(),
 		logger:             set.Logger,
@@ -110,16 +120,27 @@ func NewScraperControllerReceiver(
 		nextConsumer:       nextConsumer,
 		done:               make(chan struct{}),
 		terminated:         make(chan struct{}),
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             cfg.ID(),
-			Transport:              "",
-			ReceiverCreateSettings: set,
-		}),
-		recvSettings: set,
+		obsrecv:            obsrecv,
+		recvSettings:       set,
 	}
 
 	for _, op := range options {
 		op(sc)
+	}
+
+	sc.obsScrapers = make([]*obsreport.Scraper, len(sc.scrapers))
+	for i, scraper := range sc.scrapers {
+		scrp, err := obsreport.NewScraper(obsreport.ScraperSettings{
+			ReceiverID:             sc.id,
+			Scraper:                scraper.ID(),
+			ReceiverCreateSettings: sc.recvSettings,
+		})
+
+		sc.obsScrapers[i] = scrp
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return sc, nil
@@ -184,12 +205,8 @@ func (sc *controller) startScraping() {
 func (sc *controller) scrapeMetricsAndReport(ctx context.Context) {
 	metrics := pmetric.NewMetrics()
 
-	for _, scraper := range sc.scrapers {
-		scrp := obsreport.MustNewScraper(obsreport.ScraperSettings{
-			ReceiverID:             sc.id,
-			Scraper:                scraper.ID(),
-			ReceiverCreateSettings: sc.recvSettings,
-		})
+	for i, scraper := range sc.scrapers {
+		scrp := sc.obsScrapers[i]
 		ctx = scrp.StartMetricsOp(ctx)
 		md, err := scraper.Scrape(ctx)
 

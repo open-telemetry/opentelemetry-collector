@@ -155,10 +155,15 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings, bs *baseSettings, signal component.DataType, reqUnmarshaler internal.RequestUnmarshaler) *baseExporter {
+func newBaseExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings, bs *baseSettings, signal component.DataType, reqUnmarshaler internal.RequestUnmarshaler) (*baseExporter, error) {
 	be := &baseExporter{}
 
-	be.obsrep = newObsExporter(obsreport.ExporterSettings{ExporterID: cfg.ID(), ExporterCreateSettings: set}, globalInstruments)
+	var err error
+	be.obsrep, err = newObsExporter(obsreport.ExporterSettings{ExporterID: cfg.ID(), ExporterCreateSettings: set}, globalInstruments)
+	if err != nil {
+		return nil, err
+	}
+
 	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
@@ -176,7 +181,7 @@ func newBaseExporter(cfg component.ExporterConfig, set component.ExporterCreateS
 		// Last shutdown the wrapped exporter itself.
 		return bs.ShutdownFunc.Shutdown(ctx)
 	}
-	return be
+	return be, nil
 }
 
 // wrapConsumerSender wraps the consumer sender (the sender that uses retries and timeout) with the given wrapper.

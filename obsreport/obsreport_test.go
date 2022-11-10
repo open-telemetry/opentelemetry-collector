@@ -232,11 +232,12 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		scrp := MustNewScraper(ScraperSettings{
+		scrp, serr := NewScraper(ScraperSettings{
 			ReceiverID:             receiver,
 			Scraper:                scraper,
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 		})
+		require.NoError(t, serr)
 		ctx := scrp.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
@@ -438,12 +439,13 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for i := range params {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		rec := MustNewReceiver(ReceiverSettings{
+		rec, rerr := NewReceiver(ReceiverSettings{
 			ReceiverID:             receiver,
 			Transport:              transport,
 			LongLivedCtx:           true,
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 		})
+		require.NoError(t, rerr)
 		ctx := rec.StartTracesOp(longLivedCtx)
 		assert.NotNil(t, ctx)
 		rec.EndTracesOp(ctx, format, params[i].items, params[i].err)
@@ -485,10 +487,11 @@ func TestProcessorTraceData(t *testing.T) {
 	const refusedSpans = 19
 	const droppedSpans = 13
 
-	obsrep := MustNewProcessor(ProcessorSettings{
+	obsrep, err := NewProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
+	require.NoError(t, err)
 	obsrep.TracesAccepted(context.Background(), acceptedSpans)
 	obsrep.TracesRefused(context.Background(), refusedSpans)
 	obsrep.TracesDropped(context.Background(), droppedSpans)
@@ -505,10 +508,11 @@ func TestProcessorMetricsData(t *testing.T) {
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	obsrep := MustNewProcessor(ProcessorSettings{
+	obsrep, err := NewProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
+	require.NoError(t, err)
 	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
 	obsrep.MetricsRefused(context.Background(), refusedPoints)
 	obsrep.MetricsDropped(context.Background(), droppedPoints)
@@ -547,10 +551,11 @@ func TestProcessorLogRecords(t *testing.T) {
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	obsrep := MustNewProcessor(ProcessorSettings{
+	obsrep, err := NewProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	})
+	require.NoError(t, err)
 	obsrep.LogsAccepted(context.Background(), acceptedRecords)
 	obsrep.LogsRefused(context.Background(), refusedRecords)
 	obsrep.LogsDropped(context.Background(), droppedRecords)

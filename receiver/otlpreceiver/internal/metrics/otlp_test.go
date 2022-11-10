@@ -87,7 +87,8 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	r := New(component.NewIDWithName("otlp", "metrics"), mc, componenttest.NewNopReceiverCreateSettings())
+	r, err := New(component.NewIDWithName("otlp", "metrics"), mc, componenttest.NewNopReceiverCreateSettings())
+	require.NoError(t, err)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	pmetricotlp.RegisterGRPCServer(srv, r)

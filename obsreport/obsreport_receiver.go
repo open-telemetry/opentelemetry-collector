@@ -76,18 +76,14 @@ type ReceiverSettings struct {
 	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
-// Deprecated: [v0.64.0] use MustNewReceiver.
-func NewReceiver(cfg ReceiverSettings) *Receiver {
-	rcv, err := newReceiver(cfg, featuregate.GetRegistry())
-	if err != nil && cfg.ReceiverCreateSettings.Logger != nil {
-		cfg.ReceiverCreateSettings.Logger.Warn("Error creating an obsreport.Receiver", zap.Error(err))
-	}
-	return rcv
+// NewReceiver creates a new Receiver.
+func NewReceiver(cfg ReceiverSettings) (*Receiver, error) {
+	return newReceiver(cfg, featuregate.GetRegistry())
 }
 
-// MustNewReceiver creates a new Receiver.
+// Deprecated: [v0.65.0] use NewReceiver.
 func MustNewReceiver(cfg ReceiverSettings) *Receiver {
-	rcv, err := newReceiver(cfg, featuregate.GetRegistry())
+	rcv, err := NewReceiver(cfg)
 	if err != nil {
 		panic(err)
 	}

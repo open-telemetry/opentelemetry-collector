@@ -35,15 +35,20 @@ type Receiver struct {
 }
 
 // New creates a new Receiver reference.
-func New(id component.ID, nextConsumer consumer.Logs, set component.ReceiverCreateSettings) *Receiver {
+func New(id component.ID, nextConsumer consumer.Logs, set component.ReceiverCreateSettings) (*Receiver, error) {
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             id,
+		Transport:              receiverTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &Receiver{
 		nextConsumer: nextConsumer,
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              receiverTransport,
-			ReceiverCreateSettings: set,
-		}),
-	}
+		obsrecv:      obsrecv,
+	}, nil
 }
 
 // Export implements the service Export logs func.
