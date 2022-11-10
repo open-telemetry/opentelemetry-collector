@@ -26,9 +26,8 @@ import (
 
 const (
 	// Protocol values.
-	protoGRPC          = "protocols::grpc"
-	protoHTTP          = "protocols::http"
-	protocolsFieldName = "protocols"
+	protoGRPC = "protocols::grpc"
+	protoHTTP = "protocols::http"
 )
 
 // Protocols is the configuration for the supported protocols.
