@@ -4,6 +4,12 @@
 
 <!-- next version -->
 
+## v0.64.1
+
+### 🧰 Bug fixes 🧰
+
+- `loggingexporter`: Fix logging exporter to not mutate the data (#6420)
+
 ## 0.64.0
 
 ### 🛑 Breaking changes 🛑
