@@ -158,6 +158,21 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	return nil
 }
 
+func (col *Collector) reloadConfiguration(ctx context.Context) error {
+	col.service.telemetrySettings.Logger.Warn("Config updated, restart service")
+	col.setCollectorState(Closing)
+
+	if err := col.service.Shutdown(ctx); err != nil {
+		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+	}
+
+	if err := col.setupConfigurationComponents(ctx); err != nil {
+		return fmt.Errorf("failed to setup configuration components: %w", err)
+	}
+
+	return nil
+}
+
 // Run starts the collector according to the given configuration, and waits for it to complete.
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
@@ -165,6 +180,9 @@ func (col *Collector) Run(ctx context.Context) error {
 		col.setCollectorState(Closed)
 		return err
 	}
+
+	// Always notify with SIGHUP for configuration reloading.
+	signal.Notify(col.signalsChannel, syscall.SIGHUP)
 
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
 	if !col.set.DisableGracefulShutdown {
@@ -180,21 +198,22 @@ LOOP:
 				break LOOP
 			}
 
-			col.service.telemetrySettings.Logger.Warn("Config updated, restart service")
-			col.setCollectorState(Closing)
-
-			if err = col.service.Shutdown(ctx); err != nil {
-				return fmt.Errorf("failed to shutdown the retiring config: %w", err)
-			}
-			if err = col.setupConfigurationComponents(ctx); err != nil {
-				return fmt.Errorf("failed to setup configuration components: %w", err)
+			if err = col.reloadConfiguration(ctx); err != nil {
+				return err
 			}
 		case err := <-col.asyncErrorChannel:
 			col.service.telemetrySettings.Logger.Error("Asynchronous error received, terminating process", zap.Error(err))
 			break LOOP
 		case s := <-col.signalsChannel:
 			col.service.telemetrySettings.Logger.Info("Received signal from OS", zap.String("signal", s.String()))
-			break LOOP
+			switch s {
+			case syscall.SIGHUP:
+				if err := col.reloadConfiguration(ctx); err != nil {
+					return err
+				}
+			default:
+				break LOOP
+			}
 		case <-col.shutdownChan:
 			col.service.telemetrySettings.Logger.Info("Received shutdown request")
 			break LOOP

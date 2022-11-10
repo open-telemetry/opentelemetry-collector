@@ -197,6 +197,12 @@ func TestCollectorSendSignal(t *testing.T) {
 		return Running == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
+	col.signalsChannel <- syscall.SIGHUP
+
+	assert.Eventually(t, func() bool {
+		return Running == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
 	col.signalsChannel <- syscall.SIGTERM
 
 	wg.Wait()
