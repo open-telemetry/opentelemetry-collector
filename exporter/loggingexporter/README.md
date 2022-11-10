@@ -16,6 +16,7 @@ The following settings are optional:
 
 - `loglevel` (default = `info`): the log level of the logging export
   (debug|info|warn|error). When set to `debug`, pipeline data is verbosely 
+      - **Note**: This option has been deprecated in favor of `verbosity`
   logged.
 - `verbosity` (default = `normal`): the verbosity of the logging export
   (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
