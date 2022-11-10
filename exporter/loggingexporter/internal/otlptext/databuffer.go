@@ -52,7 +52,7 @@ func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
 		attrPrefix = headerParts[0] + attrPrefix
 	}
 
-	m.Sort().Range(func(k string, v pcommon.Value) bool {
+	m.Range(func(k string, v pcommon.Value) bool {
 		b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
 		return true
 	})
