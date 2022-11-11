@@ -19,67 +19,29 @@ import (
 	"sync"
 )
 
-// Gate is an immutable object that is owned by the `Registry`
-// to represents an individual feature that may be enabled or disabled based
-// on the lifecycle state of the feature and CLI flags specified by the user.
-type Gate struct {
-	id             string
-	description    string
-	referenceURL   string
-	removalVersion string
-	stage          Stage
-	enabled        bool
-}
-
-// RegistryOption allows for configuration additional information
-// about a gate that can be exposed throughout the application
+// RegistryOption allows for configuration additional information about a Gate that can be exposed throughout the application.
 type RegistryOption func(g *Gate)
 
-// WithRegisterDescription adds the description to the provided `Gate“.
+// WithRegisterDescription adds description for the Gate.
 func WithRegisterDescription(description string) RegistryOption {
 	return func(g *Gate) {
 		g.description = description
 	}
 }
 
-// WithRegisterReferenceURL adds an URL that has
-// all the contextual information about the `Gate`.
+// WithRegisterReferenceURL adds an URL that has all the contextual information about the Gate.
 func WithRegisterReferenceURL(url string) RegistryOption {
 	return func(g *Gate) {
 		g.referenceURL = url
 	}
 }
 
-// WithRegisterRemovalVersion is used when the `Gate` is considered `StageStable`,
+// WithRegisterRemovalVersion is used when the Gate is considered StageStable,
 // to inform users that referencing the gate is no longer needed.
 func WithRegisterRemovalVersion(version string) RegistryOption {
 	return func(g *Gate) {
 		g.removalVersion = version
 	}
-}
-
-func (g *Gate) GetID() string {
-	return g.id
-}
-
-func (g *Gate) IsEnabled() bool {
-	return g.enabled
-}
-
-func (g *Gate) GetDescription() string {
-	return g.description
-}
-
-func (g *Gate) Stage() Stage {
-	return g.stage
-}
-
-func (g *Gate) ReferenceURL() string {
-	return g.referenceURL
-}
-
-func (g *Gate) RemovalVersion() string {
-	return g.removalVersion
 }
 
 var reg = NewRegistry()
