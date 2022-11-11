@@ -165,21 +165,3 @@ func TestRegisterGateLifecycle(t *testing.T) {
 		})
 	}
 }
-
-func TestGateMethods(t *testing.T) {
-	g := &Gate{
-		id:             "test",
-		description:    "test gate",
-		enabled:        false,
-		stage:          StageAlpha,
-		referenceURL:   "http://example.com",
-		removalVersion: "v0.64.0",
-	}
-
-	assert.Equal(t, "test", g.GetID())
-	assert.Equal(t, "test gate", g.GetDescription())
-	assert.Equal(t, false, g.IsEnabled())
-	assert.Equal(t, StageAlpha, g.Stage())
-	assert.Equal(t, "http://example.com", g.ReferenceURL())
-	assert.Equal(t, "v0.64.0", g.RemovalVersion())
-}
