@@ -183,14 +183,3 @@ func TestGateMethods(t *testing.T) {
 	assert.Equal(t, "http://example.com", g.ReferenceURL())
 	assert.Equal(t, "v0.64.0", g.RemovalVersion())
 }
-
-func TestStageNames(t *testing.T) {
-	for expected, s := range map[string]Stage{
-		"StageAlpha":  StageAlpha,
-		"StageBeta":   StageBeta,
-		"StageStable": StageStable,
-		"unknown":     Stage(-1),
-	} {
-		assert.Equal(t, expected, s.String())
-	}
-}
