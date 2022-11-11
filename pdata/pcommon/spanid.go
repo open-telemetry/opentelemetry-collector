@@ -29,7 +29,19 @@ func NewSpanIDEmpty() SpanID {
 	return emptySpanID
 }
 
-// HexString returns hex representation of the SpanID.
+// String returns string representation of the SpanID.
+//
+// Important: Don't rely on this method to get a string identifier of SpanID,
+// Use hex.EncodeToString explicitly instead.
+// This method meant to implement Stringer interface for display purposes only.
+func (ms SpanID) String() string {
+	if ms.IsEmpty() {
+		return ""
+	}
+	return hex.EncodeToString(ms[:])
+}
+
+// Deprecated: [0.65.0] Call hex.EncodeToString explicitly instead.
 func (ms SpanID) HexString() string {
 	if ms.IsEmpty() {
 		return ""

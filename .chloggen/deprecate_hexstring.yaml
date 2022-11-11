@@ -1,0 +1,4 @@
+change_type: 'deprecation'
+component: pdata
+note: Deprecate `pcommon.[Span|Trace]ID.HexString` methods. Call `hex.EncodeToString` explicitly instead.
+issues: [6514]

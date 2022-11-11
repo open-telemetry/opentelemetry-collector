@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewSpanID(t *testing.T) {
+func TestSpanID(t *testing.T) {
 	sid := SpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
 	assert.Equal(t, [8]byte{1, 2, 3, 4, 4, 3, 2, 1}, [8]byte(sid))
 	assert.False(t, sid.IsEmpty())
@@ -38,6 +38,14 @@ func TestSpanIDHexString(t *testing.T) {
 
 	sid = SpanID([8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23})
 	assert.Equal(t, "1223ad1223ad1223", sid.HexString())
+}
+
+func TestSpanIDString(t *testing.T) {
+	sid := SpanID([8]byte{})
+	assert.Equal(t, "", sid.String())
+
+	sid = SpanID([8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23})
+	assert.Equal(t, "1223ad1223ad1223", sid.String())
 }
 
 func TestSpanIDImmutable(t *testing.T) {
