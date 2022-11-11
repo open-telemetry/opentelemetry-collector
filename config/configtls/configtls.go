@@ -229,6 +229,67 @@ func (c TLSClientSetting) LoadTLSConfig() (*tls.Config, error) {
 	return tlsCfg, nil
 }
 
+// clientCAsReloader is a wrapper object for certificate reloading
+// Its GetClientCAs method will either return the current client CAs or reload from disk
+// if the last reload happened more than ReloadInterval ago
+type clientCAsReloader struct {
+	// Path to the client CAs
+	ClientCAsFile string
+	// ReloadInterval specifies the duration after which the certificate will be reloaded
+	// If not set, it will never be reloaded (optional)
+	ReloadInterval time.Duration
+	nextReload     time.Time
+	certPool       *x509.CertPool
+	lock           sync.RWMutex
+	c              *TLSServerSetting
+}
+
+func newClientCAsReloader(clientCAsFile string, reloadInterval time.Duration, c *TLSServerSetting) (*clientCAsReloader, error) {
+	certPool, err := c.loadCert(clientCAsFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load TLS config: failed to load client CA CertPool: %w", err)
+	}
+	return &clientCAsReloader{
+		ClientCAsFile:  clientCAsFile,
+		ReloadInterval: reloadInterval,
+		nextReload:     time.Now().Add(reloadInterval),
+		certPool:       certPool,
+		c:              c,
+	}, nil
+}
+
+func (r *clientCAsReloader) GetClientConfig(original *tls.Config) (*tls.Config, error) {
+	now := time.Now()
+	// Read locking here before we do the time comparison
+	// If a reload is in progress this will block and we will skip reloading in the current
+	// call once we can continue
+	r.lock.RLock()
+	if r.ReloadInterval != 0 && r.nextReload.Before(now) {
+		// Need to release the read lock, otherwise we deadlock
+		r.lock.RUnlock()
+		r.lock.Lock()
+		defer r.lock.Unlock()
+		certPool, err := r.c.loadCert(r.ClientCAsFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load TLS config: failed to load client CA CertPool: %w", err)
+		}
+		r.certPool = certPool
+		r.nextReload = now.Add(r.ReloadInterval)
+	} else {
+		defer r.lock.RUnlock()
+	}
+	return &tls.Config{
+		RootCAs:              original.RootCAs,
+		GetCertificate:       original.GetCertificate,
+		GetClientCertificate: original.GetClientCertificate,
+		MinVersion:           original.MinVersion,
+		MaxVersion:           original.MaxVersion,
+		NextProtos:           original.NextProtos,
+		ClientCAs:            r.certPool,
+		ClientAuth:           tls.RequireAndVerifyClientCert,
+	}, nil
+}
+
 // LoadTLSConfig loads the TLS configuration.
 func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 	tlsCfg, err := c.loadTLSConfig()
@@ -236,11 +297,14 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
 	}
 	if c.ClientCAFile != "" {
-		certPool, err := c.loadCert(c.ClientCAFile)
+		var clientCAsReloader *clientCAsReloader
+		clientCAsReloader, err = newClientCAsReloader(c.ClientCAFile, c.ReloadInterval, &c)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load TLS config: failed to load client CA CertPool: %w", err)
+			return nil, fmt.Errorf("%w", err)
 		}
-		tlsCfg.ClientCAs = certPool
+
+		tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return clientCAsReloader.GetClientConfig(tlsCfg) }
+		tlsCfg.ClientCAs = clientCAsReloader.certPool
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return tlsCfg, nil
