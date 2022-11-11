@@ -56,18 +56,12 @@ func (s Stage) String() string {
 // to represents an individual feature that may be enabled or disabled based
 // on the lifecycle state of the feature and CLI flags specified by the user.
 type Gate struct {
-	// Deprecated: [v0.64.0] Use GetID() instead to read,
-	//				use `Registry.RegisterID` to set value.
-	ID string
-	// Deprecated: [v0.64.0] use GetDescription to read,
-	// 				use `WithRegisterDescription` to set using `Registry.RegisterID`.
-	Description string
-	// Deprecated: [v0.64.0] use `IsEnabled(id)` to read,
-	//              use `Registry.Apply` to set.
-	Enabled        bool
-	stage          Stage
+	id             string
+	description    string
 	referenceURL   string
 	removalVersion string
+	stage          Stage
+	enabled        bool
 }
 
 // RegistryOption allows for configuration additional information
@@ -77,7 +71,7 @@ type RegistryOption func(g *Gate)
 // WithRegisterDescription adds the description to the provided `Gate“.
 func WithRegisterDescription(description string) RegistryOption {
 	return func(g *Gate) {
-		g.Description = description
+		g.description = description
 	}
 }
 
@@ -98,15 +92,15 @@ func WithRegisterRemovalVersion(version string) RegistryOption {
 }
 
 func (g *Gate) GetID() string {
-	return g.ID
+	return g.id
 }
 
 func (g *Gate) IsEnabled() bool {
-	return g.Enabled
+	return g.enabled
 }
 
 func (g *Gate) GetDescription() string {
-	return g.Description
+	return g.description
 }
 
 func (g *Gate) Stage() Stage {
@@ -151,8 +145,8 @@ func (r *Registry) Apply(cfg map[string]bool) error {
 		if g.stage == StageStable {
 			return fmt.Errorf("feature gate %s is stable, can not be modified", id)
 		}
-		g.Enabled = val
-		r.gates[g.ID] = g
+		g.enabled = val
+		r.gates[g.id] = g
 	}
 	return nil
 }
@@ -162,27 +156,7 @@ func (r *Registry) IsEnabled(id string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	g, ok := r.gates[id]
-	return ok && g.Enabled
-}
-
-// MustRegister like Register but panics if a Gate with the same ID is already registered.
-// Deprecated: [v0.64.0] Use MustRegisterID instead.
-func (r *Registry) MustRegister(g Gate) {
-	if err := r.Register(g); err != nil {
-		panic(err)
-	}
-}
-
-// Register registers a Gate. May only be called in an init() function.
-// Deprecated: [v0.64.0] Use RegisterID instead.
-func (r *Registry) Register(g Gate) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if _, ok := r.gates[g.ID]; ok {
-		return fmt.Errorf("attempted to add pre-existing gate %q", g.ID)
-	}
-	r.gates[g.ID] = g
-	return nil
+	return ok && g.enabled
 }
 
 // MustRegisterID like RegisterID but panics if an invalid ID or gate options are provided.
@@ -199,7 +173,7 @@ func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) er
 		return fmt.Errorf("attempted to add pre-existing gate %q", id)
 	}
 	g := Gate{
-		ID:    id,
+		id:    id,
 		stage: stage,
 	}
 	for _, opt := range opts {
@@ -207,9 +181,9 @@ func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) er
 	}
 	switch g.stage {
 	case StageAlpha:
-		g.Enabled = false
+		g.enabled = false
 	case StageBeta, StageStable:
-		g.Enabled = true
+		g.enabled = true
 	default:
 		return fmt.Errorf("unknown stage value %q for gate %q", stage, id)
 	}
