@@ -24,7 +24,6 @@ func TestTraceID(t *testing.T) {
 	tid := TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	assert.Equal(t, [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}, [16]byte(tid))
 	assert.False(t, tid.IsEmpty())
-	assert.Equal(t, "01020304050607080807060504030201", tid.HexString())
 }
 
 func TestNewTraceIDEmpty(t *testing.T) {
@@ -39,6 +38,14 @@ func TestTraceIDHexString(t *testing.T) {
 
 	tid = [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
 	assert.Equal(t, "12345678123456781234567812345678", tid.HexString())
+}
+
+func TestTraceIDString(t *testing.T) {
+	tid := TraceID([16]byte{})
+	assert.Equal(t, "", tid.String())
+
+	tid = [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
+	assert.Equal(t, "12345678123456781234567812345678", tid.String())
 }
 
 func TestTraceIDImmutable(t *testing.T) {
