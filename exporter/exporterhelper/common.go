@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/internal/lifecycle"
 	"go.opentelemetry.io/collector/obsreport"
 )
 
@@ -153,10 +154,13 @@ type baseExporter struct {
 	obsrep   *obsExporter
 	sender   requestSender
 	qrSender *queuedRetrySender
+	state    lifecycle.State
 }
 
 func newBaseExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings, bs *baseSettings, signal component.DataType, reqUnmarshaler internal.RequestUnmarshaler) (*baseExporter, error) {
-	be := &baseExporter{}
+	be := &baseExporter{
+		state: lifecycle.NewState(),
+	}
 
 	var err error
 	be.obsrep, err = newObsExporter(obsreport.ExporterSettings{ExporterID: cfg.ID(), ExporterCreateSettings: set}, globalInstruments)
@@ -167,6 +171,10 @@ func newBaseExporter(cfg component.ExporterConfig, set component.ExporterCreateS
 	be.qrSender = newQueuedRetrySender(cfg.ID(), signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
 	be.StartFunc = func(ctx context.Context, host component.Host) error {
+		// Checking if the exporter has been started already.
+		if !be.state.Start() {
+			return nil
+		}
 		// First start the wrapped exporter.
 		if err := bs.StartFunc.Start(ctx, host); err != nil {
 			return err
@@ -176,6 +184,10 @@ func newBaseExporter(cfg component.ExporterConfig, set component.ExporterCreateS
 		return be.qrSender.start(ctx, host)
 	}
 	be.ShutdownFunc = func(ctx context.Context) error {
+		// Checking if the exporter has been shutdown already.
+		if !be.state.Stop() {
+			return nil
+		}
 		// First shutdown the queued retry sender
 		be.qrSender.shutdown()
 		// Last shutdown the wrapped exporter itself.

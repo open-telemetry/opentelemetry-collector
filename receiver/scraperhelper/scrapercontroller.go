@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/lifecycle"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -81,6 +82,7 @@ type controller struct {
 
 	tickerCh <-chan time.Time
 
+	state       lifecycle.State
 	initialized bool
 	done        chan struct{}
 	terminated  chan struct{}
@@ -148,6 +150,10 @@ func NewScraperControllerReceiver(
 
 // Start the receiver, invoked during service start.
 func (sc *controller) Start(ctx context.Context, host component.Host) error {
+	if !sc.state.Start() {
+		return nil
+	}
+
 	for _, scraper := range sc.scrapers {
 		if err := scraper.Start(ctx, host); err != nil {
 			return err
@@ -161,6 +167,10 @@ func (sc *controller) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown the receiver, invoked during service shutdown.
 func (sc *controller) Shutdown(ctx context.Context) error {
+	if !sc.state.Stop() {
+		return nil
+	}
+
 	sc.stopScraping()
 
 	// wait until scraping ticker has terminated
