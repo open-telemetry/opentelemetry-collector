@@ -108,7 +108,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Verbosity: configtelemetry.LevelNone,
 			},
-			expectedErr: "verbosity level \"none\" is not supported",
+			expectedErr: "verbosity level \"None\" is not supported",
 		},
 		{
 			name: "verbosity detailed",
