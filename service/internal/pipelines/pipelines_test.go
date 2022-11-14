@@ -53,7 +53,7 @@ func TestBuild(t *testing.T) {
 		{
 			name:             "pipelines_simple_multi_proc.yaml",
 			receiverIDs:      []component.ID{component.NewID("examplereceiver")},
-			processorIDs:     []component.ID{component.NewID("exampleprocessor"), component.NewID("exampleprocessor")},
+			processorIDs:     []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
 			exporterIDs:      []component.ID{component.NewID("exampleexporter")},
 			expectedRequests: 1,
 		},
