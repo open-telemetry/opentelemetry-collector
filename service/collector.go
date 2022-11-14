@@ -37,21 +37,32 @@ import (
 type State int
 
 const (
-	Starting State = iota
-	Running
-	Closing
-	Closed
+	StateStarting State = iota
+	StateRunning
+	StateClosing
+	StateClosed
+)
+
+const (
+	// Deprecated: [v0.65.0] use StateStarting.
+	Starting = StateStarting
+	// Deprecated: [v0.65.0] use StateRunning.
+	Running = StateRunning
+	// Deprecated: [v0.65.0] use StateClosing.
+	Closing = StateClosing
+	// Deprecated: [v0.65.0] use StateClosed.
+	Closed = StateClosed
 )
 
 func (s State) String() string {
 	switch s {
-	case Starting:
+	case StateStarting:
 		return "Starting"
-	case Running:
+	case StateRunning:
 		return "Running"
-	case Closing:
+	case StateClosing:
 		return "Closing"
-	case Closed:
+	case StateClosed:
 		return "Closed"
 	}
 	return "UNKNOWN"
@@ -97,7 +108,7 @@ func New(set CollectorSettings) (*Collector, error) {
 
 	return &Collector{
 		set:               set,
-		state:             atomic.NewInt32(int32(Starting)),
+		state:             atomic.NewInt32(int32(StateStarting)),
 		shutdownChan:      make(chan struct{}),
 		signalsChannel:    make(chan os.Signal, 1),
 		asyncErrorChannel: make(chan error),
@@ -113,7 +124,7 @@ func (col *Collector) GetState() State {
 func (col *Collector) Shutdown() {
 	// Only shutdown if we're in a Running or Starting State else noop
 	state := col.GetState()
-	if state == Running || state == Starting {
+	if state == StateRunning || state == StateStarting {
 		defer func() {
 			recover() // nolint:errcheck
 		}()
@@ -124,7 +135,7 @@ func (col *Collector) Shutdown() {
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	col.setCollectorState(Starting)
+	col.setCollectorState(StateStarting)
 
 	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
 	if err != nil {
@@ -154,13 +165,13 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return multierr.Append(err, col.shutdownServiceAndTelemetry(ctx))
 	}
-	col.setCollectorState(Running)
+	col.setCollectorState(StateRunning)
 	return nil
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	col.service.telemetrySettings.Logger.Warn("Config updated, restart service")
-	col.setCollectorState(Closing)
+	col.setCollectorState(StateClosing)
 
 	if err := col.service.Shutdown(ctx); err != nil {
 		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
@@ -177,7 +188,7 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 func (col *Collector) Run(ctx context.Context) error {
 	if err := col.setupConfigurationComponents(ctx); err != nil {
-		col.setCollectorState(Closed)
+		col.setCollectorState(StateClosed)
 		return err
 	}
 
@@ -228,7 +239,7 @@ LOOP:
 }
 
 func (col *Collector) shutdown(ctx context.Context) error {
-	col.setCollectorState(Closing)
+	col.setCollectorState(StateClosing)
 
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
@@ -239,7 +250,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 	errs = multierr.Append(errs, col.shutdownServiceAndTelemetry(ctx))
 
-	col.setCollectorState(Closed)
+	col.setCollectorState(StateClosed)
 
 	return errs
 }

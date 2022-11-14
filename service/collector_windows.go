@@ -113,7 +113,7 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 	go func() {
 		for {
 			state := s.col.GetState()
-			if state == Running {
+			if state == StateRunning {
 				colErrorChannel <- nil
 				break
 			}
