@@ -64,7 +64,7 @@ type ScraperSettings struct {
 	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
-// Deprecated: [v0.64.0] use MustNewScraper.
+// NewScraper creates a new Scraper.
 func NewScraper(cfg ScraperSettings) *Scraper {
 	scr, err := newScraper(cfg, featuregate.GetRegistry())
 	if err != nil && cfg.ReceiverCreateSettings.Logger != nil {
@@ -73,7 +73,7 @@ func NewScraper(cfg ScraperSettings) *Scraper {
 	return scr
 }
 
-// MustNewScraper creates a new Scraper.
+// Deprecated: [v0.65.0] use NewScraper.
 func MustNewScraper(cfg ScraperSettings) *Scraper {
 	scr, err := newScraper(cfg, featuregate.GetRegistry())
 	if err != nil {

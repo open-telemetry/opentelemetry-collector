@@ -205,7 +205,7 @@ func CheckReceiverMetrics(tts TestTelemetry, receiver component.ID, protocol str
 
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckScraperMetrics(tts TestTelemetry, receiver config.ComponentID, scraper config.ComponentID, scrapedMetricPoints, erroredMetricPoints int64) error {
+func CheckScraperMetrics(tts TestTelemetry, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	return tts.otelPrometheusChecker.checkScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
 }
 

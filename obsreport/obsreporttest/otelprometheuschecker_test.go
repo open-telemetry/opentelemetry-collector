@@ -47,9 +47,9 @@ func TestPromChecker(t *testing.T) {
 	pc, err := newStubPromChecker()
 	require.NoError(t, err)
 
-	scraper := config.NewComponentID("fakeScraper")
-	receiver := config.NewComponentID("fakeReceiver")
-	exporter := config.NewComponentID("fakeExporter")
+	scraper := component.NewID("fakeScraper")
+	receiver := component.NewID("fakeReceiver")
+	exporter := component.NewID("fakeExporter")
 	transport := "fakeTransport"
 
 	assert.NoError(t,
