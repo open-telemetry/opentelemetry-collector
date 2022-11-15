@@ -27,7 +27,7 @@ import (
 
 const (
 	typeStr   = "exampleexporter"
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 // ExampleExporterConfig config for ExampleExporter.

@@ -116,11 +116,14 @@ const (
 	StabilityLevelUndefined StabilityLevel = iota // skip 0, start types from 1.
 	StabilityLevelUnmaintained
 	StabilityLevelDeprecated
-	StabilityLevelInDevelopment
+	StabilityLevelDevelopment
 	StabilityLevelAlpha
 	StabilityLevelBeta
 	StabilityLevelStable
 )
+
+// Deprecated: [0.65.0] Use StabilityLevelDevelopment instead.
+const StabilityLevelInDevelopment = StabilityLevelDevelopment
 
 func (sl StabilityLevel) String() string {
 	switch sl {
@@ -130,8 +133,8 @@ func (sl StabilityLevel) String() string {
 		return "Unmaintained"
 	case StabilityLevelDeprecated:
 		return "Deprecated"
-	case StabilityLevelInDevelopment:
-		return "In development"
+	case StabilityLevelDevelopment:
+		return "Development"
 	case StabilityLevelAlpha:
 		return "Alpha"
 	case StabilityLevelBeta:
@@ -148,8 +151,8 @@ func (sl StabilityLevel) LogMessage() string {
 		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 6 months of remaining unmaintained."
 	case StabilityLevelDeprecated:
 		return "Deprecated component. Will be removed in future releases."
-	case StabilityLevelInDevelopment:
-		return "In development component. May change in the future."
+	case StabilityLevelDevelopment:
+		return "Development component. May change in the future."
 	case StabilityLevelAlpha:
 		return "Alpha component. May change in the future."
 	case StabilityLevelBeta:

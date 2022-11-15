@@ -48,13 +48,13 @@ func TestNewExporterFactory_WithOptions(t *testing.T) {
 	factory := component.NewExporterFactory(
 		typeStr,
 		func() component.ExporterConfig { return &defaultCfg },
-		component.WithTracesExporter(createTracesExporter, component.StabilityLevelInDevelopment),
+		component.WithTracesExporter(createTracesExporter, component.StabilityLevelDevelopment),
 		component.WithMetricsExporter(createMetricsExporter, component.StabilityLevelAlpha),
 		component.WithLogsExporter(createLogsExporter, component.StabilityLevelDeprecated))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelInDevelopment, factory.TracesExporterStability())
+	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesExporterStability())
 	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 
