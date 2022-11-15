@@ -6,7 +6,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.64.1
-	go.opentelemetry.io/collector/component v0.64.1
+	go.opentelemetry.io/collector/component v0.0.0-20221115212826-19db2f15c85c
 	go.opentelemetry.io/collector/pdata v0.64.1
 	go.opentelemetry.io/collector/semconv v0.64.1
 	go.uber.org/zap v1.23.0
