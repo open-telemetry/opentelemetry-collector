@@ -26,6 +26,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	go.opentelemetry.io/collector/consumer v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/pdata v0.64.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
@@ -52,3 +53,5 @@ replace go.opentelemetry.io/collector/semconv => ../../semconv
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../zpagesextension
 
 replace go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
+
+replace go.opentelemetry.io/collector/consumer => ../../consumer
