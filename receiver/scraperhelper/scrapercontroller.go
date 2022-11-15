@@ -95,7 +95,7 @@ func NewScraperControllerReceiver(
 	set component.ReceiverCreateSettings,
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
-) (component.Receiver, error) {
+) (component.Component, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}

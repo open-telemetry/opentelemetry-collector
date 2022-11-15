@@ -34,27 +34,24 @@ func UnmarshalProcessorConfig(conf *confmap.Conf, cfg ProcessorConfig) error {
 	return unmarshal(conf, cfg)
 }
 
-// Processor defines the common functions that must be implemented by TracesProcessor
-// and MetricsProcessor.
-type Processor interface {
-	Component
-}
+// Deprecated: [v0.65.0] unnecessary interface, will be removed.
+type Processor = Component
 
 // TracesProcessor is a processor that can consume traces.
 type TracesProcessor interface {
-	Processor
+	Component
 	consumer.Traces
 }
 
 // MetricsProcessor is a processor that can consume metrics.
 type MetricsProcessor interface {
-	Processor
+	Component
 	consumer.Metrics
 }
 
 // LogsProcessor is a processor that can consume logs.
 type LogsProcessor interface {
-	Processor
+	Component
 	consumer.Logs
 }
 

@@ -59,8 +59,8 @@ type builtPipeline struct {
 type Pipelines struct {
 	telemetry component.TelemetrySettings
 
-	allReceivers map[component.DataType]map[component.ID]component.Receiver
-	allExporters map[component.DataType]map[component.ID]component.Exporter
+	allReceivers map[component.DataType]map[component.ID]component.Component
+	allExporters map[component.DataType]map[component.ID]component.Component
 
 	pipelines map[component.ID]*builtPipeline
 }
@@ -139,12 +139,12 @@ func (bps *Pipelines) ShutdownAll(ctx context.Context) error {
 	return errs
 }
 
-func (bps *Pipelines) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
-	exportersMap := make(map[component.DataType]map[component.ID]component.Exporter)
+func (bps *Pipelines) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	exportersMap := make(map[component.DataType]map[component.ID]component.Component)
 
-	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.DataTypeTraces]))
-	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.DataTypeMetrics]))
-	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.DataTypeLogs]))
+	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeTraces]))
+	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeMetrics]))
+	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeLogs]))
 
 	for dt, expByID := range bps.allExporters {
 		for expID, exp := range expByID {
@@ -208,8 +208,8 @@ type Settings struct {
 func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 	exps := &Pipelines{
 		telemetry:    set.Telemetry,
-		allReceivers: make(map[component.DataType]map[component.ID]component.Receiver),
-		allExporters: make(map[component.DataType]map[component.ID]component.Exporter),
+		allReceivers: make(map[component.DataType]map[component.ID]component.Component),
+		allExporters: make(map[component.DataType]map[component.ID]component.Component),
 		pipelines:    make(map[component.ID]*builtPipeline, len(set.PipelineConfigs)),
 	}
 
@@ -221,7 +221,7 @@ func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 	for pipelineID, pipeline := range set.PipelineConfigs {
 		// The data type of the pipeline defines what data type each exporter is expected to receive.
 		if _, ok := exps.allExporters[pipelineID.Type()]; !ok {
-			exps.allExporters[pipelineID.Type()] = make(map[component.ID]component.Exporter)
+			exps.allExporters[pipelineID.Type()] = make(map[component.ID]component.Component)
 		}
 		expByID := exps.allExporters[pipelineID.Type()]
 
@@ -306,7 +306,7 @@ func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 	for pipelineID, pipeline := range set.PipelineConfigs {
 		// The data type of the pipeline defines what data type each exporter is expected to receive.
 		if _, ok := exps.allReceivers[pipelineID.Type()]; !ok {
-			exps.allReceivers[pipelineID.Type()] = make(map[component.ID]component.Receiver)
+			exps.allReceivers[pipelineID.Type()] = make(map[component.ID]component.Component)
 		}
 		recvByID := exps.allReceivers[pipelineID.Type()]
 		bp := exps.pipelines[pipelineID]
@@ -339,7 +339,7 @@ func buildExporter(
 	factories map[component.Type]component.ExporterFactory,
 	id component.ID,
 	pipelineID component.ID,
-) (component.Exporter, error) {
+) (component.Component, error) {
 	cfg, existsCfg := cfgs[id]
 	if !existsCfg {
 		return nil, fmt.Errorf("exporter %q is not configured", id)
@@ -365,7 +365,7 @@ func buildExporter(
 	return exp, nil
 }
 
-func createExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig, id component.ID, pipelineID component.ID, factory component.ExporterFactory) (component.Exporter, error) {
+func createExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig, id component.ID, pipelineID component.ID, factory component.ExporterFactory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		return factory.CreateTracesExporter(ctx, set, cfg)
@@ -433,7 +433,7 @@ func buildProcessor(ctx context.Context,
 	id component.ID,
 	pipelineID component.ID,
 	next baseConsumer,
-) (component.Processor, error) {
+) (component.Component, error) {
 	procCfg, existsCfg := cfgs[id]
 	if !existsCfg {
 		return nil, fmt.Errorf("processor %q is not configured", id)
@@ -458,7 +458,7 @@ func buildProcessor(ctx context.Context,
 	return proc, nil
 }
 
-func createProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig, id component.ID, pipelineID component.ID, next baseConsumer, factory component.ProcessorFactory) (component.Processor, error) {
+func createProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig, id component.ID, pipelineID component.ID, next baseConsumer, factory component.ProcessorFactory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		return factory.CreateTracesProcessor(ctx, set, cfg, next.(consumer.Traces))
@@ -499,7 +499,7 @@ func buildReceiver(ctx context.Context,
 	id component.ID,
 	pipelineID component.ID,
 	nexts []baseConsumer,
-) (component.Receiver, error) {
+) (component.Component, error) {
 	cfg, existsCfg := cfgs[id]
 	if !existsCfg {
 		return nil, fmt.Errorf("receiver %q is not configured", id)
@@ -525,7 +525,7 @@ func buildReceiver(ctx context.Context,
 	return recv, nil
 }
 
-func createReceiver(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory component.ReceiverFactory) (component.Receiver, error) {
+func createReceiver(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory component.ReceiverFactory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		var consumers []consumer.Traces

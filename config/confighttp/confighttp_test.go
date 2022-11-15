@@ -50,7 +50,7 @@ func (c *customRoundTripper) RoundTrip(request *http.Request) (*http.Response, e
 
 func TestAllHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
-		ext: map[component.ID]component.Extension{
+		ext: map[component.ID]component.Component{
 			component.NewID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 		},
 	}
@@ -160,7 +160,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 
 func TestPartialHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
-		ext: map[component.ID]component.Extension{
+		ext: map[component.ID]component.Component{
 			component.NewID("testauth"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 		},
 	}
@@ -211,7 +211,7 @@ func TestDefaultHTTPClientSettings(t *testing.T) {
 
 func TestHTTPClientSettingsError(t *testing.T) {
 	host := &mockHost{
-		ext: map[component.ID]component.Extension{},
+		ext: map[component.ID]component.Component{},
 	}
 	tests := []struct {
 		settings HTTPClientSettings
@@ -274,7 +274,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: false,
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
+				ext: map[component.ID]component.Component{
 					component.NewID("mock"): &configauth.MockClientAuthenticator{
 						ResultRoundTripper: &customRoundTripper{},
 					},
@@ -289,7 +289,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: true,
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
+				ext: map[component.ID]component.Component{
 					component.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 				},
 			},
@@ -311,7 +311,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: false,
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
+				ext: map[component.ID]component.Component{
 					component.NewID("mock"): &configauth.MockClientAuthenticator{ResultRoundTripper: &customRoundTripper{}},
 				},
 			},
@@ -324,7 +324,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			},
 			shouldErr: true,
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
+				ext: map[component.ID]component.Component{
 					component.NewID("mock"): &configauth.MockClientAuthenticator{
 						ResultRoundTripper: &customRoundTripper{}, MustError: true},
 				},
@@ -737,7 +737,7 @@ func TestHttpCorsWithAuthentication(t *testing.T) {
 	}
 
 	host := &mockHost{
-		ext: map[component.ID]component.Extension{
+		ext: map[component.ID]component.Component{
 			component.NewID("mock"): configauth.NewServerAuthenticator(
 				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					return ctx, errors.New("authentication failed")
@@ -932,7 +932,7 @@ func TestServerAuth(t *testing.T) {
 	}
 
 	host := &mockHost{
-		ext: map[component.ID]component.Extension{
+		ext: map[component.ID]component.Component{
 			component.NewID("mock"): configauth.NewServerAuthenticator(
 				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					authCalled = true
@@ -979,7 +979,7 @@ func TestFailedServerAuth(t *testing.T) {
 		},
 	}
 	host := &mockHost{
-		ext: map[component.ID]component.Extension{
+		ext: map[component.ID]component.Component{
 			component.NewID("mock"): configauth.NewServerAuthenticator(
 				configauth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					return ctx, errors.New("authentication failed")
@@ -1002,10 +1002,10 @@ func TestFailedServerAuth(t *testing.T) {
 
 type mockHost struct {
 	component.Host
-	ext map[component.ID]component.Extension
+	ext map[component.ID]component.Component
 }
 
-func (nh *mockHost) GetExtensions() map[component.ID]component.Extension {
+func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
 }
 

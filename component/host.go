@@ -45,7 +45,7 @@ type Host interface {
 	//
 	// GetExtensions can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends.
-	GetExtensions() map[ID]Extension
+	GetExtensions() map[ID]Component
 
 	// GetExporters returns the map of exporters. Only enabled and created exporters will be returned.
 	// Typically is used to find exporters by type or by full config name. Both cases
@@ -58,5 +58,5 @@ type Host interface {
 	//
 	// GetExporters can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends.
-	GetExporters() map[DataType]map[ID]Exporter
+	GetExporters() map[DataType]map[ID]Component
 }

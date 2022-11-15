@@ -91,7 +91,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
+				ext: map[component.ID]component.Component{
 					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
 				},
 			},
@@ -119,7 +119,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
+				ext: map[component.ID]component.Component{
 					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
 				},
 			},
@@ -147,7 +147,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
+				ext: map[component.ID]component.Component{
 					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
 				},
 			},
@@ -216,7 +216,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 		AuthenticatorID: component.NewID("mock"),
 	}
 	host := &mockHost{
-		ext: map[component.ID]component.Extension{
+		ext: map[component.ID]component.Component{
 			component.NewID("mock"): configauth.NewServerAuthenticator(),
 		},
 	}
@@ -295,7 +295,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
 			},
-			host: &mockHost{ext: map[component.ID]component.Extension{}},
+			host: &mockHost{ext: map[component.ID]component.Component{}},
 		},
 		{
 			err: "no extensions configuration available",
@@ -1075,9 +1075,9 @@ func tempSocketName(t *testing.T) string {
 
 type mockHost struct {
 	component.Host
-	ext map[component.ID]component.Extension
+	ext map[component.ID]component.Component
 }
 
-func (nh *mockHost) GetExtensions() map[component.ID]component.Extension {
+func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
 }
