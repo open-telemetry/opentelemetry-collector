@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// ExporterConfig is the configuration of a component.Exporter. Specific extensions must implement
+// ExporterConfig is the configuration of a component.Exporter. Specific Exporter must implement
 // this interface and must embed config.ExporterSettings struct or a struct that extends it.
 type ExporterConfig interface {
 	identifiable

@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// ReceiverConfig is the configuration of a component.Receiver. Specific extensions must implement
+// ReceiverConfig is the configuration of a component.Receiver. Specific Extension must implement
 // this interface and must embed ReceiverSettings struct or a struct that extends it.
 type ReceiverConfig interface {
 	identifiable
