@@ -57,8 +57,9 @@ type Component interface {
 	// Shutdown is invoked during service shutdown. After Shutdown() is called, if the component
 	// accepted data in any way, it should not accept it anymore.
 	//
-	// This method must be safe to call without having Start()
-	// being called or being in a shutdown state.
+	// This method must be safe to call:
+	//   - without Start() having been called
+	//   - if the component is in a shutdown state already
 	//
 	// If there are any background operations running by the component they must be aborted before
 	// this function returns. Remember that if you started any long-running background operations from
