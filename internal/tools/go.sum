@@ -275,8 +275,8 @@ github.com/golangci/revgrep v0.0.0-20220804021717-745bb2f7c2e6 h1:DIPQnGy2Gv2FSA
 github.com/golangci/revgrep v0.0.0-20220804021717-745bb2f7c2e6/go.mod h1:0AKcRCkMoKvUvlf89F6O7H2LYdhr1zBh736mBItOdRs=
 github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 h1:zwtduBRr5SSWhqsYNgcuWO2kFlpdOZbP0+yRjmvPGys=
 github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4/go.mod h1:Izgrg8RkN3rCIMLGE9CyYmU9pY2Jer6DgANEnZ/L/cQ=
-github.com/google/addlicense v1.0.0 h1:cqvo5suPWlsk6r6o42Fs2K66xYCl2tnhVPUYoP3EnO4=
-github.com/google/addlicense v1.0.0/go.mod h1:Sm/DHu7Jk+T5miFHHehdIjbi4M5+dJDRS3Cq0rncIxA=
+github.com/google/addlicense v1.1.0 h1:tbfMjUu31H8CEn9/pJW+H9Ywh44K9ESx1jpSr1asSFc=
+github.com/google/addlicense v1.1.0/go.mod h1:Sm/DHu7Jk+T5miFHHehdIjbi4M5+dJDRS3Cq0rncIxA=
 github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
