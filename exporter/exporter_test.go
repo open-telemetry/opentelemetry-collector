@@ -14,7 +14,7 @@
 
 // TODO: Move tests back to component package after config.*Settings are removed.
 
-package component_test
+package exporter_test
 
 import (
 	"context"
@@ -24,57 +24,58 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 )
 
-func TestNewExporterFactory(t *testing.T) {
+func TestNewFactory(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := config.NewExporterSettings(component.NewID(typeStr))
-	factory := component.NewExporterFactory(
+	factory := exporter.NewFactory(
 		typeStr,
-		func() component.ExporterConfig { return &defaultCfg })
+		func() exporter.Config { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{}, &defaultCfg)
+	_, err := factory.CreateTracesExporter(context.Background(), exporter.CreateSettings{}, &defaultCfg)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{}, &defaultCfg)
+	_, err = factory.CreateMetricsExporter(context.Background(), exporter.CreateSettings{}, &defaultCfg)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsExporter(context.Background(), component.ExporterCreateSettings{}, &defaultCfg)
+	_, err = factory.CreateLogsExporter(context.Background(), exporter.CreateSettings{}, &defaultCfg)
 	assert.Error(t, err)
 }
 
-func TestNewExporterFactory_WithOptions(t *testing.T) {
+func TestNewFactory_WithOptions(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := config.NewExporterSettings(component.NewID(typeStr))
-	factory := component.NewExporterFactory(
+	factory := exporter.NewFactory(
 		typeStr,
-		func() component.ExporterConfig { return &defaultCfg },
-		component.WithTracesExporter(createTracesExporter, component.StabilityLevelInDevelopment),
-		component.WithMetricsExporter(createMetricsExporter, component.StabilityLevelAlpha),
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelDeprecated))
+		func() exporter.Config { return &defaultCfg },
+		exporter.WithTraces(createTracesExporter, component.StabilityLevelInDevelopment),
+		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelAlpha),
+		exporter.WithLogs(createLogsExporter, component.StabilityLevelDeprecated))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelInDevelopment, factory.TracesExporterStability())
-	_, err := factory.CreateTracesExporter(context.Background(), component.ExporterCreateSettings{}, &defaultCfg)
+	_, err := factory.CreateTracesExporter(context.Background(), exporter.CreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsExporterStability())
-	_, err = factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{}, &defaultCfg)
+	_, err = factory.CreateMetricsExporter(context.Background(), exporter.CreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsExporterStability())
-	_, err = factory.CreateLogsExporter(context.Background(), component.ExporterCreateSettings{}, &defaultCfg)
+	_, err = factory.CreateLogsExporter(context.Background(), exporter.CreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 }
 
-func createTracesExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, exporter.CreateSettings, exporter.Config) (exporter.Traces, error) {
 	return nil, nil
 }
 
-func createMetricsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, exporter.CreateSettings, exporter.Config) (exporter.Metrics, error) {
 	return nil, nil
 }
 
-func createLogsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, exporter.CreateSettings, exporter.Config) (exporter.Logs, error) {
 	return nil, nil
 }

@@ -203,7 +203,7 @@ func TestServiceTelemetryReusable(t *testing.T) {
 	require.NoError(t, srvTwo.Shutdown(context.Background()))
 }
 
-func createExampleService(t *testing.T, factories component.Factories) *service {
+func createExampleService(t *testing.T, factories Factories) *service {
 	// Read yaml config from file
 	prov, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)

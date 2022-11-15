@@ -32,6 +32,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	exporter2 "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -60,7 +61,7 @@ const (
 )
 
 // Create new exporter.
-func newExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings) (*exporter, error) {
+func newExporter(cfg exporter2.ExporterConfig, set exporter2.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint != "" {

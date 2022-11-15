@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 )
@@ -127,7 +128,7 @@ func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg Queue
 	return qrs
 }
 
-func getStorageExtension(extensions map[component.ID]component.Extension, storageID component.ID) (storage.Extension, error) {
+func getStorageExtension(extensions map[component.ID]extension.Extension, storageID component.ID) (storage.Extension, error) {
 	if ext, found := extensions[storageID]; found {
 		if storageExt, ok := ext.(storage.Extension); ok {
 			return storageExt, nil

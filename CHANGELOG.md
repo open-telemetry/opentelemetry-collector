@@ -917,7 +917,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
   - Deprecated `exporterhelper.WithTraces` in favour of `component.WithTracesExporter`
   - Deprecated `exporterhelper.WithMetrics` in favour of `component.WithMetricsExporter`
   - Deprecated `exporterhelper.WithLogs` in favour of `component.WithLogsExporter`
-  - Deprecated `exporterhelper.NewFactory` in favour of `component.NewExporterFactory`
+  - Deprecated `exporterhelper.NewFactory` in favour of `component.NewFactory`
 - Move helpers from receiverhelper to component (#4891)
   - Deprecated `receiverhelper.CreateDefaultConfig` in favour of `component.ReceiverDefaultConfigFunc`
   - Deprecated `receiverhelper.WithTraces` in favour of `component.WithTracesReceiver`

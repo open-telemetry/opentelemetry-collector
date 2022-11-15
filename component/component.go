@@ -161,15 +161,13 @@ func (sl StabilityLevel) LogMessage() string {
 type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() Type
-
-	unexportedFactoryFunc()
 }
 
 type baseFactory struct {
 	cfgType Type
 }
 
-func (baseFactory) unexportedFactoryFunc() {}
+func (baseFactory) unexportedFunc() {}
 
 func (bf baseFactory) Type() Type {
 	return bf.cfgType

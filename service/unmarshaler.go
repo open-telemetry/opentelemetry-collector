@@ -17,7 +17,6 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"go.uber.org/zap/zapcore"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
@@ -34,7 +33,7 @@ type configSettings struct {
 
 // unmarshal the configSettings from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
-func unmarshal(v *confmap.Conf, factories component.Factories) (*configSettings, error) {
+func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 	// Unmarshal top level sections and validate.
 	cfg := &configSettings{
 		Receivers:  configunmarshaler.NewReceivers(factories.Receivers),

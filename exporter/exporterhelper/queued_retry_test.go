@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -435,7 +436,7 @@ func TestGetRetrySettings(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			storageID := component.NewIDWithName("file_storage", strconv.Itoa(tC.storageIndex))
 
-			var extensions = map[component.ID]component.Extension{}
+			var extensions = map[component.ID]extension.Extension{}
 			for i := 0; i < tC.numStorages; i++ {
 				extensions[component.NewIDWithName("file_storage", strconv.Itoa(i))] = &mockStorageExtension{GetClientError: tC.getClientError}
 			}
@@ -466,7 +467,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	settings := componenttest.NewNopExtensionCreateSettings()
 	extension, err := factory.CreateExtension(context.Background(), settings, extConfig)
 	assert.NoError(t, err)
-	var extensions = map[component.ID]component.Extension{
+	var extensions = map[component.ID]extension.Extension{
 		storageID: extension,
 	}
 	host := &mockHost{ext: extensions}
@@ -545,7 +546,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	be, err := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, err)
 
-	var extensions = map[component.ID]component.Extension{
+	var extensions = map[component.ID]extension.Extension{
 		storageID: &mockStorageExtension{},
 	}
 	host := &mockHost{ext: extensions}
@@ -568,7 +569,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	be, err := newBaseExporter(&defaultExporterCfg, tt.ToExporterCreateSettings(), fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, err)
 
-	var extensions = map[component.ID]component.Extension{
+	var extensions = map[component.ID]extension.Extension{
 		storageID: &mockStorageExtension{GetClientError: storageError},
 	}
 	host := &mockHost{ext: extensions}
@@ -746,10 +747,10 @@ func tagsMatchLabelKeys(tags []tag.Tag, keys []metricdata.LabelKey, labels []met
 
 type mockHost struct {
 	component.Host
-	ext map[component.ID]component.Extension
+	ext map[component.ID]extension.Extension
 }
 
-func (nh *mockHost) GetExtensions() map[component.ID]component.Extension {
+func (nh *mockHost) GetExtensions() map[component.ID]extension.Extension {
 	return nh.ext
 }
 

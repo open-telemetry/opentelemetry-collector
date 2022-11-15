@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -265,7 +267,7 @@ func generateConfig() *Config {
 				ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
 			},
 		},
-		Exporters: map[component.ID]component.ExporterConfig{
+		Exporters: map[component.ID]exporter.Config{
 			component.NewID("nop"): &nopExpConfig{
 				ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
 			},
@@ -275,7 +277,7 @@ func generateConfig() *Config {
 				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
 			},
 		},
-		Extensions: map[component.ID]component.ExtensionConfig{
+		Extensions: map[component.ID]extension.Config{
 			component.NewID("nop"): &nopExtConfig{
 				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
 			},

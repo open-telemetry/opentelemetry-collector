@@ -23,7 +23,7 @@ import (
 // settings holds configuration for building a new service.
 type settings struct {
 	// Factories component factories.
-	Factories component.Factories
+	Factories Factories
 
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
@@ -44,7 +44,7 @@ type settings struct {
 // CollectorSettings holds configuration for creating a new Collector.
 type CollectorSettings struct {
 	// Factories component factories.
-	Factories component.Factories
+	Factories Factories
 
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo

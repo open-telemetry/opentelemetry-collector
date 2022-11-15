@@ -21,6 +21,22 @@ import (
 // Type is the component type as it is used in the config.
 type Type string
 
+type Config interface {
+	identifiable
+	validatable
+}
+
+// UnmarshalConfig helper function to unmarshal a Config.
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalConfig(conf *confmap.Conf, cfg Config) error {
+	if cu, ok := cfg.(confmap.Unmarshaler); ok {
+		return cu.Unmarshal(conf)
+	}
+
+	return conf.Unmarshal(cfg, confmap.WithErrorUnused())
+}
+
 // validatable defines the interface for the configuration validation.
 type validatable interface {
 	// Validate validates the configuration and returns an error if invalid.
@@ -42,11 +58,3 @@ const (
 	// DataTypeLogs is the data type tag for logs.
 	DataTypeLogs DataType = "logs"
 )
-
-func unmarshal(componentSection *confmap.Conf, intoCfg interface{}) error {
-	if cu, ok := intoCfg.(confmap.Unmarshaler); ok {
-		return cu.Unmarshal(componentSection)
-	}
-
-	return componentSection.Unmarshal(intoCfg, confmap.WithErrorUnused())
-}

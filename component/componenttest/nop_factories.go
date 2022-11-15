@@ -15,28 +15,28 @@
 package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service"
 )
 
 // NopFactories returns a component.Factories with all nop factories.
-func NopFactories() (component.Factories, error) {
-	var factories component.Factories
+func NopFactories() (service.Factories, error) {
+	var factories service.Factories
 	var err error
 
-	if factories.Extensions, err = component.MakeExtensionFactoryMap(NewNopExtensionFactory()); err != nil {
-		return component.Factories{}, err
+	if factories.Extensions, err = service.MakeExtensionFactoryMap(NewNopExtensionFactory()); err != nil {
+		return service.Factories{}, err
 	}
 
-	if factories.Receivers, err = component.MakeReceiverFactoryMap(NewNopReceiverFactory()); err != nil {
-		return component.Factories{}, err
+	if factories.Receivers, err = service.MakeReceiverFactoryMap(NewNopReceiverFactory()); err != nil {
+		return service.Factories{}, err
 	}
 
-	if factories.Exporters, err = component.MakeExporterFactoryMap(NewNopExporterFactory()); err != nil {
-		return component.Factories{}, err
+	if factories.Exporters, err = service.MakeExporterFactoryMap(NewNopExporterFactory()); err != nil {
+		return service.Factories{}, err
 	}
 
-	if factories.Processors, err = component.MakeProcessorFactoryMap(NewNopProcessorFactory()); err != nil {
-		return component.Factories{}, err
+	if factories.Processors, err = service.MakeProcessorFactoryMap(NewNopProcessorFactory()); err != nil {
+		return service.Factories{}, err
 	}
 
 	return factories, err

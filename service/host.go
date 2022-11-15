@@ -16,6 +16,8 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/pipelines"
 )
@@ -24,7 +26,7 @@ var _ component.Host = (*serviceHost)(nil)
 
 type serviceHost struct {
 	asyncErrorChannel chan error
-	factories         component.Factories
+	factories         Factories
 	buildInfo         component.BuildInfo
 
 	pipelines  *pipelines.Pipelines
@@ -52,10 +54,10 @@ func (host *serviceHost) GetFactory(kind component.Kind, componentType component
 	return nil
 }
 
-func (host *serviceHost) GetExtensions() map[component.ID]component.Extension {
+func (host *serviceHost) GetExtensions() map[component.ID]extension.Extension {
 	return host.extensions.GetExtensions()
 }
 
-func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
-	return host.pipelines.GetExporters()
+func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]exporter. {
+return host.pipelines.GetExporters()
 }

@@ -30,7 +30,9 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 )
@@ -231,7 +233,7 @@ func TestBuildErrors(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.configFile, func(t *testing.T) {
-			factories := component.Factories{
+			factories := service.Factories{
 				Receivers: map[component.Type]component.ReceiverFactory{
 					nopReceiverFactory.Type(): nopReceiverFactory,
 					"unknown":                 nopReceiverFactory,
@@ -242,7 +244,7 @@ func TestBuildErrors(t *testing.T) {
 					"unknown":                  nopProcessorFactory,
 					badProcessorFactory.Type(): badProcessorFactory,
 				},
-				Exporters: map[component.Type]component.ExporterFactory{
+				Exporters: map[component.Type]exporter.Factory{
 					nopExporterFactory.Type(): nopExporterFactory,
 					"unknown":                 nopExporterFactory,
 					badExporterFactory.Type(): badExporterFactory,
@@ -290,11 +292,11 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
 			component.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
 		},
-		ExporterFactories: map[component.Type]component.ExporterFactory{
+		ExporterFactories: map[component.Type]exporter.Factory{
 			nopExporterFactory.Type(): nopExporterFactory,
 			errExporterFactory.Type(): errExporterFactory,
 		},
-		ExporterConfigs: map[component.ID]component.ExporterConfig{
+		ExporterConfigs: map[component.ID]exporter.Config{
 			component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
 			component.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
 		},
@@ -365,8 +367,8 @@ func newBadProcessorFactory() component.ProcessorFactory {
 	})
 }
 
-func newBadExporterFactory() component.ExporterFactory {
-	return component.NewExporterFactory("bf", func() component.ExporterConfig {
+func newBadExporterFactory() exporter.Factory {
+	return exporter.NewFactory("bf", func() exporter.Config {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
@@ -415,27 +417,27 @@ func newErrProcessorFactory() component.ProcessorFactory {
 	)
 }
 
-func newErrExporterFactory() component.ExporterFactory {
-	return component.NewExporterFactory("err", func() component.ExporterConfig {
+func newErrExporterFactory() exporter.Factory {
+	return exporter.NewFactory("err", func() exporter.Config {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
 			ExporterSettings: config.NewExporterSettings(component.NewID("bf")),
 		}
 	},
-		component.WithTracesExporter(func(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {
+		exporter.WithTracesExporter(func(context.Context, exporter.CreateSettings, exporter.Config) (exporter.TracesExporter, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithLogsExporter(func(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.LogsExporter, error) {
+		exporter.WithLogsExporter(func(context.Context, exporter.CreateSettings, exporter.Config) (exporter.LogsExporter, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithMetricsExporter(func(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.MetricsExporter, error) {
+		exporter.WithMetricsExporter(func(context.Context, exporter.CreateSettings, exporter.Config) (exporter.MetricsExporter, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
 }
 
-func toSettings(factories component.Factories, cfg *configSettings) Settings {
+func toSettings(factories service.Factories, cfg *configSettings) Settings {
 	return Settings{
 		Telemetry:          componenttest.NewNopTelemetrySettings(),
 		BuildInfo:          component.NewDefaultBuildInfo(),
@@ -477,7 +479,7 @@ type serviceSettings struct {
 	Pipelines map[component.ID]*config.Pipeline `mapstructure:"pipelines"`
 }
 
-func loadConfig(t *testing.T, fileName string, factories component.Factories) *configSettings {
+func loadConfig(t *testing.T, fileName string, factories service.Factories) *configSettings {
 	// Read yaml config from file
 	conf, err := confmaptest.LoadConf(fileName)
 	require.NoError(t, err)

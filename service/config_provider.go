@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -41,7 +40,7 @@ type ConfigProvider interface {
 	// Get returns the service configuration, or error otherwise.
 	//
 	// Should never be called concurrently with itself, Watch or Shutdown.
-	Get(ctx context.Context, factories component.Factories) (*Config, error)
+	Get(ctx context.Context, factories Factories) (*Config, error)
 
 	// Watch blocks until any configuration change was detected or an unrecoverable error
 	// happened during monitoring the configuration changes.
@@ -98,7 +97,7 @@ func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 	}, nil
 }
 
-func (cm *configProvider) Get(ctx context.Context, factories component.Factories) (*Config, error) {
+func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config, error) {
 	conf, err := cm.mapResolver.Resolve(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve the configuration: %w", err)

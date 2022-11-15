@@ -19,14 +19,14 @@ import (
 
 	"google.golang.org/grpc/credentials"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // ClientAuthenticator is an Extension that can be used as an authenticator for the configauth.Authentication option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
 // names from the Authentication configuration.
 type ClientAuthenticator interface {
-	component.Extension
+	extension.Extension
 
 	// RoundTripper returns a RoundTripper that can be used to authenticate HTTP requests.
 	RoundTripper(base http.RoundTripper) (http.RoundTripper, error)

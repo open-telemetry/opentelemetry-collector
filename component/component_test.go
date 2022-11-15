@@ -22,5 +22,5 @@ import (
 
 func TestBaseInternal(t *testing.T) {
 	base := baseFactory{}
-	assert.NotPanics(t, base.unexportedFactoryFunc)
+	assert.NotPanics(t, base.unexportedFunc)
 }

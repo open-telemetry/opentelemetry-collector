@@ -17,9 +17,9 @@ package zpagesextension // import "go.opentelemetry.io/collector/extension/zpage
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // Config has the configuration for the extension enabling the zPages extension.
@@ -32,7 +32,7 @@ type Config struct {
 	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
 }
 
-var _ component.ExtensionConfig = (*Config)(nil)
+var _ extension.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {

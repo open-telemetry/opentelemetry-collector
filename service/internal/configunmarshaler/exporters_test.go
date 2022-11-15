@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 func TestExportersUnmarshal(t *testing.T) {
@@ -38,7 +39,7 @@ func TestExportersUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Exporters["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myexporter")
-	assert.Equal(t, map[component.ID]component.ExporterConfig{
+	assert.Equal(t, map[component.ID]exporter.Config{
 		component.NewID("nop"):                       factories.Exporters["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myexporter"): cfgWithName,
 	}, exps.GetExporters())

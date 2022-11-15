@@ -26,12 +26,13 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/extension"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalExtensionConfig(confmap.New(), cfg))
+	assert.NoError(t, extension.UnmarshalExtensionConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -40,7 +41,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalExtensionConfig(cm, cfg))
+	assert.NoError(t, extension.UnmarshalExtensionConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),

@@ -24,8 +24,7 @@ import (
 // ReceiverConfig is the configuration of a component.Receiver. Specific Extension must implement
 // this interface and must embed ReceiverSettings struct or a struct that extends it.
 type ReceiverConfig interface {
-	identifiable
-	validatable
+	Config
 
 	privateConfigReceiver()
 }
@@ -34,7 +33,7 @@ type ReceiverConfig interface {
 // It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
 func UnmarshalReceiverConfig(conf *confmap.Conf, cfg ReceiverConfig) error {
-	return unmarshal(conf, cfg)
+	return UnmarshalConfig(conf, cfg)
 }
 
 // Receiver allows the collector to receive metrics, traces and logs.
@@ -153,6 +152,8 @@ type ReceiverFactory interface {
 
 	// LogsReceiverStability gets the stability level of the LogsReceiver.
 	LogsReceiverStability() StabilityLevel
+
+	unexportedFunc()
 }
 
 // ReceiverFactoryOption apply changes to ReceiverOptions.

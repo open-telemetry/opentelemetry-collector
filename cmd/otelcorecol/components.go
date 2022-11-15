@@ -3,51 +3,51 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/component"
-	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
-	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
-	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
-	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
-	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
-	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
-	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/exporter/loggingexporter"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/extension/ballastextension"
+	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service"
 )
 
-func components() (component.Factories, error) {
+func components() (service.Factories, error) {
 	var err error
-	factories := component.Factories{}
+	factories := service.Factories{}
 
-	factories.Extensions, err = component.MakeExtensionFactoryMap(
+	factories.Extensions, err = service.MakeExtensionFactoryMap(
 		ballastextension.NewFactory(),
 		zpagesextension.NewFactory(),
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return service.Factories{}, err
 	}
 
-	factories.Receivers, err = component.MakeReceiverFactoryMap(
+	factories.Receivers, err = service.MakeReceiverFactoryMap(
 		otlpreceiver.NewFactory(),
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return service.Factories{}, err
 	}
 
-	factories.Exporters, err = component.MakeExporterFactoryMap(
+	factories.Exporters, err = service.MakeExporterFactoryMap(
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return service.Factories{}, err
 	}
 
-	factories.Processors, err = component.MakeProcessorFactoryMap(
+	factories.Processors, err = service.MakeProcessorFactoryMap(
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return service.Factories{}, err
 	}
 
 	return factories, nil

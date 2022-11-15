@@ -20,11 +20,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 // NewNopExporterCreateSettings returns a new nop settings for Create*Exporter functions.
-func NewNopExporterCreateSettings() component.ExporterCreateSettings {
-	return component.ExporterCreateSettings{
+func NewNopExporterCreateSettings() exporter.CreateSettings {
+	return exporter.CreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -35,29 +36,29 @@ type nopExporterConfig struct {
 }
 
 // NewNopExporterFactory returns a component.ExporterFactory that constructs nop exporters.
-func NewNopExporterFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewNopExporterFactory() exporter.Factory {
+	return exporter.NewFactory(
 		"nop",
-		func() component.ExporterConfig {
+		func() exporter.Config {
 			return &nopExporterConfig{
 				ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
 			}
 		},
-		component.WithTracesExporter(createTracesExporter, component.StabilityLevelStable),
-		component.WithMetricsExporter(createMetricsExporter, component.StabilityLevelStable),
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelStable),
+		exporter.WithTracesExporter(createTracesExporter, component.StabilityLevelStable),
+		exporter.WithMetricsExporter(createMetricsExporter, component.StabilityLevelStable),
+		exporter.WithLogsExporter(createLogsExporter, component.StabilityLevelStable),
 	)
 }
 
-func createTracesExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, exporter.CreateSettings, exporter.Config) (exporter.TracesExporter, error) {
 	return nopExporterInstance, nil
 }
 
-func createMetricsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, exporter.CreateSettings, exporter.Config) (exporter.MetricsExporter, error) {
 	return nopExporterInstance, nil
 }
 
-func createLogsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, exporter.CreateSettings, exporter.Config) (exporter.LogsExporter, error) {
 	return nopExporterInstance, nil
 }
 

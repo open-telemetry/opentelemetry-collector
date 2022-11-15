@@ -29,6 +29,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
@@ -61,7 +62,7 @@ type Exporter struct {
 // ExporterSettings are settings for creating an Exporter.
 type ExporterSettings struct {
 	ExporterID             component.ID
-	ExporterCreateSettings component.ExporterCreateSettings
+	ExporterCreateSettings exporter.CreateSettings
 }
 
 // NewExporter creates a new Exporter.
@@ -84,8 +85,8 @@ func newExporter(cfg ExporterSettings, registry *featuregate.Registry) (*Exporte
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ExporterPrefix + cfg.ExporterID.String(),
 		mutators:       []tag.Mutator{tag.Upsert(obsmetrics.TagKeyExporter, cfg.ExporterID.String(), tag.WithTTL(tag.TTLNoPropagation))},
-		tracer:         cfg.ExporterCreateSettings.TracerProvider.Tracer(cfg.ExporterID.String()),
-		logger:         cfg.ExporterCreateSettings.Logger,
+		tracer:         cfg.ExporterCreateSettings.TelemetrySettings.TracerProvider.Tracer(cfg.ExporterID.String()),
+		logger:         cfg.ExporterCreateSettings.TelemetrySettings.Logger,
 
 		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
 		otelAttrs: []attribute.KeyValue{
@@ -104,7 +105,7 @@ func (exp *Exporter) createOtelMetrics(cfg ExporterSettings) error {
 	if !exp.useOtelForMetrics {
 		return nil
 	}
-	meter := cfg.ExporterCreateSettings.MeterProvider.Meter(exporterScope)
+	meter := cfg.ExporterCreateSettings.TelemetrySettings.MeterProvider.Meter(exporterScope)
 
 	var errors, err error
 

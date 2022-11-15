@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -430,8 +431,8 @@ type host struct {
 	component.Host
 }
 
-func (h *host) GetExtensions() map[component.ID]component.Extension {
-	ret := make(map[component.ID]component.Extension)
+func (h *host) GetExtensions() map[component.ID]extension.Extension {
+	ret := make(map[component.ID]extension.Extension)
 	ret[component.NewID("ballast")] = &ballastExtension{ballastSize: h.ballastSize}
 	return ret
 }

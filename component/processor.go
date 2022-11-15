@@ -24,8 +24,7 @@ import (
 // ProcessorConfig is the configuration of a component.Processor. Specific Processor must implement
 // this interface and must embed ProcessorSettings struct or a struct that extends it.
 type ProcessorConfig interface {
-	identifiable
-	validatable
+	Config
 
 	privateConfigProcessor()
 }
@@ -34,7 +33,7 @@ type ProcessorConfig interface {
 // It checks if the config implements confmap.Unmarshaler and uses that if available,
 // otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
 func UnmarshalProcessorConfig(conf *confmap.Conf, cfg ProcessorConfig) error {
-	return unmarshal(conf, cfg)
+	return UnmarshalConfig(conf, cfg)
 }
 
 // Processor defines the common functions that must be implemented by TracesProcessor
@@ -108,6 +107,8 @@ type ProcessorFactory interface {
 
 	// LogsProcessorStability gets the stability level of the LogsProcessor.
 	LogsProcessorStability() StabilityLevel
+
+	unexportedFunc()
 }
 
 // ProcessorCreateDefaultConfigFunc is the equivalent of ProcessorFactory.CreateDefaultConfig().

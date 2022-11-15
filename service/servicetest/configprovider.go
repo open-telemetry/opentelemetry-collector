@@ -17,7 +17,6 @@ package servicetest // import "go.opentelemetry.io/collector/service/servicetest
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -28,7 +27,7 @@ import (
 )
 
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
-func LoadConfig(fileName string, factories component.Factories) (*service.Config, error) {
+func LoadConfig(fileName string, factories service.Factories) (*service.Config, error) {
 	// Read yaml config from file
 	provider, err := service.NewConfigProvider(service.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
@@ -44,7 +43,7 @@ func LoadConfig(fileName string, factories component.Factories) (*service.Config
 }
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.
-func LoadConfigAndValidate(fileName string, factories component.Factories) (*service.Config, error) {
+func LoadConfigAndValidate(fileName string, factories service.Factories) (*service.Config, error) {
 	cfg, err := LoadConfig(fileName, factories)
 	if err != nil {
 		return nil, err

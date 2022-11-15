@@ -15,6 +15,7 @@
 package config // import "go.opentelemetry.io/collector/config"
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 // ExporterSettings defines common settings for a component.Exporter configuration.
@@ -25,7 +26,7 @@ import (
 // When embedded in the exporter config, it must be with `mapstructure:",squash"` tag.
 type ExporterSettings struct {
 	id component.ID `mapstructure:"-"`
-	component.ExporterConfig
+	exporter.Config
 }
 
 // NewExporterSettings return a new ExporterSettings with the given ComponentID.
@@ -33,7 +34,7 @@ func NewExporterSettings(id component.ID) ExporterSettings {
 	return ExporterSettings{id: id}
 }
 
-var _ component.ExporterConfig = (*ExporterSettings)(nil)
+var _ exporter.Config = (*ExporterSettings)(nil)
 
 // ID returns the receiver component.ID.
 func (es *ExporterSettings) ID() component.ID {

@@ -16,6 +16,8 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // nopHost mocks a receiver.ReceiverHost for test purposes.
@@ -32,10 +34,10 @@ func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Fact
 	return nil
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Extension {
+func (nh *nopHost) GetExtensions() map[component.ID]extension.Extension {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
-	return nil
+func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]exporter. {
+return nil
 }

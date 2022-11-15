@@ -12,35 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component // import "go.opentelemetry.io/collector/component"
+package extension // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/component"
 )
 
-// ExtensionConfig is the configuration of a component.Extension. Specific Extension must implement
+// Config is the configuration of a component.Extension. Specific Extension must implement
 // this interface and must embed config.ExtensionSettings struct or a struct that extends it.
-type ExtensionConfig interface {
-	identifiable
-	validatable
+type Config interface {
+	component.Config
 
 	privateConfigExtension()
-}
-
-// UnmarshalExtensionConfig helper function to unmarshal an ExtensionConfig.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalExtensionConfig(conf *confmap.Conf, cfg ExtensionConfig) error {
-	return unmarshal(conf, cfg)
 }
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
 type Extension interface {
-	Component
+	component.Component
 }
 
 // PipelineWatcher is an extra interface for Extension hosted by the OpenTelemetry
@@ -60,33 +52,33 @@ type PipelineWatcher interface {
 	NotReady() error
 }
 
-// ExtensionCreateSettings is passed to ExtensionFactory.Create* functions.
-type ExtensionCreateSettings struct {
-	TelemetrySettings
+// CreateSettings is passed to Factory.Create* functions.
+type CreateSettings struct {
+	Telemetry component.TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes
-	BuildInfo BuildInfo
+	BuildInfo component.BuildInfo
 }
 
-// ExtensionCreateDefaultConfigFunc is the equivalent of ExtensionFactory.CreateDefaultConfig()
-type ExtensionCreateDefaultConfigFunc func() ExtensionConfig
+// CreateDefaultConfigFunc is the equivalent of Factory.CreateDefaultConfig()
+type CreateDefaultConfigFunc func() Config
 
-// CreateDefaultConfig implements ExtensionFactory.CreateDefaultConfig()
-func (f ExtensionCreateDefaultConfigFunc) CreateDefaultConfig() ExtensionConfig {
+// CreateDefaultConfig implements Factory.CreateDefaultConfig()
+func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
 }
 
-// CreateExtensionFunc is the equivalent of ExtensionFactory.CreateExtension()
-type CreateExtensionFunc func(context.Context, ExtensionCreateSettings, ExtensionConfig) (Extension, error)
+// CreateExtensionFunc is the equivalent of Factory.CreateExtension()
+type CreateExtensionFunc func(context.Context, CreateSettings, Config) (Extension, error)
 
-// CreateExtension implements ExtensionFactory.CreateExtension.
-func (f CreateExtensionFunc) CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg ExtensionConfig) (Extension, error) {
+// CreateExtension implements Factory.CreateExtension.
+func (f CreateExtensionFunc) CreateExtension(ctx context.Context, set CreateSettings, cfg Config) (Extension, error) {
 	return f(ctx, set, cfg)
 }
 
-// ExtensionFactory is a factory for extensions to the service.
-type ExtensionFactory interface {
-	Factory
+// Factory is a factory for extensions to the service.
+type Factory interface {
+	component.Factory
 
 	// CreateDefaultConfig creates the default configuration for the Extension.
 	// This method can be called multiple times depending on the pipeline
@@ -95,36 +87,44 @@ type ExtensionFactory interface {
 	// The object returned by this method needs to pass the checks implemented by
 	// 'componenttest.CheckConfigStruct'. It is recommended to have these checks in the
 	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() ExtensionConfig
+	CreateDefaultConfig() Config
 
 	// CreateExtension creates an extension based on the given config.
-	CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg ExtensionConfig) (Extension, error)
+	CreateExtension(ctx context.Context, set CreateSettings, cfg Config) (Extension, error)
 
 	// ExtensionStability gets the stability level of the Extension.
-	ExtensionStability() StabilityLevel
+	ExtensionStability() component.StabilityLevel
+
+	unexportedFunc()
 }
 
-type extensionFactory struct {
-	baseFactory
-	ExtensionCreateDefaultConfigFunc
+type factory struct {
+	cfgType component.Type
+	CreateDefaultConfigFunc
 	CreateExtensionFunc
-	extensionStability StabilityLevel
+	extensionStability component.StabilityLevel
 }
 
-func (ef *extensionFactory) ExtensionStability() StabilityLevel {
+func (f factory) Type() component.Type {
+	return f.cfgType
+}
+
+func (f factory) unexportedFunc() {}
+
+func (ef *factory) ExtensionStability() component.StabilityLevel {
 	return ef.extensionStability
 }
 
-// NewExtensionFactory returns a new ExtensionFactory  based on this configuration.
+// NewExtensionFactory returns a new Factory  based on this configuration.
 func NewExtensionFactory(
-	cfgType Type,
-	createDefaultConfig ExtensionCreateDefaultConfigFunc,
+	cfgType component.Type,
+	createDefaultConfig CreateDefaultConfigFunc,
 	createServiceExtension CreateExtensionFunc,
-	sl StabilityLevel) ExtensionFactory {
-	return &extensionFactory{
-		baseFactory:                      baseFactory{cfgType: cfgType},
-		ExtensionCreateDefaultConfigFunc: createDefaultConfig,
-		CreateExtensionFunc:              createServiceExtension,
-		extensionStability:               sl,
+	sl component.StabilityLevel) Factory {
+	return &factory{
+		cfgType:                 cfgType,
+		CreateDefaultConfigFunc: createDefaultConfig,
+		CreateExtensionFunc:     createServiceExtension,
+		extensionStability:      sl,
 	}
 }

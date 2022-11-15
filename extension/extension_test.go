@@ -14,7 +14,7 @@
 
 // TODO: Move tests back to component package after config.*Settings are removed.
 
-package component_test
+package extension_test
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 type nopExtension struct {
@@ -36,10 +37,10 @@ func TestNewExtensionFactory(t *testing.T) {
 	defaultCfg := config.NewExtensionSettings(component.NewID(typeStr))
 	nopExtensionInstance := new(nopExtension)
 
-	factory := component.NewExtensionFactory(
+	factory := extension.NewExtensionFactory(
 		typeStr,
-		func() component.ExtensionConfig { return &defaultCfg },
-		func(ctx context.Context, settings component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {
+		func() extension.Config { return &defaultCfg },
+		func(ctx context.Context, settings extension.CreateSettings, extension extension.Config) (extension.Extension, error) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelInDevelopment)
@@ -47,7 +48,7 @@ func TestNewExtensionFactory(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelInDevelopment, factory.ExtensionStability())
-	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateSettings{}, &defaultCfg)
+	ext, err := factory.CreateExtension(context.Background(), extension.CreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
 }

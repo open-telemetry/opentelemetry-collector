@@ -15,6 +15,7 @@
 package config // import "go.opentelemetry.io/collector/config"
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // ExtensionSettings defines common settings for a component.Extension configuration.
@@ -25,7 +26,7 @@ import (
 // When embedded in the extension config, it must be with `mapstructure:",squash"` tag.
 type ExtensionSettings struct {
 	id component.ID `mapstructure:"-"`
-	component.ExtensionConfig
+	extension.Config
 }
 
 // NewExtensionSettings return a new ExtensionSettings with the given ID.
@@ -33,7 +34,7 @@ func NewExtensionSettings(id component.ID) ExtensionSettings {
 	return ExtensionSettings{id: id}
 }
 
-var _ component.ExtensionConfig = (*ExtensionSettings)(nil)
+var _ extension.Config = (*ExtensionSettings)(nil)
 
 // ID returns the receiver ID.
 func (es *ExtensionSettings) ID() component.ID {

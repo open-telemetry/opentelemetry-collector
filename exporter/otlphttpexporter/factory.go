@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	exporter2 "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -34,17 +35,17 @@ const (
 )
 
 // NewFactory creates a factory for OTLP exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter2.ExporterFactory {
+	return exporter2.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, component.StabilityLevelStable),
-		component.WithMetricsExporter(createMetricsExporter, component.StabilityLevelStable),
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelBeta),
+		exporter2.WithTracesExporter(createTracesExporter, component.StabilityLevelStable),
+		exporter2.WithMetricsExporter(createMetricsExporter, component.StabilityLevelStable),
+		exporter2.WithLogsExporter(createLogsExporter, component.StabilityLevelBeta),
 	)
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() exporter2.ExporterConfig {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
@@ -78,9 +79,9 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
-) (component.TracesExporter, error) {
+	set exporter2.ExporterCreateSettings,
+	cfg exporter2.ExporterConfig,
+) (exporter2.TracesExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {
 		return nil, err
@@ -104,9 +105,9 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
-) (component.MetricsExporter, error) {
+	set exporter2.ExporterCreateSettings,
+	cfg exporter2.ExporterConfig,
+) (exporter2.MetricsExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {
 		return nil, err
@@ -130,9 +131,9 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
-) (component.LogsExporter, error) {
+	set exporter2.ExporterCreateSettings,
+	cfg exporter2.ExporterConfig,
+) (exporter2.LogsExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {
 		return nil, err

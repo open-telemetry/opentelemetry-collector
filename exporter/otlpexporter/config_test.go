@@ -29,13 +29,14 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	exporter2 "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalExporterConfig(confmap.New(), cfg))
+	assert.NoError(t, exporter2.UnmarshalExporterConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -44,7 +45,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalExporterConfig(cm, cfg))
+	assert.NoError(t, exporter2.UnmarshalExporterConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),

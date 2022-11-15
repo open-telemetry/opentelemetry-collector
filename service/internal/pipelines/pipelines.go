@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/service/internal/zpages"
@@ -59,8 +60,8 @@ type builtPipeline struct {
 type Pipelines struct {
 	telemetry component.TelemetrySettings
 
-	allReceivers map[component.DataType]map[component.ID]component.Receiver
-	allExporters map[component.DataType]map[component.ID]component.Exporter
+	allReceivers map[component.DataType]map[component.ID]component.Component
+	allExporters map[component.DataType]map[component.ID]component.Component
 
 	pipelines map[component.ID]*builtPipeline
 }
@@ -139,12 +140,12 @@ func (bps *Pipelines) ShutdownAll(ctx context.Context) error {
 	return errs
 }
 
-func (bps *Pipelines) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
-	exportersMap := make(map[component.DataType]map[component.ID]component.Exporter)
+func (bps *Pipelines) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	exportersMap := make(map[component.DataType]map[component.ID]component.Component)
 
-	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.DataTypeTraces]))
-	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.DataTypeMetrics]))
-	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Exporter, len(bps.allExporters[component.DataTypeLogs]))
+	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeTraces]))
+	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeMetrics]))
+	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeLogs]))
 
 	for dt, expByID := range bps.allExporters {
 		for expID, exp := range expByID {
@@ -195,10 +196,10 @@ type Settings struct {
 	ProcessorConfigs map[component.ID]component.ProcessorConfig
 
 	// ExporterFactories maps exporter type names in the config to the respective component.ExporterFactory.
-	ExporterFactories map[component.Type]component.ExporterFactory
+	ExporterFactories map[component.Type]exporter.Factory
 
 	// ExporterConfigs is a map of component.ID to component.ExporterConfig.
-	ExporterConfigs map[component.ID]component.ExporterConfig
+	ExporterConfigs map[component.ID]exporter.Config
 
 	// PipelineConfigs is a map of component.ID to config.Pipeline.
 	PipelineConfigs map[component.ID]*config.Pipeline
@@ -208,8 +209,8 @@ type Settings struct {
 func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 	exps := &Pipelines{
 		telemetry:    set.Telemetry,
-		allReceivers: make(map[component.DataType]map[component.ID]component.Receiver),
-		allExporters: make(map[component.DataType]map[component.ID]component.Exporter),
+		allReceivers: make(map[component.DataType]map[component.ID]component.Component),
+		allExporters: make(map[component.DataType]map[component.ID]component.Component),
 		pipelines:    make(map[component.ID]*builtPipeline, len(set.PipelineConfigs)),
 	}
 
@@ -221,7 +222,7 @@ func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 	for pipelineID, pipeline := range set.PipelineConfigs {
 		// The data type of the pipeline defines what data type each exporter is expected to receive.
 		if _, ok := exps.allExporters[pipelineID.Type()]; !ok {
-			exps.allExporters[pipelineID.Type()] = make(map[component.ID]component.Exporter)
+			exps.allExporters[pipelineID.Type()] = make(map[component.ID]component.Component)
 		}
 		expByID := exps.allExporters[pipelineID.Type()]
 
@@ -306,7 +307,7 @@ func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 	for pipelineID, pipeline := range set.PipelineConfigs {
 		// The data type of the pipeline defines what data type each exporter is expected to receive.
 		if _, ok := exps.allReceivers[pipelineID.Type()]; !ok {
-			exps.allReceivers[pipelineID.Type()] = make(map[component.ID]component.Receiver)
+			exps.allReceivers[pipelineID.Type()] = make(map[component.ID]component.Component)
 		}
 		recvByID := exps.allReceivers[pipelineID.Type()]
 		bp := exps.pipelines[pipelineID]
@@ -335,11 +336,11 @@ func buildExporter(
 	ctx context.Context,
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
-	cfgs map[component.ID]component.ExporterConfig,
-	factories map[component.Type]component.ExporterFactory,
+	cfgs map[component.ID]exporter.Config,
+	factories map[component.Type]exporter.Factory,
 	id component.ID,
 	pipelineID component.ID,
-) (component.Exporter, error) {
+) (component.Component, error) {
 	cfg, existsCfg := cfgs[id]
 	if !existsCfg {
 		return nil, fmt.Errorf("exporter %q is not configured", id)
@@ -350,7 +351,7 @@ func buildExporter(
 		return nil, fmt.Errorf("exporter factory not available for: %q", id)
 	}
 
-	set := component.ExporterCreateSettings{
+	set := exporter.CreateSettings{
 		TelemetrySettings: settings,
 		BuildInfo:         buildInfo,
 	}
@@ -365,7 +366,7 @@ func buildExporter(
 	return exp, nil
 }
 
-func createExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig, id component.ID, pipelineID component.ID, factory component.ExporterFactory) (component.Exporter, error) {
+func createExporter(ctx context.Context, set exporter.CreateSettings, cfg exporter.Config, id component.ID, pipelineID component.ID, factory exporter.Factory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		return factory.CreateTracesExporter(ctx, set, cfg)
@@ -413,7 +414,7 @@ func exporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 		zap.String(components.ZapNameKey, id.String()))
 }
 
-func getExporterStabilityLevel(factory component.ExporterFactory, dt component.DataType) component.StabilityLevel {
+func getExporterStabilityLevel(factory exporter.Factory, dt component.DataType) component.StabilityLevel {
 	switch dt {
 	case component.DataTypeTraces:
 		return factory.TracesExporterStability()

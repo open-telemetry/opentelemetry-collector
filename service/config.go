@@ -20,6 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -35,13 +37,13 @@ type Config struct {
 	Receivers map[component.ID]component.ReceiverConfig
 
 	// Exporters is a map of ComponentID to Exporters.
-	Exporters map[component.ID]component.ExporterConfig
+	Exporters map[component.ID]exporter.Config
 
 	// Processors is a map of ComponentID to Processors.
 	Processors map[component.ID]component.ProcessorConfig
 
 	// Extensions is a map of ComponentID to extensions.
-	Extensions map[component.ID]component.ExtensionConfig
+	Extensions map[component.ID]extension.Config
 
 	Service ConfigService
 }

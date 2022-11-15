@@ -12,35 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package component
+package service
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 )
 
 func TestMakeExtensionFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string
-		in   []ExtensionFactory
-		out  map[Type]ExtensionFactory
+		in   []extension.Factory
+		out  map[component.Type]extension.Factory
 	}
 
-	p1 := NewExtensionFactory("p1", nil, nil, StabilityLevelAlpha)
-	p2 := NewExtensionFactory("p2", nil, nil, StabilityLevelAlpha)
+	p1 := extension.NewExtensionFactory("p1", nil, nil, component.StabilityLevelAlpha)
+	p2 := extension.NewExtensionFactory("p2", nil, nil, component.StabilityLevelAlpha)
 	testCases := []testCase{
 		{
 			name: "different names",
-			in:   []ExtensionFactory{p1, p2},
-			out: map[Type]ExtensionFactory{
+			in:   []extension.Factory{p1, p2},
+			out: map[component.Type]extension.Factory{
 				p1.Type(): p1,
 				p2.Type(): p2,
 			},
 		},
 		{
 			name: "same name",
-			in:   []ExtensionFactory{p1, p2, NewExtensionFactory("p1", nil, nil, StabilityLevelAlpha)},
+			in:   []extension.Factory{p1, p2, extension.NewExtensionFactory("p1", nil, nil, component.StabilityLevelAlpha)},
 		},
 	}
 	for i := range testCases {
@@ -60,24 +64,24 @@ func TestMakeExtensionFactoryMap(t *testing.T) {
 func TestMakeReceiverFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string
-		in   []ReceiverFactory
-		out  map[Type]ReceiverFactory
+		in   []component.ReceiverFactory
+		out  map[component.Type]component.ReceiverFactory
 	}
 
-	p1 := NewReceiverFactory("p1", nil)
-	p2 := NewReceiverFactory("p2", nil)
+	p1 := component.NewReceiverFactory("p1", nil)
+	p2 := component.NewReceiverFactory("p2", nil)
 	testCases := []testCase{
 		{
 			name: "different names",
-			in:   []ReceiverFactory{p1, p2},
-			out: map[Type]ReceiverFactory{
+			in:   []component.ReceiverFactory{p1, p2},
+			out: map[component.Type]component.ReceiverFactory{
 				p1.Type(): p1,
 				p2.Type(): p2,
 			},
 		},
 		{
 			name: "same name",
-			in:   []ReceiverFactory{p1, p2, NewReceiverFactory("p1", nil)},
+			in:   []component.ReceiverFactory{p1, p2, component.NewReceiverFactory("p1", nil)},
 		},
 	}
 
@@ -98,24 +102,24 @@ func TestMakeReceiverFactoryMap(t *testing.T) {
 func TestMakeProcessorFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string
-		in   []ProcessorFactory
-		out  map[Type]ProcessorFactory
+		in   []component.ProcessorFactory
+		out  map[component.Type]component.ProcessorFactory
 	}
 
-	p1 := NewProcessorFactory("p1", nil)
-	p2 := NewProcessorFactory("p2", nil)
+	p1 := component.NewProcessorFactory("p1", nil)
+	p2 := component.NewProcessorFactory("p2", nil)
 	testCases := []testCase{
 		{
 			name: "different names",
-			in:   []ProcessorFactory{p1, p2},
-			out: map[Type]ProcessorFactory{
+			in:   []component.ProcessorFactory{p1, p2},
+			out: map[component.Type]component.ProcessorFactory{
 				p1.Type(): p1,
 				p2.Type(): p2,
 			},
 		},
 		{
 			name: "same name",
-			in:   []ProcessorFactory{p1, p2, NewProcessorFactory("p1", nil)},
+			in:   []component.ProcessorFactory{p1, p2, component.NewProcessorFactory("p1", nil)},
 		},
 	}
 
@@ -136,24 +140,24 @@ func TestMakeProcessorFactoryMap(t *testing.T) {
 func TestMakeExporterFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string
-		in   []ExporterFactory
-		out  map[Type]ExporterFactory
+		in   []exporter.Factory
+		out  map[component.Type]exporter.Factory
 	}
 
-	p1 := NewExporterFactory("p1", nil)
-	p2 := NewExporterFactory("p2", nil)
+	p1 := exporter.NewFactory("p1", nil)
+	p2 := exporter.NewFactory("p2", nil)
 	testCases := []testCase{
 		{
 			name: "different names",
-			in:   []ExporterFactory{p1, p2},
-			out: map[Type]ExporterFactory{
+			in:   []exporter.Factory{p1, p2},
+			out: map[component.Type]exporter.Factory{
 				p1.Type(): p1,
 				p2.Type(): p2,
 			},
 		},
 		{
 			name: "same name",
-			in:   []ExporterFactory{p1, p2, NewExporterFactory("p1", nil)},
+			in:   []exporter.Factory{p1, p2, exporter.NewFactory("p1", nil)},
 		},
 	}
 

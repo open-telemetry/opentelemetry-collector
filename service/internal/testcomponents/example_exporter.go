@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -36,29 +37,29 @@ type ExampleExporterConfig struct {
 }
 
 // ExampleExporterFactory is factory for ExampleExporter.
-var ExampleExporterFactory = component.NewExporterFactory(
+var ExampleExporterFactory = exporter.NewFactory(
 	typeStr,
 	createExporterDefaultConfig,
-	component.WithTracesExporter(createTracesExporter, stability),
-	component.WithMetricsExporter(createMetricsExporter, stability),
-	component.WithLogsExporter(createLogsExporter, stability),
+	exporter.WithTracesExporter(createTracesExporter, stability),
+	exporter.WithMetricsExporter(createMetricsExporter, stability),
+	exporter.WithLogsExporter(createLogsExporter, stability),
 )
 
-func createExporterDefaultConfig() component.ExporterConfig {
+func createExporterDefaultConfig() exporter.Config {
 	return &ExampleExporterConfig{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 	}
 }
 
-func createTracesExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, exporter.CreateSettings, exporter.Config) (exporter.TracesExporter, error) {
 	return &ExampleExporter{}, nil
 }
 
-func createMetricsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, exporter.CreateSettings, exporter.Config) (exporter.MetricsExporter, error) {
 	return &ExampleExporter{}, nil
 }
 
-func createLogsExporter(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, exporter.CreateSettings, exporter.Config) (exporter.LogsExporter, error) {
 	return &ExampleExporter{}, nil
 }
 
