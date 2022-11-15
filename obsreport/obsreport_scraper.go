@@ -106,7 +106,6 @@ func newScraper(cfg ScraperSettings, registry *featuregate.Registry) (*Scraper, 
 
 func (s *Scraper) createOtelMetrics(cfg ScraperSettings) error {
 	if !s.useOtelForMetrics {
-		s.logger.Info("not working")
 		return nil
 	}
 	meter := cfg.ReceiverCreateSettings.MeterProvider.Meter(scraperScope)
