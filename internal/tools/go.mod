@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.50.1
-	github.com/google/addlicense v1.0.0
+	github.com/google/addlicense v1.1.0
 	github.com/jcchavezs/porto v0.4.0
 	github.com/ory/go-acc v0.2.8
 	github.com/pavius/impi v0.0.3
