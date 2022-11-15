@@ -19,7 +19,9 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -222,4 +224,74 @@ func createExampleService(t *testing.T, factories component.Factories) *service 
 		require.NoError(t, telemetry.shutdown())
 	})
 	return srv
+}
+
+func TestComponentStatusWatcher(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	// Use a processor factory that creates "unhealthy" processor: one that
+	// always reports StatusError after successful Start.
+	unhealthyProcessorFactory := componenttest.NewUnhealthyProcessorFactory()
+	factories.Processors[unhealthyProcessorFactory.Type()] = unhealthyProcessorFactory
+
+	// Keep track of all status changes in a map.
+	changedComponents := map[component.StatusSource]component.Status{}
+	var mux sync.Mutex
+	onStatusChanged := func(source component.StatusSource, event *component.StatusEvent) {
+		mux.Lock()
+		defer mux.Unlock()
+		changedComponents[source] = event.Status()
+	}
+
+	// Add a "statuswatcher" extension that will receive notifications when processor
+	// status changes.
+	factory := componenttest.NewStatusWatcherExtensionFactory(onStatusChanged)
+	factories.Extensions[factory.Type()] = factory
+
+	// Read config from file. This config uses 4 "unhealthy" processors.
+	validProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-statuswatcher.yaml")}))
+	require.NoError(t, err)
+	validCfg, err := validProvider.Get(context.Background(), factories)
+	require.NoError(t, err)
+
+	// Create a service
+	telemetry := newColTelemetry(featuregate.NewRegistry())
+	srv, err := newService(&settings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		Config:    validCfg,
+		telemetry: telemetry,
+	})
+	require.NoError(t, err)
+
+	// Start the service.
+	require.NoError(t, srv.Start(context.Background()))
+
+	// The "unhealthy" processors will now begin to asynchronously report StatusError.
+	// We expect to see these reports.
+
+	assert.Eventually(t, func() bool {
+		mux.Lock()
+		defer mux.Unlock()
+
+		for k, v := range changedComponents {
+			// All processors must report a status change with the same ID
+			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ID())
+			// And all must be in StatusError
+			assert.EqualValues(t, component.StatusError, v)
+		}
+
+		// We have 4 processors with exactly the same ID in otelcol-statuswatcher.yaml
+		// We must have exactly 4 items in our map. This ensures that the "source" argument
+		// passed to status change func is unique per instance of source component despite
+		// components having the same IDs (having same ID for different component instances
+		// is a normal situation for processors, but also not prohibited for other component types).
+		return len(changedComponents) == 4
+	}, time.Second, time.Millisecond*10)
+
+	t.Cleanup(func() {
+		assert.NoError(t, telemetry.shutdown())
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
 }

@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
+	"go.opentelemetry.io/collector/service/internal/servicehost"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 )
 
@@ -95,7 +96,7 @@ func TestBuild(t *testing.T) {
 			pipelines, err := Build(context.Background(), toSettings(factories, cfg))
 			assert.NoError(t, err)
 
-			assert.NoError(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, pipelines.StartAll(context.Background(), servicehost.NewNopHost()))
 
 			// Verify exporters created, started and empty.
 			for _, expID := range test.exporterIDs {
@@ -311,7 +312,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.Error(t, pipelines.StartAll(context.Background(), servicehost.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 
@@ -325,7 +326,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.Error(t, pipelines.StartAll(context.Background(), servicehost.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 
@@ -339,7 +340,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			assert.NoError(t, err)
-			assert.Error(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.Error(t, pipelines.StartAll(context.Background(), servicehost.NewNopHost()))
 			assert.Error(t, pipelines.ShutdownAll(context.Background()))
 		})
 	}

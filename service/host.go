@@ -18,9 +18,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/pipelines"
+	"go.opentelemetry.io/collector/service/internal/servicehost"
 )
 
-var _ component.Host = (*serviceHost)(nil)
+var _ servicehost.Host = (*serviceHost)(nil)
 
 type serviceHost struct {
 	asyncErrorChannel chan error
@@ -34,8 +35,13 @@ type serviceHost struct {
 // ReportFatalError is used to report to the host that the receiver encountered
 // a fatal error (i.e.: an error that the instance can't recover from) after
 // its start function has already returned.
+// Deprecated: [0.65.0] Replaced by ReportComponentStatus
 func (host *serviceHost) ReportFatalError(err error) {
 	host.asyncErrorChannel <- err
+}
+
+func (host *serviceHost) ReportComponentStatus(source component.StatusSource, event *component.StatusEvent) {
+	host.extensions.NotifyComponentStatusChange(source, event)
 }
 
 func (host *serviceHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {

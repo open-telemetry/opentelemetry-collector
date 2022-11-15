@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
+	"go.opentelemetry.io/collector/service/internal/servicehost"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
@@ -65,18 +66,32 @@ type Pipelines struct {
 	pipelines map[component.ID]*builtPipeline
 }
 
+type statusReportingComponent struct {
+	kind component.Kind
+	id   component.ID
+}
+
+func (s *statusReportingComponent) GetKind() component.Kind {
+	return s.kind
+}
+
+func (s *statusReportingComponent) ID() component.ID {
+	return s.id
+}
+
 // StartAll starts all pipelines.
 //
 // Start with exporters, processors (in reverse configured order), then receivers.
 // This is important so that components that are earlier in the pipeline and reference components that are
 // later in the pipeline do not start sending data to later components which are not yet started.
-func (bps *Pipelines) StartAll(ctx context.Context, host component.Host) error {
+func (bps *Pipelines) StartAll(ctx context.Context, host servicehost.Host) error {
 	bps.telemetry.Logger.Info("Starting exporters...")
 	for dt, expByID := range bps.allExporters {
 		for expID, exp := range expByID {
 			expLogger := exporterLogger(bps.telemetry.Logger, expID, dt)
 			expLogger.Info("Exporter is starting...")
-			if err := exp.Start(ctx, components.NewHostWrapper(host, expLogger)); err != nil {
+			statusSource := &statusReportingComponent{component.KindExporter, expID}
+			if err := exp.Start(ctx, components.NewHostWrapper(host, statusSource, expLogger)); err != nil {
 				return err
 			}
 			expLogger.Info("Exporter started.")
@@ -86,9 +101,12 @@ func (bps *Pipelines) StartAll(ctx context.Context, host component.Host) error {
 	bps.telemetry.Logger.Info("Starting processors...")
 	for pipelineID, bp := range bps.pipelines {
 		for i := len(bp.processors) - 1; i >= 0; i-- {
-			procLogger := processorLogger(bps.telemetry.Logger, bp.processors[i].id, pipelineID)
+			processor := bp.processors[i]
+			procID := processor.id
+			procLogger := processorLogger(bps.telemetry.Logger, procID, pipelineID)
 			procLogger.Info("Processor is starting...")
-			if err := bp.processors[i].comp.Start(ctx, components.NewHostWrapper(host, procLogger)); err != nil {
+			statusSource := &statusReportingComponent{component.KindProcessor, procID}
+			if err := processor.comp.Start(ctx, components.NewHostWrapper(host, statusSource, procLogger)); err != nil {
 				return err
 			}
 			procLogger.Info("Processor started.")
@@ -100,7 +118,8 @@ func (bps *Pipelines) StartAll(ctx context.Context, host component.Host) error {
 		for recvID, recv := range recvByID {
 			recvLogger := receiverLogger(bps.telemetry.Logger, recvID, dt)
 			recvLogger.Info("Receiver is starting...")
-			if err := recv.Start(ctx, components.NewHostWrapper(host, recvLogger)); err != nil {
+			statusSource := &statusReportingComponent{component.KindReceiver, recvID}
+			if err := recv.Start(ctx, components.NewHostWrapper(host, statusSource, recvLogger)); err != nil {
 				return err
 			}
 			recvLogger.Info("Receiver started.")

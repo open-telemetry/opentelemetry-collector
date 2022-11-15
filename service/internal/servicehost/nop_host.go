@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright  The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
+package servicehost
 
 import (
 	"go.opentelemetry.io/collector/component"
@@ -21,23 +21,25 @@ import (
 // nopHost mocks a receiver.ReceiverHost for test purposes.
 type nopHost struct{}
 
+func (n nopHost) ReportFatalError(err error) {
+}
+
+func (n nopHost) ReportComponentStatus(source component.StatusSource, event *component.StatusEvent) {
+}
+
+func (n nopHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
+	return nil
+}
+
+func (n nopHost) GetExtensions() map[component.ID]component.Extension {
+	return nil
+}
+
+func (n nopHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
+	return nil
+}
+
 // NewNopHost returns a new instance of nopHost with proper defaults for most tests.
-func NewNopHost() component.Host {
+func NewNopHost() Host {
 	return &nopHost{}
-}
-
-func (nh *nopHost) ReportFatalError(_ error) {}
-
-func (hw *nopHost) ReportComponentStatus(event *component.StatusEvent) {}
-
-func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	return nil
-}
-
-func (nh *nopHost) GetExtensions() map[component.ID]component.Extension {
-	return nil
-}
-
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
-	return nil
 }

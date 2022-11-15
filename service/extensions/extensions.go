@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/internal/components"
+	"go.opentelemetry.io/collector/service/internal/servicehost"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
@@ -36,13 +37,26 @@ type Extensions struct {
 	extMap    map[component.ID]component.Extension
 }
 
+type statusReportingExtension struct {
+	id component.ID
+}
+
+func (s *statusReportingExtension) GetKind() component.Kind {
+	return component.KindExtension
+}
+
+func (s *statusReportingExtension) ID() component.ID {
+	return s.id
+}
+
 // Start starts all extensions.
-func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
+func (bes *Extensions) Start(ctx context.Context, host servicehost.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for extID, ext := range bes.extMap {
 		extLogger := extensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
-		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
+		statusSource := &statusReportingExtension{extID}
+		if err := ext.Start(ctx, components.NewHostWrapper(host, statusSource, extLogger)); err != nil {
 			return err
 		}
 		extLogger.Info("Extension started.")
@@ -78,6 +92,16 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	for _, ext := range bes.extMap {
 		if pw, ok := ext.(component.PipelineWatcher); ok {
 			errs = multierr.Append(errs, pw.NotReady())
+		}
+	}
+	return errs
+}
+
+func (bes *Extensions) NotifyComponentStatusChange(source component.StatusSource, event *component.StatusEvent) error {
+	var errs error
+	for _, ext := range bes.extMap {
+		if pw, ok := ext.(component.StatusWatcher); ok {
+			pw.ComponentStatusChanged(source, event)
 		}
 	}
 	return errs

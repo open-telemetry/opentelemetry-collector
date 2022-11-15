@@ -28,9 +28,9 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/internal/grpclog"
+	"go.opentelemetry.io/collector/service/internal/servicehost"
 )
 
 // State defines Collector's state.
@@ -278,7 +278,7 @@ func (col *Collector) setCollectorState(state State) {
 	col.state.Store(int32(state))
 }
 
-func getBallastSize(host component.Host) uint64 {
+func getBallastSize(host servicehost.Host) uint64 {
 	var ballastSize uint64
 	extensions := host.GetExtensions()
 	for _, extension := range extensions {
