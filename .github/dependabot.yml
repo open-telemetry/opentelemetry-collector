@@ -19,6 +19,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/component"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/loggingexporter"
     schedule:
       interval: "weekly"

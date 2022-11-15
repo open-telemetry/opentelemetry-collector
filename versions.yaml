@@ -21,6 +21,7 @@ module-sets:
     version: v0.64.1
     modules:
       - go.opentelemetry.io/collector
+      - go.opentelemetry.io/collector/component
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/exporter/loggingexporter
       - go.opentelemetry.io/collector/exporter/otlpexporter
