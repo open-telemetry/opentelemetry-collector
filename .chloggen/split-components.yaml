@@ -14,5 +14,5 @@ issues: [6187]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |-
-  The import path for the processor modules can now be access directly:
+  The import path for the component module can now be access directly:
     - `go.opentelemetry.io/collector/component`
