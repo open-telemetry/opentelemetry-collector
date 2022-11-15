@@ -17,6 +17,8 @@ func NewNopHost() component.Host {
 
 func (nh *nopHost) ReportFatalError(_ error) {}
 
+func (hw *nopHost) ReportComponentStatus(event *component.StatusEvent) {}
+
 func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }

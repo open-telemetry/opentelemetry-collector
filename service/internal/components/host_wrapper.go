@@ -9,17 +9,21 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/internal/servicehost"
 )
 
 // hostWrapper adds behavior on top of the component.Host being passed when starting the built components.
+// TODO: rename this to componentHost or hostComponentConnector to better reflect the purpose.
 type hostWrapper struct {
-	component.Host
+	servicehost.Host
+	component component.StatusSource
 	*zap.Logger
 }
 
-func NewHostWrapper(host component.Host, logger *zap.Logger) component.Host {
+func NewHostWrapper(host servicehost.Host, component component.StatusSource, logger *zap.Logger) component.Host {
 	return &hostWrapper{
 		host,
+		component,
 		logger,
 	}
 }
@@ -28,6 +32,12 @@ func (hw *hostWrapper) ReportFatalError(err error) {
 	// The logger from the built component already identifies the component.
 	hw.Logger.Error("Component fatal error", zap.Error(err))
 	hw.Host.ReportFatalError(err)
+}
+
+var emptyComponentID = component.ID{}
+
+func (hw *hostWrapper) ReportComponentStatus(event *component.StatusEvent) {
+	hw.Host.ReportComponentStatus(hw.component, event)
 }
 
 // RegisterZPages is used by zpages extension to register handles from service.

@@ -12,7 +12,16 @@ type Host interface {
 	//
 	// ReportFatalError should be called by the component anytime after Component.Start() ends and
 	// before Component.Shutdown() begins.
+	// Deprecated: [0.65.0] Use ReportComponentStatus instead (with an event of type status.ComponentError)
 	ReportFatalError(err error)
+
+	// ReportComponentStatus can be used by a component to communicate its status to the Host.
+	// The Host implementations may broadcast this information to interested parties via
+	// StatusWatcher interface.
+	// May be called by the component any time after Component.Start is called or while
+	// Component.Start call is executing.
+	// May be called concurrently with itself.
+	ReportComponentStatus(event *StatusEvent)
 
 	// GetFactory of the specified kind. Returns the factory for a component type.
 	// This allows components to create other components. For example:
