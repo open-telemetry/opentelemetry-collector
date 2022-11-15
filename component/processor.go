@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// ProcessorConfig is the configuration of a component.Processor. Specific extensions must implement
+// ProcessorConfig is the configuration of a component.Processor. Specific Processor must implement
 // this interface and must embed ProcessorSettings struct or a struct that extends it.
 type ProcessorConfig interface {
 	identifiable

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// ExtensionConfig is the configuration of a component.Extension. Specific extensions must implement
+// ExtensionConfig is the configuration of a component.Extension. Specific Extension must implement
 // this interface and must embed config.ExtensionSettings struct or a struct that extends it.
 type ExtensionConfig interface {
 	identifiable
