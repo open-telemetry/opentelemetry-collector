@@ -42,11 +42,12 @@ func TestCheckScraperMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	s := obsreport.NewScraper(obsreport.ScraperSettings{
+	s, err := obsreport.NewScraper(obsreport.ScraperSettings{
 		ReceiverID:             receiver,
 		Scraper:                scraper,
 		ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 	})
+	require.NoError(t, err)
 	ctx := s.StartMetricsOp(context.Background())
 	require.NotNil(t, ctx)
 	s.EndMetricsOp(ctx, 7, nil)

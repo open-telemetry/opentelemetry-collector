@@ -65,12 +65,8 @@ type ScraperSettings struct {
 }
 
 // NewScraper creates a new Scraper.
-func NewScraper(cfg ScraperSettings) *Scraper {
-	scr, err := newScraper(cfg, featuregate.GetRegistry())
-	if err != nil && cfg.ReceiverCreateSettings.Logger != nil {
-		cfg.ReceiverCreateSettings.Logger.Warn("Error creating an obsreport.Scraper", zap.Error(err))
-	}
-	return scr
+func NewScraper(cfg ScraperSettings) (*Scraper, error) {
+	return newScraper(cfg, featuregate.GetRegistry())
 }
 
 // Deprecated: [v0.65.0] use NewScraper.
@@ -110,6 +106,7 @@ func newScraper(cfg ScraperSettings, registry *featuregate.Registry) (*Scraper, 
 
 func (s *Scraper) createOtelMetrics(cfg ScraperSettings) error {
 	if !s.useOtelForMetrics {
+		s.logger.Info("not working")
 		return nil
 	}
 	meter := cfg.ReceiverCreateSettings.MeterProvider.Meter(scraperScope)
