@@ -44,8 +44,3 @@ func (es *ExtensionSettings) ID() component.ID {
 func (es *ExtensionSettings) SetIDName(idName string) {
 	es.id = component.NewIDWithName(es.id.Type(), idName)
 }
-
-// Deprecated: [v0.65.0] use component.ValidateConfig.
-func (es *ExtensionSettings) Validate() error {
-	return nil
-}

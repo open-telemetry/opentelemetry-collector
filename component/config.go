@@ -20,8 +20,6 @@ import (
 
 type Config interface {
 	identifiable
-	// Deprecated: [v0.65.0] use component.ValidateConfig.
-	Validate() error
 
 	privateConfig()
 }
