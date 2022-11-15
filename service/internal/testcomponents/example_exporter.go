@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -46,7 +47,7 @@ var ExampleExporterFactory = component.NewExporterFactory(
 
 func createExporterDefaultConfig() component.ExporterConfig {
 	return &ExampleExporterConfig{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(id.NewID(typeStr)),
 	}
 }
 

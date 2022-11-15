@@ -17,6 +17,7 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -228,7 +229,7 @@ func WithLogsProcessor(createLogsProcessor CreateLogsProcessorFunc, sl Stability
 }
 
 // NewProcessorFactory returns a ProcessorFactory.
-func NewProcessorFactory(cfgType Type, createDefaultConfig ProcessorCreateDefaultConfigFunc, options ...ProcessorFactoryOption) ProcessorFactory {
+func NewProcessorFactory(cfgType id.Type, createDefaultConfig ProcessorCreateDefaultConfigFunc, options ...ProcessorFactoryOption) ProcessorFactory {
 	f := &processorFactory{
 		baseFactory:                      baseFactory{cfgType: cfgType},
 		ProcessorCreateDefaultConfigFunc: createDefaultConfig,

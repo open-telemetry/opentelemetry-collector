@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -39,7 +40,7 @@ func NewNopExtensionFactory() component.ExtensionFactory {
 		"nop",
 		func() component.ExtensionConfig {
 			return &nopExtensionConfig{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
+				ExtensionSettings: config.NewExtensionSettings(id.NewID("nop")),
 			}
 		},
 		func(context.Context, component.ExtensionCreateSettings, component.ExtensionConfig) (component.Extension, error) {

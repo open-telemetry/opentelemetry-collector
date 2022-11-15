@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -41,7 +42,7 @@ func NewNopProcessorFactory() component.ProcessorFactory {
 		"nop",
 		func() component.ProcessorConfig {
 			return &nopProcessorConfig{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
+				ProcessorSettings: config.NewProcessorSettings(id.NewID("nop")),
 			}
 		},
 		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelStable),

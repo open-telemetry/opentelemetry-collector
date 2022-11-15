@@ -18,13 +18,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/component/id"
 )
 
 func TestMakeExtensionFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string
 		in   []ExtensionFactory
-		out  map[Type]ExtensionFactory
+		out  map[id.Type]ExtensionFactory
 	}
 
 	p1 := NewExtensionFactory("p1", nil, nil, StabilityLevelAlpha)
@@ -33,7 +35,7 @@ func TestMakeExtensionFactoryMap(t *testing.T) {
 		{
 			name: "different names",
 			in:   []ExtensionFactory{p1, p2},
-			out: map[Type]ExtensionFactory{
+			out: map[id.Type]ExtensionFactory{
 				p1.Type(): p1,
 				p2.Type(): p2,
 			},
@@ -61,7 +63,7 @@ func TestMakeReceiverFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string
 		in   []ReceiverFactory
-		out  map[Type]ReceiverFactory
+		out  map[id.Type]ReceiverFactory
 	}
 
 	p1 := NewReceiverFactory("p1", nil)
@@ -70,7 +72,7 @@ func TestMakeReceiverFactoryMap(t *testing.T) {
 		{
 			name: "different names",
 			in:   []ReceiverFactory{p1, p2},
-			out: map[Type]ReceiverFactory{
+			out: map[id.Type]ReceiverFactory{
 				p1.Type(): p1,
 				p2.Type(): p2,
 			},
@@ -99,7 +101,7 @@ func TestMakeProcessorFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string
 		in   []ProcessorFactory
-		out  map[Type]ProcessorFactory
+		out  map[id.Type]ProcessorFactory
 	}
 
 	p1 := NewProcessorFactory("p1", nil)
@@ -108,7 +110,7 @@ func TestMakeProcessorFactoryMap(t *testing.T) {
 		{
 			name: "different names",
 			in:   []ProcessorFactory{p1, p2},
-			out: map[Type]ProcessorFactory{
+			out: map[id.Type]ProcessorFactory{
 				p1.Type(): p1,
 				p2.Type(): p2,
 			},
@@ -137,7 +139,7 @@ func TestMakeExporterFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string
 		in   []ExporterFactory
-		out  map[Type]ExporterFactory
+		out  map[id.Type]ExporterFactory
 	}
 
 	p1 := NewExporterFactory("p1", nil)
@@ -146,7 +148,7 @@ func TestMakeExporterFactoryMap(t *testing.T) {
 		{
 			name: "different names",
 			in:   []ExporterFactory{p1, p2},
-			out: map[Type]ExporterFactory{
+			out: map[id.Type]ExporterFactory{
 				p1.Type(): p1,
 				p2.Type(): p2,
 			},

@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -38,9 +39,9 @@ func TestExtensionsUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Extensions["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myextension")
-	assert.Equal(t, map[component.ID]component.ExtensionConfig{
-		component.NewID("nop"):                        factories.Extensions["nop"].CreateDefaultConfig(),
-		component.NewIDWithName("nop", "myextension"): cfgWithName,
+	assert.Equal(t, map[id.ID]component.ExtensionConfig{
+		id.NewID("nop"):                        factories.Extensions["nop"].CreateDefaultConfig(),
+		id.NewIDWithName("nop", "myextension"): cfgWithName,
 	}, exts.GetExtensions())
 }
 

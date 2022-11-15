@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
@@ -33,7 +34,19 @@ const zExtensionName = "zextensionname"
 // Extensions is a map of extensions created from extension configs.
 type Extensions struct {
 	telemetry component.TelemetrySettings
-	extMap    map[component.ID]component.Extension
+	extMap    map[id.ID]component.Extension
+}
+
+type statusReportingExtension struct {
+	id id.ID
+}
+
+func (s *statusReportingExtension) GetKind() component.Kind {
+	return component.KindExtension
+}
+
+func (s *statusReportingExtension) ID() id.ID {
+	return s.id
 }
 
 // Start starts all extensions.
@@ -42,7 +55,8 @@ func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	for extID, ext := range bes.extMap {
 		extLogger := extensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
-		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
+		statusSource := &statusReportingExtension{extID}
+		if err := ext.Start(ctx, components.NewHostWrapper(host, statusSource, extLogger)); err != nil {
 			return err
 		}
 		extLogger.Info("Extension started.")
@@ -61,6 +75,7 @@ func (bes *Extensions) Shutdown(ctx context.Context) error {
 	return errs
 }
 
+// Deprecated: [0.65.0] Use Host.RegisterStatusListener() instead.
 func (bes *Extensions) NotifyPipelineReady() error {
 	for extID, ext := range bes.extMap {
 		if pw, ok := ext.(component.PipelineWatcher); ok {
@@ -72,6 +87,7 @@ func (bes *Extensions) NotifyPipelineReady() error {
 	return nil
 }
 
+// Deprecated: [0.65.0] Use Host.RegisterStatusListener() instead.
 func (bes *Extensions) NotifyPipelineNotReady() error {
 	// Notify extensions in reverse order.
 	var errs error
@@ -83,8 +99,8 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	return errs
 }
 
-func (bes *Extensions) GetExtensions() map[component.ID]component.Extension {
-	result := make(map[component.ID]component.Extension, len(bes.extMap))
+func (bes *Extensions) GetExtensions() map[id.ID]component.Extension {
+	result := make(map[id.ID]component.Extension, len(bes.extMap))
 	for extID, v := range bes.extMap {
 		result[extID] = v
 	}
@@ -123,17 +139,17 @@ type Settings struct {
 	BuildInfo component.BuildInfo
 
 	// Configs is a map of component.ID to component.ExtensionConfig.
-	Configs map[component.ID]component.ExtensionConfig
+	Configs map[id.ID]component.ExtensionConfig
 
 	// Factories maps extension type names in the config to the respective component.ExtensionFactory.
-	Factories map[component.Type]component.ExtensionFactory
+	Factories map[id.Type]component.ExtensionFactory
 }
 
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	exts := &Extensions{
 		telemetry: set.Telemetry,
-		extMap:    make(map[component.ID]component.Extension),
+		extMap:    make(map[id.ID]component.Extension),
 	}
 	for _, extID := range cfg {
 		extCfg, existsCfg := set.Configs[extID]
@@ -168,7 +184,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	return exts, nil
 }
 
-func extensionLogger(logger *zap.Logger, id component.ID) *zap.Logger {
+func extensionLogger(logger *zap.Logger, id id.ID) *zap.Logger {
 	return logger.With(
 		zap.String(components.ZapKindKey, components.ZapKindExtension),
 		zap.String(components.ZapNameKey, id.String()))

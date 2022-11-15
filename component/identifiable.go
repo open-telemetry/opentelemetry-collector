@@ -15,89 +15,29 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
-	"errors"
-	"fmt"
-	"strings"
+	"go.opentelemetry.io/collector/component/id"
 )
-
-// typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
-const typeAndNameSeparator = "/"
 
 // identifiable is an interface that all components configurations MUST embed.
 type identifiable interface {
 	// ID returns the ID of the component that this configuration belongs to.
-	ID() ID
+	ID() id.ID
 	// SetIDName updates the name part of the ID for the component that this configuration belongs to.
 	SetIDName(idName string)
 }
 
-// ID represents the identity for a component. It combines two values:
-// * type - the Type of the component.
-// * name - the name of that component.
-// The component ID (combination type + name) is unique for a given component.Kind.
-type ID struct {
-	typeVal Type   `mapstructure:"-"`
-	nameVal string `mapstructure:"-"`
-}
+// Deprecated: [0.65.0] Use id.ID instead.
+type ID = id.ID
 
-// NewID returns a new ID with the given Type and empty name.
+// Deprecated: [0.65.0] Use id.Type instead.
+type Type = id.Type
+
+// Deprecated: [0.65.0] Use id.NewID instead.
 func NewID(typeVal Type) ID {
-	return ID{typeVal: typeVal}
+	return id.NewID(typeVal)
 }
 
-// NewIDWithName returns a new ID with the given Type and name.
+// Deprecated: [0.65.0] Use id.NewIDWithName instead.
 func NewIDWithName(typeVal Type, nameVal string) ID {
-	return ID{typeVal: typeVal, nameVal: nameVal}
-}
-
-// Type returns the type of the component.
-func (id ID) Type() Type {
-	return id.typeVal
-}
-
-// Name returns the custom name of the component.
-func (id ID) Name() string {
-	return id.nameVal
-}
-
-// MarshalText implements the encoding.TextMarshaler interface.
-// This marshals the type and name as one string in the config.
-func (id ID) MarshalText() (text []byte, err error) {
-	return []byte(id.String()), nil
-}
-
-// UnmarshalText implements the encoding.TextUnmarshaler interface.
-func (id *ID) UnmarshalText(text []byte) error {
-	idStr := string(text)
-	items := strings.SplitN(idStr, typeAndNameSeparator, 2)
-	if len(items) >= 1 {
-		id.typeVal = Type(strings.TrimSpace(items[0]))
-	}
-
-	if len(items) == 1 && id.typeVal == "" {
-		return errors.New("id must not be empty")
-	}
-
-	if id.typeVal == "" {
-		return fmt.Errorf("in %q id: the part before %s should not be empty", idStr, typeAndNameSeparator)
-	}
-
-	if len(items) > 1 {
-		// "name" part is present.
-		id.nameVal = strings.TrimSpace(items[1])
-		if id.nameVal == "" {
-			return fmt.Errorf("in %q id: the part after %s should not be empty", idStr, typeAndNameSeparator)
-		}
-	}
-
-	return nil
-}
-
-// String returns the ID string representation as "type[/name]" format.
-func (id ID) String() string {
-	if id.nameVal == "" {
-		return string(id.typeVal)
-	}
-
-	return string(id.typeVal) + typeAndNameSeparator + id.nameVal
+	return id.NewIDWithName(typeVal, nameVal)
 }

@@ -18,6 +18,7 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -25,23 +26,23 @@ import (
 const exportersKeyName = "exporters"
 
 type Exporters struct {
-	exps map[component.ID]component.ExporterConfig
+	exps map[id.ID]component.ExporterConfig
 
-	factories map[component.Type]component.ExporterFactory
+	factories map[id.Type]component.ExporterFactory
 }
 
-func NewExporters(factories map[component.Type]component.ExporterFactory) *Exporters {
+func NewExporters(factories map[id.Type]component.ExporterFactory) *Exporters {
 	return &Exporters{factories: factories}
 }
 
 func (e *Exporters) Unmarshal(conf *confmap.Conf) error {
-	rawExps := make(map[component.ID]map[string]interface{})
+	rawExps := make(map[id.ID]map[string]interface{})
 	if err := conf.Unmarshal(&rawExps, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 
 	// Prepare resulting map.
-	e.exps = make(map[component.ID]component.ExporterConfig)
+	e.exps = make(map[id.ID]component.ExporterConfig)
 
 	// Iterate over Exporters and create a config for each.
 	for id, value := range rawExps {
@@ -67,6 +68,6 @@ func (e *Exporters) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (e *Exporters) GetExporters() map[component.ID]component.ExporterConfig {
+func (e *Exporters) GetExporters() map[id.ID]component.ExporterConfig {
 	return e.exps
 }

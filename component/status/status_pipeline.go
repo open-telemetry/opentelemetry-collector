@@ -12,23 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package components
+package status
 
-import (
-	"errors"
-	"testing"
+// PipelineReadiness represents an enumeration of pipeline statuses
+type PipelineReadiness int
 
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/component/status"
+const (
+	// PipelineReady indicates the pipeline is ready
+	PipelineReady PipelineReadiness = iota
+	// PipelineNotReady indicates the pipeline is not ready
+	PipelineNotReady
 )
 
-func Test_newHostWrapper(t *testing.T) {
-	hw := NewHostWrapper(componenttest.NewNopHost(), nil, zap.NewNop())
-	hw.ReportFatalError(errors.New("test error"))
-	ev, err := status.NewComponentEvent(status.ComponentOK)
-	assert.NoError(t, err)
-	hw.ReportComponentStatus(ev)
-}
+// PipelineStatusFunc is a function to be called when the collector pipeline changes states
+type PipelineStatusFunc func(st PipelineReadiness) error
+
+var noopPipelineStatusFunc = func(st PipelineReadiness) error { return nil }

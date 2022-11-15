@@ -18,6 +18,7 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -25,23 +26,23 @@ import (
 const processorsKeyName = "processors"
 
 type Processors struct {
-	procs map[component.ID]component.ProcessorConfig
+	procs map[id.ID]component.ProcessorConfig
 
-	factories map[component.Type]component.ProcessorFactory
+	factories map[id.Type]component.ProcessorFactory
 }
 
-func NewProcessors(factories map[component.Type]component.ProcessorFactory) *Processors {
+func NewProcessors(factories map[id.Type]component.ProcessorFactory) *Processors {
 	return &Processors{factories: factories}
 }
 
 func (p *Processors) Unmarshal(conf *confmap.Conf) error {
-	rawProcs := make(map[component.ID]map[string]interface{})
+	rawProcs := make(map[id.ID]map[string]interface{})
 	if err := conf.Unmarshal(&rawProcs, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 
 	// Prepare resulting map.
-	p.procs = make(map[component.ID]component.ProcessorConfig)
+	p.procs = make(map[id.ID]component.ProcessorConfig)
 	// Iterate over processors and create a config for each.
 	for id, value := range rawProcs {
 		// Find processor factory based on "type" that we read from config source.
@@ -66,6 +67,6 @@ func (p *Processors) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (p *Processors) GetProcessors() map[component.ID]component.ProcessorConfig {
+func (p *Processors) GetProcessors() map[id.ID]component.ProcessorConfig {
 	return p.procs
 }

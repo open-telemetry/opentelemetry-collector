@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -40,7 +41,7 @@ func NewNopExporterFactory() component.ExporterFactory {
 		"nop",
 		func() component.ExporterConfig {
 			return &nopExporterConfig{
-				ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
+				ExporterSettings: config.NewExporterSettings(id.NewID("nop")),
 			}
 		},
 		component.WithTracesExporter(createTracesExporter, component.StabilityLevelStable),

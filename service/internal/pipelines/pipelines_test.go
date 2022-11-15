@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -38,48 +39,48 @@ import (
 func TestBuild(t *testing.T) {
 	tests := []struct {
 		name             string
-		receiverIDs      []component.ID
-		processorIDs     []component.ID
-		exporterIDs      []component.ID
+		receiverIDs      []id.ID
+		processorIDs     []id.ID
+		exporterIDs      []id.ID
 		expectedRequests int
 	}{
 		{
 			name:             "pipelines_simple.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver")},
-			processorIDs:     []component.ID{component.NewID("exampleprocessor")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter")},
+			receiverIDs:      []id.ID{id.NewID("examplereceiver")},
+			processorIDs:     []id.ID{id.NewID("exampleprocessor")},
+			exporterIDs:      []id.ID{id.NewID("exampleexporter")},
 			expectedRequests: 1,
 		},
 		{
 			name:             "pipelines_simple_multi_proc.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver")},
-			processorIDs:     []component.ID{component.NewID("exampleprocessor"), component.NewID("exampleprocessor")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter")},
+			receiverIDs:      []id.ID{id.NewID("examplereceiver")},
+			processorIDs:     []id.ID{id.NewID("exampleprocessor"), id.NewID("exampleprocessor")},
+			exporterIDs:      []id.ID{id.NewID("exampleexporter")},
 			expectedRequests: 1,
 		},
 		{
 			name:             "pipelines_simple_no_proc.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter")},
+			receiverIDs:      []id.ID{id.NewID("examplereceiver")},
+			exporterIDs:      []id.ID{id.NewID("exampleexporter")},
 			expectedRequests: 1,
 		},
 		{
 			name:             "pipelines_multi.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
-			processorIDs:     []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+			receiverIDs:      []id.ID{id.NewID("examplereceiver"), id.NewIDWithName("examplereceiver", "1")},
+			processorIDs:     []id.ID{id.NewID("exampleprocessor"), id.NewIDWithName("exampleprocessor", "1")},
+			exporterIDs:      []id.ID{id.NewID("exampleexporter"), id.NewIDWithName("exampleexporter", "1")},
 			expectedRequests: 2,
 		},
 		{
 			name:             "pipelines_multi_no_proc.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+			receiverIDs:      []id.ID{id.NewID("examplereceiver"), id.NewIDWithName("examplereceiver", "1")},
+			exporterIDs:      []id.ID{id.NewID("exampleexporter"), id.NewIDWithName("exampleexporter", "1")},
 			expectedRequests: 2,
 		},
 		{
 			name:             "pipelines_exporter_multi_pipeline.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter")},
+			receiverIDs:      []id.ID{id.NewID("examplereceiver")},
+			exporterIDs:      []id.ID{id.NewID("exampleexporter")},
 			expectedRequests: 2,
 		},
 	}
@@ -116,17 +117,17 @@ func TestBuild(t *testing.T) {
 
 			// Verify processors created in the given order and started.
 			for i, procID := range test.processorIDs {
-				traceProcessor := pipelines.pipelines[component.NewID(component.DataTypeTraces)].processors[i]
+				traceProcessor := pipelines.pipelines[id.NewID(component.DataTypeTraces)].processors[i]
 				assert.Equal(t, procID, traceProcessor.id)
 				assert.True(t, traceProcessor.comp.(*testcomponents.ExampleProcessor).Started)
 
 				// Validate metrics.
-				metricsProcessor := pipelines.pipelines[component.NewID(component.DataTypeMetrics)].processors[i]
+				metricsProcessor := pipelines.pipelines[id.NewID(component.DataTypeMetrics)].processors[i]
 				assert.Equal(t, procID, metricsProcessor.id)
 				assert.True(t, metricsProcessor.comp.(*testcomponents.ExampleProcessor).Started)
 
 				// Validate logs.
-				logsProcessor := pipelines.pipelines[component.NewID(component.DataTypeLogs)].processors[i]
+				logsProcessor := pipelines.pipelines[id.NewID(component.DataTypeLogs)].processors[i]
 				assert.Equal(t, procID, logsProcessor.id)
 				assert.True(t, logsProcessor.comp.(*testcomponents.ExampleProcessor).Started)
 			}
@@ -165,15 +166,15 @@ func TestBuild(t *testing.T) {
 
 			// Verify processors shutdown.
 			for i := range test.processorIDs {
-				traceProcessor := pipelines.pipelines[component.NewID(component.DataTypeTraces)].processors[i]
+				traceProcessor := pipelines.pipelines[id.NewID(component.DataTypeTraces)].processors[i]
 				assert.True(t, traceProcessor.comp.(*testcomponents.ExampleProcessor).Stopped)
 
 				// Validate metrics.
-				metricsProcessor := pipelines.pipelines[component.NewID(component.DataTypeMetrics)].processors[i]
+				metricsProcessor := pipelines.pipelines[id.NewID(component.DataTypeMetrics)].processors[i]
 				assert.True(t, metricsProcessor.comp.(*testcomponents.ExampleProcessor).Stopped)
 
 				// Validate logs.
-				logsProcessor := pipelines.pipelines[component.NewID(component.DataTypeLogs)].processors[i]
+				logsProcessor := pipelines.pipelines[id.NewID(component.DataTypeLogs)].processors[i]
 				assert.True(t, logsProcessor.comp.(*testcomponents.ExampleProcessor).Stopped)
 			}
 
@@ -232,17 +233,17 @@ func TestBuildErrors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.configFile, func(t *testing.T) {
 			factories := component.Factories{
-				Receivers: map[component.Type]component.ReceiverFactory{
+				Receivers: map[id.Type]component.ReceiverFactory{
 					nopReceiverFactory.Type(): nopReceiverFactory,
 					"unknown":                 nopReceiverFactory,
 					badReceiverFactory.Type(): badReceiverFactory,
 				},
-				Processors: map[component.Type]component.ProcessorFactory{
+				Processors: map[id.Type]component.ProcessorFactory{
 					nopProcessorFactory.Type(): nopProcessorFactory,
 					"unknown":                  nopProcessorFactory,
 					badProcessorFactory.Type(): badProcessorFactory,
 				},
-				Exporters: map[component.Type]component.ExporterFactory{
+				Exporters: map[id.Type]component.ExporterFactory{
 					nopExporterFactory.Type(): nopExporterFactory,
 					"unknown":                 nopExporterFactory,
 					badExporterFactory.Type(): badExporterFactory,
@@ -274,39 +275,39 @@ func TestFailToStartAndShutdown(t *testing.T) {
 	set := Settings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		ReceiverFactories: map[component.Type]component.ReceiverFactory{
+		ReceiverFactories: map[id.Type]component.ReceiverFactory{
 			nopReceiverFactory.Type(): nopReceiverFactory,
 			errReceiverFactory.Type(): errReceiverFactory,
 		},
-		ReceiverConfigs: map[component.ID]component.ReceiverConfig{
-			component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
-			component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
+		ReceiverConfigs: map[id.ID]component.ReceiverConfig{
+			id.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
+			id.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
 		},
-		ProcessorFactories: map[component.Type]component.ProcessorFactory{
+		ProcessorFactories: map[id.Type]component.ProcessorFactory{
 			nopProcessorFactory.Type(): nopProcessorFactory,
 			errProcessorFactory.Type(): errProcessorFactory,
 		},
-		ProcessorConfigs: map[component.ID]component.ProcessorConfig{
-			component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
-			component.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
+		ProcessorConfigs: map[id.ID]component.ProcessorConfig{
+			id.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
+			id.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
 		},
-		ExporterFactories: map[component.Type]component.ExporterFactory{
+		ExporterFactories: map[id.Type]component.ExporterFactory{
 			nopExporterFactory.Type(): nopExporterFactory,
 			errExporterFactory.Type(): errExporterFactory,
 		},
-		ExporterConfigs: map[component.ID]component.ExporterConfig{
-			component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
-			component.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
+		ExporterConfigs: map[id.ID]component.ExporterConfig{
+			id.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
+			id.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
 		},
 	}
 
 	for _, dt := range []component.DataType{component.DataTypeTraces, component.DataTypeMetrics, component.DataTypeLogs} {
 		t.Run(string(dt)+"/receiver", func(t *testing.T) {
-			set.PipelineConfigs = map[component.ID]*config.Pipeline{
-				component.NewID(dt): {
-					Receivers:  []component.ID{component.NewID("nop"), component.NewID("err")},
-					Processors: []component.ID{component.NewID("nop")},
-					Exporters:  []component.ID{component.NewID("nop")},
+			set.PipelineConfigs = map[id.ID]*config.Pipeline{
+				id.NewID(dt): {
+					Receivers:  []id.ID{id.NewID("nop"), id.NewID("err")},
+					Processors: []id.ID{id.NewID("nop")},
+					Exporters:  []id.ID{id.NewID("nop")},
 				},
 			}
 			pipelines, err := Build(context.Background(), set)
@@ -316,11 +317,11 @@ func TestFailToStartAndShutdown(t *testing.T) {
 		})
 
 		t.Run(string(dt)+"/processor", func(t *testing.T) {
-			set.PipelineConfigs = map[component.ID]*config.Pipeline{
-				component.NewID(dt): {
-					Receivers:  []component.ID{component.NewID("nop")},
-					Processors: []component.ID{component.NewID("nop"), component.NewID("err")},
-					Exporters:  []component.ID{component.NewID("nop")},
+			set.PipelineConfigs = map[id.ID]*config.Pipeline{
+				id.NewID(dt): {
+					Receivers:  []id.ID{id.NewID("nop")},
+					Processors: []id.ID{id.NewID("nop"), id.NewID("err")},
+					Exporters:  []id.ID{id.NewID("nop")},
 				},
 			}
 			pipelines, err := Build(context.Background(), set)
@@ -330,11 +331,11 @@ func TestFailToStartAndShutdown(t *testing.T) {
 		})
 
 		t.Run(string(dt)+"/exporter", func(t *testing.T) {
-			set.PipelineConfigs = map[component.ID]*config.Pipeline{
-				component.NewID(dt): {
-					Receivers:  []component.ID{component.NewID("nop")},
-					Processors: []component.ID{component.NewID("nop")},
-					Exporters:  []component.ID{component.NewID("nop"), component.NewID("err")},
+			set.PipelineConfigs = map[id.ID]*config.Pipeline{
+				id.NewID(dt): {
+					Receivers:  []id.ID{id.NewID("nop")},
+					Processors: []id.ID{id.NewID("nop")},
+					Exporters:  []id.ID{id.NewID("nop"), id.NewID("err")},
 				},
 			}
 			pipelines, err := Build(context.Background(), set)
@@ -350,7 +351,7 @@ func newBadReceiverFactory() component.ReceiverFactory {
 		return &struct {
 			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID("bf")),
+			ReceiverSettings: config.NewReceiverSettings(id.NewID("bf")),
 		}
 	})
 }
@@ -360,7 +361,7 @@ func newBadProcessorFactory() component.ProcessorFactory {
 		return &struct {
 			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ProcessorSettings: config.NewProcessorSettings(component.NewID("bf")),
+			ProcessorSettings: config.NewProcessorSettings(id.NewID("bf")),
 		}
 	})
 }
@@ -370,7 +371,7 @@ func newBadExporterFactory() component.ExporterFactory {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ExporterSettings: config.NewExporterSettings(component.NewID("bf")),
+			ExporterSettings: config.NewExporterSettings(id.NewID("bf")),
 		}
 	})
 }
@@ -380,7 +381,7 @@ func newErrReceiverFactory() component.ReceiverFactory {
 		return &struct {
 			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID("bf")),
+			ReceiverSettings: config.NewReceiverSettings(id.NewID("bf")),
 		}
 	},
 		component.WithTracesReceiver(func(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Traces) (component.TracesReceiver, error) {
@@ -400,7 +401,7 @@ func newErrProcessorFactory() component.ProcessorFactory {
 		return &struct {
 			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ProcessorSettings: config.NewProcessorSettings(component.NewID("bf")),
+			ProcessorSettings: config.NewProcessorSettings(id.NewID("bf")),
 		}
 	},
 		component.WithTracesProcessor(func(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Traces) (component.TracesProcessor, error) {
@@ -420,7 +421,7 @@ func newErrExporterFactory() component.ExporterFactory {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
-			ExporterSettings: config.NewExporterSettings(component.NewID("bf")),
+			ExporterSettings: config.NewExporterSettings(id.NewID("bf")),
 		}
 	},
 		component.WithTracesExporter(func(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {
@@ -474,7 +475,7 @@ type configSettings struct {
 }
 
 type serviceSettings struct {
-	Pipelines map[component.ID]*config.Pipeline `mapstructure:"pipelines"`
+	Pipelines map[id.ID]*config.Pipeline `mapstructure:"pipelines"`
 }
 
 func loadConfig(t *testing.T, fileName string, factories component.Factories) *configSettings {

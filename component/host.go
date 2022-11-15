@@ -13,6 +13,10 @@
 // limitations under the License.
 
 package component // import "go.opentelemetry.io/collector/component"
+import (
+	"go.opentelemetry.io/collector/component/id"
+	"go.opentelemetry.io/collector/component/status"
+)
 
 // Host represents the entity that is hosting a Component. It is used to allow communication
 // between the Component and its host (normally the service.Collector is the host).
@@ -23,6 +27,7 @@ type Host interface {
 	//
 	// ReportFatalError should be called by the component anytime after Component.Start() ends and
 	// before Component.Shutdown() begins.
+	// Deprecated: [0.65.0] Use ReportComponentStatus instead (with an event of type status.ComponentError)
 	ReportFatalError(err error)
 
 	// GetFactory of the specified kind. Returns the factory for a component type.
@@ -36,7 +41,7 @@ type Host interface {
 	// GetFactory can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends. Note that the component is responsible for destroying
 	// other components that it creates.
-	GetFactory(kind Kind, componentType Type) Factory
+	GetFactory(kind Kind, componentType id.Type) Factory
 
 	// GetExtensions returns the map of extensions. Only enabled and created extensions will be returned.
 	// Typically is used to find an extension by type or by full config name. Both cases
@@ -45,7 +50,7 @@ type Host interface {
 	//
 	// GetExtensions can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends.
-	GetExtensions() map[ID]Extension
+	GetExtensions() map[id.ID]Extension
 
 	// GetExporters returns the map of exporters. Only enabled and created exporters will be returned.
 	// Typically is used to find exporters by type or by full config name. Both cases
@@ -58,5 +63,20 @@ type Host interface {
 	//
 	// GetExporters can be called by the component anytime after Component.Start() begins and
 	// until Component.Shutdown() ends.
-	GetExporters() map[DataType]map[ID]Exporter
+	GetExporters() map[DataType]map[id.ID]Exporter
+
+	// ReportComponentStatus can be used by a component to communicate its status to registered status
+	// listeners. Components can use this function to indicate that they are functioning properly,
+	// or are in an error state.
+	ReportComponentStatus(event *status.ComponentEvent)
+
+	// RegisterStatusListener allows interested components to register status listeners to receive
+	// the following events:
+	// - Events reported by via the ReportComponentStatus function,
+	// - Notifications about pipeline status changes (ready, not ready).
+	RegisterStatusListener(options ...status.ListenerOption) StatusListenerUnregisterFunc
 }
+
+// StatusListenerUnregisterFunc is a function to be called to unregister a component that has previously
+// registered using Host.RegisterStatusListener().
+type StatusListenerUnregisterFunc func() error

@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -40,7 +41,7 @@ func NewNopReceiverFactory() component.ReceiverFactory {
 		"nop",
 		func() component.ReceiverConfig {
 			return &nopReceiverConfig{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
+				ReceiverSettings: config.NewReceiverSettings(id.NewID("nop")),
 			}
 		},
 		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelStable),

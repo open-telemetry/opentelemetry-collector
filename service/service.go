@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/pipelines"
@@ -43,13 +44,8 @@ type service struct {
 
 func newService(set *settings) (*service, error) {
 	srv := &service{
-		buildInfo: set.BuildInfo,
-		config:    set.Config,
-		host: &serviceHost{
-			factories:         set.Factories,
-			buildInfo:         set.BuildInfo,
-			asyncErrorChannel: set.AsyncErrorChannel,
-		},
+		buildInfo:            set.BuildInfo,
+		config:               set.Config,
 		telemetryInitializer: set.telemetry,
 	}
 
@@ -70,6 +66,8 @@ func newService(set *settings) (*service, error) {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
+
+	srv.host = newServiceHost(set, srv.telemetrySettings)
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensionsAndPipeline(set); err != nil {
@@ -99,6 +97,11 @@ func (srv *service) Start(ctx context.Context) error {
 		return fmt.Errorf("cannot start pipelines: %w", err)
 	}
 
+	if err := srv.host.statusNotifications.SetPipelineStatus(status.PipelineReady); err != nil {
+		return fmt.Errorf("SetPipelineStatus failed: %w", err)
+	}
+
+	// TODO: remove usage of NotifyPipelineReady() and replace by the new status notifications.
 	if err := srv.host.extensions.NotifyPipelineReady(); err != nil {
 		return err
 	}
@@ -114,6 +117,11 @@ func (srv *service) Shutdown(ctx context.Context) error {
 	// Begin shutdown sequence.
 	srv.telemetrySettings.Logger.Info("Starting shutdown...")
 
+	if err := srv.host.statusNotifications.SetPipelineStatus(status.PipelineNotReady); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("SetPipelineStatus failed: %w", err))
+	}
+
+	// TODO: remove usage of NotifyPipelineNotReady() and replace by the new status notifications.
 	if err := srv.host.extensions.NotifyPipelineNotReady(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
@@ -131,6 +139,8 @@ func (srv *service) Shutdown(ctx context.Context) error {
 	if err := srv.telemetry.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
 	}
+
+	srv.host.statusNotifications.Shutdown()
 
 	// TODO: Shutdown MeterProvider.
 	return errs

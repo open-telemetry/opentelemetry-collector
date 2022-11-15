@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -32,16 +33,16 @@ var (
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
 	// Receivers is a map of ComponentID to Receivers.
-	Receivers map[component.ID]component.ReceiverConfig
+	Receivers map[id.ID]component.ReceiverConfig
 
 	// Exporters is a map of ComponentID to Exporters.
-	Exporters map[component.ID]component.ExporterConfig
+	Exporters map[id.ID]component.ExporterConfig
 
 	// Processors is a map of ComponentID to Processors.
-	Processors map[component.ID]component.ProcessorConfig
+	Processors map[id.ID]component.ProcessorConfig
 
 	// Extensions is a map of ComponentID to extensions.
-	Extensions map[component.ID]component.ExtensionConfig
+	Extensions map[id.ID]component.ExtensionConfig
 
 	Service ConfigService
 }
@@ -163,10 +164,10 @@ type ConfigService struct {
 	Telemetry telemetry.Config `mapstructure:"telemetry"`
 
 	// Extensions are the ordered list of extensions configured for the service.
-	Extensions []component.ID `mapstructure:"extensions"`
+	Extensions []id.ID `mapstructure:"extensions"`
 
 	// Pipelines are the set of data pipelines configured for the service.
-	Pipelines map[component.ID]*ConfigServicePipeline `mapstructure:"pipelines"`
+	Pipelines map[id.ID]*ConfigServicePipeline `mapstructure:"pipelines"`
 }
 
 type ConfigServicePipeline = config.Pipeline

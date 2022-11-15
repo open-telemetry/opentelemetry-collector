@@ -23,13 +23,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 func TestNewProcessorFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewProcessorSettings(component.NewID(typeStr))
+	defaultCfg := config.NewProcessorSettings(id.NewID(typeStr))
 	factory := component.NewProcessorFactory(
 		typeStr,
 		func() component.ProcessorConfig { return &defaultCfg })
@@ -45,7 +46,7 @@ func TestNewProcessorFactory(t *testing.T) {
 
 func TestNewProcessorFactory_WithOptions(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewProcessorSettings(component.NewID(typeStr))
+	defaultCfg := config.NewProcessorSettings(id.NewID(typeStr))
 	factory := component.NewProcessorFactory(
 		typeStr,
 		func() component.ProcessorConfig { return &defaultCfg },

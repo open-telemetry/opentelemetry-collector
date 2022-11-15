@@ -17,6 +17,7 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -213,7 +214,7 @@ func WithLogsExporter(createLogsExporter CreateLogsExporterFunc, sl StabilityLev
 }
 
 // NewExporterFactory returns a ExporterFactory.
-func NewExporterFactory(cfgType Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
+func NewExporterFactory(cfgType id.Type, createDefaultConfig ExporterCreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
 	f := &exporterFactory{
 		baseFactory:                     baseFactory{cfgType: cfgType},
 		ExporterCreateDefaultConfigFunc: createDefaultConfig,

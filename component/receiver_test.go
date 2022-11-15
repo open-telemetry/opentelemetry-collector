@@ -23,13 +23,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 func TestNewReceiverFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewReceiverSettings(component.NewID(typeStr))
+	defaultCfg := config.NewReceiverSettings(id.NewID(typeStr))
 	factory := component.NewReceiverFactory(
 		typeStr,
 		func() component.ReceiverConfig { return &defaultCfg })
@@ -45,7 +46,7 @@ func TestNewReceiverFactory(t *testing.T) {
 
 func TestNewReceiverFactory_WithOptions(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewReceiverSettings(component.NewID(typeStr))
+	defaultCfg := config.NewReceiverSettings(id.NewID(typeStr))
 	factory := component.NewReceiverFactory(
 		typeStr,
 		func() component.ReceiverConfig { return &defaultCfg },

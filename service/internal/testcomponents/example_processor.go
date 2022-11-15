@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -40,7 +41,7 @@ var ExampleProcessorFactory = component.NewProcessorFactory(
 // CreateDefaultConfig creates the default configuration for the Processor.
 func createDefaultConfig() component.ProcessorConfig {
 	return &ExampleProcessorConfig{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(procType)),
+		ProcessorSettings: config.NewProcessorSettings(id.NewID(procType)),
 	}
 }
 

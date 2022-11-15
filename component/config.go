@@ -15,11 +15,9 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/confmap"
 )
-
-// Type is the component type as it is used in the config.
-type Type string
 
 // validatable defines the interface for the configuration validation.
 type validatable interface {
@@ -29,7 +27,7 @@ type validatable interface {
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
 // collecting metrics, traces and logs, this can expand in the future.
-type DataType = Type
+type DataType = id.Type
 
 // Currently supported data types. Add new data types here when new types are supported in the future.
 const (

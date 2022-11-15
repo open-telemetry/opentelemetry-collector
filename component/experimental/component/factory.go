@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config/experimental/config"
 	"go.opentelemetry.io/collector/config/experimental/configsource"
 )
@@ -56,4 +57,4 @@ type ConfigSourceFactory interface {
 }
 
 // ConfigSourceFactories maps the type of a ConfigSource to the respective factory object.
-type ConfigSourceFactories map[component.Type]ConfigSourceFactory
+type ConfigSourceFactories map[id.Type]ConfigSourceFactory

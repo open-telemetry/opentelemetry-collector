@@ -18,11 +18,12 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
-const receiverType = component.Type("examplereceiver")
+const receiverType = id.Type("examplereceiver")
 
 // ExampleReceiverConfig config for ExampleReceiver.
 type ExampleReceiverConfig struct {
@@ -39,7 +40,7 @@ var ExampleReceiverFactory = component.NewReceiverFactory(
 
 func createReceiverDefaultConfig() component.ReceiverConfig {
 	return &ExampleReceiverConfig{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(receiverType)),
+		ReceiverSettings: config.NewReceiverSettings(id.NewID(receiverType)),
 	}
 }
 

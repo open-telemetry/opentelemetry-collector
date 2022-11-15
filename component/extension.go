@@ -17,6 +17,7 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -47,6 +48,7 @@ type Extension interface {
 // Collector that is to be implemented by extensions interested in changes to pipeline
 // states. Typically this will be used by extensions that change their behavior if data is
 // being ingested or not, e.g.: a k8s readiness probe.
+// Deprecated: [0.65.0] Use Host.RegisterStatusListener() instead.
 type PipelineWatcher interface {
 	// Ready notifies the Extension that all pipelines were built and the
 	// receivers were started, i.e.: the service is ready to receive data
@@ -117,7 +119,7 @@ func (ef *extensionFactory) ExtensionStability() StabilityLevel {
 
 // NewExtensionFactory returns a new ExtensionFactory  based on this configuration.
 func NewExtensionFactory(
-	cfgType Type,
+	cfgType id.Type,
 	createDefaultConfig ExtensionCreateDefaultConfigFunc,
 	createServiceExtension CreateExtensionFunc,
 	sl StabilityLevel) ExtensionFactory {

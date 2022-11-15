@@ -18,6 +18,7 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -25,23 +26,23 @@ import (
 const extensionsKeyName = "extensions"
 
 type Extensions struct {
-	exts map[component.ID]component.ExtensionConfig
+	exts map[id.ID]component.ExtensionConfig
 
-	factories map[component.Type]component.ExtensionFactory
+	factories map[id.Type]component.ExtensionFactory
 }
 
-func NewExtensions(factories map[component.Type]component.ExtensionFactory) *Extensions {
+func NewExtensions(factories map[id.Type]component.ExtensionFactory) *Extensions {
 	return &Extensions{factories: factories}
 }
 
 func (e *Extensions) Unmarshal(conf *confmap.Conf) error {
-	rawExts := make(map[component.ID]map[string]interface{})
+	rawExts := make(map[id.ID]map[string]interface{})
 	if err := conf.Unmarshal(&rawExts, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 
 	// Prepare resulting map.
-	e.exts = make(map[component.ID]component.ExtensionConfig)
+	e.exts = make(map[id.ID]component.ExtensionConfig)
 
 	// Iterate over extensions and create a config for each.
 	for id, value := range rawExts {
@@ -67,6 +68,6 @@ func (e *Extensions) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (e *Extensions) GetExtensions() map[component.ID]component.ExtensionConfig {
+func (e *Extensions) GetExtensions() map[id.ID]component.ExtensionConfig {
 	return e.exts
 }

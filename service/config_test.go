@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -113,7 +114,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-extension-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Service.Extensions = append(cfg.Service.Extensions, component.NewIDWithName("nop", "2"))
+				cfg.Service.Extensions = append(cfg.Service.Extensions, id.NewIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`service references extension "nop/2" which does not exist`),
@@ -122,8 +123,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-receiver-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
-				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "2"))
+				pipe := cfg.Service.Pipelines[id.NewID("traces")]
+				pipe.Receivers = append(pipe.Receivers, id.NewIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`pipeline "traces" references receiver "nop/2" which does not exist`),
@@ -132,8 +133,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-processor-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
-				pipe.Processors = append(pipe.Processors, component.NewIDWithName("nop", "2"))
+				pipe := cfg.Service.Pipelines[id.NewID("traces")]
+				pipe.Processors = append(pipe.Processors, id.NewIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`pipeline "traces" references processor "nop/2" which does not exist`),
@@ -142,8 +143,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-exporter-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
-				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
+				pipe := cfg.Service.Pipelines[id.NewID("traces")]
+				pipe.Exporters = append(pipe.Exporters, id.NewIDWithName("nop", "2"))
 				return cfg
 			},
 			expected: errors.New(`pipeline "traces" references exporter "nop/2" which does not exist`),
@@ -152,7 +153,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-receivers",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe := cfg.Service.Pipelines[id.NewID("traces")]
 				pipe.Receivers = nil
 				return cfg
 			},
@@ -162,7 +163,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "missing-pipeline-exporters",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe := cfg.Service.Pipelines[id.NewID("traces")]
 				pipe.Exporters = nil
 				return cfg
 			},
@@ -181,8 +182,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-receiver-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Receivers[component.NewID("nop")] = &nopRecvConfig{
-					ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
+				cfg.Receivers[id.NewID("nop")] = &nopRecvConfig{
+					ReceiverSettings: config.NewReceiverSettings(id.NewID("nop")),
 					validateErr:      errInvalidRecvConfig,
 				}
 				return cfg
@@ -193,8 +194,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-exporter-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Exporters[component.NewID("nop")] = &nopExpConfig{
-					ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
+				cfg.Exporters[id.NewID("nop")] = &nopExpConfig{
+					ExporterSettings: config.NewExporterSettings(id.NewID("nop")),
 					validateErr:      errInvalidExpConfig,
 				}
 				return cfg
@@ -205,8 +206,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-processor-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Processors[component.NewID("nop")] = &nopProcConfig{
-					ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
+				cfg.Processors[id.NewID("nop")] = &nopProcConfig{
+					ProcessorSettings: config.NewProcessorSettings(id.NewID("nop")),
 					validateErr:       errInvalidProcConfig,
 				}
 				return cfg
@@ -217,8 +218,8 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-extension-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Extensions[component.NewID("nop")] = &nopExtConfig{
-					ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
+				cfg.Extensions[id.NewID("nop")] = &nopExtConfig{
+					ExtensionSettings: config.NewExtensionSettings(id.NewID("nop")),
 					validateErr:       errInvalidExtConfig,
 				}
 				return cfg
@@ -229,10 +230,10 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Service.Pipelines[component.NewID("wrongtype")] = &ConfigServicePipeline{
-					Receivers:  []component.ID{component.NewID("nop")},
-					Processors: []component.ID{component.NewID("nop")},
-					Exporters:  []component.ID{component.NewID("nop")},
+				cfg.Service.Pipelines[id.NewID("wrongtype")] = &ConfigServicePipeline{
+					Receivers:  []id.ID{id.NewID("nop")},
+					Processors: []id.ID{id.NewID("nop")},
+					Exporters:  []id.ID{id.NewID("nop")},
 				}
 				return cfg
 			},
@@ -260,24 +261,24 @@ func TestConfigValidate(t *testing.T) {
 
 func generateConfig() *Config {
 	return &Config{
-		Receivers: map[component.ID]component.ReceiverConfig{
-			component.NewID("nop"): &nopRecvConfig{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
+		Receivers: map[id.ID]component.ReceiverConfig{
+			id.NewID("nop"): &nopRecvConfig{
+				ReceiverSettings: config.NewReceiverSettings(id.NewID("nop")),
 			},
 		},
-		Exporters: map[component.ID]component.ExporterConfig{
-			component.NewID("nop"): &nopExpConfig{
-				ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
+		Exporters: map[id.ID]component.ExporterConfig{
+			id.NewID("nop"): &nopExpConfig{
+				ExporterSettings: config.NewExporterSettings(id.NewID("nop")),
 			},
 		},
-		Processors: map[component.ID]component.ProcessorConfig{
-			component.NewID("nop"): &nopProcConfig{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
+		Processors: map[id.ID]component.ProcessorConfig{
+			id.NewID("nop"): &nopProcConfig{
+				ProcessorSettings: config.NewProcessorSettings(id.NewID("nop")),
 			},
 		},
-		Extensions: map[component.ID]component.ExtensionConfig{
-			component.NewID("nop"): &nopExtConfig{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
+		Extensions: map[id.ID]component.ExtensionConfig{
+			id.NewID("nop"): &nopExtConfig{
+				ExtensionSettings: config.NewExtensionSettings(id.NewID("nop")),
 			},
 		},
 		Service: ConfigService{
@@ -297,12 +298,12 @@ func generateConfig() *Config {
 					Address: ":8080",
 				},
 			},
-			Extensions: []component.ID{component.NewID("nop")},
-			Pipelines: map[component.ID]*ConfigServicePipeline{
-				component.NewID("traces"): {
-					Receivers:  []component.ID{component.NewID("nop")},
-					Processors: []component.ID{component.NewID("nop")},
-					Exporters:  []component.ID{component.NewID("nop")},
+			Extensions: []id.ID{id.NewID("nop")},
+			Pipelines: map[id.ID]*ConfigServicePipeline{
+				id.NewID("traces"): {
+					Receivers:  []id.ID{id.NewID("nop")},
+					Processors: []id.ID{id.NewID("nop")},
+					Exporters:  []id.ID{id.NewID("nop")},
 				},
 			},
 		},

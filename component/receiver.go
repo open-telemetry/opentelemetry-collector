@@ -17,6 +17,7 @@ package component // import "go.opentelemetry.io/collector/component"
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component/id"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -273,7 +274,7 @@ func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc, sl StabilityLev
 }
 
 // NewReceiverFactory returns a ReceiverFactory.
-func NewReceiverFactory(cfgType Type, createDefaultConfig ReceiverCreateDefaultConfigFunc, options ...ReceiverFactoryOption) ReceiverFactory {
+func NewReceiverFactory(cfgType id.Type, createDefaultConfig ReceiverCreateDefaultConfigFunc, options ...ReceiverFactoryOption) ReceiverFactory {
 	f := &receiverFactory{
 		baseFactory:                     baseFactory{cfgType: cfgType},
 		ReceiverCreateDefaultConfigFunc: createDefaultConfig,

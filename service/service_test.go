@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -26,6 +27,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/id"
+	"go.opentelemetry.io/collector/component/status"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -68,7 +71,7 @@ func TestServiceGetExtensions(t *testing.T) {
 	extMap := srv.host.GetExtensions()
 
 	assert.Len(t, extMap, 1)
-	assert.Contains(t, extMap, component.NewID("nop"))
+	assert.Contains(t, extMap, id.NewID("nop"))
 }
 
 func TestServiceGetExporters(t *testing.T) {
@@ -84,11 +87,11 @@ func TestServiceGetExporters(t *testing.T) {
 	expMap := srv.host.GetExporters()
 	assert.Len(t, expMap, 3)
 	assert.Len(t, expMap[component.DataTypeTraces], 1)
-	assert.Contains(t, expMap[component.DataTypeTraces], component.NewID("nop"))
+	assert.Contains(t, expMap[component.DataTypeTraces], id.NewID("nop"))
 	assert.Len(t, expMap[component.DataTypeMetrics], 1)
-	assert.Contains(t, expMap[component.DataTypeMetrics], component.NewID("nop"))
+	assert.Contains(t, expMap[component.DataTypeMetrics], id.NewID("nop"))
 	assert.Len(t, expMap[component.DataTypeLogs], 1)
-	assert.Contains(t, expMap[component.DataTypeLogs], component.NewID("nop"))
+	assert.Contains(t, expMap[component.DataTypeLogs], id.NewID("nop"))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
@@ -222,4 +225,93 @@ func createExampleService(t *testing.T, factories component.Factories) *service 
 		require.NoError(t, telemetry.shutdown())
 	})
 	return srv
+}
+
+func TestService_ReportStatus(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	srv := createExampleService(t, factories)
+	host := srv.host
+
+	var readyHandlerCalled, notReadyHandlerCalled, statusEventHandlerCalled bool
+
+	var statusEvent *status.ComponentEvent
+
+	statusEventHandler := func(ev *status.ComponentEvent) error {
+		statusEvent = ev
+		statusEventHandlerCalled = true
+		return nil
+	}
+
+	pipelineStatusHandler := func(s status.PipelineReadiness) error {
+		if s == status.PipelineReady {
+			readyHandlerCalled = true
+		} else {
+			notReadyHandlerCalled = true
+		}
+		return nil
+	}
+
+	unregister := host.RegisterStatusListener(
+		status.WithComponentEventHandler(statusEventHandler),
+		status.WithPipelineStatusHandler(pipelineStatusHandler),
+	)
+
+	assert.False(t, statusEventHandlerCalled)
+	assert.False(t, readyHandlerCalled)
+	assert.False(t, notReadyHandlerCalled)
+
+	assert.NoError(t, srv.Start(context.Background()))
+	assert.True(t, readyHandlerCalled)
+
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	expectedError := errors.New("an error")
+
+	ev, err := status.NewComponentEvent(
+		status.ComponentError,
+		status.WithError(expectedError),
+	)
+	assert.NoError(t, err)
+	host.ReportComponentStatus(ev)
+
+	assert.True(t, statusEventHandlerCalled)
+	assert.Equal(t, expectedError, statusEvent.Err())
+	assert.NotNil(t, statusEvent.Timestamp)
+	assert.NoError(t, unregister())
+}
+
+func TestService_ReportStatusWithBuggyHandler(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	srv := createExampleService(t, factories)
+	host := srv.host
+
+	var statusEventHandlerCalled bool
+
+	statusEventHandler := func(ev *status.ComponentEvent) error {
+		statusEventHandlerCalled = true
+		return errors.New("an error")
+	}
+
+	unregister := host.RegisterStatusListener(
+		status.WithComponentEventHandler(statusEventHandler),
+	)
+
+	assert.False(t, statusEventHandlerCalled)
+	assert.NoError(t, srv.Start(context.Background()))
+	t.Cleanup(func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	})
+
+	// SetComponentStatus handles errors in handlers (by logging) and does not surface them back to callers
+	ev, err := status.NewComponentEvent(
+		status.ComponentOK,
+	)
+	assert.NoError(t, err)
+	host.ReportComponentStatus(ev)
+	assert.True(t, statusEventHandlerCalled)
+	assert.NoError(t, unregister())
 }
