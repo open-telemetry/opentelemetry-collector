@@ -127,7 +127,6 @@ Here is a list of community roles with current and previous members:
 - Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
    - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
-   - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
    - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
    - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
@@ -145,6 +144,7 @@ Here is a list of community roles with current and previous members:
 
    - [Alex Boten](https://github.com/codeboten), Lightstep
    - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
+   - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
    - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 - Emeritus Maintainers:
