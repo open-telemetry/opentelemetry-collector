@@ -15,4 +15,4 @@ issues: [6186]
 # Use pipe (|) for multiline entries.
 subtext: |-
   The import path for the consumer module can now be accessed directly:
-    - `go.opentelemetry.io/collector/consumer
+    - `go.opentelemetry.io/collector/consumer`
