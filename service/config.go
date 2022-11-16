@@ -130,11 +130,18 @@ func (cfg *Config) validateService() error {
 		}
 
 		// Validate pipeline processor name references.
+		procSet := make(map[component.ID]bool, len(cfg.Processors))
 		for _, ref := range pipeline.Processors {
 			// Check that the name referenced in the pipeline's processors exists in the top-level processors.
 			if cfg.Processors[ref] == nil {
 				return fmt.Errorf("pipeline %q references processor %q which does not exist", pipelineID, ref)
 			}
+			// Ensure no processors are duplicated within the pipeline
+			if _, exists := procSet[ref]; exists {
+
+				return fmt.Errorf("pipeline %q references processor %q multiple times", pipelineID, ref)
+			}
+			procSet[ref] = true
 		}
 
 		// Validate pipeline has at least one exporter.

@@ -139,6 +139,16 @@ func TestConfigValidate(t *testing.T) {
 			expected: errors.New(`pipeline "traces" references processor "nop/2" which does not exist`),
 		},
 		{
+			name: "duplicate-processor-reference",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Processors = append(pipe.Processors, pipe.Processors...)
+				return cfg
+			},
+			expected: errors.New(`pipeline "traces" references processor "nop" multiple times`),
+		},
+		{
 			name: "invalid-exporter-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
