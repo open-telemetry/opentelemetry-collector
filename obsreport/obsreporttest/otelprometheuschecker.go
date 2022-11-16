@@ -158,6 +158,7 @@ func attributesForScraperMetrics(receiver component.ID, scraper component.ID) []
 		attribute.String(scraperTag.Name(), scraper.String()),
 	}
 }
+
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
 func attributesForReceiverMetrics(receiver component.ID, transport string) []attribute.KeyValue {
 	return []attribute.KeyValue{
