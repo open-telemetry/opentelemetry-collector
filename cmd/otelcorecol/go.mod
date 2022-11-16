@@ -63,7 +63,7 @@ require (
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/consumer v0.0.0-20221116212002-2454cfb9ab7f // indirect
 	go.opentelemetry.io/collector/pdata v0.64.1 // indirect
 	go.opentelemetry.io/collector/semconv v0.64.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4 // indirect
