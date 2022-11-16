@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 const (
@@ -56,7 +57,7 @@ func createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	level := set.MetricsLevel
-	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), level)
+	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), level, featuregate.GetRegistry())
 }
 
 func createMetricsProcessor(
@@ -66,7 +67,7 @@ func createMetricsProcessor(
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	level := set.MetricsLevel
-	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), level)
+	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), level, featuregate.GetRegistry())
 }
 
 func createLogsProcessor(
@@ -76,5 +77,5 @@ func createLogsProcessor(
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	level := set.MetricsLevel
-	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), level)
+	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), level, featuregate.GetRegistry())
 }
