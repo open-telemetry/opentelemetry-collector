@@ -176,11 +176,11 @@ func testBatchProcessorSentBySize(t *testing.T, tel testTelemetry, registry *fea
 	})
 }
 
-func TestBatchProcessorSentBySize_withMaxSize(t *testing.T) {
-	telemetryTest(t, testBatchProcessorSentBySize_withMaxSize)
+func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
+	telemetryTest(t, testBatchProcessorSentBySizeWithMaxSize)
 }
 
-func testBatchProcessorSentBySize_withMaxSize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
+func testBatchProcessorSentBySizeWithMaxSize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
@@ -348,11 +348,11 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	}
 }
 
-func TestBatchMetricProcessor_BatchSize(t *testing.T) {
-	telemetryTest(t, testBatchMetricProcessor_BatchSize)
+func TestBatchMetricProcessorBatchSize(t *testing.T) {
+	telemetryTest(t, testBatchMetricProcessorBatchSize)
 }
 
-func testBatchMetricProcessor_BatchSize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
+func testBatchMetricProcessorBatchSize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
 	sizer := &pmetric.ProtoMarshaler{}
 
 	// Instantiate the batch processor with low config values to test data
@@ -659,10 +659,10 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
-	telemetryTest(t, testBatchLogProcessor_BatchSize)
+	telemetryTest(t, testBatchLogProcessorBatchSize)
 }
 
-func testBatchLogProcessor_BatchSize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
+func testBatchLogProcessorBatchSize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
 	sizer := &plog.ProtoMarshaler{}
 
 	// Instantiate the batch processor with low config values to test data
