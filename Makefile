@@ -47,7 +47,7 @@ version:
 	@echo ${VERSION}
 
 .PHONY: all
-all: checklicense checkdoc misspell goimpi golint gotest
+all: checklicense checkdoc misspell goimpi goporto multimod-verify golint gotest
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -70,7 +70,7 @@ gotest-with-cover:
 	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
 .PHONY: goporto
-goporto:
+goporto: install-tools
 	porto -w --include-internal ./
 
 .PHONY: golint
@@ -78,7 +78,7 @@ golint:
 	@$(MAKE) for-all-target TARGET="lint"
 
 .PHONY: goimpi
-goimpi:
+goimpi: install-tools
 	@$(MAKE) for-all-target TARGET="impi"
 
 .PHONY: gofmt
@@ -465,9 +465,9 @@ checklinks:
 		markdown-link-check -q -c ./.github/workflows/check_links_config.json || true
 
 # error message "failed to sync logger:  sync /dev/stderr: inappropriate ioctl for device"
-# is a known issue but does not affect function. 
+# is a known issue but does not affect function.
 .PHONY: crosslink
-crosslink: 
+crosslink:
 	@echo "Executing crosslink"
 	crosslink --root=$(shell pwd) --prune
 
