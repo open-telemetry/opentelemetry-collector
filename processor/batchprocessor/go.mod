@@ -7,6 +7,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.64.1
 	go.opentelemetry.io/collector/component v0.0.0-20221115212826-19db2f15c85c
+	go.opentelemetry.io/collector/consumer v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v0.64.1
 	go.uber.org/zap v1.23.0
 )
@@ -46,3 +47,5 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/semconv => ../../semconv
 
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
+
+replace go.opentelemetry.io/collector/consumer => ../../consumer
