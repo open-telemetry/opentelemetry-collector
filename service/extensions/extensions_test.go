@@ -118,7 +118,7 @@ func newBadExtensionFactory() component.ExtensionFactory {
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {
 			return nil, nil
 		},
-		component.StabilityLevelInDevelopment,
+		component.StabilityLevelDevelopment,
 	)
 }
 
@@ -135,6 +135,6 @@ func newCreateErrorExtensionFactory() component.ExtensionFactory {
 		func(ctx context.Context, set component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
-		component.StabilityLevelInDevelopment,
+		component.StabilityLevelDevelopment,
 	)
 }

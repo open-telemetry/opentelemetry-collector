@@ -56,7 +56,7 @@ All the requirements defined for components in [the Collector's README](../READM
 applicable to the scraping receivers as well. In addition, the following rules applied specifically to scraping
 metrics receivers:
 
-### In development
+### Development
 
 The receiver is not ready for use. All the metrics emitted by the receiver are not finalized and can change in any way.
 

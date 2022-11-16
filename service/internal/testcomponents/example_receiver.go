@@ -33,9 +33,9 @@ type ExampleReceiverConfig struct {
 var ExampleReceiverFactory = component.NewReceiverFactory(
 	receiverType,
 	createReceiverDefaultConfig,
-	component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelInDevelopment),
-	component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelInDevelopment),
-	component.WithLogsReceiver(createLogsReceiver, component.StabilityLevelInDevelopment))
+	component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelDevelopment),
+	component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelDevelopment),
+	component.WithLogsReceiver(createLogsReceiver, component.StabilityLevelDevelopment))
 
 func createReceiverDefaultConfig() component.ReceiverConfig {
 	return &ExampleReceiverConfig{

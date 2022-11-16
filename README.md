@@ -71,7 +71,7 @@ we intend to provide high-quality components as part of this repository, we ackn
 for prime time. As such, each component should list its current stability level for each telemetry signal, according to
 the following definitions:
 
-### In development
+### Development
 
 Not all pieces of the component are in place yet and it might not be available as part of any distributions yet. Bugs and performance issues should be reported, but it is likely that the component owners might not give them much attention. Your feedback is still desired, especially when it comes to the user-experience (configuration options, component observability, technical implementation details, ...). Configuration options might break often depending on how things evolve. The component should not be used in production.
 

@@ -42,11 +42,11 @@ func TestNewExtensionFactory(t *testing.T) {
 		func(ctx context.Context, settings component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {
 			return nopExtensionInstance, nil
 		},
-		component.StabilityLevelInDevelopment)
+		component.StabilityLevelDevelopment)
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelInDevelopment, factory.ExtensionStability())
+	assert.Equal(t, component.StabilityLevelDevelopment, factory.ExtensionStability())
 	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
