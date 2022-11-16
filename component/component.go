@@ -124,20 +124,22 @@ const (
 
 func (sl StabilityLevel) String() string {
 	switch sl {
+	case StabilityLevelUndefined:
+		return "Undefined"
 	case StabilityLevelUnmaintained:
-		return "unmaintained"
+		return "Unmaintained"
 	case StabilityLevelDeprecated:
-		return "deprecated"
+		return "Deprecated"
 	case StabilityLevelInDevelopment:
-		return "in development"
+		return "In development"
 	case StabilityLevelAlpha:
-		return "alpha"
+		return "Alpha"
 	case StabilityLevelBeta:
-		return "beta"
+		return "Beta"
 	case StabilityLevelStable:
-		return "stable"
+		return "Stable"
 	}
-	return "undefined"
+	return ""
 }
 
 func (sl StabilityLevel) LogMessage() string {
