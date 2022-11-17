@@ -19,31 +19,6 @@ import (
 	"sync"
 )
 
-// RegistryOption allows for configuration additional information about a Gate that can be exposed throughout the application.
-type RegistryOption func(g *Gate)
-
-// WithRegisterDescription adds description for the Gate.
-func WithRegisterDescription(description string) RegistryOption {
-	return func(g *Gate) {
-		g.description = description
-	}
-}
-
-// WithRegisterReferenceURL adds an URL that has all the contextual information about the Gate.
-func WithRegisterReferenceURL(url string) RegistryOption {
-	return func(g *Gate) {
-		g.referenceURL = url
-	}
-}
-
-// WithRegisterRemovalVersion is used when the Gate is considered StageStable,
-// to inform users that referencing the gate is no longer needed.
-func WithRegisterRemovalVersion(version string) RegistryOption {
-	return func(g *Gate) {
-		g.removalVersion = version
-	}
-}
-
 var reg = NewRegistry()
 
 // GetRegistry returns the global Registry.
@@ -51,14 +26,55 @@ func GetRegistry() *Registry {
 	return reg
 }
 
+type Registry struct {
+	mu    sync.RWMutex
+	gates map[string]Gate
+}
+
 // NewRegistry returns a new empty Registry.
 func NewRegistry() *Registry {
 	return &Registry{gates: make(map[string]Gate)}
 }
 
-type Registry struct {
-	mu    sync.RWMutex
-	gates map[string]Gate
+// RegistryOption allows to configure additional information about a Gate during registration.
+type RegistryOption interface {
+	apply(g *Gate)
+}
+
+type registerOption struct {
+	applyFunc func(g *Gate)
+}
+
+func (ro registerOption) apply(g *Gate) {
+	ro.applyFunc(g)
+}
+
+// WithRegisterDescription adds description for the Gate.
+func WithRegisterDescription(description string) RegistryOption {
+	return registerOption{
+		applyFunc: func(g *Gate) {
+			g.description = description
+		},
+	}
+}
+
+// WithRegisterReferenceURL adds an URL that has all the contextual information about the Gate.
+func WithRegisterReferenceURL(url string) RegistryOption {
+	return registerOption{
+		applyFunc: func(g *Gate) {
+			g.referenceURL = url
+		},
+	}
+}
+
+// WithRegisterRemovalVersion is used when the Gate is considered StageStable,
+// to inform users that referencing the gate is no longer needed.
+func WithRegisterRemovalVersion(version string) RegistryOption {
+	return registerOption{
+		applyFunc: func(g *Gate) {
+			g.removalVersion = version
+		},
+	}
 }
 
 // Apply a configuration in the form of a map of Gate identifiers to boolean values.
@@ -106,7 +122,7 @@ func (r *Registry) RegisterID(id string, stage Stage, opts ...RegistryOption) er
 		stage: stage,
 	}
 	for _, opt := range opts {
-		opt(&g)
+		opt.apply(&g)
 	}
 	switch g.stage {
 	case StageAlpha:
