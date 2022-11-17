@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -50,10 +49,10 @@ func TestNewBuildSubCommand(t *testing.T) {
 
 	ExpectedYamlStruct := componentsOutput{
 		BuildInfo:  component.NewDefaultBuildInfo(),
-		Receivers:  []config.Type{"nop"},
-		Processors: []config.Type{"nop"},
-		Exporters:  []config.Type{"nop"},
-		Extensions: []config.Type{"nop"},
+		Receivers:  []component.Type{"nop"},
+		Processors: []component.Type{"nop"},
+		Exporters:  []component.Type{"nop"},
+		Extensions: []component.Type{"nop"},
 	}
 	ExpectedOutput, err := yaml.Marshal(ExpectedYamlStruct)
 	require.NoError(t, err)
