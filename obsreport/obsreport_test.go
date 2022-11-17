@@ -52,13 +52,13 @@ type testParams struct {
 	err   error
 }
 
-func testTelemetry(t *testing.T, testFunc func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry)) {
+func testTelemetry(t *testing.T, testFunc func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry)) {
 	t.Run("WithOC", func(t *testing.T) {
 		tt, err := obsreporttest.SetupTelemetry()
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(tt, featuregate.NewRegistry())
+		testFunc(t, tt, featuregate.NewRegistry())
 	})
 
 	t.Run("WithOTel", func(t *testing.T) {
@@ -70,12 +70,12 @@ func testTelemetry(t *testing.T, testFunc func(tt obsreporttest.TestTelemetry, r
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(tt, registry)
+		testFunc(t, tt, registry)
 	})
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -122,7 +122,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -170,7 +170,7 @@ func TestReceiveLogsOp(t *testing.T) {
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -219,64 +219,66 @@ func TestReceiveMetricsOp(t *testing.T) {
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
-		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
-		defer parentSpan.End()
+	testTelemetry(t, testScrapeMetricsDataOp)
+}
 
-		params := []testParams{
-			{items: 23, err: partialErrFake},
-			{items: 29, err: errFake},
-			{items: 15, err: nil},
+func testScrapeMetricsDataOp(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	defer parentSpan.End()
+
+	params := []testParams{
+		{items: 23, err: partialErrFake},
+		{items: 29, err: errFake},
+		{items: 15, err: nil},
+	}
+	for i := range params {
+		scrp, err := newScraper(ScraperSettings{
+			ReceiverID:             receiver,
+			Scraper:                scraper,
+			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
+		}, registry)
+		require.NoError(t, err)
+		ctx := scrp.StartMetricsOp(parentCtx)
+		assert.NotNil(t, ctx)
+		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
+	}
+
+	spans := tt.SpanRecorder.Ended()
+	require.Equal(t, len(params), len(spans))
+
+	var scrapedMetricPoints, erroredMetricPoints int
+	for i, span := range spans {
+		assert.Equal(t, "scraper/"+receiver.String()+"/"+scraper.String()+"/MetricsScraped", span.Name())
+		switch {
+		case params[i].err == nil:
+			scrapedMetricPoints += params[i].items
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(0)})
+			assert.Equal(t, codes.Unset, span.Status().Code)
+		case errors.Is(params[i].err, errFake):
+			erroredMetricPoints += params[i].items
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(0)})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
+
+		case errors.Is(params[i].err, partialErrFake):
+			scrapedMetricPoints += params[i].items
+			erroredMetricPoints++
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
+			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(1)})
+			assert.Equal(t, codes.Error, span.Status().Code)
+			assert.Equal(t, params[i].err.Error(), span.Status().Description)
+		default:
+			t.Fatalf("unexpected err param: %v", params[i].err)
 		}
-		for i := range params {
-			scrp, err := newScraper(ScraperSettings{
-				ReceiverID:             receiver,
-				Scraper:                scraper,
-				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
-			}, registry)
-			require.NoError(t, err)
-			ctx := scrp.StartMetricsOp(parentCtx)
-			assert.NotNil(t, ctx)
-			scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
-		}
+	}
 
-		spans := tt.SpanRecorder.Ended()
-		require.Equal(t, len(params), len(spans))
-
-		var scrapedMetricPoints, erroredMetricPoints int
-		for i, span := range spans {
-			assert.Equal(t, "scraper/"+receiver.String()+"/"+scraper.String()+"/MetricsScraped", span.Name())
-			switch {
-			case params[i].err == nil:
-				scrapedMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(0)})
-				assert.Equal(t, codes.Unset, span.Status().Code)
-			case errors.Is(params[i].err, errFake):
-				erroredMetricPoints += params[i].items
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(0)})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				assert.Equal(t, codes.Error, span.Status().Code)
-				assert.Equal(t, params[i].err.Error(), span.Status().Description)
-
-			case errors.Is(params[i].err, partialErrFake):
-				scrapedMetricPoints += params[i].items
-				erroredMetricPoints++
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ScrapedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
-				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.ErroredMetricPointsKey, Value: attribute.Int64Value(1)})
-				assert.Equal(t, codes.Error, span.Status().Code)
-				assert.Equal(t, params[i].err.Error(), span.Status().Description)
-			default:
-				t.Fatalf("unexpected err param: %v", params[i].err)
-			}
-		}
-
-		require.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
-	})
+	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
 }
 
 func TestExportTraceDataOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -325,7 +327,7 @@ func TestExportTraceDataOp(t *testing.T) {
 }
 
 func TestExportMetricsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -374,7 +376,7 @@ func TestExportMetricsOp(t *testing.T) {
 }
 
 func TestExportLogsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
