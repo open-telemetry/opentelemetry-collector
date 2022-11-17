@@ -27,7 +27,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opentelemetry.io/collector/consumer v0.0.0-20221116212002-2454cfb9ab7f // indirect
-	go.opentelemetry.io/collector/featuregate v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737 // indirect
 	go.opentelemetry.io/collector/pdata v0.64.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
