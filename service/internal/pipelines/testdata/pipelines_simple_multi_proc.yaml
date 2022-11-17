@@ -3,6 +3,7 @@ receivers:
 
 processors:
   exampleprocessor:
+  exampleprocessor/1:
 
 exporters:
   exampleexporter:
@@ -11,15 +12,15 @@ service:
   pipelines:
     traces:
       receivers: [examplereceiver]
-      processors: [exampleprocessor, exampleprocessor]
+      processors: [exampleprocessor, exampleprocessor/1]
       exporters: [exampleexporter]
 
     metrics:
       receivers: [examplereceiver]
-      processors: [exampleprocessor, exampleprocessor]
+      processors: [exampleprocessor, exampleprocessor/1]
       exporters: [exampleexporter]
 
     logs:
       receivers: [examplereceiver]
-      processors: [exampleprocessor, exampleprocessor]
+      processors: [exampleprocessor, exampleprocessor/1]
       exporters: [exampleexporter]

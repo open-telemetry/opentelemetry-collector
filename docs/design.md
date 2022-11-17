@@ -149,6 +149,8 @@ When the Collector loads this config the result will look like this:
 
 Note that each `batch` processor is an independent instance, although both are configured the same way, i.e. each have a `send_batch_size` of 10000.
 
+The same name of the processor MUST NOT be referenced multiple times in the `processors` key of a single pipeline.
+
 ## <a name="opentelemetry-agent"></a>Running as an Agent
 
 On a typical VM/container, there are user applications running in some
