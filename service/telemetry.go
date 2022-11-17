@@ -244,7 +244,10 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 	}
 
 	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
-	exporter, err := otelprom.New(otelprom.WithRegisterer(wrappedRegisterer))
+	// We can remove `otelprom.WithoutUnits()` when the otel-go start exposing prometheus metrics using the OpenMetrics format
+	// which includes metric units that prometheusreceiver uses to trim unit's suffixes from metric names.
+	// https://github.com/open-telemetry/opentelemetry-go/issues/3468
+	exporter, err := otelprom.New(otelprom.WithRegisterer(wrappedRegisterer), otelprom.WithoutUnits())
 	if err != nil {
 		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
