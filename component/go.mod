@@ -25,6 +25,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
@@ -39,6 +40,8 @@ require (
 replace go.opentelemetry.io/collector => ../
 
 replace go.opentelemetry.io/collector/consumer => ../consumer
+
+replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/pdata => ../pdata
 

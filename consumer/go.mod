@@ -36,3 +36,5 @@ replace go.opentelemetry.io/collector/processor/batchprocessor => ../processor/b
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/zpagesextension
 
 replace go.opentelemetry.io/collector/component => ../component
+
+replace go.opentelemetry.io/collector/featuregate => ../featuregate
