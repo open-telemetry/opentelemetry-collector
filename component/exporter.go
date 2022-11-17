@@ -24,10 +24,7 @@ import (
 // ExporterConfig is the configuration of a component.Exporter. Specific Exporter must implement
 // this interface and must embed config.ExporterSettings struct or a struct that extends it.
 type ExporterConfig interface {
-	identifiable
-	validatable
-
-	privateConfigExporter()
+	Config
 }
 
 // UnmarshalExporterConfig helper function to unmarshal an ExporterConfig.

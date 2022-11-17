@@ -45,7 +45,7 @@ func (rs *ReceiverSettings) SetIDName(idName string) {
 	rs.id = component.NewIDWithName(rs.id.Type(), idName)
 }
 
-// Validate validates the configuration and returns an error if invalid.
+// Deprecated: [v0.65.0] use component.ValidateConfig.
 func (rs *ReceiverSettings) Validate() error {
 	return nil
 }

@@ -23,10 +23,7 @@ import (
 // ExtensionConfig is the configuration of a component.Extension. Specific Extension must implement
 // this interface and must embed config.ExtensionSettings struct or a struct that extends it.
 type ExtensionConfig interface {
-	identifiable
-	validatable
-
-	privateConfigExtension()
+	Config
 }
 
 // UnmarshalExtensionConfig helper function to unmarshal an ExtensionConfig.

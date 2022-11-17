@@ -24,10 +24,7 @@ import (
 // ReceiverConfig is the configuration of a component.Receiver. Specific Extension must implement
 // this interface and must embed ReceiverSettings struct or a struct that extends it.
 type ReceiverConfig interface {
-	identifiable
-	validatable
-
-	privateConfigReceiver()
+	Config
 }
 
 // UnmarshalReceiverConfig helper function to unmarshal a ReceiverConfig.

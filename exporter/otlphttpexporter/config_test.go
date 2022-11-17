@@ -37,7 +37,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalExporterConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	// Default/Empty config is invalid.
-	assert.Error(t, cfg.Validate())
+	assert.Error(t, component.ValidateConfig(cfg))
 }
 
 func TestUnmarshalConfig(t *testing.T) {

@@ -45,7 +45,7 @@ func (ps *ProcessorSettings) SetIDName(idName string) {
 	ps.id = component.NewIDWithName(ps.id.Type(), idName)
 }
 
-// Validate validates the configuration and returns an error if invalid.
+// Deprecated: [v0.65.0] use component.ValidateConfig.
 func (ps *ProcessorSettings) Validate() error {
 	return nil
 }

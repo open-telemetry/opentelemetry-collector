@@ -60,7 +60,7 @@ func (cfg *Config) Validate() error {
 
 	// Validate the receiver configuration.
 	for recvID, recvCfg := range cfg.Receivers {
-		if err := recvCfg.Validate(); err != nil {
+		if err := component.ValidateConfig(recvCfg); err != nil {
 			return fmt.Errorf("receiver %q has invalid configuration: %w", recvID, err)
 		}
 	}
@@ -73,21 +73,21 @@ func (cfg *Config) Validate() error {
 
 	// Validate the exporter configuration.
 	for expID, expCfg := range cfg.Exporters {
-		if err := expCfg.Validate(); err != nil {
+		if err := component.ValidateConfig(expCfg); err != nil {
 			return fmt.Errorf("exporter %q has invalid configuration: %w", expID, err)
 		}
 	}
 
 	// Validate the processor configuration.
 	for procID, procCfg := range cfg.Processors {
-		if err := procCfg.Validate(); err != nil {
+		if err := component.ValidateConfig(procCfg); err != nil {
 			return fmt.Errorf("processor %q has invalid configuration: %w", procID, err)
 		}
 	}
 
 	// Validate the extension configuration.
 	for extID, extCfg := range cfg.Extensions {
-		if err := extCfg.Validate(); err != nil {
+		if err := component.ValidateConfig(extCfg); err != nil {
 			return fmt.Errorf("extension %q has invalid configuration: %w", extID, err)
 		}
 	}
