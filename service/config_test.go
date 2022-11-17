@@ -67,6 +67,16 @@ type nopExtConfig struct {
 	validateErr error
 }
 
+type nopExtConfigWithChildStruct struct {
+	config.ExtensionSettings
+	ChildWithError nopExtConfig
+}
+
+type nopExtConfigWithChildArray struct {
+	config.ExtensionSettings
+	ChildWithError []nopExtConfig
+}
+
 func (nc *nopExtConfig) Validate() error {
 	return nc.validateErr
 }
@@ -234,6 +244,36 @@ func TestConfigValidate(t *testing.T) {
 				return cfg
 			},
 			expected: fmt.Errorf(`extension "nop" has invalid configuration: %w`, errInvalidExtConfig),
+		},
+		{
+			name: "invalid-struct-children-of-extension-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Extensions[component.NewID("nop")] = &nopExtConfigWithChildStruct{
+					ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
+					ChildWithError: nopExtConfig{
+						validateErr: errInvalidExtConfig,
+					},
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`extension "nop" has invalid configuration in "ChildWithError": %w`, errInvalidExtConfig),
+		},
+		{
+			name: "invalid-array-children-of-extension-config",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				cfg.Extensions[component.NewID("nop")] = &nopExtConfigWithChildArray{
+					ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
+					ChildWithError: []nopExtConfig{
+						{
+							validateErr: errInvalidExtConfig,
+						},
+					},
+				}
+				return cfg
+			},
+			expected: fmt.Errorf(`extension "nop" has invalid configuration in "ChildWithError[0]": %w`, errInvalidExtConfig),
 		},
 		{
 			name: "invalid-service-pipeline-type",

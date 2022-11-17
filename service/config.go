@@ -17,6 +17,7 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -76,12 +77,18 @@ func (cfg *Config) Validate() error {
 		if err := component.ValidateConfig(expCfg); err != nil {
 			return fmt.Errorf("exporter %q has invalid configuration: %w", expID, err)
 		}
+		if structName, err := callAllValidateMethods(reflect.ValueOf(expCfg)); err != nil {
+			return fmt.Errorf("exporter %q has invalid configuration in %q: %w", expID, structName, err)
+		}
 	}
 
 	// Validate the processor configuration.
 	for procID, procCfg := range cfg.Processors {
 		if err := component.ValidateConfig(procCfg); err != nil {
 			return fmt.Errorf("processor %q has invalid configuration: %w", procID, err)
+		}
+		if structName, err := callAllValidateMethods(reflect.ValueOf(procCfg)); err != nil {
+			return fmt.Errorf("processor %q has invalid configuration in %q: %w", procID, structName, err)
 		}
 	}
 
@@ -90,9 +97,76 @@ func (cfg *Config) Validate() error {
 		if err := component.ValidateConfig(extCfg); err != nil {
 			return fmt.Errorf("extension %q has invalid configuration: %w", extID, err)
 		}
+		if structName, err := callAllValidateMethods(reflect.ValueOf(extCfg)); err != nil {
+			return fmt.Errorf("extension %q has invalid configuration in %q: %w", extID, structName, err)
+		}
 	}
 
 	return cfg.validateService()
+}
+
+// Go through each nested structure in the given structure and call its Validate method.
+// the Validate method of r has already been checked, only need to check its children
+func callAllValidateMethods(r reflect.Value) (string, error) {
+	invokeValidate := func(r reflect.Value) error {
+		if _, ok := r.Interface().(component.ConfigValidator); ok {
+			output := r.MethodByName("Validate").Call([]reflect.Value{})
+			if len(output) > 0 {
+				returnVal := output[0].Interface()
+				if returnVal != nil {
+					return returnVal.(error)
+				}
+			}
+		}
+		return nil
+	}
+
+	joinPathElements := func(head, rest string) string {
+		switch {
+		case rest == "":
+			return head
+		case rest[0:1] == "[":
+			return head + rest
+		default:
+			return head + "." + rest
+		}
+	}
+
+	switch r.Kind() {
+	case reflect.Ptr:
+		// If it's a pointer, follow to its value
+		return callAllValidateMethods(r.Elem())
+	case reflect.Struct:
+		// If it's a struct, first check if it already has a Validate method.
+		// If it fails, not need to check further
+		// TODO: if a Validate method exists and returns nil, should we refrain from checking its children?
+		if r.CanAddr() {
+			rp := r.Addr()
+			if rp.CanInterface() {
+				err := invokeValidate(rp)
+				if err != nil {
+					return "", err
+				}
+			}
+		}
+		// Next, recurse into the struct's fields to check validity
+		for i := 0; i < r.Type().NumField(); i++ {
+			structField := r.Type().Field(i)
+			if childName, err := callAllValidateMethods(r.Field(i)); err != nil {
+				return joinPathElements(structField.Name, childName), err
+			}
+		}
+
+	case reflect.Slice, reflect.Array:
+		// If it's an array, simply iterate through the elements looking for an error
+		for i := 0; i < r.Len(); i++ {
+			elem := r.Index(i)
+			if childName, err := callAllValidateMethods(elem); err != nil {
+				return joinPathElements(fmt.Sprintf("[%d]", i), childName), err
+			}
+		}
+	}
+	return "", nil
 }
 
 func (cfg *Config) validateService() error {
