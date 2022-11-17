@@ -52,13 +52,13 @@ type testParams struct {
 	err   error
 }
 
-func testTelemetry(t *testing.T, testFunc func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry)) {
+func testTelemetry(t *testing.T, testFunc func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry)) {
 	t.Run("WithOC", func(t *testing.T) {
 		tt, err := obsreporttest.SetupTelemetry()
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(tt, featuregate.NewRegistry())
+		testFunc(t, tt, featuregate.NewRegistry())
 	})
 
 	t.Run("WithOTel", func(t *testing.T) {
@@ -70,12 +70,12 @@ func testTelemetry(t *testing.T, testFunc func(tt obsreporttest.TestTelemetry, r
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(tt, registry)
+		testFunc(t, tt, registry)
 	})
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -122,7 +122,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -170,7 +170,7 @@ func TestReceiveLogsOp(t *testing.T) {
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -219,10 +219,10 @@ func TestReceiveMetricsOp(t *testing.T) {
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, testScrapeMetricsDataOp)
+}
 
+func testScrapeMetricsDataOp(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
@@ -232,12 +232,12 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		scrp, serr := NewScraper(ScraperSettings{
+		scrp, err := newScraper(ScraperSettings{
 			ReceiverID:             receiver,
 			Scraper:                scraper,
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
-		})
-		require.NoError(t, serr)
+		}, registry)
+		require.NoError(t, err)
 		ctx := scrp.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
@@ -278,7 +278,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 }
 
 func TestExportTraceDataOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -327,7 +327,7 @@ func TestExportTraceDataOp(t *testing.T) {
 }
 
 func TestExportMetricsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -376,7 +376,7 @@ func TestExportMetricsOp(t *testing.T) {
 }
 
 func TestExportLogsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 

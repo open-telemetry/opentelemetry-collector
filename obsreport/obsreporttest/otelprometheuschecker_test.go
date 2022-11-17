@@ -47,6 +47,7 @@ func TestPromChecker(t *testing.T) {
 	pc, err := newStubPromChecker()
 	require.NoError(t, err)
 
+	scraper := component.NewID("fakeScraper")
 	receiver := component.NewID("fakeReceiver")
 	exporter := component.NewID("fakeExporter")
 	transport := "fakeTransport"
@@ -74,6 +75,11 @@ func TestPromChecker(t *testing.T) {
 	assert.Error(t,
 		pc.checkCounter("gauge_metric", 49, nil),
 		"invalid metric type should return error",
+	)
+
+	assert.NoError(t,
+		pc.checkScraperMetrics(receiver, scraper, 7, 41),
+		"metrics from Scraper Metrics should be valid",
 	)
 
 	assert.NoError(t,

@@ -34,6 +34,13 @@ type prometheusChecker struct {
 	promHandler http.Handler
 }
 
+func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
+	scraperAttrs := attributesForScraperMetrics(receiver, scraper)
+	return multierr.Combine(
+		pc.checkCounter("scraper_scraped_metric_points", scrapedMetricPoints, scraperAttrs),
+		pc.checkCounter("scraper_errored_metric_points", erroredMetricPoints, scraperAttrs))
+}
+
 func (pc *prometheusChecker) checkReceiverTraces(receiver component.ID, protocol string, acceptedSpans, droppedSpans int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
@@ -143,6 +150,13 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 
 	var parser expfmt.TextParser
 	return parser.TextToMetricFamilies(rr.Body)
+}
+
+func attributesForScraperMetrics(receiver component.ID, scraper component.ID) []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String(receiverTag.Name(), receiver.String()),
+		attribute.String(scraperTag.Name(), scraper.String()),
+	}
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.

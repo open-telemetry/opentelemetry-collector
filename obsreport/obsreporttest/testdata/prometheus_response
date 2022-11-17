@@ -34,6 +34,12 @@ receiver_refused_metric_points{receiver="fakeReceiver",transport="fakeTransport"
 # HELP receiver_refused_spans Number of spans that could not be pushed into the pipeline.
 # TYPE receiver_refused_spans counter
 receiver_refused_spans{receiver="fakeReceiver",transport="fakeTransport"} 13
+# HELP scraper_scraped_metric_points Number of metric points successfully scraped.
+# TYPE scraper_scraped_metric_points counter
+scraper_scraped_metric_points{receiver="fakeReceiver",scraper="fakeScraper"} 7
+# HELP scraper_errored_metric_points Number of metric points that were unable to be scraped.
+# TYPE scraper_errored_metric_points counter
+scraper_errored_metric_points{receiver="fakeReceiver",scraper="fakeScraper"} 41
 # HELP gauge_metric A simple gauge metric
 # TYPE gauge_metric gauge
 gauge_metric 49
