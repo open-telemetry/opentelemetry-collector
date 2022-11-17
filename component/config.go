@@ -18,14 +18,33 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// Type is the component type as it is used in the config.
-type Type string
+type Config interface {
+	identifiable
+	// Deprecated: [v0.65.0] use component.ValidateConfig.
+	Validate() error
 
-// validatable defines the interface for the configuration validation.
-type validatable interface {
-	// Validate validates the configuration and returns an error if invalid.
+	privateConfig()
+}
+
+// ConfigValidator defines an optional interface for configurations to implement to do validation.
+type ConfigValidator interface {
+	// Validate the configuration and returns an error if invalid.
 	Validate() error
 }
+
+// ValidateConfig validates a config, by doing this:
+//   - Call Validate on the config itself if the config implements ConfigValidator.
+func ValidateConfig(cfg Config) error {
+	validator, ok := cfg.(ConfigValidator)
+	if !ok {
+		return nil
+	}
+
+	return validator.Validate()
+}
+
+// Type is the component type as it is used in the config.
+type Type string
 
 // DataType is a special Type that represents the data types supported by the collector. We currently support
 // collecting metrics, traces and logs, this can expand in the future.

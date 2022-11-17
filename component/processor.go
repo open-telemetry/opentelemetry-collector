@@ -24,10 +24,7 @@ import (
 // ProcessorConfig is the configuration of a component.Processor. Specific Processor must implement
 // this interface and must embed ProcessorSettings struct or a struct that extends it.
 type ProcessorConfig interface {
-	identifiable
-	validatable
-
-	privateConfigProcessor()
+	Config
 }
 
 // UnmarshalProcessorConfig helper function to unmarshal a ProcessorConfig.
