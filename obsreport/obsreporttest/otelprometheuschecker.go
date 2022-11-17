@@ -34,7 +34,7 @@ type prometheusChecker struct {
 	promHandler http.Handler
 }
 
-func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error{
+func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	scraperAttrs := attributesForScraperMetrics(receiver, scraper)
 	return multierr.Combine(
 		pc.checkCounter("scraper_scraped_metric_points", scrapedMetricPoints, scraperAttrs),

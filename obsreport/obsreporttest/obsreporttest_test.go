@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	scraper = component.NewID("fakeScraper")
+	scraper  = component.NewID("fakeScraper")
 	receiver = component.NewID("fakeReicever")
 	exporter = component.NewID("fakeExporter")
 )
