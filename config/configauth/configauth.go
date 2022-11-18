@@ -35,7 +35,7 @@ type Authentication struct {
 
 // GetServerAuthenticator attempts to select the appropriate ServerAuthenticator from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.
-func (a Authentication) GetServerAuthenticator(extensions map[component.ID]component.Extension) (ServerAuthenticator, error) {
+func (a Authentication) GetServerAuthenticator(extensions map[component.ID]component.Component) (ServerAuthenticator, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if auth, ok := ext.(ServerAuthenticator); ok {
 			return auth, nil
@@ -49,7 +49,7 @@ func (a Authentication) GetServerAuthenticator(extensions map[component.ID]compo
 // GetClientAuthenticator attempts to select the appropriate ClientAuthenticator from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by HTTP clients.
-func (a Authentication) GetClientAuthenticator(extensions map[component.ID]component.Extension) (ClientAuthenticator, error) {
+func (a Authentication) GetClientAuthenticator(extensions map[component.ID]component.Component) (ClientAuthenticator, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if auth, ok := ext.(ClientAuthenticator); ok {
 			return auth, nil

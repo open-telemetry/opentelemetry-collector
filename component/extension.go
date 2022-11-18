@@ -36,9 +36,7 @@ func UnmarshalExtensionConfig(conf *confmap.Conf, cfg ExtensionConfig) error {
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
-type Extension interface {
-	Component
-}
+type Extension = Component
 
 // PipelineWatcher is an extra interface for Extension hosted by the OpenTelemetry
 // Collector that is to be implemented by extensions interested in changes to pipeline

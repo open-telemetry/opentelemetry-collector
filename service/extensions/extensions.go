@@ -83,8 +83,8 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	return errs
 }
 
-func (bes *Extensions) GetExtensions() map[component.ID]component.Extension {
-	result := make(map[component.ID]component.Extension, len(bes.extMap))
+func (bes *Extensions) GetExtensions() map[component.ID]component.Component {
+	result := make(map[component.ID]component.Component, len(bes.extMap))
 	for extID, v := range bes.extMap {
 		result[extID] = v
 	}

@@ -52,10 +52,10 @@ func (host *serviceHost) GetFactory(kind component.Kind, componentType component
 	return nil
 }
 
-func (host *serviceHost) GetExtensions() map[component.ID]component.Extension {
+func (host *serviceHost) GetExtensions() map[component.ID]component.Component {
 	return host.extensions.GetExtensions()
 }
 
-func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
+func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return host.pipelines.GetExporters()
 }

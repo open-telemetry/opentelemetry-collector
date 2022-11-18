@@ -72,9 +72,8 @@ func UnmarshalReceiverConfig(conf *confmap.Conf, cfg ReceiverConfig) error {
 //
 // This ensures there are strong delivery guarantees once the data is acknowledged
 // by the Collector.
-type Receiver interface {
-	Component
-}
+// Deprecated: [v0.65.0] unnecessary interface, will be removed.
+type Receiver = Component
 
 // A TracesReceiver receives traces.
 // Its purpose is to translate data from any format to the collector's internal trace format.
@@ -82,7 +81,7 @@ type Receiver interface {
 //
 // For example it could be Zipkin data source which translates Zipkin spans into ptrace.Traces.
 type TracesReceiver interface {
-	Receiver
+	Component
 }
 
 // A MetricsReceiver receives metrics.
@@ -91,7 +90,7 @@ type TracesReceiver interface {
 //
 // For example it could be Prometheus data source which translates Prometheus metrics into pmetric.Metrics.
 type MetricsReceiver interface {
-	Receiver
+	Component
 }
 
 // A LogsReceiver receives logs.
@@ -100,7 +99,7 @@ type MetricsReceiver interface {
 //
 // For example a LogsReceiver can read syslogs and convert them into plog.Logs.
 type LogsReceiver interface {
-	Receiver
+	Component
 }
 
 // ReceiverCreateSettings configures Receiver creators.

@@ -34,26 +34,24 @@ func UnmarshalExporterConfig(conf *confmap.Conf, cfg ExporterConfig) error {
 	return unmarshal(conf, cfg)
 }
 
-// Exporter exports telemetry data from the collector to a destination.
-type Exporter interface {
-	Component
-}
+// Deprecated: [v0.65.0] unnecessary interface, will be removed.
+type Exporter = Component
 
 // TracesExporter is an Exporter that can consume traces.
 type TracesExporter interface {
-	Exporter
+	Component
 	consumer.Traces
 }
 
 // MetricsExporter is an Exporter that can consume metrics.
 type MetricsExporter interface {
-	Exporter
+	Component
 	consumer.Metrics
 }
 
 // LogsExporter is an Exporter that can consume logs.
 type LogsExporter interface {
-	Exporter
+	Component
 	consumer.Logs
 }
 

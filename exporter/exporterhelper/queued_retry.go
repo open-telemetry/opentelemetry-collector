@@ -127,7 +127,7 @@ func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg Queue
 	return qrs
 }
 
-func getStorageExtension(extensions map[component.ID]component.Extension, storageID component.ID) (storage.Extension, error) {
+func getStorageExtension(extensions map[component.ID]component.Component, storageID component.ID) (storage.Extension, error) {
 	if ext, found := extensions[storageID]; found {
 		if storageExt, ok := ext.(storage.Extension); ok {
 			return storageExt, nil
