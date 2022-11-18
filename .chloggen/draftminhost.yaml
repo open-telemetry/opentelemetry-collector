@@ -5,7 +5,7 @@ change_type: enhancement
 component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: component.Extension will be reverted to not be an alias. Change your `component.Host` implementation.
+note: "`component.Extension` is temporarily set to be an alias of `component.Component` which will be reverted once it's moved to the `extension` package. Change your `component.Host.GetExtensions()` implementation to return `map[ID]component.Component` instead of `map[ID]component.Extension`"
 
 # One or more tracking issues or pull requests related to the change
 issues: [6553]
