@@ -69,16 +69,6 @@ func NewScraper(cfg ScraperSettings) (*Scraper, error) {
 	return newScraper(cfg, featuregate.GetRegistry())
 }
 
-// Deprecated: [v0.65.0] use NewScraper.
-func MustNewScraper(cfg ScraperSettings) *Scraper {
-	scr, err := newScraper(cfg, featuregate.GetRegistry())
-	if err != nil {
-		panic(err)
-	}
-
-	return scr
-}
-
 func newScraper(cfg ScraperSettings, registry *featuregate.Registry) (*Scraper, error) {
 	scraper := &Scraper{
 		level:      cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,

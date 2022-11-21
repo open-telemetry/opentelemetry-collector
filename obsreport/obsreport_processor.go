@@ -60,16 +60,6 @@ func NewProcessor(cfg ProcessorSettings) (*Processor, error) {
 	}, nil
 }
 
-// Deprecated: [v0.65.0] use NewProcessor.
-func MustNewProcessor(cfg ProcessorSettings) *Processor {
-	proc, err := NewProcessor(cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	return proc
-}
-
 // TracesAccepted reports that the trace data was accepted.
 func (por *Processor) TracesAccepted(ctx context.Context, numSpans int) {
 	if por.level != configtelemetry.LevelNone {
