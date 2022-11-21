@@ -239,7 +239,7 @@ func (mr *Resolver) expandValueRecursively(ctx context.Context, value interface{
 func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interface{}, bool, error) {
 	switch v := value.(type) {
 	case string:
-		// If it doesn't have the format "${scheme:opaque}" no need to expand, or contains "
+		// If it doesn't have the format "${scheme:opaque}" no need to expand.
 		if !strings.HasPrefix(v, "${") || !strings.HasSuffix(v, "}") || !strings.Contains(v, ":") {
 			return value, false, nil
 		}
