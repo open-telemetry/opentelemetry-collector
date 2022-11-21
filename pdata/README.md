@@ -75,8 +75,11 @@ schema, `Timestamp` word is used instead of `TimeUnixNano` to represent protobuf
 
 #### Optional fields
 
-Each optional field in a protobuf message exposed in pdata MUST have an additional method with `Has` prefix to
-determine if the field is set.
+Each optional field in a protobuf message exposed in pdata MUST have the following additional methods: 
+- A method starting with `Has` to determine if the field is set. For example, 
+  `func (ms HistogramDataPoint) HasMin() bool`.
+- A method starting with `Remove` prefix to remove a value associated with the optional field. For example,
+  `func (ms HistogramDataPoint) RemoveMin()`.
 
 #### OneOf fields
 
