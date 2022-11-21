@@ -239,13 +239,15 @@ func (mr *Resolver) expandValueRecursively(ctx context.Context, value interface{
 func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interface{}, bool, error) {
 	switch v := value.(type) {
 	case string:
-		// If it doesn't have the format "${scheme:opaque}" no need to expand.
+		// If it doesn't have the format "${scheme:opaque}" no need to expand, or contains "
 		if !strings.HasPrefix(v, "${") || !strings.HasSuffix(v, "}") || !strings.Contains(v, ":") {
 			return value, false, nil
 		}
 		lURI, err := newLocation(v[2 : len(v)-1])
 		if err != nil {
-			return nil, false, err
+			// Cannot return error, since a case like "${HOST}:${PORT}" is invalid location,
+			// but is supported in the legacy implementation.
+			return value, false, nil
 		}
 		if strings.Contains(lURI.opaqueValue, "$") {
 			return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())
