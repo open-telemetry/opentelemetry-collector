@@ -16,8 +16,7 @@ package service
 
 import (
 	"bytes"
-	"io"
-	"os"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -57,28 +56,15 @@ func TestNewBuildSubCommand(t *testing.T) {
 	ExpectedOutput, err := yaml.Marshal(ExpectedYamlStruct)
 	require.NoError(t, err)
 
-	// Obtaining StdOutput of cmd.Execute()
-	oldStdOut := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w // Write to os.StdOut
-
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
 	err = cmd.Execute()
 	require.NoError(t, err)
 
-	bufChan := make(chan string)
-
-	go func() {
-		var buf bytes.Buffer
-		_, err = io.Copy(&buf, r)
-		require.NoError(t, err)
-		bufChan <- buf.String()
-	}()
-
-	err = w.Close()
+	out, err := ioutil.ReadAll(b)
 	require.NoError(t, err)
-	defer func() { os.Stdout = oldStdOut }() // Restore os.Stdout to old value after test
-	output := <-bufChan
+
 	// Trim new line at the end of the two strings to make a better comparison as string() adds an extra new
 	// line that makes the test fail.
-	assert.Equal(t, strings.Trim(output, "\n"), strings.Trim(string(ExpectedOutput), "\n"))
+	assert.Equal(t, strings.Trim(string(ExpectedOutput), "\n"), strings.Trim(string(out), "\n"))
 }
