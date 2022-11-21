@@ -69,16 +69,6 @@ func NewExporter(cfg ExporterSettings) (*Exporter, error) {
 	return newExporter(cfg, featuregate.GetRegistry())
 }
 
-// Deprecated: [v0.65.0] use NewExporter.
-func MustNewExporter(cfg ExporterSettings) *Exporter {
-	exp, err := NewExporter(cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	return exp
-}
-
 func newExporter(cfg ExporterSettings, registry *featuregate.Registry) (*Exporter, error) {
 	exp := &Exporter{
 		level:          cfg.ExporterCreateSettings.TelemetrySettings.MetricsLevel,
