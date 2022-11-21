@@ -11,8 +11,8 @@ do
     if [[ ! -f $f ]]
     then
         echo "$f does not exist."
-        echo "::set-output name=passed::false"
+        echo "passed=false" >> $GITHUB_OUTPUT
         exit 0 
     fi
 done
-echo "::set-output name=passed::true"
+echo "passed=true" >> $GITHUB_OUTPUT
