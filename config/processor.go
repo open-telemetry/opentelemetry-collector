@@ -44,8 +44,3 @@ func (ps *ProcessorSettings) ID() component.ID {
 func (ps *ProcessorSettings) SetIDName(idName string) {
 	ps.id = component.NewIDWithName(ps.id.Type(), idName)
 }
-
-// Deprecated: [v0.65.0] use component.ValidateConfig.
-func (ps *ProcessorSettings) Validate() error {
-	return nil
-}
