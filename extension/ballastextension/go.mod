@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.1
-	go.opentelemetry.io/collector/component v0.0.0-20221115212826-19db2f15c85c
+	go.opentelemetry.io/collector v0.65.0
+	go.opentelemetry.io/collector/component v0.65.0
 	go.uber.org/zap v1.23.0
 )
 
@@ -26,9 +26,9 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/consumer v0.0.0-20221116212002-2454cfb9ab7f // indirect
-	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737 // indirect
-	go.opentelemetry.io/collector/pdata v0.64.1 // indirect
+	go.opentelemetry.io/collector/consumer v0.65.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.65.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.65.0 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
