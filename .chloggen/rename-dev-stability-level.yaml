@@ -1,6 +1,0 @@
-change_type: deprecation
-component: component
-note: Deprecate `StabilityLevelInDevelopment` enum const in favor of `StabilityLevelDevelopment`.
-issues: [6561]
-subtext: |-
-  Also rename all mentions of "In development" stability level to "Development".

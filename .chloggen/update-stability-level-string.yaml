@@ -1,8 +1,0 @@
-change_type: breaking
-component: component
-note: Update values returned by `StabilityLevel.String` method.
-issues: [6490]
-subtext: |
-  - All returned strings are capitalized.
-  - "Undefined" is returned only for `StabilityLevelUndefined`.
-  - "" is returned for integers that are out of StabilityLevel enum range.
