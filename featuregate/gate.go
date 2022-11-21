@@ -25,11 +25,6 @@ type Gate struct {
 	enabled        bool
 }
 
-// Deprecated: [v0.65.0] use ID.
-func (g *Gate) GetID() string {
-	return g.ID()
-}
-
 // ID returns the id of the Gate.
 func (g *Gate) ID() string {
 	return g.id
@@ -38,11 +33,6 @@ func (g *Gate) ID() string {
 // IsEnabled returns true if the feature described by the Gate is enabled.
 func (g *Gate) IsEnabled() bool {
 	return g.enabled
-}
-
-// Deprecated: [v0.65.0] use Description.
-func (g *Gate) GetDescription() string {
-	return g.Description()
 }
 
 // Description returns the description for the Gate.
