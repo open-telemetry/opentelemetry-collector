@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector v0.64.1
 	go.opentelemetry.io/collector/component v0.0.0-20221115212826-19db2f15c85c
 	go.opentelemetry.io/collector/consumer v0.0.0-20221116212002-2454cfb9ab7f
-	go.opentelemetry.io/collector/pdata v0.64.1
+	go.opentelemetry.io/collector/pdata v0.65.0
 	go.uber.org/atomic v1.10.0
 	google.golang.org/genproto v0.0.0-20221018160656-63c7b68cfc55
 	google.golang.org/grpc v1.51.0
