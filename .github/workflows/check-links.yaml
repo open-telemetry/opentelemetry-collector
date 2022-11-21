@@ -26,7 +26,7 @@ jobs:
       - name: Get changed files
         id: changes
         run: |
-          echo "::set-output name=md::$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} | grep .md$ | xargs)"
+          echo "md=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} | grep .md$ | xargs)" >> $GITHUB_OUTPUT
   check-links:
     runs-on: ubuntu-latest
     needs: changedfiles
