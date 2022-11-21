@@ -1,9 +1,0 @@
-change_type: breaking
-component: configtelemetry
-note: Update values returned by `Level.String` and `Level.MarshalText` method.
-issues: [6490]
-subtext: |
-  - All returned strings are capitalized.
-  - "" is returned for integers that are out of Level enum range.
-  - It also affects `Level.Marshal` output, but it's not a problem because `Unmarshal` method accepts strings in
-  all cases, e.g. "normal", "Normal" and "NORMAL".
