@@ -24,23 +24,12 @@ import (
 //
 // When embedded in the processor config it must be with `mapstructure:",squash"` tag.
 type ProcessorSettings struct {
-	id component.ID `mapstructure:"-"`
-	component.ProcessorConfig
+	settings
 }
 
 // NewProcessorSettings return a new ProcessorSettings with the given ComponentID.
 func NewProcessorSettings(id component.ID) ProcessorSettings {
-	return ProcessorSettings{id: id}
+	return ProcessorSettings{settings: newSettings(id)}
 }
 
 var _ component.ProcessorConfig = (*ProcessorSettings)(nil)
-
-// ID returns the receiver ComponentID.
-func (ps *ProcessorSettings) ID() component.ID {
-	return ps.id
-}
-
-// SetIDName sets the receiver name.
-func (ps *ProcessorSettings) SetIDName(idName string) {
-	ps.id = component.NewIDWithName(ps.id.Type(), idName)
-}

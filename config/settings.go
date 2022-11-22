@@ -18,19 +18,23 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// ExporterSettings defines common settings for a component.Exporter configuration.
-// Specific exporters can embed this struct and extend it with more fields if needed.
-//
-// It is highly recommended to "override" the Validate() function.
-//
-// When embedded in the exporter config, it must be with `mapstructure:",squash"` tag.
-type ExporterSettings struct {
-	settings
+type settings struct {
+	id component.ID `mapstructure:"-"`
+	component.Config
 }
 
-// NewExporterSettings return a new ExporterSettings with the given ComponentID.
-func NewExporterSettings(id component.ID) ExporterSettings {
-	return ExporterSettings{settings: newSettings(id)}
+func newSettings(id component.ID) settings {
+	return settings{id: id}
 }
 
-var _ component.ExporterConfig = (*ExporterSettings)(nil)
+var _ component.Config = (*settings)(nil)
+
+// ID returns the receiver component.ID.
+func (es *settings) ID() component.ID {
+	return es.id
+}
+
+// SetIDName sets the receiver name.
+func (es *settings) SetIDName(idName string) {
+	es.id = component.NewIDWithName(es.id.Type(), idName)
+}

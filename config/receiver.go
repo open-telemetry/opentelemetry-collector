@@ -24,23 +24,12 @@ import (
 //
 // When embedded in the receiver config it must be with `mapstructure:",squash"` tag.
 type ReceiverSettings struct {
-	id component.ID `mapstructure:"-"`
-	component.ReceiverConfig
+	settings
 }
 
 // NewReceiverSettings return a new ReceiverSettings with the given ID.
 func NewReceiverSettings(id component.ID) ReceiverSettings {
-	return ReceiverSettings{id: id}
+	return ReceiverSettings{settings: newSettings(id)}
 }
 
 var _ component.ReceiverConfig = (*ReceiverSettings)(nil)
-
-// ID returns the receiver ID.
-func (rs *ReceiverSettings) ID() component.ID {
-	return rs.id
-}
-
-// SetIDName sets the receiver name.
-func (rs *ReceiverSettings) SetIDName(idName string) {
-	rs.id = component.NewIDWithName(rs.id.Type(), idName)
-}
