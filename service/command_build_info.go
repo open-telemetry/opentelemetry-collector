@@ -57,7 +57,7 @@ func newBuildSubCommand(set CollectorSettings) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), string(yamlData))
+			fmt.Fprint(cmd.OutOrStdout(), string(yamlData))
 			return nil
 		},
 	}

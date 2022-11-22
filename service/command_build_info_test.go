@@ -16,7 +16,6 @@ package service
 
 import (
 	"bytes"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -61,10 +60,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 	err = cmd.Execute()
 	require.NoError(t, err)
 
-	out, err := ioutil.ReadAll(b)
-	require.NoError(t, err)
-
 	// Trim new line at the end of the two strings to make a better comparison as string() adds an extra new
 	// line that makes the test fail.
-	assert.Equal(t, strings.Trim(string(ExpectedOutput), "\n"), strings.Trim(string(out), "\n"))
+	assert.Equal(t, strings.Trim(string(ExpectedOutput), "\n"), strings.Trim(b.String(), "\n"))
 }
