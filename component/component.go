@@ -122,9 +122,6 @@ const (
 	StabilityLevelStable
 )
 
-// Deprecated: [0.65.0] Use StabilityLevelDevelopment instead.
-const StabilityLevelInDevelopment = StabilityLevelDevelopment
-
 func (sl StabilityLevel) String() string {
 	switch sl {
 	case StabilityLevelUndefined:

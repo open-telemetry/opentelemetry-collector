@@ -34,9 +34,6 @@ func UnmarshalExporterConfig(conf *confmap.Conf, cfg ExporterConfig) error {
 	return unmarshal(conf, cfg)
 }
 
-// Deprecated: [v0.65.0] unnecessary interface, will be removed.
-type Exporter = Component
-
 // TracesExporter is an Exporter that can consume traces.
 type TracesExporter interface {
 	Component
