@@ -43,17 +43,6 @@ const (
 	StateClosed
 )
 
-const (
-	// Deprecated: [v0.65.0] use StateStarting.
-	Starting = StateStarting
-	// Deprecated: [v0.65.0] use StateRunning.
-	Running = StateRunning
-	// Deprecated: [v0.65.0] use StateClosing.
-	Closing = StateClosing
-	// Deprecated: [v0.65.0] use StateClosed.
-	Closed = StateClosed
-)
-
 func (s State) String() string {
 	switch s {
 	case StateStarting:
