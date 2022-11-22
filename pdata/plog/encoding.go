@@ -25,6 +25,14 @@ type Marshaler interface {
 	// MarshalLogs the given pdata.Logs into bytes.
 	// If the error is not nil, the returned bytes slice cannot be used.
 	MarshalLogs(ld Logs) ([]byte, error)
+
+	// MarshalResourceLogs the given pdata.ResourceLogs into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
+	MarshalResourceLogs(ld ResourceLogs) ([]byte, error)
+
+	// MarshalLogRecord the given pdata.LogRecord into bytes.
+	// If the error is not nil, the returned bytes slice cannot be used.
+	MarshalLogRecord(lr LogRecord) ([]byte, error)
 }
 
 // Unmarshaler unmarshalls bytes into pdata.Logs.
@@ -32,6 +40,14 @@ type Unmarshaler interface {
 	// UnmarshalLogs the given bytes into pdata.Logs.
 	// If the error is not nil, the returned pdata.Logs cannot be used.
 	UnmarshalLogs(buf []byte) (Logs, error)
+
+	// UnmarshalResourceLogs the given bytes into pdata.ResourceLogs.
+	// If the error is not nil, the returned pdata.ResourceLogs cannot be used.
+	UnmarshalResourceLogs(buf []byte) (ResourceLogs, error)
+
+	// UnmarshalLogRecord the given bytes into pdata.LogRecord.
+	// If the error is not nil, the returned pdata.LogRecord cannot be used.
+	UnmarshalLogRecord(buf []byte) (LogRecord, error)
 }
 
 // Sizer is an optional interface implemented by the Marshaler,
@@ -39,4 +55,10 @@ type Unmarshaler interface {
 type Sizer interface {
 	// LogsSize returns the size in bytes of a marshaled Logs.
 	LogsSize(ld Logs) int
+
+	// ResourceLogsSize returns the size in bytes of a marshaled ResourceLogs.
+	ResourceLogsSize(rl ResourceLogs) int
+
+	// LogRecordSize returns the size in bytes of a marshaled LogRecord.
+	LogRecordSize(lr LogRecord) int
 }

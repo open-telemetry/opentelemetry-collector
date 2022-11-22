@@ -28,8 +28,30 @@ func (e *ProtoMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 	return pb.Marshal()
 }
 
+func (e *ProtoMarshaler) MarshalResourceLogs(rl ResourceLogs) ([]byte, error) {
+	pb := internal.ResourceLogsToProto(internal.ResourceLogs(rl))
+	return pb.Marshal()
+}
+
+func (e *ProtoMarshaler) MarshalLogRecord(lr LogRecord) ([]byte, error) {
+	pb := internal.LogRecordToProto(internal.LogRecord(lr))
+	return pb.Marshal()
+}
+
 func (e *ProtoMarshaler) LogsSize(ld Logs) int {
 	pb := internal.LogsToProto(internal.Logs(ld))
+	return pb.Size()
+}
+
+func (e *ProtoMarshaler) ResourceLogsSize(rl ResourceLogs) int {
+	pb := internal.ResourceLogsToProto(internal.ResourceLogs(rl))
+
+	return pb.Size()
+}
+
+func (e *ProtoMarshaler) LogRecordSize(lr LogRecord) int {
+	pb := internal.LogRecordToProto(internal.LogRecord(lr))
+
 	return pb.Size()
 }
 
@@ -41,4 +63,16 @@ func (d *ProtoUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	pb := otlplogs.LogsData{}
 	err := pb.Unmarshal(buf)
 	return Logs(internal.LogsFromProto(pb)), err
+}
+
+func (d *ProtoUnmarshaler) UnmarshalResourceLogs(buf []byte) (ResourceLogs, error) {
+	pb := otlplogs.ResourceLogs{}
+	err := pb.Unmarshal(buf)
+	return ResourceLogs(internal.ResourceLogsFromProto(pb)), err
+}
+
+func (d *ProtoUnmarshaler) UnmarshalLogRecord(buf []byte) (LogRecord, error) {
+	pb := otlplogs.LogRecord{}
+	err := pb.Unmarshal(buf)
+	return LogRecord(internal.LogRecordFromProto(pb)), err
 }

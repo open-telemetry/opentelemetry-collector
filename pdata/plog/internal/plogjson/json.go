@@ -52,6 +52,24 @@ func UnmarshalLogsData(buf []byte, dest *otlplogs.LogsData) error {
 	return iter.Error
 }
 
+func UnmarshalResourceLogs(buf []byte, dest *otlplogs.ResourceLogs) error {
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	dest = readResourceLogs(iter)
+	if len(dest.ScopeLogs) == 0 {
+		dest.ScopeLogs = dest.DeprecatedScopeLogs
+	}
+	dest.DeprecatedScopeLogs = nil
+	return iter.Error
+}
+
+func UnmarshalLogRecord(buf []byte, dest *otlplogs.LogRecord) error {
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	dest = readLog(iter)
+	return iter.Error
+}
+
 func UnmarshalExportLogsServiceRequest(buf []byte, dest *otlpcollectorlog.ExportLogsServiceRequest) error {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)

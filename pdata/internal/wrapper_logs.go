@@ -44,3 +44,27 @@ func LogsFromProto(orig otlplogs.LogsData) Logs {
 		ResourceLogs: orig.ResourceLogs,
 	}}
 }
+
+// ResourceLogsToProto internal helper to convert ResourceLogs to protobuf representation.
+func ResourceLogsToProto(rl ResourceLogs) otlplogs.ResourceLogs {
+	return *rl.orig
+}
+
+// ResourceLogsFromProto internal helper to convert protobuf representation to ResourceLogs.
+func ResourceLogsFromProto(orig otlplogs.ResourceLogs) ResourceLogs {
+	return ResourceLogs{
+		orig: &orig,
+	}
+}
+
+// LogRecordToProto internal helper to convert LogRecord to protobuf representation.
+func LogRecordToProto(lr LogRecord) otlplogs.LogRecord {
+	return *lr.orig
+}
+
+// LogRecordFromProto internal helper to convert protobuf representation to LogRecord.
+func LogRecordFromProto(orig otlplogs.LogRecord) LogRecord {
+	return LogRecord{
+		orig: &orig,
+	}
+}

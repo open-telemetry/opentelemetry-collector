@@ -35,6 +35,20 @@ func (*JSONMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
+func (m *JSONMarshaler) MarshalResourceLogs(rl ResourceLogs) ([]byte, error) {
+	buf := bytes.Buffer{}
+	pb := internal.ResourceLogsToProto(internal.ResourceLogs(rl))
+	err := delegate.Marshal(&buf, &pb)
+	return buf.Bytes(), err
+}
+
+func (m *JSONMarshaler) MarshalLogRecord(lr LogRecord) ([]byte, error) {
+	buf := bytes.Buffer{}
+	pb := internal.LogRecordToProto(internal.LogRecord(lr))
+	err := delegate.Marshal(&buf, &pb)
+	return buf.Bytes(), err
+}
+
 var _ Unmarshaler = (*JSONUnmarshaler)(nil)
 
 type JSONUnmarshaler struct{}
@@ -45,4 +59,20 @@ func (*JSONUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 		return Logs{}, err
 	}
 	return Logs(internal.LogsFromProto(ld)), nil
+}
+
+func (*JSONUnmarshaler) UnmarshalResourceLogs(buf []byte) (ResourceLogs, error) {
+	var rl otlplogs.ResourceLogs
+	if err := plogjson.UnmarshalResourceLogs(buf, &rl); err != nil {
+		return ResourceLogs{}, err
+	}
+	return ResourceLogs(internal.ResourceLogsFromProto(rl)), nil
+}
+
+func (*JSONUnmarshaler) UnmarshalLogRecord(buf []byte) (LogRecord, error) {
+	var lr otlplogs.LogRecord
+	if err := plogjson.UnmarshalLogRecord(buf, &lr); err != nil {
+		return LogRecord{}, err
+	}
+	return LogRecord(internal.LogRecordFromProto(lr)), nil
 }
