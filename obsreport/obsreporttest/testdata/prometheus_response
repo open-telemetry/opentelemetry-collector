@@ -16,6 +16,33 @@ exporter_send_failed_log_records{exporter="fakeExporter"} 36
 # HELP exporter_sent_log_records Number of logs successfully sent to destination.
 # TYPE exporter_sent_log_records counter
 exporter_sent_log_records{exporter="fakeExporter"} 103
+# HELP processor_accepted_spans Number of spans successfully pushed into the next component in the pipeline.
+# TYPE processor_accepted_spans counter
+processor_accepted_spans{processor="fakeProcessor"} 42
+# HELP processor_refused_spans Number of spans that were rejected by the next component in the pipeline.
+# TYPE processor_refused_spans counter
+processor_refused_spans{processor="fakeProcessor"} 13
+# HELP processor_dropped_spans Number of spans that were dropped.
+# TYPE processor_dropped_spans counter
+processor_dropped_spans{processor="fakeProcessor"} 7
+# HELP processor_accepted_metric_points Number of metric points successfully pushed into the next component in the pipeline.
+# TYPE processor_accepted_metric_points counter
+processor_accepted_metric_points{processor="fakeProcessor"} 7
+# HELP processor_refused_metric_points Number of metric points that were rejected by the next component in the pipeline.
+# TYPE processor_refused_metric_points counter
+processor_refused_metric_points{processor="fakeProcessor"} 41
+# HELP processor_dropped_metric_points Number of metric points that were dropped.
+# TYPE processor_dropped_metric_points counter
+processor_dropped_metric_points{processor="fakeProcessor"} 13
+# HELP processor_accepted_log_records Number of log records successfully pushed into the next component in the pipeline.
+# TYPE processor_accepted_log_records counter
+processor_accepted_log_records{processor="fakeProcessor"} 102
+# HELP processor_refused_log_records Number of log records that were rejected by the next component in the pipeline.
+# TYPE processor_refused_log_records counter
+processor_refused_log_records{processor="fakeProcessor"} 35
+# HELP processor_dropped_log_records Number of log records that were dropped.
+# TYPE processor_dropped_log_records counter
+processor_dropped_log_records{processor="fakeProcessor"} 14
 # HELP receiver_accepted_log_records Number of log records successfully pushed into the pipeline.
 # TYPE receiver_accepted_log_records counter
 receiver_accepted_log_records{receiver="fakeReceiver",transport="fakeTransport"} 102
