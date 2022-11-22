@@ -157,32 +157,20 @@ func CheckExporterLogs(tts TestTelemetry, exporter component.ID, sentLogRecords,
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckProcessorTraces(_ TestTelemetry, processor component.ID, acceptedSpans, refusedSpans, droppedSpans int64) error {
-	processorTags := tagsForProcessorView(processor)
-	return multierr.Combine(
-		checkValueForView(processorTags, acceptedSpans, "processor/accepted_spans"),
-		checkValueForView(processorTags, refusedSpans, "processor/refused_spans"),
-		checkValueForView(processorTags, droppedSpans, "processor/dropped_spans"))
+func CheckProcessorTraces(tts TestTelemetry, processor component.ID, acceptedSpans, refusedSpans, droppedSpans int64) error {
+	return tts.otelPrometheusChecker.checkProcessorTraces(processor, acceptedSpans, refusedSpans, droppedSpans)
 }
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckProcessorMetrics(_ TestTelemetry, processor component.ID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
-	processorTags := tagsForProcessorView(processor)
-	return multierr.Combine(
-		checkValueForView(processorTags, acceptedMetricPoints, "processor/accepted_metric_points"),
-		checkValueForView(processorTags, refusedMetricPoints, "processor/refused_metric_points"),
-		checkValueForView(processorTags, droppedMetricPoints, "processor/dropped_metric_points"))
+func CheckProcessorMetrics(tts TestTelemetry, processor component.ID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
+	return tts.otelPrometheusChecker.checkProcessorMetrics(processor, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints)
 }
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckProcessorLogs(_ TestTelemetry, processor component.ID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
-	processorTags := tagsForProcessorView(processor)
-	return multierr.Combine(
-		checkValueForView(processorTags, acceptedLogRecords, "processor/accepted_log_records"),
-		checkValueForView(processorTags, refusedLogRecords, "processor/refused_log_records"),
-		checkValueForView(processorTags, droppedLogRecords, "processor/dropped_log_records"))
+func CheckProcessorLogs(tts TestTelemetry, processor component.ID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
+	return tts.otelPrometheusChecker.checkProcessorLogs(processor, acceptedLogRecords, refusedLogRecords, droppedLogRecords)
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.

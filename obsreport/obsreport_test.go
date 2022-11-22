@@ -479,18 +479,17 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 }
 
 func TestProcessorTraceData(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, testProcessorTraceData)
+}
 
+func testProcessorTraceData(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 	const acceptedSpans = 27
 	const refusedSpans = 19
 	const droppedSpans = 13
-
-	obsrep, err := NewProcessor(ProcessorSettings{
+	obsrep, err := newProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
-	})
+	}, registry)
 	require.NoError(t, err)
 	obsrep.TracesAccepted(context.Background(), acceptedSpans)
 	obsrep.TracesRefused(context.Background(), refusedSpans)
@@ -500,24 +499,24 @@ func TestProcessorTraceData(t *testing.T) {
 }
 
 func TestProcessorMetricsData(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, testProcessorMetricsData)
+}
 
-	const acceptedPoints = 29
-	const refusedPoints = 11
-	const droppedPoints = 17
+func testProcessorMetricsData(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+		const acceptedPoints = 29
+		const refusedPoints = 11
+		const droppedPoints = 17
 
-	obsrep, err := NewProcessor(ProcessorSettings{
-		ProcessorID:             processor,
-		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
-	})
-	require.NoError(t, err)
-	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
-	obsrep.MetricsRefused(context.Background(), refusedPoints)
-	obsrep.MetricsDropped(context.Background(), droppedPoints)
+		obsrep, err := newProcessor(ProcessorSettings{
+			ProcessorID:             processor,
+			ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
+		}, registry)
+		require.NoError(t, err)
+		obsrep.MetricsAccepted(context.Background(), acceptedPoints)
+		obsrep.MetricsRefused(context.Background(), refusedPoints)
+		obsrep.MetricsDropped(context.Background(), droppedPoints)
 
-	require.NoError(t, obsreporttest.CheckProcessorMetrics(tt, processor, acceptedPoints, refusedPoints, droppedPoints))
+		require.NoError(t, obsreporttest.CheckProcessorMetrics(tt, processor, acceptedPoints, refusedPoints, droppedPoints))
 }
 
 func TestBuildProcessorCustomMetricName(t *testing.T) {
@@ -543,18 +542,18 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 }
 
 func TestProcessorLogRecords(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, testProcessorLogRecords)
+}
 
+func testProcessorLogRecords(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 	const acceptedRecords = 29
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	obsrep, err := NewProcessor(ProcessorSettings{
+	obsrep, err := newProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
-	})
+	}, registry)
 	require.NoError(t, err)
 	obsrep.LogsAccepted(context.Background(), acceptedRecords)
 	obsrep.LogsRefused(context.Background(), refusedRecords)

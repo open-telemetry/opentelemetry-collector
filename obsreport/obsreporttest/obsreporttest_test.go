@@ -34,6 +34,7 @@ const (
 var (
 	scraper  = component.NewID("fakeScraper")
 	receiver = component.NewID("fakeReicever")
+	processor= component.NewID("fakeProcessor")
 	exporter = component.NewID("fakeExporter")
 )
 
@@ -119,6 +120,81 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	assert.Error(t, obsreporttest.CheckReceiverLogs(tt, receiver, transport, 7, 7))
 	assert.Error(t, obsreporttest.CheckReceiverLogs(tt, receiver, transport, 0, 0))
 	assert.Error(t, obsreporttest.CheckReceiverLogs(tt, receiver, transport, 0, 7))
+}
+
+func TestCheckProcessorTracesViews(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	por, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
+		ProcessorID:             processor,
+		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
+	})
+	assert.NoError(t, err)
+
+	por.TracesAccepted(context.Background(), 7)
+	por.TracesRefused(context.Background(), 8)
+	por.TracesDropped(context.Background(), 9)
+
+	assert.NoError(t, obsreporttest.CheckProcessorTraces(tt, processor, 7, 8, 9))
+	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 0, 0, 0))
+	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 7, 0, 0))
+	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 7, 8, 0))
+	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 7, 0, 9))
+	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 0, 8, 0))
+	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 0, 8, 9))
+	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 0, 0, 9))
+}
+
+func TestCheckProcessorMetricsViews(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	por, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
+		ProcessorID:             processor,
+		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
+	})
+	assert.NoError(t, err)
+
+	por.MetricsAccepted(context.Background(), 7)
+	por.MetricsRefused(context.Background(), 8)
+	por.MetricsDropped(context.Background(), 9)
+
+	assert.NoError(t, obsreporttest.CheckProcessorMetrics(tt, processor, 7, 8, 9))
+	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 0, 0, 0))
+	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 7, 0, 0))
+	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 7, 8, 0))
+	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 7, 0, 9))
+	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 0, 8, 0))
+	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 0, 8, 9))
+	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 0, 0, 9))
+}
+
+func TestCheckProcessorLogViews(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	por, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
+		ProcessorID:             processor,
+		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
+	})
+	assert.NoError(t, err)
+
+	por.LogsAccepted(context.Background(), 7)
+	por.LogsRefused(context.Background(), 8)
+	por.LogsDropped(context.Background(), 9)
+
+	assert.NoError(t, obsreporttest.CheckProcessorLogs(tt, processor, 7, 8, 9))
+	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 0, 0, 0))
+	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 7, 0, 0))
+	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 7, 8, 0))
+	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 7, 0, 9))
+	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 0, 8, 0))
+	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 0, 8, 9))
+	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 0, 0, 9))
 }
 
 func TestCheckExporterTracesViews(t *testing.T) {
