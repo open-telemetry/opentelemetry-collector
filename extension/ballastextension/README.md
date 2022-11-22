@@ -26,7 +26,8 @@ When `size_in_percentage` is enabled with the value(1-100), the absolute `ballas
 2. If `memory.limit_in_bytes` is positive value other than `9223372036854771712`(`0x7FFFFFFFFFFFF000`). The `ballest_size`
    will be calculated by `memory.limit_in_bytes * size_in_percentage / 100`.
    If `memory.limit_in_bytes` value is `9223372036854771712`(`0x7FFFFFFFFFFFF000`), it indicates there is no memory limit has
-   been set for the collector process or the running container in cgroup. Then the `totalMemory` will be determined in next step.
+   been set for the collector process or the running container in cgroup. Then the `hierarchical_memory_limit` in `memory.stat` will be used.
+   If `hierarchical_memory_limit` is `9223372036854771712`(`0x7FFFFFFFFFFFF000`) or undefined, Then the `totalMemory` will be determined in next step.
    
 3. if there is no memory limit set in cgroup for the collector process or container where the collector is running. The total memory will be
    calculated by `github.com/shirou/gopsutil/v3/mem`[[link]](https://github.com/shirou/gopsutil/) on `mem.VirtualMemory().total` which is supported in multiple OS systems.

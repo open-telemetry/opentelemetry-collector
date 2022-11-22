@@ -62,6 +62,10 @@ const (
 
 	_cgroupMemoryLimitBytes = "memory.limit_in_bytes"
 
+	_cgroupMemoryStat = "memory.stat"
+
+	_cgroupHierarchyMemoryLimit = "hierarchical_memory_limit"
+
 	// _cgroupv2MemoryMax is the file name for the CGroup-V2 Memory max
 	// parameter.
 	_cgroupv2MemoryMax = "memory.max"
@@ -135,6 +139,36 @@ func (cg CGroups) MemoryQuota() (int64, bool, error) {
 	if defined := memLimitBytes > 0; err != nil || !defined {
 		return -1, defined, err
 	}
+	return memLimitBytes, true, nil
+}
+
+// HierarchyMemoryQuota returns the total memory limit for current hierarchy
+// It is a result of `hierarchical_memory_limit` in `memory.stat`.
+// If it was not set (-1) or not found, the method returns `(-1, false, nil)`.
+func (cg CGroups) HierarchyMemoryQuota() (int64, bool, error) {
+	memCGroup, exists := cg[_cgroupSubsysMemory]
+	if !exists {
+		return -1, false, nil
+	}
+
+	var memLimitBytes int64
+	var err error
+	err = memCGroup.readFile(_cgroupMemoryStat, func(line string) bool {
+		fields := strings.Split(line, " ")
+		if len(fields) != 2 {
+			return true
+		}
+		if fields[0] == _cgroupHierarchyMemoryLimit {
+			limitAsString := []byte(strings.Trim(fields[1], " "))
+			memLimitBytes, err = strconv.ParseInt(string(limitAsString), 10, 64)
+			return false
+		}
+		return true
+	})
+	if defined := memLimitBytes > 0; err != nil || !defined {
+		return -1, defined, err
+	}
+
 	return memLimitBytes, true, nil
 }
 

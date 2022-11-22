@@ -536,6 +536,8 @@
 - Add support to handle 404, 405 http error code as permanent errors in OTLP exporter (#5827)
 - Enforce scheme name restrictions to all `confmap.Provider` implementations. (#5861)
 
+- Fix undefined cgroupv1 memroy limit with HierarchyMemoryQuota (#4972)
+
 ## v0.57.2 Beta
 
 See the changelog for v0.57.0.
