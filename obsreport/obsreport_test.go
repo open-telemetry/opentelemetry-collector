@@ -503,20 +503,20 @@ func TestProcessorMetricsData(t *testing.T) {
 }
 
 func testProcessorMetricsData(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
-		const acceptedPoints = 29
-		const refusedPoints = 11
-		const droppedPoints = 17
+	const acceptedPoints = 29
+	const refusedPoints = 11
+	const droppedPoints = 17
 
-		obsrep, err := newProcessor(ProcessorSettings{
-			ProcessorID:             processor,
-			ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
-		}, registry)
-		require.NoError(t, err)
-		obsrep.MetricsAccepted(context.Background(), acceptedPoints)
-		obsrep.MetricsRefused(context.Background(), refusedPoints)
-		obsrep.MetricsDropped(context.Background(), droppedPoints)
+	obsrep, err := newProcessor(ProcessorSettings{
+		ProcessorID:             processor,
+		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
+	}, registry)
+	require.NoError(t, err)
+	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
+	obsrep.MetricsRefused(context.Background(), refusedPoints)
+	obsrep.MetricsDropped(context.Background(), droppedPoints)
 
-		require.NoError(t, obsreporttest.CheckProcessorMetrics(tt, processor, acceptedPoints, refusedPoints, droppedPoints))
+	require.NoError(t, obsreporttest.CheckProcessorMetrics(tt, processor, acceptedPoints, refusedPoints, droppedPoints))
 }
 
 func TestBuildProcessorCustomMetricName(t *testing.T) {

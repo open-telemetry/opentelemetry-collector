@@ -32,10 +32,10 @@ const (
 )
 
 var (
-	scraper  = component.NewID("fakeScraper")
-	receiver = component.NewID("fakeReicever")
-	processor= component.NewID("fakeProcessor")
-	exporter = component.NewID("fakeExporter")
+	scraper   = component.NewID("fakeScraper")
+	receiver  = component.NewID("fakeReicever")
+	processor = component.NewID("fakeProcessor")
+	exporter  = component.NewID("fakeExporter")
 )
 
 func TestCheckScraperMetricsViews(t *testing.T) {

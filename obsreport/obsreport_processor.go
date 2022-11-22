@@ -59,11 +59,11 @@ type Processor struct {
 	level    configtelemetry.Level
 	mutators []tag.Mutator
 
-	meter  metric.Meter	
+	meter  metric.Meter
 	logger *zap.Logger
 
-	useOtelForMetrics    bool
-	otelAttrs            []attribute.KeyValue
+	useOtelForMetrics bool
+	otelAttrs         []attribute.KeyValue
 
 	acceptedSpansCounter        syncint64.Counter
 	refusedSpansCounter         syncint64.Counter
@@ -74,7 +74,6 @@ type Processor struct {
 	acceptedLogRecordsCounter   syncint64.Counter
 	refusedLogRecordsCounter    syncint64.Counter
 	droppedLogRecordsCounter    syncint64.Counter
-
 }
 
 // ProcessorSettings are settings for creating a Processor.
@@ -100,15 +99,14 @@ func MustNewProcessor(cfg ProcessorSettings) *Processor {
 
 func newProcessor(cfg ProcessorSettings, registry *featuregate.Registry) (*Processor, error) {
 	proc := &Processor{
-		level:    cfg.ProcessorCreateSettings.MetricsLevel,
-		mutators: []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},
+		level:             cfg.ProcessorCreateSettings.MetricsLevel,
+		mutators:          []tag.Mutator{tag.Upsert(obsmetrics.TagKeyProcessor, cfg.ProcessorID.String(), tag.WithTTL(tag.TTLNoPropagation))},
 		logger:            cfg.ProcessorCreateSettings.Logger,
 		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
-		meter: cfg.ProcessorCreateSettings.MeterProvider.Meter(processorScope),
-		otelAttrs: []attribute.KeyValue{ 
+		meter:             cfg.ProcessorCreateSettings.MeterProvider.Meter(processorScope),
+		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ProcessorKey, cfg.ProcessorID.String()),
 		},
-
 	}
 
 	if err := proc.createOtelMetrics(); err != nil {
