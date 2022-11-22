@@ -145,11 +145,11 @@ Here is a list of community roles with current and previous members:
    - [Alex Boten](https://github.com/codeboten), Lightstep
    - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
    - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-   - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 - Emeritus Maintainers:
 
    - [Paulo Janotti](https://github.com/pjanotti), Splunk
+   - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in [Community membership](https://github.com/open-telemetry/community/blob/main/community-membership.md).
 In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
