@@ -27,11 +27,9 @@ type ExporterConfig interface {
 	Config
 }
 
-// UnmarshalExporterConfig helper function to unmarshal an ExporterConfig.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+// Deprecated: [v0.67.0] use UnmarshalConfig.
 func UnmarshalExporterConfig(conf *confmap.Conf, cfg ExporterConfig) error {
-	return unmarshal(conf, cfg)
+	return UnmarshalConfig(conf, cfg)
 }
 
 // TracesExporter is an Exporter that can consume traces.

@@ -32,6 +32,17 @@ type Config interface {
 // for an interface type Foo is to use a *Foo value.
 var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()
 
+// UnmarshalConfig helper function to UnmarshalConfig a Config.
+// It checks if the config implements confmap.Unmarshaler and uses that if available,
+// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+func UnmarshalConfig(conf *confmap.Conf, intoCfg Config) error {
+	if cu, ok := intoCfg.(confmap.Unmarshaler); ok {
+		return cu.Unmarshal(conf)
+	}
+
+	return conf.Unmarshal(intoCfg, confmap.WithErrorUnused())
+}
+
 // ConfigValidator defines an optional interface for configurations to implement to do validation.
 type ConfigValidator interface {
 	// Validate the configuration and returns an error if invalid.
@@ -122,11 +133,3 @@ const (
 	// DataTypeLogs is the data type tag for logs.
 	DataTypeLogs DataType = "logs"
 )
-
-func unmarshal(componentSection *confmap.Conf, intoCfg interface{}) error {
-	if cu, ok := intoCfg.(confmap.Unmarshaler); ok {
-		return cu.Unmarshal(componentSection)
-	}
-
-	return componentSection.Unmarshal(intoCfg, confmap.WithErrorUnused())
-}

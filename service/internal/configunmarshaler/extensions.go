@@ -57,7 +57,7 @@ func (e *Extensions) Unmarshal(conf *confmap.Conf) error {
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalExtensionConfig(confmap.NewFromStringMap(value), extensionCfg); err != nil {
+		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), extensionCfg); err != nil {
 			return errorUnmarshalError(extensionsKeyName, id, err)
 		}
 
