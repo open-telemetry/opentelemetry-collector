@@ -28,14 +28,6 @@ type Config interface {
 	privateConfig()
 }
 
-// CreateDefaultConfigFunc is the equivalent of Factory.CreateDefaultConfig().
-type CreateDefaultConfigFunc func() Config
-
-// CreateDefaultConfig implements Factory.CreateDefaultConfig().
-func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
-	return f()
-}
-
 // As interface types are only used for static typing, a common idiom to find the reflection Type
 // for an interface type Foo is to use a *Foo value.
 var configValidatorType = reflect.TypeOf((*ConfigValidator)(nil)).Elem()

@@ -38,7 +38,7 @@ func TestExtensionsUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Extensions["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myextension")
-	assert.Equal(t, map[component.ID]component.ExtensionConfig{
+	assert.Equal(t, map[component.ID]component.Config{
 		component.NewID("nop"):                        factories.Extensions["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myextension"): cfgWithName,
 	}, exts.GetExtensions())

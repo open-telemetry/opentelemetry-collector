@@ -32,4 +32,4 @@ func NewExtensionSettings(id component.ID) ExtensionSettings {
 	return ExtensionSettings{settings: newSettings(id)}
 }
 
-var _ component.ExtensionConfig = (*ExtensionSettings)(nil)
+var _ component.Config = (*ExtensionSettings)(nil)

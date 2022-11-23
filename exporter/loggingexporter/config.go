@@ -56,7 +56,7 @@ type Config struct {
 	warnLogLevel bool
 }
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 func mapLevel(level zapcore.Level) (configtelemetry.Level, error) {

@@ -32,16 +32,16 @@ var (
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
 	// Receivers is a map of ComponentID to Receivers.
-	Receivers map[component.ID]component.ReceiverConfig
+	Receivers map[component.ID]component.Config
 
 	// Exporters is a map of ComponentID to Exporters.
-	Exporters map[component.ID]component.ExporterConfig
+	Exporters map[component.ID]component.Config
 
 	// Processors is a map of ComponentID to Processors.
-	Processors map[component.ID]component.ProcessorConfig
+	Processors map[component.ID]component.Config
 
 	// Extensions is a map of ComponentID to extensions.
-	Extensions map[component.ID]component.ExtensionConfig
+	Extensions map[component.ID]component.Config
 
 	Service ConfigService
 }

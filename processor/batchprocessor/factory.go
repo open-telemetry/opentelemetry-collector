@@ -42,7 +42,7 @@ func NewFactory() component.ProcessorFactory {
 		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelStable))
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		SendBatchSize:     defaultSendBatchSize,
@@ -53,7 +53,7 @@ func createDefaultConfig() component.ProcessorConfig {
 func createTracesProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	level := set.MetricsLevel
@@ -63,7 +63,7 @@ func createTracesProcessor(
 func createMetricsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	level := set.MetricsLevel
@@ -73,7 +73,7 @@ func createMetricsProcessor(
 func createLogsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	level := set.MetricsLevel

@@ -37,7 +37,7 @@ var ExampleReceiverFactory = component.NewReceiverFactory(
 	component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelDevelopment),
 	component.WithLogsReceiver(createLogsReceiver, component.StabilityLevelDevelopment))
 
-func createReceiverDefaultConfig() component.ReceiverConfig {
+func createReceiverDefaultConfig() component.Config {
 	return &ExampleReceiverConfig{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(receiverType)),
 	}
@@ -47,7 +47,7 @@ func createReceiverDefaultConfig() component.ReceiverConfig {
 func createTracesReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	receiver := createReceiver(cfg)
@@ -59,7 +59,7 @@ func createTracesReceiver(
 func createMetricsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	receiver := createReceiver(cfg)
@@ -70,7 +70,7 @@ func createMetricsReceiver(
 func createLogsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	receiver := createReceiver(cfg)
@@ -78,7 +78,7 @@ func createLogsReceiver(
 	return receiver, nil
 }
 
-func createReceiver(cfg component.ReceiverConfig) *ExampleReceiver {
+func createReceiver(cfg component.Config) *ExampleReceiver {
 	// There must be one receiver for all data types. We maintain a map of
 	// receivers per config.
 
@@ -118,4 +118,4 @@ func (erp *ExampleReceiver) Shutdown(context.Context) error {
 // We maintain this map because the ReceiverFactory is asked trace and metric receivers separately
 // when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
-var exampleReceivers = map[component.ReceiverConfig]*ExampleReceiver{}
+var exampleReceivers = map[component.Config]*ExampleReceiver{}

@@ -33,4 +33,4 @@ func NewExporterSettings(id component.ID) ExporterSettings {
 	return ExporterSettings{settings: newSettings(id)}
 }
 
-var _ component.ExporterConfig = (*ExporterSettings)(nil)
+var _ component.Config = (*ExporterSettings)(nil)

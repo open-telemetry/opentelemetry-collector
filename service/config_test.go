@@ -270,22 +270,22 @@ func TestConfigValidate(t *testing.T) {
 
 func generateConfig() *Config {
 	return &Config{
-		Receivers: map[component.ID]component.ReceiverConfig{
+		Receivers: map[component.ID]component.Config{
 			component.NewID("nop"): &nopRecvConfig{
 				ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
 			},
 		},
-		Exporters: map[component.ID]component.ExporterConfig{
+		Exporters: map[component.ID]component.Config{
 			component.NewID("nop"): &nopExpConfig{
 				ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
 			},
 		},
-		Processors: map[component.ID]component.ProcessorConfig{
+		Processors: map[component.ID]component.Config{
 			component.NewID("nop"): &nopProcConfig{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
 			},
 		},
-		Extensions: map[component.ID]component.ExtensionConfig{
+		Extensions: map[component.ID]component.Config{
 			component.NewID("nop"): &nopExtConfig{
 				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
 			},

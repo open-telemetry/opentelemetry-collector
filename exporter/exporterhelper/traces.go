@@ -82,7 +82,7 @@ type traceExporter struct {
 func NewTracesExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 	pusher consumer.ConsumeTracesFunc,
 	options ...Option,
 ) (component.TracesExporter, error) {

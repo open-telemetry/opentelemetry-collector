@@ -161,7 +161,7 @@ func (sl StabilityLevel) LogMessage() string {
 	return "Stability level of component is undefined"
 }
 
-// Factory is implemented by all component factories.
+// Factory is implemented by all Component factories.
 //
 // This interface cannot be directly implemented. Implementations must
 // use the factory helpers for the appropriate component type.
@@ -169,11 +169,29 @@ type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() Type
 
+	// CreateDefaultConfig creates the default configuration for the Component.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Component.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'componenttest.CheckConfigStruct'. It is recommended to have these checks in the
+	// tests of any implementation of the Factory interface.
+	CreateDefaultConfig() Config
+
 	unexportedFactoryFunc()
+}
+
+// CreateDefaultConfigFunc is the equivalent of Factory.CreateDefaultConfig().
+type CreateDefaultConfigFunc func() Config
+
+// CreateDefaultConfig implements Factory.CreateDefaultConfig().
+func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
+	return f()
 }
 
 type baseFactory struct {
 	cfgType Type
+	CreateDefaultConfigFunc
 }
 
 func (baseFactory) unexportedFactoryFunc() {}

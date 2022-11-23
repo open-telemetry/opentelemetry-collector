@@ -38,7 +38,7 @@ func TestExportersUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Exporters["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myexporter")
-	assert.Equal(t, map[component.ID]component.ExporterConfig{
+	assert.Equal(t, map[component.ID]component.Config{
 		component.NewID("nop"):                       factories.Exporters["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myexporter"): cfgWithName,
 	}, exps.GetExporters())

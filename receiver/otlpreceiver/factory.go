@@ -44,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols: Protocols{
@@ -67,7 +67,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createTracesReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
@@ -84,7 +84,7 @@ func createTracesReceiver(
 func createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
@@ -101,7 +101,7 @@ func createMetricsReceiver(
 func createLogReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {

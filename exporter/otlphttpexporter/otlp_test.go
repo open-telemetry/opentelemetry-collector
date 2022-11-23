@@ -332,7 +332,7 @@ func startLogsExporter(t *testing.T, baseURL string, overrideURL string) compone
 	return exp
 }
 
-func createExporterConfig(baseURL string, defaultCfg component.ExporterConfig) *Config {
+func createExporterConfig(baseURL string, defaultCfg component.Config) *Config {
 	cfg := defaultCfg.(*Config)
 	cfg.Endpoint = baseURL
 	cfg.QueueSettings.Enabled = false
@@ -364,7 +364,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	startAndCleanup(t, recv)
 }
 
-func createReceiverConfig(addr string, defaultCfg component.ReceiverConfig) *otlpreceiver.Config {
+func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
 	cfg.HTTP.Endpoint = addr
 	cfg.GRPC = nil

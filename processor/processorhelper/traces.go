@@ -39,7 +39,7 @@ type tracesProcessor struct {
 func NewTracesProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 	tracesFunc ProcessTracesFunc,
 	options ...Option,

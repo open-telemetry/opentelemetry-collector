@@ -37,12 +37,12 @@ type nopExtensionConfig struct {
 func NewNopExtensionFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(
 		"nop",
-		func() component.ExtensionConfig {
+		func() component.Config {
 			return &nopExtensionConfig{
 				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
 			}
 		},
-		func(context.Context, component.ExtensionCreateSettings, component.ExtensionConfig) (component.Extension, error) {
+		func(context.Context, component.ExtensionCreateSettings, component.Config) (component.Extension, error) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelStable)

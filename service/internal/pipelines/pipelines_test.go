@@ -278,7 +278,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			nopReceiverFactory.Type(): nopReceiverFactory,
 			errReceiverFactory.Type(): errReceiverFactory,
 		},
-		ReceiverConfigs: map[component.ID]component.ReceiverConfig{
+		ReceiverConfigs: map[component.ID]component.Config{
 			component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
 			component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
 		},
@@ -286,7 +286,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			nopProcessorFactory.Type(): nopProcessorFactory,
 			errProcessorFactory.Type(): errProcessorFactory,
 		},
-		ProcessorConfigs: map[component.ID]component.ProcessorConfig{
+		ProcessorConfigs: map[component.ID]component.Config{
 			component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
 			component.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
 		},
@@ -294,7 +294,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			nopExporterFactory.Type(): nopExporterFactory,
 			errExporterFactory.Type(): errExporterFactory,
 		},
-		ExporterConfigs: map[component.ID]component.ExporterConfig{
+		ExporterConfigs: map[component.ID]component.Config{
 			component.NewID(nopExporterFactory.Type()): nopExporterFactory.CreateDefaultConfig(),
 			component.NewID(errExporterFactory.Type()): errExporterFactory.CreateDefaultConfig(),
 		},
@@ -346,7 +346,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 }
 
 func newBadReceiverFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory("bf", func() component.ReceiverConfig {
+	return component.NewReceiverFactory("bf", func() component.Config {
 		return &struct {
 			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
@@ -356,7 +356,7 @@ func newBadReceiverFactory() component.ReceiverFactory {
 }
 
 func newBadProcessorFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory("bf", func() component.ProcessorConfig {
+	return component.NewProcessorFactory("bf", func() component.Config {
 		return &struct {
 			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
@@ -366,7 +366,7 @@ func newBadProcessorFactory() component.ProcessorFactory {
 }
 
 func newBadExporterFactory() component.ExporterFactory {
-	return component.NewExporterFactory("bf", func() component.ExporterConfig {
+	return component.NewExporterFactory("bf", func() component.Config {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
@@ -376,60 +376,60 @@ func newBadExporterFactory() component.ExporterFactory {
 }
 
 func newErrReceiverFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory("err", func() component.ReceiverConfig {
+	return component.NewReceiverFactory("err", func() component.Config {
 		return &struct {
 			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
 			ReceiverSettings: config.NewReceiverSettings(component.NewID("bf")),
 		}
 	},
-		component.WithTracesReceiver(func(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Traces) (component.TracesReceiver, error) {
+		component.WithTracesReceiver(func(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Traces) (component.TracesReceiver, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithLogsReceiver(func(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Logs) (component.LogsReceiver, error) {
+		component.WithLogsReceiver(func(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Logs) (component.LogsReceiver, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithMetricsReceiver(func(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Metrics) (component.MetricsReceiver, error) {
+		component.WithMetricsReceiver(func(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Metrics) (component.MetricsReceiver, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
 }
 
 func newErrProcessorFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory("err", func() component.ProcessorConfig {
+	return component.NewProcessorFactory("err", func() component.Config {
 		return &struct {
 			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
 			ProcessorSettings: config.NewProcessorSettings(component.NewID("bf")),
 		}
 	},
-		component.WithTracesProcessor(func(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Traces) (component.TracesProcessor, error) {
+		component.WithTracesProcessor(func(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Traces) (component.TracesProcessor, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithLogsProcessor(func(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Logs) (component.LogsProcessor, error) {
+		component.WithLogsProcessor(func(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Logs) (component.LogsProcessor, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithMetricsProcessor(func(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Metrics) (component.MetricsProcessor, error) {
+		component.WithMetricsProcessor(func(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Metrics) (component.MetricsProcessor, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)
 }
 
 func newErrExporterFactory() component.ExporterFactory {
-	return component.NewExporterFactory("err", func() component.ExporterConfig {
+	return component.NewExporterFactory("err", func() component.Config {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
 			ExporterSettings: config.NewExporterSettings(component.NewID("bf")),
 		}
 	},
-		component.WithTracesExporter(func(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.TracesExporter, error) {
+		component.WithTracesExporter(func(context.Context, component.ExporterCreateSettings, component.Config) (component.TracesExporter, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithLogsExporter(func(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.LogsExporter, error) {
+		component.WithLogsExporter(func(context.Context, component.ExporterCreateSettings, component.Config) (component.LogsExporter, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithMetricsExporter(func(context.Context, component.ExporterCreateSettings, component.ExporterConfig) (component.MetricsExporter, error) {
+		component.WithMetricsExporter(func(context.Context, component.ExporterCreateSettings, component.Config) (component.MetricsExporter, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)

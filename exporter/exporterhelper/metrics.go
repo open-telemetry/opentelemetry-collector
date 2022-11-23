@@ -82,7 +82,7 @@ type metricsExporter struct {
 func NewMetricsExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 	pusher consumer.ConsumeMetricsFunc,
 	options ...Option,
 ) (component.MetricsExporter, error) {

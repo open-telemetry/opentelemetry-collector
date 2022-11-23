@@ -185,20 +185,20 @@ type Settings struct {
 	// ReceiverFactories maps receiver type names in the config to the respective component.ReceiverFactory.
 	ReceiverFactories map[component.Type]component.ReceiverFactory
 
-	// ReceiverConfigs is a map of component.ID to component.ReceiverConfig.
-	ReceiverConfigs map[component.ID]component.ReceiverConfig
+	// ReceiverConfigs is a map of component.ID to component.Config.
+	ReceiverConfigs map[component.ID]component.Config
 
 	// ProcessorFactories maps processor type names in the config to the respective component.ProcessorFactory.
 	ProcessorFactories map[component.Type]component.ProcessorFactory
 
-	// ProcessorConfigs is a map of component.ID to component.ProcessorConfig.
-	ProcessorConfigs map[component.ID]component.ProcessorConfig
+	// ProcessorConfigs is a map of component.ID to component.Config.
+	ProcessorConfigs map[component.ID]component.Config
 
 	// ExporterFactories maps exporter type names in the config to the respective component.ExporterFactory.
 	ExporterFactories map[component.Type]component.ExporterFactory
 
-	// ExporterConfigs is a map of component.ID to component.ExporterConfig.
-	ExporterConfigs map[component.ID]component.ExporterConfig
+	// ExporterConfigs is a map of component.ID to component.Config.
+	ExporterConfigs map[component.ID]component.Config
 
 	// PipelineConfigs is a map of component.ID to config.Pipeline.
 	PipelineConfigs map[component.ID]*config.Pipeline
@@ -335,7 +335,7 @@ func buildExporter(
 	ctx context.Context,
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
-	cfgs map[component.ID]component.ExporterConfig,
+	cfgs map[component.ID]component.Config,
 	factories map[component.Type]component.ExporterFactory,
 	id component.ID,
 	pipelineID component.ID,
@@ -365,7 +365,7 @@ func buildExporter(
 	return exp, nil
 }
 
-func createExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig, id component.ID, pipelineID component.ID, factory component.ExporterFactory) (component.Component, error) {
+func createExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, factory component.ExporterFactory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		return factory.CreateTracesExporter(ctx, set, cfg)
@@ -428,7 +428,7 @@ func getExporterStabilityLevel(factory component.ExporterFactory, dt component.D
 func buildProcessor(ctx context.Context,
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
-	cfgs map[component.ID]component.ProcessorConfig,
+	cfgs map[component.ID]component.Config,
 	factories map[component.Type]component.ProcessorFactory,
 	id component.ID,
 	pipelineID component.ID,
@@ -458,7 +458,7 @@ func buildProcessor(ctx context.Context,
 	return proc, nil
 }
 
-func createProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig, id component.ID, pipelineID component.ID, next baseConsumer, factory component.ProcessorFactory) (component.Component, error) {
+func createProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, next baseConsumer, factory component.ProcessorFactory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		return factory.CreateTracesProcessor(ctx, set, cfg, next.(consumer.Traces))
@@ -494,7 +494,7 @@ func getProcessorStabilityLevel(factory component.ProcessorFactory, dt component
 func buildReceiver(ctx context.Context,
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
-	cfgs map[component.ID]component.ReceiverConfig,
+	cfgs map[component.ID]component.Config,
 	factories map[component.Type]component.ReceiverFactory,
 	id component.ID,
 	pipelineID component.ID,
@@ -525,7 +525,7 @@ func buildReceiver(ctx context.Context,
 	return recv, nil
 }
 
-func createReceiver(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory component.ReceiverFactory) (component.Component, error) {
+func createReceiver(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory component.ReceiverFactory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		var consumers []consumer.Traces

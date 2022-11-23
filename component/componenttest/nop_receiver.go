@@ -38,7 +38,7 @@ type nopReceiverConfig struct {
 func NewNopReceiverFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		"nop",
-		func() component.ReceiverConfig {
+		func() component.Config {
 			return &nopReceiverConfig{
 				ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
 			}
@@ -48,15 +48,15 @@ func NewNopReceiverFactory() component.ReceiverFactory {
 		component.WithLogsReceiver(createLogsReceiver, component.StabilityLevelStable))
 }
 
-func createTracesReceiver(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Traces) (component.TracesReceiver, error) {
+func createTracesReceiver(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Traces) (component.TracesReceiver, error) {
 	return nopReceiverInstance, nil
 }
 
-func createMetricsReceiver(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Metrics) (component.MetricsReceiver, error) {
 	return nopReceiverInstance, nil
 }
 
-func createLogsReceiver(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Logs) (component.LogsReceiver, error) {
 	return nopReceiverInstance, nil
 }
 

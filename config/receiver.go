@@ -32,4 +32,4 @@ func NewReceiverSettings(id component.ID) ReceiverSettings {
 	return ReceiverSettings{settings: newSettings(id)}
 }
 
-var _ component.ReceiverConfig = (*ReceiverSettings)(nil)
+var _ component.Config = (*ReceiverSettings)(nil)

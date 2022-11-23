@@ -39,7 +39,7 @@ type metricsProcessor struct {
 func NewMetricsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 	metricsFunc ProcessMetricsFunc,
 	options ...Option,

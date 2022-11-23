@@ -38,7 +38,7 @@ func TestReceiversUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Receivers["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myreceiver")
-	assert.Equal(t, map[component.ID]component.ReceiverConfig{
+	assert.Equal(t, map[component.ID]component.Config{
 		component.NewID("nop"):                       factories.Receivers["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myreceiver"): cfgWithName,
 	}, recvs.GetReceivers())
