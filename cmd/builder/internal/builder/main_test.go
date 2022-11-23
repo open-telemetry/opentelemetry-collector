@@ -15,6 +15,8 @@
 package builder
 
 import (
+	"fmt"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -49,8 +51,12 @@ func TestGenerateAndCompileDefault(t *testing.T) {
 	cfg := NewDefaultConfig()
 	cfg.Distribution.OutputPath = t.TempDir()
 
-	// we override this version, otherwise this would break during releases
-	cfg.Distribution.OtelColVersion = "0.52.0"
+	// This test is dependent on the current file structure.
+	// The goal is find the root of the repo so we can replace the root module.
+	_, thisFile, _, _ := runtime.Caller(0)
+	workspaceDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
+	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector => %s", workspaceDir))
+	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/component => %s/component", workspaceDir))
 
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())
