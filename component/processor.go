@@ -34,9 +34,6 @@ func UnmarshalProcessorConfig(conf *confmap.Conf, cfg ProcessorConfig) error {
 	return unmarshal(conf, cfg)
 }
 
-// Deprecated: [v0.65.0] unnecessary interface, will be removed.
-type Processor = Component
-
 // TracesProcessor is a processor that can consume traces.
 type TracesProcessor interface {
 	Component
