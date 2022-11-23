@@ -96,10 +96,12 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	return &Collector{
-		set:               set,
-		state:             atomic.NewInt32(int32(StateStarting)),
-		shutdownChan:      make(chan struct{}),
-		signalsChannel:    make(chan os.Signal, 1),
+		set:          set,
+		state:        atomic.NewInt32(int32(StateStarting)),
+		shutdownChan: make(chan struct{}),
+		// Per signal.Notify documentation, a size of the channel equaled with
+		// the number of signals getting notified on is recommended.
+		signalsChannel:    make(chan os.Signal, 3),
 		asyncErrorChannel: make(chan error),
 	}, nil
 }
@@ -183,6 +185,7 @@ func (col *Collector) Run(ctx context.Context) error {
 
 	// Always notify with SIGHUP for configuration reloading.
 	signal.Notify(col.signalsChannel, syscall.SIGHUP)
+	defer signal.Stop(col.signalsChannel)
 
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
 	if !col.set.DisableGracefulShutdown {
@@ -197,7 +200,6 @@ LOOP:
 				col.service.telemetrySettings.Logger.Error("Config watch failed", zap.Error(err))
 				break LOOP
 			}
-
 			if err = col.reloadConfiguration(ctx); err != nil {
 				return err
 			}
@@ -206,20 +208,17 @@ LOOP:
 			break LOOP
 		case s := <-col.signalsChannel:
 			col.service.telemetrySettings.Logger.Info("Received signal from OS", zap.String("signal", s.String()))
-			switch s {
-			case syscall.SIGHUP:
-				if err := col.reloadConfiguration(ctx); err != nil {
-					return err
-				}
-			default:
+			if s != syscall.SIGHUP {
 				break LOOP
+			}
+			if err := col.reloadConfiguration(ctx); err != nil {
+				return err
 			}
 		case <-col.shutdownChan:
 			col.service.telemetrySettings.Logger.Info("Received shutdown request")
 			break LOOP
 		case <-ctx.Done():
 			col.service.telemetrySettings.Logger.Info("Context done, terminating process", zap.Error(ctx.Err()))
-
 			// Call shutdown with background context as the passed in context has been canceled
 			return col.shutdown(context.Background())
 		}
