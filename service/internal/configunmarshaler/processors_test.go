@@ -38,7 +38,7 @@ func TestProcessorsUnmarshal(t *testing.T) {
 
 	cfgWithName := factories.Processors["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myprocessor")
-	assert.Equal(t, map[component.ID]component.ProcessorConfig{
+	assert.Equal(t, map[component.ID]component.Config{
 		component.NewID("nop"):                        factories.Processors["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myprocessor"): cfgWithName,
 	}, procs.procs)

@@ -16,20 +16,13 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/confmap"
 )
 
-// ExtensionConfig is the configuration of a component.Extension. Specific Extension must implement
-// this interface and must embed config.ExtensionSettings struct or a struct that extends it.
-type ExtensionConfig interface {
-	Config
-}
+// Deprecated: [v0.67.0] use Config.
+type ExtensionConfig = Config
 
 // Deprecated: [v0.67.0] use UnmarshalConfig.
-func UnmarshalExtensionConfig(conf *confmap.Conf, cfg ExtensionConfig) error {
-	return UnmarshalConfig(conf, cfg)
-}
+var UnmarshalExtensionConfig = UnmarshalConfig
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
@@ -61,19 +54,14 @@ type ExtensionCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// ExtensionCreateDefaultConfigFunc is the equivalent of ExtensionFactory.CreateDefaultConfig()
-type ExtensionCreateDefaultConfigFunc func() ExtensionConfig
-
-// CreateDefaultConfig implements ExtensionFactory.CreateDefaultConfig()
-func (f ExtensionCreateDefaultConfigFunc) CreateDefaultConfig() ExtensionConfig {
-	return f()
-}
+// Deprecated: [v0.67.0] use CreateDefaultConfigFunc.
+type ExtensionCreateDefaultConfigFunc = CreateDefaultConfigFunc
 
 // CreateExtensionFunc is the equivalent of ExtensionFactory.CreateExtension()
-type CreateExtensionFunc func(context.Context, ExtensionCreateSettings, ExtensionConfig) (Extension, error)
+type CreateExtensionFunc func(context.Context, ExtensionCreateSettings, Config) (Extension, error)
 
 // CreateExtension implements ExtensionFactory.CreateExtension.
-func (f CreateExtensionFunc) CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg ExtensionConfig) (Extension, error) {
+func (f CreateExtensionFunc) CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg Config) (Extension, error) {
 	return f(ctx, set, cfg)
 }
 
@@ -81,17 +69,8 @@ func (f CreateExtensionFunc) CreateExtension(ctx context.Context, set ExtensionC
 type ExtensionFactory interface {
 	Factory
 
-	// CreateDefaultConfig creates the default configuration for the Extension.
-	// This method can be called multiple times depending on the pipeline
-	// configuration and should not cause side-effects that prevent the creation
-	// of multiple instances of the Extension.
-	// The object returned by this method needs to pass the checks implemented by
-	// 'componenttest.CheckConfigStruct'. It is recommended to have these checks in the
-	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() ExtensionConfig
-
 	// CreateExtension creates an extension based on the given config.
-	CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg ExtensionConfig) (Extension, error)
+	CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg Config) (Extension, error)
 
 	// ExtensionStability gets the stability level of the Extension.
 	ExtensionStability() StabilityLevel
@@ -99,7 +78,6 @@ type ExtensionFactory interface {
 
 type extensionFactory struct {
 	baseFactory
-	ExtensionCreateDefaultConfigFunc
 	CreateExtensionFunc
 	extensionStability StabilityLevel
 }
@@ -111,13 +89,15 @@ func (ef *extensionFactory) ExtensionStability() StabilityLevel {
 // NewExtensionFactory returns a new ExtensionFactory  based on this configuration.
 func NewExtensionFactory(
 	cfgType Type,
-	createDefaultConfig ExtensionCreateDefaultConfigFunc,
+	createDefaultConfig CreateDefaultConfigFunc,
 	createServiceExtension CreateExtensionFunc,
 	sl StabilityLevel) ExtensionFactory {
 	return &extensionFactory{
-		baseFactory:                      baseFactory{cfgType: cfgType},
-		ExtensionCreateDefaultConfigFunc: createDefaultConfig,
-		CreateExtensionFunc:              createServiceExtension,
-		extensionStability:               sl,
+		baseFactory: baseFactory{
+			cfgType:                 cfgType,
+			CreateDefaultConfigFunc: createDefaultConfig,
+		},
+		CreateExtensionFunc: createServiceExtension,
+		extensionStability:  sl,
 	}
 }

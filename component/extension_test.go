@@ -38,8 +38,8 @@ func TestNewExtensionFactory(t *testing.T) {
 
 	factory := component.NewExtensionFactory(
 		typeStr,
-		func() component.ExtensionConfig { return &defaultCfg },
-		func(ctx context.Context, settings component.ExtensionCreateSettings, extension component.ExtensionConfig) (component.Extension, error) {
+		func() component.Config { return &defaultCfg },
+		func(ctx context.Context, settings component.ExtensionCreateSettings, extension component.Config) (component.Extension, error) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelDevelopment)

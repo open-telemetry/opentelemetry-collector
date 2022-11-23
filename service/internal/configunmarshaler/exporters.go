@@ -25,7 +25,7 @@ import (
 const exportersKeyName = "exporters"
 
 type Exporters struct {
-	exps map[component.ID]component.ExporterConfig
+	exps map[component.ID]component.Config
 
 	factories map[component.Type]component.ExporterFactory
 }
@@ -41,7 +41,7 @@ func (e *Exporters) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	// Prepare resulting map.
-	e.exps = make(map[component.ID]component.ExporterConfig)
+	e.exps = make(map[component.ID]component.Config)
 
 	// Iterate over Exporters and create a config for each.
 	for id, value := range rawExps {
@@ -67,6 +67,6 @@ func (e *Exporters) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (e *Exporters) GetExporters() map[component.ID]component.ExporterConfig {
+func (e *Exporters) GetExporters() map[component.ID]component.Config {
 	return e.exps
 }

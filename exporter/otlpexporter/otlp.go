@@ -58,7 +58,7 @@ type exporter struct {
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings) (*exporter, error) {
+func newExporter(cfg component.Config, set component.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {

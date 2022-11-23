@@ -32,7 +32,7 @@ type Config struct {
 	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
 }
 
-var _ component.ExtensionConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {

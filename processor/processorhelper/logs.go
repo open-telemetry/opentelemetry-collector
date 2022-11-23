@@ -39,7 +39,7 @@ type logProcessor struct {
 func NewLogsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 	logsFunc ProcessLogsFunc,
 	options ...Option,

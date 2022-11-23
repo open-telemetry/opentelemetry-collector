@@ -42,15 +42,6 @@ type CreateSettings struct {
 // use the NewFactory to implement it.
 type Factory interface {
 	component.Factory
-
-	// CreateDefaultConfig creates the default configuration for the Connector.
-	// This method can be called multiple times depending on the pipeline
-	// configuration and should not cause side-effects that prevent the creation
-	// of multiple instances of the Connector.
-	// The object returned by this method needs to pass the checks implemented by
-	// 'configtest.CheckConfigStruct'. It is recommended to have these checks in the
-	// tests of any implementation of the Factory interface.
-	CreateDefaultConfig() component.Config
 }
 
 // FactoryOption applies changes to Factory.
@@ -80,6 +71,12 @@ var _ Factory = (*factory)(nil)
 // Type returns the type of component.
 func (f *factory) Type() component.Type {
 	return f.cfgType
+}
+
+// CreateDefaultConfig creates the default configuration for the Component.
+// TODO: Remove this when we remove the private func from component.Factory and add it to every specialized Factory.
+func (f *factory) CreateDefaultConfig() component.Config {
+	return f.CreateDefaultConfigFunc()
 }
 
 // NewFactory returns a Factory.

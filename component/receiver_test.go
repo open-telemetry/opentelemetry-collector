@@ -32,7 +32,7 @@ func TestNewReceiverFactory(t *testing.T) {
 	defaultCfg := config.NewReceiverSettings(component.NewID(typeStr))
 	factory := component.NewReceiverFactory(
 		typeStr,
-		func() component.ReceiverConfig { return &defaultCfg })
+		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{}, &defaultCfg, nil)
@@ -48,7 +48,7 @@ func TestNewReceiverFactory_WithOptions(t *testing.T) {
 	defaultCfg := config.NewReceiverSettings(component.NewID(typeStr))
 	factory := component.NewReceiverFactory(
 		typeStr,
-		func() component.ReceiverConfig { return &defaultCfg },
+		func() component.Config { return &defaultCfg },
 		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelDeprecated),
 		component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelAlpha),
 		component.WithLogsReceiver(createLogsReceiver, component.StabilityLevelStable))
@@ -68,14 +68,14 @@ func TestNewReceiverFactory_WithOptions(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func createTracesReceiver(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Traces) (component.TracesReceiver, error) {
+func createTracesReceiver(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Traces) (component.TracesReceiver, error) {
 	return nil, nil
 }
 
-func createMetricsReceiver(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Metrics) (component.MetricsReceiver, error) {
 	return nil, nil
 }
 
-func createLogsReceiver(context.Context, component.ReceiverCreateSettings, component.ReceiverConfig, consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Logs) (component.LogsReceiver, error) {
 	return nil, nil
 }

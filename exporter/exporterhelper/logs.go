@@ -81,7 +81,7 @@ type logsExporter struct {
 func NewLogsExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 	pusher consumer.ConsumeLogsFunc,
 	options ...Option,
 ) (component.LogsExporter, error) {

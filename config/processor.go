@@ -32,4 +32,4 @@ func NewProcessorSettings(id component.ID) ProcessorSettings {
 	return ProcessorSettings{settings: newSettings(id)}
 }
 
-var _ component.ProcessorConfig = (*ProcessorSettings)(nil)
+var _ component.Config = (*ProcessorSettings)(nil)

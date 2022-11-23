@@ -155,7 +155,7 @@ type baseExporter struct {
 	qrSender *queuedRetrySender
 }
 
-func newBaseExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings, bs *baseSettings, signal component.DataType, reqUnmarshaler internal.RequestUnmarshaler) (*baseExporter, error) {
+func newBaseExporter(cfg component.Config, set component.ExporterCreateSettings, bs *baseSettings, signal component.DataType, reqUnmarshaler internal.RequestUnmarshaler) (*baseExporter, error) {
 	be := &baseExporter{}
 
 	var err error

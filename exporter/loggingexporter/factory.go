@@ -49,7 +49,7 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		LogLevel:           zapcore.InfoLevel,
@@ -59,7 +59,7 @@ func createDefaultConfig() component.ExporterConfig {
 	}
 }
 
-func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
@@ -74,7 +74,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 	)
 }
 
-func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
@@ -89,7 +89,7 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	)
 }
 
-func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
 	s := newLoggingExporter(exporterLogger, cfg.Verbosity)

@@ -32,7 +32,7 @@ func TestNewProcessorFactory(t *testing.T) {
 	defaultCfg := config.NewProcessorSettings(component.NewID(typeStr))
 	factory := component.NewProcessorFactory(
 		typeStr,
-		func() component.ProcessorConfig { return &defaultCfg })
+		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
@@ -48,7 +48,7 @@ func TestNewProcessorFactory_WithOptions(t *testing.T) {
 	defaultCfg := config.NewProcessorSettings(component.NewID(typeStr))
 	factory := component.NewProcessorFactory(
 		typeStr,
-		func() component.ProcessorConfig { return &defaultCfg },
+		func() component.Config { return &defaultCfg },
 		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelAlpha),
 		component.WithMetricsProcessor(createMetricsProcessor, component.StabilityLevelBeta),
 		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelUnmaintained))
@@ -68,14 +68,14 @@ func TestNewProcessorFactory_WithOptions(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func createTracesProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Traces) (component.TracesProcessor, error) {
 	return nil, nil
 }
 
-func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Metrics) (component.MetricsProcessor, error) {
 	return nil, nil
 }
 
-func createLogsProcessor(context.Context, component.ProcessorCreateSettings, component.ProcessorConfig, consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Logs) (component.LogsProcessor, error) {
 	return nil, nil
 }
