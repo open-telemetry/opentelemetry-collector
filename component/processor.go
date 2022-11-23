@@ -27,11 +27,9 @@ type ProcessorConfig interface {
 	Config
 }
 
-// UnmarshalProcessorConfig helper function to unmarshal a ProcessorConfig.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+// Deprecated: [v0.67.0] use UnmarshalConfig.
 func UnmarshalProcessorConfig(conf *confmap.Conf, cfg ProcessorConfig) error {
-	return unmarshal(conf, cfg)
+	return UnmarshalConfig(conf, cfg)
 }
 
 // TracesProcessor is a processor that can consume traces.

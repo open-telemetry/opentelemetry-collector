@@ -56,7 +56,7 @@ func (p *Processors) Unmarshal(conf *confmap.Conf) error {
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalProcessorConfig(confmap.NewFromStringMap(value), processorCfg); err != nil {
+		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), processorCfg); err != nil {
 			return errorUnmarshalError(processorsKeyName, id, err)
 		}
 

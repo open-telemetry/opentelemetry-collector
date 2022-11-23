@@ -27,11 +27,9 @@ type ReceiverConfig interface {
 	Config
 }
 
-// UnmarshalReceiverConfig helper function to unmarshal a ReceiverConfig.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
+// Deprecated: [v0.67.0] use UnmarshalConfig.
 func UnmarshalReceiverConfig(conf *confmap.Conf, cfg ReceiverConfig) error {
-	return unmarshal(conf, cfg)
+	return UnmarshalConfig(conf, cfg)
 }
 
 // A TracesReceiver receives traces.

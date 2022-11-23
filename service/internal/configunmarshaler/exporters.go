@@ -57,7 +57,7 @@ func (e *Exporters) Unmarshal(conf *confmap.Conf) error {
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalExporterConfig(confmap.NewFromStringMap(value), exporterCfg); err != nil {
+		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), exporterCfg); err != nil {
 			return errorUnmarshalError(exportersKeyName, id, err)
 		}
 

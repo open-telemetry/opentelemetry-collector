@@ -57,7 +57,7 @@ func (r *Receivers) Unmarshal(conf *confmap.Conf) error {
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalReceiverConfig(confmap.NewFromStringMap(value), receiverCfg); err != nil {
+		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), receiverCfg); err != nil {
 			return errorUnmarshalError(receiversKeyName, id, err)
 		}
 

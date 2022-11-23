@@ -34,7 +34,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalExporterConfig(confmap.New(), cfg))
+	assert.NoError(t, component.UnmarshalConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	// Default/Empty config is invalid.
 	assert.Error(t, component.ValidateConfig(cfg))
@@ -45,7 +45,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalExporterConfig(cm, cfg))
+	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
