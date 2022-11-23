@@ -1,9 +1,7 @@
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
 ALL_PKGS := $(sort $(shell go list ./...))
 
-# Use a single process (-p 1) on go test to avoid tests clashing on machine
-# wide resources, e.g. ports.
-GOTEST_OPT?= -v -p 1 -race -timeout 120s
+GOTEST_OPT?= -race -timeout 120s
 GOCMD?= go
 GOTEST=$(GOCMD) test
 GO_ACC=go-acc
