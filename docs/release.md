@@ -40,6 +40,8 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
     * Update CHANGELOG.md file, this is done via `chloggen`. Run the following command from the root of the opentelemetry-collector-contrib repo:
       * `make chlog-update VERSION=v0.55.0`
 
+    * Update the version numbers in `cmd/builder/test/core.builder.yaml`
+
     * Run `make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0`
 
     * Ensure the `main` branch builds successfully.
@@ -92,12 +94,12 @@ The last step of the release process creates artifacts for the new version of th
 1. Ensure the "Release" action passes, this will
 
     1. push new container images to https://hub.docker.com/repository/docker/otel/opentelemetry-collector
-    
+
     1. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/runs/1346637081).
 
 ## Troubleshooting
 
-1. `unknown revision internal/coreinternal/v0.55.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module. 
+1. `unknown revision internal/coreinternal/v0.55.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module.
 2. `commitChangesToNewBranch failed: invalid merge` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/47) with our release tooling. The current workaround is to clone a fresh copy of the repository and try again. Note that you may need to set up a `fork` remote pointing to your own fork for the release tooling to work properly.
 3. `could not run Go Mod Tidy: go mod tidy failed` when running `multimod` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/46) with our release tooling. The current workaround is to run `make gotidy` manually after the multimod tool fails and commit the result.
 
