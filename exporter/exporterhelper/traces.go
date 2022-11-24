@@ -99,7 +99,7 @@ func NewTracesExporter(
 	}
 
 	bs := fromOptions(options...)
-	be, err := newBaseExporter(cfg, set, bs, component.DataTypeTraces, newTraceRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, bs, component.DataTypeTraces, newTraceRequestUnmarshalerFunc(pusher))
 	if err != nil {
 		return nil, err
 	}

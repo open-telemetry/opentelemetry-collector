@@ -98,7 +98,7 @@ func NewLogsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be, err := newBaseExporter(cfg, set, bs, component.DataTypeLogs, newLogsRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, bs, component.DataTypeLogs, newLogsRequestUnmarshalerFunc(pusher))
 	if err != nil {
 		return nil, err
 	}

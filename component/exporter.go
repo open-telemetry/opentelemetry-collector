@@ -46,6 +46,9 @@ type LogsExporter interface {
 
 // ExporterCreateSettings configures Exporter creators.
 type ExporterCreateSettings struct {
+	// ID returns the ID of the component that will be created.
+	ID ID
+
 	TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes

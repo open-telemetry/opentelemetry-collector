@@ -48,6 +48,9 @@ type PipelineWatcher interface {
 
 // ExtensionCreateSettings is passed to ExtensionFactory.Create* functions.
 type ExtensionCreateSettings struct {
+	// ID returns the ID of the component that will be created.
+	ID ID
+
 	TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes

@@ -175,7 +175,7 @@ func (r *otlpReceiver) registerTraceConsumer(tc consumer.Traces) error {
 		return component.ErrNilNextConsumer
 	}
 	var err error
-	r.traceReceiver, err = trace.New(r.cfg.ID(), tc, r.settings)
+	r.traceReceiver, err = trace.New(tc, r.settings)
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func (r *otlpReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 		return component.ErrNilNextConsumer
 	}
 	var err error
-	r.metricsReceiver, err = metrics.New(r.cfg.ID(), mc, r.settings)
+	r.metricsReceiver, err = metrics.New(mc, r.settings)
 	if err != nil {
 		return err
 	}
@@ -232,7 +232,7 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) error {
 		return component.ErrNilNextConsumer
 	}
 	var err error
-	r.logReceiver, err = logs.New(r.cfg.ID(), lc, r.settings)
+	r.logReceiver, err = logs.New(lc, r.settings)
 	if err != nil {
 		return err
 	}

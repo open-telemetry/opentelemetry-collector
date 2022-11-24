@@ -99,7 +99,7 @@ func NewMetricsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be, err := newBaseExporter(cfg, set, bs, component.DataTypeMetrics, newMetricsRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, bs, component.DataTypeMetrics, newMetricsRequestUnmarshalerFunc(pusher))
 	if err != nil {
 		return nil, err
 	}

@@ -115,7 +115,7 @@ func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memo
 		zap.Duration("check_interval", cfg.CheckInterval))
 
 	obsrep, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
-		ProcessorID:             cfg.ID(),
+		ProcessorID:             set.ID,
 		ProcessorCreateSettings: set,
 	})
 	if err != nil {

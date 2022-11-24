@@ -53,7 +53,7 @@ func (e *Extensions) Unmarshal(conf *confmap.Conf) error {
 
 		// Create the default config for this extension.
 		extensionCfg := factory.CreateDefaultConfig()
-		extensionCfg.SetIDName(id.Name())
+		extensionCfg.SetIDName(id.Name()) //nolint:staticcheck
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.

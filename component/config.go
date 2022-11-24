@@ -23,7 +23,11 @@ import (
 )
 
 type Config interface {
-	identifiable
+	// Deprecated: [v0.67.0] use Settings.ID.
+	ID() ID
+
+	// Deprecated: [v0.67.0] use Settings.ID.
+	SetIDName(idName string)
 
 	privateConfig()
 }

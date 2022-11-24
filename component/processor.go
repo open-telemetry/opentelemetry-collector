@@ -46,6 +46,9 @@ type LogsProcessor interface {
 
 // ProcessorCreateSettings is passed to Create* functions in ProcessorFactory.
 type ProcessorCreateSettings struct {
+	// ID returns the ID of the component that will be created.
+	ID ID
+
 	TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes

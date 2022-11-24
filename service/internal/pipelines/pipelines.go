@@ -351,6 +351,7 @@ func buildExporter(
 	}
 
 	set := component.ExporterCreateSettings{
+		ID:                id,
 		TelemetrySettings: settings,
 		BuildInfo:         buildInfo,
 	}
@@ -445,6 +446,7 @@ func buildProcessor(ctx context.Context,
 	}
 
 	set := component.ProcessorCreateSettings{
+		ID:                id,
 		TelemetrySettings: settings,
 		BuildInfo:         buildInfo,
 	}
@@ -511,6 +513,7 @@ func buildReceiver(ctx context.Context,
 	}
 
 	set := component.ReceiverCreateSettings{
+		ID:                id,
 		TelemetrySettings: settings,
 		BuildInfo:         buildInfo,
 	}

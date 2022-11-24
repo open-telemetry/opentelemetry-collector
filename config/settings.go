@@ -29,12 +29,12 @@ func newSettings(id component.ID) settings {
 
 var _ component.Config = (*settings)(nil)
 
-// ID returns the receiver component.ID.
+// Deprecated: [v0.67.0] use Settings.ID.
 func (es *settings) ID() component.ID {
 	return es.id
 }
 
-// SetIDName sets the receiver name.
+// Deprecated: [v0.67.0] use Settings.ID.
 func (es *settings) SetIDName(idName string) {
 	es.id = component.NewIDWithName(es.id.Type(), idName)
 }
