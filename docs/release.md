@@ -144,9 +144,9 @@ The following documents the procedure to release a bugfix
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-12-07 | v0.66.0 | @Aneurysm9      |
-| 2022-12-21 | v0.67.0 | @mx-psi         |
-| 2023-01-04 | v0.68.0 | @dmitryax       |
-| 2023-01-18 | v0.69.0 | @bogdandrutu    |
-| 2022-02-01 | v0.70.0 | @codeboten      |
-| 2022-02-15 | v0.71.0 | @jpkrohling     |
+| 2022-12-07 | v0.67.0 | @Aneurysm9      |
+| 2022-12-21 | v0.68.0 | @mx-psi         |
+| 2023-01-04 | v0.69.0 | @dmitryax       |
+| 2023-01-18 | v0.70.0 | @bogdandrutu    |
+| 2022-02-01 | v0.71.0 | @codeboten      |
+| 2022-02-15 | v0.72.0 | @jpkrohling     |
