@@ -5,7 +5,7 @@ change_type: enhancement
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:  Added build-info sub command which outputs components in collector distribution.
+note:  Added components sub command which outputs components in collector distribution.
 
 # One or more tracking issues or pull requests related to the change
 issues: [4671]
