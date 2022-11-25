@@ -63,7 +63,7 @@ When submitting a component to the community, consider breaking it down into sep
   binary by updating the `components.go` file. The component must be enabled
   only after sufficient testing, and there is enough confidence in the
   stability and quality of the component.
-* Once a new component has been added to the executable, please add the component 
+* Once a new component has been added to the executable, please add the component
   to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 * intra-repository `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
   on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).
@@ -354,12 +354,12 @@ The following limitations are recommended:
 
 ### Observability
 
-Out of the box, your users should be able to observe the state of your component. 
+Out of the box, your users should be able to observe the state of your component.
 The collector exposes an OpenMetrics endpoint at `http://localhost:8888/metrics`
 where your data will land.
 
-When using the regular helpers, you should have some metrics added around key 
-events automatically. For instance, exporters should have `otelcol_exporter_sent_spans` 
+When using the regular helpers, you should have some metrics added around key
+events automatically. For instance, exporters should have `otelcol_exporter_sent_spans`
 tracked without your exporter doing anything.
 
 ### Resource Usage
@@ -395,7 +395,7 @@ do not decrease overall code coverage of the codebase - this is aligned with our
 goal to increase coverage over time. Keep track of execution time for your unit
 tests and try to keep them as short as possible.
 
-#### Testing Library Recommendations 
+#### Testing Library Recommendations
 
 To keep testing practices consistent across the project, it is advised to use these libraries under
 these circumstances:
@@ -412,7 +412,7 @@ a local version. In their absence, it is strongly advised to mock the integratio
 
 ### Using CGO
 
-Using CGO is prohibited due to the lack of portability and complexity 
+Using CGO is prohibited due to the lack of portability and complexity
 that comes with managing external libaries with different operating systems and configurations.
 However, if the package MUST use CGO, this should be explicitly called out within the readme
 with clear instructions on how to install the required libraries.
@@ -546,11 +546,49 @@ go: github.com/golangci/golangci-lint@v1.31.0 requires
 
 `export GOPROXY=https://proxy.golang.org,direct`
 
+### Makefile Guidelines
+
+When adding or modifying the `Makefile`'s in this repository, consider the following design guidelines.
+
+Make targets are organized according to whether they apply to the entire repository, or only to an individual module.
+The [Makefile](./Makefile) SHOULD contain "repo-level" targets. (i.e. targets that apply to the entire repo.)
+Likewise, `Makefile.Common` SHOULD contain "module-level" targets. (i.e. targets that apply to one module at a time.)
+Each module should have a `Makefile` at its root that includes `Makefile.Common`.
+
+#### Module-level targets
+
+Module-level targets SHOULD NOT act on nested modules. For example, running `make lint` at the root of the repo will
+_only_ evaluate code that is part of the `go.opentelemetry.io/collector` module. This excludes nested modules such as
+`go.opentelemetry.io/collector/component`.
+
+Each module-level target SHOULD have a corresponding repo-level target. For example, `make golint` will run `make lint`
+in each module. In this way, the entire repository is covered. The root `Makefile` contains some "for each module" targets
+that can wrap a module-level target into a repo-level target.
+
+#### Repo-level targets
+
+Whenever reasonable, targets SHOULD be implemented as module-level targets (and wrapped with a repo-level target).
+However, there are many valid justifications for implementing a standalone repo-level target.
+
+1. The target naturally applies to the repo as a whole. (e.g. Building the collector.)
+2. Interaction between modules would be problematic.
+3. A necessary tool does not provide a mechanism for scoping its application. (e.g. `porto` cannot be limited to a specific module.)
+4. The "for each module" pattern would result in incomplete coverage of the codebase. (e.g. A target that scans all file, not just `.go` files.)
+
+#### Default targets
+
+The default module-level target (i.e. running `make` in the context of an individual module), should run a substantial set of module-level
+targets for an individual module. Ideally, this would include *all* module-level targets, but exceptions should be made if a particular
+target would result in unacceptable latency in the local development loop.
+
+The default repo-level target (i.e. running `make` at the root of the repo) should meaningfully validate the entire repo. This should include
+running the default common target for each module as well as additional repo-level targets.
+
 ## Exceptions
 
-While the rules in this and other documents in this repository is what we strive to follow, we acknowledge that rules may be 
-unfeasible to be applied in some situations. Exceptions to the rules 
+While the rules in this and other documents in this repository is what we strive to follow, we acknowledge that rules may be
+unfeasible to be applied in some situations. Exceptions to the rules
 on this and other documents are acceptable if consensus can be obtained from approvers in the pull request they are proposed.
-A reason for requesting the exception MUST be given in the pull request. Until unanimity is obtained, approvers and maintainers are 
-encouraged to discuss the issue at hand. If a consensus (unanimity) cannot be obtained, the maintainers are then tasked in getting a 
+A reason for requesting the exception MUST be given in the pull request. Until unanimity is obtained, approvers and maintainers are
+encouraged to discuss the issue at hand. If a consensus (unanimity) cannot be obtained, the maintainers are then tasked in getting a
 decision using its regular means (voting, TC help, ...).
