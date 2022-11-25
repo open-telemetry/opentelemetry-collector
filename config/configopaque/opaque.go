@@ -28,3 +28,6 @@ var _ encoding.TextMarshaler = String("")
 func (s String) MarshalText() ([]byte, error) {
 	return bytes.Repeat([]byte("*"), len(s)), nil
 }
+
+// Headers is a string map with opaque values for configuration fields that set HTTP headers.
+type Headers map[string]String

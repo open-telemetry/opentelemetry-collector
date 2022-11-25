@@ -15,16 +15,28 @@
 package configopaque // import "go.opentelemetry.io/collector/config/configopaque"
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestOpaqueStringMarshalText(t *testing.T) {
+func TestStringMarshalText(t *testing.T) {
 	var example String = "opaque"
 
 	opaque, err := example.MarshalText()
 	require.NoError(t, err)
 	assert.Equal(t, "******", string(opaque))
+}
+
+func TestHeadersMarshalText(t *testing.T) {
+	var example = Headers{
+		"x-field-key":   "opaque",
+		"x-field-key-2": "opaque-2",
+	}
+
+	opaque, err := json.Marshal(example)
+	require.NoError(t, err)
+	assert.Equal(t, "{\"x-field-key\":\"******\",\"x-field-key-2\":\"********\"}", string(opaque))
 }
