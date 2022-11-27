@@ -42,7 +42,7 @@ var (
 
 // BuildProcessorCustomMetricName is used to be build a metric name following
 // the standards used in the Collector. The configType should be the same
-// value used to identify the type on the component.
+// value used to identify the type on the config.
 func BuildProcessorCustomMetricName(configType, metric string) string {
 	componentPrefix := obsmetrics.ProcessorPrefix
 	if !strings.HasSuffix(componentPrefix, obsmetrics.NameSep) {
@@ -85,16 +85,6 @@ type ProcessorSettings struct {
 // NewProcessor creates a new Processor.
 func NewProcessor(cfg ProcessorSettings) (*Processor, error) {
 	return newProcessor(cfg, featuregate.GetRegistry())
-}
-
-// Deprecated: [v0.65.0] use NewProcessor.
-func MustNewProcessor(cfg ProcessorSettings) *Processor {
-	proc, err := NewProcessor(cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	return proc
 }
 
 func newProcessor(cfg ProcessorSettings, registry *featuregate.Registry) (*Processor, error) {
