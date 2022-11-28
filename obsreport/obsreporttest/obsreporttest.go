@@ -16,9 +16,6 @@ package obsreporttest // import "go.opentelemetry.io/collector/obsreport/obsrepo
 
 import (
 	"context"
-	"fmt"
-	"reflect"
-	"sort"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
@@ -157,32 +154,20 @@ func CheckExporterLogs(tts TestTelemetry, exporter component.ID, sentLogRecords,
 
 // CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckProcessorTraces(_ TestTelemetry, processor component.ID, acceptedSpans, refusedSpans, droppedSpans int64) error {
-	processorTags := tagsForProcessorView(processor)
-	return multierr.Combine(
-		checkValueForView(processorTags, acceptedSpans, "processor/accepted_spans"),
-		checkValueForView(processorTags, refusedSpans, "processor/refused_spans"),
-		checkValueForView(processorTags, droppedSpans, "processor/dropped_spans"))
+func CheckProcessorTraces(tts TestTelemetry, processor component.ID, acceptedSpans, refusedSpans, droppedSpans int64) error {
+	return tts.otelPrometheusChecker.checkProcessorTraces(processor, acceptedSpans, refusedSpans, droppedSpans)
 }
 
 // CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckProcessorMetrics(_ TestTelemetry, processor component.ID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
-	processorTags := tagsForProcessorView(processor)
-	return multierr.Combine(
-		checkValueForView(processorTags, acceptedMetricPoints, "processor/accepted_metric_points"),
-		checkValueForView(processorTags, refusedMetricPoints, "processor/refused_metric_points"),
-		checkValueForView(processorTags, droppedMetricPoints, "processor/dropped_metric_points"))
+func CheckProcessorMetrics(tts TestTelemetry, processor component.ID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
+	return tts.otelPrometheusChecker.checkProcessorMetrics(processor, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints)
 }
 
 // CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
 // When this function is called it is required to also call SetupTelemetry as first thing.
-func CheckProcessorLogs(_ TestTelemetry, processor component.ID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
-	processorTags := tagsForProcessorView(processor)
-	return multierr.Combine(
-		checkValueForView(processorTags, acceptedLogRecords, "processor/accepted_log_records"),
-		checkValueForView(processorTags, refusedLogRecords, "processor/refused_log_records"),
-		checkValueForView(processorTags, droppedLogRecords, "processor/dropped_log_records"))
+func CheckProcessorLogs(tts TestTelemetry, processor component.ID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
+	return tts.otelPrometheusChecker.checkProcessorLogs(processor, acceptedLogRecords, refusedLogRecords, droppedLogRecords)
 }
 
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
@@ -207,42 +192,4 @@ func CheckReceiverMetrics(tts TestTelemetry, receiver component.ID, protocol str
 // When this function is called it is required to also call SetupTelemetry as first thing.
 func CheckScraperMetrics(tts TestTelemetry, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
 	return tts.otelPrometheusChecker.checkScraperMetrics(receiver, scraper, scrapedMetricPoints, erroredMetricPoints)
-}
-
-// checkValueForView checks that for the current exported value in the view with the given name
-// for {LegacyTagKeyReceiver: receiverName} is equal to "value".
-func checkValueForView(wantTags []tag.Tag, value int64, vName string) error {
-	// Make sure the tags slice is sorted by tag keys.
-	sortTags(wantTags)
-
-	rows, err := view.RetrieveData(vName)
-	if err != nil {
-		return err
-	}
-
-	for _, row := range rows {
-		// Make sure the tags slice is sorted by tag keys.
-		sortTags(row.Tags)
-		if reflect.DeepEqual(wantTags, row.Tags) {
-			sum := row.Data.(*view.SumData)
-			if float64(value) != sum.Value {
-				return fmt.Errorf("[%s]: values did no match, wanted %f got %f", vName, float64(value), sum.Value)
-			}
-			return nil
-		}
-	}
-	return fmt.Errorf("[%s]: could not find tags, wantTags: %s in rows %v", vName, wantTags, rows)
-}
-
-// tagsForProcessorView returns the tags that are needed for the processor views.
-func tagsForProcessorView(processor component.ID) []tag.Tag {
-	return []tag.Tag{
-		{Key: processorTag, Value: processor.String()},
-	}
-}
-
-func sortTags(tags []tag.Tag) {
-	sort.SliceStable(tags, func(i, j int) bool {
-		return tags[i].Key.Name() < tags[j].Key.Name()
-	})
 }
