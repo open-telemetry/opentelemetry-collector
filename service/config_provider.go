@@ -37,6 +37,8 @@ import (
 //	cfgProvider.Watch() // wait for an event.
 //	// repeat Get/Watch cycle until it is time to shut down the Collector process.
 //	cfgProvider.Shutdown()
+//
+// Deprecated: [v0.67.0] use otelcol.ConfigProvider
 type ConfigProvider interface {
 	// Get returns the service configuration, or error otherwise.
 	//
@@ -66,6 +68,7 @@ type configProvider struct {
 }
 
 // ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
+// Deprecated: [v0.67.0] use otelcol.ConfigProviderSettings
 type ConfigProviderSettings struct {
 	// ResolverSettings are the settings to configure the behavior of the confmap.Resolver.
 	ResolverSettings confmap.ResolverSettings
@@ -87,6 +90,7 @@ func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 //   - Then applies all the confmap.Converter in the given order.
 //
 // * Then unmarshalls the confmap.Conf into the service Config.
+// Deprecated: [v0.67.0] use otelcol.NewConfigProvider
 func NewConfigProvider(set ConfigProviderSettings) (ConfigProvider, error) {
 	mr, err := confmap.NewResolver(set.ResolverSettings)
 	if err != nil {

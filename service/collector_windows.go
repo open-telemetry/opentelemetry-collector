@@ -40,6 +40,7 @@ type windowsService struct {
 }
 
 // NewSvcHandler constructs a new svc.Handler using the given CollectorSettings.
+// Deprecated: [v0.67.0] use otelcol.NewSvcHandler
 func NewSvcHandler(set CollectorSettings) svc.Handler {
 	return &windowsService{settings: set, flags: flags()}
 }

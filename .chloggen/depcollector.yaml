@@ -1,0 +1,22 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: deprecation
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: service
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Deprecate service.[Collector|NewSvcHandler|CollectorSettings|State|NewCommand] in favor of otelcol package"
+
+# One or more tracking issues or pull requests related to the change
+issues: [6608]
+
+subtext: |-
+  - Deprecate `service.Config` in favor of `otelcol.Config`.
+  - Deprecate `service.ConfigProvider` in favor of `otelcol.ConfigProvider`.
+  - Deprecate `service.NewConfigProvider` in favor of `otelcol.NewConfigProvider`.
+  - Deprecate `service.CollectorSettings` in favor of `otelcol.CollectorSettings`.
+  - Deprecate `service.Collector` in favor of `otelcol.Collector`.
+  - Deprecate `service.New` in favor of `otelcol.NewCollector`.
+  - Deprecate `service.State` in favor of `otelcol.State`.
+  - Deprecate `service.NewSvcHandler` in favor of `otelcol.NewSvcHandler`.
+  - Deprecate `service.NewCommand` in favor of `otelcol.NewCommand`.
