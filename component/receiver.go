@@ -55,6 +55,9 @@ type LogsReceiver interface {
 
 // ReceiverCreateSettings configures Receiver creators.
 type ReceiverCreateSettings struct {
+	// ID returns the ID of the component that will be created.
+	ID ID
+
 	TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes.

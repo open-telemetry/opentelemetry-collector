@@ -147,6 +147,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 		}
 
 		extSet := component.ExtensionCreateSettings{
+			ID:                extID,
 			TelemetrySettings: set.Telemetry,
 			BuildInfo:         set.BuildInfo,
 		}

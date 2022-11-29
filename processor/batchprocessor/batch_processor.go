@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -72,8 +71,8 @@ var _ consumer.Traces = (*batchProcessor)(nil)
 var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
-func newBatchProcessor(set component.ProcessorCreateSettings, cfg *Config, batch batch, telemetryLevel configtelemetry.Level, registry *featuregate.Registry) (*batchProcessor, error) {
-	bpt, err := newBatchProcessorTelemetry(set.MeterProvider, cfg, telemetryLevel, registry)
+func newBatchProcessor(set component.ProcessorCreateSettings, cfg *Config, batch batch, registry *featuregate.Registry) (*batchProcessor, error) {
+	bpt, err := newBatchProcessorTelemetry(set, registry)
 	if err != nil {
 		return nil, fmt.Errorf("error to create batch processor telemetry %w", err)
 	}
@@ -201,18 +200,18 @@ func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(set component.ProcessorCreateSettings, next consumer.Traces, cfg *Config, telemetryLevel configtelemetry.Level, registry *featuregate.Registry) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, newBatchTraces(next), telemetryLevel, registry)
+func newBatchTracesProcessor(set component.ProcessorCreateSettings, next consumer.Traces, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, newBatchTraces(next), registry)
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(set component.ProcessorCreateSettings, next consumer.Metrics, cfg *Config, telemetryLevel configtelemetry.Level, registry *featuregate.Registry) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, newBatchMetrics(next), telemetryLevel, registry)
+func newBatchMetricsProcessor(set component.ProcessorCreateSettings, next consumer.Metrics, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, newBatchMetrics(next), registry)
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(set component.ProcessorCreateSettings, next consumer.Logs, cfg *Config, telemetryLevel configtelemetry.Level, registry *featuregate.Registry) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, newBatchLogs(next), telemetryLevel, registry)
+func newBatchLogsProcessor(set component.ProcessorCreateSettings, next consumer.Logs, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, newBatchLogs(next), registry)
 }
 
 type batchTraces struct {

@@ -37,7 +37,7 @@ func TestReceiversUnmarshal(t *testing.T) {
 	require.NoError(t, recvs.Unmarshal(conf))
 
 	cfgWithName := factories.Receivers["nop"].CreateDefaultConfig()
-	cfgWithName.SetIDName("myreceiver")
+	cfgWithName.SetIDName("myreceiver") //nolint:staticcheck
 	assert.Equal(t, map[component.ID]component.Config{
 		component.NewID("nop"):                       factories.Receivers["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myreceiver"): cfgWithName,

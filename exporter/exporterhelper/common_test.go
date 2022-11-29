@@ -25,14 +25,18 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var (
-	defaultExporterCfg  = config.NewExporterSettings(component.NewID("test"))
+	defaultID       = component.NewID("test")
+	defaultSettings = func() component.ExporterCreateSettings {
+		set := componenttest.NewNopExporterCreateSettings()
+		set.ID = defaultID
+		return set
+	}()
 	exporterTag, _      = tag.NewKey("exporter")
 	defaultExporterTags = []tag.Tag{
 		{Key: exporterTag, Value: "test"},
@@ -40,7 +44,7 @@ var (
 )
 
 func TestBaseExporter(t *testing.T) {
-	be, err := newBaseExporter(&defaultExporterCfg, componenttest.NewNopExporterCreateSettings(), fromOptions(), "", nopRequestUnmarshaler())
+	be, err := newBaseExporter(defaultSettings, fromOptions(), "", nopRequestUnmarshaler())
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
@@ -49,8 +53,7 @@ func TestBaseExporter(t *testing.T) {
 func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
 	be, err := newBaseExporter(
-		&defaultExporterCfg,
-		componenttest.NewNopExporterCreateSettings(),
+		defaultSettings,
 		fromOptions(
 			WithStart(func(ctx context.Context, host component.Host) error { return want }),
 			WithShutdown(func(ctx context.Context) error { return want }),

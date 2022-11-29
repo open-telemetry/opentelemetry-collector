@@ -105,7 +105,7 @@ func NewScraperControllerReceiver(
 	}
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             cfg.ID(),
+		ReceiverID:             set.ID,
 		Transport:              "",
 		ReceiverCreateSettings: set,
 	})
@@ -114,7 +114,7 @@ func NewScraperControllerReceiver(
 	}
 
 	sc := &controller{
-		id:                 cfg.ID(),
+		id:                 set.ID,
 		logger:             set.Logger,
 		collectionInterval: cfg.CollectionInterval,
 		nextConsumer:       nextConsumer,

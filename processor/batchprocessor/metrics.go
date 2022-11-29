@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	otelview "go.opentelemetry.io/otel/sdk/metric/view"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
@@ -145,21 +146,21 @@ type batchProcessorTelemetry struct {
 	batchSendSizeBytes   syncint64.Histogram
 }
 
-func newBatchProcessorTelemetry(mp metric.MeterProvider, cfg *Config, level configtelemetry.Level, registry *featuregate.Registry) (*batchProcessorTelemetry, error) {
-	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, cfg.ID().String()))
+func newBatchProcessorTelemetry(set component.ProcessorCreateSettings, registry *featuregate.Registry) (*batchProcessorTelemetry, error) {
+	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, set.ID.String()))
 	if err != nil {
 		return nil, err
 	}
 
 	bpt := &batchProcessorTelemetry{
 		useOtel:       registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
-		processorAttr: []attribute.KeyValue{attribute.String(obsmetrics.ProcessorKey, cfg.ID().String())},
+		processorAttr: []attribute.KeyValue{attribute.String(obsmetrics.ProcessorKey, set.ID.String())},
 		exportCtx:     exportCtx,
-		level:         level,
-		detailed:      level == configtelemetry.LevelDetailed,
+		level:         set.MetricsLevel,
+		detailed:      set.MetricsLevel == configtelemetry.LevelDetailed,
 	}
 
-	err = bpt.createOtelMetrics(mp)
+	err = bpt.createOtelMetrics(set.MeterProvider)
 	if err != nil {
 		return nil, err
 	}

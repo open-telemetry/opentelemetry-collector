@@ -35,9 +35,9 @@ type Receiver struct {
 }
 
 // New creates a new Receiver reference.
-func New(id component.ID, nextConsumer consumer.Metrics, set component.ReceiverCreateSettings) (*Receiver, error) {
+func New(nextConsumer consumer.Metrics, set component.ReceiverCreateSettings) (*Receiver, error) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             id,
+		ReceiverID:             set.ID,
 		Transport:              receiverTransport,
 		ReceiverCreateSettings: set,
 	})

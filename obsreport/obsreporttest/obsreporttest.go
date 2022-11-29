@@ -50,6 +50,7 @@ var (
 
 type TestTelemetry struct {
 	component.TelemetrySettings
+	id           component.ID
 	SpanRecorder *tracetest.SpanRecorder
 	views        []*view.View
 
@@ -60,23 +61,26 @@ type TestTelemetry struct {
 
 // ToExporterCreateSettings returns ExporterCreateSettings with configured TelemetrySettings
 func (tts *TestTelemetry) ToExporterCreateSettings() component.ExporterCreateSettings {
-	exporterSettings := componenttest.NewNopExporterCreateSettings()
-	exporterSettings.TelemetrySettings = tts.TelemetrySettings
-	return exporterSettings
+	set := componenttest.NewNopExporterCreateSettings()
+	set.TelemetrySettings = tts.TelemetrySettings
+	set.ID = tts.id
+	return set
 }
 
 // ToProcessorCreateSettings returns ProcessorCreateSettings with configured TelemetrySettings
 func (tts *TestTelemetry) ToProcessorCreateSettings() component.ProcessorCreateSettings {
-	processorSettings := componenttest.NewNopProcessorCreateSettings()
-	processorSettings.TelemetrySettings = tts.TelemetrySettings
-	return processorSettings
+	set := componenttest.NewNopProcessorCreateSettings()
+	set.TelemetrySettings = tts.TelemetrySettings
+	set.ID = tts.id
+	return set
 }
 
 // ToReceiverCreateSettings returns ReceiverCreateSettings with configured TelemetrySettings
 func (tts *TestTelemetry) ToReceiverCreateSettings() component.ReceiverCreateSettings {
-	receiverSettings := componenttest.NewNopReceiverCreateSettings()
-	receiverSettings.TelemetrySettings = tts.TelemetrySettings
-	return receiverSettings
+	set := componenttest.NewNopReceiverCreateSettings()
+	set.TelemetrySettings = tts.TelemetrySettings
+	set.ID = tts.id
+	return set
 }
 
 // Shutdown unregisters any views and shuts down the SpanRecorder
@@ -91,14 +95,21 @@ func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-// SetupTelemetry does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
-// The caller should defer a call to Shutdown the returned TestTelemetry.
+// Deprecated: [v0.67.0] use SetupTelemetryWithID.
 func SetupTelemetry() (TestTelemetry, error) {
+	return SetupTelemetryWithID(component.NewID(""))
+}
+
+// SetupTelemetryWithID does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
+// The caller must pass the ID of the component that intends to test, so the CreateSettings and Check methods will use.
+// The caller should defer a call to Shutdown the returned TestTelemetry.
+func SetupTelemetryWithID(id component.ID) (TestTelemetry, error) {
 	sr := new(tracetest.SpanRecorder)
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
 	settings := TestTelemetry{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		id:                id,
 		SpanRecorder:      sr,
 	}
 	settings.TelemetrySettings.TracerProvider = tp
