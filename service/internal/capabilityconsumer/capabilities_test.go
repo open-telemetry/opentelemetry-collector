@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelines
+package capabilityconsumer
 
 import (
 	"context"
@@ -26,11 +26,11 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 )
 
-func TestWrapLogs(t *testing.T) {
+func TestLogs(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
 
-	wrap := wrapLogs(sink, consumer.Capabilities{MutatesData: true})
+	wrap := NewLogs(sink, consumer.Capabilities{MutatesData: true})
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())
 
 	assert.NoError(t, wrap.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
@@ -38,11 +38,11 @@ func TestWrapLogs(t *testing.T) {
 	assert.Equal(t, testdata.GenerateLogs(1), sink.AllLogs()[0])
 }
 
-func TestWrapMetrics(t *testing.T) {
+func TestMetrics(t *testing.T) {
 	sink := &consumertest.MetricsSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
 
-	wrap := wrapMetrics(sink, consumer.Capabilities{MutatesData: true})
+	wrap := NewMetrics(sink, consumer.Capabilities{MutatesData: true})
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())
 
 	assert.NoError(t, wrap.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
@@ -50,11 +50,11 @@ func TestWrapMetrics(t *testing.T) {
 	assert.Equal(t, testdata.GenerateMetrics(1), sink.AllMetrics()[0])
 }
 
-func TestWrapTraces(t *testing.T) {
+func TestTraces(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	require.Equal(t, consumer.Capabilities{MutatesData: false}, sink.Capabilities())
 
-	wrap := wrapTraces(sink, consumer.Capabilities{MutatesData: true})
+	wrap := NewTraces(sink, consumer.Capabilities{MutatesData: true})
 	assert.Equal(t, consumer.Capabilities{MutatesData: true}, wrap.Capabilities())
 
 	assert.NoError(t, wrap.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
