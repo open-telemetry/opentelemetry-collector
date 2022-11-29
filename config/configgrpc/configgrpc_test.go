@@ -90,7 +90,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Settings{AuthenticatorID: component.NewID("testauth")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
@@ -118,7 +118,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Settings{AuthenticatorID: component.NewID("testauth")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
@@ -146,7 +146,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Settings{AuthenticatorID: component.NewID("testauth")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
@@ -214,7 +214,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	gss.Auth = &configauth.Settings{
+	gss.Auth = &configauth.Authentication{
 		AuthenticatorID: component.NewID("mock"),
 	}
 	host := &mockHost{
@@ -295,7 +295,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Settings{AuthenticatorID: component.NewID("doesntexist")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
 			},
 			host: &mockHost{ext: map[component.ID]component.Component{}},
 		},
@@ -303,7 +303,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "no extensions configuration available",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Settings{AuthenticatorID: component.NewID("doesntexist")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
 			},
 			host: &mockHost{},
 		},

@@ -249,7 +249,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"dummy\": authenticator not found",
 			settings: HTTPClientSettings{
 				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Settings{AuthenticatorID: component.NewID("dummy")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 			},
 		},
 	}
@@ -287,7 +287,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Settings{AuthenticatorID: component.NewID("dummy")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 			},
 			shouldErr: true,
 			host: &mockHost{
@@ -300,7 +300,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension_map",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Settings{AuthenticatorID: component.NewID("dummy")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 			},
 			shouldErr: true,
 			host:      componenttest.NewNopHost(),
@@ -309,7 +309,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Settings{AuthenticatorID: component.NewID("mock")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("mock")},
 			},
 			shouldErr: false,
 			host: &mockHost{
@@ -322,7 +322,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_err_extension",
 			settings: HTTPClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Settings{AuthenticatorID: component.NewID("mock")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("mock")},
 			},
 			shouldErr: true,
 			host: &mockHost{
@@ -733,7 +733,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		CORS: &CORSSettings{
 			AllowedOrigins: []string{"*"},
 		},
-		Auth: &configauth.Settings{
+		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID("mock"),
 		},
 	}
@@ -928,7 +928,7 @@ func TestServerAuth(t *testing.T) {
 	authCalled := false
 	hss := HTTPServerSettings{
 		Endpoint: "localhost:0",
-		Auth: &configauth.Settings{
+		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID("mock"),
 		},
 	}
@@ -962,7 +962,7 @@ func TestServerAuth(t *testing.T) {
 
 func TestInvalidServerAuth(t *testing.T) {
 	hss := HTTPServerSettings{
-		Auth: &configauth.Settings{
+		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID("non-existing"),
 		},
 	}
@@ -976,7 +976,7 @@ func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := HTTPServerSettings{
 		Endpoint: "localhost:0",
-		Auth: &configauth.Settings{
+		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID("mock"),
 		},
 	}

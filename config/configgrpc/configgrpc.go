@@ -97,7 +97,7 @@ type GRPCClientSettings struct {
 	BalancerName string `mapstructure:"balancer_name"`
 
 	// Auth configuration for outgoing RPCs.
-	Auth *configauth.Settings `mapstructure:"auth"`
+	Auth *configauth.Authentication `mapstructure:"auth"`
 }
 
 // KeepaliveServerConfig is the configuration for keepalive.
@@ -153,7 +153,7 @@ type GRPCServerSettings struct {
 	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive"`
 
 	// Auth for this receiver
-	Auth *configauth.Settings `mapstructure:"auth"`
+	Auth *configauth.Authentication `mapstructure:"auth"`
 
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	// Experimental: *NOTE* this option is subject to change or removal in the future.

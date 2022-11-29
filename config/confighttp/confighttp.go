@@ -61,7 +61,7 @@ type HTTPClientSettings struct {
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
 
 	// Auth configuration for outgoing HTTP calls.
-	Auth *configauth.Settings `mapstructure:"auth"`
+	Auth *configauth.Authentication `mapstructure:"auth"`
 
 	// The compression key for supported compression types within collector.
 	Compression configcompression.CompressionType `mapstructure:"compression"`
@@ -212,7 +212,7 @@ type HTTPServerSettings struct {
 	CORS *CORSSettings `mapstructure:"cors"`
 
 	// Auth for this receiver
-	Auth *configauth.Settings `mapstructure:"auth"`
+	Auth *configauth.Authentication `mapstructure:"auth"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
