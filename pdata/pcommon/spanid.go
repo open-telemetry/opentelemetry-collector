@@ -41,14 +41,6 @@ func (ms SpanID) String() string {
 	return hex.EncodeToString(ms[:])
 }
 
-// Deprecated: [0.65.0] Call hex.EncodeToString explicitly instead.
-func (ms SpanID) HexString() string {
-	if ms.IsEmpty() {
-		return ""
-	}
-	return hex.EncodeToString(ms[:])
-}
-
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (ms SpanID) IsEmpty() bool {
 	return data.SpanID(ms).IsEmpty()

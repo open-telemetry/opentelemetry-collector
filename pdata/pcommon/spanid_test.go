@@ -32,14 +32,6 @@ func TestNewSpanIDEmpty(t *testing.T) {
 	assert.True(t, sid.IsEmpty())
 }
 
-func TestSpanIDHexString(t *testing.T) {
-	sid := SpanID([8]byte{})
-	assert.Equal(t, "", sid.HexString())
-
-	sid = SpanID([8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23})
-	assert.Equal(t, "1223ad1223ad1223", sid.HexString())
-}
-
 func TestSpanIDString(t *testing.T) {
 	sid := SpanID([8]byte{})
 	assert.Equal(t, "", sid.String())

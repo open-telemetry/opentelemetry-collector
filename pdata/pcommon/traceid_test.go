@@ -32,14 +32,6 @@ func TestNewTraceIDEmpty(t *testing.T) {
 	assert.True(t, tid.IsEmpty())
 }
 
-func TestTraceIDHexString(t *testing.T) {
-	tid := TraceID([16]byte{})
-	assert.Equal(t, "", tid.HexString())
-
-	tid = [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
-	assert.Equal(t, "12345678123456781234567812345678", tid.HexString())
-}
-
 func TestTraceIDString(t *testing.T) {
 	tid := TraceID([16]byte{})
 	assert.Equal(t, "", tid.String())

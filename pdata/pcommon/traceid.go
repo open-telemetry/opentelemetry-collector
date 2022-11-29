@@ -42,14 +42,6 @@ func (ms TraceID) String() string {
 	return hex.EncodeToString(ms[:])
 }
 
-// Deprecated: [0.65.0] Call hex.EncodeToString explicitly instead.
-func (ms TraceID) HexString() string {
-	if ms.IsEmpty() {
-		return ""
-	}
-	return hex.EncodeToString(ms[:])
-}
-
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (ms TraceID) IsEmpty() bool {
 	return data.TraceID(ms).IsEmpty()
