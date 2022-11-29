@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/service/internal/zpages"
@@ -282,11 +283,11 @@ func Build(ctx context.Context, set Settings) (*Pipelines, error) {
 		// Because of this wrap the first consumer if any consumers in the pipeline mutate the data and the first says that it doesn't.
 		switch pipelineID.Type() {
 		case component.DataTypeTraces:
-			bp.lastConsumer = capTraces{Traces: bp.lastConsumer.(consumer.Traces), cap: consumer.Capabilities{MutatesData: mutatesConsumedData}}
+			bp.lastConsumer = capabilityconsumer.NewTraces(bp.lastConsumer.(consumer.Traces), consumer.Capabilities{MutatesData: mutatesConsumedData})
 		case component.DataTypeMetrics:
-			bp.lastConsumer = capMetrics{Metrics: bp.lastConsumer.(consumer.Metrics), cap: consumer.Capabilities{MutatesData: mutatesConsumedData}}
+			bp.lastConsumer = capabilityconsumer.NewMetrics(bp.lastConsumer.(consumer.Metrics), consumer.Capabilities{MutatesData: mutatesConsumedData})
 		case component.DataTypeLogs:
-			bp.lastConsumer = capLogs{Logs: bp.lastConsumer.(consumer.Logs), cap: consumer.Capabilities{MutatesData: mutatesConsumedData}}
+			bp.lastConsumer = capabilityconsumer.NewLogs(bp.lastConsumer.(consumer.Logs), consumer.Capabilities{MutatesData: mutatesConsumedData})
 		default:
 			return nil, fmt.Errorf("create cap consumer in pipeline %q, data type %q is not supported", pipelineID, pipelineID.Type())
 		}

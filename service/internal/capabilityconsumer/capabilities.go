@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelines // import "go.opentelemetry.io/collector/service/internal/pipelines"
+package capabilityconsumer // import "go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 
 import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-func wrapLogs(logs consumer.Logs, cap consumer.Capabilities) consumer.Logs {
+func NewLogs(logs consumer.Logs, cap consumer.Capabilities) consumer.Logs {
 	return capLogs{Logs: logs, cap: cap}
 }
 
@@ -31,7 +31,7 @@ func (mts capLogs) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
 
-func wrapMetrics(metrics consumer.Metrics, cap consumer.Capabilities) consumer.Metrics {
+func NewMetrics(metrics consumer.Metrics, cap consumer.Capabilities) consumer.Metrics {
 	return capMetrics{Metrics: metrics, cap: cap}
 }
 
@@ -44,7 +44,7 @@ func (mts capMetrics) Capabilities() consumer.Capabilities {
 	return mts.cap
 }
 
-func wrapTraces(traces consumer.Traces, cap consumer.Capabilities) consumer.Traces {
+func NewTraces(traces consumer.Traces, cap consumer.Capabilities) consumer.Traces {
 	return capTraces{Traces: traces, cap: cap}
 }
 
