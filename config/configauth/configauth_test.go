@@ -49,7 +49,7 @@ func TestGetServer(t *testing.T) {
 				component.NewID("mock"): tC.authenticator,
 			}
 
-			authenticator, err := cfg.GetServer(ext)
+			authenticator, err := cfg.GetServerAuthenticator(ext)
 
 			// verify
 			if tC.expected != nil {
@@ -68,7 +68,7 @@ func TestGetServerFails(t *testing.T) {
 		AuthenticatorID: component.NewID("does-not-exist"),
 	}
 
-	authenticator, err := cfg.GetServer(map[component.ID]component.Component{})
+	authenticator, err := cfg.GetServerAuthenticator(map[component.ID]component.Component{})
 	assert.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }
@@ -100,7 +100,7 @@ func TestGetClient(t *testing.T) {
 				component.NewID("mock"): tC.authenticator,
 			}
 
-			authenticator, err := cfg.GetClient(ext)
+			authenticator, err := cfg.GetClientAuthenticator(ext)
 
 			// verify
 			if tC.expected != nil {
@@ -118,7 +118,7 @@ func TestGetClientFails(t *testing.T) {
 	cfg := &Authentication{
 		AuthenticatorID: component.NewID("does-not-exist"),
 	}
-	authenticator, err := cfg.GetClient(map[component.ID]component.Component{})
+	authenticator, err := cfg.GetClientAuthenticator(map[component.ID]component.Component{})
 	assert.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }

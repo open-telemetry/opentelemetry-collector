@@ -161,7 +161,7 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClient(ext)
+		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetClientAuthenticator(ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -278,7 +278,7 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 	}
 
 	if hss.Auth != nil {
-		authenticator, err := hss.Auth.GetServer(host.GetExtensions())
+		authenticator, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
