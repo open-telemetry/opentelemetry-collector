@@ -22,6 +22,7 @@ module-sets:
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/component
+      - go.opentelemetry.io/collector/confmap
       - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/exporter/loggingexporter

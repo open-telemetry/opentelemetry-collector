@@ -11,6 +11,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.66.0
 	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/confmap v0.66.0
 	go.opentelemetry.io/collector/consumer v0.66.0
 	go.opentelemetry.io/collector/featuregate v0.66.0
 	go.opentelemetry.io/collector/pdata v0.66.0
@@ -60,6 +61,8 @@ require (
 replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/component => ../../component
+
+replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 

@@ -23,6 +23,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/confmap"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/consumer"
     schedule:
       interval: "weekly"
