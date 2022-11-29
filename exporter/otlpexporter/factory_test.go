@@ -206,9 +206,10 @@ func TestCreateTracesExporter(t *testing.T) {
 			err = consumer.Start(context.Background(), componenttest.NewNopHost())
 			if tt.mustFailOnStart {
 				assert.Error(t, err)
-				return
+			} else {
+				assert.NoError(t, err)
 			}
-			assert.NoError(t, err)
+			// Shutdown is called even when Start fails
 			err = consumer.Shutdown(context.Background())
 			if err != nil {
 				// Since the endpoint of OTLP exporter doesn't actually exist,
