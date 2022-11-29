@@ -22,9 +22,9 @@ import (
 )
 
 var (
-	errAuthenticatorNotFound  = errors.New("authenticator not found")
-	errNotClientAuthenticator = errors.New("requested authenticator is not a client authenticator")
-	errNotServerAuthenticator = errors.New("requested authenticator is not a server authenticator")
+	errAuthenticatorNotFound = errors.New("authenticator not found")
+	errNotClient             = errors.New("requested authenticator is not a client authenticator")
+	errNotServer             = errors.New("requested authenticator is not a server authenticator")
 )
 
 // Authentication defines the auth settings for the receiver.
@@ -40,7 +40,7 @@ func (a Authentication) GetServerAuthenticator(extensions map[component.ID]compo
 		if auth, ok := ext.(ServerAuthenticator); ok {
 			return auth, nil
 		}
-		return nil, errNotServerAuthenticator
+		return nil, errNotServer
 	}
 
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
@@ -54,7 +54,7 @@ func (a Authentication) GetClientAuthenticator(extensions map[component.ID]compo
 		if auth, ok := ext.(ClientAuthenticator); ok {
 			return auth, nil
 		}
-		return nil, errNotClientAuthenticator
+		return nil, errNotClient
 	}
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }

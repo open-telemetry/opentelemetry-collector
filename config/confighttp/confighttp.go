@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
+	"go.opentelemetry.io/collector/extension/auth"
 )
 
 const headerContentEncoding = "Content-Encoding"
@@ -342,7 +343,7 @@ type CORSSettings struct {
 	MaxAge int `mapstructure:"max_age"`
 }
 
-func authInterceptor(next http.Handler, authenticate configauth.AuthenticateFunc) http.Handler {
+func authInterceptor(next http.Handler, authenticate auth.AuthenticateFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := authenticate(r.Context(), r.Header)
 		if err != nil {

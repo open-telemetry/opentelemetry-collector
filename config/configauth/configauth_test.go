@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func TestGetServerAuthenticator(t *testing.T) {
+func TestGetServer(t *testing.T) {
 	testCases := []struct {
 		desc          string
 		authenticator component.Extension
@@ -35,8 +35,8 @@ func TestGetServerAuthenticator(t *testing.T) {
 		},
 		{
 			desc:          "not a server authenticator",
-			authenticator: &MockClientAuthenticator{},
-			expected:      errNotServerAuthenticator,
+			authenticator: NewClientAuthenticator(),
+			expected:      errNotServer,
 		},
 	}
 	for _, tC := range testCases {
@@ -63,7 +63,7 @@ func TestGetServerAuthenticator(t *testing.T) {
 	}
 }
 
-func TestGetServerAuthenticatorFails(t *testing.T) {
+func TestGetServerFails(t *testing.T) {
 	cfg := &Authentication{
 		AuthenticatorID: component.NewID("does-not-exist"),
 	}
@@ -73,7 +73,7 @@ func TestGetServerAuthenticatorFails(t *testing.T) {
 	assert.Nil(t, authenticator)
 }
 
-func TestGetClientAuthenticator(t *testing.T) {
+func TestGetClient(t *testing.T) {
 	testCases := []struct {
 		desc          string
 		authenticator component.Extension
@@ -81,13 +81,13 @@ func TestGetClientAuthenticator(t *testing.T) {
 	}{
 		{
 			desc:          "obtain client authenticator",
-			authenticator: &MockClientAuthenticator{},
+			authenticator: NewClientAuthenticator(),
 			expected:      nil,
 		},
 		{
 			desc:          "not a client authenticator",
 			authenticator: NewServerAuthenticator(),
-			expected:      errNotClientAuthenticator,
+			expected:      errNotClient,
 		},
 	}
 	for _, tC := range testCases {
@@ -114,7 +114,7 @@ func TestGetClientAuthenticator(t *testing.T) {
 	}
 }
 
-func TestGetClientAuthenticatorFails(t *testing.T) {
+func TestGetClientFails(t *testing.T) {
 	cfg := &Authentication{
 		AuthenticatorID: component.NewID("does-not-exist"),
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth
+package auth
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 
 func TestClientDefaultValues(t *testing.T) {
 	// prepare
-	e := NewClientAuthenticator()
+	e := NewClient()
 
 	// test
 	t.Run("start", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestClientDefaultValues(t *testing.T) {
 
 func TestWithClientStart(t *testing.T) {
 	called := false
-	e := NewClientAuthenticator(WithClientStart(func(c context.Context, h component.Host) error {
+	e := NewClient(WithClientStart(func(c context.Context, h component.Host) error {
 		called = true
 		return nil
 	}))
@@ -71,7 +71,7 @@ func TestWithClientStart(t *testing.T) {
 
 func TestWithClientShutdown(t *testing.T) {
 	called := false
-	e := NewClientAuthenticator(WithClientShutdown(func(c context.Context) error {
+	e := NewClient(WithClientShutdown(func(c context.Context) error {
 		called = true
 		return nil
 	}))
@@ -86,7 +86,7 @@ func TestWithClientShutdown(t *testing.T) {
 
 func TestWithClientRoundTripper(t *testing.T) {
 	called := false
-	e := NewClientAuthenticator(WithClientRoundTripper(func(base http.RoundTripper) (http.RoundTripper, error) {
+	e := NewClient(WithClientRoundTripper(func(base http.RoundTripper) (http.RoundTripper, error) {
 		called = true
 		return base, nil
 	}))
@@ -100,9 +100,21 @@ func TestWithClientRoundTripper(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+type customPerRPCCredentials struct{}
+
+var _ credentials.PerRPCCredentials = (*customPerRPCCredentials)(nil)
+
+func (c *customPerRPCCredentials) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
+	return nil, nil
+}
+
+func (c *customPerRPCCredentials) RequireTransportSecurity() bool {
+	return true
+}
+
 func TestWithPerRPCCredentials(t *testing.T) {
 	called := false
-	e := NewClientAuthenticator(WithPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
+	e := NewClient(WithPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
 		called = true
 		return &customPerRPCCredentials{}, nil
 	}))

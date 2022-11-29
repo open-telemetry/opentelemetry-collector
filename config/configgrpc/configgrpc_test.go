@@ -39,6 +39,8 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
@@ -92,7 +94,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -120,7 +122,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -148,7 +150,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -217,7 +219,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			component.NewID("mock"): configauth.NewServerAuthenticator(),
+			component.NewID("mock"): auth.NewServer(),
 		},
 	}
 	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())

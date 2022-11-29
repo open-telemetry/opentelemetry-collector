@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth // import "go.opentelemetry.io/collector/config/configauth"
+package authtest // import "go.opentelemetry.io/collector/extension/auth/authtest"
 
 import (
 	"context"
@@ -22,42 +22,43 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/auth"
 )
 
 var (
-	_            ClientAuthenticator = (*MockClientAuthenticator)(nil)
-	errMockError                     = errors.New("mock Error")
+	_            auth.Client = (*MockClient)(nil)
+	errMockError             = errors.New("mock Error")
 )
 
-// MockClientAuthenticator provides a mock implementation of GRPCClientAuthenticator and HTTPClientAuthenticator interfaces
-type MockClientAuthenticator struct {
+// MockClient provides a mock implementation of GRPCClient and HTTPClient interfaces
+type MockClient struct {
 	ResultRoundTripper      http.RoundTripper
 	ResultPerRPCCredentials credentials.PerRPCCredentials
 	MustError               bool
 }
 
-// Start for the MockClientAuthenticator does nothing
-func (m *MockClientAuthenticator) Start(ctx context.Context, host component.Host) error {
+// Start for the MockClient does nothing
+func (m *MockClient) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-// Shutdown for the MockClientAuthenticator does nothing
-func (m *MockClientAuthenticator) Shutdown(ctx context.Context) error {
+// Shutdown for the MockClient does nothing
+func (m *MockClient) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// RoundTripper for the MockClientAuthenticator either returns error if the mock authenticator is forced to or
+// RoundTripper for the MockClient either returns error if the mock authenticator is forced to or
 // returns the supplied resultRoundTripper.
-func (m *MockClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (m *MockClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	if m.MustError {
 		return nil, errMockError
 	}
 	return m.ResultRoundTripper, nil
 }
 
-// PerRPCCredentials for the MockClientAuthenticator either returns error if the mock authenticator is forced to or
+// PerRPCCredentials for the MockClient either returns error if the mock authenticator is forced to or
 // returns the supplied resultPerRPCCredentials.
-func (m *MockClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+func (m *MockClient) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	if m.MustError {
 		return nil, errMockError
 	}

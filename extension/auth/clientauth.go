@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configauth // import "go.opentelemetry.io/collector/config/configauth"
+package auth // import "go.opentelemetry.io/collector/extension/auth"
 
 import (
 	"net/http"
@@ -22,10 +22,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// ClientAuthenticator is an Extension that can be used as an authenticator for the configauth.Authentication option.
+// Client is an Extension that can be used as an authenticator for the configauth.Authentication option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
 // names from the Authentication configuration.
-type ClientAuthenticator interface {
+type Client interface {
 	component.Extension
 
 	// RoundTripper returns a RoundTripper that can be used to authenticate HTTP requests.
