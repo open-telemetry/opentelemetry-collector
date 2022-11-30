@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/confmap
 
-go 1.19
+go 1.18
 
 require (
 	github.com/knadh/koanf v1.4.4
