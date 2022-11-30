@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
@@ -823,14 +824,32 @@ func ExampleHTTPServerSettings() {
 
 func TestHttpHeaders(t *testing.T) {
 	tests := []struct {
-		name    string
-		headers map[string]string
+		name          string
+		headers       map[string]string
+		opaqueHeaders map[string]configopaque.String
+		shouldErr     bool
 	}{
 		{
-			"with_headers",
-			map[string]string{
+			name: "with_headers",
+			headers: map[string]string{
 				"header1": "value1",
 			},
+		},
+		{
+			name: "with__opaque_headers",
+			opaqueHeaders: map[string]configopaque.String{
+				"header1": "value1",
+			},
+		},
+		{
+			name: "with_both",
+			headers: map[string]string{
+				"header1": "value1",
+			},
+			opaqueHeaders: map[string]configopaque.String{
+				"header1": "value1",
+			},
+			shouldErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -838,6 +857,9 @@ func TestHttpHeaders(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				for k, v := range tt.headers {
 					assert.Equal(t, r.Header.Get(k), v)
+				}
+				for k, v := range tt.opaqueHeaders {
+					assert.Equal(t, r.Header.Get(k), string(v))
 				}
 				w.WriteHeader(200)
 			}))
@@ -849,11 +871,14 @@ func TestHttpHeaders(t *testing.T) {
 				ReadBufferSize:  0,
 				WriteBufferSize: 0,
 				Timeout:         0,
-				Headers: map[string]string{
-					"header1": "value1",
-				},
+				Headers:         tt.headers,
+				OpaqueHeaders:   tt.opaqueHeaders,
 			}
-			client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, err := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			if tt.shouldErr {
+				assert.Error(t, err)
+				return
+			}
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)
