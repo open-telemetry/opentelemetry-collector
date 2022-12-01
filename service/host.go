@@ -17,7 +17,6 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/extensions"
-	"go.opentelemetry.io/collector/service/internal/pipelines"
 )
 
 var _ component.Host = (*serviceHost)(nil)
@@ -27,7 +26,7 @@ type serviceHost struct {
 	factories         component.Factories
 	buildInfo         component.BuildInfo
 
-	pipelines  *pipelines.Pipelines
+	pipelines  *builtPipelines
 	extensions *extensions.Extensions
 }
 
