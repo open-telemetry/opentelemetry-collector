@@ -18,3 +18,10 @@ subtext: |-
   - configauth.WithClientShutdown -> auth.WithClientShutdown
   - configauth.WithClientRoundTripper -> auth.WithClientRoundTripper
   - configauth.WithPerRPCCredentials -> auth.WithClientPerRPCCredentials
+  - configauth.ServerAuthenticator -> auth.Server
+  - configauth.NewServerAuthenticator -> auth.NewServer
+  - configauth.Option -> auth.ServerOption
+  - configauth.AuthenticateFunc -> auth.ServerAuthenticateFunc
+  - configauth.WithAuthenticate -> auth.WithServerAuthenticate
+  - configauth.WithStart -> auth.WithServerStart
+  - configauth.WithShutdown -> auth.WithServerShutdown

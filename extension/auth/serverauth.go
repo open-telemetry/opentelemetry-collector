@@ -38,7 +38,3 @@ type Server interface {
 	// The context keys to be used are not defined yet.
 	Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error)
 }
-
-// AuthenticateFunc defines the signature for the function responsible for performing the authentication based on the given headers map.
-// See Server.Authenticate.
-type AuthenticateFunc func(ctx context.Context, headers map[string][]string) (context.Context, error)

@@ -22,64 +22,56 @@ import (
 
 var _ Server = (*defaultServer)(nil)
 
-// Option represents the possible options for NewServer.
-type Option func(*defaultServer)
-
 type defaultServer struct {
-	AuthenticateFunc
+	ServerAuthenticateFunc
 	component.StartFunc
 	component.ShutdownFunc
 }
 
-// WithAuthenticate specifies which function to use to perform the authentication.
-func WithAuthenticate(authenticateFunc AuthenticateFunc) Option {
+// ServerOption represents the possible options for NewServer.
+type ServerOption func(*defaultServer)
+
+// ServerAuthenticateFunc defines the signature for the function responsible for performing the authentication based
+// on the given headers map. See Server.Authenticate.
+type ServerAuthenticateFunc func(ctx context.Context, headers map[string][]string) (context.Context, error)
+
+func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+	if f == nil {
+		return ctx, nil
+	}
+	return f(ctx, headers)
+}
+
+// WithServerAuthenticate specifies which function to use to perform the authentication.
+func WithServerAuthenticate(authFunc ServerAuthenticateFunc) ServerOption {
 	return func(o *defaultServer) {
-		o.AuthenticateFunc = authenticateFunc
+		o.ServerAuthenticateFunc = authFunc
 	}
 }
 
-// WithStart overrides the default `Start` function for a component.Component.
+// WithServerStart overrides the default `Start` function for a component.Component.
 // The default always returns nil.
-func WithStart(startFunc component.StartFunc) Option {
+func WithServerStart(startFunc component.StartFunc) ServerOption {
 	return func(o *defaultServer) {
 		o.StartFunc = startFunc
 	}
 }
 
-// WithShutdown overrides the default `Shutdown` function for a component.Component.
+// WithServerShutdown overrides the default `Shutdown` function for a component.Component.
 // The default always returns nil.
-func WithShutdown(shutdownFunc component.ShutdownFunc) Option {
+func WithServerShutdown(shutdownFunc component.ShutdownFunc) ServerOption {
 	return func(o *defaultServer) {
 		o.ShutdownFunc = shutdownFunc
 	}
 }
 
 // NewServer returns a Server configured with the provided options.
-func NewServer(options ...Option) Server {
-	bc := &defaultServer{
-		AuthenticateFunc: func(ctx context.Context, headers map[string][]string) (context.Context, error) { return ctx, nil },
-		StartFunc:        func(ctx context.Context, host component.Host) error { return nil },
-		ShutdownFunc:     func(ctx context.Context) error { return nil },
-	}
+func NewServer(options ...ServerOption) Server {
+	bc := &defaultServer{}
 
 	for _, op := range options {
 		op(bc)
 	}
 
 	return bc
-}
-
-// Authenticate performs the authentication.
-func (a *defaultServer) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	return a.AuthenticateFunc(ctx, headers)
-}
-
-// Start the component.
-func (a *defaultServer) Start(ctx context.Context, host component.Host) error {
-	return a.StartFunc(ctx, host)
-}
-
-// Shutdown stops the component.
-func (a *defaultServer) Shutdown(ctx context.Context) error {
-	return a.ShutdownFunc(ctx)
 }

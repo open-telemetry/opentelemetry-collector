@@ -741,7 +741,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			component.NewID("mock"): auth.NewServer(
-				auth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					return ctx, errors.New("Settings failed")
 				}),
 			),
@@ -936,7 +936,7 @@ func TestServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			component.NewID("mock"): auth.NewServer(
-				auth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					authCalled = true
 					return ctx, nil
 				}),
@@ -983,7 +983,7 @@ func TestFailedServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			component.NewID("mock"): auth.NewServer(
-				auth.WithAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				auth.WithServerAuthenticate(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
 					return ctx, errors.New("Settings failed")
 				}),
 			),

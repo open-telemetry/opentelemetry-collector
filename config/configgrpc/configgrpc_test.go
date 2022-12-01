@@ -918,7 +918,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -942,7 +942,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -962,7 +962,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -993,7 +993,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.NoError(t, err)
@@ -1019,7 +1019,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Equal(t, expectedErr, err)
@@ -1041,7 +1041,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)
