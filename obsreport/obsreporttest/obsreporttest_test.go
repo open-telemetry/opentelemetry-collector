@@ -123,7 +123,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 }
 
 func TestCheckProcessorTracesViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(processor)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -148,7 +148,7 @@ func TestCheckProcessorTracesViews(t *testing.T) {
 }
 
 func TestCheckProcessorMetricsViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(processor)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -173,7 +173,7 @@ func TestCheckProcessorMetricsViews(t *testing.T) {
 }
 
 func TestCheckProcessorLogViews(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(processor)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
