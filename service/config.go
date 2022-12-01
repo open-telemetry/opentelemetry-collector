@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -176,4 +175,8 @@ type ConfigService struct {
 	Pipelines map[component.ID]*ConfigServicePipeline `mapstructure:"pipelines"`
 }
 
-type ConfigServicePipeline = config.Pipeline
+type ConfigServicePipeline struct {
+	Receivers  []component.ID `mapstructure:"receivers"`
+	Processors []component.ID `mapstructure:"processors"`
+	Exporters  []component.ID `mapstructure:"exporters"`
+}

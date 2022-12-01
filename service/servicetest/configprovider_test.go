@@ -23,7 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/service"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Contains(t, cfg.Service.Extensions, component.NewID("nop"))
 	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
-		&config.Pipeline{
+		&service.ConfigServicePipeline{
 			Receivers:  []component.ID{component.NewID("nop")},
 			Processors: []component.ID{component.NewID("nop")},
 			Exporters:  []component.ID{component.NewID("nop")},

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelines // import "go.opentelemetry.io/collector/service/internal/pipelines"
+package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
@@ -56,8 +55,8 @@ type builtPipeline struct {
 	exporters  []builtComponent
 }
 
-// Pipelines is set of all pipelines created from exporter configs.
-type Pipelines struct {
+// builtPipelines is set of all pipelines created from exporter configs.
+type builtPipelines struct {
 	telemetry component.TelemetrySettings
 
 	allReceivers map[component.DataType]map[component.ID]component.Component
@@ -71,7 +70,7 @@ type Pipelines struct {
 // Start with exporters, processors (in reverse configured order), then receivers.
 // This is important so that components that are earlier in the pipeline and reference components that are
 // later in the pipeline do not start sending data to later components which are not yet started.
-func (bps *Pipelines) StartAll(ctx context.Context, host component.Host) error {
+func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) error {
 	bps.telemetry.Logger.Info("Starting exporters...")
 	for dt, expByID := range bps.allExporters {
 		for expID, exp := range expByID {
@@ -114,7 +113,7 @@ func (bps *Pipelines) StartAll(ctx context.Context, host component.Host) error {
 //
 // Shutdown order is the reverse of starting: receivers, processors, then exporters.
 // This gives senders a chance to send all their data to a not "shutdown" component.
-func (bps *Pipelines) ShutdownAll(ctx context.Context) error {
+func (bps *builtPipelines) ShutdownAll(ctx context.Context) error {
 	var errs error
 	bps.telemetry.Logger.Info("Stopping receivers...")
 	for _, recvByID := range bps.allReceivers {
@@ -140,7 +139,7 @@ func (bps *Pipelines) ShutdownAll(ctx context.Context) error {
 	return errs
 }
 
-func (bps *Pipelines) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (bps *builtPipelines) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	exportersMap := make(map[component.DataType]map[component.ID]component.Component)
 
 	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeTraces]))
@@ -156,14 +155,14 @@ func (bps *Pipelines) GetExporters() map[component.DataType]map[component.ID]com
 	return exportersMap
 }
 
-func (bps *Pipelines) HandleZPages(w http.ResponseWriter, r *http.Request) {
+func (bps *builtPipelines) HandleZPages(w http.ResponseWriter, r *http.Request) {
 	qValues := r.URL.Query()
 	pipelineName := qValues.Get(zPipelineName)
 	componentName := qValues.Get(zComponentName)
 	componentKind := qValues.Get(zComponentKind)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "Pipelines"})
+	zpages.WriteHTMLPageHeader(w, zpages.HeaderData{Title: "builtPipelines"})
 	zpages.WriteHTMLPipelinesSummaryTable(w, bps.getPipelinesSummaryTableData())
 	if pipelineName != "" && componentName != "" && componentKind != "" {
 		fullName := componentName
@@ -178,7 +177,7 @@ func (bps *Pipelines) HandleZPages(w http.ResponseWriter, r *http.Request) {
 	zpages.WriteHTMLPageFooter(w)
 }
 
-// Settings holds configuration for building Pipelines.
+// Settings holds configuration for building builtPipelines.
 type Settings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
@@ -201,13 +200,13 @@ type Settings struct {
 	// ExporterConfigs is a map of component.ID to component.Config.
 	ExporterConfigs map[component.ID]component.Config
 
-	// PipelineConfigs is a map of component.ID to config.Pipeline.
-	PipelineConfigs map[component.ID]*config.Pipeline
+	// PipelineConfigs is a map of component.ID to ConfigServicePipeline.
+	PipelineConfigs map[component.ID]*ConfigServicePipeline
 }
 
-// Build builds all pipelines from config.
-func Build(ctx context.Context, set Settings) (*Pipelines, error) {
-	exps := &Pipelines{
+// buildPipelines builds all pipelines from config.
+func buildPipelines(ctx context.Context, set Settings) (*builtPipelines, error) {
+	exps := &builtPipelines{
 		telemetry:    set.Telemetry,
 		allReceivers: make(map[component.DataType]map[component.ID]component.Component),
 		allExporters: make(map[component.DataType]map[component.ID]component.Component),
@@ -572,7 +571,7 @@ func getReceiverStabilityLevel(factory component.ReceiverFactory, dt component.D
 	return component.StabilityLevelUndefined
 }
 
-func (bps *Pipelines) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
+func (bps *builtPipelines) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
 	sumData := zpages.SummaryPipelinesTableData{}
 	sumData.Rows = make([]zpages.SummaryPipelinesTableRowData, 0, len(bps.pipelines))
 	for c, p := range bps.pipelines {
