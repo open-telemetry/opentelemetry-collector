@@ -26,20 +26,20 @@ import (
 )
 
 func TestExportersUnmarshal(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := component.MakeExporterFactoryMap(componenttest.NewNopExporterFactory())
 	require.NoError(t, err)
 
-	exps := NewExporters(factories.Exporters)
+	exps := NewExporters(factories)
 	conf := confmap.NewFromStringMap(map[string]interface{}{
 		"nop":            nil,
 		"nop/myexporter": nil,
 	})
 	require.NoError(t, exps.Unmarshal(conf))
 
-	cfgWithName := factories.Exporters["nop"].CreateDefaultConfig()
+	cfgWithName := factories["nop"].CreateDefaultConfig()
 	cfgWithName.SetIDName("myexporter") //nolint:staticcheck
 	assert.Equal(t, map[component.ID]component.Config{
-		component.NewID("nop"):                       factories.Exporters["nop"].CreateDefaultConfig(),
+		component.NewID("nop"):                       factories["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myexporter"): cfgWithName,
 	}, exps.GetExporters())
 }
@@ -100,12 +100,12 @@ func TestExportersUnmarshalError(t *testing.T) {
 		},
 	}
 
-	factories, err := componenttest.NopFactories()
+	factories, err := component.MakeExporterFactoryMap(componenttest.NewNopExporterFactory())
 	assert.NoError(t, err)
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			exps := NewExporters(factories.Exporters)
+			exps := NewExporters(factories)
 			err = exps.Unmarshal(tt.conf)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
