@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/knadh/koanf v1.4.4
-	github.com/magiconair/properties v1.8.6
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/featuregate v0.65.0
