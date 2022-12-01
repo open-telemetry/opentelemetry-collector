@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.66.0
 	go.opentelemetry.io/collector/component v0.66.0
-	go.opentelemetry.io/collector/confmap v0.66.0
+	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
 	go.uber.org/zap v1.24.0
 )
 
