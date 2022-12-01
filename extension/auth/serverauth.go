@@ -17,7 +17,7 @@ package auth // import "go.opentelemetry.io/collector/extension/auth"
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // Server is an Extension that can be used as an authenticator for the configauth.Authentication option.
@@ -26,7 +26,7 @@ import (
 // but note that the expectations that come as part of Extensions exist here as well. For instance, multiple instances of the same
 // authenticator should be possible to exist under different names.
 type Server interface {
-	component.Extension
+	extension.Extension
 
 	// Authenticate checks whether the given headers map contains valid auth data. Successfully authenticated calls will always return a nil error.
 	// When the authentication fails, an error must be returned and the caller must not retry. This function is typically called from interceptors,

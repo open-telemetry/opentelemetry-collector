@@ -24,15 +24,13 @@ type ExtensionConfig = Config
 // Deprecated: [v0.67.0] use UnmarshalConfig.
 var UnmarshalExtensionConfig = UnmarshalConfig
 
-// Extension is the interface for objects hosted by the OpenTelemetry Collector that
-// don't participate directly on data pipelines but provide some functionality
-// to the service, examples: health check endpoint, z-pages, etc.
+// Deprecated: [v0.67.0] use CreateDefaultConfigFunc.
+type ExtensionCreateDefaultConfigFunc = CreateDefaultConfigFunc
+
+// Deprecated: [v0.67.0] use extension.Extension.
 type Extension = Component
 
-// PipelineWatcher is an extra interface for Extension hosted by the OpenTelemetry
-// Collector that is to be implemented by extensions interested in changes to pipeline
-// states. Typically this will be used by extensions that change their behavior if data is
-// being ingested or not, e.g.: a k8s readiness probe.
+// Deprecated: [v0.67.0] use extension.PipelineWatcher.
 type PipelineWatcher interface {
 	// Ready notifies the Extension that all pipelines were built and the
 	// receivers were started, i.e.: the service is ready to receive data
@@ -46,7 +44,7 @@ type PipelineWatcher interface {
 	NotReady() error
 }
 
-// ExtensionCreateSettings is passed to ExtensionFactory.Create* functions.
+// Deprecated: [v0.67.0] use extension.CreateSettings.
 type ExtensionCreateSettings struct {
 	// ID returns the ID of the component that will be created.
 	ID ID
@@ -57,10 +55,7 @@ type ExtensionCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// Deprecated: [v0.67.0] use CreateDefaultConfigFunc.
-type ExtensionCreateDefaultConfigFunc = CreateDefaultConfigFunc
-
-// CreateExtensionFunc is the equivalent of ExtensionFactory.CreateExtension()
+// Deprecated: [v0.67.0] use extension.CreateFunc.
 type CreateExtensionFunc func(context.Context, ExtensionCreateSettings, Config) (Extension, error)
 
 // CreateExtension implements ExtensionFactory.CreateExtension.
@@ -68,7 +63,7 @@ func (f CreateExtensionFunc) CreateExtension(ctx context.Context, set ExtensionC
 	return f(ctx, set, cfg)
 }
 
-// ExtensionFactory is a factory for extensions to the service.
+// Deprecated: [v0.67.0] use extension.Factory.
 type ExtensionFactory interface {
 	Factory
 
@@ -89,7 +84,7 @@ func (ef *extensionFactory) ExtensionStability() StabilityLevel {
 	return ef.extensionStability
 }
 
-// NewExtensionFactory returns a new ExtensionFactory  based on this configuration.
+// Deprecated: [v0.67.0] use extension.NewFactory.
 func NewExtensionFactory(
 	cfgType Type,
 	createDefaultConfig CreateDefaultConfigFunc,

@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: Move tests back to component package after config.*Settings are removed.
-
-package component_test
+package extension
 
 import (
 	"context"
@@ -36,10 +34,10 @@ func TestNewExtensionFactory(t *testing.T) {
 	defaultCfg := config.NewExtensionSettings(component.NewID(typeStr))
 	nopExtensionInstance := new(nopExtension)
 
-	factory := component.NewExtensionFactory(
+	factory := NewFactory(
 		typeStr,
 		func() component.Config { return &defaultCfg },
-		func(ctx context.Context, settings component.ExtensionCreateSettings, extension component.Config) (component.Extension, error) {
+		func(ctx context.Context, settings CreateSettings, extension component.Config) (Extension, error) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelDevelopment)
@@ -47,7 +45,7 @@ func TestNewExtensionFactory(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.ExtensionStability())
-	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateSettings{}, &defaultCfg)
+	ext, err := factory.CreateExtension(context.Background(), CreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
 }

@@ -25,10 +25,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestBuildExtensions(t *testing.T) {
-	nopExtensionFactory := componenttest.NewNopExtensionFactory()
+	nopExtensionFactory := extensiontest.NewNopFactory()
 	nopExtensionConfig := nopExtensionFactory.CreateDefaultConfig()
 	errExtensionFactory := newCreateErrorExtensionFactory()
 	errExtensionConfig := errExtensionFactory.CreateDefaultConfig()
@@ -62,7 +64,7 @@ func TestBuildExtensions(t *testing.T) {
 		{
 			name: "error_on_create_extension",
 			factories: component.Factories{
-				Extensions: map[component.Type]component.ExtensionFactory{
+				Extensions: map[component.Type]extension.Factory{
 					errExtensionFactory.Type(): errExtensionFactory,
 				},
 			},
@@ -77,7 +79,7 @@ func TestBuildExtensions(t *testing.T) {
 		{
 			name: "bad_factory",
 			factories: component.Factories{
-				Extensions: map[component.Type]component.ExtensionFactory{
+				Extensions: map[component.Type]extension.Factory{
 					badExtensionFactory.Type(): badExtensionFactory,
 				},
 			},
@@ -105,8 +107,8 @@ func TestBuildExtensions(t *testing.T) {
 	}
 }
 
-func newBadExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func newBadExtensionFactory() extension.Factory {
+	return extension.NewFactory(
 		"bf",
 		func() component.Config {
 			return &struct {
@@ -115,15 +117,15 @@ func newBadExtensionFactory() component.ExtensionFactory {
 				ExtensionSettings: config.NewExtensionSettings(component.NewID("bf")),
 			}
 		},
-		func(ctx context.Context, set component.ExtensionCreateSettings, extension component.Config) (component.Extension, error) {
+		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
 			return nil, nil
 		},
 		component.StabilityLevelDevelopment,
 	)
 }
 
-func newCreateErrorExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func newCreateErrorExtensionFactory() extension.Factory {
+	return extension.NewFactory(
 		"err",
 		func() component.Config {
 			return &struct {
@@ -132,7 +134,7 @@ func newCreateErrorExtensionFactory() component.ExtensionFactory {
 				ExtensionSettings: config.NewExtensionSettings(component.NewID("err")),
 			}
 		},
-		func(ctx context.Context, set component.ExtensionCreateSettings, extension component.Config) (component.Extension, error) {
+		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")
 		},
 		component.StabilityLevelDevelopment,

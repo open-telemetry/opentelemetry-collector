@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -462,9 +463,9 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	storageID := component.NewIDWithName("extension", "extension")
 
 	// make a test extension
-	factory := componenttest.NewNopExtensionFactory()
+	factory := extensiontest.NewNopFactory()
 	extConfig := factory.CreateDefaultConfig()
-	settings := componenttest.NewNopExtensionCreateSettings()
+	settings := extensiontest.NewNopCreateSettings()
 	extension, err := factory.CreateExtension(context.Background(), settings, extConfig)
 	assert.NoError(t, err)
 	var extensions = map[component.ID]component.Component{

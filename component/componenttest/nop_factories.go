@@ -23,6 +23,7 @@ func NopFactories() (component.Factories, error) {
 	var factories component.Factories
 	var err error
 
+	//nolint:staticcheck
 	if factories.Extensions, err = component.MakeExtensionFactoryMap(NewNopExtensionFactory()); err != nil {
 		return component.Factories{}, err
 	}
