@@ -57,6 +57,7 @@ func TestGenerateAndCompileDefault(t *testing.T) {
 	workspaceDir := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
 	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector => %s", workspaceDir))
 	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/component => %s/component", workspaceDir))
+	cfg.Replaces = append(cfg.Replaces, fmt.Sprintf("go.opentelemetry.io/collector/confmap => %s/confmap", workspaceDir))
 
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())

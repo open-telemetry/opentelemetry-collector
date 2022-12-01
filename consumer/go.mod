@@ -40,3 +40,5 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../extension/
 replace go.opentelemetry.io/collector/component => ../component
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
+
+replace go.opentelemetry.io/collector/confmap => ../confmap

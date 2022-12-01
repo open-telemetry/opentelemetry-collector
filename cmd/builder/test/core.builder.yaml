@@ -20,3 +20,4 @@ exporters:
 replaces:
   - go.opentelemetry.io/collector => ${WORKSPACE_DIR}
   - go.opentelemetry.io/collector/component => ${WORKSPACE_DIR}/component
+  - go.opentelemetry.io/collector/confmap => ${WORKSPACE_DIR}/confmap

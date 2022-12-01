@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.66.0
+	go.opentelemetry.io/collector/confmap v0.66.0
 	go.opentelemetry.io/collector/consumer v0.66.0
 	go.opentelemetry.io/collector/pdata v0.66.0
 	go.opentelemetry.io/otel/metric v0.33.0
@@ -38,6 +39,8 @@ require (
 )
 
 replace go.opentelemetry.io/collector => ../
+
+replace go.opentelemetry.io/collector/confmap => ../confmap
 
 replace go.opentelemetry.io/collector/consumer => ../consumer
 

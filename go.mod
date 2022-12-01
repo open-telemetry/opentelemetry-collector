@@ -8,9 +8,6 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.3.0
 	github.com/klauspost/compress v1.15.12
-	github.com/knadh/koanf v1.4.4
-	github.com/magiconair/properties v1.8.6
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mostynb/go-grpc-compression v1.1.17
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
@@ -21,6 +18,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/confmap v0.66.0
 	go.opentelemetry.io/collector/consumer v0.66.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.66.0
 	go.opentelemetry.io/collector/featuregate v0.66.0
@@ -61,9 +59,11 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -83,6 +83,8 @@ require (
 )
 
 replace go.opentelemetry.io/collector/component => ./component
+
+replace go.opentelemetry.io/collector/confmap => ./confmap
 
 replace go.opentelemetry.io/collector/consumer => ./consumer
 
