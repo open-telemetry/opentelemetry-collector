@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
@@ -33,7 +34,7 @@ const zExtensionName = "zextensionname"
 // Extensions is a map of extensions created from extension configs.
 type Extensions struct {
 	telemetry component.TelemetrySettings
-	extMap    map[component.ID]component.Extension
+	extMap    map[component.ID]extension.Extension
 }
 
 // Start starts all extensions.
@@ -63,7 +64,7 @@ func (bes *Extensions) Shutdown(ctx context.Context) error {
 
 func (bes *Extensions) NotifyPipelineReady() error {
 	for extID, ext := range bes.extMap {
-		if pw, ok := ext.(component.PipelineWatcher); ok {
+		if pw, ok := ext.(extension.PipelineWatcher); ok {
 			if err := pw.Ready(); err != nil {
 				return fmt.Errorf("failed to notify extension %q: %w", extID, err)
 			}
@@ -76,7 +77,7 @@ func (bes *Extensions) NotifyPipelineNotReady() error {
 	// Notify extensions in reverse order.
 	var errs error
 	for _, ext := range bes.extMap {
-		if pw, ok := ext.(component.PipelineWatcher); ok {
+		if pw, ok := ext.(extension.PipelineWatcher); ok {
 			errs = multierr.Append(errs, pw.NotReady())
 		}
 	}
@@ -125,15 +126,15 @@ type Settings struct {
 	// Configs is a map of component.ID to component.Config.
 	Configs map[component.ID]component.Config
 
-	// Factories maps extension type names in the config to the respective component.ExtensionFactory.
-	Factories map[component.Type]component.ExtensionFactory
+	// Factories maps extension type names in the config to the respective extension.Factory.
+	Factories map[component.Type]extension.Factory
 }
 
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	exts := &Extensions{
 		telemetry: set.Telemetry,
-		extMap:    make(map[component.ID]component.Extension),
+		extMap:    make(map[component.ID]extension.Extension),
 	}
 	for _, extID := range cfg {
 		extCfg, existsCfg := set.Configs[extID]
@@ -146,7 +147,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 			return nil, fmt.Errorf("extension factory for type %q is not configured", extID.Type())
 		}
 
-		extSet := component.ExtensionCreateSettings{
+		extSet := extension.CreateSettings{
 			ID:                extID,
 			TelemetrySettings: set.Telemetry,
 			BuildInfo:         set.BuildInfo,

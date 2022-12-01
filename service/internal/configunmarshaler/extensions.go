@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // extensionsKeyName is the configuration key name for extensions section.
@@ -27,10 +28,10 @@ const extensionsKeyName = "extensions"
 type Extensions struct {
 	exts map[component.ID]component.Config
 
-	factories map[component.Type]component.ExtensionFactory
+	factories map[component.Type]extension.Factory
 }
 
-func NewExtensions(factories map[component.Type]component.ExtensionFactory) *Extensions {
+func NewExtensions(factories map[component.Type]extension.Factory) *Extensions {
 	return &Extensions{factories: factories}
 }
 

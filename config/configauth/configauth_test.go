@@ -20,13 +20,14 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
 func TestGetServer(t *testing.T) {
 	testCases := []struct {
 		desc          string
-		authenticator component.Extension
+		authenticator extension.Extension
 		expected      error
 	}{
 		{
@@ -77,7 +78,7 @@ func TestGetServerFails(t *testing.T) {
 func TestGetClient(t *testing.T) {
 	testCases := []struct {
 		desc          string
-		authenticator component.Extension
+		authenticator extension.Extension
 		expected      error
 	}{
 		{
