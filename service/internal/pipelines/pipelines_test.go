@@ -17,7 +17,6 @@ package pipelines
 import (
 	"context"
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,12 +25,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/service/internal/configunmarshaler"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 )
 
@@ -41,161 +37,250 @@ func TestBuild(t *testing.T) {
 		receiverIDs      []component.ID
 		processorIDs     []component.ID
 		exporterIDs      []component.ID
+		pipelineConfigs  map[component.ID]*config.Pipeline
 		expectedRequests int
 	}{
 		{
-			name:             "pipelines_simple.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver")},
-			processorIDs:     []component.ID{component.NewID("exampleprocessor")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter")},
+			name: "pipelines_simple",
+			pipelineConfigs: map[component.ID]*config.Pipeline{
+				component.NewID("traces"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver")},
+					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Exporters:  []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("metrics"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver")},
+					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Exporters:  []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("logs"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver")},
+					Processors: []component.ID{component.NewID("exampleprocessor")},
+					Exporters:  []component.ID{component.NewID("exampleexporter")},
+				},
+			},
 			expectedRequests: 1,
 		},
 		{
-			name:             "pipelines_simple_multi_proc.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver")},
-			processorIDs:     []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter")},
+			name: "pipelines_simple_multi_proc",
+			pipelineConfigs: map[component.ID]*config.Pipeline{
+				component.NewID("traces"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver")},
+					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Exporters:  []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("metrics"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver")},
+					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Exporters:  []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("logs"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver")},
+					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Exporters:  []component.ID{component.NewID("exampleexporter")},
+				},
+			},
 			expectedRequests: 1,
 		},
 		{
-			name:             "pipelines_simple_no_proc.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter")},
+			name: "pipelines_simple_no_proc",
+			pipelineConfigs: map[component.ID]*config.Pipeline{
+				component.NewID("traces"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("metrics"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("logs"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+			},
 			expectedRequests: 1,
 		},
 		{
-			name:             "pipelines_multi.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
-			processorIDs:     []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+			name: "pipelines_multi",
+			pipelineConfigs: map[component.ID]*config.Pipeline{
+				component.NewID("traces"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
+					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Exporters:  []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+				},
+				component.NewID("metrics"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
+					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Exporters:  []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+				},
+				component.NewID("logs"): {
+					Receivers:  []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
+					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
+					Exporters:  []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+				},
+			},
 			expectedRequests: 2,
 		},
 		{
-			name:             "pipelines_multi_no_proc.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+			name: "pipelines_multi_no_proc",
+			pipelineConfigs: map[component.ID]*config.Pipeline{
+				component.NewID("traces"): {
+					Receivers: []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
+					Exporters: []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+				},
+				component.NewID("metrics"): {
+					Receivers: []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
+					Exporters: []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+				},
+				component.NewID("logs"): {
+					Receivers: []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
+					Exporters: []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
+				},
+			},
 			expectedRequests: 2,
 		},
 		{
-			name:             "pipelines_exporter_multi_pipeline.yaml",
-			receiverIDs:      []component.ID{component.NewID("examplereceiver")},
-			exporterIDs:      []component.ID{component.NewID("exampleexporter")},
-			expectedRequests: 2,
+			name:        "pipelines_exporter_multi_pipeline",
+			receiverIDs: []component.ID{component.NewID("examplereceiver")},
+			exporterIDs: []component.ID{component.NewID("exampleexporter")},
+			pipelineConfigs: map[component.ID]*config.Pipeline{
+				component.NewID("traces"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewIDWithName("traces", "1"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("metrics"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewIDWithName("metrics", "1"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewID("logs"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+				component.NewIDWithName("logs", "1"): {
+					Receivers: []component.ID{component.NewID("examplereceiver")},
+					Exporters: []component.ID{component.NewID("exampleexporter")},
+				},
+			},
+			expectedRequests: 4,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			factories, err := testcomponents.ExampleComponents()
-			assert.NoError(t, err)
-
-			cfg := loadConfig(t, filepath.Join("testdata", test.name), factories)
-
 			// Build the pipeline
-			pipelines, err := Build(context.Background(), toSettings(factories, cfg))
+			pipelines, err := Build(context.Background(), Settings{
+				Telemetry: componenttest.NewNopTelemetrySettings(),
+				BuildInfo: component.NewDefaultBuildInfo(),
+				ReceiverFactories: map[component.Type]component.ReceiverFactory{
+					testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+				},
+				ReceiverConfigs: map[component.ID]component.Config{
+					component.NewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+					component.NewIDWithName("examplereceiver", "1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+				},
+				ProcessorFactories: map[component.Type]component.ProcessorFactory{
+					testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+				},
+				ProcessorConfigs: map[component.ID]component.Config{
+					component.NewID("exampleprocessor"):              testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+					component.NewIDWithName("exampleprocessor", "1"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+				},
+				ExporterFactories: map[component.Type]component.ExporterFactory{
+					testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
+				},
+				ExporterConfigs: map[component.ID]component.Config{
+					component.NewID("exampleexporter"):              testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+					component.NewIDWithName("exampleexporter", "1"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
+				},
+				PipelineConfigs: test.pipelineConfigs,
+			})
 			assert.NoError(t, err)
 
 			assert.NoError(t, pipelines.StartAll(context.Background(), componenttest.NewNopHost()))
 
-			// Verify exporters created, started and empty.
-			for _, expID := range test.exporterIDs {
-				traceExporter := pipelines.GetExporters()[component.DataTypeTraces][expID].(*testcomponents.ExampleExporter)
-				assert.True(t, traceExporter.Started)
-				assert.Equal(t, len(traceExporter.Traces), 0)
+			for dt, pipeline := range test.pipelineConfigs {
+				// Verify exporters created, started and empty.
+				for _, expID := range pipeline.Exporters {
+					exporter := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
+					assert.True(t, exporter.Started)
+					switch dt.Type() {
+					case component.DataTypeTraces:
+						assert.Len(t, exporter.Traces, 0)
+					case component.DataTypeMetrics:
+						assert.Len(t, exporter.Metrics, 0)
+					case component.DataTypeLogs:
+						assert.Len(t, exporter.Logs, 0)
+					}
+				}
 
-				// Validate metrics.
-				metricsExporter := pipelines.GetExporters()[component.DataTypeMetrics][expID].(*testcomponents.ExampleExporter)
-				assert.True(t, metricsExporter.Started)
-				assert.Zero(t, len(metricsExporter.Traces))
+				// Verify processors created in the given order and started.
+				for i, procID := range pipeline.Processors {
+					processor := pipelines.pipelines[dt].processors[i]
+					assert.Equal(t, procID, processor.id)
+					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Started)
+				}
 
-				// Validate logs.
-				logsExporter := pipelines.GetExporters()[component.DataTypeLogs][expID].(*testcomponents.ExampleExporter)
-				assert.True(t, logsExporter.Started)
-				assert.Zero(t, len(logsExporter.Traces))
+				// Verify receivers created, started and send data to confirm pipelines correctly connected.
+				for _, recvID := range pipeline.Receivers {
+					receiver := pipelines.allReceivers[dt.Type()][recvID].(*testcomponents.ExampleReceiver)
+					assert.True(t, receiver.Started)
+				}
 			}
 
-			// Verify processors created in the given order and started.
-			for i, procID := range test.processorIDs {
-				traceProcessor := pipelines.pipelines[component.NewID(component.DataTypeTraces)].processors[i]
-				assert.Equal(t, procID, traceProcessor.id)
-				assert.True(t, traceProcessor.comp.(*testcomponents.ExampleProcessor).Started)
-
-				// Validate metrics.
-				metricsProcessor := pipelines.pipelines[component.NewID(component.DataTypeMetrics)].processors[i]
-				assert.Equal(t, procID, metricsProcessor.id)
-				assert.True(t, metricsProcessor.comp.(*testcomponents.ExampleProcessor).Started)
-
-				// Validate logs.
-				logsProcessor := pipelines.pipelines[component.NewID(component.DataTypeLogs)].processors[i]
-				assert.Equal(t, procID, logsProcessor.id)
-				assert.True(t, logsProcessor.comp.(*testcomponents.ExampleProcessor).Started)
-			}
-
-			// Verify receivers created, started and send data to confirm pipelines correctly connected.
-			for _, recvID := range test.receiverIDs {
-				traceReceiver := pipelines.allReceivers[component.DataTypeTraces][recvID].(*testcomponents.ExampleReceiver)
-				assert.True(t, traceReceiver.Started)
-				// Send traces.
-				assert.NoError(t, traceReceiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
-
-				metricsReceiver := pipelines.allReceivers[component.DataTypeMetrics][recvID].(*testcomponents.ExampleReceiver)
-				assert.True(t, metricsReceiver.Started)
-				// Send metrics.
-				assert.NoError(t, metricsReceiver.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
-
-				logsReceiver := pipelines.allReceivers[component.DataTypeLogs][recvID].(*testcomponents.ExampleReceiver)
-				assert.True(t, logsReceiver.Started)
-				// Send logs.
-				assert.NoError(t, logsReceiver.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
+			// Send data to confirm pipelines correctly connected.
+			for dt, pipeline := range test.pipelineConfigs {
+				for _, recvID := range pipeline.Receivers {
+					receiver := pipelines.allReceivers[dt.Type()][recvID].(*testcomponents.ExampleReceiver)
+					switch dt.Type() {
+					case component.DataTypeTraces:
+						assert.NoError(t, receiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+					case component.DataTypeMetrics:
+						assert.NoError(t, receiver.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
+					case component.DataTypeLogs:
+						assert.NoError(t, receiver.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)))
+					}
+				}
 			}
 
 			assert.NoError(t, pipelines.ShutdownAll(context.Background()))
 
-			// Verify receivers shutdown.
-			for _, recvID := range test.receiverIDs {
-				traceReceiver := pipelines.allReceivers[component.DataTypeTraces][recvID].(*testcomponents.ExampleReceiver)
-				assert.True(t, traceReceiver.Stopped)
+			for dt, pipeline := range test.pipelineConfigs {
+				// Verify receivers shutdown.
+				for _, recvID := range pipeline.Receivers {
+					receiver := pipelines.allReceivers[dt.Type()][recvID].(*testcomponents.ExampleReceiver)
+					assert.True(t, receiver.Stopped)
+				}
 
-				metricsReceiver := pipelines.allReceivers[component.DataTypeMetrics][recvID].(*testcomponents.ExampleReceiver)
-				assert.True(t, metricsReceiver.Stopped)
+				// Verify processors shutdown.
+				for i := range pipeline.Processors {
+					processor := pipelines.pipelines[dt].processors[i]
+					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Stopped)
+				}
 
-				logsReceiver := pipelines.allReceivers[component.DataTypeLogs][recvID].(*testcomponents.ExampleReceiver)
-				assert.True(t, logsReceiver.Stopped)
-			}
-
-			// Verify processors shutdown.
-			for i := range test.processorIDs {
-				traceProcessor := pipelines.pipelines[component.NewID(component.DataTypeTraces)].processors[i]
-				assert.True(t, traceProcessor.comp.(*testcomponents.ExampleProcessor).Stopped)
-
-				// Validate metrics.
-				metricsProcessor := pipelines.pipelines[component.NewID(component.DataTypeMetrics)].processors[i]
-				assert.True(t, metricsProcessor.comp.(*testcomponents.ExampleProcessor).Stopped)
-
-				// Validate logs.
-				logsProcessor := pipelines.pipelines[component.NewID(component.DataTypeLogs)].processors[i]
-				assert.True(t, logsProcessor.comp.(*testcomponents.ExampleProcessor).Stopped)
-			}
-
-			// Now verify that exporters received data, and are shutdown.
-			for _, expID := range test.exporterIDs {
-				// Validate traces.
-				traceExporter := pipelines.GetExporters()[component.DataTypeTraces][expID].(*testcomponents.ExampleExporter)
-				require.Len(t, traceExporter.Traces, test.expectedRequests)
-				assert.EqualValues(t, testdata.GenerateTraces(1), traceExporter.Traces[0])
-				assert.True(t, traceExporter.Stopped)
-
-				// Validate metrics.
-				metricsExporter := pipelines.GetExporters()[component.DataTypeMetrics][expID].(*testcomponents.ExampleExporter)
-				require.Len(t, metricsExporter.Metrics, test.expectedRequests)
-				assert.EqualValues(t, testdata.GenerateMetrics(1), metricsExporter.Metrics[0])
-				assert.True(t, metricsExporter.Stopped)
-
-				// Validate logs.
-				logsExporter := pipelines.GetExporters()[component.DataTypeLogs][expID].(*testcomponents.ExampleExporter)
-				require.Len(t, logsExporter.Logs, test.expectedRequests)
-				assert.EqualValues(t, testdata.GenerateLogs(1), logsExporter.Logs[0])
-				assert.True(t, logsExporter.Stopped)
+				// Now verify that exporters received data, and are shutdown.
+				for _, expID := range pipeline.Exporters {
+					exporter := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
+					switch dt.Type() {
+					case component.DataTypeTraces:
+						require.Len(t, exporter.Traces, test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateTraces(1), exporter.Traces[0])
+					case component.DataTypeMetrics:
+						require.Len(t, exporter.Metrics, test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateMetrics(1), exporter.Metrics[0])
+					case component.DataTypeLogs:
+						require.Len(t, exporter.Logs, test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateLogs(1), exporter.Logs[0])
+					}
+					assert.True(t, exporter.Stopped)
+				}
 			}
 		})
 	}
@@ -686,20 +771,6 @@ func newErrExporterFactory() component.ExporterFactory {
 	)
 }
 
-func toSettings(factories component.Factories, cfg *configSettings) Settings {
-	return Settings{
-		Telemetry:          componenttest.NewNopTelemetrySettings(),
-		BuildInfo:          component.NewDefaultBuildInfo(),
-		ReceiverFactories:  factories.Receivers,
-		ReceiverConfigs:    cfg.Receivers.GetReceivers(),
-		ProcessorFactories: factories.Processors,
-		ProcessorConfigs:   cfg.Processors.GetProcessors(),
-		ExporterFactories:  factories.Exporters,
-		ExporterConfigs:    cfg.Exporters.GetExporters(),
-		PipelineConfigs:    cfg.Service.Pipelines,
-	}
-}
-
 type errComponent struct {
 	consumertest.Consumer
 }
@@ -714,29 +785,4 @@ func (e errComponent) Start(context.Context, component.Host) error {
 
 func (e errComponent) Shutdown(context.Context) error {
 	return errors.New("my error")
-}
-
-// TODO: Remove this by not reading the input from the files, or by providing something similar outside service package.
-type configSettings struct {
-	Receivers  *configunmarshaler.Receivers  `mapstructure:"receivers"`
-	Processors *configunmarshaler.Processors `mapstructure:"processors"`
-	Exporters  *configunmarshaler.Exporters  `mapstructure:"exporters"`
-	Service    *serviceSettings              `mapstructure:"service"`
-}
-
-type serviceSettings struct {
-	Pipelines map[component.ID]*config.Pipeline `mapstructure:"pipelines"`
-}
-
-func loadConfig(t *testing.T, fileName string, factories component.Factories) *configSettings {
-	// Read yaml config from file
-	conf, err := confmaptest.LoadConf(fileName)
-	require.NoError(t, err)
-	cfg := &configSettings{
-		Receivers:  configunmarshaler.NewReceivers(factories.Receivers),
-		Processors: configunmarshaler.NewProcessors(factories.Processors),
-		Exporters:  configunmarshaler.NewExporters(factories.Exporters),
-	}
-	require.NoError(t, conf.Unmarshal(cfg, confmap.WithErrorUnused()))
-	return cfg
 }
