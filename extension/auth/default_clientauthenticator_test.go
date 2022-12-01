@@ -114,7 +114,7 @@ func (c *customPerRPCCredentials) RequireTransportSecurity() bool {
 
 func TestWithPerRPCCredentials(t *testing.T) {
 	called := false
-	e := NewClient(WithPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
+	e := NewClient(WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
 		called = true
 		return &customPerRPCCredentials{}, nil
 	}))

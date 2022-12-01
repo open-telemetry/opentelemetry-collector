@@ -10,3 +10,11 @@ note: Define new authextension package and use new package in collector repo
 # One or more tracking issues or pull requests related to the change
 issues: [6467]
 
+subtext: |-
+  - configauth.ClientAuthenticator -> auth.Client
+  - configauth.NewClientAuthenticator -> auth.NewClient
+  - configauth.ClientOption -> auth.ClientOption
+  - configauth.WithClientStart -> auth.WithClientStart
+  - configauth.WithClientShutdown -> auth.WithClientShutdown
+  - configauth.WithClientRoundTripper -> auth.WithClientRoundTripper
+  - configauth.WithPerRPCCredentials -> auth.WithClientPerRPCCredentials
