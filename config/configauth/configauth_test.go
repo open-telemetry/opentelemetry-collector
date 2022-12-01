@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/auth"
 )
 
 func TestGetServer(t *testing.T) {
@@ -30,12 +31,12 @@ func TestGetServer(t *testing.T) {
 	}{
 		{
 			desc:          "obtain server authenticator",
-			authenticator: NewServerAuthenticator(),
+			authenticator: auth.NewServer(),
 			expected:      nil,
 		},
 		{
 			desc:          "not a server authenticator",
-			authenticator: NewClientAuthenticator(),
+			authenticator: auth.NewClient(),
 			expected:      errNotServer,
 		},
 	}
@@ -81,12 +82,12 @@ func TestGetClient(t *testing.T) {
 	}{
 		{
 			desc:          "obtain client authenticator",
-			authenticator: NewClientAuthenticator(),
+			authenticator: auth.NewClient(),
 			expected:      nil,
 		},
 		{
 			desc:          "not a client authenticator",
-			authenticator: NewServerAuthenticator(),
+			authenticator: auth.NewServer(),
 			expected:      errNotClient,
 		},
 	}
