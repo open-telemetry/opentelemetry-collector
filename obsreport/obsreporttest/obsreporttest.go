@@ -20,7 +20,6 @@ import (
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -34,18 +33,18 @@ import (
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
-var (
+const (
 	// Names used by the metrics and labels are hard coded here in order to avoid
 	// inadvertent changes: at this point changing metric names and labels should
 	// be treated as a breaking changing and requires a good justification.
 	// Changes to metric names or labels can break alerting, dashboards, etc
 	// that are used to monitor the Collector in production deployments.
 	// DO NOT SWITCH THE VARIABLES BELOW TO SIMILAR ONES DEFINED ON THE PACKAGE.
-	receiverTag, _  = tag.NewKey("receiver")
-	scraperTag, _   = tag.NewKey("scraper")
-	transportTag, _ = tag.NewKey("transport")
-	exporterTag, _  = tag.NewKey("exporter")
-	processorTag, _ = tag.NewKey("processor")
+	receiverTag  = "receiver"
+	scraperTag   = "scraper"
+	transportTag = "transport"
+	exporterTag  = "exporter"
+	processorTag = "processor"
 )
 
 type TestTelemetry struct {
