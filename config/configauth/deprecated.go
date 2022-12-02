@@ -34,8 +34,8 @@ var WithClientShutdown = auth.WithClientShutdown
 // Deprecated: [v0.67.0] Use auth.WithClientRoundTripper
 var WithClientRoundTripper = auth.WithClientRoundTripper
 
-// Deprecated: [v0.67.0] Use auth.WithPerRPCCredentials
-var WithPerRPCCredentials = auth.WithPerRPCCredentials
+// Deprecated: [v0.67.0] Use auth.WithClientPerRPCCredentials
+var WithPerRPCCredentials = auth.WithClientPerRPCCredentials
 
 // Deprecated: [v0.67.0] Use auth.NewClient
 var NewClientAuthenticator = auth.NewClient
