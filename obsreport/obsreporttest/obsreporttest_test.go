@@ -74,10 +74,10 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndTracesOp(ctx, format, 7, nil)
 
-	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiver, transport, 7, 0))
-	assert.Error(t, obsreporttest.CheckReceiverTraces(tt, receiver, transport, 7, 7))
-	assert.Error(t, obsreporttest.CheckReceiverTraces(tt, receiver, transport, 0, 0))
-	assert.Error(t, obsreporttest.CheckReceiverTraces(tt, receiver, transport, 0, 7))
+	assert.NoError(t, tt.CheckReceiverTraces(transport, 7, 0))
+	assert.Error(t, tt.CheckReceiverTraces(transport, 7, 7))
+	assert.Error(t, tt.CheckReceiverTraces(transport, 0, 0))
+	assert.Error(t, tt.CheckReceiverTraces(transport, 0, 7))
 }
 
 func TestCheckReceiverMetricsViews(t *testing.T) {
@@ -95,10 +95,10 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndMetricsOp(ctx, format, 7, nil)
 
-	assert.NoError(t, obsreporttest.CheckReceiverMetrics(tt, receiver, transport, 7, 0))
-	assert.Error(t, obsreporttest.CheckReceiverMetrics(tt, receiver, transport, 7, 7))
-	assert.Error(t, obsreporttest.CheckReceiverMetrics(tt, receiver, transport, 0, 0))
-	assert.Error(t, obsreporttest.CheckReceiverMetrics(tt, receiver, transport, 0, 7))
+	assert.NoError(t, tt.CheckReceiverMetrics(transport, 7, 0))
+	assert.Error(t, tt.CheckReceiverMetrics(transport, 7, 7))
+	assert.Error(t, tt.CheckReceiverMetrics(transport, 0, 0))
+	assert.Error(t, tt.CheckReceiverMetrics(transport, 0, 7))
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
@@ -116,10 +116,10 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	rec.EndLogsOp(ctx, format, 7, nil)
 
-	assert.NoError(t, obsreporttest.CheckReceiverLogs(tt, receiver, transport, 7, 0))
-	assert.Error(t, obsreporttest.CheckReceiverLogs(tt, receiver, transport, 7, 7))
-	assert.Error(t, obsreporttest.CheckReceiverLogs(tt, receiver, transport, 0, 0))
-	assert.Error(t, obsreporttest.CheckReceiverLogs(tt, receiver, transport, 0, 7))
+	assert.NoError(t, tt.CheckReceiverLogs(transport, 7, 0))
+	assert.Error(t, tt.CheckReceiverLogs(transport, 7, 7))
+	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 0))
+	assert.Error(t, tt.CheckReceiverLogs(transport, 0, 7))
 }
 
 func TestCheckProcessorTracesViews(t *testing.T) {
@@ -137,14 +137,14 @@ func TestCheckProcessorTracesViews(t *testing.T) {
 	por.TracesRefused(context.Background(), 8)
 	por.TracesDropped(context.Background(), 9)
 
-	assert.NoError(t, obsreporttest.CheckProcessorTraces(tt, processor, 7, 8, 9))
-	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 0, 0, 0))
-	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 7, 0, 0))
-	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 7, 8, 0))
-	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 7, 0, 9))
-	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 0, 8, 0))
-	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 0, 8, 9))
-	assert.Error(t, obsreporttest.CheckProcessorTraces(tt, processor, 0, 0, 9))
+	assert.NoError(t, tt.CheckProcessorTraces(7, 8, 9))
+	assert.Error(t, tt.CheckProcessorTraces(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorTraces(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorTraces(7, 8, 0))
+	assert.Error(t, tt.CheckProcessorTraces(7, 0, 9))
+	assert.Error(t, tt.CheckProcessorTraces(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorTraces(0, 8, 9))
+	assert.Error(t, tt.CheckProcessorTraces(0, 0, 9))
 }
 
 func TestCheckProcessorMetricsViews(t *testing.T) {
@@ -162,14 +162,14 @@ func TestCheckProcessorMetricsViews(t *testing.T) {
 	por.MetricsRefused(context.Background(), 8)
 	por.MetricsDropped(context.Background(), 9)
 
-	assert.NoError(t, obsreporttest.CheckProcessorMetrics(tt, processor, 7, 8, 9))
-	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 0, 0, 0))
-	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 7, 0, 0))
-	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 7, 8, 0))
-	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 7, 0, 9))
-	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 0, 8, 0))
-	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 0, 8, 9))
-	assert.Error(t, obsreporttest.CheckProcessorMetrics(tt, processor, 0, 0, 9))
+	assert.NoError(t, tt.CheckProcessorMetrics(7, 8, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 8, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(7, 0, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 8, 9))
+	assert.Error(t, tt.CheckProcessorMetrics(0, 0, 9))
 }
 
 func TestCheckProcessorLogViews(t *testing.T) {
@@ -187,14 +187,14 @@ func TestCheckProcessorLogViews(t *testing.T) {
 	por.LogsRefused(context.Background(), 8)
 	por.LogsDropped(context.Background(), 9)
 
-	assert.NoError(t, obsreporttest.CheckProcessorLogs(tt, processor, 7, 8, 9))
-	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 0, 0, 0))
-	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 7, 0, 0))
-	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 7, 8, 0))
-	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 7, 0, 9))
-	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 0, 8, 0))
-	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 0, 8, 9))
-	assert.Error(t, obsreporttest.CheckProcessorLogs(tt, processor, 0, 0, 9))
+	assert.NoError(t, tt.CheckProcessorLogs(7, 8, 9))
+	assert.Error(t, tt.CheckProcessorLogs(0, 0, 0))
+	assert.Error(t, tt.CheckProcessorLogs(7, 0, 0))
+	assert.Error(t, tt.CheckProcessorLogs(7, 8, 0))
+	assert.Error(t, tt.CheckProcessorLogs(7, 0, 9))
+	assert.Error(t, tt.CheckProcessorLogs(0, 8, 0))
+	assert.Error(t, tt.CheckProcessorLogs(0, 8, 9))
+	assert.Error(t, tt.CheckProcessorLogs(0, 0, 9))
 }
 
 func TestCheckExporterTracesViews(t *testing.T) {
@@ -211,10 +211,10 @@ func TestCheckExporterTracesViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	obsrep.EndTracesOp(ctx, 7, nil)
 
-	assert.NoError(t, obsreporttest.CheckExporterTraces(tt, exporter, 7, 0))
-	assert.Error(t, obsreporttest.CheckExporterTraces(tt, exporter, 7, 7))
-	assert.Error(t, obsreporttest.CheckExporterTraces(tt, exporter, 0, 0))
-	assert.Error(t, obsreporttest.CheckExporterTraces(tt, exporter, 0, 7))
+	assert.NoError(t, tt.CheckExporterTraces(7, 0))
+	assert.Error(t, tt.CheckExporterTraces(7, 7))
+	assert.Error(t, tt.CheckExporterTraces(0, 0))
+	assert.Error(t, tt.CheckExporterTraces(0, 7))
 }
 
 func TestCheckExporterMetricsViews(t *testing.T) {
@@ -231,10 +231,10 @@ func TestCheckExporterMetricsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	obsrep.EndMetricsOp(ctx, 7, nil)
 
-	assert.NoError(t, obsreporttest.CheckExporterMetrics(tt, exporter, 7, 0))
-	assert.Error(t, obsreporttest.CheckExporterMetrics(tt, exporter, 7, 7))
-	assert.Error(t, obsreporttest.CheckExporterMetrics(tt, exporter, 0, 0))
-	assert.Error(t, obsreporttest.CheckExporterMetrics(tt, exporter, 0, 7))
+	assert.NoError(t, tt.CheckExporterMetrics(7, 0))
+	assert.Error(t, tt.CheckExporterMetrics(7, 7))
+	assert.Error(t, tt.CheckExporterMetrics(0, 0))
+	assert.Error(t, tt.CheckExporterMetrics(0, 7))
 }
 
 func TestCheckExporterLogsViews(t *testing.T) {
@@ -251,8 +251,8 @@ func TestCheckExporterLogsViews(t *testing.T) {
 	require.NotNil(t, ctx)
 	obsrep.EndLogsOp(ctx, 7, nil)
 
-	assert.NoError(t, obsreporttest.CheckExporterLogs(tt, exporter, 7, 0))
-	assert.Error(t, obsreporttest.CheckExporterLogs(tt, exporter, 7, 7))
-	assert.Error(t, obsreporttest.CheckExporterLogs(tt, exporter, 0, 0))
-	assert.Error(t, obsreporttest.CheckExporterLogs(tt, exporter, 0, 7))
+	assert.NoError(t, tt.CheckExporterLogs(7, 0))
+	assert.Error(t, tt.CheckExporterLogs(7, 7))
+	assert.Error(t, tt.CheckExporterLogs(0, 0))
+	assert.Error(t, tt.CheckExporterLogs(0, 7))
 }

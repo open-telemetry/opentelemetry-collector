@@ -287,7 +287,7 @@ func assertReceiverViews(t *testing.T, tt obsreporttest.TestTelemetry, sink *con
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
 	}
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, component.NewID("receiver"), "", int64(dataPointCount), 0))
+	require.NoError(t, tt.CheckReceiverMetrics("", int64(dataPointCount), 0))
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
