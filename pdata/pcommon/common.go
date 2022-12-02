@@ -717,18 +717,14 @@ func (m Map) PutEmptySlice(k string) Slice {
 }
 
 // Sort sorts the entries in the Map so two instances can be compared.
-// Returns the same instance to allow nicer code like:
-//
-//	assert.EqualValues(t, expected.Sort(), actual.Sort())
 //
 // IMPORTANT: Sort mutates the data, if you call this function in a consumer,
 // the consumer must be configured that it mutates data.
-func (m Map) Sort() Map {
+func (m Map) Sort() {
 	// Intention is to move the nil values at the end.
 	sort.SliceStable(*m.getOrig(), func(i, j int) bool {
 		return (*m.getOrig())[i].Key < (*m.getOrig())[j].Key
 	})
-	return m
 }
 
 // Len returns the length of this map.
