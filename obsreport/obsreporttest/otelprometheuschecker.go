@@ -178,28 +178,24 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 
 func attributesForScraperMetrics(receiver component.ID, scraper component.ID) []attribute.KeyValue {
 	return []attribute.KeyValue{
-		attribute.String(receiverTag.Name(), receiver.String()),
-		attribute.String(scraperTag.Name(), scraper.String()),
+		attribute.String(receiverTag, receiver.String()),
+		attribute.String(scraperTag, scraper.String()),
 	}
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
 func attributesForReceiverMetrics(receiver component.ID, transport string) []attribute.KeyValue {
 	return []attribute.KeyValue{
-		attribute.String(receiverTag.Name(), receiver.String()),
-		attribute.String(transportTag.Name(), transport),
+		attribute.String(receiverTag, receiver.String()),
+		attribute.String(transportTag, transport),
 	}
 }
 
 func attributesForProcessorMetrics(processor component.ID) []attribute.KeyValue {
-	return []attribute.KeyValue{
-		attribute.String(processorTag.Name(), processor.String()),
-	}
+	return []attribute.KeyValue{attribute.String(processorTag, processor.String())}
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
 func attributesForExporterMetrics(exporter component.ID) []attribute.KeyValue {
-	return []attribute.KeyValue{
-		attribute.String(exporterTag.Name(), exporter.String()),
-	}
+	return []attribute.KeyValue{attribute.String(exporterTag, exporter.String())}
 }
