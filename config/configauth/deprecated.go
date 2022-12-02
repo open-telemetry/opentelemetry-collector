@@ -43,20 +43,20 @@ var NewClientAuthenticator = auth.NewClient
 // Deprecated: [v0.67.0] Use auth.Server
 type ServerAuthenticator = auth.Server
 
-// Deprecated: [v0.67.0] Use auth.AuthenticateFunc
-type AuthenticateFunc = auth.AuthenticateFunc
+// Deprecated: [v0.67.0] Use auth.ServerAuthenticateFunc
+type AuthenticateFunc = auth.ServerAuthenticateFunc
 
-// Deprecated: [v0.67.0] Use auth.Option
-type Option = auth.Option
+// Deprecated: [v0.67.0] Use auth.ServerOption
+type Option = auth.ServerOption
 
-// Deprecated: [v0.67.0] Use auth.WithAuthenticate
-var WithAuthenticate = auth.WithAuthenticate
+// Deprecated: [v0.67.0] Use auth.WithServerAuthenticate
+var WithAuthenticate = auth.WithServerAuthenticate
 
-// Deprecated: [v0.67.0] Use auth.WithStart
-var WithStart = auth.WithStart
+// Deprecated: [v0.67.0] Use auth.WithServerStart
+var WithStart = auth.WithServerStart
 
 // Deprecated: [v0.67.0] Use auth.WithShutdown
-var WithShutdown = auth.WithShutdown
+var WithShutdown = auth.WithServerShutdown
 
 // Deprecated: [v0.67.0] Use auth.NewServer
 var NewServerAuthenticator = auth.NewServer

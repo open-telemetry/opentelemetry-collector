@@ -278,12 +278,12 @@ func (hss *HTTPServerSettings) ToServer(host component.Host, settings component.
 	}
 
 	if hss.Auth != nil {
-		authenticator, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
+		server, err := hss.Auth.GetServerAuthenticator(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, authenticator.Authenticate)
+		handler = authInterceptor(handler, server)
 	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
@@ -343,9 +343,9 @@ type CORSSettings struct {
 	MaxAge int `mapstructure:"max_age"`
 }
 
-func authInterceptor(next http.Handler, authenticate auth.AuthenticateFunc) http.Handler {
+func authInterceptor(next http.Handler, server auth.Server) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := authenticate(r.Context(), r.Header)
+		ctx, err := server.Authenticate(r.Context(), r.Header)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
