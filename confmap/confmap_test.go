@@ -319,8 +319,9 @@ func newConfFromFile(t testing.TB, fileName string) map[string]interface{} {
 }
 
 type testConfig struct {
-	Next    *nextConfig `mapstructure:"next"`
-	Another string      `mapstructure:"another"`
+	Next           *nextConfig `mapstructure:"next"`
+	Another        string      `mapstructure:"another"`
+	EmbeddedConfig `mapstructure:",squash"`
 }
 
 func (tc *testConfig) Unmarshal(component *Conf) error {
@@ -344,18 +345,32 @@ func (nc *nextConfig) Unmarshal(component *Conf) error {
 	return nil
 }
 
+type EmbeddedConfig struct {
+	Some string `mapstructure:"some"`
+}
+
+func (ec *EmbeddedConfig) Unmarshal(component *Conf) error {
+	if err := component.Unmarshal(ec); err != nil {
+		return err
+	}
+	ec.Some += " is also called"
+	return nil
+}
+
 func TestUnmarshaler(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]interface{}{
 		"next": map[string]interface{}{
 			"string": "make sure this",
 		},
 		"another": "make sure this",
+		"some":    "make sure this",
 	})
 
 	tc := &testConfig{}
 	assert.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
+	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
 }
 
 func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {
