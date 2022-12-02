@@ -32,6 +32,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -41,7 +42,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
-type exporter struct {
+type baseExporter struct {
 	// Input configuration.
 	config     *Config
 	client     *http.Client
@@ -60,7 +61,7 @@ const (
 )
 
 // Create new exporter.
-func newExporter(cfg component.Config, set component.ExporterCreateSettings) (*exporter, error) {
+func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint != "" {
@@ -74,7 +75,7 @@ func newExporter(cfg component.Config, set component.ExporterCreateSettings) (*e
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
 	// client construction is deferred to start
-	return &exporter{
+	return &baseExporter{
 		config:    oCfg,
 		logger:    set.Logger,
 		userAgent: userAgent,
@@ -84,7 +85,7 @@ func newExporter(cfg component.Config, set component.ExporterCreateSettings) (*e
 
 // start actually creates the HTTP client. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *exporter) start(_ context.Context, host component.Host) error {
+func (e *baseExporter) start(_ context.Context, host component.Host) error {
 	client, err := e.config.HTTPClientSettings.ToClient(host, e.settings)
 	if err != nil {
 		return err
@@ -93,7 +94,7 @@ func (e *exporter) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	tr := ptraceotlp.NewExportRequestFromTraces(td)
 	request, err := tr.MarshalProto()
 	if err != nil {
@@ -103,7 +104,7 @@ func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	return e.export(ctx, e.tracesURL, request)
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	tr := pmetricotlp.NewExportRequestFromMetrics(md)
 	request, err := tr.MarshalProto()
 	if err != nil {
@@ -112,7 +113,7 @@ func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return e.export(ctx, e.metricsURL, request)
 }
 
-func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	tr := plogotlp.NewExportRequestFromLogs(ld)
 	request, err := tr.MarshalProto()
 	if err != nil {
@@ -122,7 +123,7 @@ func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	return e.export(ctx, e.logsURL, request)
 }
 
-func (e *exporter) export(ctx context.Context, url string, request []byte) error {
+func (e *baseExporter) export(ctx context.Context, url string, request []byte) error {
 	e.logger.Debug("Preparing to make HTTP request", zap.String("url", url))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {

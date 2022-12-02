@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -78,14 +79,14 @@ type metricsExporter struct {
 	consumer.Metrics
 }
 
-// NewMetricsExporter creates a component.MetricsExporter that records observability metrics and wraps every request with a Span.
+// NewMetricsExporter creates a exporter.Metrics that records observability metrics and wraps every request with a Span.
 func NewMetricsExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
 	pusher consumer.ConsumeMetricsFunc,
 	options ...Option,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	if cfg == nil {
 		return nil, errNilConfig
 	}

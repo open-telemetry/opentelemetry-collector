@@ -38,10 +38,10 @@ const (
 )
 
 var (
-	receiver  = component.NewID("fakeReceiver")
-	scraper   = component.NewID("fakeScraper")
-	processor = component.NewID("fakeProcessor")
-	exporter  = component.NewID("fakeExporter")
+	receiverID  = component.NewID("fakeReceiver")
+	scraperID   = component.NewID("fakeScraper")
+	processorID = component.NewID("fakeProcessor")
+	exporterID  = component.NewID("fakeExporter")
 
 	errFake        = errors.New("errFake")
 	partialErrFake = scrapererror.NewPartialScrapeError(errFake, 1)
@@ -75,7 +75,7 @@ func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
-	testTelemetry(t, receiver, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, receiverID, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -85,7 +85,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		}
 		for i, param := range params {
 			rec, err := newReceiver(ReceiverSettings{
-				ReceiverID:             receiver,
+				ReceiverID:             receiverID,
 				Transport:              transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			}, registry)
@@ -100,7 +100,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 
 		var acceptedSpans, refusedSpans int
 		for i, span := range spans {
-			assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name())
+			assert.Equal(t, "receiver/"+receiverID.String()+"/TraceDataReceived", span.Name())
 			switch {
 			case params[i].err == nil:
 				acceptedSpans += params[i].items
@@ -122,7 +122,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	testTelemetry(t, receiver, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, receiverID, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -132,7 +132,7 @@ func TestReceiveLogsOp(t *testing.T) {
 		}
 		for i, param := range params {
 			rec, err := newReceiver(ReceiverSettings{
-				ReceiverID:             receiver,
+				ReceiverID:             receiverID,
 				Transport:              transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			}, registry)
@@ -148,7 +148,7 @@ func TestReceiveLogsOp(t *testing.T) {
 
 		var acceptedLogRecords, refusedLogRecords int
 		for i, span := range spans {
-			assert.Equal(t, "receiver/"+receiver.String()+"/LogsReceived", span.Name())
+			assert.Equal(t, "receiver/"+receiverID.String()+"/LogsReceived", span.Name())
 			switch {
 			case params[i].err == nil:
 				acceptedLogRecords += params[i].items
@@ -170,7 +170,7 @@ func TestReceiveLogsOp(t *testing.T) {
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	testTelemetry(t, receiver, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, receiverID, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -180,7 +180,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 		}
 		for i, param := range params {
 			rec, err := newReceiver(ReceiverSettings{
-				ReceiverID:             receiver,
+				ReceiverID:             receiverID,
 				Transport:              transport,
 				ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 			}, registry)
@@ -196,7 +196,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 
 		var acceptedMetricPoints, refusedMetricPoints int
 		for i, span := range spans {
-			assert.Equal(t, "receiver/"+receiver.String()+"/MetricsReceived", span.Name())
+			assert.Equal(t, "receiver/"+receiverID.String()+"/MetricsReceived", span.Name())
 			switch {
 			case params[i].err == nil:
 				acceptedMetricPoints += params[i].items
@@ -219,7 +219,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
-	testTelemetry(t, receiver, testScrapeMetricsDataOp)
+	testTelemetry(t, receiverID, testScrapeMetricsDataOp)
 }
 
 func testScrapeMetricsDataOp(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
@@ -233,8 +233,8 @@ func testScrapeMetricsDataOp(t *testing.T, tt obsreporttest.TestTelemetry, regis
 	}
 	for i := range params {
 		scrp, err := newScraper(ScraperSettings{
-			ReceiverID:             receiver,
-			Scraper:                scraper,
+			ReceiverID:             receiverID,
+			Scraper:                scraperID,
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 		}, registry)
 		require.NoError(t, err)
@@ -248,7 +248,7 @@ func testScrapeMetricsDataOp(t *testing.T, tt obsreporttest.TestTelemetry, regis
 
 	var scrapedMetricPoints, erroredMetricPoints int
 	for i, span := range spans {
-		assert.Equal(t, "scraper/"+receiver.String()+"/"+scraper.String()+"/MetricsScraped", span.Name())
+		assert.Equal(t, "scraper/"+receiverID.String()+"/"+scraperID.String()+"/MetricsScraped", span.Name())
 		switch {
 		case params[i].err == nil:
 			scrapedMetricPoints += params[i].items
@@ -274,16 +274,16 @@ func testScrapeMetricsDataOp(t *testing.T, tt obsreporttest.TestTelemetry, regis
 		}
 	}
 
-	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiver, scraper, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
+	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, receiverID, scraperID, int64(scrapedMetricPoints), int64(erroredMetricPoints)))
 }
 
 func TestExportTraceDataOp(t *testing.T) {
-	testTelemetry(t, exporter, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, exporterID, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ExporterSettings{
-			ExporterID:             exporter,
+			ExporterID:             exporterID,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, registry)
 		require.NoError(t, err)
@@ -303,7 +303,7 @@ func TestExportTraceDataOp(t *testing.T) {
 
 		var sentSpans, failedToSendSpans int
 		for i, span := range spans {
-			assert.Equal(t, "exporter/"+exporter.String()+"/traces", span.Name())
+			assert.Equal(t, "exporter/"+exporterID.String()+"/traces", span.Name())
 			switch {
 			case params[i].err == nil:
 				sentSpans += params[i].items
@@ -327,12 +327,12 @@ func TestExportTraceDataOp(t *testing.T) {
 }
 
 func TestExportMetricsOp(t *testing.T) {
-	testTelemetry(t, exporter, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, exporterID, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ExporterSettings{
-			ExporterID:             exporter,
+			ExporterID:             exporterID,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, registry)
 		require.NoError(t, err)
@@ -353,7 +353,7 @@ func TestExportMetricsOp(t *testing.T) {
 
 		var sentMetricPoints, failedToSendMetricPoints int
 		for i, span := range spans {
-			assert.Equal(t, "exporter/"+exporter.String()+"/metrics", span.Name())
+			assert.Equal(t, "exporter/"+exporterID.String()+"/metrics", span.Name())
 			switch {
 			case params[i].err == nil:
 				sentMetricPoints += params[i].items
@@ -376,12 +376,12 @@ func TestExportMetricsOp(t *testing.T) {
 }
 
 func TestExportLogsOp(t *testing.T) {
-	testTelemetry(t, exporter, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, exporterID, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		obsrep, err := newExporter(ExporterSettings{
-			ExporterID:             exporter,
+			ExporterID:             exporterID,
 			ExporterCreateSettings: tt.ToExporterCreateSettings(),
 		}, registry)
 		require.NoError(t, err)
@@ -402,7 +402,7 @@ func TestExportLogsOp(t *testing.T) {
 
 		var sentLogRecords, failedToSendLogRecords int
 		for i, span := range spans {
-			assert.Equal(t, "exporter/"+exporter.String()+"/logs", span.Name())
+			assert.Equal(t, "exporter/"+exporterID.String()+"/logs", span.Name())
 			switch {
 			case params[i].err == nil:
 				sentLogRecords += params[i].items
@@ -425,7 +425,7 @@ func TestExportLogsOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(receiver)
+	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -440,7 +440,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
 		rec, rerr := NewReceiver(ReceiverSettings{
-			ReceiverID:             receiver,
+			ReceiverID:             receiverID,
 			Transport:              transport,
 			LongLivedCtx:           true,
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
@@ -460,7 +460,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		link := span.Links()[0]
 		assert.Equal(t, parentSpan.SpanContext().TraceID(), link.SpanContext.TraceID())
 		assert.Equal(t, parentSpan.SpanContext().SpanID(), link.SpanContext.SpanID())
-		assert.Equal(t, "receiver/"+receiver.String()+"/TraceDataReceived", span.Name())
+		assert.Equal(t, "receiver/"+receiverID.String()+"/TraceDataReceived", span.Name())
 		require.Contains(t, span.Attributes(), attribute.KeyValue{Key: obsmetrics.TransportKey, Value: attribute.StringValue(transport)})
 		switch {
 		case params[i].err == nil:
@@ -479,7 +479,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 }
 
 func TestProcessorTraceData(t *testing.T) {
-	testTelemetry(t, processor, testProcessorTraceData)
+	testTelemetry(t, processorID, testProcessorTraceData)
 }
 
 func testProcessorTraceData(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
@@ -487,7 +487,7 @@ func testProcessorTraceData(t *testing.T, tt obsreporttest.TestTelemetry, regist
 	const refusedSpans = 19
 	const droppedSpans = 13
 	obsrep, err := newProcessor(ProcessorSettings{
-		ProcessorID:             processor,
+		ProcessorID:             processorID,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	}, registry)
 	require.NoError(t, err)
@@ -499,7 +499,7 @@ func testProcessorTraceData(t *testing.T, tt obsreporttest.TestTelemetry, regist
 }
 
 func TestProcessorMetricsData(t *testing.T) {
-	testTelemetry(t, processor, testProcessorMetricsData)
+	testTelemetry(t, processorID, testProcessorMetricsData)
 }
 
 func testProcessorMetricsData(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
@@ -508,7 +508,7 @@ func testProcessorMetricsData(t *testing.T, tt obsreporttest.TestTelemetry, regi
 	const droppedPoints = 17
 
 	obsrep, err := newProcessor(ProcessorSettings{
-		ProcessorID:             processor,
+		ProcessorID:             processorID,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	}, registry)
 	require.NoError(t, err)
@@ -542,7 +542,7 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 }
 
 func TestProcessorLogRecords(t *testing.T) {
-	testTelemetry(t, processor, testProcessorLogRecords)
+	testTelemetry(t, processorID, testProcessorLogRecords)
 }
 
 func testProcessorLogRecords(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
@@ -551,7 +551,7 @@ func testProcessorLogRecords(t *testing.T, tt obsreporttest.TestTelemetry, regis
 	const droppedRecords = 17
 
 	obsrep, err := newProcessor(ProcessorSettings{
-		ProcessorID:             processor,
+		ProcessorID:             processorID,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
 	}, registry)
 	require.NoError(t, err)

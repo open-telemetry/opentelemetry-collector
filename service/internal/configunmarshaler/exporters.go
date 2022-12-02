@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 // exportersKeyName is the configuration key name for exporters section.
@@ -27,10 +28,10 @@ const exportersKeyName = "exporters"
 type Exporters struct {
 	exps map[component.ID]component.Config
 
-	factories map[component.Type]component.ExporterFactory
+	factories map[component.Type]exporter.Factory
 }
 
-func NewExporters(factories map[component.Type]component.ExporterFactory) *Exporters {
+func NewExporters(factories map[component.Type]exporter.Factory) *Exporters {
 	return &Exporters{factories: factories}
 }
 

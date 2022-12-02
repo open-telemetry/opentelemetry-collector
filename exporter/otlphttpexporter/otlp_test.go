@@ -42,6 +42,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -302,7 +303,7 @@ func TestIssue_4221(t *testing.T) {
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), md))
 }
 
-func startTracesExporter(t *testing.T, baseURL string, overrideURL string) component.TracesExporter {
+func startTracesExporter(t *testing.T, baseURL string, overrideURL string) exporter.Traces {
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
@@ -312,7 +313,7 @@ func startTracesExporter(t *testing.T, baseURL string, overrideURL string) compo
 	return exp
 }
 
-func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) component.MetricsExporter {
+func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) exporter.Metrics {
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.MetricsEndpoint = overrideURL
@@ -322,7 +323,7 @@ func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) comp
 	return exp
 }
 
-func startLogsExporter(t *testing.T, baseURL string, overrideURL string) component.LogsExporter {
+func startLogsExporter(t *testing.T, baseURL string, overrideURL string) exporter.Logs {
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.LogsEndpoint = overrideURL

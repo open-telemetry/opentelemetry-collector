@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -60,7 +61,7 @@ func TestTracesExporter_InvalidName(t *testing.T) {
 }
 
 func TestTracesExporter_NilLogger(t *testing.T) {
-	te, err := NewTracesExporter(context.Background(), component.ExporterCreateSettings{}, &fakeTracesExporterConfig, newTraceDataPusher(nil))
+	te, err := NewTracesExporter(context.Background(), exporter.CreateSettings{}, &fakeTracesExporterConfig, newTraceDataPusher(nil))
 	require.Nil(t, te)
 	require.Equal(t, errNilLogger, err)
 }
@@ -213,7 +214,7 @@ func newTraceDataPusher(retError error) consumer.ConsumeTracesFunc {
 	}
 }
 
-func checkRecordedMetricsForTracesExporter(t *testing.T, tt obsreporttest.TestTelemetry, te component.TracesExporter, wantError error) {
+func checkRecordedMetricsForTracesExporter(t *testing.T, tt obsreporttest.TestTelemetry, te exporter.Traces, wantError error) {
 	td := testdata.GenerateTraces(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -228,7 +229,7 @@ func checkRecordedMetricsForTracesExporter(t *testing.T, tt obsreporttest.TestTe
 	}
 }
 
-func generateTraceTraffic(t *testing.T, tracer trace.Tracer, te component.TracesExporter, numRequests int, wantError error) {
+func generateTraceTraffic(t *testing.T, tracer trace.Tracer, te exporter.Traces, numRequests int, wantError error) {
 	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	ctx, span := tracer.Start(context.Background(), fakeTraceParentSpanName)
@@ -238,7 +239,7 @@ func generateTraceTraffic(t *testing.T, tracer trace.Tracer, te component.Traces
 	}
 }
 
-func checkWrapSpanForTracesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, te component.TracesExporter, wantError error, numSpans int64) {
+func checkWrapSpanForTracesExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, te exporter.Traces, wantError error, numSpans int64) {
 	const numRequests = 5
 	generateTraceTraffic(t, tracer, te, numRequests, wantError)
 

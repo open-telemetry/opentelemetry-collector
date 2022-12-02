@@ -62,9 +62,7 @@ func MakeProcessorFactoryMap(factories ...ProcessorFactory) (map[Type]ProcessorF
 	return fMap, nil
 }
 
-// MakeExporterFactoryMap takes a list of exporter factories and returns a map
-// with factory type as keys. It returns a non-nil error when more than one factories
-// have the same type.
+// Deprecated: [v0.67.0] use exporter.MakeFactoryMap
 func MakeExporterFactoryMap(factories ...ExporterFactory) (map[Type]ExporterFactory, error) {
 	fMap := map[Type]ExporterFactory{}
 	for _, f := range factories {

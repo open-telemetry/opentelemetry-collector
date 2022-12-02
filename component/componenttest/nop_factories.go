@@ -32,6 +32,7 @@ func NopFactories() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
+	//nolint:staticcheck
 	if factories.Exporters, err = component.MakeExporterFactoryMap(NewNopExporterFactory()); err != nil {
 		return component.Factories{}, err
 	}
