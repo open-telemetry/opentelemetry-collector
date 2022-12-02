@@ -20,9 +20,21 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 )
 
-var _ Client = (*defaultClient)(nil)
+// Client is an Extension that can be used as an authenticator for the configauth.Authentication option.
+// Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
+// names from the Authentication configuration.
+type Client interface {
+	extension.Extension
+
+	// RoundTripper returns a RoundTripper that can be used to authenticate HTTP requests.
+	RoundTripper(base http.RoundTripper) (http.RoundTripper, error)
+
+	// PerRPCCredentials returns a PerRPCCredentials that can be used to authenticate gRPC requests.
+	PerRPCCredentials() (credentials.PerRPCCredentials, error)
+}
 
 // ClientOption represents the possible options for NewServerAuthenticator.
 type ClientOption func(*defaultClient)
