@@ -53,6 +53,7 @@ func createDefaultConfig() component.Config {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:      "",
 			Timeout:       30 * time.Second,
+			Headers:       map[string]string{},
 			OpaqueHeaders: map[string]configopaque.String{},
 			// Default to gzip compression
 			Compression: configcompression.Gzip,
