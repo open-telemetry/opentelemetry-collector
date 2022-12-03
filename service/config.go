@@ -157,6 +157,98 @@ func (cfg *Config) validateService() error {
 	return nil
 }
 
+func (cfg *Config) DryRunValidate() {
+	// Currently, there is no default receiver enabled.
+	// The configuration must specify at least one receiver to be valid.
+	if len(cfg.Receivers) == 0 {
+		fmt.Printf("**..%v\n", errMissingReceivers)
+	} else {
+		for recvID, recvCfg := range cfg.Receivers {
+			if err := recvCfg.Validate(); err != nil {
+				fmt.Printf("**..receiver %q has invalid configuration: %v\n", recvID, err)
+			}
+		}
+	}
+
+	// Currently, there is no default exporter enabled.
+	// The configuration must specify at least one exporter to be valid.
+	if len(cfg.Exporters) == 0 {
+		fmt.Printf("**..%v\n", errMissingExporters)
+	} else {
+		for expID, expCfg := range cfg.Exporters {
+			if err := expCfg.Validate(); err != nil {
+				fmt.Printf("**..exporter %q has invalid configuration: %v\n", expID, err)
+			}
+		}
+	}
+
+	// Validate the processor configuration.
+	for procID, procCfg := range cfg.Processors {
+		if err := procCfg.Validate(); err != nil {
+			fmt.Printf("**..processor %q has invalid configuration: %v\n", procID, err)
+		}
+	}
+
+	// Validate the extension configuration.
+	for extID, extCfg := range cfg.Extensions {
+		if err := extCfg.Validate(); err != nil {
+			fmt.Printf("**..extension %q has invalid configuration: %v\n", extID, err)
+		}
+	}
+	cfg.dryRunValidateService()
+}
+
+func (cfg *Config) dryRunValidateService() {
+
+	for _, ref := range cfg.Service.Extensions {
+		// Check that the name referenced in the Service extensions exists in the top-level extensions.
+		if cfg.Extensions[ref] == nil {
+			fmt.Printf("**..service references extension %q which does not exist\n", ref)
+		}
+	}
+
+	// Must have at least one pipeline.
+	if len(cfg.Service.Pipelines) == 0 {
+		fmt.Printf("**..%v\n", errMissingServicePipelines)
+	} else {
+		for pipelineID, pipeline := range cfg.Service.Pipelines {
+			if pipelineID.Type() != component.DataTypeTraces && pipelineID.Type() != component.DataTypeMetrics && pipelineID.Type() != component.DataTypeLogs {
+				fmt.Printf("unknown pipeline datatype %q for %v", pipelineID.Type(), pipelineID)
+			}
+
+			// Validate pipeline has at least one receiver.
+			if len(pipeline.Receivers) == 0 {
+				fmt.Printf("**..pipeline %q must have at least one receiver\n", pipelineID)
+			} else {
+				for _, ref := range pipeline.Receivers {
+					// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.
+					if cfg.Receivers[ref] == nil {
+						fmt.Printf("**..pipeline %q references receiver %q which does not exist\n", pipelineID, ref)
+					}
+				}
+			}
+			for _, ref := range pipeline.Processors {
+				// Check that the name referenced in the pipeline's processors exists in the top-level processors.
+				if cfg.Processors[ref] == nil {
+					fmt.Printf("**..pipeline %q references processor %q which does not exist\n", pipelineID, ref)
+				}
+			}
+
+			// Validate pipeline has at least one exporter.
+			if len(pipeline.Exporters) == 0 {
+				fmt.Printf("**..pipeline %q must have at least one exporter\n", pipelineID)
+			} else {
+				for _, ref := range pipeline.Exporters {
+					// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters.
+					if cfg.Exporters[ref] == nil {
+						fmt.Printf("**..pipeline %q references exporter %q which does not exist\n", pipelineID, ref)
+					}
+				}
+			}
+		}
+	}
+}
+
 // ConfigService defines the configurable components of the service.
 type ConfigService struct {
 	// Telemetry is the configuration for collector's own telemetry.
