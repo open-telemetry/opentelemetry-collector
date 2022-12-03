@@ -57,6 +57,10 @@ type Component interface {
 	// Shutdown is invoked during service shutdown. After Shutdown() is called, if the component
 	// accepted data in any way, it should not accept it anymore.
 	//
+	// This method must be safe to call:
+	//   - without Start() having been called
+	//   - if the component is in a shutdown state already
+	//
 	// If there are any background operations running by the component they must be aborted before
 	// this function returns. Remember that if you started any long-running background operations from
 	// the Start() method, those operations must be also cancelled. If there are any buffers in the
@@ -100,6 +104,7 @@ const (
 	KindProcessor
 	KindExporter
 	KindExtension
+	KindConnector
 )
 
 // StabilityLevel represents the stability level of the component created by the factory.
@@ -112,7 +117,7 @@ const (
 	StabilityLevelUndefined StabilityLevel = iota // skip 0, start types from 1.
 	StabilityLevelUnmaintained
 	StabilityLevelDeprecated
-	StabilityLevelInDevelopment
+	StabilityLevelDevelopment
 	StabilityLevelAlpha
 	StabilityLevelBeta
 	StabilityLevelStable
@@ -120,20 +125,22 @@ const (
 
 func (sl StabilityLevel) String() string {
 	switch sl {
+	case StabilityLevelUndefined:
+		return "Undefined"
 	case StabilityLevelUnmaintained:
-		return "unmaintained"
+		return "Unmaintained"
 	case StabilityLevelDeprecated:
-		return "deprecated"
-	case StabilityLevelInDevelopment:
-		return "in development"
+		return "Deprecated"
+	case StabilityLevelDevelopment:
+		return "Development"
 	case StabilityLevelAlpha:
-		return "alpha"
+		return "Alpha"
 	case StabilityLevelBeta:
-		return "beta"
+		return "Beta"
 	case StabilityLevelStable:
-		return "stable"
+		return "Stable"
 	}
-	return "undefined"
+	return ""
 }
 
 func (sl StabilityLevel) LogMessage() string {
@@ -142,8 +149,8 @@ func (sl StabilityLevel) LogMessage() string {
 		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 6 months of remaining unmaintained."
 	case StabilityLevelDeprecated:
 		return "Deprecated component. Will be removed in future releases."
-	case StabilityLevelInDevelopment:
-		return "In development component. May change in the future."
+	case StabilityLevelDevelopment:
+		return "Development component. May change in the future."
 	case StabilityLevelAlpha:
 		return "Alpha component. May change in the future."
 	case StabilityLevelBeta:
@@ -154,7 +161,7 @@ func (sl StabilityLevel) LogMessage() string {
 	return "Stability level of component is undefined"
 }
 
-// Factory is implemented by all component factories.
+// Factory is implemented by all Component factories.
 //
 // This interface cannot be directly implemented. Implementations must
 // use the factory helpers for the appropriate component type.
@@ -162,11 +169,29 @@ type Factory interface {
 	// Type gets the type of the component created by this factory.
 	Type() Type
 
+	// CreateDefaultConfig creates the default configuration for the Component.
+	// This method can be called multiple times depending on the pipeline
+	// configuration and should not cause side-effects that prevent the creation
+	// of multiple instances of the Component.
+	// The object returned by this method needs to pass the checks implemented by
+	// 'componenttest.CheckConfigStruct'. It is recommended to have these checks in the
+	// tests of any implementation of the Factory interface.
+	CreateDefaultConfig() Config
+
 	unexportedFactoryFunc()
+}
+
+// CreateDefaultConfigFunc is the equivalent of Factory.CreateDefaultConfig().
+type CreateDefaultConfigFunc func() Config
+
+// CreateDefaultConfig implements Factory.CreateDefaultConfig().
+func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
+	return f()
 }
 
 type baseFactory struct {
 	cfgType Type
+	CreateDefaultConfigFunc
 }
 
 func (baseFactory) unexportedFactoryFunc() {}

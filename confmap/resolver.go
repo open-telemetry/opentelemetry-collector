@@ -245,7 +245,9 @@ func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interfa
 		}
 		lURI, err := newLocation(v[2 : len(v)-1])
 		if err != nil {
-			return nil, false, err
+			// Cannot return error, since a case like "${HOST}:${PORT}" is invalid location,
+			// but is supported in the legacy implementation.
+			return value, false, nil
 		}
 		if strings.Contains(lURI.opaqueValue, "$") {
 			return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())

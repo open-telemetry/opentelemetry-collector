@@ -38,8 +38,8 @@ type tracesProcessor struct {
 // NewTracesProcessor creates a component.TracesProcessor that ensure context propagation and the right tags are set.
 func NewTracesProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set component.ProcessorCreateSettings,
+	_ component.Config,
 	nextConsumer consumer.Traces,
 	tracesFunc ProcessTracesFunc,
 	options ...Option,
@@ -53,7 +53,7 @@ func NewTracesProcessor(
 		return nil, component.ErrNilNextConsumer
 	}
 
-	eventOptions := spanAttributes(cfg.ID())
+	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	traceConsumer, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		span := trace.SpanFromContext(ctx)

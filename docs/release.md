@@ -40,13 +40,15 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
     * Update CHANGELOG.md file, this is done via `chloggen`. Run the following command from the root of the opentelemetry-collector-contrib repo:
       * `make chlog-update VERSION=v0.55.0`
 
+    * Update the version numbers in `cmd/builder/test/core.builder.yaml`
+
     * Run `make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0`
 
     * Ensure the `main` branch builds successfully.
 
 1. Create a branch named `release/<release-series>` (e.g. `release/v0.45.x`) from the changelog update commit and push to `open-telemetry/opentelemetry-collector`.
 
-1. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.55.0`). Push them to `open-telemetry/opentelemetry-collector` with `make push-tag TAG=v0.55.0`. Wait for the new tag build to pass successfully.
+1. Tag all the module groups (stable, beta) with the new release version by running the `make push-tags` command (e.g. `make push-tags MODSET=stable` and `make push-tags MODSET=beta`). Wait for the new tag build to pass successfully.
 
 1. The release script for the collector builder should create a new GitHub release for the builder. This is a separate release from the core, but we might join them in the future if it makes sense.
 
@@ -73,7 +75,7 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Create a branch named `release/<release-series>` (e.g. `release/v0.45.x`) in Contrib from the changelog update commit and push it to `open-telemetry/opentelemetry-collector-contrib`.
 
-1. Tag all the modules with the new release version by running the `make add-tag TAG=v0.55.0` command. Push them to `open-telemetry/opentelemetry-collector-contrib` with `make push-tag TAG=v0.55.0`. Wait for the new tag build to pass successfully.
+1. Tag all the module groups (`contrib-base`) with the new release version by running the `make push-tags MODSET=contrib-base` command. Wait for the new tag build to pass successfully.
 
 1. A new `v0.55.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description. At the top of the description add a link to Core release notes (assuming the previous release of Core and Contrib was also performed simultaneously), e.g. "The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.55.0) (be sure to check the release notes here as well!)."
 
@@ -87,17 +89,17 @@ The last step of the release process creates artifacts for the new version of th
 
 1. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
 
-1. Tag with the new release version by running the `make add-tag TAG=v0.55.0` command. Push them to `open-telemetry/opentelemetry-collector-releases` with `make push-tag TAG=v0.55.0`. Wait for the new tag build to pass successfully.
+1. Tag with the new release version by running the `make push-tags TAG=v0.55.0` command. Wait for the new tag build to pass successfully.
 
 1. Ensure the "Release" action passes, this will
 
     1. push new container images to https://hub.docker.com/repository/docker/otel/opentelemetry-collector
-    
+
     1. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/runs/1346637081).
 
 ## Troubleshooting
 
-1. `unknown revision internal/coreinternal/v0.55.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module. 
+1. `unknown revision internal/coreinternal/v0.55.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module.
 2. `commitChangesToNewBranch failed: invalid merge` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/47) with our release tooling. The current workaround is to clone a fresh copy of the repository and try again. Note that you may need to set up a `fork` remote pointing to your own fork for the release tooling to work properly.
 3. `could not run Go Mod Tidy: go mod tidy failed` when running `multimod` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/46) with our release tooling. The current workaround is to run `make gotidy` manually after the multimod tool fails and commit the result.
 
@@ -125,14 +127,26 @@ When considering making a bugfix release on the `v0.N.x` release cycle, the bug 
 
 The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
 
+### Bugfix release procedure
+
+The following documents the procedure to release a bugfix
+
+1. Create a pull request against the `release/<release-series>` (e.g. `release/v0.45.x`) branch to apply the fix.
+2. Create a pull request to update version number against the `release/<release-series>` branch.
+3. Once those changes have been merged, create a pull request to the `main` branch from the `release/<release-series>` branch.
+4. Enable the **Merge pull request** setting in the repository's **Settings** tab.
+5. Tag all the modules with the new release version by running the `make add-tag` command (e.g. `make add-tag TAG=v0.55.0`). Push them to `open-telemetry/opentelemetry-collector` with `make push-tag TAG=v0.55.0`. Wait for the new tag build to pass successfully.
+6. **IMPORTANT**: The pull request to bring the changes from the release branch *MUST* be merged using the **Merge pull request** method, and *NOT* squashed using “**Squash and merge**”. This is important as it allows us to ensure the commit SHA from the release branch is also on the main branch. **Not following this step will cause much go dependency sadness.**
+7. Once the branch has been merged, it will be auto-deleted. Restore the release branch via GitHub.
+8. Once the patch is release, disable the **Merge pull request** setting.
+
 ## Release schedule
 
 | Date       | Version | Release manager |
 |------------|---------|-----------------|
-| 2022-11-09 | v0.64.0 | @jpkrohling     |
-| 2022-11-23 | v0.65.0 | @tigrannajaryan |
-| 2022-12-07 | v0.66.0 | @Aneurysm9      |
-| 2022-12-21 | v0.67.0 | @mx-psi         |
-| 2023-01-04 | v0.68.0 | @dmitryax       |
-| 2023-01-18 | v0.69.0 | @bogdandrutu    |
-| 2022-02-01 | v0.70.0 | @codeboten      |
+| 2022-12-07 | v0.67.0 | @Aneurysm9      |
+| 2022-12-21 | v0.68.0 | @mx-psi         |
+| 2023-01-04 | v0.69.0 | @dmitryax       |
+| 2023-01-18 | v0.70.0 | @bogdandrutu    |
+| 2022-02-01 | v0.71.0 | @codeboten      |
+| 2022-02-15 | v0.72.0 | @jpkrohling     |

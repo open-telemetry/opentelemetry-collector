@@ -39,12 +39,14 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -59,7 +61,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -91,8 +93,8 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
-					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
+				ext: map[component.ID]component.Component{
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -119,8 +121,8 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
-					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
+				ext: map[component.ID]component.Component{
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -147,8 +149,8 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
-				ext: map[component.ID]component.Extension{
-					component.NewID("testauth"): &configauth.MockClientAuthenticator{},
+				ext: map[component.ID]component.Component{
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -216,8 +218,8 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 		AuthenticatorID: component.NewID("mock"),
 	}
 	host := &mockHost{
-		ext: map[component.ID]component.Extension{
-			component.NewID("mock"): configauth.NewServerAuthenticator(),
+		ext: map[component.ID]component.Component{
+			component.NewID("mock"): auth.NewServer(),
 		},
 	}
 	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
@@ -226,7 +228,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -295,7 +297,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Endpoint: "localhost:1234",
 				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
 			},
-			host: &mockHost{ext: map[component.ID]component.Extension{}},
+			host: &mockHost{ext: map[component.ID]component.Component{}},
 		},
 		{
 			err: "no extensions configuration available",
@@ -349,7 +351,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 }
 
 func TestUseSecure(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -488,7 +490,7 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -640,7 +642,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on windows")
 	}
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -869,7 +871,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 					},
 				}
 
-				tt, err := obsreporttest.SetupTelemetry()
+				tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("component"))
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, tt.Shutdown(context.Background()))
@@ -916,7 +918,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -940,7 +942,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -960,7 +962,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -991,7 +993,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.NoError(t, err)
@@ -1017,7 +1019,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Equal(t, expectedErr, err)
@@ -1039,7 +1041,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)
@@ -1075,9 +1077,9 @@ func tempSocketName(t *testing.T) string {
 
 type mockHost struct {
 	component.Host
-	ext map[component.ID]component.Extension
+	ext map[component.ID]component.Component
 }
 
-func (nh *mockHost) GetExtensions() map[component.ID]component.Extension {
+func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
 }

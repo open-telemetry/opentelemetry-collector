@@ -32,10 +32,10 @@ func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Fact
 	return nil
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Extension {
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
+func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return nil
 }

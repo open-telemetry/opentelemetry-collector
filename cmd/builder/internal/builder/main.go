@@ -94,7 +94,7 @@ func Compile(cfg Config) error {
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to compile the OpenTelemetry Collector distribution: %w. Output: %q", err, out)
+		return fmt.Errorf("failed to compile the OpenTelemetry Collector distribution: %w. Output:\n%s", err, out)
 	}
 	cfg.Logger.Info("Compiled", zap.String("binary", fmt.Sprintf("%s/%s", cfg.Distribution.OutputPath, cfg.Distribution.Name)))
 
@@ -112,7 +112,7 @@ func GetModules(cfg Config) error {
 	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.18")
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to update go.mod: %w. Output: %q", err, out)
+		return fmt.Errorf("failed to update go.mod: %w. Output:\n%s", err, out)
 	}
 
 	cfg.Logger.Info("Getting go modules")
@@ -125,7 +125,7 @@ func GetModules(cfg Config) error {
 		cmd := exec.Command(cfg.Distribution.Go, "mod", "download")
 		cmd.Dir = cfg.Distribution.OutputPath
 		if out, err := cmd.CombinedOutput(); err != nil {
-			failReason = fmt.Sprintf("%s. Output: %q", err, out)
+			failReason = fmt.Sprintf("%s. Output:\n%s", err, out)
 			cfg.Logger.Info("Failed modules download", zap.String("retry", fmt.Sprintf("%d/%d", i, retries)))
 			time.Sleep(5 * time.Second)
 			continue

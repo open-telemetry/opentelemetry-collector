@@ -60,7 +60,7 @@ const (
 )
 
 // Create new exporter.
-func newExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings) (*exporter, error) {
+func newExporter(cfg component.Config, set component.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint != "" {

@@ -34,7 +34,7 @@ func (b *dataBuffer) logEntry(format string, a ...interface{}) {
 	b.buf.WriteString("\n")
 }
 
-func (b *dataBuffer) logAttr(attr string, value string) {
+func (b *dataBuffer) logAttr(attr string, value interface{}) {
 	b.logEntry("    %-15s: %s", attr, value)
 }
 
@@ -52,7 +52,7 @@ func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
 		attrPrefix = headerParts[0] + attrPrefix
 	}
 
-	m.Sort().Range(func(k string, v pcommon.Value) bool {
+	m.Range(func(k string, v pcommon.Value) bool {
 		b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
 		return true
 	})
@@ -258,8 +258,8 @@ func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 	for i := 0; i < sl.Len(); i++ {
 		l := sl.At(i)
 		b.logEntry("SpanLink #%d", i)
-		b.logEntry("     -> Trace ID: %s", l.TraceID().HexString())
-		b.logEntry("     -> ID: %s", l.SpanID().HexString())
+		b.logEntry("     -> Trace ID: %s", l.TraceID())
+		b.logEntry("     -> ID: %s", l.SpanID())
 		b.logEntry("     -> TraceState: %s", l.TraceState().AsRaw())
 		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
 		if l.Attributes().Len() == 0 {

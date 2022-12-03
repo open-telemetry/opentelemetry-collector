@@ -30,8 +30,12 @@ func NewTraceIDEmpty() TraceID {
 	return emptyTraceID
 }
 
-// HexString returns hex representation of the TraceID.
-func (ms TraceID) HexString() string {
+// String returns string representation of the TraceID.
+//
+// Important: Don't rely on this method to get a string identifier of TraceID.
+// Use hex.EncodeToString explicitly instead.
+// This method meant to implement Stringer interface for display purposes only.
+func (ms TraceID) String() string {
 	if ms.IsEmpty() {
 		return ""
 	}

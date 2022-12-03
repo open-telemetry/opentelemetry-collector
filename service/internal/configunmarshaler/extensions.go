@@ -19,18 +19,19 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // extensionsKeyName is the configuration key name for extensions section.
 const extensionsKeyName = "extensions"
 
 type Extensions struct {
-	exts map[component.ID]component.ExtensionConfig
+	exts map[component.ID]component.Config
 
-	factories map[component.Type]component.ExtensionFactory
+	factories map[component.Type]extension.Factory
 }
 
-func NewExtensions(factories map[component.Type]component.ExtensionFactory) *Extensions {
+func NewExtensions(factories map[component.Type]extension.Factory) *Extensions {
 	return &Extensions{factories: factories}
 }
 
@@ -41,7 +42,7 @@ func (e *Extensions) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	// Prepare resulting map.
-	e.exts = make(map[component.ID]component.ExtensionConfig)
+	e.exts = make(map[component.ID]component.Config)
 
 	// Iterate over extensions and create a config for each.
 	for id, value := range rawExts {
@@ -53,11 +54,11 @@ func (e *Extensions) Unmarshal(conf *confmap.Conf) error {
 
 		// Create the default config for this extension.
 		extensionCfg := factory.CreateDefaultConfig()
-		extensionCfg.SetIDName(id.Name())
+		extensionCfg.SetIDName(id.Name()) //nolint:staticcheck
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalExtensionConfig(confmap.NewFromStringMap(value), extensionCfg); err != nil {
+		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), extensionCfg); err != nil {
 			return errorUnmarshalError(extensionsKeyName, id, err)
 		}
 
@@ -67,6 +68,6 @@ func (e *Extensions) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (e *Extensions) GetExtensions() map[component.ID]component.ExtensionConfig {
+func (e *Extensions) GetExtensions() map[component.ID]component.Config {
 	return e.exts
 }

@@ -19,11 +19,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
-// NewNopExtensionCreateSettings returns a new nop settings for Create*Extension functions.
-func NewNopExtensionCreateSettings() component.ExtensionCreateSettings {
-	return component.ExtensionCreateSettings{
+// Deprecated: [v0.67.0] use extensiontest.NewNopCreateSettings.
+func NewNopExtensionCreateSettings() extension.CreateSettings {
+	return extension.CreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -33,16 +34,16 @@ type nopExtensionConfig struct {
 	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
-// NewNopExtensionFactory returns a component.ExtensionFactory that constructs nop extensions.
-func NewNopExtensionFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+// Deprecated: [v0.67.0] use extensiontest.NewNopFactory.
+func NewNopExtensionFactory() extension.Factory {
+	return extension.NewFactory(
 		"nop",
-		func() component.ExtensionConfig {
+		func() component.Config {
 			return &nopExtensionConfig{
 				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
 			}
 		},
-		func(context.Context, component.ExtensionCreateSettings, component.ExtensionConfig) (component.Extension, error) {
+		func(context.Context, component.ExtensionCreateSettings, component.Config) (component.Extension, error) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelStable)

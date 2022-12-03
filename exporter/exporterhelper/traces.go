@@ -82,7 +82,7 @@ type traceExporter struct {
 func NewTracesExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 	pusher consumer.ConsumeTracesFunc,
 	options ...Option,
 ) (component.TracesExporter, error) {
@@ -99,7 +99,10 @@ func NewTracesExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set, bs, component.DataTypeTraces, newTraceRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, bs, component.DataTypeTraces, newTraceRequestUnmarshalerFunc(pusher))
+	if err != nil {
+		return nil, err
+	}
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
 			obsrep:     be.obsrep,
@@ -109,11 +112,11 @@ func NewTracesExporter(
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req := newTracesRequest(ctx, td, pusher)
-		err := be.sender.send(req)
-		if errors.Is(err, errSendingQueueIsFull) {
+		serr := be.sender.send(req)
+		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordTracesEnqueueFailure(req.Context(), int64(req.Count()))
 		}
-		return err
+		return serr
 	}, bs.consumerOptions...)
 
 	return &traceExporter{

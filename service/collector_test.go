@@ -43,10 +43,10 @@ import (
 )
 
 func TestStateString(t *testing.T) {
-	assert.Equal(t, "Starting", Starting.String())
-	assert.Equal(t, "Running", Running.String())
-	assert.Equal(t, "Closing", Closing.String())
-	assert.Equal(t, "Closed", Closed.String())
+	assert.Equal(t, "Starting", StateStarting.String())
+	assert.Equal(t, "Running", StateRunning.String())
+	assert.Equal(t, "Closing", StateClosing.String())
+	assert.Equal(t, "Closed", StateClosed.String())
 	assert.Equal(t, "UNKNOWN", State(13).String())
 }
 
@@ -69,13 +69,13 @@ func TestCollectorStartAsGoRoutine(t *testing.T) {
 	wg := startCollector(context.Background(), t, col)
 
 	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
+		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
 	col.Shutdown()
 	col.Shutdown()
 	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+	assert.Equal(t, StateClosed, col.GetState())
 }
 
 func TestCollectorCancelContext(t *testing.T) {
@@ -98,12 +98,12 @@ func TestCollectorCancelContext(t *testing.T) {
 	wg := startCollector(ctx, t, col)
 
 	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
+		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
 	cancel()
 	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+	assert.Equal(t, StateClosed, col.GetState())
 }
 
 type mockCfgProvider struct {
@@ -134,19 +134,19 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	wg := startCollector(context.Background(), t, col)
 
 	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
+		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
 	watcher <- nil
 
 	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
+		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
 	col.Shutdown()
 
 	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+	assert.Equal(t, StateClosed, col.GetState())
 }
 
 func TestCollectorReportError(t *testing.T) {
@@ -167,13 +167,13 @@ func TestCollectorReportError(t *testing.T) {
 	wg := startCollector(context.Background(), t, col)
 
 	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
+		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
 	col.service.host.ReportFatalError(errors.New("err2"))
 
 	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+	assert.Equal(t, StateClosed, col.GetState())
 }
 
 func TestCollectorSendSignal(t *testing.T) {
@@ -194,13 +194,19 @@ func TestCollectorSendSignal(t *testing.T) {
 	wg := startCollector(context.Background(), t, col)
 
 	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	col.signalsChannel <- syscall.SIGHUP
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
 	col.signalsChannel <- syscall.SIGTERM
 
 	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+	assert.Equal(t, StateClosed, col.GetState())
 }
 
 func TestCollectorFailedShutdown(t *testing.T) {
@@ -226,10 +232,15 @@ func TestCollectorFailedShutdown(t *testing.T) {
 		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
 	}()
 
+
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
 	col.Shutdown()
 
 	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+	assert.Equal(t, StateClosed, col.GetState())
 }
 
 func TestCollectorStartInvalidConfig(t *testing.T) {
@@ -399,7 +410,7 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 	wg := startCollector(context.Background(), t, col)
 
 	assert.Eventually(t, func() bool {
-		return Running == col.GetState()
+		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 	assert.True(t, loggingHookCalled)
 
@@ -410,7 +421,7 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 	col.Shutdown()
 
 	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+	assert.Equal(t, StateClosed, col.GetState())
 }
 
 func TestCollectorStartWithOpenCensusMetrics(t *testing.T) {
@@ -463,12 +474,12 @@ func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
 
 			if tt.errExpected {
 				require.Error(t, col.Run(context.Background()))
-				assert.Equal(t, Closed, col.GetState())
+				assert.Equal(t, StateClosed, col.GetState())
 			} else {
 				wg := startCollector(context.Background(), t, col)
 				col.Shutdown()
 				wg.Wait()
-				assert.Equal(t, Closed, col.GetState())
+				assert.Equal(t, StateClosed, col.GetState())
 			}
 		})
 	}
@@ -503,7 +514,7 @@ func TestCollectorRun(t *testing.T) {
 
 			col.Shutdown()
 			wg.Wait()
-			assert.Equal(t, Closed, col.GetState())
+			assert.Equal(t, StateClosed, col.GetState())
 		})
 	}
 }
@@ -531,7 +542,7 @@ func TestCollectorShutdownBeforeRun(t *testing.T) {
 
 	col.Shutdown()
 	wg.Wait()
-	assert.Equal(t, Closed, col.GetState())
+	assert.Equal(t, StateClosed, col.GetState())
 }
 
 func TestCollectorShutdownBeforeRunMessage(t *testing.T) {
@@ -580,7 +591,7 @@ func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 	require.Error(t, col.Run(context.Background()))
 
 	// Expect state to be closed
-	assert.Equal(t, Closed, col.GetState())
+	assert.Equal(t, StateClosed, col.GetState())
 }
 
 func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]labelValue) {

@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 )
 
@@ -31,16 +32,16 @@ const (
 var memHandler = iruntime.TotalMemory
 
 // NewFactory creates a factory for FluentBit extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
+func NewFactory() extension.Factory {
+	return extension.NewFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
-	return newMemoryBallast(cfg.(*Config), set.Logger, memHandler), nil
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+	return newMemoryBallast(cfg.(*Config), set.TelemetrySettings.Logger, memHandler), nil
 }

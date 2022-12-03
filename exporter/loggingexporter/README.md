@@ -1,10 +1,10 @@
 # Logging Exporter
 
-| Status                   |                         |
-| ------------------------ | ----------------------- |
-| Stability                | [In development]        |
-| Supported pipeline types | traces, metrics, logs   |
-| Distributions            | [core], [contrib]       |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [Development]         |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
 
 Exports data to the console via zap.Logger.
 
@@ -15,7 +15,11 @@ Supported pipeline types: traces, metrics, logs
 The following settings are optional:
 
 - `loglevel` (default = `info`): the log level of the logging export
-  (debug|info|warn|error). When set to `debug`, pipeline data is verbosely
+  (debug|info|warn|error). When set to `debug`, pipeline data is verbosely 
+      - **Note**: This option has been deprecated in favor of `verbosity`
+  logged.
+- `verbosity` (default = `normal`): the verbosity of the logging export
+  (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
   logged.
 - `sampling_initial` (default = `2`): number of messages initially logged each
   second.
@@ -24,16 +28,19 @@ The following settings are optional:
   docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details.
   on how sampling parameters impact number of messages.
 
+### Note
+`loglevel` is deprecated, use `verbosity` instead.
+
 Example:
 
 ```yaml
 exporters:
   logging:
-    loglevel: debug
+    verbosity: detailed
     sampling_initial: 5
     sampling_thereafter: 200
 ```
 
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
-[In development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+[Development]: https://github.com/open-telemetry/opentelemetry-collector#in-development

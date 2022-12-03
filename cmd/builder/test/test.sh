@@ -1,4 +1,6 @@
 #!/bin/bash
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+export WORKSPACE_DIR=$( cd -- "$( dirname $(dirname $(dirname -- "${SCRIPT_DIR}")) )" &> /dev/null && pwd )
 
 GOBIN=$(go env GOBIN)
 if [[ "$GO" == "" ]]; then
@@ -25,7 +27,9 @@ test_build_config() {
 
     echo "Starting test '${test}' at `date`" >> "${out}/test.log"
 
-    go run . --go "${GOBIN}" --config "$build_config" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
+    final_build_config=$(basename ${build_config})
+    envsubst < "$build_config" > "${out}/${final_build_config}"
+    go run . --go "${GOBIN}" --config "${out}/${final_build_config}" --output-path "${out}" --name otelcol-built-test > "${out}/builder.log" 2>&1
 
     if [ $? != 0 ]; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"

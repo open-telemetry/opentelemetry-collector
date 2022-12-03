@@ -38,8 +38,8 @@ type logProcessor struct {
 // NewLogsProcessor creates a component.LogsProcessor that ensure context propagation and the right tags are set.
 func NewLogsProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set component.ProcessorCreateSettings,
+	_ component.Config,
 	nextConsumer consumer.Logs,
 	logsFunc ProcessLogsFunc,
 	options ...Option,
@@ -53,7 +53,7 @@ func NewLogsProcessor(
 		return nil, component.ErrNilNextConsumer
 	}
 
-	eventOptions := spanAttributes(cfg.ID())
+	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)

@@ -28,17 +28,17 @@ import (
 )
 
 func TestExportEnqueueFailure(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	exporter := component.NewID("fakeExporter")
+	tt, err := obsreporttest.SetupTelemetryWithID(exporter)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	exporter := component.NewID("fakeExporter")
-
 	insts := newInstruments(metric.NewRegistry())
-	obsrep := newObsExporter(obsreport.ExporterSettings{
+	obsrep, err := newObsExporter(obsreport.ExporterSettings{
 		ExporterID:             exporter,
 		ExporterCreateSettings: tt.ToExporterCreateSettings(),
 	}, insts)
+	require.NoError(t, err)
 
 	logRecords := int64(7)
 	obsrep.recordLogsEnqueueFailure(context.Background(), logRecords)

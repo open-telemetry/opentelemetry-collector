@@ -26,20 +26,20 @@ import (
 )
 
 func TestProcessorsUnmarshal(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := component.MakeProcessorFactoryMap(componenttest.NewNopProcessorFactory())
 	require.NoError(t, err)
 
-	procs := NewProcessors(factories.Processors)
+	procs := NewProcessors(factories)
 	conf := confmap.NewFromStringMap(map[string]interface{}{
 		"nop":             nil,
 		"nop/myprocessor": nil,
 	})
 	require.NoError(t, procs.Unmarshal(conf))
 
-	cfgWithName := factories.Processors["nop"].CreateDefaultConfig()
-	cfgWithName.SetIDName("myprocessor")
-	assert.Equal(t, map[component.ID]component.ProcessorConfig{
-		component.NewID("nop"):                        factories.Processors["nop"].CreateDefaultConfig(),
+	cfgWithName := factories["nop"].CreateDefaultConfig()
+	cfgWithName.SetIDName("myprocessor") //nolint:staticcheck
+	assert.Equal(t, map[component.ID]component.Config{
+		component.NewID("nop"):                        factories["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myprocessor"): cfgWithName,
 	}, procs.procs)
 }
@@ -100,12 +100,12 @@ func TestProcessorsUnmarshalError(t *testing.T) {
 		},
 	}
 
-	factories, err := componenttest.NopFactories()
+	factories, err := component.MakeProcessorFactoryMap(componenttest.NewNopProcessorFactory())
 	assert.NoError(t, err)
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			procs := NewProcessors(factories.Processors)
+			procs := NewProcessors(factories)
 			err = procs.Unmarshal(tt.conf)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)

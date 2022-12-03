@@ -169,7 +169,7 @@ You can also configure the `logging` exporter so the entire payload is printed:
 ```yaml
 exporters:
   logging:
-    loglevel: debug
+    verbosity: detailed
 ```
 
 With the modified configuration if you re-run the test above the log output should look like:

@@ -34,14 +34,14 @@ var processorCapabilities = consumer.Capabilities{MutatesData: false}
 type factory struct {
 	// memoryLimiters stores memoryLimiter instances with unique configs that multiple processors can reuse.
 	// This avoids running multiple memory checks (ie: GC) for every processor using the same processor config.
-	memoryLimiters map[component.ProcessorConfig]*memoryLimiter
+	memoryLimiters map[component.Config]*memoryLimiter
 	lock           sync.Mutex
 }
 
 // NewFactory returns a new factory for the Memory Limiter processor.
 func NewFactory() component.ProcessorFactory {
 	f := &factory{
-		memoryLimiters: map[component.ProcessorConfig]*memoryLimiter{},
+		memoryLimiters: map[component.Config]*memoryLimiter{},
 	}
 	return component.NewProcessorFactory(
 		typeStr,
@@ -53,7 +53,7 @@ func NewFactory() component.ProcessorFactory {
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
 // that the default configuration is expected to fail for this processor.
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 	}
@@ -62,7 +62,7 @@ func createDefaultConfig() component.ProcessorConfig {
 func (f *factory) createTracesProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
@@ -79,7 +79,7 @@ func (f *factory) createTracesProcessor(
 func (f *factory) createMetricsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
@@ -96,7 +96,7 @@ func (f *factory) createMetricsProcessor(
 func (f *factory) createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
@@ -112,7 +112,7 @@ func (f *factory) createLogsProcessor(
 
 // getMemoryLimiter checks if we have a cached memoryLimiter with a specific config,
 // otherwise initialize and add one to the store.
-func (f *factory) getMemoryLimiter(set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (*memoryLimiter, error) {
+func (f *factory) getMemoryLimiter(set component.ProcessorCreateSettings, cfg component.Config) (*memoryLimiter, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 

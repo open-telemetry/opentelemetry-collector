@@ -24,7 +24,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats/view"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -32,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -43,7 +43,8 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -85,7 +86,8 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	cfg.SendBatchSize = 128
 	cfg.SendBatchMaxSize = 130
 	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelBasic)
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -123,18 +125,19 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 }
 
 func TestBatchProcessorSentBySize(t *testing.T) {
-	sizer := &ptrace.ProtoMarshaler{}
-	views := MetricViews()
-	require.NoError(t, view.Register(views...))
-	defer view.Unregister(views...)
+	telemetryTest(t, testBatchProcessorSentBySize)
+}
 
+func testBatchProcessorSentBySize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
+	sizer := &ptrace.ProtoMarshaler{}
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 500 * time.Millisecond
-	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
+	creationSet := tel.NewProcessorCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, registry)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -168,28 +171,19 @@ func TestBatchProcessorSentBySize(t *testing.T) {
 		}
 	}
 
-	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(viewData))
-	distData := viewData[0].Data.(*view.DistributionData)
-	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, sink.SpanCount(), int(distData.Sum()))
-	assert.Equal(t, sendBatchSize, int(distData.Min))
-	assert.Equal(t, sendBatchSize, int(distData.Max))
-
-	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(viewData))
-	distData = viewData[0].Data.(*view.DistributionData)
-	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, sizeSum, int(distData.Sum()))
+	tel.assertMetrics(t, expectedMetrics{
+		sendCount:        float64(expectedBatchesNum),
+		sendSizeSum:      float64(sink.SpanCount()),
+		sendSizeBytesSum: float64(sizeSum),
+		sizeTrigger:      float64(expectedBatchesNum),
+	})
 }
 
-func TestBatchProcessorSentBySize_withMaxSize(t *testing.T) {
-	views := MetricViews()
-	require.NoError(t, view.Register(views...))
-	defer view.Unregister(views...)
+func TestBatchProcessorSentBySizeWithMaxSize(t *testing.T) {
+	telemetryTest(t, testBatchProcessorSentBySizeWithMaxSize)
+}
 
+func testBatchProcessorSentBySizeWithMaxSize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	sendBatchSize := 20
@@ -197,8 +191,9 @@ func TestBatchProcessorSentBySize_withMaxSize(t *testing.T) {
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.SendBatchMaxSize = uint32(sendBatchMaxSize)
 	cfg.Timeout = 500 * time.Millisecond
-	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
+	creationSet := tel.NewProcessorCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, registry)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -224,14 +219,12 @@ func TestBatchProcessorSentBySize_withMaxSize(t *testing.T) {
 	receivedTraces := sink.AllTraces()
 	require.EqualValues(t, expectedBatchesNum, len(receivedTraces))
 
-	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(viewData))
-	distData := viewData[0].Data.(*view.DistributionData)
-	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, sink.SpanCount(), int(distData.Sum()))
-	assert.Equal(t, totalSpans%sendBatchMaxSize, int(distData.Min))
-	assert.Equal(t, sendBatchMaxSize, int(distData.Max))
+	tel.assertMetrics(t, expectedMetrics{
+		sendCount:      float64(expectedBatchesNum),
+		sendSizeSum:    float64(sink.SpanCount()),
+		sizeTrigger:    math.Floor(float64(totalSpans) / float64(sendBatchMaxSize)),
+		timeoutTrigger: 1,
+	})
 }
 
 func TestBatchProcessorSentByTimeout(t *testing.T) {
@@ -240,13 +233,14 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	sendBatchSize := 100
 	cfg.SendBatchSize = uint32(sendBatchSize)
 	cfg.Timeout = 100 * time.Millisecond
-	creationSet := componenttest.NewNopProcessorCreateSettings()
 
 	requestCount := 5
 	spansPerRequest := 10
 	start := time.Now()
 
-	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, configtelemetry.LevelDetailed)
+	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -293,7 +287,8 @@ func TestBatchProcessorTraceSendWhenClosing(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchTracesProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchTracesProcessor(creationSet, sink, &cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -324,7 +319,8 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -359,11 +355,12 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	}
 }
 
-func TestBatchMetricProcessor_BatchSize(t *testing.T) {
+func TestBatchMetricProcessorBatchSize(t *testing.T) {
+	telemetryTest(t, testBatchMetricProcessorBatchSize)
+}
+
+func testBatchMetricProcessorBatchSize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
 	sizer := &pmetric.ProtoMarshaler{}
-	views := MetricViews()
-	require.NoError(t, view.Register(views...))
-	defer view.Unregister(views...)
 
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
@@ -379,8 +376,9 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 	dataPointsPerRequest := metricsPerRequest * dataPointsPerMetric
 	sink := new(consumertest.MetricsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	creationSet := tel.NewProcessorCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, registry)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -409,21 +407,12 @@ func TestBatchMetricProcessor_BatchSize(t *testing.T) {
 		}
 	}
 
-	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(viewData))
-	distData := viewData[0].Data.(*view.DistributionData)
-	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, sink.DataPointCount(), int(distData.Sum()))
-	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
-	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
-
-	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(viewData))
-	distData = viewData[0].Data.(*view.DistributionData)
-	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, size, int(distData.Sum()))
+	tel.assertMetrics(t, expectedMetrics{
+		sendCount:        float64(expectedBatchesNum),
+		sendSizeSum:      float64(sink.DataPointCount()),
+		sendSizeBytesSum: float64(size),
+		sizeTrigger:      20,
+	})
 }
 
 func TestBatchMetrics_UnevenBatchMaxSize(t *testing.T) {
@@ -456,7 +445,8 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -505,7 +495,8 @@ func TestBatchMetricProcessor_Shutdown(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -589,9 +580,9 @@ func BenchmarkBatchMetricProcessor(b *testing.B) {
 	ctx := context.Background()
 	sink := new(metricsSink)
 	creationSet := componenttest.NewNopProcessorCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
 	metricsPerRequest := 1000
-
-	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	batcher, err := newBatchMetricsProcessor(creationSet, sink, &cfg, featuregate.GetRegistry())
 	require.NoError(b, err)
 	require.NoError(b, batcher.Start(ctx, componenttest.NewNopHost()))
 
@@ -642,7 +633,8 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 
 	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -678,10 +670,11 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 }
 
 func TestBatchLogProcessor_BatchSize(t *testing.T) {
+	telemetryTest(t, testBatchLogProcessorBatchSize)
+}
+
+func testBatchLogProcessorBatchSize(t *testing.T, tel testTelemetry, registry *featuregate.Registry) {
 	sizer := &plog.ProtoMarshaler{}
-	views := MetricViews()
-	require.NoError(t, view.Register(views...))
-	defer view.Unregister(views...)
 
 	// Instantiate the batch processor with low config values to test data
 	// gets sent through the processor.
@@ -695,8 +688,9 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 	logsPerRequest := 5
 	sink := new(consumertest.LogsSink)
 
-	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	creationSet := tel.NewProcessorCreateSettings()
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, registry)
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -725,21 +719,12 @@ func TestBatchLogProcessor_BatchSize(t *testing.T) {
 		}
 	}
 
-	viewData, err := view.RetrieveData("processor/batch/" + statBatchSendSize.Name())
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(viewData))
-	distData := viewData[0].Data.(*view.DistributionData)
-	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, sink.LogRecordCount(), int(distData.Sum()))
-	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Min))
-	assert.Equal(t, cfg.SendBatchSize, uint32(distData.Max))
-
-	viewData, err = view.RetrieveData("processor/batch/" + statBatchSendSizeBytes.Name())
-	require.NoError(t, err)
-	assert.Equal(t, 1, len(viewData))
-	distData = viewData[0].Data.(*view.DistributionData)
-	assert.Equal(t, int64(expectedBatchesNum), distData.Count)
-	assert.Equal(t, size, int(distData.Sum()))
+	tel.assertMetrics(t, expectedMetrics{
+		sendCount:        float64(expectedBatchesNum),
+		sendSizeSum:      float64(sink.LogRecordCount()),
+		sendSizeBytesSum: float64(size),
+		sizeTrigger:      float64(expectedBatchesNum),
+	})
 }
 
 func TestBatchLogsProcessor_Timeout(t *testing.T) {
@@ -753,7 +738,8 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 
 	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -802,7 +788,8 @@ func TestBatchLogProcessor_Shutdown(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 
 	creationSet := componenttest.NewNopProcessorCreateSettings()
-	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, configtelemetry.LevelDetailed)
+	creationSet.MetricsLevel = configtelemetry.LevelDetailed
+	batcher, err := newBatchLogsProcessor(creationSet, sink, &cfg, featuregate.GetRegistry())
 	require.NoError(t, err)
 	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
 

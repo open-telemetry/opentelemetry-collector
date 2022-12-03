@@ -19,6 +19,18 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/component"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/confmap"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/consumer"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/loggingexporter"
     schedule:
       interval: "weekly"
@@ -36,6 +48,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/extension/zpagesextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/featuregate"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

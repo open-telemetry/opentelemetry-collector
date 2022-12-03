@@ -116,7 +116,7 @@ func TestConfigValidate(t *testing.T) {
 				cfg.Service.Extensions = append(cfg.Service.Extensions, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`service references extension "nop/2" which does not exist`),
+			expected: errors.New(`service::extensions: references extension "nop/2" which is not configured`),
 		},
 		{
 			name: "invalid-receiver-reference",
@@ -126,7 +126,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Receivers = append(pipe.Receivers, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`pipeline "traces" references receiver "nop/2" which does not exist`),
+			expected: errors.New(`service::pipeline::traces: references receiver "nop/2" which is not configured`),
 		},
 		{
 			name: "invalid-processor-reference",
@@ -136,7 +136,17 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Processors = append(pipe.Processors, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`pipeline "traces" references processor "nop/2" which does not exist`),
+			expected: errors.New(`service::pipeline::traces: references processor "nop/2" which is not configured`),
+		},
+		{
+			name: "duplicate-processor-reference",
+			cfgFn: func() *Config {
+				cfg := generateConfig()
+				pipe := cfg.Service.Pipelines[component.NewID("traces")]
+				pipe.Processors = append(pipe.Processors, pipe.Processors...)
+				return cfg
+			},
+			expected: fmt.Errorf(`service::pipeline::traces: %w`, errors.New(`references processor "nop" multiple times`)),
 		},
 		{
 			name: "invalid-exporter-reference",
@@ -146,7 +156,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: errors.New(`pipeline "traces" references exporter "nop/2" which does not exist`),
+			expected: errors.New(`service::pipeline::traces: references exporter "nop/2" which is not configured`),
 		},
 		{
 			name: "missing-pipeline-receivers",
@@ -156,7 +166,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Receivers = nil
 				return cfg
 			},
-			expected: errors.New(`pipeline "traces" must have at least one receiver`),
+			expected: fmt.Errorf(`service::pipeline::traces: %w`, errMissingServicePipelineReceivers),
 		},
 		{
 			name: "missing-pipeline-exporters",
@@ -166,7 +176,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Exporters = nil
 				return cfg
 			},
-			expected: errors.New(`pipeline "traces" must have at least one exporter`),
+			expected: fmt.Errorf(`service::pipeline::traces: %w`, errMissingServicePipelineExporters),
 		},
 		{
 			name: "missing-pipelines",
@@ -187,7 +197,7 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`receiver "nop" has invalid configuration: %w`, errInvalidRecvConfig),
+			expected: fmt.Errorf(`receivers::nop: %w`, errInvalidRecvConfig),
 		},
 		{
 			name: "invalid-exporter-config",
@@ -199,7 +209,7 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`exporter "nop" has invalid configuration: %w`, errInvalidExpConfig),
+			expected: fmt.Errorf(`exporters::nop: %w`, errInvalidExpConfig),
 		},
 		{
 			name: "invalid-processor-config",
@@ -211,7 +221,7 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`processor "nop" has invalid configuration: %w`, errInvalidProcConfig),
+			expected: fmt.Errorf(`processors::nop: %w`, errInvalidProcConfig),
 		},
 		{
 			name: "invalid-extension-config",
@@ -223,7 +233,7 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`extension "nop" has invalid configuration: %w`, errInvalidExtConfig),
+			expected: fmt.Errorf(`extensions::nop: %w`, errInvalidExtConfig),
 		},
 		{
 			name: "invalid-service-pipeline-type",
@@ -236,7 +246,7 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: errors.New(`unknown pipeline datatype "wrongtype" for wrongtype`),
+			expected: errors.New(`service::pipeline::wrongtype: unknown datatype "wrongtype"`),
 		},
 		{
 			name: "invalid-telemetry-metric-config",
@@ -260,22 +270,22 @@ func TestConfigValidate(t *testing.T) {
 
 func generateConfig() *Config {
 	return &Config{
-		Receivers: map[component.ID]component.ReceiverConfig{
+		Receivers: map[component.ID]component.Config{
 			component.NewID("nop"): &nopRecvConfig{
 				ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
 			},
 		},
-		Exporters: map[component.ID]component.ExporterConfig{
+		Exporters: map[component.ID]component.Config{
 			component.NewID("nop"): &nopExpConfig{
 				ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
 			},
 		},
-		Processors: map[component.ID]component.ProcessorConfig{
+		Processors: map[component.ID]component.Config{
 			component.NewID("nop"): &nopProcConfig{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
 			},
 		},
-		Extensions: map[component.ID]component.ExtensionConfig{
+		Extensions: map[component.ID]component.Config{
 			component.NewID("nop"): &nopExtConfig{
 				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
 			},

@@ -44,7 +44,7 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
@@ -79,7 +79,7 @@ func composeSignalURL(oCfg *Config, signalOverrideURL string, signalName string)
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.TracesExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {
@@ -105,7 +105,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.MetricsExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {
@@ -131,7 +131,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.LogsExporter, error) {
 	oce, err := newExporter(cfg, set)
 	if err != nil {

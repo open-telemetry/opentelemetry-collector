@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 const (
@@ -41,7 +42,7 @@ func NewFactory() component.ProcessorFactory {
 		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelStable))
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		SendBatchSize:     defaultSendBatchSize,
@@ -52,29 +53,26 @@ func createDefaultConfig() component.ProcessorConfig {
 func createTracesProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	level := set.MetricsLevel
-	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), level)
+	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), featuregate.GetRegistry())
 }
 
 func createMetricsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	level := set.MetricsLevel
-	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), level)
+	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), featuregate.GetRegistry())
 }
 
 func createLogsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	level := set.MetricsLevel
-	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), level)
+	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), featuregate.GetRegistry())
 }
