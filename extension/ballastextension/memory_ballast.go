@@ -24,9 +24,6 @@ import (
 
 const megaBytes = 1024 * 1024
 
-// Deprecated: [v0.64.0] will be made private.
-type MemoryBallast = memoryBallast
-
 type memoryBallast struct {
 	cfg              *Config
 	logger           *zap.Logger

@@ -25,7 +25,7 @@ import (
 const processorsKeyName = "processors"
 
 type Processors struct {
-	procs map[component.ID]component.ProcessorConfig
+	procs map[component.ID]component.Config
 
 	factories map[component.Type]component.ProcessorFactory
 }
@@ -41,7 +41,7 @@ func (p *Processors) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	// Prepare resulting map.
-	p.procs = make(map[component.ID]component.ProcessorConfig)
+	p.procs = make(map[component.ID]component.Config)
 	// Iterate over processors and create a config for each.
 	for id, value := range rawProcs {
 		// Find processor factory based on "type" that we read from config source.
@@ -52,11 +52,11 @@ func (p *Processors) Unmarshal(conf *confmap.Conf) error {
 
 		// Create the default config for this processor.
 		processorCfg := factory.CreateDefaultConfig()
-		processorCfg.SetIDName(id.Name())
+		processorCfg.SetIDName(id.Name()) //nolint:staticcheck
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalProcessorConfig(confmap.NewFromStringMap(value), processorCfg); err != nil {
+		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), processorCfg); err != nil {
 			return errorUnmarshalError(processorsKeyName, id, err)
 		}
 
@@ -66,6 +66,6 @@ func (p *Processors) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (p *Processors) GetProcessors() map[component.ID]component.ProcessorConfig {
+func (p *Processors) GetProcessors() map[component.ID]component.Config {
 	return p.procs
 }

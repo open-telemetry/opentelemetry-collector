@@ -168,14 +168,31 @@ const accessorsOptionalPrimitiveValueTemplate = `// ${fieldName} returns the ${l
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ms.getOrig().Get${fieldName}()
 }
+
 // Has${fieldName} returns true if the ${structName} contains a
 // ${fieldName} value, false otherwise.
 func (ms ${structName}) Has${fieldName}() bool {
 	return ms.getOrig().${fieldName}_ != nil
 }
+
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	ms.getOrig().${fieldName}_ = &${originStructType}{${fieldName}: v}
+}
+
+// Remove${fieldName} removes the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) Remove${fieldName}() {
+	ms.getOrig().${fieldName}_ = nil
+}`
+
+const accessorsOptionalPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	assert.Equal(t, ${defaultVal}, ms.${fieldName}())
+	ms.Set${fieldName}(${testValue})
+	assert.True(t, ms.Has${fieldName}())
+	assert.Equal(t, ${testValue}, ms.${fieldName}())
+	ms.Remove${fieldName}()
+	assert.False(t, ms.Has${fieldName}())
 }`
 
 type baseField interface {
@@ -787,7 +804,7 @@ func (opv *optionalPrimitiveValue) generateAccessors(ms baseStruct, sb *bytes.Bu
 }
 
 func (opv *optionalPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+	sb.WriteString(os.Expand(accessorsOptionalPrimitiveTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()

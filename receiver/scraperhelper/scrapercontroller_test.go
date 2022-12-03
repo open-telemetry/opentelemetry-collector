@@ -135,7 +135,7 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tt, err := obsreporttest.SetupTelemetry()
+			tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("receiver"))
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 

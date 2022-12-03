@@ -107,7 +107,7 @@ func TestLogsExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -120,7 +120,7 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 
 func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -132,7 +132,7 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 

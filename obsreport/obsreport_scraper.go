@@ -21,12 +21,24 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/metric/instrument/syncint64"
+	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+)
+
+var (
+	scraperName  = "scraper"
+	scraperScope = scopeName + nameSep + scraperName
 )
 
 // Scraper is a helper to add observability to a component.Scraper.
@@ -36,6 +48,13 @@ type Scraper struct {
 	scraper    component.ID
 	mutators   []tag.Mutator
 	tracer     trace.Tracer
+
+	logger *zap.Logger
+
+	useOtelForMetrics    bool
+	otelAttrs            []attribute.KeyValue
+	scrapedMetricsPoints syncint64.Counter
+	erroredMetricsPoints syncint64.Counter
 }
 
 // ScraperSettings are settings for creating a Scraper.
@@ -45,12 +64,13 @@ type ScraperSettings struct {
 	ReceiverCreateSettings component.ReceiverCreateSettings
 }
 
-// Deprecated: [v0.64.0] use MustNewScraper.
-var NewScraper = MustNewScraper
+// NewScraper creates a new Scraper.
+func NewScraper(cfg ScraperSettings) (*Scraper, error) {
+	return newScraper(cfg, featuregate.GetRegistry())
+}
 
-// MustNewScraper creates a new Scraper.
-func MustNewScraper(cfg ScraperSettings) *Scraper {
-	return &Scraper{
+func newScraper(cfg ScraperSettings, registry *featuregate.Registry) (*Scraper, error) {
+	scraper := &Scraper{
 		level:      cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		receiverID: cfg.ReceiverID,
 		scraper:    cfg.Scraper,
@@ -58,7 +78,45 @@ func MustNewScraper(cfg ScraperSettings) *Scraper {
 			tag.Upsert(obsmetrics.TagKeyReceiver, cfg.ReceiverID.String(), tag.WithTTL(tag.TTLNoPropagation)),
 			tag.Upsert(obsmetrics.TagKeyScraper, cfg.Scraper.String(), tag.WithTTL(tag.TTLNoPropagation))},
 		tracer: cfg.ReceiverCreateSettings.TracerProvider.Tracer(cfg.Scraper.String()),
+
+		logger:            cfg.ReceiverCreateSettings.Logger,
+		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		otelAttrs: []attribute.KeyValue{
+			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
+			attribute.String(obsmetrics.ScraperKey, cfg.Scraper.String()),
+		},
 	}
+
+	if err := scraper.createOtelMetrics(cfg); err != nil {
+		return nil, err
+	}
+
+	return scraper, nil
+}
+
+func (s *Scraper) createOtelMetrics(cfg ScraperSettings) error {
+	if !s.useOtelForMetrics {
+		return nil
+	}
+	meter := cfg.ReceiverCreateSettings.MeterProvider.Meter(scraperScope)
+
+	var errors, err error
+
+	s.scrapedMetricsPoints, err = meter.SyncInt64().Counter(
+		obsmetrics.ScraperPrefix+obsmetrics.ScrapedMetricPointsKey,
+		instrument.WithDescription("Number of metric points successfully scraped."),
+		instrument.WithUnit(unit.Dimensionless),
+	)
+	errors = multierr.Append(errors, err)
+
+	s.erroredMetricsPoints, err = meter.SyncInt64().Counter(
+		obsmetrics.ScraperPrefix+obsmetrics.ErroredMetricPointsKey,
+		instrument.WithDescription("Number of metric points that were unable to be scraped."),
+		instrument.WithUnit(unit.Dimensionless),
+	)
+	errors = multierr.Append(errors, err)
+
+	return errors
 }
 
 // StartMetricsOp is called when a scrape operation is started. The
@@ -93,10 +151,7 @@ func (s *Scraper) EndMetricsOp(
 	span := trace.SpanFromContext(scraperCtx)
 
 	if s.level != configtelemetry.LevelNone {
-		stats.Record(
-			scraperCtx,
-			obsmetrics.ScraperScrapedMetricPoints.M(int64(numScrapedMetrics)),
-			obsmetrics.ScraperErroredMetricPoints.M(int64(numErroredMetrics)))
+		s.recordMetrics(scraperCtx, numScrapedMetrics, numErroredMetrics)
 	}
 
 	// end span according to errors
@@ -110,4 +165,16 @@ func (s *Scraper) EndMetricsOp(
 	}
 
 	span.End()
+}
+
+func (s *Scraper) recordMetrics(scraperCtx context.Context, numScrapedMetrics, numErroredMetrics int) {
+	if s.useOtelForMetrics {
+		s.scrapedMetricsPoints.Add(scraperCtx, int64(numScrapedMetrics), s.otelAttrs...)
+		s.erroredMetricsPoints.Add(scraperCtx, int64(numErroredMetrics), s.otelAttrs...)
+	} else { // OC for metrics
+		stats.Record(
+			scraperCtx,
+			obsmetrics.ScraperScrapedMetricPoints.M(int64(numScrapedMetrics)),
+			obsmetrics.ScraperErroredMetricPoints.M(int64(numErroredMetrics)))
+	}
 }

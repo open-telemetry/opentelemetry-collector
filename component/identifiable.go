@@ -23,14 +23,6 @@ import (
 // typeAndNameSeparator is the separator that is used between type and name in type/name composite keys.
 const typeAndNameSeparator = "/"
 
-// identifiable is an interface that all components configurations MUST embed.
-type identifiable interface {
-	// ID returns the ID of the component that this configuration belongs to.
-	ID() ID
-	// SetIDName updates the name part of the ID for the component that this configuration belongs to.
-	SetIDName(idName string)
-}
-
 // ID represents the identity for a component. It combines two values:
 // * type - the Type of the component.
 // * name - the name of that component.

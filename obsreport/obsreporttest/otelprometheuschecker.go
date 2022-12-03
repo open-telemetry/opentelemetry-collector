@@ -34,6 +34,13 @@ type prometheusChecker struct {
 	promHandler http.Handler
 }
 
+func (pc *prometheusChecker) checkScraperMetrics(receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) error {
+	scraperAttrs := attributesForScraperMetrics(receiver, scraper)
+	return multierr.Combine(
+		pc.checkCounter("scraper_scraped_metric_points", scrapedMetricPoints, scraperAttrs),
+		pc.checkCounter("scraper_errored_metric_points", erroredMetricPoints, scraperAttrs))
+}
+
 func (pc *prometheusChecker) checkReceiverTraces(receiver component.ID, protocol string, acceptedSpans, droppedSpans int64) error {
 	receiverAttrs := attributesForReceiverMetrics(receiver, protocol)
 	return multierr.Combine(
@@ -53,6 +60,30 @@ func (pc *prometheusChecker) checkReceiverMetrics(receiver component.ID, protoco
 	return multierr.Combine(
 		pc.checkCounter("receiver_accepted_metric_points", acceptedMetricPoints, receiverAttrs),
 		pc.checkCounter("receiver_refused_metric_points", droppedMetricPoints, receiverAttrs))
+}
+
+func (pc *prometheusChecker) checkProcessorTraces(processor component.ID, acceptedSpans, refusedSpans, droppedSpans int64) error {
+	processorAttrs := attributesForProcessorMetrics(processor)
+	return multierr.Combine(
+		pc.checkCounter("processor_accepted_spans", acceptedSpans, processorAttrs),
+		pc.checkCounter("processor_refused_spans", refusedSpans, processorAttrs),
+		pc.checkCounter("processor_dropped_spans", droppedSpans, processorAttrs))
+}
+
+func (pc *prometheusChecker) checkProcessorMetrics(processor component.ID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
+	processorAttrs := attributesForProcessorMetrics(processor)
+	return multierr.Combine(
+		pc.checkCounter("processor_accepted_metric_points", acceptedMetricPoints, processorAttrs),
+		pc.checkCounter("processor_refused_metric_points", refusedMetricPoints, processorAttrs),
+		pc.checkCounter("processor_dropped_metric_points", droppedMetricPoints, processorAttrs))
+}
+
+func (pc *prometheusChecker) checkProcessorLogs(processor component.ID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
+	processorAttrs := attributesForProcessorMetrics(processor)
+	return multierr.Combine(
+		pc.checkCounter("processor_accepted_log_records", acceptedLogRecords, processorAttrs),
+		pc.checkCounter("processor_refused_log_records", refusedLogRecords, processorAttrs),
+		pc.checkCounter("processor_dropped_log_records", droppedLogRecords, processorAttrs))
 }
 
 func (pc *prometheusChecker) checkExporterTraces(exporter component.ID, sentSpans, sendFailedSpans int64) error {
@@ -145,17 +176,26 @@ func fetchPrometheusMetrics(handler http.Handler) (map[string]*io_prometheus_cli
 	return parser.TextToMetricFamilies(rr.Body)
 }
 
-// attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
-func attributesForReceiverMetrics(receiver component.ID, transport string) []attribute.KeyValue {
+func attributesForScraperMetrics(receiver component.ID, scraper component.ID) []attribute.KeyValue {
 	return []attribute.KeyValue{
-		attribute.String(receiverTag.Name(), receiver.String()),
-		attribute.String(transportTag.Name(), transport),
+		attribute.String(receiverTag, receiver.String()),
+		attribute.String(scraperTag, scraper.String()),
 	}
 }
 
 // attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
-func attributesForExporterMetrics(exporter component.ID) []attribute.KeyValue {
+func attributesForReceiverMetrics(receiver component.ID, transport string) []attribute.KeyValue {
 	return []attribute.KeyValue{
-		attribute.String(exporterTag.Name(), exporter.String()),
+		attribute.String(receiverTag, receiver.String()),
+		attribute.String(transportTag, transport),
 	}
+}
+
+func attributesForProcessorMetrics(processor component.ID) []attribute.KeyValue {
+	return []attribute.KeyValue{attribute.String(processorTag, processor.String())}
+}
+
+// attributesForReceiverMetrics returns the attributes that are needed for the receiver metrics.
+func attributesForExporterMetrics(exporter component.ID) []attribute.KeyValue {
+	return []attribute.KeyValue{attribute.String(exporterTag, exporter.String())}
 }

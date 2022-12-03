@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	otelview "go.opentelemetry.io/otel/sdk/metric/view"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
@@ -229,19 +230,30 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 		resAttrs = append(resAttrs, attribute.String(k, v))
 	}
 
+	var views []otelview.View
+
+	batchViews, err := batchprocessor.OtelMetricsViews()
+	if err != nil {
+		return fmt.Errorf("error creating otel metrics views for batch processor: %w", err)
+	}
+	views = append(views, batchViews...)
+
 	res, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
 	if err != nil {
 		return fmt.Errorf("error creating otel resources: %w", err)
 	}
 
 	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
-	exporter, err := otelprom.New(otelprom.WithRegisterer(wrappedRegisterer))
+	// We can remove `otelprom.WithoutUnits()` when the otel-go start exposing prometheus metrics using the OpenMetrics format
+	// which includes metric units that prometheusreceiver uses to trim unit's suffixes from metric names.
+	// https://github.com/open-telemetry/opentelemetry-go/issues/3468
+	exporter, err := otelprom.New(otelprom.WithRegisterer(wrappedRegisterer), otelprom.WithoutUnits())
 	if err != nil {
 		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
 	tel.mp = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
-		sdkmetric.WithReader(exporter),
+		sdkmetric.WithReader(exporter, views...),
 	)
 
 	return nil

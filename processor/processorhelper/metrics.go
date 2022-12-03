@@ -38,8 +38,8 @@ type metricsProcessor struct {
 // NewMetricsProcessor creates a component.MetricsProcessor that ensure context propagation and the right tags are set.
 func NewMetricsProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	set component.ProcessorCreateSettings,
+	_ component.Config,
 	nextConsumer consumer.Metrics,
 	metricsFunc ProcessMetricsFunc,
 	options ...Option,
@@ -53,7 +53,7 @@ func NewMetricsProcessor(
 		return nil, component.ErrNilNextConsumer
 	}
 
-	eventOptions := spanAttributes(cfg.ID())
+	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	metricsConsumer, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		span := trace.SpanFromContext(ctx)

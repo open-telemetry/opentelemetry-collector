@@ -4,6 +4,175 @@
 
 <!-- next version -->
 
+## v0.65.0
+
+### 🛑 Breaking changes 🛑
+
+- `featuregate`: Capitalize `featuregate.Stage` string values, remove Stage prefix. (#6490)
+- `configtelemetry`: Update values returned by `Level.String` and `Level.MarshalText` method. (#6490)
+  - All returned strings are capitalized.
+  - "" is returned for integers that are out of Level enum range.
+  - It also affects `Level.Marshal` output, but it's not a problem because `Unmarshal` method accepts strings in
+  all cases, e.g. "normal", "Normal" and "NORMAL".
+  
+- `featuregate`: Make impossible to implement RegistryOption outside `featuregate` package (#6532)
+- `service/telemetry`: Remove unit suffixes from metrics exported by the otel-go prometheus exporter. (#6403)
+- `obsreport`: `obsreport.New[Receiver|Scraper|Processor|Exporter]` returns error now (#6458)
+- `configgrpc`: Remove deprecated funcs in `configgrpc`. (#6529)
+  - `configgrpc.GRPCClientSettings.ToDialOptions`
+  - `configgrpc.GRPCServerSettings.ToServerOption`
+  
+- `config/configtest`: Remove deprecated `configtest` package. (#6542)
+- `config`: Remove deprecated types and funcs from config. Use `component` package. (#6511)
+  - config.ComponentID
+  - config.Type
+  - config.DataType
+  - config.Receiver
+  - config.UnmarshalReceiver
+  - config.Processor
+  - config.UnmarshalProcessor
+  - config.Exporter
+  - config.UnmarshalExporter
+  - config.Extension
+  - config.UnmarshalExtension
+  
+- `featuregate`: Remove deprecated funcs and struct members from `featuregate` package (#6523)
+  - featuregate.Gate.ID
+  - featuregate.Gate.Description
+  - featuregate.Gate.Enabled
+  - featuregate.Registry.Register
+  - featuregate.Registry.MustRegister
+  
+- `experimental`: Remove experimental configsource code. (#6558)
+- `component`: Update values returned by `StabilityLevel.String` method. (#6490)
+  - All returned strings are capitalized.
+  - "Undefined" is returned only for `StabilityLevelUndefined`.
+  - "" is returned for integers that are out of StabilityLevel enum range.
+  
+
+### 🚩 Deprecations 🚩
+
+- `pdata`: Deprecate `pcommon.[Span|Trace]ID.HexString` methods. Call `hex.EncodeToString` explicitly instead. (#6514)
+- `obsreport`: deprecate `obsreport.MustNew[Receiver|Scraper|Processor|Exporter]` in favor of `obsreport.New[Receiver|Scraper|Processor|Exporter]` (#6458)
+  - Deprecate `obsreport.MustNewReceiver()` in favor of `obsreport.NewReceiver()`
+  - Deprecate `obsreport.MustNewScraper()` in favor of `obsreport.NewScraper()`
+  - Deprecate `obsreport.MustNewProcessor()` in favor of `obsreport.NewProcessor()`
+  - Deprecate `obsreport.MustNewExporter()` in favor of `obsreport.NewExporter()`
+  
+- `component`: Deprecate `component.Receiver`, `component.Processor`, and `component.Exporter`. (#6553)
+- `featuregate`: Deprecate Get prefix funcs for `featuregate.Gate` (#6528)
+  `featuregate.Gate.GetID` -> `featuregate.Gate.ID`
+  `featuregate.Gate.GetDescription` -> `featuregate.Gate.Description`
+  
+- `component`: Deprecate `component.Config.Validate` in favor of `component.ValidateConfig` (#6572)
+- `component`: Deprecate `StabilityLevelInDevelopment` enum const in favor of `StabilityLevelDevelopment`. (#6561)
+  Also rename all mentions of "In development" stability level to "Development".
+- `service`: Deprecate `service.[Starting|Running|Closing|Closed]` in favor of `service.State[Starting|Running|Closing|Closed]` (#6492)
+
+### 💡 Enhancements 💡
+
+- `component`: `component.Extension` is temporarily set to be an alias of `component.Component` which will be reverted once it's moved to the `extension` package. Change your `component.Host.GetExtensions()` implementation to return `map[ID]component.Component` instead of `map[ID]component.Extension` (#6553)
+- `pdata`: Return error from `pcommon.[Value|Map|Slice].FromRaw` when unsupported type. (#6579)
+- `batchprocessor`: instrument the `batch` processor with OpenTelemetry Go SDK (#6423)
+- `obsreport`: Instrument `obsreport.Scraper` metrics with otel-go (#6460)
+- `service/collector`: Support SIGHUP configuration reloading (#5966)
+- `component`: Split component into its own package (#6187)
+  The import path for the component module can now be access directly:
+    - `go.opentelemetry.io/collector/component`
+- `consumer`: Split consumer into its own package (#6186)
+  The import path for the consumer module can now be accessed directly:
+    - `go.opentelemetry.io/collector/consumer`
+- `featuregate`: Split featuregate into its own package (#6526)
+  The import path for the featuregate module can now be accessed directly:
+    - `go.opentelemetry.io/collector/featuregate`
+
+### 🧰 Bug fixes 🧰
+
+- `service`: Disallow duplicate references to processors within a single pipeline (#6540)
+
+## v0.64.1
+
+### 🧰 Bug fixes 🧰
+
+- `loggingexporter`: Fix logging exporter to not mutate the data (#6420)
+
+## 0.64.0
+
+### 🛑 Breaking changes 🛑
+
+- `config`: Remove already deprecates `config.Service`. (#6395)
+- `pdata`: Change output of String() method of the following enum types to more a concise form: (#6251)
+  - plog.SeverityNumber
+  - ptrace.SpanKind
+  - ptrace.StatusCode
+  
+- `config`: Remove already deprecates `config.Config`. (#6394)
+- `pdata`: Remove deprecated code from pdata (#6417)
+  - `p[trace|metric|log]otlp.[Request|Response]`
+  - `p[trace|metric|log]otlp.New[Request|Response]`
+  - `p[trace|metric|log]otlp.NewRequestFrom[Traces|Metrics|Logs]`
+  - `p[trace|metric|log]otlp.NewClient`
+  - `p[trace|metric|log]New[JSON|Proto][Marshaler|Unmarshale]`
+  
+- `extension`: Splitting ballast/zpages extension into their own modules (#6191)
+  The import path for the extension modules can now be accessed directly:
+  - `go.opentelemetry.io/collector/extension/ballastextension`
+  - `go.opentelemetry.io/collector/extension/zpagesextension`
+  
+  If using one of these extensions, modify your Collector builder configuration to use `gomod` directly, such as:
+  - `gomod: go.opentelemetry.io/collector/extension/ballastextension v0.64.0`
+- `processor`: Splitting batch/memorylimiter processors into their own modules (#6188, #6192, #6193)
+  The import path for the processor modules can now be access directly:
+  - `go.opentelemetry.io/collector/processor/batchprocessor`
+  - `go.opentelemetry.io/collector/processor/memorylimiter`
+  
+  If using this processor, modify your Collector builder configuration to use `gomod` directly, such as:
+  - `gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.64.0`
+- `otlpreceiver`: Splitting otlp receiver into its own module (#6190)
+  The import path for the OTLP receiver can now be access directly:
+  - `go.opentelemetry.io/collector/receiver/otlpreceiver`
+  
+  If using this receiver, modify your Collector builder configuration to use `gomod` directly, such as:
+  - `gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.0`
+
+- `confmap`: Remove unused public member `sync.Mutex` from `confmap.Resolver`. (#6489)
+  This is an exception from the deprecation rule since this is not used anywhere and it is very unlikely that is used by external users.
+
+### 🚩 Deprecations 🚩
+
+- `config`: Deprecate multiple types and funcs in `config` package (#6422)
+  - config.ComponentID => component.ID
+  - config.Type => component.Type
+  - config.DataType => component.DataType
+  - config.[Traces|Metrics|Logs]DataType => component.DataType[Traces|Metrics|Logs]
+  - config.Receiver => component.ReceiverConfig
+  - config.UnmarshalReceiver => component.UnmarshalReceiverConfig
+  - config.Processor => component.ProcessorConfig
+  - config.UnmarshalProcessor => component.UnmarshalProcessorConfig
+  - config.Exporter => component.ExporterConfig
+  - config.UnmarshalExporter => component.UnmarshalExporterConfig
+  - config.Extension => component.ExtensionConfig
+  - config.UnmarshalExtension => component.UnmarshalExtensionConfig
+  
+- `obsreport`: deprecate `obsreport.New[Receiver|Scraper|Processor|Exporter]` in favor of `obsreport.MustNew[Receiver|Scraper|Processor|Exporter]` (#6458)
+- `config/configgrpc`: Provide better helpers for configgrpc, consistent with confighttp (#6441)
+  - Deprecate `GRPCClientSettings.ToDialOptions` in favor of `GRPCClientSettings.ToClientConn`.
+  - Deprecate `GRPCServerSettings.ToServerOption` in favor of `GRPCServerSettings.ToServer`.
+  
+
+### 💡 Enhancements 💡
+
+- `service/telemetry`: Allow to configure sampling config for logs. (#4554)
+- `featuregates`: Extend feature gate definition to include support for issue links and expected deprecated version (#6167)
+- `receiver/otlp`: Add warning when using unspecified (`0.0.0.0`) address on HTTP or gRPC servers (#6151)
+- `obsreport`: Instrument `obsreport.Exporter` metrics with otel-go (#6346)
+- `config`: Add validation for empty address [telemetry::metrics::address] (#5661)
+
+### 🧰 Bug fixes 🧰
+
+- `cgroups`: split line into exactly 3 parts while parsing /proc/{pid}/cgroup (#6389)
+- `cgroups`: Use int64 for cgroup v1 parsing (#6443)
+
 ## v0.63.1
 
 ### 🧰 Bug fixes 🧰

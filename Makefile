@@ -47,7 +47,7 @@ version:
 	@echo ${VERSION}
 
 .PHONY: all
-all: checklicense checkdoc misspell goimpi golint gotest
+all: checklicense checkdoc misspell goimpi goporto multimod-verify golint gotest
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -70,7 +70,7 @@ gotest-with-cover:
 	$(GOCOVMERGE) $$(find . -name coverage.out) > coverage.txt
 
 .PHONY: goporto
-goporto:
+goporto: install-tools
 	porto -w --include-internal ./
 
 .PHONY: golint
@@ -78,7 +78,7 @@ golint:
 	@$(MAKE) for-all-target TARGET="lint"
 
 .PHONY: goimpi
-goimpi:
+goimpi: install-tools
 	@$(MAKE) for-all-target TARGET="impi"
 
 .PHONY: gofmt
@@ -165,35 +165,16 @@ ifndef COMPONENT
 	$(error COMPONENT variable was not defined)
 endif
 
-.PHONY: add-tag
-add-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Adding tag ${TAG}"
-	@git tag -a ${TAG} -s -m "Version ${TAG}"
-	@set -e; for dir in $(ALL_MODULES); do \
-	  (echo Adding tag "$${dir:2}/$${TAG}" && \
-	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
-	done
-
-.PHONY: push-tag
-push-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Pushing tag ${TAG}"
-	@git push git@github.com:open-telemetry/opentelemetry-collector.git ${TAG}
-	@set -e; for dir in $(ALL_MODULES); do \
-	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
-	 	git push git@github.com:open-telemetry/opentelemetry-collector.git "$${dir:2}/$${TAG}"); \
-	done
-
-.PHONY: delete-tag
-delete-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Deleting tag ${TAG}"
-	@git tag -d ${TAG}
-	@set -e; for dir in $(ALL_MODULES); do \
-	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
-	 	git tag -d "$${dir:2}/$${TAG}" ); \
-	done
+COMMIT?=HEAD
+MODSET?=stable
+REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
+.PHONY: push-tags
+push-tags:
+	multimod verify
+	set -e; for tag in `multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+		echo "pushing tag $${tag}"; \
+		git push ${REMOTE} $${tag}; \
+	done;
 
 # Build the Collector executable.
 .PHONY: otelcorecol
@@ -325,11 +306,15 @@ gensemconv:
 check-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(CURDIR)"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/component=$(CURDIR)/component"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/confmap=$(CURDIR)/confmap"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/consumer=$(CURDIR)/consumer"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/loggingexporter=$(CURDIR)/exporter/loggingexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/otlpexporter=$(CURDIR)/exporter/otlpexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/exporter/otlphttpexporter=$(CURDIR)/exporter/otlphttpexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension/ballastextension=$(CURDIR)/extension/ballastextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/extension/zpagesextension=$(CURDIR)/extension/zpagesextension"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/featuregate=$(CURDIR)/featuregate"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/pdata=$(CURDIR)/pdata"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/processor/batchprocessor=$(CURDIR)/processor/batchprocessor"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector/processor/memorylimiterprocessor=$(CURDIR)/processor/memorylimiterprocessor"
@@ -346,11 +331,15 @@ check-contrib:
 restore-contrib:
 	@echo Restoring contrib at $(CONTRIB_PATH) to its original state
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/component"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/confmap"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/consumer"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/loggingexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/otlpexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension/ballastextension"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/extension/zpagestextension"
+	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/featuregate"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/pdata"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/processor/batchprocessor"
 	@$(MAKE) -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector/processor/memorylimiterprocessor"
@@ -463,9 +452,9 @@ checklinks:
 		markdown-link-check -q -c ./.github/workflows/check_links_config.json || true
 
 # error message "failed to sync logger:  sync /dev/stderr: inappropriate ioctl for device"
-# is a known issue but does not affect function. 
+# is a known issue but does not affect function.
 .PHONY: crosslink
-crosslink: 
+crosslink:
 	@echo "Executing crosslink"
 	crosslink --root=$(shell pwd) --prune
 

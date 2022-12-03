@@ -58,7 +58,7 @@ type exporter struct {
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings) (*exporter, error) {
+func newExporter(cfg component.Config, set component.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
@@ -77,7 +77,6 @@ func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
-
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
@@ -90,7 +89,10 @@ func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 }
 
 func (e *exporter) shutdown(context.Context) error {
-	return e.clientConn.Close()
+	if e.clientConn != nil {
+		return e.clientConn.Close()
+	}
+	return nil
 }
 
 func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {

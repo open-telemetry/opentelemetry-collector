@@ -25,7 +25,7 @@ import (
 const exportersKeyName = "exporters"
 
 type Exporters struct {
-	exps map[component.ID]component.ExporterConfig
+	exps map[component.ID]component.Config
 
 	factories map[component.Type]component.ExporterFactory
 }
@@ -41,7 +41,7 @@ func (e *Exporters) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	// Prepare resulting map.
-	e.exps = make(map[component.ID]component.ExporterConfig)
+	e.exps = make(map[component.ID]component.Config)
 
 	// Iterate over Exporters and create a config for each.
 	for id, value := range rawExps {
@@ -53,11 +53,11 @@ func (e *Exporters) Unmarshal(conf *confmap.Conf) error {
 
 		// Create the default config for this exporter.
 		exporterCfg := factory.CreateDefaultConfig()
-		exporterCfg.SetIDName(id.Name())
+		exporterCfg.SetIDName(id.Name()) //nolint:staticcheck
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalExporterConfig(confmap.NewFromStringMap(value), exporterCfg); err != nil {
+		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), exporterCfg); err != nil {
 			return errorUnmarshalError(exportersKeyName, id, err)
 		}
 
@@ -67,6 +67,6 @@ func (e *Exporters) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (e *Exporters) GetExporters() map[component.ID]component.ExporterConfig {
+func (e *Exporters) GetExporters() map[component.ID]component.Config {
 	return e.exps
 }

@@ -33,7 +33,7 @@ type Config struct {
 	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

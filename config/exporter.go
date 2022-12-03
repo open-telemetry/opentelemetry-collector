@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+
 import (
 	"go.opentelemetry.io/collector/component"
 )
@@ -24,28 +25,12 @@ import (
 //
 // When embedded in the exporter config, it must be with `mapstructure:",squash"` tag.
 type ExporterSettings struct {
-	id component.ID `mapstructure:"-"`
-	component.ExporterConfig
+	settings
 }
 
 // NewExporterSettings return a new ExporterSettings with the given ComponentID.
 func NewExporterSettings(id component.ID) ExporterSettings {
-	return ExporterSettings{id: id}
+	return ExporterSettings{settings: newSettings(id)}
 }
 
-var _ component.ExporterConfig = (*ExporterSettings)(nil)
-
-// ID returns the receiver component.ID.
-func (es *ExporterSettings) ID() component.ID {
-	return es.id
-}
-
-// SetIDName sets the receiver name.
-func (es *ExporterSettings) SetIDName(idName string) {
-	es.id = component.NewIDWithName(es.id.Type(), idName)
-}
-
-// Validate validates the configuration and returns an error if invalid.
-func (es *ExporterSettings) Validate() error {
-	return nil
-}
+var _ component.Config = (*ExporterSettings)(nil)

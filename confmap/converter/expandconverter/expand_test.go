@@ -115,3 +115,58 @@ func TestNewExpandConverter_EscapedEnvVars(t *testing.T) {
 	require.NoError(t, New().Convert(context.Background(), conf))
 	assert.Equal(t, expectedMap, conf.ToStringMap())
 }
+
+func TestNewExpandConverterHostPort(t *testing.T) {
+	t.Setenv("HOST", "127.0.0.1")
+	t.Setenv("PORT", "4317")
+
+	var testCases = []struct {
+		name     string
+		input    map[string]any
+		expected map[string]any
+	}{
+		{
+			name: "brackets",
+			input: map[string]any{
+				"test": "${HOST}:${PORT}",
+			},
+			expected: map[string]any{
+				"test": "127.0.0.1:4317",
+			},
+		},
+		{
+			name: "no brackets",
+			input: map[string]any{
+				"test": "$HOST:$PORT",
+			},
+			expected: map[string]any{
+				"test": "127.0.0.1:4317",
+			},
+		},
+		{
+			name: "mix",
+			input: map[string]any{
+				"test": "${HOST}:$PORT",
+			},
+			expected: map[string]any{
+				"test": "127.0.0.1:4317",
+			},
+		},
+		{
+			name: "reverse mix",
+			input: map[string]any{
+				"test": "$HOST:${PORT}",
+			},
+			expected: map[string]any{
+				"test": "127.0.0.1:4317",
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := confmap.NewFromStringMap(tt.input)
+			require.NoError(t, New().Convert(context.Background(), conf))
+			assert.Equal(t, tt.expected, conf.ToStringMap())
+		})
+	}
+}

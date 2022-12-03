@@ -47,7 +47,9 @@ func TestPromChecker(t *testing.T) {
 	pc, err := newStubPromChecker()
 	require.NoError(t, err)
 
+	scraper := component.NewID("fakeScraper")
 	receiver := component.NewID("fakeReceiver")
+	processor := component.NewID("fakeProcessor")
 	exporter := component.NewID("fakeExporter")
 	transport := "fakeTransport"
 
@@ -77,6 +79,11 @@ func TestPromChecker(t *testing.T) {
 	)
 
 	assert.NoError(t,
+		pc.checkScraperMetrics(receiver, scraper, 7, 41),
+		"metrics from Scraper Metrics should be valid",
+	)
+
+	assert.NoError(t,
 		pc.checkReceiverTraces(receiver, transport, 42, 13),
 		"metrics from Receiver Traces should be valid",
 	)
@@ -88,6 +95,21 @@ func TestPromChecker(t *testing.T) {
 
 	assert.NoError(t,
 		pc.checkReceiverLogs(receiver, transport, 102, 35),
+		"metrics from Receiver Logs should be valid",
+	)
+
+	assert.NoError(t,
+		pc.checkProcessorTraces(processor, 42, 13, 7),
+		"metrics from Receiver Traces should be valid",
+	)
+
+	assert.NoError(t,
+		pc.checkProcessorMetrics(processor, 7, 41, 13),
+		"metrics from Receiver Metrics should be valid",
+	)
+
+	assert.NoError(t,
+		pc.checkProcessorLogs(processor, 102, 35, 14),
 		"metrics from Receiver Logs should be valid",
 	)
 

@@ -37,21 +37,21 @@ import (
 type State int
 
 const (
-	Starting State = iota
-	Running
-	Closing
-	Closed
+	StateStarting State = iota
+	StateRunning
+	StateClosing
+	StateClosed
 )
 
 func (s State) String() string {
 	switch s {
-	case Starting:
+	case StateStarting:
 		return "Starting"
-	case Running:
+	case StateRunning:
 		return "Running"
-	case Closing:
+	case StateClosing:
 		return "Closing"
-	case Closed:
+	case StateClosed:
 		return "Closed"
 	}
 	return "UNKNOWN"
@@ -96,10 +96,12 @@ func New(set CollectorSettings) (*Collector, error) {
 	}
 
 	return &Collector{
-		set:               set,
-		state:             atomic.NewInt32(int32(Starting)),
-		shutdownChan:      make(chan struct{}),
-		signalsChannel:    make(chan os.Signal, 1),
+		set:          set,
+		state:        atomic.NewInt32(int32(StateStarting)),
+		shutdownChan: make(chan struct{}),
+		// Per signal.Notify documentation, a size of the channel equaled with
+		// the number of signals getting notified on is recommended.
+		signalsChannel:    make(chan os.Signal, 3),
 		asyncErrorChannel: make(chan error),
 	}, nil
 }
@@ -113,7 +115,7 @@ func (col *Collector) GetState() State {
 func (col *Collector) Shutdown() {
 	// Only shutdown if we're in a Running or Starting State else noop
 	state := col.GetState()
-	if state == Running || state == Starting {
+	if state == StateRunning || state == StateStarting {
 		defer func() {
 			recover() // nolint:errcheck
 		}()
@@ -124,7 +126,7 @@ func (col *Collector) Shutdown() {
 // setupConfigurationComponents loads the config and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	col.setCollectorState(Starting)
+	col.setCollectorState(StateStarting)
 
 	cfg, err := col.set.ConfigProvider.Get(ctx, col.set.Factories)
 	if err != nil {
@@ -154,7 +156,22 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return multierr.Append(err, col.shutdownServiceAndTelemetry(ctx))
 	}
-	col.setCollectorState(Running)
+	col.setCollectorState(StateRunning)
+	return nil
+}
+
+func (col *Collector) reloadConfiguration(ctx context.Context) error {
+	col.service.telemetrySettings.Logger.Warn("Config updated, restart service")
+	col.setCollectorState(StateClosing)
+
+	if err := col.service.Shutdown(ctx); err != nil {
+		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+	}
+
+	if err := col.setupConfigurationComponents(ctx); err != nil {
+		return fmt.Errorf("failed to setup configuration components: %w", err)
+	}
+
 	return nil
 }
 
@@ -174,9 +191,13 @@ func (col *Collector) DryRun(ctx context.Context) error {
 
 func (col *Collector) Run(ctx context.Context) error {
 	if err := col.setupConfigurationComponents(ctx); err != nil {
-		col.setCollectorState(Closed)
+		col.setCollectorState(StateClosed)
 		return err
 	}
+
+	// Always notify with SIGHUP for configuration reloading.
+	signal.Notify(col.signalsChannel, syscall.SIGHUP)
+	defer signal.Stop(col.signalsChannel)
 
 	// Only notify with SIGTERM and SIGINT if graceful shutdown is enabled.
 	if !col.set.DisableGracefulShutdown {
@@ -191,28 +212,25 @@ LOOP:
 				col.service.telemetrySettings.Logger.Error("Config watch failed", zap.Error(err))
 				break LOOP
 			}
-
-			col.service.telemetrySettings.Logger.Warn("Config updated, restart service")
-			col.setCollectorState(Closing)
-
-			if err = col.service.Shutdown(ctx); err != nil {
-				return fmt.Errorf("failed to shutdown the retiring config: %w", err)
-			}
-			if err = col.setupConfigurationComponents(ctx); err != nil {
-				return fmt.Errorf("failed to setup configuration components: %w", err)
+			if err = col.reloadConfiguration(ctx); err != nil {
+				return err
 			}
 		case err := <-col.asyncErrorChannel:
 			col.service.telemetrySettings.Logger.Error("Asynchronous error received, terminating process", zap.Error(err))
 			break LOOP
 		case s := <-col.signalsChannel:
 			col.service.telemetrySettings.Logger.Info("Received signal from OS", zap.String("signal", s.String()))
-			break LOOP
+			if s != syscall.SIGHUP {
+				break LOOP
+			}
+			if err := col.reloadConfiguration(ctx); err != nil {
+				return err
+			}
 		case <-col.shutdownChan:
 			col.service.telemetrySettings.Logger.Info("Received shutdown request")
 			break LOOP
 		case <-ctx.Done():
 			col.service.telemetrySettings.Logger.Info("Context done, terminating process", zap.Error(ctx.Err()))
-
 			// Call shutdown with background context as the passed in context has been canceled
 			return col.shutdown(context.Background())
 		}
@@ -221,7 +239,7 @@ LOOP:
 }
 
 func (col *Collector) shutdown(ctx context.Context) error {
-	col.setCollectorState(Closing)
+	col.setCollectorState(StateClosing)
 
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
@@ -232,7 +250,7 @@ func (col *Collector) shutdown(ctx context.Context) error {
 
 	errs = multierr.Append(errs, col.shutdownServiceAndTelemetry(ctx))
 
-	col.setCollectorState(Closed)
+	col.setCollectorState(StateClosed)
 
 	return errs
 }

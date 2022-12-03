@@ -50,7 +50,7 @@ type Config struct {
 	MemorySpikePercentage uint32 `mapstructure:"spike_limit_percentage"`
 }
 
-var _ component.ProcessorConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {

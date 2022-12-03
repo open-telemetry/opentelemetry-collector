@@ -25,7 +25,7 @@ import (
 const receiversKeyName = "receivers"
 
 type Receivers struct {
-	recvs map[component.ID]component.ReceiverConfig
+	recvs map[component.ID]component.Config
 
 	factories map[component.Type]component.ReceiverFactory
 }
@@ -41,7 +41,7 @@ func (r *Receivers) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	// Prepare resulting map.
-	r.recvs = make(map[component.ID]component.ReceiverConfig)
+	r.recvs = make(map[component.ID]component.Config)
 
 	// Iterate over input map and create a config for each.
 	for id, value := range rawRecvs {
@@ -53,11 +53,11 @@ func (r *Receivers) Unmarshal(conf *confmap.Conf) error {
 
 		// Create the default config for this receiver.
 		receiverCfg := factory.CreateDefaultConfig()
-		receiverCfg.SetIDName(id.Name())
+		receiverCfg.SetIDName(id.Name()) //nolint:staticcheck
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalReceiverConfig(confmap.NewFromStringMap(value), receiverCfg); err != nil {
+		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), receiverCfg); err != nil {
 			return errorUnmarshalError(receiversKeyName, id, err)
 		}
 
@@ -67,6 +67,6 @@ func (r *Receivers) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (r *Receivers) GetReceivers() map[component.ID]component.ReceiverConfig {
+func (r *Receivers) GetReceivers() map[component.ID]component.Config {
 	return r.recvs
 }

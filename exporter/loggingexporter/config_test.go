@@ -32,7 +32,7 @@ import (
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalExporterConfig(confmap.New(), cfg))
+	assert.NoError(t, component.UnmarshalConfig(confmap.New(), cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
@@ -86,7 +86,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			require.NoError(t, err)
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
-			err = component.UnmarshalExporterConfig(cm, cfg)
+			err = component.UnmarshalConfig(cm, cfg)
 			if tt.expectedErr != "" {
 				assert.EqualError(t, err, tt.expectedErr)
 			} else {
@@ -108,7 +108,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Verbosity: configtelemetry.LevelNone,
 			},
-			expectedErr: "verbosity level \"none\" is not supported",
+			expectedErr: "verbosity level \"None\" is not supported",
 		},
 		{
 			name: "verbosity detailed",

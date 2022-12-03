@@ -52,13 +52,13 @@ type testParams struct {
 	err   error
 }
 
-func testTelemetry(t *testing.T, testFunc func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry)) {
+func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry)) {
 	t.Run("WithOC", func(t *testing.T) {
-		tt, err := obsreporttest.SetupTelemetry()
+		tt, err := obsreporttest.SetupTelemetryWithID(id)
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(tt, featuregate.NewRegistry())
+		testFunc(t, tt, featuregate.NewRegistry())
 	})
 
 	t.Run("WithOTel", func(t *testing.T) {
@@ -66,16 +66,16 @@ func testTelemetry(t *testing.T, testFunc func(tt obsreporttest.TestTelemetry, r
 		obsreportconfig.RegisterInternalMetricFeatureGate(registry)
 		require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
 
-		tt, err := obsreporttest.SetupTelemetry()
+		tt, err := obsreporttest.SetupTelemetryWithID(id)
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-		testFunc(tt, registry)
+		testFunc(t, tt, registry)
 	})
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, receiver, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -122,7 +122,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, receiver, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -170,7 +170,7 @@ func TestReceiveLogsOp(t *testing.T) {
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, receiver, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -219,10 +219,10 @@ func TestReceiveMetricsOp(t *testing.T) {
 }
 
 func TestScrapeMetricsDataOp(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, receiver, testScrapeMetricsDataOp)
+}
 
+func testScrapeMetricsDataOp(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 	parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
@@ -232,11 +232,12 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 15, err: nil},
 	}
 	for i := range params {
-		scrp := MustNewScraper(ScraperSettings{
+		scrp, err := newScraper(ScraperSettings{
 			ReceiverID:             receiver,
 			Scraper:                scraper,
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
-		})
+		}, registry)
+		require.NoError(t, err)
 		ctx := scrp.StartMetricsOp(parentCtx)
 		assert.NotNil(t, ctx)
 		scrp.EndMetricsOp(ctx, params[i].items, params[i].err)
@@ -277,7 +278,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 }
 
 func TestExportTraceDataOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, exporter, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -326,7 +327,7 @@ func TestExportTraceDataOp(t *testing.T) {
 }
 
 func TestExportMetricsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, exporter, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -375,7 +376,7 @@ func TestExportMetricsOp(t *testing.T) {
 }
 
 func TestExportLogsOp(t *testing.T) {
-	testTelemetry(t, func(tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
+	testTelemetry(t, exporter, func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 		parentCtx, parentSpan := tt.TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
@@ -424,7 +425,7 @@ func TestExportLogsOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(receiver)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -438,12 +439,13 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	for i := range params {
 		// Use a new context on each operation to simulate distinct operations
 		// under the same long lived context.
-		rec := MustNewReceiver(ReceiverSettings{
+		rec, rerr := NewReceiver(ReceiverSettings{
 			ReceiverID:             receiver,
 			Transport:              transport,
 			LongLivedCtx:           true,
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 		})
+		require.NoError(t, rerr)
 		ctx := rec.StartTracesOp(longLivedCtx)
 		assert.NotNil(t, ctx)
 		rec.EndTracesOp(ctx, format, params[i].items, params[i].err)
@@ -477,18 +479,18 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 }
 
 func TestProcessorTraceData(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, processor, testProcessorTraceData)
+}
 
+func testProcessorTraceData(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 	const acceptedSpans = 27
 	const refusedSpans = 19
 	const droppedSpans = 13
-
-	obsrep := MustNewProcessor(ProcessorSettings{
+	obsrep, err := newProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
-	})
+	}, registry)
+	require.NoError(t, err)
 	obsrep.TracesAccepted(context.Background(), acceptedSpans)
 	obsrep.TracesRefused(context.Background(), refusedSpans)
 	obsrep.TracesDropped(context.Background(), droppedSpans)
@@ -497,18 +499,19 @@ func TestProcessorTraceData(t *testing.T) {
 }
 
 func TestProcessorMetricsData(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, processor, testProcessorMetricsData)
+}
 
+func testProcessorMetricsData(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 	const acceptedPoints = 29
 	const refusedPoints = 11
 	const droppedPoints = 17
 
-	obsrep := MustNewProcessor(ProcessorSettings{
+	obsrep, err := newProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
-	})
+	}, registry)
+	require.NoError(t, err)
 	obsrep.MetricsAccepted(context.Background(), acceptedPoints)
 	obsrep.MetricsRefused(context.Background(), refusedPoints)
 	obsrep.MetricsDropped(context.Background(), droppedPoints)
@@ -539,18 +542,19 @@ func TestBuildProcessorCustomMetricName(t *testing.T) {
 }
 
 func TestProcessorLogRecords(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	testTelemetry(t, processor, testProcessorLogRecords)
+}
 
+func testProcessorLogRecords(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry) {
 	const acceptedRecords = 29
 	const refusedRecords = 11
 	const droppedRecords = 17
 
-	obsrep := MustNewProcessor(ProcessorSettings{
+	obsrep, err := newProcessor(ProcessorSettings{
 		ProcessorID:             processor,
 		ProcessorCreateSettings: tt.ToProcessorCreateSettings(),
-	})
+	}, registry)
+	require.NoError(t, err)
 	obsrep.LogsAccepted(context.Background(), acceptedRecords)
 	obsrep.LogsRefused(context.Background(), refusedRecords)
 	obsrep.LogsDropped(context.Background(), droppedRecords)

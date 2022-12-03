@@ -261,8 +261,10 @@ func TestIssue_4221(t *testing.T) {
 		tr := ptraceotlp.NewExportRequest()
 		require.NoError(t, tr.UnmarshalProto(unbase64Data))
 		span := tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
-		assert.Equal(t, "e5513c32795c41b9", span.SpanID().HexString())
+		traceID := span.TraceID()
+		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", hex.EncodeToString(traceID[:]))
+		spanID := span.SpanID()
+		assert.Equal(t, "e5513c32795c41b9", hex.EncodeToString(spanID[:]))
 	}))
 
 	exp := startTracesExporter(t, "", svr.URL)
@@ -281,14 +283,16 @@ func TestIssue_4221(t *testing.T) {
 	require.NoError(t, err)
 	copy(traceIDBytes[:], traceIDBytesSlice)
 	span.SetTraceID(traceIDBytes)
-	assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
+	traceID := span.TraceID()
+	assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", hex.EncodeToString(traceID[:]))
 
 	var spanIDBytes [8]byte
 	spanIDBytesSlice, err := hex.DecodeString("e5513c32795c41b9")
 	require.NoError(t, err)
 	copy(spanIDBytes[:], spanIDBytesSlice)
 	span.SetSpanID(spanIDBytes)
-	assert.Equal(t, "e5513c32795c41b9", span.SpanID().HexString())
+	spanID := span.SpanID()
+	assert.Equal(t, "e5513c32795c41b9", hex.EncodeToString(spanID[:]))
 
 	span.SetEndTimestamp(1634684637873000000)
 	span.Attributes().PutInt("span_index", 3)
@@ -328,7 +332,7 @@ func startLogsExporter(t *testing.T, baseURL string, overrideURL string) compone
 	return exp
 }
 
-func createExporterConfig(baseURL string, defaultCfg component.ExporterConfig) *Config {
+func createExporterConfig(baseURL string, defaultCfg component.Config) *Config {
 	cfg := defaultCfg.(*Config)
 	cfg.Endpoint = baseURL
 	cfg.QueueSettings.Enabled = false
@@ -360,7 +364,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	startAndCleanup(t, recv)
 }
 
-func createReceiverConfig(addr string, defaultCfg component.ReceiverConfig) *otlpreceiver.Config {
+func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
 	cfg.HTTP.Endpoint = addr
 	cfg.GRPC = nil

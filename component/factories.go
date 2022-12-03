@@ -76,9 +76,7 @@ func MakeExporterFactoryMap(factories ...ExporterFactory) (map[Type]ExporterFact
 	return fMap, nil
 }
 
-// MakeExtensionFactoryMap takes a list of extension factories and returns a map
-// with factory type as keys. It returns a non-nil error when more than one factories
-// have the same type.
+// Deprecated: [v0.67.0] use extension.MakeFactoryMap
 func MakeExtensionFactoryMap(factories ...ExtensionFactory) (map[Type]ExtensionFactory, error) {
 	fMap := map[Type]ExtensionFactory{}
 	for _, f := range factories {

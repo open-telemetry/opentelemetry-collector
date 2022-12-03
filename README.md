@@ -71,7 +71,7 @@ we intend to provide high-quality components as part of this repository, we ackn
 for prime time. As such, each component should list its current stability level for each telemetry signal, according to
 the following definitions:
 
-### In development
+### Development
 
 Not all pieces of the component are in place yet and it might not be available as part of any distributions yet. Bugs and performance issues should be reported, but it is likely that the component owners might not give them much attention. Your feedback is still desired, especially when it comes to the user-experience (configuration options, component observability, technical implementation details, ...). Configuration options might break often depending on how things evolve. The component should not be used in production.
 
@@ -127,7 +127,6 @@ Here is a list of community roles with current and previous members:
 - Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
    - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
-   - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
    - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
    - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
@@ -145,11 +144,12 @@ Here is a list of community roles with current and previous members:
 
    - [Alex Boten](https://github.com/codeboten), Lightstep
    - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
-   - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
+   - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 
 - Emeritus Maintainers:
 
    - [Paulo Janotti](https://github.com/pjanotti), Splunk
+   - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in [Community membership](https://github.com/open-telemetry/community/blob/main/community-membership.md).
 In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating

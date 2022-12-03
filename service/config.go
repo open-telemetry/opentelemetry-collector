@@ -19,29 +19,30 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 var (
-	errMissingExporters        = errors.New("no enabled exporters specified in config")
-	errMissingReceivers        = errors.New("no enabled receivers specified in config")
-	errMissingServicePipelines = errors.New("service must have at least one pipeline")
+	errMissingExporters                = errors.New("no exporter configuration specified in config")
+	errMissingReceivers                = errors.New("no receiver configuration specified in config")
+	errMissingServicePipelines         = errors.New("service must have at least one pipeline")
+	errMissingServicePipelineReceivers = errors.New("must have at least one receiver")
+	errMissingServicePipelineExporters = errors.New("must have at least one exporter")
 )
 
 // Config defines the configuration for the various elements of collector or agent.
 type Config struct {
 	// Receivers is a map of ComponentID to Receivers.
-	Receivers map[component.ID]component.ReceiverConfig
+	Receivers map[component.ID]component.Config
 
 	// Exporters is a map of ComponentID to Exporters.
-	Exporters map[component.ID]component.ExporterConfig
+	Exporters map[component.ID]component.Config
 
 	// Processors is a map of ComponentID to Processors.
-	Processors map[component.ID]component.ProcessorConfig
+	Processors map[component.ID]component.Config
 
 	// Extensions is a map of ComponentID to extensions.
-	Extensions map[component.ID]component.ExtensionConfig
+	Extensions map[component.ID]component.Config
 
 	Service ConfigService
 }
@@ -60,8 +61,8 @@ func (cfg *Config) Validate() error {
 
 	// Validate the receiver configuration.
 	for recvID, recvCfg := range cfg.Receivers {
-		if err := recvCfg.Validate(); err != nil {
-			return fmt.Errorf("receiver %q has invalid configuration: %w", recvID, err)
+		if err := component.ValidateConfig(recvCfg); err != nil {
+			return fmt.Errorf("receivers::%s: %w", recvID, err)
 		}
 	}
 
@@ -73,59 +74,44 @@ func (cfg *Config) Validate() error {
 
 	// Validate the exporter configuration.
 	for expID, expCfg := range cfg.Exporters {
-		if err := expCfg.Validate(); err != nil {
-			return fmt.Errorf("exporter %q has invalid configuration: %w", expID, err)
+		if err := component.ValidateConfig(expCfg); err != nil {
+			return fmt.Errorf("exporters::%s: %w", expID, err)
 		}
 	}
 
 	// Validate the processor configuration.
 	for procID, procCfg := range cfg.Processors {
-		if err := procCfg.Validate(); err != nil {
-			return fmt.Errorf("processor %q has invalid configuration: %w", procID, err)
+		if err := component.ValidateConfig(procCfg); err != nil {
+			return fmt.Errorf("processors::%s: %w", procID, err)
 		}
 	}
 
 	// Validate the extension configuration.
 	for extID, extCfg := range cfg.Extensions {
-		if err := extCfg.Validate(); err != nil {
-			return fmt.Errorf("extension %q has invalid configuration: %w", extID, err)
+		if err := component.ValidateConfig(extCfg); err != nil {
+			return fmt.Errorf("extensions::%s: %w", extID, err)
 		}
 	}
 
-	return cfg.validateService()
-}
+	if err := cfg.Service.Validate(); err != nil {
+		return err
+	}
 
-func (cfg *Config) validateService() error {
 	// Check that all enabled extensions in the service are configured.
 	for _, ref := range cfg.Service.Extensions {
 		// Check that the name referenced in the Service extensions exists in the top-level extensions.
 		if cfg.Extensions[ref] == nil {
-			return fmt.Errorf("service references extension %q which does not exist", ref)
+			return fmt.Errorf("service::extensions: references extension %q which is not configured", ref)
 		}
 	}
 
-	// Must have at least one pipeline.
-	if len(cfg.Service.Pipelines) == 0 {
-		return errMissingServicePipelines
-	}
-
-	// Check that all pipelines have at least one receiver and one exporter, and they reference
-	// only configured components.
+	// Check that all pipelines reference only configured components.
 	for pipelineID, pipeline := range cfg.Service.Pipelines {
-		if pipelineID.Type() != component.DataTypeTraces && pipelineID.Type() != component.DataTypeMetrics && pipelineID.Type() != component.DataTypeLogs {
-			return fmt.Errorf("unknown pipeline datatype %q for %v", pipelineID.Type(), pipelineID)
-		}
-
-		// Validate pipeline has at least one receiver.
-		if len(pipeline.Receivers) == 0 {
-			return fmt.Errorf("pipeline %q must have at least one receiver", pipelineID)
-		}
-
 		// Validate pipeline receiver name references.
 		for _, ref := range pipeline.Receivers {
 			// Check that the name referenced in the pipeline's receivers exists in the top-level receivers.
 			if cfg.Receivers[ref] == nil {
-				return fmt.Errorf("pipeline %q references receiver %q which does not exist", pipelineID, ref)
+				return fmt.Errorf("service::pipeline::%s: references receiver %q which is not configured", pipelineID, ref)
 			}
 		}
 
@@ -133,27 +119,19 @@ func (cfg *Config) validateService() error {
 		for _, ref := range pipeline.Processors {
 			// Check that the name referenced in the pipeline's processors exists in the top-level processors.
 			if cfg.Processors[ref] == nil {
-				return fmt.Errorf("pipeline %q references processor %q which does not exist", pipelineID, ref)
+				return fmt.Errorf("service::pipeline::%s: references processor %q which is not configured", pipelineID, ref)
 			}
-		}
-
-		// Validate pipeline has at least one exporter.
-		if len(pipeline.Exporters) == 0 {
-			return fmt.Errorf("pipeline %q must have at least one exporter", pipelineID)
 		}
 
 		// Validate pipeline exporter name references.
 		for _, ref := range pipeline.Exporters {
 			// Check that the name referenced in the pipeline's Exporters exists in the top-level Exporters.
 			if cfg.Exporters[ref] == nil {
-				return fmt.Errorf("pipeline %q references exporter %q which does not exist", pipelineID, ref)
+				return fmt.Errorf("service::pipeline::%s: references exporter %q which is not configured", pipelineID, ref)
 			}
 		}
-
-		if err := cfg.Service.Telemetry.Validate(); err != nil {
-			fmt.Printf("telemetry config validation failed, %v\n", err)
-		}
 	}
+
 	return nil
 }
 
@@ -261,4 +239,58 @@ type ConfigService struct {
 	Pipelines map[component.ID]*ConfigServicePipeline `mapstructure:"pipelines"`
 }
 
-type ConfigServicePipeline = config.Pipeline
+func (cfg *ConfigService) Validate() error {
+	// Must have at least one pipeline.
+	if len(cfg.Pipelines) == 0 {
+		return errMissingServicePipelines
+	}
+
+	// Check that all pipelines have at least one receiver and one exporter, and they reference
+	// only configured components.
+	for pipelineID, pipeline := range cfg.Pipelines {
+		if pipelineID.Type() != component.DataTypeTraces && pipelineID.Type() != component.DataTypeMetrics && pipelineID.Type() != component.DataTypeLogs {
+			return fmt.Errorf("service::pipeline::%s: unknown datatype %q", pipelineID, pipelineID.Type())
+		}
+
+		// Validate pipeline has at least one receiver.
+		if err := pipeline.Validate(); err != nil {
+			return fmt.Errorf("service::pipeline::%s: %w", pipelineID, err)
+		}
+	}
+
+	if err := cfg.Telemetry.Validate(); err != nil {
+		fmt.Printf("service::telemetry config validation failed, %v\n", err)
+	}
+
+	return nil
+}
+
+type ConfigServicePipeline struct {
+	Receivers  []component.ID `mapstructure:"receivers"`
+	Processors []component.ID `mapstructure:"processors"`
+	Exporters  []component.ID `mapstructure:"exporters"`
+}
+
+func (cfg *ConfigServicePipeline) Validate() error {
+	// Validate pipeline has at least one receiver.
+	if len(cfg.Receivers) == 0 {
+		return errMissingServicePipelineReceivers
+	}
+
+	// Validate pipeline has at least one exporter.
+	if len(cfg.Exporters) == 0 {
+		return errMissingServicePipelineExporters
+	}
+
+	// Validate no processors are duplicated within a pipeline.
+	procSet := make(map[component.ID]struct{}, len(cfg.Processors))
+	for _, ref := range cfg.Processors {
+		// Ensure no processors are duplicated within the pipeline
+		if _, exists := procSet[ref]; exists {
+			return fmt.Errorf("references processor %q multiple times", ref)
+		}
+		procSet[ref] = struct{}{}
+	}
+
+	return nil
+}
