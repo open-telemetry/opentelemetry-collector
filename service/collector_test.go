@@ -232,7 +232,6 @@ func TestCollectorFailedShutdown(t *testing.T) {
 		assert.EqualError(t, col.Run(context.Background()), "failed to shutdown collector telemetry: err1")
 	}()
 
-
 	assert.Eventually(t, func() bool {
 		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
