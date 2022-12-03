@@ -48,8 +48,6 @@ type ConfigProvider interface {
 	//
 	// Should never be called concurrently with itself or Get.
 	Shutdown(ctx context.Context) error
-	// DryRunGet validates the configuration, prints out all related errors without running the collector
-	DryRunGet(ctx context.Context, factories component.Factories) (*Config, error, bool)
 }
 
 type configProvider struct {
@@ -98,24 +96,6 @@ func (cm *configProvider) Get(ctx context.Context, factories Factories) (*Config
 		Extensions: cfg.Extensions.Configs(),
 		Service:    cfg.Service,
 	}, nil
-}
-func (cm *configProvider) DryRunGet(ctx context.Context, factories component.Factories) (*Config, error, bool) {
-	retMap, err := cm.mapResolver.Resolve(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("cannot resolve the configuration: %w", err), false
-	}
-
-	var cfg *Config
-	cfg, err, errorcheck := configunmarshaler.New().DryRunUnmarshal(retMap, factories)
-	if err != nil {
-		return nil, fmt.Errorf("cannot unmarshal the configuration: %w", err), false
-	}
-	if errorcheck {
-		return nil, nil, errorcheck
-	}
-
-	cfg.DryRunValidate()
-	return nil, nil, false
 }
 
 func (cm *configProvider) Watch() <-chan error {
