@@ -221,9 +221,9 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, tt obsreporttest.TestTele
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		require.NoError(t, obsreporttest.CheckExporterLogs(tt, fakeLogsExporterName, 0, int64(numBatches*ld.LogRecordCount())))
+		require.NoError(t, tt.CheckExporterLogs(0, int64(numBatches*ld.LogRecordCount())))
 	} else {
-		require.NoError(t, obsreporttest.CheckExporterLogs(tt, fakeLogsExporterName, int64(numBatches*ld.LogRecordCount()), 0))
+		require.NoError(t, tt.CheckExporterLogs(int64(numBatches*ld.LogRecordCount()), 0))
 	}
 }
 

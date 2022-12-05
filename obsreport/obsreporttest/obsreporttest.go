@@ -82,6 +82,60 @@ func (tts *TestTelemetry) ToReceiverCreateSettings() component.ReceiverCreateSet
 	return set
 }
 
+// CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckExporterTraces(sentSpans, sendFailedSpans int64) error {
+	return tts.otelPrometheusChecker.checkExporterTraces(tts.id, sentSpans, sendFailedSpans)
+}
+
+// CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckExporterMetrics(sentMetricsPoints, sendFailedMetricsPoints int64) error {
+	return tts.otelPrometheusChecker.checkExporterMetrics(tts.id, sentMetricsPoints, sendFailedMetricsPoints)
+}
+
+// CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords int64) error {
+	return tts.otelPrometheusChecker.checkExporterLogs(tts.id, sentLogRecords, sendFailedLogRecords)
+}
+
+// CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckProcessorTraces(acceptedSpans, refusedSpans, droppedSpans int64) error {
+	return tts.otelPrometheusChecker.checkProcessorTraces(tts.id, acceptedSpans, refusedSpans, droppedSpans)
+}
+
+// CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckProcessorMetrics(acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
+	return tts.otelPrometheusChecker.checkProcessorMetrics(tts.id, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints)
+}
+
+// CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckProcessorLogs(acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
+	return tts.otelPrometheusChecker.checkProcessorLogs(tts.id, acceptedLogRecords, refusedLogRecords, droppedLogRecords)
+}
+
+// CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckReceiverTraces(protocol string, acceptedSpans, droppedSpans int64) error {
+	return tts.otelPrometheusChecker.checkReceiverTraces(tts.id, protocol, acceptedSpans, droppedSpans)
+}
+
+// CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckReceiverLogs(protocol string, acceptedLogRecords, droppedLogRecords int64) error {
+	return tts.otelPrometheusChecker.checkReceiverLogs(tts.id, protocol, acceptedLogRecords, droppedLogRecords)
+}
+
+// CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
+// When this function is called it is required to also call SetupTelemetry as first thing.
+func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
+	return tts.otelPrometheusChecker.checkReceiverMetrics(tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
+}
+
 // Shutdown unregisters any views and shuts down the SpanRecorder
 func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	view.Unregister(tts.views...)
@@ -144,56 +198,47 @@ func SetupTelemetryWithID(id component.ID) (TestTelemetry, error) {
 	return settings, nil
 }
 
-// CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
+// Deprecated: [v0.67.0] use TestTelemetry.CheckExporterTraces.
 func CheckExporterTraces(tts TestTelemetry, exporter component.ID, sentSpans, sendFailedSpans int64) error {
 	return tts.otelPrometheusChecker.checkExporterTraces(exporter, sentSpans, sendFailedSpans)
 }
 
-// CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
+// Deprecated: [v0.67.0] use TestTelemetry.CheckExporterMetrics.
 func CheckExporterMetrics(tts TestTelemetry, exporter component.ID, sentMetricsPoints, sendFailedMetricsPoints int64) error {
 	return tts.otelPrometheusChecker.checkExporterMetrics(exporter, sentMetricsPoints, sendFailedMetricsPoints)
 }
 
-// CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
+// Deprecated: [v0.67.0] use TestTelemetry.CheckExporterLogs.
 func CheckExporterLogs(tts TestTelemetry, exporter component.ID, sentLogRecords, sendFailedLogRecords int64) error {
 	return tts.otelPrometheusChecker.checkExporterLogs(exporter, sentLogRecords, sendFailedLogRecords)
 }
 
-// CheckProcessorTraces checks that for the current exported values for trace exporter metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
+// Deprecated: [v0.67.0] use TestTelemetry.CheckProcessorTraces.
 func CheckProcessorTraces(tts TestTelemetry, processor component.ID, acceptedSpans, refusedSpans, droppedSpans int64) error {
 	return tts.otelPrometheusChecker.checkProcessorTraces(processor, acceptedSpans, refusedSpans, droppedSpans)
 }
 
-// CheckProcessorMetrics checks that for the current exported values for metrics exporter metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
+// Deprecated: [v0.67.0] use TestTelemetry.CheckProcessorMetrics.
 func CheckProcessorMetrics(tts TestTelemetry, processor component.ID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
 	return tts.otelPrometheusChecker.checkProcessorMetrics(processor, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints)
 }
 
-// CheckProcessorLogs checks that for the current exported values for logs exporter metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
+// Deprecated: [v0.67.0] use TestTelemetry.CheckProcessorLogs.
 func CheckProcessorLogs(tts TestTelemetry, processor component.ID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
 	return tts.otelPrometheusChecker.checkProcessorLogs(processor, acceptedLogRecords, refusedLogRecords, droppedLogRecords)
 }
 
-// CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
+// Deprecated: [v0.67.0] use TestTelemetry.CheckReceiverTraces.
 func CheckReceiverTraces(tts TestTelemetry, receiver component.ID, protocol string, acceptedSpans, droppedSpans int64) error {
 	return tts.otelPrometheusChecker.checkReceiverTraces(receiver, protocol, acceptedSpans, droppedSpans)
 }
 
-// CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
+// Deprecated: [v0.67.0] use TestTelemetry.CheckReceiverLogs.
 func CheckReceiverLogs(tts TestTelemetry, receiver component.ID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
 	return tts.otelPrometheusChecker.checkReceiverLogs(receiver, protocol, acceptedLogRecords, droppedLogRecords)
 }
 
-// CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
-// When this function is called it is required to also call SetupTelemetry as first thing.
+// Deprecated: [v0.67.0] use TestTelemetry.CheckReceiverMetrics.
 func CheckReceiverMetrics(tts TestTelemetry, receiver component.ID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
 	return tts.otelPrometheusChecker.checkReceiverMetrics(receiver, protocol, acceptedMetricPoints, droppedMetricPoints)
 }

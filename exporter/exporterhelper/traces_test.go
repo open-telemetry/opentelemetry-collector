@@ -222,9 +222,9 @@ func checkRecordedMetricsForTracesExporter(t *testing.T, tt obsreporttest.TestTe
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		require.NoError(t, obsreporttest.CheckExporterTraces(tt, fakeTracesExporterName, 0, int64(numBatches*td.SpanCount())))
+		require.NoError(t, tt.CheckExporterTraces(0, int64(numBatches*td.SpanCount())))
 	} else {
-		require.NoError(t, obsreporttest.CheckExporterTraces(tt, fakeTracesExporterName, int64(numBatches*td.SpanCount()), 0))
+		require.NoError(t, tt.CheckExporterTraces(int64(numBatches*td.SpanCount()), 0))
 	}
 }
 
