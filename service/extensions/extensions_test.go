@@ -39,7 +39,7 @@ func TestBuildExtensions(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		factories         component.Factories
+		factories         map[component.Type]extension.Factory
 		extensionsConfigs map[component.ID]component.Config
 		serviceExtensions []component.ID
 		wantErrMsg        string
@@ -63,10 +63,8 @@ func TestBuildExtensions(t *testing.T) {
 		},
 		{
 			name: "error_on_create_extension",
-			factories: component.Factories{
-				Extensions: map[component.Type]extension.Factory{
-					errExtensionFactory.Type(): errExtensionFactory,
-				},
+			factories: map[component.Type]extension.Factory{
+				errExtensionFactory.Type(): errExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
 				component.NewID(errExtensionFactory.Type()): errExtensionConfig,
@@ -78,10 +76,8 @@ func TestBuildExtensions(t *testing.T) {
 		},
 		{
 			name: "bad_factory",
-			factories: component.Factories{
-				Extensions: map[component.Type]extension.Factory{
-					badExtensionFactory.Type(): badExtensionFactory,
-				},
+			factories: map[component.Type]extension.Factory{
+				badExtensionFactory.Type(): badExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
 				component.NewID(badExtensionFactory.Type()): badExtensionCfg,
@@ -99,7 +95,7 @@ func TestBuildExtensions(t *testing.T) {
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Configs:   tt.extensionsConfigs,
-				Factories: tt.factories.Extensions,
+				Factories: tt.factories,
 			}, tt.serviceExtensions)
 			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
