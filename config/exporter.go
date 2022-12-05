@@ -21,8 +21,6 @@ import (
 // ExporterSettings defines common settings for a component.Exporter configuration.
 // Specific exporters can embed this struct and extend it with more fields if needed.
 //
-// It is highly recommended to "override" the Validate() function.
-//
 // When embedded in the exporter config, it must be with `mapstructure:",squash"` tag.
 type ExporterSettings struct {
 	settings

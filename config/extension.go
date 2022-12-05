@@ -20,8 +20,6 @@ import (
 // ExtensionSettings defines common settings for a component.Extension configuration.
 // Specific processors can embed this struct and extend it with more fields if needed.
 //
-// It is highly recommended to "override" the Validate() function.
-//
 // When embedded in the extension config, it must be with `mapstructure:",squash"` tag.
 type ExtensionSettings struct {
 	settings
