@@ -20,43 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMakeExtensionFactoryMap(t *testing.T) {
-	type testCase struct {
-		name string
-		in   []ExtensionFactory
-		out  map[Type]ExtensionFactory
-	}
-
-	p1 := NewExtensionFactory("p1", nil, nil, StabilityLevelAlpha)
-	p2 := NewExtensionFactory("p2", nil, nil, StabilityLevelAlpha)
-	testCases := []testCase{
-		{
-			name: "different names",
-			in:   []ExtensionFactory{p1, p2},
-			out: map[Type]ExtensionFactory{
-				p1.Type(): p1,
-				p2.Type(): p2,
-			},
-		},
-		{
-			name: "same name",
-			in:   []ExtensionFactory{p1, p2, NewExtensionFactory("p1", nil, nil, StabilityLevelAlpha)},
-		},
-	}
-	for i := range testCases {
-		tt := testCases[i]
-		t.Run(tt.name, func(t *testing.T) {
-			out, err := MakeExtensionFactoryMap(tt.in...)
-			if tt.out == nil {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, tt.out, out)
-		})
-	}
-}
-
 func TestMakeReceiverFactoryMap(t *testing.T) {
 	type testCase struct {
 		name string

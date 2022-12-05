@@ -5,7 +5,7 @@ change_type: deprecation
 component: component
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate Extension related -s from component package in favor of extension package.
+note: Deprecate Extension related types/funcs from component package in favor of extension package.
 
 # One or more tracking issues or pull requests related to the change
 issues: [6578]

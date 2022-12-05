@@ -29,7 +29,7 @@ type nopExtension struct {
 	component.ShutdownFunc
 }
 
-func TestNewExtensionFactory(t *testing.T) {
+func TestNewFactory(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := config.NewExtensionSettings(component.NewID(typeStr))
 	nopExtensionInstance := new(nopExtension)
@@ -48,4 +48,41 @@ func TestNewExtensionFactory(t *testing.T) {
 	ext, err := factory.CreateExtension(context.Background(), CreateSettings{}, &defaultCfg)
 	assert.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
+}
+
+func TestMakeFactoryMap(t *testing.T) {
+	type testCase struct {
+		name string
+		in   []Factory
+		out  map[component.Type]Factory
+	}
+
+	p1 := NewFactory("p1", nil, nil, component.StabilityLevelAlpha)
+	p2 := NewFactory("p2", nil, nil, component.StabilityLevelAlpha)
+	testCases := []testCase{
+		{
+			name: "different names",
+			in:   []Factory{p1, p2},
+			out: map[component.Type]Factory{
+				p1.Type(): p1,
+				p2.Type(): p2,
+			},
+		},
+		{
+			name: "same name",
+			in:   []Factory{p1, p2, NewFactory("p1", nil, nil, component.StabilityLevelAlpha)},
+		},
+	}
+	for i := range testCases {
+		tt := testCases[i]
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := MakeFactoryMap(tt.in...)
+			if tt.out == nil {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.out, out)
+		})
+	}
 }
