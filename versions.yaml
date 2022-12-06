@@ -14,7 +14,7 @@
 
 module-sets:
   stable:
-    version: v0.66.0
+    version: v1.0.0-rc1
     modules:
       - go.opentelemetry.io/collector/pdata
   beta:
