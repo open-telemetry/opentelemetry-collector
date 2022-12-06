@@ -92,7 +92,7 @@ type Collector struct {
 }
 
 // New creates and returns a new instance of Collector.
-// Deprecated: [v0.67.0] use otelcol.New
+// Deprecated: [v0.67.0] use otelcol.NewCollector
 func New(set CollectorSettings) (*Collector, error) {
 	if set.ConfigProvider == nil {
 		return nil, errors.New("invalid nil config provider")
