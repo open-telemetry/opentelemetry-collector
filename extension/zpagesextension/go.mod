@@ -29,7 +29,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.66.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.66.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect

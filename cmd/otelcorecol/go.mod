@@ -66,7 +66,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a // indirect
 	go.opentelemetry.io/collector/consumer v0.66.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.66.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1 // indirect
 	go.opentelemetry.io/collector/semconv v0.66.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
