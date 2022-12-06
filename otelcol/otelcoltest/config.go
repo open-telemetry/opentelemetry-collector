@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package servicetest // import "go.opentelemetry.io/collector/service/servicetest"
+package otelcoltest // import "go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 import (
 	"context"
@@ -24,13 +24,13 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/otelcol"
 )
 
 // LoadConfig loads a config.Config  from file, and does NOT validate the configuration.
-func LoadConfig(fileName string, factories component.Factories) (*service.Config, error) {
+func LoadConfig(fileName string, factories component.Factories) (*otelcol.Config, error) {
 	// Read yaml config from file
-	provider, err := service.NewConfigProvider(service.ConfigProviderSettings{
+	provider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:       []string{fileName},
 			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New()),
@@ -44,7 +44,7 @@ func LoadConfig(fileName string, factories component.Factories) (*service.Config
 }
 
 // LoadConfigAndValidate loads a config from the file, and validates the configuration.
-func LoadConfigAndValidate(fileName string, factories component.Factories) (*service.Config, error) {
+func LoadConfigAndValidate(fileName string, factories component.Factories) (*otelcol.Config, error) {
 	cfg, err := LoadConfig(fileName, factories)
 	if err != nil {
 		return nil, err

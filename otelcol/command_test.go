@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package otelcol
 
 import (
 	"path/filepath"
@@ -23,6 +23,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
 func TestNewCommandVersion(t *testing.T) {
@@ -42,7 +45,14 @@ func TestNewCommandInvalidComponent(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
+	cfgProvider, err := NewConfigProvider(
+		ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:       []string{filepath.Join("testdata", "otelcol-invalid.yaml")},
+				Providers:  map[string]confmap.Provider{"file": fileprovider.New()},
+				Converters: []confmap.Converter{expandconverter.New()},
+			},
+		})
 	require.NoError(t, err)
 
 	cmd := NewCommand(CollectorSettings{Factories: factories, ConfigProvider: cfgProvider})

@@ -42,6 +42,7 @@ type settings struct {
 }
 
 // CollectorSettings holds configuration for creating a new Collector.
+// Deprecated: [v0.66.0] use otelcol.CollectorSettings.
 type CollectorSettings struct {
 	// Factories component factories.
 	Factories component.Factories

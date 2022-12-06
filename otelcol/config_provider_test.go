@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package otelcol
 
 import (
 	"context"
@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -39,9 +40,9 @@ var configNop = &Config{
 	Processors: map[component.ID]component.Config{component.NewID("nop"): componenttest.NewNopProcessorFactory().CreateDefaultConfig()},
 	Exporters:  map[component.ID]component.Config{component.NewID("nop"): componenttest.NewNopExporterFactory().CreateDefaultConfig()},
 	Extensions: map[component.ID]component.Config{component.NewID("nop"): extensiontest.NewNopFactory().CreateDefaultConfig()},
-	Service: ConfigService{
+	Service: service.ConfigService{
 		Extensions: []component.ID{component.NewID("nop")},
-		Pipelines: map[component.ID]*ConfigServicePipeline{
+		Pipelines: map[component.ID]*service.ConfigServicePipeline{
 			component.NewID("traces"): {
 				Receivers:  []component.ID{component.NewID("nop")},
 				Processors: []component.ID{component.NewID("nop")},

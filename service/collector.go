@@ -34,12 +34,17 @@ import (
 )
 
 // State defines Collector's state.
+// Deprecated: [v0.67.0] use otelcol.State
 type State int
 
 const (
+	// Deprecated: [v0.67.0] use otelcol.StateStarting
 	StateStarting State = iota
+	// Deprecated: [v0.67.0] use otelcol.StateRunning
 	StateRunning
+	// Deprecated: [v0.67.0] use otelcol.StateClosing
 	StateClosing
+	// Deprecated: [v0.67.0] use otelcol.StateClosed
 	StateClosed
 )
 
@@ -69,6 +74,7 @@ func (s State) String() string {
 // - Users can call (*Collector).Shutdown anytime to shut down the collector.
 
 // Collector represents a server providing the OpenTelemetry Collector service.
+// Deprecated: [v0.67.0] use otelcol.Collector
 type Collector struct {
 	set CollectorSettings
 
@@ -86,6 +92,7 @@ type Collector struct {
 }
 
 // New creates and returns a new instance of Collector.
+// Deprecated: [v0.67.0] use otelcol.NewCollector
 func New(set CollectorSettings) (*Collector, error) {
 	if set.ConfigProvider == nil {
 		return nil, errors.New("invalid nil config provider")

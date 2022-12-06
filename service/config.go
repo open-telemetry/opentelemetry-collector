@@ -30,7 +30,7 @@ var (
 	errMissingServicePipelineExporters = errors.New("must have at least one exporter")
 )
 
-// Config defines the configuration for the various elements of collector or agent.
+// Deprecated: [v0.67.0] use otelcol.Config
 type Config struct {
 	// Receivers is a map of ComponentID to Receivers.
 	Receivers map[component.ID]component.Config
