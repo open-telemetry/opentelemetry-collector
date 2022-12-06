@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package collector handles the command-line, configuration, and runs the
+// Package otelcol handles the command-line, configuration, and runs the
 // OpenTelemetry Collector.
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
