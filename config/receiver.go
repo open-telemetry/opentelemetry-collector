@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// ReceiverSettings defines common settings for a component.Receiver configuration.
+// ReceiverSettings defines common settings for a receiver.Receiver configuration.
 // Specific receivers can embed this struct and extend it with more fields if needed.
 //
 // When embedded in the receiver config it must be with `mapstructure:",squash"` tag.

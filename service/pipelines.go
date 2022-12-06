@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
@@ -183,8 +184,8 @@ type pipelinesSettings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	// ReceiverFactories maps receiver type names in the config to the respective component.ReceiverFactory.
-	ReceiverFactories map[component.Type]component.ReceiverFactory
+	// ReceiverFactories maps receiver type names in the config to the respective receiver.Factory.
+	ReceiverFactories map[component.Type]receiver.Factory
 
 	// ReceiverConfigs is a map of component.ID to component.Config.
 	ReceiverConfigs map[component.ID]component.Config
@@ -498,7 +499,7 @@ func buildReceiver(ctx context.Context,
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	cfgs map[component.ID]component.Config,
-	factories map[component.Type]component.ReceiverFactory,
+	factories map[component.Type]receiver.Factory,
 	id component.ID,
 	pipelineID component.ID,
 	nexts []baseConsumer,
@@ -513,7 +514,7 @@ func buildReceiver(ctx context.Context,
 		return nil, fmt.Errorf("receiver factory not available for: %q", id)
 	}
 
-	set := component.ReceiverCreateSettings{
+	set := receiver.CreateSettings{
 		ID:                id,
 		TelemetrySettings: settings,
 		BuildInfo:         buildInfo,
@@ -529,7 +530,7 @@ func buildReceiver(ctx context.Context,
 	return recv, nil
 }
 
-func createReceiver(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory component.ReceiverFactory) (component.Component, error) {
+func createReceiver(ctx context.Context, set receiver.CreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory receiver.Factory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		var consumers []consumer.Traces
@@ -560,7 +561,7 @@ func receiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 		zap.String(components.ZapKindPipeline, string(dt)))
 }
 
-func getReceiverStabilityLevel(factory component.ReceiverFactory, dt component.DataType) component.StabilityLevel {
+func getReceiverStabilityLevel(factory receiver.Factory, dt component.DataType) component.StabilityLevel {
 	switch dt {
 	case component.DataTypeTraces:
 		return factory.TracesReceiverStability()

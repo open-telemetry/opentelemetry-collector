@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: Move tests back to component package after config.*Settings are removed.
-
-package component_test
+package receiver
 
 import (
 	"context"
@@ -30,52 +28,52 @@ import (
 func TestNewReceiverFactory(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := config.NewReceiverSettings(component.NewID(typeStr))
-	factory := component.NewReceiverFactory(
+	factory := NewFactory(
 		typeStr,
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
 }
 
 func TestNewReceiverFactory_WithOptions(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := config.NewReceiverSettings(component.NewID(typeStr))
-	factory := component.NewReceiverFactory(
+	factory := NewFactory(
 		typeStr,
 		func() component.Config { return &defaultCfg },
-		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelDeprecated),
-		component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelAlpha),
-		component.WithLogsReceiver(createLogsReceiver, component.StabilityLevelStable))
+		WithTraces(createTraces, component.StabilityLevelDeprecated),
+		WithMetrics(createMetrics, component.StabilityLevelAlpha),
+		WithLogs(createLogs, component.StabilityLevelStable))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelDeprecated, factory.TracesReceiverStability())
-	_, err := factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsReceiverStability())
-	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsReceiver(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelStable, factory.LogsReceiverStability())
-	_, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsReceiver(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
-func createTracesReceiver(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Traces) (component.TracesReceiver, error) {
+func createTraces(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error) {
 	return nil, nil
 }
 
-func createMetricsReceiver(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetrics(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error) {
 	return nil, nil
 }
 
-func createLogsReceiver(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Logs) (component.LogsReceiver, error) {
+func createLogs(context.Context, CreateSettings, component.Config, consumer.Logs) (Logs, error) {
 	return nil, nil
 }

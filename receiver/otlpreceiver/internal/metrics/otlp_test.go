@@ -26,11 +26,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestExport(t *testing.T) {
@@ -87,7 +87,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = component.NewIDWithName("otlp", "metrics")
 	r, err := New(mc, set)
 	require.NoError(t, err)

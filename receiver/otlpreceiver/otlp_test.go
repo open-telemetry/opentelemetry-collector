@@ -53,6 +53,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 )
 
@@ -193,7 +195,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 	// Traces
 	tr, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -203,7 +205,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 	// Metrics
 	mr, err := NewFactory().CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -213,7 +215,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 	// Logs
 	lr, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -728,7 +730,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -797,7 +799,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	// TLS is resolved during Start for HTTP.
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -821,7 +823,7 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -866,8 +868,8 @@ func newHTTPReceiver(t *testing.T, endpoint string, tc consumer.Traces, mc consu
 	return newReceiver(t, factory, cfg, otlpReceiverID, tc, mc)
 }
 
-func newReceiver(t *testing.T, factory component.ReceiverFactory, cfg *Config, id component.ID, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	set := componenttest.NewNopReceiverCreateSettings()
+func newReceiver(t *testing.T, factory receiver.Factory, cfg *Config, id component.ID, tc consumer.Traces, mc consumer.Metrics) component.Component {
+	set := receivertest.NewNopCreateSettings()
 	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 	set.ID = id
 	var r component.Component
@@ -910,7 +912,7 @@ func TestShutdown(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	cfg.HTTP.Endpoint = endpointHTTP
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),

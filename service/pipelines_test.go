@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 )
 
@@ -181,7 +183,7 @@ func TestBuildPipelines(t *testing.T) {
 			pipelines, err := buildPipelines(context.Background(), pipelinesSettings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
-				ReceiverFactories: map[component.Type]component.ReceiverFactory{
+				ReceiverFactories: map[component.Type]receiver.Factory{
 					testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
 				},
 				ReceiverConfigs: map[component.ID]component.Config{
@@ -289,7 +291,7 @@ func TestBuildPipelines(t *testing.T) {
 }
 
 func TestBuildErrors(t *testing.T) {
-	nopReceiverFactory := componenttest.NewNopReceiverFactory()
+	nopReceiverFactory := receivertest.NewNopFactory()
 	nopProcessorFactory := componenttest.NewNopProcessorFactory()
 	nopExporterFactory := exportertest.NewNopFactory()
 	badReceiverFactory := newBadReceiverFactory()
@@ -582,7 +584,7 @@ func TestBuildErrors(t *testing.T) {
 			set := test.settings
 			set.BuildInfo = component.NewDefaultBuildInfo()
 			set.Telemetry = componenttest.NewNopTelemetrySettings()
-			set.ReceiverFactories = map[component.Type]component.ReceiverFactory{
+			set.ReceiverFactories = map[component.Type]receiver.Factory{
 				nopReceiverFactory.Type(): nopReceiverFactory,
 				badReceiverFactory.Type(): badReceiverFactory,
 			}
@@ -605,14 +607,14 @@ func TestFailToStartAndShutdown(t *testing.T) {
 	errReceiverFactory := newErrReceiverFactory()
 	errProcessorFactory := newErrProcessorFactory()
 	errExporterFactory := newErrExporterFactory()
-	nopReceiverFactory := componenttest.NewNopReceiverFactory()
+	nopReceiverFactory := receivertest.NewNopFactory()
 	nopProcessorFactory := componenttest.NewNopProcessorFactory()
 	nopExporterFactory := exportertest.NewNopFactory()
 
 	set := pipelinesSettings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
-		ReceiverFactories: map[component.Type]component.ReceiverFactory{
+		ReceiverFactories: map[component.Type]receiver.Factory{
 			nopReceiverFactory.Type(): nopReceiverFactory,
 			errReceiverFactory.Type(): errReceiverFactory,
 		},
@@ -683,8 +685,8 @@ func TestFailToStartAndShutdown(t *testing.T) {
 	}
 }
 
-func newBadReceiverFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory("bf", func() component.Config {
+func newBadReceiverFactory() receiver.Factory {
+	return receiver.NewFactory("bf", func() component.Config {
 		return &struct {
 			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
@@ -713,21 +715,21 @@ func newBadExporterFactory() exporter.Factory {
 	})
 }
 
-func newErrReceiverFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory("err", func() component.Config {
+func newErrReceiverFactory() receiver.Factory {
+	return receiver.NewFactory("err", func() component.Config {
 		return &struct {
 			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
 			ReceiverSettings: config.NewReceiverSettings(component.NewID("bf")),
 		}
 	},
-		component.WithTracesReceiver(func(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Traces) (component.TracesReceiver, error) {
+		receiver.WithTraces(func(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithLogsReceiver(func(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Logs) (component.LogsReceiver, error) {
+		receiver.WithLogs(func(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithMetricsReceiver(func(context.Context, component.ReceiverCreateSettings, component.Config, consumer.Metrics) (component.MetricsReceiver, error) {
+		receiver.WithMetrics(func(context.Context, receiver.CreateSettings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)

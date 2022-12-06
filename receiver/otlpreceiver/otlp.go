@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -49,13 +50,13 @@ type otlpReceiver struct {
 	logReceiver     *logs.Receiver
 	shutdownWG      sync.WaitGroup
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 }
 
 // newOtlpReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOtlpReceiver(cfg *Config, settings component.ReceiverCreateSettings) *otlpReceiver {
+func newOtlpReceiver(cfg *Config, settings receiver.CreateSettings) *otlpReceiver {
 	r := &otlpReceiver{
 		cfg:      cfg,
 		settings: settings,

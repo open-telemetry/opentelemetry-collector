@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -45,7 +46,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationSet := componenttest.NewNopReceiverCreateSettings()
+	creationSet := receivertest.NewNopCreateSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -113,7 +114,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := componenttest.NewNopReceiverCreateSettings()
+	creationSet := receivertest.NewNopCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
@@ -189,7 +190,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := componenttest.NewNopReceiverCreateSettings()
+	creationSet := receivertest.NewNopCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
@@ -292,7 +293,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := componenttest.NewNopReceiverCreateSettings()
+	creationSet := receivertest.NewNopCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateLogsReceiver(ctx, creationSet, tt.cfg, tt.sink)
