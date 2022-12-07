@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -64,7 +65,7 @@ func TestMetricsExporter_InvalidName(t *testing.T) {
 }
 
 func TestMetricsExporter_NilLogger(t *testing.T) {
-	me, err := NewMetricsExporter(context.Background(), component.ExporterCreateSettings{}, &fakeMetricsExporterConfig, newPushMetricsData(nil))
+	me, err := NewMetricsExporter(context.Background(), exporter.CreateSettings{}, &fakeMetricsExporterConfig, newPushMetricsData(nil))
 	require.Nil(t, me)
 	require.Equal(t, errNilLogger, err)
 }
@@ -213,7 +214,7 @@ func newPushMetricsData(retError error) consumer.ConsumeMetricsFunc {
 	}
 }
 
-func checkRecordedMetricsForMetricsExporter(t *testing.T, tt obsreporttest.TestTelemetry, me component.MetricsExporter, wantError error) {
+func checkRecordedMetricsForMetricsExporter(t *testing.T, tt obsreporttest.TestTelemetry, me exporter.Metrics, wantError error) {
 	md := testdata.GenerateMetrics(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -229,7 +230,7 @@ func checkRecordedMetricsForMetricsExporter(t *testing.T, tt obsreporttest.TestT
 	}
 }
 
-func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me component.MetricsExporter, numRequests int, wantError error) {
+func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me exporter.Metrics, numRequests int, wantError error) {
 	md := testdata.GenerateMetrics(1)
 	ctx, span := tracer.Start(context.Background(), fakeMetricsParentSpanName)
 	defer span.End()
@@ -238,7 +239,7 @@ func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me component.Metr
 	}
 }
 
-func checkWrapSpanForMetricsExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, me component.MetricsExporter, wantError error, numMetricPoints int64) {
+func checkWrapSpanForMetricsExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, me exporter.Metrics, wantError error, numMetricPoints int64) {
 	const numRequests = 5
 	generateMetricsTraffic(t, tracer, me, numRequests, wantError)
 

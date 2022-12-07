@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 )
@@ -193,7 +194,7 @@ func TestBuildPipelines(t *testing.T) {
 					component.NewID("exampleprocessor"):              testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
 					component.NewIDWithName("exampleprocessor", "1"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
 				},
-				ExporterFactories: map[component.Type]component.ExporterFactory{
+				ExporterFactories: map[component.Type]exporter.Factory{
 					testcomponents.ExampleExporterFactory.Type(): testcomponents.ExampleExporterFactory,
 				},
 				ExporterConfigs: map[component.ID]component.Config{
@@ -209,15 +210,15 @@ func TestBuildPipelines(t *testing.T) {
 			for dt, pipeline := range test.pipelineConfigs {
 				// Verify exporters created, started and empty.
 				for _, expID := range pipeline.Exporters {
-					exporter := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
-					assert.True(t, exporter.Started)
+					exp := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
+					assert.True(t, exp.Started)
 					switch dt.Type() {
 					case component.DataTypeTraces:
-						assert.Len(t, exporter.Traces, 0)
+						assert.Len(t, exp.Traces, 0)
 					case component.DataTypeMetrics:
-						assert.Len(t, exporter.Metrics, 0)
+						assert.Len(t, exp.Metrics, 0)
 					case component.DataTypeLogs:
-						assert.Len(t, exporter.Logs, 0)
+						assert.Len(t, exp.Logs, 0)
 					}
 				}
 
@@ -267,19 +268,19 @@ func TestBuildPipelines(t *testing.T) {
 
 				// Now verify that exporters received data, and are shutdown.
 				for _, expID := range pipeline.Exporters {
-					exporter := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
+					exp := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
 					switch dt.Type() {
 					case component.DataTypeTraces:
-						require.Len(t, exporter.Traces, test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateTraces(1), exporter.Traces[0])
+						require.Len(t, exp.Traces, test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateTraces(1), exp.Traces[0])
 					case component.DataTypeMetrics:
-						require.Len(t, exporter.Metrics, test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateMetrics(1), exporter.Metrics[0])
+						require.Len(t, exp.Metrics, test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateMetrics(1), exp.Metrics[0])
 					case component.DataTypeLogs:
-						require.Len(t, exporter.Logs, test.expectedRequests)
-						assert.EqualValues(t, testdata.GenerateLogs(1), exporter.Logs[0])
+						require.Len(t, exp.Logs, test.expectedRequests)
+						assert.EqualValues(t, testdata.GenerateLogs(1), exp.Logs[0])
 					}
-					assert.True(t, exporter.Stopped)
+					assert.True(t, exp.Stopped)
 				}
 			}
 		})
@@ -588,7 +589,7 @@ func TestBuildErrors(t *testing.T) {
 				nopProcessorFactory.Type(): nopProcessorFactory,
 				badProcessorFactory.Type(): badProcessorFactory,
 			}
-			set.ExporterFactories = map[component.Type]component.ExporterFactory{
+			set.ExporterFactories = map[component.Type]exporter.Factory{
 				nopExporterFactory.Type(): nopExporterFactory,
 				badExporterFactory.Type(): badExporterFactory,
 			}
@@ -626,7 +627,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			component.NewID(nopProcessorFactory.Type()): nopProcessorFactory.CreateDefaultConfig(),
 			component.NewID(errProcessorFactory.Type()): errProcessorFactory.CreateDefaultConfig(),
 		},
-		ExporterFactories: map[component.Type]component.ExporterFactory{
+		ExporterFactories: map[component.Type]exporter.Factory{
 			nopExporterFactory.Type(): nopExporterFactory,
 			errExporterFactory.Type(): errExporterFactory,
 		},
@@ -701,8 +702,8 @@ func newBadProcessorFactory() component.ProcessorFactory {
 	})
 }
 
-func newBadExporterFactory() component.ExporterFactory {
-	return component.NewExporterFactory("bf", func() component.Config {
+func newBadExporterFactory() exporter.Factory {
+	return exporter.NewFactory("bf", func() component.Config {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
@@ -751,21 +752,21 @@ func newErrProcessorFactory() component.ProcessorFactory {
 	)
 }
 
-func newErrExporterFactory() component.ExporterFactory {
-	return component.NewExporterFactory("err", func() component.Config {
+func newErrExporterFactory() exporter.Factory {
+	return exporter.NewFactory("err", func() component.Config {
 		return &struct {
 			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
 			ExporterSettings: config.NewExporterSettings(component.NewID("bf")),
 		}
 	},
-		component.WithTracesExporter(func(context.Context, component.ExporterCreateSettings, component.Config) (component.TracesExporter, error) {
+		exporter.WithTraces(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithLogsExporter(func(context.Context, component.ExporterCreateSettings, component.Config) (component.LogsExporter, error) {
+		exporter.WithLogs(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithMetricsExporter(func(context.Context, component.ExporterCreateSettings, component.Config) (component.MetricsExporter, error) {
+		exporter.WithMetrics(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)

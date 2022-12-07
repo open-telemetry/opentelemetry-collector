@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -65,7 +66,7 @@ func TestLogsExporter_InvalidName(t *testing.T) {
 }
 
 func TestLogsExporter_NilLogger(t *testing.T) {
-	le, err := NewLogsExporter(context.Background(), component.ExporterCreateSettings{}, &fakeLogsExporterConfig, newPushLogsData(nil))
+	le, err := NewLogsExporter(context.Background(), exporter.CreateSettings{}, &fakeLogsExporterConfig, newPushLogsData(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilLogger, err)
 }
@@ -212,7 +213,7 @@ func newPushLogsData(retError error) consumer.ConsumeLogsFunc {
 	}
 }
 
-func checkRecordedMetricsForLogsExporter(t *testing.T, tt obsreporttest.TestTelemetry, le component.LogsExporter, wantError error) {
+func checkRecordedMetricsForLogsExporter(t *testing.T, tt obsreporttest.TestTelemetry, le exporter.Logs, wantError error) {
 	ld := testdata.GenerateLogs(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -227,7 +228,7 @@ func checkRecordedMetricsForLogsExporter(t *testing.T, tt obsreporttest.TestTele
 	}
 }
 
-func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le component.LogsExporter, numRequests int, wantError error) {
+func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le exporter.Logs, numRequests int, wantError error) {
 	ld := testdata.GenerateLogs(1)
 	ctx, span := tracer.Start(context.Background(), fakeLogsParentSpanName)
 	defer span.End()
@@ -236,7 +237,7 @@ func generateLogsTraffic(t *testing.T, tracer trace.Tracer, le component.LogsExp
 	}
 }
 
-func checkWrapSpanForLogsExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le component.LogsExporter, wantError error, numLogRecords int64) {
+func checkWrapSpanForLogsExporter(t *testing.T, sr *tracetest.SpanRecorder, tracer trace.Tracer, le exporter.Logs, wantError error, numLogRecords int64) {
 	const numRequests = 5
 	generateLogsTraffic(t, tracer, le, numRequests, wantError)
 
