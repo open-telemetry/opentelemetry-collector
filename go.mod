@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.66.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.66.0
 	go.opentelemetry.io/collector/featuregate v0.66.0
-	go.opentelemetry.io/collector/pdata v0.66.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1
 	go.opentelemetry.io/collector/processor/batchprocessor v0.66.0
 	go.opentelemetry.io/collector/semconv v0.66.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4

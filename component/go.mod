@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector v0.66.0
 	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
 	go.opentelemetry.io/collector/consumer v0.66.0
-	go.opentelemetry.io/collector/pdata v0.66.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1
 	go.opentelemetry.io/otel/metric v0.33.0
 	go.opentelemetry.io/otel/trace v1.11.1
 	go.uber.org/multierr v1.8.0
