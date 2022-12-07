@@ -80,9 +80,10 @@ func (pq *persistentQueue) Produce(item Request) bool {
 // Stop stops accepting items, shuts down the queue and closes the persistent queue
 func (pq *persistentQueue) Stop() {
 	pq.stopOnce.Do(func() {
-		pq.storage.stop()
+		// stop the consumers before the storage or the successful processing result will fail to write to persistent storage
 		close(pq.stopChan)
 		pq.stopWG.Wait()
+		pq.storage.stop()
 	})
 }
 
