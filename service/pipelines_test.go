@@ -176,7 +176,7 @@ func TestBuildPipelines(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Build the pipeline
-			pipelines, err := buildPipelines(context.Background(), Settings{
+			pipelines, err := buildPipelines(context.Background(), pipelinesSettings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				ReceiverFactories: map[component.Type]component.ReceiverFactory{
@@ -296,11 +296,11 @@ func TestBuildErrors(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		settings Settings
+		settings pipelinesSettings
 	}{
 		{
 			name: "not_supported_exporter_logs",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -317,7 +317,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "not_supported_exporter_metrics",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -334,7 +334,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "not_supported_exporter_traces",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -351,7 +351,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "not_supported_processor_logs",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -372,7 +372,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "not_supported_processor_metrics",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -393,7 +393,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "not_supported_processor_traces",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -414,7 +414,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "not_supported_receiver_logs",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
 				},
@@ -431,7 +431,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "not_supported_receiver_metrics",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
 				},
@@ -448,7 +448,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "not_supported_receiver_traces",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("bf"): badReceiverFactory.CreateDefaultConfig(),
 				},
@@ -465,7 +465,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "unknown_exporter_config",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -482,7 +482,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "unknown_exporter_factory",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -499,7 +499,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "unknown_processor_config",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -520,7 +520,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "unknown_processor_factory",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -541,7 +541,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "unknown_receiver_config",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -558,7 +558,7 @@ func TestBuildErrors(t *testing.T) {
 		},
 		{
 			name: "unknown_receiver_factory",
-			settings: Settings{
+			settings: pipelinesSettings{
 				ReceiverConfigs: map[component.ID]component.Config{
 					component.NewID("unknown"): nopReceiverFactory.CreateDefaultConfig(),
 				},
@@ -607,7 +607,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 	nopProcessorFactory := componenttest.NewNopProcessorFactory()
 	nopExporterFactory := componenttest.NewNopExporterFactory()
 
-	set := Settings{
+	set := pipelinesSettings{
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		BuildInfo: component.NewDefaultBuildInfo(),
 		ReceiverFactories: map[component.Type]component.ReceiverFactory{
