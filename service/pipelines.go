@@ -177,8 +177,8 @@ func (bps *builtPipelines) HandleZPages(w http.ResponseWriter, r *http.Request) 
 	zpages.WriteHTMLPageFooter(w)
 }
 
-// Settings holds configuration for building builtPipelines.
-type Settings struct {
+// pipelinesSettings holds configuration for building builtPipelines.
+type pipelinesSettings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
@@ -205,7 +205,7 @@ type Settings struct {
 }
 
 // buildPipelines builds all pipelines from config.
-func buildPipelines(ctx context.Context, set Settings) (*builtPipelines, error) {
+func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines, error) {
 	exps := &builtPipelines{
 		telemetry:    set.Telemetry,
 		allReceivers: make(map[component.DataType]map[component.ID]component.Component),
