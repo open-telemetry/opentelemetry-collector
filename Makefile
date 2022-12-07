@@ -165,17 +165,6 @@ ifndef COMPONENT
 	$(error COMPONENT variable was not defined)
 endif
 
-COMMIT?=HEAD
-MODSET?=stable
-REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
-.PHONY: push-tags
-push-tags:
-	multimod verify
-	set -e; for tag in `multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
-		echo "pushing tag $${tag}"; \
-		git push ${REMOTE} $${tag}; \
-	done;
-
 # Build the Collector executable.
 .PHONY: otelcorecol
 otelcorecol:
@@ -393,26 +382,41 @@ multimod-verify: install-tools
 	@echo "Validating versions.yaml"
 	multimod verify
 
+MODSET?=stable
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -s=true -b=false -v ./versions.yaml -m stable
-	multimod prerelease -s=true -b=false -v ./versions.yaml -m beta
+	multimod prerelease -s=true -b=false -v ./versions.yaml -m ${MODSET}
 	$(MAKE) gotidy
+
+COMMIT?=HEAD
+REMOTE?=git@github.com:open-telemetry/opentelemetry-collector.git
+.PHONY: push-tags
+push-tags:
+	multimod verify
+	set -e; for tag in `multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+		echo "pushing tag $${tag}"; \
+		git push ${REMOTE} $${tag}; \
+	done;
 
 .PHONY: prepare-release
 prepare-release:
+ifndef MODSET
+	@echo "MODSET not defined"
+	@echo "usage: make prepare-release RELEASE_CANDIDATE=<version eg 0.53.0> PREVIOUS_VERSION=<version eg 0.52.0> MODSET=beta"
+	exit 1
+endif
 ifdef PREVIOUS_VERSION
 	@echo "Previous version $(PREVIOUS_VERSION)"
 else
 	@echo "PREVIOUS_VERSION not defined"
-	@echo "usage: make prepare-release RELEASE_CANDIDATE=<version eg 0.53.0> PREVIOUS_VERSION=<version eg 0.52.0>"
+	@echo "usage: make prepare-release RELEASE_CANDIDATE=<version eg 0.53.0> PREVIOUS_VERSION=<version eg 0.52.0> MODSET=beta"
 	exit 1
 endif
 ifdef RELEASE_CANDIDATE
-	@echo "Preparing release $(RELEASE_CANDIDATE)"
+	@echo "Preparing ${MODSET} release $(RELEASE_CANDIDATE)"
 else
 	@echo "RELEASE_CANDIDATE not defined"
-	@echo "usage: make prepare-release RELEASE_CANDIDATE=<version eg 0.53.0> PREVIOUS_VERSION=<version eg 0.52.0>"
+	@echo "usage: make prepare-release RELEASE_CANDIDATE=<version eg 0.53.0> PREVIOUS_VERSION=<version eg 0.52.0> MODSET=beta"
 	exit 1
 endif
 	# ensure a clean branch
