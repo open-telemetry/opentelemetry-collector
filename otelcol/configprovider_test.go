@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -76,6 +77,30 @@ var configNop = &Config{
 	},
 }
 
+func newConfig(yamlBytes []byte, factories Factories) (*Config, error) {
+	var stringMap = map[string]interface{}{}
+	err := yaml.Unmarshal(yamlBytes, stringMap)
+
+	if err != nil {
+		return nil, err
+	}
+
+	conf := confmap.NewFromStringMap(stringMap)
+
+	cfg, err := unmarshal(conf, factories)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Config{
+		Receivers:  cfg.Receivers.Configs(),
+		Processors: cfg.Processors.Configs(),
+		Exporters:  cfg.Exporters.Configs(),
+		Extensions: cfg.Extensions.Configs(),
+		Service:    cfg.Service,
+	}, nil
+}
+
 func TestConfigProviderYaml(t *testing.T) {
 	yamlBytes, err := os.ReadFile(filepath.Join("testdata", "otelcol-nop.yaml"))
 	require.NoError(t, err)
@@ -97,6 +122,10 @@ func TestConfigProviderYaml(t *testing.T) {
 
 	cfg, err := cp.Get(context.Background(), factories)
 	require.NoError(t, err)
+
+	configNop, err := newConfig(yamlBytes, factories)
+	require.NoError(t, err)
+
 	assert.EqualValues(t, configNop, cfg)
 }
 
@@ -118,5 +147,12 @@ func TestConfigProviderFile(t *testing.T) {
 
 	cfg, err := cp.Get(context.Background(), factories)
 	require.NoError(t, err)
+
+	yamlBytes, err := os.ReadFile(filepath.Join("testdata", "otelcol-nop.yaml"))
+	require.NoError(t, err)
+
+	configNop, err := newConfig(yamlBytes, factories)
+	require.NoError(t, err)
+
 	assert.EqualValues(t, configNop, cfg)
 }

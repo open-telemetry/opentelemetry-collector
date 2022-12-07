@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
@@ -30,6 +31,10 @@ type PipelineWatcher interface {
 	// This is sent before receivers are stopped, so the Extension can take any
 	// appropriate actions before that happens.
 	NotReady() error
+}
+
+type ConfigWatcher interface {
+	ConfigResolved(ctx context.Context, conf *confmap.Conf) error
 }
 
 // CreateSettings is passed to Factory.Create(...) function.
