@@ -250,6 +250,11 @@ func getExpectedShutdownErr(test metricsTestCase) error {
 	var errs error
 
 	if test.closeErr != nil {
+		// In the event that there was an initialize error
+		// then no other scraper beyond the first would have been started
+		if test.initializeErr != nil {
+			return test.closeErr
+		}
 		for i := 0; i < test.scrapers; i++ {
 			errs = multierr.Append(errs, test.closeErr)
 		}

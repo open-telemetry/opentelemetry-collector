@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
@@ -149,8 +150,7 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 
 // baseExporter contains common fields between different exporter types.
 type baseExporter struct {
-	component.StartFunc
-	component.ShutdownFunc
+	component.Component
 	obsrep   *obsExporter
 	sender   requestSender
 	qrSender *queuedRetrySender
@@ -167,21 +167,23 @@ func newBaseExporter(set exporter.CreateSettings, bs *baseSettings, signal compo
 
 	be.qrSender = newQueuedRetrySender(set.ID, signal, bs.QueueSettings, bs.RetrySettings, reqUnmarshaler, &timeoutSender{cfg: bs.TimeoutSettings}, set.Logger)
 	be.sender = be.qrSender
-	be.StartFunc = func(ctx context.Context, host component.Host) error {
-		// First start the wrapped exporter.
-		if err := bs.StartFunc.Start(ctx, host); err != nil {
-			return err
-		}
+	be.Component = componenthelper.NewComponent(
+		func(ctx context.Context, host component.Host) error {
+			// First start the wrapped exporter.
+			if err := bs.StartFunc.Start(ctx, host); err != nil {
+				return err
+			}
 
-		// If no error then start the queuedRetrySender.
-		return be.qrSender.start(ctx, host)
-	}
-	be.ShutdownFunc = func(ctx context.Context) error {
-		// First shutdown the queued retry sender
-		be.qrSender.shutdown()
-		// Last shutdown the wrapped exporter itself.
-		return bs.ShutdownFunc.Shutdown(ctx)
-	}
+			// If no error then start the queuedRetrySender.
+			return be.qrSender.start(ctx, host)
+		},
+		func(ctx context.Context) error {
+			// First shutdown the queued retry sender
+			be.qrSender.shutdown()
+			// Last shutdown the wrapped exporter itself.
+			return bs.ShutdownFunc.Shutdown(ctx)
+		},
+	)
 	return be, nil
 }
 

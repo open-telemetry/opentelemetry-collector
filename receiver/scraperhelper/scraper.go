@@ -19,6 +19,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -31,6 +32,11 @@ func (sf ScrapeFunc) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return sf(ctx)
 }
 
+type baseSettings struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
 // Scraper is the base interface for scrapers.
 type Scraper interface {
 	component.Component
@@ -41,18 +47,18 @@ type Scraper interface {
 }
 
 // ScraperOption apply changes to internal options.
-type ScraperOption func(*baseScraper)
+type ScraperOption func(*baseSettings)
 
 // WithStart sets the function that will be called on startup.
 func WithStart(start component.StartFunc) ScraperOption {
-	return func(o *baseScraper) {
+	return func(o *baseSettings) {
 		o.StartFunc = start
 	}
 }
 
 // WithShutdown sets the function that will be called on shutdown.
 func WithShutdown(shutdown component.ShutdownFunc) ScraperOption {
-	return func(o *baseScraper) {
+	return func(o *baseSettings) {
 		o.ShutdownFunc = shutdown
 	}
 }
@@ -60,8 +66,7 @@ func WithShutdown(shutdown component.ShutdownFunc) ScraperOption {
 var _ Scraper = (*baseScraper)(nil)
 
 type baseScraper struct {
-	component.StartFunc
-	component.ShutdownFunc
+	component.Component
 	ScrapeFunc
 	id component.ID
 }
@@ -76,13 +81,18 @@ func NewScraper(name string, scrape ScrapeFunc, options ...ScraperOption) (Scrap
 	if scrape == nil {
 		return nil, errNilFunc
 	}
-	bs := &baseScraper{
-		ScrapeFunc: scrape,
-		id:         component.NewID(component.Type(name)),
-	}
-	for _, op := range options {
-		op(bs)
+
+	settings := &baseSettings{}
+	for _, opt := range options {
+		opt(settings)
 	}
 
-	return bs, nil
+	return &baseScraper{
+		Component: componenthelper.NewComponent(
+			settings.Start,
+			settings.Shutdown,
+		),
+		ScrapeFunc: scrape,
+		id:         component.NewID(component.Type(name)),
+	}, nil
 }

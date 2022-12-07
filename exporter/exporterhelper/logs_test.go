@@ -191,7 +191,11 @@ func TestLogsExporter_WithShutdown(t *testing.T) {
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Nil(t, le.Shutdown(context.Background()))
+	assert.NoError(t, le.Shutdown(context.Background()))
+	assert.False(t, shutdownCalled)
+
+	assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, le.Shutdown(context.Background()))
 	assert.True(t, shutdownCalled)
 }
 
@@ -203,7 +207,8 @@ func TestLogsExporter_WithShutdown_ReturnError(t *testing.T) {
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 
-	assert.Equal(t, le.Shutdown(context.Background()), want)
+	assert.NoError(t, le.Start(context.Background(), componenttest.NewNopHost()))
+	assert.ErrorIs(t, le.Shutdown(context.Background()), want)
 }
 
 func newPushLogsData(retError error) consumer.ConsumeLogsFunc {

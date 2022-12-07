@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
@@ -31,8 +32,7 @@ import (
 type ProcessLogsFunc func(context.Context, plog.Logs) (plog.Logs, error)
 
 type logProcessor struct {
-	component.StartFunc
-	component.ShutdownFunc
+	component.Component
 	consumer.Logs
 }
 
@@ -75,8 +75,10 @@ func NewLogsProcessor(
 	}
 
 	return &logProcessor{
-		StartFunc:    bs.StartFunc,
-		ShutdownFunc: bs.ShutdownFunc,
-		Logs:         logsConsumer,
+		Component: componenthelper.NewComponent(
+			bs.Start,
+			bs.Shutdown,
+		),
+		Logs: logsConsumer,
 	}, nil
 }
