@@ -64,8 +64,8 @@ func TestCreateProcessor(t *testing.T) {
 	tp, err = factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
-	// test if we can shutdown a monitoring routine that has not started
-	assert.ErrorIs(t, tp.Shutdown(context.Background()), errShutdownNotStarted)
+
+	assert.NoError(t, tp.Shutdown(context.Background()), "Must not error since component has not been started")
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 
 	mp, err = factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
@@ -81,12 +81,12 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, lp.Shutdown(context.Background()))
 	assert.NoError(t, tp.Shutdown(context.Background()))
 	assert.NoError(t, mp.Shutdown(context.Background()))
-	// verify that no monitoring routine is running
-	assert.Error(t, tp.Shutdown(context.Background()))
+
+	assert.NoError(t, tp.Shutdown(context.Background()))
 
 	// start and shutdown a new monitoring routine
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, lp.Shutdown(context.Background()))
 	// calling it again should throw an error
-	assert.ErrorIs(t, lp.Shutdown(context.Background()), errShutdownNotStarted)
+	assert.NoError(t, lp.Shutdown(context.Background()), "Must not error if Shutdown is called twice")
 }

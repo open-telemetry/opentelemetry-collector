@@ -57,8 +57,6 @@ var (
 	errPercentageLimitOutOfRange = errors.New(
 		"memoryLimitPercentage and memorySpikePercentage must be greater than zero and less than or equal to hundred",
 	)
-
-	errShutdownNotStarted = errors.New("no existing monitoring routine is running")
 )
 
 // make it overridable by tests
@@ -87,8 +85,9 @@ type memoryLimiter struct {
 
 	obsrep *obsreport.Processor
 
-	refCounterLock sync.Mutex
-	refCounter     int
+	sem  chan struct{}
+	done context.CancelFunc
+	wg   sync.WaitGroup
 }
 
 // Minimum interval between forced GC when in soft limited mode. We don't want to
@@ -131,6 +130,7 @@ func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter
 		logger:         logger,
 		forceDrop:      atomic.NewBool(false),
 		obsrep:         obsrep,
+		sem:            make(chan struct{}, 1),
 	}
 
 	return ml, nil
@@ -154,6 +154,11 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 }
 
 func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
+	select {
+	case ml.sem <- struct{}{}:
+	default:
+		return nil
+	}
 	extensions := host.GetExtensions()
 	for _, extension := range extensions {
 		if ext, ok := extension.(interface{ GetBallastSize() uint64 }); ok {
@@ -166,15 +171,14 @@ func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
-	ml.refCounterLock.Lock()
-	defer ml.refCounterLock.Unlock()
-
-	if ml.refCounter == 0 {
-		return errShutdownNotStarted
-	} else if ml.refCounter == 1 {
-		ml.ticker.Stop()
+	select {
+	case <-ml.sem:
+	default:
+		return nil
 	}
-	ml.refCounter--
+	ml.done()
+	ml.ticker.Stop()
+	ml.wg.Wait()
 	return nil
 }
 
@@ -253,17 +257,23 @@ func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
 // startMonitoring starts a single ticker'd goroutine per instance
 // that will check memory usage every checkInterval period.
 func (ml *memoryLimiter) startMonitoring() {
-	ml.refCounterLock.Lock()
-	defer ml.refCounterLock.Unlock()
+	ml.wg.Add(1)
+	var ctx context.Context
+	ctx, ml.done = context.WithCancel(context.Background())
 
-	ml.refCounter++
-	if ml.refCounter == 1 {
-		go func() {
-			for range ml.ticker.C {
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				ml.wg.Done()
+				return
+			// A ticker channel never  closes
+			// so in order for this routine to stop, ml.done needs to be called.
+			case <-ml.ticker.C:
 				ml.checkMemLimits()
 			}
-		}()
-	}
+		}
+	}(ctx)
 }
 
 func memstatToZapField(ms *runtime.MemStats) zap.Field {
