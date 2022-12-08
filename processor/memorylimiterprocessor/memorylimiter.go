@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -63,6 +64,8 @@ var (
 var getMemoryFn = iruntime.TotalMemory
 
 type memoryLimiter struct {
+	component.Component
+
 	usageChecker memUsageChecker
 
 	memCheckWait time.Duration
@@ -85,7 +88,6 @@ type memoryLimiter struct {
 
 	obsrep *obsreport.Processor
 
-	sem  chan struct{}
 	done context.CancelFunc
 	wg   sync.WaitGroup
 }
@@ -130,8 +132,11 @@ func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter
 		logger:         logger,
 		forceDrop:      atomic.NewBool(false),
 		obsrep:         obsrep,
-		sem:            make(chan struct{}, 1),
 	}
+	ml.Component = componenthelper.NewComponent(
+		ml.start,
+		ml.shutdown,
+	)
 
 	return ml, nil
 }
@@ -154,11 +159,6 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 }
 
 func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
-	select {
-	case ml.sem <- struct{}{}:
-	default:
-		return nil
-	}
 	extensions := host.GetExtensions()
 	for _, extension := range extensions {
 		if ext, ok := extension.(interface{ GetBallastSize() uint64 }); ok {
@@ -171,11 +171,6 @@ func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
-	select {
-	case <-ml.sem:
-	default:
-		return nil
-	}
 	ml.done()
 	ml.ticker.Stop()
 	ml.wg.Wait()

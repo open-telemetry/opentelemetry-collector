@@ -70,8 +70,8 @@ func (f *factory) createTracesProcessor(
 	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithStart(memLimiter.start),
-		processorhelper.WithShutdown(memLimiter.shutdown))
+		processorhelper.WithStart(memLimiter.Start),
+		processorhelper.WithShutdown(memLimiter.Shutdown))
 }
 
 func (f *factory) createMetricsProcessor(
@@ -87,8 +87,8 @@ func (f *factory) createMetricsProcessor(
 	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithStart(memLimiter.start),
-		processorhelper.WithShutdown(memLimiter.shutdown))
+		processorhelper.WithStart(memLimiter.Start),
+		processorhelper.WithShutdown(memLimiter.Shutdown))
 }
 
 func (f *factory) createLogsProcessor(
@@ -104,8 +104,8 @@ func (f *factory) createLogsProcessor(
 	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer,
 		memLimiter.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithStart(memLimiter.start),
-		processorhelper.WithShutdown(memLimiter.shutdown))
+		processorhelper.WithStart(memLimiter.Start),
+		processorhelper.WithShutdown(memLimiter.Shutdown))
 }
 
 // getMemoryLimiter checks if we have a cached memoryLimiter with a specific config,
