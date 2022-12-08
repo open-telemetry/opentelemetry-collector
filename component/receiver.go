@@ -160,7 +160,6 @@ func (r receiverFactory) TracesReceiverStability() StabilityLevel {
 	return r.tracesStabilityLevel
 }
 
-// Deprecated: [v0.67.0] use receiver.MetricsStabiilty.
 func (r receiverFactory) MetricsReceiverStability() StabilityLevel {
 	return r.metricsStabilityLevel
 }
