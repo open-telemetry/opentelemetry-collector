@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -340,7 +341,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		new(consumertest.MetricsSink),
 		AddScraper(scp),
 		WithTickerChannel(tickerCh),

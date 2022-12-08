@@ -34,9 +34,7 @@ type Factories struct {
 	Extensions map[Type]ExtensionFactory
 }
 
-// MakeReceiverFactoryMap takes a list of receiver factories and returns a map
-// with factory type as keys. It returns a non-nil error when more than one factories
-// have the same type.
+// Deprecated: [v0.67.0] use receiver.MakeFactoryMap
 func MakeReceiverFactoryMap(factories ...ReceiverFactory) (map[Type]ReceiverFactory, error) {
 	fMap := map[Type]ReceiverFactory{}
 	for _, f := range factories {

@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 const (
@@ -77,8 +79,8 @@ func (tts *TestTelemetry) ToProcessorCreateSettings() component.ProcessorCreateS
 }
 
 // ToReceiverCreateSettings returns ReceiverCreateSettings with configured TelemetrySettings
-func (tts *TestTelemetry) ToReceiverCreateSettings() component.ReceiverCreateSettings {
-	set := componenttest.NewNopReceiverCreateSettings()
+func (tts *TestTelemetry) ToReceiverCreateSettings() receiver.CreateSettings {
+	set := receivertest.NewNopCreateSettings()
 	set.TelemetrySettings = tts.TelemetrySettings
 	set.ID = tts.id
 	return set

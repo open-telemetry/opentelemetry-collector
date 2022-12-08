@@ -13,6 +13,7 @@ import (
 	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
 	batchprocessor "go.opentelemetry.io/collector/processor/batchprocessor"
 	memorylimiterprocessor "go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/receiver"
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -28,7 +29,7 @@ func components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
-	factories.Receivers, err = component.MakeReceiverFactoryMap(
+	factories.Receivers, err = receiver.MakeFactoryMap(
 		otlpreceiver.NewFactory(),
 	)
 	if err != nil {

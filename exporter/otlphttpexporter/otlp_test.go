@@ -52,6 +52,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestInvalidConfig(t *testing.T) {
@@ -345,7 +346,7 @@ func createExporterConfig(baseURL string, defaultCfg component.Config) *Config {
 func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, next)
+	recv, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }
@@ -353,7 +354,7 @@ func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, next)
+	recv, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }
@@ -361,7 +362,7 @@ func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
 func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, next)
+	recv, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }

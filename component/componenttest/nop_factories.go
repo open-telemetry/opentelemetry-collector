@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // NopFactories returns a component.Factories with all nop factories.
@@ -30,7 +31,7 @@ func NopFactories() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
-	if factories.Receivers, err = component.MakeReceiverFactoryMap(NewNopReceiverFactory()); err != nil {
+	if factories.Receivers, err = receiver.MakeFactoryMap(NewNopReceiverFactory()); err != nil {
 		return component.Factories{}, err
 	}
 

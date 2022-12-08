@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // receiversKeyName is the configuration key name for receivers section.
@@ -27,10 +28,10 @@ const receiversKeyName = "receivers"
 type Receivers struct {
 	recvs map[component.ID]component.Config
 
-	factories map[component.Type]component.ReceiverFactory
+	factories map[component.Type]receiver.Factory
 }
 
-func NewReceivers(factories map[component.Type]component.ReceiverFactory) *Receivers {
+func NewReceivers(factories map[component.Type]receiver.Factory) *Receivers {
 	return &Receivers{factories: factories}
 }
 

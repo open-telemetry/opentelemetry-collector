@@ -26,34 +26,22 @@ type ReceiverConfig = Config
 // Deprecated: [v0.67.0] use UnmarshalConfig.
 var UnmarshalReceiverConfig = UnmarshalConfig
 
-// A TracesReceiver receives traces.
-// Its purpose is to translate data from any format to the collector's internal trace format.
-// TracesReceiver feeds a consumer.Traces with data.
-//
-// For example it could be Zipkin data source which translates Zipkin spans into ptrace.Traces.
+// Deprecated: [v0.67.0] use receiver.Traces.
 type TracesReceiver interface {
 	Component
 }
 
-// A MetricsReceiver receives metrics.
-// Its purpose is to translate data from any format to the collector's internal metrics format.
-// MetricsReceiver feeds a consumer.Metrics with data.
-//
-// For example it could be Prometheus data source which translates Prometheus metrics into pmetric.Metrics.
+// Deprecated: [v0.67.0] use receiver.Metrics.
 type MetricsReceiver interface {
 	Component
 }
 
-// A LogsReceiver receives logs.
-// Its purpose is to translate data from any format to the collector's internal logs data format.
-// LogsReceiver feeds a consumer.Logs with data.
-//
-// For example a LogsReceiver can read syslogs and convert them into plog.Logs.
+// Deprecated: [v0.67.0] use receiver.Logs.
 type LogsReceiver interface {
 	Component
 }
 
-// ReceiverCreateSettings configures Receiver creators.
+// Deprecated: [v0.67.0] use receiver.CreateSettings.
 type ReceiverCreateSettings struct {
 	// ID returns the ID of the component that will be created.
 	ID ID
@@ -64,10 +52,7 @@ type ReceiverCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// ReceiverFactory is factory interface for receivers.
-//
-// This interface cannot be directly implemented. Implementations must
-// use the NewReceiverFactory to implement it.
+// Deprecated: [v0.67.0] use receivrer.Factory.
 type ReceiverFactory interface {
 	Factory
 
@@ -96,7 +81,7 @@ type ReceiverFactory interface {
 	LogsReceiverStability() StabilityLevel
 }
 
-// ReceiverFactoryOption apply changes to ReceiverOptions.
+// Deprecated: [v0.67.0] use receiver.FactoryOption.
 type ReceiverFactoryOption interface {
 	// applyReceiverFactoryOption applies the option.
 	applyReceiverFactoryOption(o *receiverFactory)
@@ -114,7 +99,7 @@ func (f receiverFactoryOptionFunc) applyReceiverFactoryOption(o *receiverFactory
 // Deprecated: [v0.67.0] use CreateDefaultConfigFunc.
 type ReceiverCreateDefaultConfigFunc = CreateDefaultConfigFunc
 
-// CreateTracesReceiverFunc is the equivalent of ReceiverFactory.CreateTracesReceiver().
+// Deprecated: [v0.67.0] use receiver.CreateTracesFunc.
 type CreateTracesReceiverFunc func(context.Context, ReceiverCreateSettings, Config, consumer.Traces) (TracesReceiver, error)
 
 // CreateTracesReceiver implements ReceiverFactory.CreateTracesReceiver().
@@ -129,7 +114,7 @@ func (f CreateTracesReceiverFunc) CreateTracesReceiver(
 	return f(ctx, set, cfg, nextConsumer)
 }
 
-// CreateMetricsReceiverFunc is the equivalent of ReceiverFactory.CreateMetricsReceiver().
+// Deprecated: [v0.67.0] use receiver.CreateMetricsFunc.
 type CreateMetricsReceiverFunc func(context.Context, ReceiverCreateSettings, Config, consumer.Metrics) (MetricsReceiver, error)
 
 // CreateMetricsReceiver implements ReceiverFactory.CreateMetricsReceiver().
@@ -145,7 +130,7 @@ func (f CreateMetricsReceiverFunc) CreateMetricsReceiver(
 	return f(ctx, set, cfg, nextConsumer)
 }
 
-// CreateLogsReceiverFunc is the equivalent of ReceiverFactory.CreateLogsReceiver().
+// Deprecated: [v0.67.0] use receiver.CreateLogsFunc.
 type CreateLogsReceiverFunc func(context.Context, ReceiverCreateSettings, Config, consumer.Logs) (LogsReceiver, error)
 
 // CreateLogsReceiver implements ReceiverFactory.CreateLogsReceiver().
@@ -183,7 +168,7 @@ func (r receiverFactory) LogsReceiverStability() StabilityLevel {
 	return r.logsStabilityLevel
 }
 
-// WithTracesReceiver overrides the default "error not supported" implementation for CreateTracesReceiver and the default "undefined" stability level.
+// Deprecated: [v0.67.0] use receiver.WithTraces.
 func WithTracesReceiver(createTracesReceiver CreateTracesReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
 		o.tracesStabilityLevel = sl
@@ -191,7 +176,7 @@ func WithTracesReceiver(createTracesReceiver CreateTracesReceiverFunc, sl Stabil
 	})
 }
 
-// WithMetricsReceiver overrides the default "error not supported" implementation for CreateMetricsReceiver and the default "undefined" stability level.
+// Deprecated: [v0.67.0] use receiver.WithMetrics.
 func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
 		o.metricsStabilityLevel = sl
@@ -199,7 +184,7 @@ func WithMetricsReceiver(createMetricsReceiver CreateMetricsReceiverFunc, sl Sta
 	})
 }
 
-// WithLogsReceiver overrides the default "error not supported" implementation for CreateLogsReceiver and the default "undefined" stability level.
+// Deprecated: [v0.67.0] use receiver.WithLogs.
 func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc, sl StabilityLevel) ReceiverFactoryOption {
 	return receiverFactoryOptionFunc(func(o *receiverFactory) {
 		o.logsStabilityLevel = sl
@@ -207,7 +192,7 @@ func WithLogsReceiver(createLogsReceiver CreateLogsReceiverFunc, sl StabilityLev
 	})
 }
 
-// NewReceiverFactory returns a ReceiverFactory.
+// Deprecated: [v0.67.0] use receiver.NewFactory.
 func NewReceiverFactory(cfgType Type, createDefaultConfig CreateDefaultConfigFunc, options ...ReceiverFactoryOption) ReceiverFactory {
 	f := &receiverFactory{
 		baseFactory: baseFactory{

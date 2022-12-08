@@ -21,12 +21,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestReceiversUnmarshal(t *testing.T) {
-	factories, err := component.MakeReceiverFactoryMap(componenttest.NewNopReceiverFactory())
+	factories, err := receiver.MakeFactoryMap(receivertest.NewNopFactory())
 	require.NoError(t, err)
 
 	recvs := NewReceivers(factories)
@@ -100,7 +101,7 @@ func TestReceiversUnmarshalError(t *testing.T) {
 		},
 	}
 
-	factories, err := component.MakeReceiverFactoryMap(componenttest.NewNopReceiverFactory())
+	factories, err := receiver.MakeFactoryMap(receivertest.NewNopFactory())
 	assert.NoError(t, err)
 
 	for _, tt := range testCases {

@@ -27,12 +27,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // ScraperControllerSettings defines common settings for a scraper controller
 // configuration. Scraper controller receivers can embed this struct, instead
-// of component.ReceiverSettings, and extend it with more fields if needed.
+// of receiver.Settings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	CollectionInterval      time.Duration            `mapstructure:"collection_interval"`
@@ -86,13 +87,13 @@ type controller struct {
 	terminated  chan struct{}
 
 	obsrecv      *obsreport.Receiver
-	recvSettings component.ReceiverCreateSettings
+	recvSettings receiver.CreateSettings
 }
 
 // NewScraperControllerReceiver creates a Receiver with the configured options, that can control multiple scrapers.
 func NewScraperControllerReceiver(
 	cfg *ScraperControllerSettings,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	nextConsumer consumer.Metrics,
 	options ...ScraperControllerOption,
 ) (component.Component, error) {
