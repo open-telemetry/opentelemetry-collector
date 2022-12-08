@@ -409,9 +409,11 @@ func WithLogsToLogs(createLogsToLogs CreateLogsToLogsFunc, sl component.Stabilit
 func (f factory) TracesToTracesStability() component.StabilityLevel {
 	return f.tracesToTracesStabilityLevel
 }
+
 func (f factory) TracesToMetricsStability() component.StabilityLevel {
 	return f.tracesToMetricsStabilityLevel
 }
+
 func (f factory) TracesToLogsStability() component.StabilityLevel {
 	return f.tracesToLogsStabilityLevel
 }
@@ -419,9 +421,11 @@ func (f factory) TracesToLogsStability() component.StabilityLevel {
 func (f factory) MetricsToTracesStability() component.StabilityLevel {
 	return f.metricsToTracesStabilityLevel
 }
+
 func (f factory) MetricsToMetricsStability() component.StabilityLevel {
 	return f.metricsToMetricsStabilityLevel
 }
+
 func (f factory) MetricsToLogsStability() component.StabilityLevel {
 	return f.metricsToLogsStabilityLevel
 }
@@ -429,9 +433,11 @@ func (f factory) MetricsToLogsStability() component.StabilityLevel {
 func (f factory) LogsToTracesStability() component.StabilityLevel {
 	return f.logsToTracesStabilityLevel
 }
+
 func (f factory) LogsToMetricsStability() component.StabilityLevel {
 	return f.logsToMetricsStabilityLevel
 }
+
 func (f factory) LogsToLogsStability() component.StabilityLevel {
 	return f.logsToLogsStabilityLevel
 }
