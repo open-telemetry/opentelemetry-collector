@@ -156,7 +156,6 @@ type receiverFactory struct {
 	logsStabilityLevel StabilityLevel
 }
 
-// Deprecated: [v0.67.0] use receiver.TracesStabiilty.
 func (r receiverFactory) TracesReceiverStability() StabilityLevel {
 	return r.tracesStabilityLevel
 }
