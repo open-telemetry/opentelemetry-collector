@@ -4,7 +4,12 @@
 
 <!-- next version -->
 
-## v0.67.0
+## v1.0.0-RC1/v0.67.0
+
+We are excited to announce that the `pdata` module is now available as a
+v1.0.0 release candidate.  While breaking changes may still happen in this
+module before v1.0.0, we believe it is ready for final assessment and validation
+and hope to make a v1.0.0 release soon.
 
 ### 🛑 Breaking changes 🛑
 
