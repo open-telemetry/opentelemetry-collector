@@ -195,7 +195,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		consumertest.NewNop(),
 		ml.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.Shutdown))
+		processorhelper.WithShutdown(ml.shutdown))
 	require.NoError(t, err)
 
 	ctx := context.Background()
