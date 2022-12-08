@@ -16,6 +16,8 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // NopFactories returns a component.Factories with all nop factories.
@@ -24,7 +26,7 @@ func NopFactories() (component.Factories, error) {
 	var err error
 
 	//nolint:staticcheck
-	if factories.Extensions, err = component.MakeExtensionFactoryMap(NewNopExtensionFactory()); err != nil {
+	if factories.Extensions, err = extension.MakeFactoryMap(NewNopExtensionFactory()); err != nil {
 		return component.Factories{}, err
 	}
 
@@ -33,7 +35,7 @@ func NopFactories() (component.Factories, error) {
 	}
 
 	//nolint:staticcheck
-	if factories.Exporters, err = component.MakeExporterFactoryMap(NewNopExporterFactory()); err != nil {
+	if factories.Exporters, err = exporter.MakeFactoryMap(NewNopExporterFactory()); err != nil {
 		return component.Factories{}, err
 	}
 
