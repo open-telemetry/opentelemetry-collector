@@ -37,6 +37,20 @@ const (
 	SentLogRecordsKey = "sent_log_records"
 	// FailedToSendLogRecordsKey used to track logs that failed to be sent by exporters.
 	FailedToSendLogRecordsKey = "send_failed_log_records"
+
+	// SentBytes is used to track bytes sent by exporters and receivers.
+	SentBytes = "sent"
+
+	// SentWireBytes is used to track bytes sent on the wire
+	// (includes compression) by exporters and receivers.
+	SentWireBytes = "sent_wire"
+
+	// RecvBytes is used to track bytes received by exporters and receivers.
+	RecvBytes = "recv"
+
+	// RecvWireBytes is used to track bytes received on the wire
+	// (includes compression) by exporters and receivers.
+	RecvWireBytes = "recv_wire"
 )
 
 var (

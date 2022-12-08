@@ -25,12 +25,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -50,6 +52,7 @@ type baseExporter struct {
 	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
 	callOptions    []grpc.CallOption
+	obsNet         *obsreport.NetworkReporter
 
 	settings component.TelemetrySettings
 
@@ -69,15 +72,44 @@ func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExport
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
+<<<<<<< HEAD
 	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
+=======
+	obsNet, err := obsreport.NewExporterNetworkReporter(set)
+	if err != nil {
+		return nil, err
+	}
+
+	return &exporter{
+		config:    oCfg,
+		settings:  set.TelemetrySettings,
+		userAgent: userAgent,
+		obsNet:    obsNet,
+	}, nil
+>>>>>>> 6f35a3a6 (Add obsreport network metrics api, OTLP-gRPC receiver/exporter support)
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
+<<<<<<< HEAD
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
 	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+=======
+func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
+	dialOpts := []grpc.DialOption{
+		grpc.WithUserAgent(e.userAgent),
+	}
+	if e.obsNet != nil {
+		// When the user has configured component-level
+		// network telemetry (i.e., greater than BasicLevel).
+		dialOpts = append(dialOpts, grpc.WithStatsHandler(e))
+	}
+
+	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, dialOpts...); err != nil {
+>>>>>>> 6f35a3a6 (Add obsreport network metrics api, OTLP-gRPC receiver/exporter support)
 		return err
 	}
+
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
@@ -192,4 +224,40 @@ func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
 		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
 	}
 	return 0
+}
+
+// TagRPC implements grpc/stats.Handler
+func (e *baseExporter) TagRPC(ctx context.Context, _ *stats.RPCTagInfo) context.Context {
+	return ctx
+}
+
+// HandleRPC implements grpc/stats.Handler
+func (e *baseExporter) HandleRPC(ctx context.Context, rs stats.RPCStats) {
+	switch s := rs.(type) {
+	case *stats.Begin, *stats.OutHeader, *stats.OutTrailer, *stats.InHeader, *stats.InTrailer:
+		// Note we have some info aboute header WireLength,
+		// but intentionally not counting.
+
+	case *stats.InPayload:
+		var ss obsreport.SizesStruct
+		ss.Length = int64(s.Length)
+		ss.WireLength = int64(s.WireLength)
+		e.obsNet.CountReceive(ctx, ss)
+
+	case *stats.OutPayload:
+		var ss obsreport.SizesStruct
+		ss.Length = int64(s.Length)
+		ss.WireLength = int64(s.WireLength)
+		e.obsNet.CountSend(ctx, ss)
+	}
+}
+
+// TagConn implements grpc/stats.Handler
+func (e *baseExporter) TagConn(ctx context.Context, _ *stats.ConnTagInfo) context.Context {
+	return ctx
+}
+
+// HandleConn implements grpc/stats.Handler
+func (e *baseExporter) HandleConn(_ context.Context, s stats.ConnStats) {
+	// Note: ConnBegin and ConnEnd
 }
