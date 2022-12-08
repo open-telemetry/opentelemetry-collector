@@ -164,7 +164,6 @@ func (r receiverFactory) MetricsReceiverStability() StabilityLevel {
 	return r.metricsStabilityLevel
 }
 
-// Deprecated: [v0.67.0] use receiver.LogsStabiilty.
 func (r receiverFactory) LogsReceiverStability() StabilityLevel {
 	return r.logsStabilityLevel
 }
