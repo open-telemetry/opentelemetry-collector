@@ -46,9 +46,7 @@ func MakeReceiverFactoryMap(factories ...ReceiverFactory) (map[Type]ReceiverFact
 	return fMap, nil
 }
 
-// MakeProcessorFactoryMap takes a list of processor factories and returns a map
-// with factory type as keys. It returns a non-nil error when more than one factories
-// have the same type.
+// Deprecated: [v0.68.0] use processor.MakeFactoryMap
 func MakeProcessorFactoryMap(factories ...ProcessorFactory) (map[Type]ProcessorFactory, error) {
 	fMap := map[Type]ProcessorFactory{}
 	for _, f := range factories {

@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: Move tests back to component package after config.*Settings are removed.
-
-package component_test
+package processor
 
 import (
 	"context"
@@ -27,55 +25,55 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-func TestNewProcessorFactory(t *testing.T) {
+func TestNewFactory(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := config.NewProcessorSettings(component.NewID(typeStr))
-	factory := component.NewProcessorFactory(
+	factory := NewFactory(
 		typeStr,
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.Error(t, err)
 }
 
-func TestNewProcessorFactory_WithOptions(t *testing.T) {
+func TestNewFactory_WithOptions(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := config.NewProcessorSettings(component.NewID(typeStr))
-	factory := component.NewProcessorFactory(
+	factory := NewFactory(
 		typeStr,
 		func() component.Config { return &defaultCfg },
-		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelAlpha),
-		component.WithMetricsProcessor(createMetricsProcessor, component.StabilityLevelBeta),
-		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelUnmaintained))
+		WithTraces(createTraces, component.StabilityLevelAlpha),
+		WithMetrics(createMetrics, component.StabilityLevelBeta),
+		WithLogs(createLogs, component.StabilityLevelUnmaintained))
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesProcessorStability())
-	_, err := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsProcessorStability())
-	_, err = factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsProcessorStability())
-	_, err = factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsProcessor(context.Background(), CreateSettings{}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
-func createTracesProcessor(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Traces) (component.TracesProcessor, error) {
+func createTraces(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error) {
 	return nil, nil
 }
 
-func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetrics(context.Context, CreateSettings, component.Config, consumer.Metrics) (Metrics, error) {
 	return nil, nil
 }
 
-func createLogsProcessor(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Logs) (component.LogsProcessor, error) {
+func createLogs(context.Context, CreateSettings, component.Config, consumer.Logs) (Logs, error) {
 	return nil, nil
 }

@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/processor"
 )
 
 var (
@@ -77,7 +78,7 @@ type Processor struct {
 // ProcessorSettings are settings for creating a Processor.
 type ProcessorSettings struct {
 	ProcessorID             component.ID
-	ProcessorCreateSettings component.ProcessorCreateSettings
+	ProcessorCreateSettings processor.CreateSettings
 }
 
 // NewProcessor creates a new Processor.

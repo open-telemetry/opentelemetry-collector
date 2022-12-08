@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 )
 
 const (
@@ -95,7 +96,7 @@ type memoryLimiter struct {
 const minGCIntervalWhenSoftLimited = 10 * time.Second
 
 // newMemoryLimiter returns a new memorylimiter processor.
-func newMemoryLimiter(set component.ProcessorCreateSettings, cfg *Config) (*memoryLimiter, error) {
+func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter, error) {
 	if cfg.CheckInterval <= 0 {
 		return nil, errCheckIntervalOutOfRange
 	}

@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
@@ -190,7 +192,7 @@ func TestBuildPipelines(t *testing.T) {
 					component.NewID("examplereceiver"):              testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 					component.NewIDWithName("examplereceiver", "1"): testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
 				},
-				ProcessorFactories: map[component.Type]component.ProcessorFactory{
+				ProcessorFactories: map[component.Type]processor.Factory{
 					testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
 				},
 				ProcessorConfigs: map[component.ID]component.Config{
@@ -292,7 +294,7 @@ func TestBuildPipelines(t *testing.T) {
 
 func TestBuildErrors(t *testing.T) {
 	nopReceiverFactory := receivertest.NewNopFactory()
-	nopProcessorFactory := componenttest.NewNopProcessorFactory()
+	nopProcessorFactory := processortest.NewNopFactory()
 	nopExporterFactory := exportertest.NewNopFactory()
 	badReceiverFactory := newBadReceiverFactory()
 	badProcessorFactory := newBadProcessorFactory()
@@ -604,7 +606,7 @@ func TestBuildErrors(t *testing.T) {
 				nopReceiverFactory.Type(): nopReceiverFactory,
 				badReceiverFactory.Type(): badReceiverFactory,
 			}
-			set.ProcessorFactories = map[component.Type]component.ProcessorFactory{
+			set.ProcessorFactories = map[component.Type]processor.Factory{
 				nopProcessorFactory.Type(): nopProcessorFactory,
 				badProcessorFactory.Type(): badProcessorFactory,
 			}
@@ -624,7 +626,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 	errProcessorFactory := newErrProcessorFactory()
 	errExporterFactory := newErrExporterFactory()
 	nopReceiverFactory := receivertest.NewNopFactory()
-	nopProcessorFactory := componenttest.NewNopProcessorFactory()
+	nopProcessorFactory := processortest.NewNopFactory()
 	nopExporterFactory := exportertest.NewNopFactory()
 
 	set := pipelinesSettings{
@@ -638,7 +640,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 			component.NewID(nopReceiverFactory.Type()): nopReceiverFactory.CreateDefaultConfig(),
 			component.NewID(errReceiverFactory.Type()): errReceiverFactory.CreateDefaultConfig(),
 		},
-		ProcessorFactories: map[component.Type]component.ProcessorFactory{
+		ProcessorFactories: map[component.Type]processor.Factory{
 			nopProcessorFactory.Type(): nopProcessorFactory,
 			errProcessorFactory.Type(): errProcessorFactory,
 		},
@@ -711,8 +713,8 @@ func newBadReceiverFactory() receiver.Factory {
 	})
 }
 
-func newBadProcessorFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory("bf", func() component.Config {
+func newBadProcessorFactory() processor.Factory {
+	return processor.NewFactory("bf", func() component.Config {
 		return &struct {
 			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
@@ -751,21 +753,21 @@ func newErrReceiverFactory() receiver.Factory {
 	)
 }
 
-func newErrProcessorFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory("err", func() component.Config {
+func newErrProcessorFactory() processor.Factory {
+	return processor.NewFactory("err", func() component.Config {
 		return &struct {
 			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 		}{
 			ProcessorSettings: config.NewProcessorSettings(component.NewID("bf")),
 		}
 	},
-		component.WithTracesProcessor(func(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Traces) (component.TracesProcessor, error) {
+		processor.WithTraces(func(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithLogsProcessor(func(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Logs) (component.LogsProcessor, error) {
+		processor.WithLogs(func(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
-		component.WithMetricsProcessor(func(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Metrics) (component.MetricsProcessor, error) {
+		processor.WithMetrics(func(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
 	)

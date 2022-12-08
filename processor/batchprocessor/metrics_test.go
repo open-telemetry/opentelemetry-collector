@@ -35,9 +35,10 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestBatchProcessorMetrics(t *testing.T) {
@@ -127,8 +128,8 @@ func setupTelemetry(t *testing.T, useOtel bool) testTelemetry {
 	return telemetry
 }
 
-func (tt *testTelemetry) NewProcessorCreateSettings() component.ProcessorCreateSettings {
-	settings := componenttest.NewNopProcessorCreateSettings()
+func (tt *testTelemetry) NewProcessorCreateSettings() processor.CreateSettings {
+	settings := processortest.NewNopCreateSettings()
 	settings.MeterProvider = tt.meterProvider
 	settings.ID = component.NewID(typeStr)
 

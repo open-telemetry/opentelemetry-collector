@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
@@ -191,7 +192,7 @@ type pipelinesSettings struct {
 	ReceiverConfigs map[component.ID]component.Config
 
 	// ProcessorFactories maps processor type names in the config to the respective component.ProcessorFactory.
-	ProcessorFactories map[component.Type]component.ProcessorFactory
+	ProcessorFactories map[component.Type]processor.Factory
 
 	// ProcessorConfigs is a map of component.ID to component.Config.
 	ProcessorConfigs map[component.ID]component.Config
@@ -432,7 +433,7 @@ func buildProcessor(ctx context.Context,
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	cfgs map[component.ID]component.Config,
-	factories map[component.Type]component.ProcessorFactory,
+	factories map[component.Type]processor.Factory,
 	id component.ID,
 	pipelineID component.ID,
 	next baseConsumer,
@@ -447,7 +448,7 @@ func buildProcessor(ctx context.Context,
 		return nil, fmt.Errorf("processor factory not available for: %q", id)
 	}
 
-	set := component.ProcessorCreateSettings{
+	set := processor.CreateSettings{
 		ID:                id,
 		TelemetrySettings: settings,
 		BuildInfo:         buildInfo,
@@ -462,7 +463,7 @@ func buildProcessor(ctx context.Context,
 	return proc, nil
 }
 
-func createProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, next baseConsumer, factory component.ProcessorFactory) (component.Component, error) {
+func createProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, next baseConsumer, factory processor.Factory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		return factory.CreateTracesProcessor(ctx, set, cfg, next.(consumer.Traces))
@@ -483,7 +484,7 @@ func processorLogger(logger *zap.Logger, procID component.ID, pipelineID compone
 		zap.String(components.ZapKindPipeline, pipelineID.String()))
 }
 
-func getProcessorStabilityLevel(factory component.ProcessorFactory, dt component.DataType) component.StabilityLevel {
+func getProcessorStabilityLevel(factory processor.Factory, dt component.DataType) component.StabilityLevel {
 	switch dt {
 	case component.DataTypeTraces:
 		return factory.TracesProcessorStability()

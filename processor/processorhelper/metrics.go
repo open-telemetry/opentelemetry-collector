@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor"
 )
 
 // ProcessMetricsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
@@ -38,12 +39,12 @@ type metricsProcessor struct {
 // NewMetricsProcessor creates a component.MetricsProcessor that ensure context propagation and the right tags are set.
 func NewMetricsProcessor(
 	_ context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	_ component.Config,
 	nextConsumer consumer.Metrics,
 	metricsFunc ProcessMetricsFunc,
 	options ...Option,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	// TODO: Add observability metrics support
 	if metricsFunc == nil {
 		return nil, errors.New("nil metricsFunc")

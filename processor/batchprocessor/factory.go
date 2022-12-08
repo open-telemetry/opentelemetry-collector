@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/processor"
 )
 
 const (
@@ -33,13 +34,13 @@ const (
 )
 
 // NewFactory returns a new factory for the Batch processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelStable),
-		component.WithMetricsProcessor(createMetricsProcessor, component.StabilityLevelStable),
-		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelStable))
+		processor.WithTraces(createTraces, component.StabilityLevelStable),
+		processor.WithMetrics(createMetrics, component.StabilityLevelStable),
+		processor.WithLogs(createLogs, component.StabilityLevelStable))
 }
 
 func createDefaultConfig() component.Config {
@@ -50,29 +51,29 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesProcessor(
+func createTraces(
 	_ context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), featuregate.GetRegistry())
 }
 
-func createMetricsProcessor(
+func createMetrics(
 	_ context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), featuregate.GetRegistry())
 }
 
-func createLogsProcessor(
+func createLogs(
 	_ context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), featuregate.GetRegistry())
 }
