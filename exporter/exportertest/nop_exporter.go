@@ -19,7 +19,7 @@ import (
 )
 
 // NewNopCreateSettings returns a new nop settings for Create*Exporter functions.
-var NewNopCreateSettings = componenttest.NewNopExporterCreateSettings
+var NewNopCreateSettings = componenttest.NewNopExporterCreateSettings //nolint:staticcheck
 
 // NewNopFactory returns an exporter.Factory that constructs nop exporters.
-var NewNopFactory = componenttest.NewNopExporterFactory
+var NewNopFactory = componenttest.NewNopExporterFactory //nolint:staticcheck

@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 )
 
-// NewNopExporterCreateSettings returns a new nop settings for Create*Exporter functions.
+// Deprecated: [v0.67.0] use exportertest.NewNopCreateSettings.
 func NewNopExporterCreateSettings() exporter.CreateSettings {
 	return exporter.CreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
@@ -35,7 +35,7 @@ type nopExporterConfig struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
-// NewNopExporterFactory returns an exporter.Factory that constructs nop exporters.
+// Deprecated: [v0.67.0] use exportertest.NewNopFactory.
 func NewNopExporterFactory() exporter.Factory {
 	return exporter.NewFactory(
 		"nop",

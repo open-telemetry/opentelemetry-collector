@@ -28,13 +28,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var (
 	defaultID       = component.NewID("test")
 	defaultSettings = func() exporter.CreateSettings {
-		set := componenttest.NewNopExporterCreateSettings()
+		set := exportertest.NewNopCreateSettings()
 		set.ID = defaultID
 		return set
 	}()

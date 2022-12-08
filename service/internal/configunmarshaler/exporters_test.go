@@ -21,13 +21,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestExportersUnmarshal(t *testing.T) {
-	factories, err := exporter.MakeFactoryMap(componenttest.NewNopExporterFactory())
+	factories, err := exporter.MakeFactoryMap(exportertest.NewNopFactory())
 	require.NoError(t, err)
 
 	exps := NewExporters(factories)
@@ -101,7 +101,7 @@ func TestExportersUnmarshalError(t *testing.T) {
 		},
 	}
 
-	factories, err := exporter.MakeFactoryMap(componenttest.NewNopExporterFactory())
+	factories, err := exporter.MakeFactoryMap(exportertest.NewNopFactory())
 	assert.NoError(t, err)
 
 	for _, tt := range testCases {
