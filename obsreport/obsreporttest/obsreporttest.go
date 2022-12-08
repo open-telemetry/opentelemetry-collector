@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 )
 
@@ -61,7 +62,7 @@ type TestTelemetry struct {
 
 // ToExporterCreateSettings returns ExporterCreateSettings with configured TelemetrySettings
 func (tts *TestTelemetry) ToExporterCreateSettings() exporter.CreateSettings {
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	set.TelemetrySettings = tts.TelemetrySettings
 	set.ID = tts.id
 	return set

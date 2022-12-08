@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -38,7 +39,7 @@ import (
 var configNop = &Config{
 	Receivers:  map[component.ID]component.Config{component.NewID("nop"): componenttest.NewNopReceiverFactory().CreateDefaultConfig()},
 	Processors: map[component.ID]component.Config{component.NewID("nop"): componenttest.NewNopProcessorFactory().CreateDefaultConfig()},
-	Exporters:  map[component.ID]component.Config{component.NewID("nop"): componenttest.NewNopExporterFactory().CreateDefaultConfig()},
+	Exporters:  map[component.ID]component.Config{component.NewID("nop"): exportertest.NewNopFactory().CreateDefaultConfig()},
 	Extensions: map[component.ID]component.Config{component.NewID("nop"): extensiontest.NewNopFactory().CreateDefaultConfig()},
 	Service: service.ConfigService{
 		Extensions: []component.ID{component.NewID("nop")},

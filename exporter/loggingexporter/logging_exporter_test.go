@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -32,7 +32,7 @@ import (
 
 func TestLoggingTracesExporterNoErrors(t *testing.T) {
 	f := NewFactory()
-	lte, err := f.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), f.CreateDefaultConfig())
+	lte, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), f.CreateDefaultConfig())
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
 
@@ -44,7 +44,7 @@ func TestLoggingTracesExporterNoErrors(t *testing.T) {
 
 func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 	f := NewFactory()
-	lme, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), f.CreateDefaultConfig())
+	lme, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), f.CreateDefaultConfig())
 	require.NotNil(t, lme)
 	assert.NoError(t, err)
 
@@ -59,7 +59,7 @@ func TestLoggingMetricsExporterNoErrors(t *testing.T) {
 
 func TestLoggingLogsExporterNoErrors(t *testing.T) {
 	f := NewFactory()
-	lle, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), f.CreateDefaultConfig())
+	lle, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), f.CreateDefaultConfig())
 	require.NotNil(t, lle)
 	assert.NoError(t, err)
 

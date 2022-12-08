@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
@@ -59,7 +60,7 @@ func TestMetricsRequest(t *testing.T) {
 }
 
 func TestMetricsExporter_InvalidName(t *testing.T) {
-	me, err := NewMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), nil, newPushMetricsData(nil))
+	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), nil, newPushMetricsData(nil))
 	require.Nil(t, me)
 	require.Equal(t, errNilConfig, err)
 }
@@ -71,14 +72,14 @@ func TestMetricsExporter_NilLogger(t *testing.T) {
 }
 
 func TestMetricsExporter_NilPushMetricsData(t *testing.T) {
-	me, err := NewMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &fakeMetricsExporterConfig, nil)
+	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeMetricsExporterConfig, nil)
 	require.Nil(t, me)
 	require.Equal(t, errNilPushMetricsData, err)
 }
 
 func TestMetricsExporter_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
-	me, err := NewMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil))
+	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -90,7 +91,7 @@ func TestMetricsExporter_Default(t *testing.T) {
 
 func TestMetricsExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	me, err := NewMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil), WithCapabilities(capabilities))
+	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil), WithCapabilities(capabilities))
 	assert.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -100,7 +101,7 @@ func TestMetricsExporter_WithCapabilities(t *testing.T) {
 func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 	md := pmetric.NewMetrics()
 	want := errors.New("my_error")
-	me, err := NewMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(want))
+	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
@@ -157,7 +158,7 @@ func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
 }
 
 func TestMetricsExporter_WithSpan(t *testing.T) {
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -170,7 +171,7 @@ func TestMetricsExporter_WithSpan(t *testing.T) {
 }
 
 func TestMetricsExporter_WithSpan_ReturnError(t *testing.T) {
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -187,7 +188,7 @@ func TestMetricsExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	me, err := NewMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil), WithShutdown(shutdown))
+	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -200,7 +201,7 @@ func TestMetricsExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	me, err := NewMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil), WithShutdown(shutdownErr))
+	me, err := NewMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), &fakeMetricsExporterConfig, newPushMetricsData(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
