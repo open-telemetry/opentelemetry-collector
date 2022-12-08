@@ -207,6 +207,44 @@ func TestLoadTLSServerConfig(t *testing.T) {
 	assert.NotNil(t, tlsCfg)
 }
 
+func TestLoadTLSServerConfigReload(t *testing.T) {
+
+	tmpCa, err := os.CreateTemp("", "ca-tmp.crt")
+
+	assert.NoError(t, err)
+
+	firstCa, err := os.Open(filepath.Join("testdata", "ca-1.crt"))
+	assert.NoError(t, err)
+	_, err = io.Copy(tmpCa, firstCa)
+	assert.NoError(t, err)
+
+	tlsSetting := TLSServerSetting{
+		ClientCAFile: tmpCa.Name(),
+	}
+
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, tlsCfg)
+
+	firstClient, err := tlsCfg.GetConfigForClient(nil)
+	assert.NoError(t, err)
+	firstClientCAs := firstClient.ClientCAs
+
+	secondCa, err := os.Open(filepath.Join("testdata", "ca-2.crt"))
+	assert.NoError(t, err)
+	_, err = io.Copy(tmpCa, secondCa)
+	assert.NoError(t, err)
+
+	// Wait some to ensure file watcher is notified
+	time.Sleep(100 * time.Millisecond)
+
+	secondClient, err := tlsCfg.GetConfigForClient(nil)
+	assert.NoError(t, err)
+	secondClientCAs := secondClient.ClientCAs
+
+	assert.NotEqual(t, firstClientCAs, secondClientCAs)
+}
+
 func TestEagerlyLoadCertificate(t *testing.T) {
 	options := TLSSetting{
 		CertFile: filepath.Join("testdata", "client-1.crt"),

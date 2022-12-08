@@ -236,14 +236,23 @@ func (c TLSServerSetting) LoadTLSConfig() (*tls.Config, error) {
 		return nil, fmt.Errorf("failed to load TLS config: %w", err)
 	}
 	if c.ClientCAFile != "" {
-		certPool, err := c.loadCert(c.ClientCAFile)
+		reloader, err := newClientCAsReloader(c.ClientCAFile, &c)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load TLS config: failed to load client CA CertPool: %w", err)
+			return nil, err
 		}
-		tlsCfg.ClientCAs = certPool
+		err = reloader.StartWatching()
+		if err != nil {
+			return nil, err
+		}
+		tlsCfg.GetConfigForClient = func(t *tls.ClientHelloInfo) (*tls.Config, error) { return reloader.GetClientConfig(tlsCfg) }
+		tlsCfg.ClientCAs = reloader.certPool
 		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 	return tlsCfg, nil
+}
+
+func (c TLSServerSetting) loadClientCAFile() (*x509.CertPool, error) {
+	return c.loadCert(c.ClientCAFile)
 }
 
 func convertVersion(v string, defaultVersion uint16) (uint16, error) {
