@@ -18,8 +18,7 @@ import (
 	"fmt"
 )
 
-// Factories struct holds in a single type all component factories that
-// can be handled by the Config.
+// Deprecated: [v0.68.0] use service.Factories.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
 	Receivers map[Type]ReceiverFactory

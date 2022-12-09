@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -35,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/servicetest"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -101,7 +101,7 @@ func TestConfigProviderYaml(t *testing.T) {
 	cp, err := NewConfigProvider(set)
 	require.NoError(t, err)
 
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 
 	cfg, err := cp.Get(context.Background(), factories)
@@ -122,7 +122,7 @@ func TestConfigProviderFile(t *testing.T) {
 	cp, err := NewConfigProvider(set)
 	require.NoError(t, err)
 
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 
 	cfg, err := cp.Get(context.Background(), factories)

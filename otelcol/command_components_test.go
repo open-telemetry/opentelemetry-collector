@@ -25,11 +25,11 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestNewBuildSubCommand(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 
 	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))

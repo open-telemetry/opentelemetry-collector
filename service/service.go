@@ -34,7 +34,7 @@ import (
 // Settings holds configuration for building a new service.
 type Settings struct {
 	// Factories component factories.
-	Factories component.Factories
+	Factories Factories
 
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
