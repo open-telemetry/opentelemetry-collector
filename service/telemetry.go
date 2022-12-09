@@ -24,6 +24,7 @@ import (
 	"unicode"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
+	"github.com/go-logr/zapr"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	ocmetric "go.opencensus.io/metric"
@@ -127,6 +128,11 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 	// to the OpenTelemetry Go SDK without breaking existing metrics.
 	promRegistry := prometheus.NewRegistry()
 	if tel.registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID) {
+		otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+			logger.Error("OTel SDK error", zap.Error(err))
+		}))
+		otel.SetLogger(zapr.NewLogger(logger))
+
 		err = tel.initOpenTelemetry(telAttrs, promRegistry)
 		if err != nil {
 			return err
