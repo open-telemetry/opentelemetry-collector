@@ -128,11 +128,13 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 	// to the OpenTelemetry Go SDK without breaking existing metrics.
 	promRegistry := prometheus.NewRegistry()
 	if tel.registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID) {
-		err = tel.initOpenTelemetry(telAttrs, promRegistry)
+		// Register the otel-go logging handlers.
 		otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
 			logger.Error("OTel SDK error", zap.Error(err))
 		}))
 		otel.SetLogger(zapr.NewLogger(logger))
+
+		err = tel.initOpenTelemetry(telAttrs, promRegistry)
 		if err != nil {
 			return err
 		}
