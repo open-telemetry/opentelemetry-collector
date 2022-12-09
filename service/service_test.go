@@ -15,19 +15,123 @@
 package service
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
+	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
+
+type labelState int
+
+const (
+	labelNotPresent labelState = iota
+	labelSpecificValue
+	labelAnyValue
+)
+
+type labelValue struct {
+	label string
+	state labelState
+}
+
+type ownMetricsTestCase struct {
+	name                string
+	userDefinedResource map[string]*string
+	expectedLabels      map[string]labelValue
+}
+
+var testResourceAttrValue = "resource_attr_test_value"
+var testInstanceID = "test_instance_id"
+var testServiceVersion = "2022-05-20"
+
+const metricsVersion = "test version"
+
+func ownMetricsTestCases() []ownMetricsTestCase {
+	return []ownMetricsTestCase{{
+		name:                "no resource",
+		userDefinedResource: nil,
+		// All labels added to all collector metrics by default are listed below.
+		// These labels are hard coded here in order to avoid inadvertent changes:
+		// at this point changing labels should be treated as a breaking changing
+		// and requires a good justification. The reason is that changes to metric
+		// names or labels can break alerting, dashboards, etc that are used to
+		// monitor the Collector in production deployments.
+		expectedLabels: map[string]labelValue{
+			"service_instance_id": {state: labelAnyValue},
+			"service_version":     {label: metricsVersion, state: labelSpecificValue},
+		},
+	},
+		{
+			name: "resource with custom attr",
+			userDefinedResource: map[string]*string{
+				"custom_resource_attr": &testResourceAttrValue,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id":  {state: labelAnyValue},
+				"service_version":      {label: metricsVersion, state: labelSpecificValue},
+				"custom_resource_attr": {label: "resource_attr_test_value", state: labelSpecificValue},
+			},
+		},
+		{
+			name: "override service.instance.id",
+			userDefinedResource: map[string]*string{
+				"service.instance.id": &testInstanceID,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {label: "test_instance_id", state: labelSpecificValue},
+				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+			},
+		},
+		{
+			name: "suppress service.instance.id",
+			userDefinedResource: map[string]*string{
+				"service.instance.id": nil, // nil value in config is used to suppress attributes.
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelNotPresent},
+				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+			},
+		},
+		{
+			name: "override service.version",
+			userDefinedResource: map[string]*string{
+				"service.version": &testServiceVersion,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_version":     {label: "2022-05-20", state: labelSpecificValue},
+			},
+		},
+		{
+			name: "suppress service.version",
+			userDefinedResource: map[string]*string{
+				"service.version": nil, // nil value in config is used to suppress attributes.
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_version":     {state: labelNotPresent},
+			},
+		}}
+}
 
 func TestService_GetFactory(t *testing.T) {
 	factories, err := componenttest.NopFactories()
@@ -135,7 +239,85 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 		assert.NoError(t, telemetryTwo.shutdown())
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
+}
 
+func TestServiceTelemetryWithOpenCensusMetrics(t *testing.T) {
+	for _, tc := range ownMetricsTestCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			testCollectorStartHelper(t, newColTelemetry(featuregate.NewRegistry()), tc)
+		})
+	}
+}
+
+func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
+	for _, tc := range ownMetricsTestCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			registry := featuregate.NewRegistry()
+			obsreportconfig.RegisterInternalMetricFeatureGate(registry)
+			colTel := newColTelemetry(registry)
+			require.NoError(t, colTel.registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
+			testCollectorStartHelper(t, colTel, tc)
+		})
+	}
+}
+
+func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc ownMetricsTestCase) {
+	factories, err := componenttest.NopFactories()
+	zpagesExt := zpagesextension.NewFactory()
+	factories.Extensions[zpagesExt.Type()] = zpagesExt
+	require.NoError(t, err)
+	var once sync.Once
+	loggingHookCalled := false
+	hook := func(entry zapcore.Entry) error {
+		once.Do(func() {
+			loggingHookCalled = true
+		})
+		return nil
+	}
+
+	metricsAddr := testutil.GetAvailableLocalAddress(t)
+	zpagesAddr := testutil.GetAvailableLocalAddress(t)
+	// Prepare config properties to be merged with the main config.
+	extraCfgAsProps := map[string]interface{}{
+		// Setup the zpages extension.
+		"extensions::zpages::endpoint": zpagesAddr,
+		"service::extensions":          "nop, zpages",
+		// Set the metrics address to expose own metrics on.
+		"service::telemetry::metrics::address": metricsAddr,
+	}
+	// Also include resource attributes under the service::telemetry::resource key.
+	for k, v := range tc.userDefinedResource {
+		extraCfgAsProps["service::telemetry::resource::"+k] = v
+	}
+
+	cfgSet := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")})
+	cfgSet.ResolverSettings.Converters = append([]confmap.Converter{
+		mapConverter{extraCfgAsProps}},
+		cfgSet.ResolverSettings.Converters...,
+	)
+	cfgProvider, err := NewConfigProvider(cfgSet)
+	require.NoError(t, err)
+
+	cfg, err := cfgProvider.Get(context.Background(), factories)
+	require.NoError(t, err)
+
+	srv, err := newService(&settings{
+		BuildInfo:      component.BuildInfo{Version: "test version"},
+		Factories:      factories,
+		Config:         cfg,
+		LoggingOptions: []zap.Option{zap.Hooks(hook)},
+		telemetry:      telemetry,
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, srv.Start(context.Background()))
+	// Sleep for 1 second to ensure the http server is started.
+	time.Sleep(1 * time.Second)
+	assert.True(t, loggingHookCalled)
+	assertMetrics(t, metricsAddr, tc.expectedLabels)
+	assertZPages(t, zpagesAddr)
+	require.NoError(t, srv.Shutdown(context.Background()))
+	require.NoError(t, telemetry.shutdown())
 }
 
 // TestServiceTelemetryReusable tests that a single telemetryInitializer can be reused in multiple services
@@ -222,4 +404,84 @@ func createExampleService(t *testing.T, factories component.Factories) *service 
 		require.NoError(t, telemetry.shutdown())
 	})
 	return srv
+}
+
+func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]labelValue) {
+	client := &http.Client{}
+	resp, err := client.Get("http://" + metricsAddr + "/metrics")
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		assert.NoError(t, resp.Body.Close())
+	})
+	reader := bufio.NewReader(resp.Body)
+
+	var parser expfmt.TextParser
+	parsed, err := parser.TextToMetricFamilies(reader)
+	require.NoError(t, err)
+
+	prefix := "otelcol"
+	for metricName, metricFamily := range parsed {
+		// require is used here so test fails with a single message.
+		require.True(
+			t,
+			strings.HasPrefix(metricName, prefix),
+			"expected prefix %q but string starts with %q",
+			prefix,
+			metricName[:len(prefix)+1]+"...")
+
+		for _, metric := range metricFamily.Metric {
+			labelMap := map[string]string{}
+			for _, labelPair := range metric.Label {
+				labelMap[*labelPair.Name] = *labelPair.Value
+			}
+
+			for k, v := range expectedLabels {
+				switch v.state {
+				case labelNotPresent:
+					_, present := labelMap[k]
+					assert.Falsef(t, present, "label %q must not be present", k)
+				case labelSpecificValue:
+					require.Equalf(t, v.label, labelMap[k], "mandatory label %q value mismatch", k)
+				case labelAnyValue:
+					assert.NotEmptyf(t, labelMap[k], "mandatory label %q not present", k)
+				}
+			}
+		}
+	}
+}
+
+func assertZPages(t *testing.T, zpagesAddr string) {
+	paths := []string{
+		"/debug/tracez",
+		// TODO: enable this when otel-metrics is used and this page is available.
+		// "/debug/rpcz",
+		"/debug/pipelinez",
+		"/debug/servicez",
+		"/debug/extensionz",
+	}
+
+	testZPagePathFn := func(t *testing.T, path string) {
+		client := &http.Client{}
+		resp, err := client.Get("http://" + zpagesAddr + path)
+		if !assert.NoError(t, err, "error retrieving zpage at %q", path) {
+			return
+		}
+		assert.Equal(t, http.StatusOK, resp.StatusCode, "unsuccessful zpage %q GET", path)
+		assert.NoError(t, resp.Body.Close())
+	}
+
+	for _, path := range paths {
+		testZPagePathFn(t, path)
+	}
+}
+
+// mapConverter applies extraMap of config settings. Useful for overriding the config
+// for testing purposes. Keys must use "::" delimiter between levels.
+type mapConverter struct {
+	extraMap map[string]interface{}
+}
+
+func (m mapConverter) Convert(ctx context.Context, conf *confmap.Conf) error {
+	return conf.Merge(confmap.NewFromStringMap(m.extraMap))
 }
