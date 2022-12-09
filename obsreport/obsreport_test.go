@@ -54,7 +54,7 @@ type testParams struct {
 
 func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt obsreporttest.TestTelemetry, registry *featuregate.Registry)) {
 	t.Run("WithOC", func(t *testing.T) {
-		tt, err := obsreporttest.SetupTelemetryWithID(id)
+		tt, err := obsreporttest.SetupTelemetry(id)
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -66,7 +66,7 @@ func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt
 		obsreportconfig.RegisterInternalMetricFeatureGate(registry)
 		require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
 
-		tt, err := obsreporttest.SetupTelemetryWithID(id)
+		tt, err := obsreporttest.SetupTelemetry(id)
 		require.NoError(t, err)
 		t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -425,7 +425,7 @@ func TestExportLogsOp(t *testing.T) {
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
