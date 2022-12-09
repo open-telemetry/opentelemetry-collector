@@ -671,7 +671,7 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, test := range tests {
 			t.Run(test.name+"/"+exporter.receiverTag, func(t *testing.T) {
-				tt, err := obsreporttest.SetupTelemetryWithID(component.NewIDWithName(typeStr, exporter.receiverTag))
+				tt, err := obsreporttest.SetupTelemetry(component.NewIDWithName(typeStr, exporter.receiverTag))
 				require.NoError(t, err)
 				t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 

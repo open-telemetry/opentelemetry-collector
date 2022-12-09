@@ -29,7 +29,7 @@ import (
 
 func TestExportEnqueueFailure(t *testing.T) {
 	exporter := component.NewID("fakeExporter")
-	tt, err := obsreporttest.SetupTelemetryWithID(exporter)
+	tt, err := obsreporttest.SetupTelemetry(exporter)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 

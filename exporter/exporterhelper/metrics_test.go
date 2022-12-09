@@ -108,7 +108,7 @@ func TestMetricsExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(fakeMetricsExporterName)
+	tt, err := obsreporttest.SetupTelemetry(fakeMetricsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -121,7 +121,7 @@ func TestMetricsExporter_WithRecordMetrics(t *testing.T) {
 
 func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	tt, err := obsreporttest.SetupTelemetryWithID(fakeMetricsExporterName)
+	tt, err := obsreporttest.SetupTelemetry(fakeMetricsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -133,7 +133,7 @@ func TestMetricsExporter_WithRecordMetrics_ReturnError(t *testing.T) {
 }
 
 func TestMetricsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(fakeMetricsExporterName)
+	tt, err := obsreporttest.SetupTelemetry(fakeMetricsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
