@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -45,7 +44,6 @@ func TestUnmarshalConfig(t *testing.T) {
 		{
 			filename: "config_loglevel.yaml",
 			cfg: &Config{
-				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 				LogLevel:           zapcore.DebugLevel,
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
@@ -56,7 +54,6 @@ func TestUnmarshalConfig(t *testing.T) {
 		{
 			filename: "config_verbosity.yaml",
 			cfg: &Config{
-				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 				LogLevel:           zapcore.InfoLevel,
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
@@ -66,7 +63,6 @@ func TestUnmarshalConfig(t *testing.T) {
 		{
 			filename: "loglevel_info.yaml",
 			cfg: &Config{
-				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 				LogLevel:           zapcore.InfoLevel,
 				Verbosity:          configtelemetry.LevelNormal,
 				SamplingInitial:    2,

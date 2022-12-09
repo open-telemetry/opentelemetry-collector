@@ -39,7 +39,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -188,8 +187,7 @@ func TestJsonHttp(t *testing.T) {
 func TestHandleInvalidRequests(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-		Protocols:        Protocols{HTTP: &confighttp.HTTPServerSettings{Endpoint: endpoint}},
+		Protocols: Protocols{HTTP: &confighttp.HTTPServerSettings{Endpoint: endpoint}},
 	}
 
 	// Traces
@@ -712,7 +710,6 @@ func TestOTLPReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
@@ -783,7 +780,6 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols: Protocols{
 			HTTP: &confighttp.HTTPServerSettings{
 				Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -812,7 +808,6 @@ func testHTTPMaxRequestBodySizeJSON(t *testing.T, payload []byte, size int, expe
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	url := fmt.Sprintf("http://%s/v1/traces", endpoint)
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols: Protocols{
 			HTTP: &confighttp.HTTPServerSettings{
 				Endpoint:           endpoint,

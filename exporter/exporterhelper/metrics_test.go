@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -45,7 +44,7 @@ const (
 
 var (
 	fakeMetricsExporterName   = component.NewIDWithName("fake_metrics_exporter", "with_name")
-	fakeMetricsExporterConfig = config.NewExporterSettings(fakeMetricsExporterName)
+	fakeMetricsExporterConfig = struct{}{}
 )
 
 func TestMetricsRequest(t *testing.T) {

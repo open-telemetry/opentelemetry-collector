@@ -26,7 +26,8 @@ import (
 
 // Config defines configuration for memory memoryLimiter processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// Deprecated: [v0.68.0] will be removed soon.
+	config.ProcessorSettings `mapstructure:",squash"`
 
 	// CheckInterval is the time between measurements of memory usage for the
 	// purposes of avoiding going over the limits. Defaults to zero, so no

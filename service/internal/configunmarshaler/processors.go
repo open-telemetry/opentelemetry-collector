@@ -53,7 +53,6 @@ func (p *Processors) Unmarshal(conf *confmap.Conf) error {
 
 		// Create the default config for this processor.
 		processorCfg := factory.CreateDefaultConfig()
-		processorCfg.SetIDName(id.Name()) //nolint:staticcheck
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.

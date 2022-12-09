@@ -23,12 +23,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 func TestNewFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewExporterSettings(component.NewID(typeStr))
+	defaultCfg := struct{}{}
 	factory := NewFactory(
 		typeStr,
 		func() component.Config { return &defaultCfg })
@@ -44,7 +43,7 @@ func TestNewFactory(t *testing.T) {
 
 func TestNewFactoryWithOptions(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewExporterSettings(component.NewID(typeStr))
+	defaultCfg := struct{}{}
 	factory := NewFactory(
 		typeStr,
 		func() component.Config { return &defaultCfg },

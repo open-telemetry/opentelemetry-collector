@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 type nopExtension struct {
@@ -31,7 +30,7 @@ type nopExtension struct {
 
 func TestNewFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewExtensionSettings(component.NewID(typeStr))
+	defaultCfg := struct{}{}
 	nopExtensionInstance := new(nopExtension)
 
 	factory := NewFactory(

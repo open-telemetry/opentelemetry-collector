@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -31,19 +30,11 @@ func NewNopReceiverCreateSettings() receiver.CreateSettings {
 	}
 }
 
-type nopReceiverConfig struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
-
 // Deprecated: [v0.67.0] use receivertest.NewNopFactory
 func NewNopReceiverFactory() receiver.Factory {
 	return receiver.NewFactory(
 		"nop",
-		func() component.Config {
-			return &nopReceiverConfig{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
-			}
-		},
+		func() component.Config { return &nopConfig{} },
 		receiver.WithTraces(createTraces, component.StabilityLevelStable),
 		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
 		receiver.WithLogs(createLogs, component.StabilityLevelStable))

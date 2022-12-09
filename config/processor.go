@@ -13,21 +13,15 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+
 import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// ProcessorSettings defines common settings for a component.Processor configuration.
-// Specific processors can embed this struct and extend it with more fields if needed.
-//
-// When embedded in the processor config it must be with `mapstructure:",squash"` tag.
-type ProcessorSettings struct {
-	settings
-}
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
+type ProcessorSettings struct{}
 
-// NewProcessorSettings return a new ProcessorSettings with the given ComponentID.
-func NewProcessorSettings(id component.ID) ProcessorSettings {
-	return ProcessorSettings{settings: newSettings(id)}
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
+func NewProcessorSettings(component.ID) ProcessorSettings {
+	return ProcessorSettings{}
 }
-
-var _ component.Config = (*ProcessorSettings)(nil)

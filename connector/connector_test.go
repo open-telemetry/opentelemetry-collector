@@ -21,13 +21,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 func TestNewConnectorFactory_NoOptions(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewConnectorSettings(component.NewID(typeStr))
+	defaultCfg := struct{}{}
 	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
@@ -56,7 +55,7 @@ func TestNewConnectorFactory_NoOptions(t *testing.T) {
 
 func TestNewConnectorFactory_WithSameTypes(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewConnectorSettings(component.NewID(typeStr))
+	defaultCfg := struct{}{}
 	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg },
 		WithTracesToTraces(createTracesToTraces, component.StabilityLevelAlpha),
 		WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelBeta),
@@ -94,7 +93,7 @@ func TestNewConnectorFactory_WithSameTypes(t *testing.T) {
 
 func TestNewConnectorFactory_WithTranslateTypes(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewConnectorSettings(component.NewID(typeStr))
+	defaultCfg := struct{}{}
 	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg },
 		WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),
 		WithTracesToLogs(createTracesToLogs, component.StabilityLevelAlpha),
@@ -139,7 +138,7 @@ func TestNewConnectorFactory_WithTranslateTypes(t *testing.T) {
 
 func TestNewConnectorFactory_WithAllTypes(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewConnectorSettings(component.NewID(typeStr))
+	defaultCfg := struct{}{}
 	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg },
 		WithTracesToTraces(createTracesToTraces, component.StabilityLevelAlpha),
 		WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),

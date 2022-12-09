@@ -38,7 +38,6 @@ func TestExportersUnmarshal(t *testing.T) {
 	require.NoError(t, exps.Unmarshal(conf))
 
 	cfgWithName := factories["nop"].CreateDefaultConfig()
-	cfgWithName.SetIDName("myexporter") //nolint:staticcheck
 	assert.Equal(t, map[component.ID]component.Config{
 		component.NewID("nop"):                       factories["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myexporter"): cfgWithName,

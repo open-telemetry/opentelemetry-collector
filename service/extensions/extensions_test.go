@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
@@ -107,11 +106,7 @@ func newBadExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		"bf",
 		func() component.Config {
-			return &struct {
-				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-			}{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("bf")),
-			}
+			return &struct{}{}
 		},
 		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
 			return nil, nil
@@ -124,11 +119,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		"err",
 		func() component.Config {
-			return &struct {
-				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-			}{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("err")),
-			}
+			return &struct{}{}
 		},
 		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")

@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -705,42 +704,25 @@ func TestFailToStartAndShutdown(t *testing.T) {
 
 func newBadReceiverFactory() receiver.Factory {
 	return receiver.NewFactory("bf", func() component.Config {
-		return &struct {
-			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-		}{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID("bf")),
-		}
+		return &struct{}{}
 	})
 }
 
 func newBadProcessorFactory() processor.Factory {
 	return processor.NewFactory("bf", func() component.Config {
-		return &struct {
-			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-		}{
-			ProcessorSettings: config.NewProcessorSettings(component.NewID("bf")),
-		}
+		return &struct{}{}
 	})
 }
 
 func newBadExporterFactory() exporter.Factory {
 	return exporter.NewFactory("bf", func() component.Config {
-		return &struct {
-			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-		}{
-			ExporterSettings: config.NewExporterSettings(component.NewID("bf")),
-		}
+		return &struct{}{}
 	})
 }
 
 func newErrReceiverFactory() receiver.Factory {
-	return receiver.NewFactory("err", func() component.Config {
-		return &struct {
-			config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-		}{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID("bf")),
-		}
-	},
+	return receiver.NewFactory("err",
+		func() component.Config { return &struct{}{} },
 		receiver.WithTraces(func(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
@@ -754,13 +736,8 @@ func newErrReceiverFactory() receiver.Factory {
 }
 
 func newErrProcessorFactory() processor.Factory {
-	return processor.NewFactory("err", func() component.Config {
-		return &struct {
-			config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-		}{
-			ProcessorSettings: config.NewProcessorSettings(component.NewID("bf")),
-		}
-	},
+	return processor.NewFactory("err",
+		func() component.Config { return &struct{}{} },
 		processor.WithTraces(func(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
@@ -774,13 +751,8 @@ func newErrProcessorFactory() processor.Factory {
 }
 
 func newErrExporterFactory() exporter.Factory {
-	return exporter.NewFactory("err", func() component.Config {
-		return &struct {
-			config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-		}{
-			ExporterSettings: config.NewExporterSettings(component.NewID("bf")),
-		}
-	},
+	return exporter.NewFactory("err",
+		func() component.Config { return &struct{}{} },
 		exporter.WithTraces(func(context.Context, exporter.CreateSettings, component.Config) (exporter.Traces, error) {
 			return &errComponent{}, nil
 		}, component.StabilityLevelUndefined),
