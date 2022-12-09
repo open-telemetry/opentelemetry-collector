@@ -16,408 +16,25 @@ package memorylimiterprocessor
 
 import (
 	"context"
-	"runtime"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
-	"go.uber.org/zap"
+	"github.com/tilinna/clock"
+	"go.uber.org/zap/zaptest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/memory"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/memorytest"
 )
-
-func TestNew(t *testing.T) {
-	type args struct {
-		nextConsumer        consumer.Traces
-		checkInterval       time.Duration
-		memoryLimitMiB      uint32
-		memorySpikeLimitMiB uint32
-	}
-	sink := new(consumertest.TracesSink)
-	tests := []struct {
-		name    string
-		args    args
-		wantErr error
-	}{
-		{
-			name: "zero_checkInterval",
-			args: args{
-				nextConsumer: sink,
-			},
-			wantErr: errCheckIntervalOutOfRange,
-		},
-		{
-			name: "zero_memAllocLimit",
-			args: args{
-				nextConsumer:  sink,
-				checkInterval: 100 * time.Millisecond,
-			},
-			wantErr: errLimitOutOfRange,
-		},
-		{
-			name: "memSpikeLimit_gt_memAllocLimit",
-			args: args{
-				nextConsumer:        sink,
-				checkInterval:       100 * time.Millisecond,
-				memoryLimitMiB:      1,
-				memorySpikeLimitMiB: 2,
-			},
-			wantErr: errMemSpikeLimitOutOfRange,
-		},
-		{
-			name: "success",
-			args: args{
-				nextConsumer:   sink,
-				checkInterval:  100 * time.Millisecond,
-				memoryLimitMiB: 1024,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := createDefaultConfig().(*Config)
-			cfg.CheckInterval = tt.args.checkInterval
-			cfg.MemoryLimitMiB = tt.args.memoryLimitMiB
-			cfg.MemorySpikeLimitMiB = tt.args.memorySpikeLimitMiB
-			got, err := newMemoryLimiter(processortest.NewNopCreateSettings(), cfg)
-			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
-				return
-			}
-			assert.NoError(t, err)
-			assert.NoError(t, got.start(context.Background(), componenttest.NewNopHost()))
-			assert.NoError(t, got.shutdown(context.Background()))
-		})
-	}
-}
-
-// TestMetricsMemoryPressureResponse manipulates results from querying memory and
-// check expected side effects.
-func TestMetricsMemoryPressureResponse(t *testing.T) {
-	var currentMemAlloc uint64
-	ml := &memoryLimiter{
-		usageChecker: memUsageChecker{
-			memAllocLimit: 1024,
-		},
-		forceDrop: atomic.NewBool(false),
-		readMemStatsFn: func(ms *runtime.MemStats) {
-			ms.Alloc = currentMemAlloc
-		},
-		obsrep: newObsReport(t),
-		logger: zap.NewNop(),
-	}
-	mp, err := processorhelper.NewMetricsProcessor(
-		context.Background(),
-		processortest.NewNopCreateSettings(),
-		&Config{},
-		consumertest.NewNop(),
-		ml.processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	md := pmetric.NewMetrics()
-
-	// Below memAllocLimit.
-	currentMemAlloc = 800
-	ml.checkMemLimits()
-	assert.NoError(t, mp.ConsumeMetrics(ctx, md))
-
-	// Above memAllocLimit.
-	currentMemAlloc = 1800
-	ml.checkMemLimits()
-	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, md))
-
-	// Check ballast effect
-	ml.ballastSize = 1000
-
-	// Below memAllocLimit accounting for ballast.
-	currentMemAlloc = 800 + ml.ballastSize
-	ml.checkMemLimits()
-	assert.NoError(t, mp.ConsumeMetrics(ctx, md))
-
-	// Above memAllocLimit even accountiing for ballast.
-	currentMemAlloc = 1800 + ml.ballastSize
-	ml.checkMemLimits()
-	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, md))
-
-	// Restore ballast to default.
-	ml.ballastSize = 0
-
-	// Check spike limit
-	ml.usageChecker.memSpikeLimit = 512
-
-	// Below memSpikeLimit.
-	currentMemAlloc = 500
-	ml.checkMemLimits()
-	assert.NoError(t, mp.ConsumeMetrics(ctx, md))
-
-	// Above memSpikeLimit.
-	currentMemAlloc = 550
-	ml.checkMemLimits()
-	assert.Equal(t, errForcedDrop, mp.ConsumeMetrics(ctx, md))
-
-}
-
-// TestTraceMemoryPressureResponse manipulates results from querying memory and
-// check expected side effects.
-func TestTraceMemoryPressureResponse(t *testing.T) {
-	var currentMemAlloc uint64
-	ml := &memoryLimiter{
-		usageChecker: memUsageChecker{
-			memAllocLimit: 1024,
-		},
-		forceDrop: atomic.NewBool(false),
-		readMemStatsFn: func(ms *runtime.MemStats) {
-			ms.Alloc = currentMemAlloc
-		},
-		obsrep: newObsReport(t),
-		logger: zap.NewNop(),
-	}
-	tp, err := processorhelper.NewTracesProcessor(
-		context.Background(),
-		processortest.NewNopCreateSettings(),
-		&Config{},
-		consumertest.NewNop(),
-		ml.processTraces,
-		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	td := ptrace.NewTraces()
-
-	// Below memAllocLimit.
-	currentMemAlloc = 800
-	ml.checkMemLimits()
-	assert.NoError(t, tp.ConsumeTraces(ctx, td))
-
-	// Above memAllocLimit.
-	currentMemAlloc = 1800
-	ml.checkMemLimits()
-	assert.Equal(t, errForcedDrop, tp.ConsumeTraces(ctx, td))
-
-	// Check ballast effect
-	ml.ballastSize = 1000
-
-	// Below memAllocLimit accounting for ballast.
-	currentMemAlloc = 800 + ml.ballastSize
-	ml.checkMemLimits()
-	assert.NoError(t, tp.ConsumeTraces(ctx, td))
-
-	// Above memAllocLimit even accountiing for ballast.
-	currentMemAlloc = 1800 + ml.ballastSize
-	ml.checkMemLimits()
-	assert.Equal(t, errForcedDrop, tp.ConsumeTraces(ctx, td))
-
-	// Restore ballast to default.
-	ml.ballastSize = 0
-
-	// Check spike limit
-	ml.usageChecker.memSpikeLimit = 512
-
-	// Below memSpikeLimit.
-	currentMemAlloc = 500
-	ml.checkMemLimits()
-	assert.NoError(t, tp.ConsumeTraces(ctx, td))
-
-	// Above memSpikeLimit.
-	currentMemAlloc = 550
-	ml.checkMemLimits()
-	assert.Equal(t, errForcedDrop, tp.ConsumeTraces(ctx, td))
-
-}
-
-// TestLogMemoryPressureResponse manipulates results from querying memory and
-// check expected side effects.
-func TestLogMemoryPressureResponse(t *testing.T) {
-	var currentMemAlloc uint64
-	ml := &memoryLimiter{
-		usageChecker: memUsageChecker{
-			memAllocLimit: 1024,
-		},
-		forceDrop: atomic.NewBool(false),
-		readMemStatsFn: func(ms *runtime.MemStats) {
-			ms.Alloc = currentMemAlloc
-		},
-		obsrep: newObsReport(t),
-		logger: zap.NewNop(),
-	}
-	lp, err := processorhelper.NewLogsProcessor(
-		context.Background(),
-		processortest.NewNopCreateSettings(),
-		&Config{},
-		consumertest.NewNop(),
-		ml.processLogs,
-		processorhelper.WithCapabilities(processorCapabilities),
-		processorhelper.WithShutdown(ml.shutdown))
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	ld := plog.NewLogs()
-
-	// Below memAllocLimit.
-	currentMemAlloc = 800
-	ml.checkMemLimits()
-	assert.NoError(t, lp.ConsumeLogs(ctx, ld))
-
-	// Above memAllocLimit.
-	currentMemAlloc = 1800
-	ml.checkMemLimits()
-	assert.Equal(t, errForcedDrop, lp.ConsumeLogs(ctx, ld))
-
-	// Check ballast effect
-	ml.ballastSize = 1000
-
-	// Below memAllocLimit accounting for ballast.
-	currentMemAlloc = 800 + ml.ballastSize
-	ml.checkMemLimits()
-	assert.NoError(t, lp.ConsumeLogs(ctx, ld))
-
-	// Above memAllocLimit even accountiing for ballast.
-	currentMemAlloc = 1800 + ml.ballastSize
-	ml.checkMemLimits()
-	assert.Equal(t, errForcedDrop, lp.ConsumeLogs(ctx, ld))
-
-	// Restore ballast to default.
-	ml.ballastSize = 0
-
-	// Check spike limit
-	ml.usageChecker.memSpikeLimit = 512
-
-	// Below memSpikeLimit.
-	currentMemAlloc = 500
-	ml.checkMemLimits()
-	assert.NoError(t, lp.ConsumeLogs(ctx, ld))
-
-	// Above memSpikeLimit.
-	currentMemAlloc = 550
-	ml.checkMemLimits()
-	assert.Equal(t, errForcedDrop, lp.ConsumeLogs(ctx, ld))
-}
-
-func TestGetDecision(t *testing.T) {
-	t.Run("fixed_limit", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitMiB: 100, MemorySpikeLimitMiB: 20}, zap.NewNop())
-		require.NoError(t, err)
-		assert.Equal(t, &memUsageChecker{
-			memAllocLimit: 100 * mibBytes,
-			memSpikeLimit: 20 * mibBytes,
-		}, d)
-	})
-	t.Run("fixed_limit_error", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitMiB: 20, MemorySpikeLimitMiB: 100}, zap.NewNop())
-		require.Error(t, err)
-		assert.Nil(t, d)
-	})
-
-	t.Cleanup(func() {
-		getMemoryFn = iruntime.TotalMemory
-	})
-	getMemoryFn = func() (uint64, error) {
-		return 100 * mibBytes, nil
-	}
-	t.Run("percentage_limit", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitPercentage: 50, MemorySpikePercentage: 10}, zap.NewNop())
-		require.NoError(t, err)
-		assert.Equal(t, &memUsageChecker{
-			memAllocLimit: 50 * mibBytes,
-			memSpikeLimit: 10 * mibBytes,
-		}, d)
-	})
-	t.Run("percentage_limit_error", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitPercentage: 101, MemorySpikePercentage: 10}, zap.NewNop())
-		require.Error(t, err)
-		assert.Nil(t, d)
-		d, err = getMemUsageChecker(&Config{MemoryLimitPercentage: 99, MemorySpikePercentage: 101}, zap.NewNop())
-		require.Error(t, err)
-		assert.Nil(t, d)
-	})
-}
-
-func TestDropDecision(t *testing.T) {
-	decison1000Limit30Spike30, err := newPercentageMemUsageChecker(1000, 60, 30)
-	require.NoError(t, err)
-	decison1000Limit60Spike50, err := newPercentageMemUsageChecker(1000, 60, 50)
-	require.NoError(t, err)
-	decison1000Limit40Spike20, err := newPercentageMemUsageChecker(1000, 40, 20)
-	require.NoError(t, err)
-	decison1000Limit40Spike60, err := newPercentageMemUsageChecker(1000, 40, 60)
-	require.Error(t, err)
-	assert.Nil(t, decison1000Limit40Spike60)
-
-	tests := []struct {
-		name         string
-		usageChecker memUsageChecker
-		ms           *runtime.MemStats
-		shouldDrop   bool
-	}{
-		{
-			name:         "should drop over limit",
-			usageChecker: *decison1000Limit30Spike30,
-			ms:           &runtime.MemStats{Alloc: 600},
-			shouldDrop:   true,
-		},
-		{
-			name:         "should not drop",
-			usageChecker: *decison1000Limit30Spike30,
-			ms:           &runtime.MemStats{Alloc: 100},
-			shouldDrop:   false,
-		},
-		{
-			name: "should not drop spike, fixed usageChecker",
-			usageChecker: memUsageChecker{
-				memAllocLimit: 600,
-				memSpikeLimit: 500,
-			},
-			ms:         &runtime.MemStats{Alloc: 300},
-			shouldDrop: true,
-		},
-		{
-			name:         "should drop, spike, percentage usageChecker",
-			usageChecker: *decison1000Limit60Spike50,
-			ms:           &runtime.MemStats{Alloc: 300},
-			shouldDrop:   true,
-		},
-		{
-			name:         "should drop, spike, percentage usageChecker",
-			usageChecker: *decison1000Limit40Spike20,
-			ms:           &runtime.MemStats{Alloc: 250},
-			shouldDrop:   true,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			shouldDrop := test.usageChecker.aboveSoftLimit(test.ms)
-			assert.Equal(t, test.shouldDrop, shouldDrop)
-		})
-	}
-}
-
-func TestBallastSize(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.CheckInterval = 10 * time.Second
-	cfg.MemoryLimitMiB = 1024
-	got, err := newMemoryLimiter(processortest.NewNopCreateSettings(), cfg)
-	require.NoError(t, err)
-	require.NoError(t, got.start(context.Background(), &host{ballastSize: 113}))
-	assert.Equal(t, uint64(113), got.ballastSize)
-	require.NoError(t, got.shutdown(context.Background()))
-}
 
 type host struct {
 	ballastSize uint64
@@ -440,15 +57,212 @@ func (be *ballastExtension) GetBallastSize() uint64 {
 	return be.ballastSize
 }
 
-func newObsReport(t *testing.T) *obsreport.Processor {
+func newObsReport(tb testing.TB) *obsreport.Processor {
+	tb.Helper()
+
 	set := obsreport.ProcessorSettings{
 		ProcessorID:             component.NewID(typeStr),
-		ProcessorCreateSettings: processortest.NewNopCreateSettings(),
+		ProcessorCreateSettings: componenttest.NewNopProcessorCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone
 
 	proc, err := obsreport.NewProcessor(set)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	return proc
+}
+
+func TestNewMemoryLimiter(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name string
+		conf *Config
+		opts []func(*memorySettings)
+
+		err error
+	}{
+		{
+			name: "Valid Memory Limiter",
+			conf: &Config{
+				CheckInterval:       time.Minute,
+				MemoryLimitMiB:      1000,
+				MemorySpikeLimitMiB: 800,
+			},
+			err: nil,
+		},
+		{
+			name: "Total memory failed",
+			conf: &Config{
+				CheckInterval:         time.Minute,
+				MemoryLimitPercentage: 90,
+			},
+			err: errForcedDrop,
+			opts: []func(*memorySettings){
+				func(ms *memorySettings) {
+					ms.total = func() (uint64, error) {
+						return 0, errForcedDrop
+					}
+				},
+			},
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			lim, err := newMemoryLimiter(
+				context.Background(),
+				componenttest.NewNopProcessorCreateSettings(),
+				tc.conf,
+				tc.opts...,
+			)
+
+			assert.ErrorIs(t, err, tc.err, "Must match expected error")
+			if tc.err != nil {
+				assert.Nil(t, lim, "Must be nil if error returned")
+				return
+			}
+			assert.NotNil(t, lim, "Must have a valid limiter if no error is returned")
+		})
+	}
+}
+
+func TestTelemetryProcessing(t *testing.T) {
+	type consumeEvent struct {
+		name string
+		err  error
+	}
+
+	for _, signal := range []struct {
+		telemetry string
+		consume   func(lim *memoryLimiter) error
+	}{
+		{
+			telemetry: "logs",
+			consume: func(lim *memoryLimiter) error {
+				_, err := lim.processLogs(context.Background(), plog.NewLogs())
+				return err
+			},
+		},
+		{
+			telemetry: "traces",
+			consume: func(lim *memoryLimiter) error {
+				_, err := lim.processTraces(context.Background(), ptrace.NewTraces())
+				return err
+			},
+		},
+		{
+			telemetry: "metrics",
+			consume: func(lim *memoryLimiter) error {
+				_, err := lim.processMetrics(context.Background(), pmetric.NewMetrics())
+				return err
+			},
+		},
+	} {
+		signal := signal
+		for _, tc := range []struct {
+			memOpts []memorytest.MockOption
+			events  []consumeEvent
+		}{
+			{
+				memOpts: []memorytest.MockOption{
+					memorytest.WithAssertMockedGC(memorytest.WithMethodCalled(2)),
+					memorytest.WithAssertMockedStats(
+						&memory.Stats{Alloc: 10 * mibBytes},
+						memorytest.WithMethodCalled(1),
+					),
+					memorytest.WithAssertMockedStats(
+						&memory.Stats{Alloc: 60 * mibBytes},
+						memorytest.WithMethodCalled(2),
+					),
+					memorytest.WithAssertMockedStats(
+						&memory.Stats{Alloc: 10 * mibBytes},
+						memorytest.WithMethodCalled(2),
+					),
+					memorytest.WithAssertMockedStats(
+						&memory.Stats{Alloc: 92 * mibBytes},
+						memorytest.WithMethodCalled(1),
+					),
+					memorytest.WithAssertMockedStats(
+						&memory.Stats{Alloc: 10 * mibBytes},
+						memorytest.WithMethodCalled(1),
+					),
+				},
+				events: []consumeEvent{
+					{name: "started with gc set to now", err: nil},
+					{name: "breached soft limit, withing gc wait time, force dropping to recover", err: errForcedDrop},
+					{name: "breached soft limit, exceeding gc wait time, force dropping to recover", err: nil},
+					{name: "recovered", err: nil},
+					{name: "breached hard limit, recovers after gc", err: nil},
+				},
+			},
+		} {
+			tc := tc
+			t.Run(signal.telemetry, func(t *testing.T) {
+				mem := memorytest.NewMockMemory(t, tc.memOpts...)
+				ctx, done := context.WithCancel(context.Background())
+				t.Cleanup(done)
+				clk := clock.NewMock(time.Unix(100, 0))
+
+				ctx = clock.Context(ctx, clk)
+
+				lim, err := newMemoryLimiter(
+					ctx,
+					component.ProcessorCreateSettings{
+						ID: component.NewID(typeStr),
+						TelemetrySettings: component.TelemetrySettings{
+							Logger: zaptest.NewLogger(t),
+						},
+						BuildInfo: component.NewDefaultBuildInfo(),
+					},
+					&Config{
+						MemoryLimitMiB:      100,
+						MemorySpikeLimitMiB: 60,
+						CheckInterval:       5 * time.Second,
+					},
+					func(ms *memorySettings) {
+						ms.total = memorytest.AsTotalFunc(mem)
+						ms.usage = memorytest.AsStatsFunc(mem)
+						ms.gc = memorytest.AsGCFunc(mem)
+					},
+				)
+				require.NoError(t, err, "Must not error creating limiter")
+
+				assert.NoError(t, lim.start(ctx, componenttest.NewNopHost()), "Must not error starting component")
+				for _, event := range tc.events {
+					clk.AddNext()
+					// Even though virtual time is progressing, it still requires actual time for the background
+					// process to be scheduled and run again.
+					assert.Eventually(
+						t,
+						func() bool {
+							return errors.Is(signal.consume(lim), event.err)
+						},
+						300*time.Millisecond, // If the test flakes, extends this time
+						100*time.Millisecond,
+						event.name,
+					)
+				}
+				assert.NoError(t, lim.shutdown(ctx), "Must not error shutting down component")
+				assert.NoError(t, lim.shutdown(ctx), "Must match the expected error")
+				assert.Zero(t, clk.Len(), "Must have shutdown timer correctly after shutdown")
+			})
+		}
+
+	}
+
+}
+
+func TestBallastSize(t *testing.T) {
+	t.Parallel()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.CheckInterval = 10 * time.Second
+	cfg.MemoryLimitMiB = 1024
+	got, err := newMemoryLimiter(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, got.start(context.Background(), &host{ballastSize: 113}))
+	assert.EqualValues(t, 113, got.memObserver.ballastSize)
+	require.NoError(t, got.shutdown(context.Background()))
 }

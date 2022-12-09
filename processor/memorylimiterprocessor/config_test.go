@@ -45,5 +45,72 @@ func TestUnmarshalConfig(t *testing.T) {
 			CheckInterval:       5 * time.Second,
 			MemoryLimitMiB:      4000,
 			MemorySpikeLimitMiB: 500,
-		}, cfg)
+		},
+		cfg,
+	)
+}
+
+func TestConfigValidation(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name string
+		conf *Config
+		err  error
+	}{
+		{
+			name: "Valid config",
+			conf: &Config{
+				CheckInterval:  time.Minute,
+				MemoryLimitMiB: 100,
+			},
+			err: nil,
+		},
+		{
+			name: "Missing check interval",
+			conf: &Config{},
+			err:  errCheckIntervalOutOfRange,
+		},
+		{
+			name: "no limits sets",
+			conf: &Config{
+				CheckInterval: time.Minute,
+			},
+			err: errLimitOutOfRange,
+		},
+		{
+			name: "Spike limit exceeds alloc memory",
+			conf: &Config{
+				CheckInterval:       time.Minute,
+				MemorySpikeLimitMiB: 100,
+				MemoryLimitMiB:      69,
+			},
+			err: errMemSpikeLimitOutOfRange,
+		},
+		{
+			name: "spike percentage greater than mem alloc percentage",
+			conf: &Config{
+				CheckInterval:         time.Minute,
+				MemoryLimitPercentage: 20,
+				MemorySpikePercentage: 30,
+			},
+			err: errPercentageLimitOutOfRange,
+		},
+		{
+			name: "mem alloc percentage out of bounds",
+			conf: &Config{
+				CheckInterval:         time.Minute,
+				MemoryLimitPercentage: 110,
+				MemorySpikePercentage: 30,
+			},
+			err: errPercentageLimitOutOfRange,
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			assert.ErrorIs(t, tc.conf.Validate(), tc.err, "Must match the expected error")
+		})
+	}
 }

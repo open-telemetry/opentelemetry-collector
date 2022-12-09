@@ -51,9 +51,34 @@ type Config struct {
 	MemorySpikePercentage uint32 `mapstructure:"spike_limit_percentage"`
 }
 
-var _ component.Config = (*Config)(nil)
+var (
+	_ component.Config = (*Config)(nil)
+)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.CheckInterval <= 0 {
+		return errCheckIntervalOutOfRange
+	}
+	switch {
+	case cfg.MemoryLimitMiB != 0:
+		if cfg.MemorySpikeLimitMiB > cfg.MemoryLimitMiB {
+			return errMemSpikeLimitOutOfRange
+		}
+	case cfg.MemoryLimitPercentage != 0:
+		if cfg.MemorySpikePercentage > cfg.MemoryLimitPercentage {
+			return errPercentageLimitOutOfRange
+		}
+		for _, value := range []uint32{
+			cfg.MemoryLimitPercentage,
+			cfg.MemorySpikePercentage,
+		} {
+			if value <= 0 || value > 100 {
+				return errPercentageLimitOutOfRange
+			}
+		}
+	default:
+		return errLimitOutOfRange
+	}
 	return nil
 }

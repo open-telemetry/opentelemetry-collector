@@ -17,25 +17,18 @@ package memorylimiterprocessor // import "go.opentelemetry.io/collector/processo
 import (
 	"context"
 	"errors"
-	"fmt"
-	"runtime"
 	"sync"
 	"time"
 
-	"go.uber.org/atomic"
+	"github.com/tilinna/clock"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor"
-)
-
-const (
-	mibBytes = 1024 * 1024
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/memory"
 )
 
 var (
@@ -57,62 +50,45 @@ var (
 	errPercentageLimitOutOfRange = errors.New(
 		"memoryLimitPercentage and memorySpikePercentage must be greater than zero and less than or equal to hundred",
 	)
-
-	errShutdownNotStarted = errors.New("no existing monitoring routine is running")
 )
 
-// make it overridable by tests
-var getMemoryFn = iruntime.TotalMemory
-
+type memorySettings struct {
+	total memory.TotalFunc
+	usage memory.StatsFunc
+	gc    memory.GCFunc
+}
 type memoryLimiter struct {
-	usageChecker memUsageChecker
+	interval    time.Duration
+	memObserver *observer
 
-	memCheckWait time.Duration
-	ballastSize  uint64
-
-	// forceDrop is used atomically to indicate when data should be dropped.
-	forceDrop *atomic.Bool
-
-	ticker *time.Ticker
-
-	lastGCDone time.Time
-
-	// The function to read the mem values is set as a reference to help with
-	// testing different values.
-	readMemStatsFn func(m *runtime.MemStats)
-
-	// Fields used for logging.
-	logger                 *zap.Logger
-	configMismatchedLogged bool
-
+	logger *zap.Logger
 	obsrep *obsreport.Processor
 
-	refCounterLock sync.Mutex
-	refCounter     int
+	sem  chan struct{}
+	done context.CancelFunc
+	wg   sync.WaitGroup
 }
 
-// Minimum interval between forced GC when in soft limited mode. We don't want to
-// do GCs too frequently since it is a CPU-heavy operation.
-const minGCIntervalWhenSoftLimited = 10 * time.Second
-
 // newMemoryLimiter returns a new memorylimiter processor.
-func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter, error) {
-	if cfg.CheckInterval <= 0 {
-		return nil, errCheckIntervalOutOfRange
+func newMemoryLimiter(ctx context.Context, set component.ProcessorCreateSettings, cfg *Config, opts ...func(*memorySettings)) (*memoryLimiter, error) {
+	memSettings := &memorySettings{}
+	for _, opt := range opts {
+		opt(memSettings)
 	}
-	if cfg.MemoryLimitMiB == 0 && cfg.MemoryLimitPercentage == 0 {
-		return nil, errLimitOutOfRange
-	}
-
 	logger := set.Logger
-	usageChecker, err := getMemUsageChecker(cfg, logger)
+	limiter, err := memSettings.total.NewMemChecker(
+		uint64(cfg.MemoryLimitMiB),
+		uint64(cfg.MemorySpikeLimitMiB),
+		uint64(cfg.MemoryLimitPercentage),
+		uint64(cfg.MemorySpikePercentage),
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	logger.Info("Memory limiter configured",
-		zap.Uint64("limit_mib", usageChecker.memAllocLimit/mibBytes),
-		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit/mibBytes),
+		zap.Uint64("limit_mib", limiter.HardLimitMiB()),
+		zap.Uint64("spike_limit_mib", limiter.SoftLimitMiB()),
 		zap.Duration("check_interval", cfg.CheckInterval))
 
 	obsrep, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
@@ -123,64 +99,69 @@ func newMemoryLimiter(set processor.CreateSettings, cfg *Config) (*memoryLimiter
 		return nil, err
 	}
 
-	ml := &memoryLimiter{
-		usageChecker:   *usageChecker,
-		memCheckWait:   cfg.CheckInterval,
-		ticker:         time.NewTicker(cfg.CheckInterval),
-		readMemStatsFn: runtime.ReadMemStats,
-		logger:         logger,
-		forceDrop:      atomic.NewBool(false),
-		obsrep:         obsrep,
-	}
-
-	return ml, nil
+	return &memoryLimiter{
+		interval: cfg.CheckInterval,
+		logger:   logger,
+		obsrep:   obsrep,
+		memObserver: newObserver(
+			ctx,
+			*limiter,
+			logger,
+			withMemoryStats(memSettings.usage),
+			withMemoryGC(memSettings.gc),
+		),
+		sem: make(chan struct{}, 1),
+	}, nil
 }
 
-func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, error) {
-	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
-	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
-	if cfg.MemoryLimitMiB != 0 {
-		return newFixedMemUsageChecker(memAllocLimit, memSpikeLimit)
+func (ml *memoryLimiter) start(ctx context.Context, host component.Host) error {
+	select {
+	case ml.sem <- struct{}{}:
+		// aquired Sem, start processor
+	default:
+		return nil
 	}
-	totalMemory, err := getMemoryFn()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
+	if err := ml.memObserver.start(ctx, host); err != nil {
+		return err
 	}
-	logger.Info("Using percentage memory limiter",
-		zap.Uint64("total_memory_mib", totalMemory/mibBytes),
-		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
-		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
-	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage), uint64(cfg.MemorySpikePercentage))
-}
+	var (
+		schedulerCtx context.Context
+		ticker       = clock.FromContext(ctx).NewTicker(ml.interval)
+	)
 
-func (ml *memoryLimiter) start(_ context.Context, host component.Host) error {
-	extensions := host.GetExtensions()
-	for _, extension := range extensions {
-		if ext, ok := extension.(interface{ GetBallastSize() uint64 }); ok {
-			ml.ballastSize = ext.GetBallastSize()
-			break
+	schedulerCtx, ml.done = context.WithCancel(context.Background())
+	ml.wg.Add(1)
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				ticker.Stop()
+				ml.wg.Done()
+				return
+			case <-ticker.C:
+				ml.memObserver.checkMemoryUsage()
+			}
 		}
-	}
-	ml.startMonitoring()
+	}(schedulerCtx)
 	return nil
 }
 
 func (ml *memoryLimiter) shutdown(context.Context) error {
-	ml.refCounterLock.Lock()
-	defer ml.refCounterLock.Unlock()
-
-	if ml.refCounter == 0 {
-		return errShutdownNotStarted
-	} else if ml.refCounter == 1 {
-		ml.ticker.Stop()
+	select {
+	case <-ml.sem:
+		// aquired sem, shutdown processor
+	default:
+		return nil
 	}
-	ml.refCounter--
+	// Ensure the background process finishes before shutdown returns.
+	ml.done()
+	ml.wg.Wait()
 	return nil
 }
 
 func (ml *memoryLimiter) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	numSpans := td.SpanCount()
-	if ml.forceDrop.Load() {
+	if ml.memObserver.memoryExceeded() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
@@ -199,7 +180,7 @@ func (ml *memoryLimiter) processTraces(ctx context.Context, td ptrace.Traces) (p
 
 func (ml *memoryLimiter) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	numDataPoints := md.DataPointCount()
-	if ml.forceDrop.Load() {
+	if ml.memObserver.memoryExceeded() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
@@ -217,7 +198,7 @@ func (ml *memoryLimiter) processMetrics(ctx context.Context, md pmetric.Metrics)
 
 func (ml *memoryLimiter) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	numRecords := ld.LogRecordCount()
-	if ml.forceDrop.Load() {
+	if ml.memObserver.memoryExceeded() {
 		// TODO: actually to be 100% sure that this is "refused" and not "dropped"
 		// 	it is necessary to check the pipeline to see if this is directly connected
 		// 	to a receiver (ie.: a receiver is on the call stack). For now it
@@ -232,121 +213,4 @@ func (ml *memoryLimiter) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 	// this processor.
 	ml.obsrep.LogsAccepted(ctx, numRecords)
 	return ld, nil
-}
-
-func (ml *memoryLimiter) readMemStats() *runtime.MemStats {
-	ms := &runtime.MemStats{}
-	ml.readMemStatsFn(ms)
-	// If proper configured ms.Alloc should be at least ml.ballastSize but since
-	// a misconfiguration is possible check for that here.
-	if ms.Alloc >= ml.ballastSize {
-		ms.Alloc -= ml.ballastSize
-	} else if !ml.configMismatchedLogged {
-		// This indicates misconfiguration. Log it once.
-		ml.configMismatchedLogged = true
-		ml.logger.Warn(`"size_mib" in ballast extension is likely incorrectly configured.`)
-	}
-
-	return ms
-}
-
-// startMonitoring starts a single ticker'd goroutine per instance
-// that will check memory usage every checkInterval period.
-func (ml *memoryLimiter) startMonitoring() {
-	ml.refCounterLock.Lock()
-	defer ml.refCounterLock.Unlock()
-
-	ml.refCounter++
-	if ml.refCounter == 1 {
-		go func() {
-			for range ml.ticker.C {
-				ml.checkMemLimits()
-			}
-		}()
-	}
-}
-
-func memstatToZapField(ms *runtime.MemStats) zap.Field {
-	return zap.Uint64("cur_mem_mib", ms.Alloc/mibBytes)
-}
-
-func (ml *memoryLimiter) doGCandReadMemStats() *runtime.MemStats {
-	runtime.GC()
-	ml.lastGCDone = time.Now()
-	ms := ml.readMemStats()
-	ml.logger.Info("Memory usage after GC.", memstatToZapField(ms))
-	return ms
-}
-
-func (ml *memoryLimiter) checkMemLimits() {
-	ms := ml.readMemStats()
-
-	ml.logger.Debug("Currently used memory.", memstatToZapField(ms))
-
-	if ml.usageChecker.aboveHardLimit(ms) {
-		ml.logger.Warn("Memory usage is above hard limit. Forcing a GC.", memstatToZapField(ms))
-		ms = ml.doGCandReadMemStats()
-	}
-
-	// Remember current dropping state.
-	wasForcingDrop := ml.forceDrop.Load()
-
-	// Check if the memory usage is above the soft limit.
-	mustForceDrop := ml.usageChecker.aboveSoftLimit(ms)
-
-	if wasForcingDrop && !mustForceDrop {
-		// Was previously dropping but enough memory is available now, no need to limit.
-		ml.logger.Info("Memory usage back within limits. Resuming normal operation.", memstatToZapField(ms))
-	}
-
-	if !wasForcingDrop && mustForceDrop {
-		// We are above soft limit, do a GC if it wasn't done recently and see if
-		// it brings memory usage below the soft limit.
-		if time.Since(ml.lastGCDone) > minGCIntervalWhenSoftLimited {
-			ml.logger.Info("Memory usage is above soft limit. Forcing a GC.", memstatToZapField(ms))
-			ms = ml.doGCandReadMemStats()
-			// Check the limit again to see if GC helped.
-			mustForceDrop = ml.usageChecker.aboveSoftLimit(ms)
-		}
-
-		if mustForceDrop {
-			ml.logger.Warn("Memory usage is above soft limit. Dropping data.", memstatToZapField(ms))
-		}
-	}
-
-	ml.forceDrop.Store(mustForceDrop)
-}
-
-type memUsageChecker struct {
-	memAllocLimit uint64
-	memSpikeLimit uint64
-}
-
-func (d memUsageChecker) aboveSoftLimit(ms *runtime.MemStats) bool {
-	return ms.Alloc >= d.memAllocLimit-d.memSpikeLimit
-}
-
-func (d memUsageChecker) aboveHardLimit(ms *runtime.MemStats) bool {
-	return ms.Alloc >= d.memAllocLimit
-}
-
-func newFixedMemUsageChecker(memAllocLimit, memSpikeLimit uint64) (*memUsageChecker, error) {
-	if memSpikeLimit >= memAllocLimit {
-		return nil, errMemSpikeLimitOutOfRange
-	}
-	if memSpikeLimit == 0 {
-		// If spike limit is unspecified use 20% of mem limit.
-		memSpikeLimit = memAllocLimit / 5
-	}
-	return &memUsageChecker{
-		memAllocLimit: memAllocLimit,
-		memSpikeLimit: memSpikeLimit,
-	}, nil
-}
-
-func newPercentageMemUsageChecker(totalMemory uint64, percentageLimit, percentageSpike uint64) (*memUsageChecker, error) {
-	if percentageLimit > 100 || percentageLimit <= 0 || percentageSpike > 100 || percentageSpike <= 0 {
-		return nil, errPercentageLimitOutOfRange
-	}
-	return newFixedMemUsageChecker(percentageLimit*totalMemory/100, percentageSpike*totalMemory/100)
 }
