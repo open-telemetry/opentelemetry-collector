@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/processor"
 )
 
 // processorsKeyName is the configuration key name for processors section.
@@ -27,10 +28,10 @@ const processorsKeyName = "processors"
 type Processors struct {
 	procs map[component.ID]component.Config
 
-	factories map[component.Type]component.ProcessorFactory
+	factories map[component.Type]processor.Factory
 }
 
-func NewProcessors(factories map[component.Type]component.ProcessorFactory) *Processors {
+func NewProcessors(factories map[component.Type]processor.Factory) *Processors {
 	return &Processors{factories: factories}
 }
 

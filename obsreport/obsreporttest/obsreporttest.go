@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -71,8 +73,8 @@ func (tts *TestTelemetry) ToExporterCreateSettings() exporter.CreateSettings {
 }
 
 // ToProcessorCreateSettings returns ProcessorCreateSettings with configured TelemetrySettings
-func (tts *TestTelemetry) ToProcessorCreateSettings() component.ProcessorCreateSettings {
-	set := componenttest.NewNopProcessorCreateSettings()
+func (tts *TestTelemetry) ToProcessorCreateSettings() processor.CreateSettings {
+	set := processortest.NewNopCreateSettings()
 	set.TelemetrySettings = tts.TelemetrySettings
 	set.ID = tts.id
 	return set

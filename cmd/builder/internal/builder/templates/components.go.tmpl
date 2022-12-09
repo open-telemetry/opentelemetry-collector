@@ -6,6 +6,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
 	{{- range .Exporters}}
 	{{.Name}} "{{.Import}}"
@@ -52,7 +53,7 @@ func components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
-	factories.Processors, err = component.MakeProcessorFactoryMap(
+	factories.Processors, err = processor.MakeFactoryMap(
 		{{- range .Processors}}
 		{{.Name}}.NewFactory(),
 		{{- end}}

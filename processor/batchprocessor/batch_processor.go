@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 )
 
 // batch_processor is a component that accepts spans and metrics, places them
@@ -71,7 +72,7 @@ var _ consumer.Traces = (*batchProcessor)(nil)
 var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
-func newBatchProcessor(set component.ProcessorCreateSettings, cfg *Config, batch batch, registry *featuregate.Registry) (*batchProcessor, error) {
+func newBatchProcessor(set processor.CreateSettings, cfg *Config, batch batch, registry *featuregate.Registry) (*batchProcessor, error) {
 	bpt, err := newBatchProcessorTelemetry(set, registry)
 	if err != nil {
 		return nil, fmt.Errorf("error to create batch processor telemetry %w", err)
@@ -200,17 +201,17 @@ func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(set component.ProcessorCreateSettings, next consumer.Traces, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
+func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, newBatchTraces(next), registry)
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(set component.ProcessorCreateSettings, next consumer.Metrics, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
+func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metrics, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, newBatchMetrics(next), registry)
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(set component.ProcessorCreateSettings, next consumer.Logs, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
+func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
 	return newBatchProcessor(set, cfg, newBatchLogs(next), registry)
 }
 

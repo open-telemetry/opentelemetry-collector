@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestNew(t *testing.T) {
@@ -92,7 +93,7 @@ func TestNew(t *testing.T) {
 			cfg.CheckInterval = tt.args.checkInterval
 			cfg.MemoryLimitMiB = tt.args.memoryLimitMiB
 			cfg.MemorySpikeLimitMiB = tt.args.memorySpikeLimitMiB
-			got, err := newMemoryLimiter(componenttest.NewNopProcessorCreateSettings(), cfg)
+			got, err := newMemoryLimiter(processortest.NewNopCreateSettings(), cfg)
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
 				return
@@ -121,7 +122,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		},
@@ -192,7 +193,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	}
 	tp, err := processorhelper.NewTracesProcessor(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		},
@@ -263,7 +264,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	}
 	lp, err := processorhelper.NewLogsProcessor(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		},
@@ -418,7 +419,7 @@ func TestBallastSize(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.CheckInterval = 10 * time.Second
 	cfg.MemoryLimitMiB = 1024
-	got, err := newMemoryLimiter(componenttest.NewNopProcessorCreateSettings(), cfg)
+	got, err := newMemoryLimiter(processortest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NoError(t, got.start(context.Background(), &host{ballastSize: 113}))
 	assert.Equal(t, uint64(113), got.ballastSize)
@@ -449,7 +450,7 @@ func (be *ballastExtension) GetBallastSize() uint64 {
 func newObsReport(t *testing.T) *obsreport.Processor {
 	set := obsreport.ProcessorSettings{
 		ProcessorID:             component.NewID(typeStr),
-		ProcessorCreateSettings: componenttest.NewNopProcessorCreateSettings(),
+		ProcessorCreateSettings: processortest.NewNopCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone
 

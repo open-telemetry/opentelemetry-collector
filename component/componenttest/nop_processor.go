@@ -21,11 +21,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor"
 )
 
-// NewNopProcessorCreateSettings returns a new nop settings for Create*Processor functions.
-func NewNopProcessorCreateSettings() component.ProcessorCreateSettings {
-	return component.ProcessorCreateSettings{
+// Deprecated: [v0.68.0] use processortest.NewNopCreateSettings.
+func NewNopProcessorCreateSettings() processor.CreateSettings {
+	return processor.CreateSettings{
 		TelemetrySettings: NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -35,30 +36,30 @@ type nopProcessorConfig struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
-// NewNopProcessorFactory returns a component.ProcessorFactory that constructs nop processors.
-func NewNopProcessorFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+// Deprecated: [v0.68.0] use processortest.NewNopFactory.
+func NewNopProcessorFactory() processor.Factory {
+	return processor.NewFactory(
 		"nop",
 		func() component.Config {
 			return &nopProcessorConfig{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
 			}
 		},
-		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelStable),
-		component.WithMetricsProcessor(createMetricsProcessor, component.StabilityLevelStable),
-		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelStable),
+		processor.WithTraces(createTracesProcessor, component.StabilityLevelStable),
+		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelStable),
+		processor.WithLogs(createLogsProcessor, component.StabilityLevelStable),
 	)
 }
 
-func createTracesProcessor(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Traces) (processor.Traces, error) {
 	return nopProcessorInstance, nil
 }
 
-func createMetricsProcessor(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Metrics) (processor.Metrics, error) {
 	return nopProcessorInstance, nil
 }
 
-func createLogsProcessor(context.Context, component.ProcessorCreateSettings, component.Config, consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(context.Context, processor.CreateSettings, component.Config, consumer.Logs) (processor.Logs, error) {
 	return nopProcessorInstance, nil
 }
 

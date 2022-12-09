@@ -28,12 +28,12 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	otelview "go.opentelemetry.io/otel/sdk/metric/view"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor"
 )
 
 const (
@@ -146,7 +146,7 @@ type batchProcessorTelemetry struct {
 	batchSendSizeBytes   syncint64.Histogram
 }
 
-func newBatchProcessorTelemetry(set component.ProcessorCreateSettings, registry *featuregate.Registry) (*batchProcessorTelemetry, error) {
+func newBatchProcessorTelemetry(set processor.CreateSettings, registry *featuregate.Registry) (*batchProcessorTelemetry, error) {
 	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, set.ID.String()))
 	if err != nil {
 		return nil, err
