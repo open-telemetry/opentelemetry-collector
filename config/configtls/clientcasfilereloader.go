@@ -28,16 +28,16 @@ type clientCAsFileReloader struct {
 	certPool        *x509.CertPool
 	lastReloadError error
 	lock            sync.RWMutex
-	loader          ClientCAsFileLoader
+	loader          clientCAsFileLoader
 	watcher         *fsnotify.Watcher
 	shutdownCH      chan bool
 }
 
-type ClientCAsFileLoader interface {
+type clientCAsFileLoader interface {
 	loadClientCAFile() (*x509.CertPool, error)
 }
 
-func newClientCAsReloader(clientCAsFile string, loader ClientCAsFileLoader) (*clientCAsFileReloader, error) {
+func newClientCAsReloader(clientCAsFile string, loader clientCAsFileLoader) (*clientCAsFileReloader, error) {
 	certPool, err := loader.loadClientCAFile()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load TLS config: failed to load client CA CertPool: %w", err)
