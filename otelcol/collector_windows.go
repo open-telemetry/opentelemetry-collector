@@ -15,7 +15,7 @@
 //go:build windows
 // +build windows
 
-package service // import "go.opentelemetry.io/collector/service"
+package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"context"
@@ -40,7 +40,6 @@ type windowsService struct {
 }
 
 // NewSvcHandler constructs a new svc.Handler using the given CollectorSettings.
-// Deprecated: [v0.67.0] use otelcol.NewSvcHandler
 func NewSvcHandler(set CollectorSettings) svc.Handler {
 	return &windowsService{settings: set, flags: flags()}
 }
@@ -159,7 +158,7 @@ func newWithWindowsEventLogCore(set CollectorSettings, flags *flag.FlagSet, elog
 		[]zap.Option{zap.WrapCore(withWindowsCore(elog))},
 		set.LoggingOptions...,
 	)
-	return New(set)
+	return NewCollector(set)
 }
 
 var _ zapcore.Core = (*windowsEventLogCore)(nil)

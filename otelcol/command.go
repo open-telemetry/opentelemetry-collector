@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service // import "go.opentelemetry.io/collector/service"
+package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"errors"
@@ -46,7 +46,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 					return err
 				}
 			}
-			col, err := New(set)
+			col, err := NewCollector(set)
 			if err != nil {
 				return err
 			}
