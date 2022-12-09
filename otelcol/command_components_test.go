@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package otelcol
 
 import (
 	"bytes"
@@ -26,7 +26,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestNewBuildSubCommand(t *testing.T) {
@@ -40,7 +39,6 @@ func TestNewBuildSubCommand(t *testing.T) {
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
-		telemetry:      newColTelemetry(featuregate.NewRegistry()),
 	}
 	cmd := NewCommand(set)
 	cmd.SetArgs([]string{"components"})

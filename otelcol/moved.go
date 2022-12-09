@@ -17,6 +17,12 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
+	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/service"
 )
 
@@ -62,8 +68,23 @@ type ConfigProviderSettings = service.ConfigProviderSettings //nolint:staticchec
 // * Then unmarshalls the confmap.Conf into the service Config.
 var NewConfigProvider = service.NewConfigProvider //nolint:staticcheck
 
-// NewCommand constructs a new cobra.Command using the given CollectorSettings.
-var NewCommand = service.NewCommand //nolint:staticcheck
-
 // Config defines the configuration for the various elements of collector or agent.
 type Config = service.Config //nolint:staticcheck
+
+func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
+	return ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:       uris,
+			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New()),
+			Converters: []confmap.Converter{expandconverter.New()},
+		},
+	}
+}
+
+func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
+	ret := make(map[string]confmap.Provider, len(providers))
+	for _, provider := range providers {
+		ret[provider.Scheme()] = provider
+	}
+	return ret
+}
