@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	otelview "go.opentelemetry.io/otel/sdk/metric/view"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
@@ -44,7 +45,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/obsreport"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -190,12 +191,8 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
-	var views []*view.View
-	views = append(views, batchprocessor.MetricViews()...)
-	views = append(views, obsreportconfig.AllViews(cfg.Metrics.Level)...)
-
-	tel.views = views
-	if err := view.Register(views...); err != nil {
+	tel.views = obsreportconfig.AllViews(cfg.Metrics.Level)
+	if err := view.Register(tel.views...); err != nil {
 		return nil, err
 	}
 
@@ -229,13 +226,10 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 		resAttrs = append(resAttrs, attribute.String(k, v))
 	}
 
-	var views []otelview.View
-
-	batchViews, err := batchprocessor.OtelMetricsViews()
+	views, err := batchViews()
 	if err != nil {
 		return fmt.Errorf("error creating otel metrics views for batch processor: %w", err)
 	}
-	views = append(views, batchViews...)
 
 	res, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
 	if err != nil {
@@ -293,4 +287,35 @@ func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator,
 		}
 	}
 	return propagation.NewCompositeTextMapPropagator(textMapPropagators...), nil
+}
+
+func batchViews() ([]otelview.View, error) {
+	var views []otelview.View
+	var err error
+
+	v, err := otelview.New(
+		otelview.MatchInstrumentName(obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size")),
+		otelview.WithSetAggregation(aggregation.ExplicitBucketHistogram{
+			Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	views = append(views, v)
+
+	v, err = otelview.New(
+		otelview.MatchInstrumentName(obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size_bytes")),
+		otelview.WithSetAggregation(aggregation.ExplicitBucketHistogram{
+			Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+				100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+				1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	views = append(views, v)
+
+	return views, nil
 }
