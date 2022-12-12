@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:unused
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
-	"fmt"
 	"hash/fnv"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
 )
@@ -57,6 +58,20 @@ func newReceiverNode(pipelineID component.ID, recvID component.ID) *receiverNode
 	}
 }
 
+func (n *receiverNode) build(
+	ctx context.Context,
+	tel component.TelemetrySettings,
+	info component.BuildInfo,
+	builder *receiver.Builder,
+	nexts []baseConsumer,
+) error {
+	set := receiver.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ReceiverLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
+	r, err := buildReceiver(ctx, set, builder, component.NewIDWithName(n.pipelineType, "*"), nexts)
+	n.Component = r
+	return err
+}
+
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
 type processorNode struct {
@@ -74,6 +89,20 @@ func newProcessorNode(pipelineID, procID component.ID) *processorNode {
 	}
 }
 
+func (n *processorNode) build(
+	ctx context.Context,
+	tel component.TelemetrySettings,
+	info component.BuildInfo,
+	builder *processor.Builder,
+	nexts []baseConsumer,
+) error {
+	set := processor.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
+	p, err := buildProcessor(ctx, set, builder, n.pipelineID, nexts[0])
+	n.Component = p
+	return err
+}
+
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type exporterNode struct {
@@ -89,6 +118,19 @@ func newExporterNode(pipelineID component.ID, exprID component.ID) *exporterNode
 		componentID:  exprID,
 		pipelineType: pipelineID.Type(),
 	}
+}
+
+func (n *exporterNode) build(
+	ctx context.Context,
+	tel component.TelemetrySettings,
+	info component.BuildInfo,
+	builder *exporter.Builder,
+) error {
+	set := exporter.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
+	e, err := buildExporter(ctx, set, builder, component.NewIDWithName(n.pipelineType, "*"))
+	n.Component = e
+	return err
 }
 
 // A connector instance connects one pipeline type to one other pipeline type.
@@ -117,9 +159,6 @@ func (n *connectorNode) build(
 	builder *connector.Builder,
 	nexts []baseConsumer,
 ) error {
-	if len(nexts) == 0 {
-		return fmt.Errorf("connector %q has no next consumer", n.componentID)
-	}
 	set := connector.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 
@@ -128,11 +167,7 @@ func (n *connectorNode) build(
 	case component.DataTypeTraces:
 		var consumers []consumer.Traces
 		for _, next := range nexts {
-			tracesConsumer, ok := next.(consumer.Traces)
-			if !ok {
-				return fmt.Errorf("next component is not a traces consumer: %s", n.componentID)
-			}
-			consumers = append(consumers, tracesConsumer)
+			consumers = append(consumers, next.(consumer.Traces))
 		}
 		fanoutConsumer := fanoutconsumer.NewTraces(consumers)
 		switch n.exprPipelineType {
@@ -146,11 +181,7 @@ func (n *connectorNode) build(
 	case component.DataTypeMetrics:
 		var consumers []consumer.Metrics
 		for _, next := range nexts {
-			metricsConsumer, ok := next.(consumer.Metrics)
-			if !ok {
-				return fmt.Errorf("next component is not a metrics consumer: %s", n.componentID)
-			}
-			consumers = append(consumers, metricsConsumer)
+			consumers = append(consumers, next.(consumer.Metrics))
 		}
 		fanoutConsumer := fanoutconsumer.NewMetrics(consumers)
 		switch n.exprPipelineType {
@@ -164,11 +195,7 @@ func (n *connectorNode) build(
 	case component.DataTypeLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
-			logsConsumer, ok := next.(consumer.Logs)
-			if !ok {
-				return fmt.Errorf("next component is not a logs consumer: %s", n.componentID)
-			}
-			consumers = append(consumers, logsConsumer)
+			consumers = append(consumers, next.(consumer.Logs))
 		}
 		fanoutConsumer := fanoutconsumer.NewLogs(consumers)
 		switch n.exprPipelineType {
@@ -181,4 +208,70 @@ func (n *connectorNode) build(
 		}
 	}
 	return err
+}
+
+// If a pipeline has any processors, a fan-in is added before the first one.
+// The main purpose of this node is to present aggregated capabilities to receivers,
+// such as whether the pipeline mutates data.
+// The nodeID is derived from "pipeline ID".
+type fanInNode struct {
+	nodeID
+	pipelineID component.ID
+	baseConsumer
+	consumer.Capabilities
+}
+
+func newFanInNode(pipelineID component.ID) *fanInNode {
+	return &fanInNode{
+		nodeID:       newNodeID("fanin_to_processors", pipelineID.String()),
+		pipelineID:   pipelineID,
+		Capabilities: consumer.Capabilities{},
+	}
+}
+
+func (n *fanInNode) build(nexts []baseConsumer, processors []*processorNode) {
+	n.baseConsumer = nexts[0]
+	for _, proc := range processors {
+		n.Capabilities.MutatesData = n.Capabilities.MutatesData ||
+			proc.Component.(baseConsumer).Capabilities().MutatesData
+	}
+}
+
+// Each pipeline has one fan-out node before exporters.
+// Therefore, nodeID is derived from "pipeline ID".
+type fanOutNode struct {
+	nodeID
+	pipelineID component.ID
+	baseConsumer
+}
+
+func newFanOutNode(pipelineID component.ID) *fanOutNode {
+	return &fanOutNode{
+		nodeID:     newNodeID("fanout_to_exporters", pipelineID.String()),
+		pipelineID: pipelineID,
+	}
+}
+
+func (n *fanOutNode) build(nexts []baseConsumer) {
+	switch n.pipelineID.Type() {
+	case component.DataTypeTraces:
+		consumers := make([]consumer.Traces, 0, len(nexts))
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumer.Traces))
+		}
+		n.baseConsumer = fanoutconsumer.NewTraces(consumers)
+	case component.DataTypeMetrics:
+		consumers := make([]consumer.Metrics, 0, len(nexts))
+		for _, next := range nexts {
+
+			consumers = append(consumers, next.(consumer.Metrics))
+		}
+		n.baseConsumer = fanoutconsumer.NewMetrics(consumers)
+	case component.DataTypeLogs:
+		consumers := make([]consumer.Logs, 0, len(nexts))
+		for _, next := range nexts {
+			consumers = append(consumers, next.(consumer.Logs))
+		}
+		n.baseConsumer = fanoutconsumer.NewLogs(consumers)
+	}
 }
