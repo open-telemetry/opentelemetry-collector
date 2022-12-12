@@ -43,9 +43,14 @@ func (g *pipelinesGraph) StartAll(ctx context.Context, host component.Host) erro
 	if err != nil {
 		return err
 	}
+
 	// Start exporters first, and work towards receivers
 	for i := len(nodes) - 1; i >= 0; i-- {
-		if compErr := nodes[i].(component.Component).Start(ctx, host); compErr != nil {
+		comp, ok := nodes[i].(component.Component)
+		if !ok {
+			continue
+		}
+		if compErr := comp.Start(ctx, host); compErr != nil {
 			return compErr
 		}
 	}
@@ -57,12 +62,17 @@ func (g *pipelinesGraph) ShutdownAll(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	// Stop receivers first, and work towards exporters
 	var errs error
 	for i := 0; i < len(nodes); i++ {
-		errs = multierr.Append(errs, nodes[i].(component.Component).Shutdown(ctx))
+		comp, ok := nodes[i].(component.Component)
+		if !ok {
+			continue
+		}
+		errs = multierr.Append(errs, comp.Shutdown(ctx))
 	}
-	return errs
+	return nil
 }
 
 func (g *pipelinesGraph) GetExporters() map[component.DataType]map[component.ID]component.Component {
