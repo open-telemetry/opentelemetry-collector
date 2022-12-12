@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -42,9 +43,7 @@ func TestCreateProcessor(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 
-	if conf, ok := cfg.(interface{ Validate() error }); ok {
-		assert.Error(t, conf.Validate(), "Must error with default config")
-	}
+	assert.Error(t, component.ValidateConfig(cfg), "Must error with default config")
 
 	// Create processor with a valid config.
 	pCfg := cfg.(*Config)
