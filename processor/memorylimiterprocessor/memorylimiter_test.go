@@ -27,13 +27,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/memory"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/memorytest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 type host struct {
@@ -55,21 +55,6 @@ type ballastExtension struct {
 
 func (be *ballastExtension) GetBallastSize() uint64 {
 	return be.ballastSize
-}
-
-func newObsReport(tb testing.TB) *obsreport.Processor {
-	tb.Helper()
-
-	set := obsreport.ProcessorSettings{
-		ProcessorID:             component.NewID(typeStr),
-		ProcessorCreateSettings: componenttest.NewNopProcessorCreateSettings(),
-	}
-	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone
-
-	proc, err := obsreport.NewProcessor(set)
-	require.NoError(tb, err)
-
-	return proc
 }
 
 func TestNewMemoryLimiter(t *testing.T) {
@@ -113,7 +98,7 @@ func TestNewMemoryLimiter(t *testing.T) {
 
 			lim, err := newMemoryLimiter(
 				context.Background(),
-				componenttest.NewNopProcessorCreateSettings(),
+				processortest.NewNopCreateSettings(),
 				tc.conf,
 				tc.opts...,
 			)
@@ -191,7 +176,7 @@ func TestTelemetryProcessing(t *testing.T) {
 				},
 				events: []consumeEvent{
 					{name: "started with gc set to now", err: nil},
-					{name: "breached soft limit, withing gc wait time, force dropping to recover", err: errForcedDrop},
+					{name: "breached soft limit, within gc wait time, force dropping to recover", err: errForcedDrop},
 					{name: "breached soft limit, exceeding gc wait time, force dropping to recover", err: nil},
 					{name: "recovered", err: nil},
 					{name: "breached hard limit, recovers after gc", err: nil},
@@ -209,7 +194,7 @@ func TestTelemetryProcessing(t *testing.T) {
 
 				lim, err := newMemoryLimiter(
 					ctx,
-					component.ProcessorCreateSettings{
+					processor.CreateSettings{
 						ID: component.NewID(typeStr),
 						TelemetrySettings: component.TelemetrySettings{
 							Logger: zaptest.NewLogger(t),
@@ -260,7 +245,7 @@ func TestBallastSize(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.CheckInterval = 10 * time.Second
 	cfg.MemoryLimitMiB = 1024
-	got, err := newMemoryLimiter(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg)
+	got, err := newMemoryLimiter(context.Background(), processortest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NoError(t, got.start(context.Background(), &host{ballastSize: 113}))
 	assert.EqualValues(t, 113, got.memObserver.ballastSize)

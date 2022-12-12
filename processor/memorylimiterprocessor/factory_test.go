@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -51,19 +52,19 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
 	assert.NoError(t, tp.Shutdown(context.Background()))
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 
-	lp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	lp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))

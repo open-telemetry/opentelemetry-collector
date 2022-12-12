@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/memory"
 )
 
@@ -70,7 +71,7 @@ type memoryLimiter struct {
 }
 
 // newMemoryLimiter returns a new memorylimiter processor.
-func newMemoryLimiter(ctx context.Context, set component.ProcessorCreateSettings, cfg *Config, opts ...func(*memorySettings)) (*memoryLimiter, error) {
+func newMemoryLimiter(ctx context.Context, set processor.CreateSettings, cfg *Config, opts ...func(*memorySettings)) (*memoryLimiter, error) {
 	memSettings := &memorySettings{}
 	for _, opt := range opts {
 		opt(memSettings)
@@ -117,7 +118,7 @@ func newMemoryLimiter(ctx context.Context, set component.ProcessorCreateSettings
 func (ml *memoryLimiter) start(ctx context.Context, host component.Host) error {
 	select {
 	case ml.sem <- struct{}{}:
-		// aquired Sem, start processor
+		// acquired Sem, start processor
 	default:
 		return nil
 	}
@@ -149,7 +150,7 @@ func (ml *memoryLimiter) start(ctx context.Context, host component.Host) error {
 func (ml *memoryLimiter) shutdown(context.Context) error {
 	select {
 	case <-ml.sem:
-		// aquired sem, shutdown processor
+		// acquired sem, shutdown processor
 	default:
 		return nil
 	}
