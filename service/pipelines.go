@@ -23,6 +23,7 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/processor"
@@ -38,6 +39,15 @@ const (
 	zComponentName = "zcomponentname"
 	zComponentKind = "zcomponentkind"
 )
+
+type pipelines interface {
+	StartAll(ctx context.Context, host component.Host) error
+	ShutdownAll(ctx context.Context) error
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+	HandleZPages(w http.ResponseWriter, r *http.Request)
+}
+
+var _ pipelines = (*builtPipelines)(nil)
 
 // baseConsumer redeclared here since not public in consumer package. May consider to make that public.
 type baseConsumer interface {
@@ -187,13 +197,14 @@ type pipelinesSettings struct {
 	Receivers  *receiver.Builder
 	Processors *processor.Builder
 	Exporters  *exporter.Builder
+	Connectors *connector.Builder
 
 	// PipelineConfigs is a map of component.ID to PipelineConfig.
 	PipelineConfigs map[component.ID]*PipelineConfig
 }
 
 // buildPipelines builds all pipelines from config.
-func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines, error) {
+func buildPipelines(ctx context.Context, set pipelinesSettings) (pipelines, error) {
 	exps := &builtPipelines{
 		telemetry:    set.Telemetry,
 		allReceivers: make(map[component.DataType]map[component.ID]component.Component),
