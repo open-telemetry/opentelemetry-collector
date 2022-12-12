@@ -28,7 +28,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/internal/grpclog"
 )
@@ -76,17 +75,16 @@ func (s State) String() string {
 // Collector represents a server providing the OpenTelemetry Collector service.
 // Deprecated: [v0.67.0] use otelcol.Collector
 type Collector struct {
-	set CollectorSettings
+	set       CollectorSettings
+	telemetry *telemetryInitializer
 
 	service *service
 	state   *atomic.Int32
 
 	// shutdownChan is used to terminate the collector.
 	shutdownChan chan struct{}
-
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
-
 	// asyncErrorChannel is used to signal a fatal error from any component.
 	asyncErrorChannel chan error
 }
@@ -98,12 +96,9 @@ func New(set CollectorSettings) (*Collector, error) {
 		return nil, errors.New("invalid nil config provider")
 	}
 
-	if set.telemetry == nil {
-		set.telemetry = newColTelemetry(featuregate.GetRegistry())
-	}
-
 	return &Collector{
 		set:          set,
+		telemetry:    newColTelemetry(featuregate.GetRegistry()),
 		state:        atomic.NewInt32(int32(StateStarting)),
 		shutdownChan: make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
@@ -150,7 +145,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		Config:            cfg,
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
-		telemetry:         col.set.telemetry,
+		telemetry:         col.telemetry,
 	})
 	if err != nil {
 		return err
@@ -262,7 +257,7 @@ func (col *Collector) shutdownServiceAndTelemetry(ctx context.Context) error {
 
 	// TODO: Move this as part of the service shutdown.
 	// shutdown telemetryInitializer
-	if err := col.service.telemetryInitializer.shutdown(); err != nil {
+	if err := col.telemetry.shutdown(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
 	}
 	return errs
@@ -271,16 +266,4 @@ func (col *Collector) shutdownServiceAndTelemetry(ctx context.Context) error {
 // setCollectorState provides current state of the collector
 func (col *Collector) setCollectorState(state State) {
 	col.state.Store(int32(state))
-}
-
-func getBallastSize(host component.Host) uint64 {
-	var ballastSize uint64
-	extensions := host.GetExtensions()
-	for _, extension := range extensions {
-		if ext, ok := extension.(interface{ GetBallastSize() uint64 }); ok {
-			ballastSize = ext.GetBallastSize()
-			break
-		}
-	}
-	return ballastSize
 }

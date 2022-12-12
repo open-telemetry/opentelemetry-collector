@@ -171,3 +171,15 @@ func (srv *service) initExtensionsAndPipeline(set *settings) error {
 
 	return nil
 }
+
+func getBallastSize(host component.Host) uint64 {
+	var ballastSize uint64
+	extensions := host.GetExtensions()
+	for _, extension := range extensions {
+		if ext, ok := extension.(interface{ GetBallastSize() uint64 }); ok {
+			ballastSize = ext.GetBallastSize()
+			break
+		}
+	}
+	return ballastSize
+}

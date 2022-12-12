@@ -65,7 +65,4 @@ type CollectorSettings struct {
 
 	// SkipSettingGRPCLogger avoids setting the grpc logger
 	SkipSettingGRPCLogger bool
-
-	// For testing purpose only.
-	telemetry *telemetryInitializer
 }
