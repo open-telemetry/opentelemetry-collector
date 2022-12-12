@@ -185,7 +185,7 @@ func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	}
 	view.RegisterExporter(settings.ocExporter)
 
-	exp, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits())
+	exp, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo())
 	if err != nil {
 		return settings, err
 	}
