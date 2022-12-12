@@ -60,7 +60,7 @@ func init() {
 	_ = view.Register(metricViews()...)
 }
 
-// Deprecated: [v0.68.0] will be removed soon, views are initialize in init.
+// Deprecated: [v0.68.0] will be removed soon, views are initialized in init.
 var MetricViews = metricViews
 
 // MetricViews returns the metrics views related to batching
@@ -109,7 +109,7 @@ func metricViews() []*view.View {
 	}
 }
 
-// Deprecated: [v0.68.0] will be removed soon, views are initialize in the service for the moment until a generic solution is provided.
+// Deprecated: [v0.68.0] will be removed soon, views are initialized in the service for the moment until a generic solution is provided.
 func OtelMetricsViews() ([]otelview.View, error) {
 	var views []otelview.View
 	var err error
