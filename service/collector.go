@@ -28,7 +28,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/internal/grpclog"
 )
 
@@ -75,8 +74,7 @@ func (s State) String() string {
 // Collector represents a server providing the OpenTelemetry Collector service.
 // Deprecated: [v0.67.0] use otelcol.Collector
 type Collector struct {
-	set       CollectorSettings
-	telemetry *telemetryInitializer
+	set CollectorSettings
 
 	service *service
 	state   *atomic.Int32
@@ -98,7 +96,6 @@ func New(set CollectorSettings) (*Collector, error) {
 
 	return &Collector{
 		set:          set,
-		telemetry:    newColTelemetry(featuregate.GetRegistry()),
 		state:        atomic.NewInt32(int32(StateStarting)),
 		shutdownChan: make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
@@ -145,7 +142,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		Config:            cfg,
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
-		telemetry:         col.telemetry,
 	})
 	if err != nil {
 		return err
@@ -156,7 +152,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	}
 
 	if err = col.service.Start(ctx); err != nil {
-		return multierr.Append(err, col.shutdownServiceAndTelemetry(ctx))
+		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
 	col.setCollectorState(StateRunning)
 	return nil
@@ -238,28 +234,13 @@ func (col *Collector) shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown config provider: %w", err))
 	}
 
-	errs = multierr.Append(errs, col.shutdownServiceAndTelemetry(ctx))
-
-	col.setCollectorState(StateClosed)
-
-	return errs
-}
-
-// shutdownServiceAndTelemetry bundles shutting down the service and telemetryInitializer.
-// Returned error will be in multierr form and wrapped.
-func (col *Collector) shutdownServiceAndTelemetry(ctx context.Context) error {
-	var errs error
-
 	// shutdown service
 	if err := col.service.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown service after error: %w", err))
 	}
 
-	// TODO: Move this as part of the service shutdown.
-	// shutdown telemetryInitializer
-	if err := col.telemetry.shutdown(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
-	}
+	col.setCollectorState(StateClosed)
+
 	return errs
 }
 

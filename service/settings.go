@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 // settings holds configuration for building a new service.
@@ -38,7 +39,7 @@ type settings struct {
 	LoggingOptions []zap.Option
 
 	// For testing purpose only.
-	telemetry *telemetryInitializer
+	registry *featuregate.Registry
 }
 
 // CollectorSettings holds configuration for creating a new Collector.

@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -41,6 +42,10 @@ type service struct {
 }
 
 func newService(set *settings) (*service, error) {
+	reg := set.registry
+	if reg == nil {
+		reg = featuregate.GetRegistry()
+	}
 	srv := &service{
 		buildInfo: set.BuildInfo,
 		config:    set.Config,
@@ -49,12 +54,10 @@ func newService(set *settings) (*service, error) {
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
-		telemetryInitializer: set.telemetry,
+		telemetryInitializer: newColTelemetry(reg),
 	}
-
 	var err error
-	srv.telemetry, err = telemetry.New(context.Background(), telemetry.Settings{
-		ZapOptions: set.LoggingOptions}, set.Config.Service.Telemetry)
+	srv.telemetry, err = telemetry.New(context.Background(), telemetry.Settings{ZapOptions: set.LoggingOptions}, set.Config.Service.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
@@ -131,7 +134,9 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
 	}
 
-	// TODO: Shutdown MeterProvider.
+	if err := srv.telemetryInitializer.shutdown(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
+	}
 	return errs
 }
 
