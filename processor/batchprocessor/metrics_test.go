@@ -32,11 +32,13 @@ import (
 	"go.opencensus.io/stats/view"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -52,6 +54,12 @@ func TestBatchProcessorMetrics(t *testing.T) {
 	for i, viewName := range viewNames {
 		assert.Equal(t, "processor/batch/"+viewName, views[i].Name)
 	}
+}
+
+func TestOtelMetricsViews(t *testing.T) {
+	otelViews, err := OtelMetricsViews()
+	require.NoError(t, err)
+	assert.Len(t, otelViews, 2)
 }
 
 type testTelemetry struct {
@@ -101,16 +109,14 @@ func setupTelemetry(t *testing.T, useOtel bool) testTelemetry {
 	}
 
 	if useOtel {
-		otelViews, err := OtelMetricsViews()
-		require.NoError(t, err)
-
 		promReg := prometheus.NewRegistry()
-		exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits())
+		exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo())
 		require.NoError(t, err)
 
 		telemetry.meterProvider = sdkmetric.NewMeterProvider(
 			sdkmetric.WithResource(resource.Empty()),
-			sdkmetric.WithReader(exporter, otelViews...),
+			sdkmetric.WithReader(exporter),
+			sdkmetric.WithView(batchViews()...),
 		)
 
 		telemetry.promHandler = promhttp.HandlerFor(promReg, promhttp.HandlerOpts{})
@@ -251,5 +257,24 @@ func getSingleMetric(metric *io_prometheus_client.MetricFamily) (*io_prometheus_
 func assertFloat(t *testing.T, expected, got float64, metric string) {
 	if math.Abs(expected-got) > 0.00001 {
 		assert.Failf(t, "unexpected metric value", "value for metric '%s' did no match, expected '%f' got '%f'", metric, expected, got)
+	}
+}
+
+func batchViews() []sdkmetric.View {
+	return []sdkmetric.View{
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size")},
+			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+			}},
+		),
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size_bytes")},
+			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+			}},
+		),
 	}
 }

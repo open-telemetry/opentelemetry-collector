@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
-	otelview "go.opentelemetry.io/otel/sdk/metric/view"
+	otelview "go.opentelemetry.io/otel/sdk/metric/view" //nolint:staticcheck
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
