@@ -22,14 +22,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// Deprecated: [v0.67.0] use receivertest.NewNopCreateSettings.
-func NewNopReceiverCreateSettings() receiver.CreateSettings {
-	return receiver.CreateSettings{
-		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
 // Deprecated: [v0.67.0] use receivertest.NewNopFactory
 func NewNopReceiverFactory() receiver.Factory {
 	return receiver.NewFactory(

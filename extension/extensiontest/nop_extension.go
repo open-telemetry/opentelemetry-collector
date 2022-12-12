@@ -15,11 +15,18 @@
 package extensiontest // import "go.opentelemetry.io/collector/extension/extensiontest"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // NewNopCreateSettings returns a new nop settings for extension.Factory Create* functions.
-var NewNopCreateSettings = componenttest.NewNopExtensionCreateSettings //nolint:staticcheck
+func NewNopCreateSettings() extension.CreateSettings {
+	return extension.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
+}
 
 // NewNopFactory returns an extension.Factory that constructs nop extensions.
 var NewNopFactory = componenttest.NewNopExtensionFactory //nolint:staticcheck

@@ -14,10 +14,19 @@
 
 package receivertest // import "go.opentelemetry.io/collector/receiver/receivertest"
 
-import "go.opentelemetry.io/collector/component/componenttest"
+import (
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver"
+)
 
 // NewNopCreateSettings returns a new nop settings for Create* functions.
-var NewNopCreateSettings = componenttest.NewNopReceiverCreateSettings //nolint:staticcheck
+func NewNopCreateSettings() receiver.CreateSettings {
+	return receiver.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
+}
 
 // NewNopFactory returns a receiver.Factory that constructs nop receivers.
 var NewNopFactory = componenttest.NewNopReceiverFactory //nolint:staticcheck

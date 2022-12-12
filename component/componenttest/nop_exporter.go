@@ -22,14 +22,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 )
 
-// Deprecated: [v0.67.0] use exportertest.NewNopCreateSettings.
-func NewNopExporterCreateSettings() exporter.CreateSettings {
-	return exporter.CreateSettings{
-		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
 // Deprecated: [v0.67.0] use exportertest.NewNopFactory.
 func NewNopExporterFactory() exporter.Factory {
 	return exporter.NewFactory(
