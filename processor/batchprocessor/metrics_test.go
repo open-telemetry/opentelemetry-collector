@@ -48,13 +48,14 @@ func TestBatchProcessorMetrics(t *testing.T) {
 		"batch_send_size",
 		"batch_send_size_bytes",
 	}
-	views := MetricViews()
+	views := metricViews()
 	for i, viewName := range viewNames {
 		assert.Equal(t, "processor/batch/"+viewName, views[i].Name)
 	}
 }
 
 type testTelemetry struct {
+	meter         view.Meter
 	promHandler   http.Handler
 	useOtel       bool
 	meterProvider *sdkmetric.MeterProvider
@@ -89,11 +90,13 @@ func telemetryTest(t *testing.T, testFunc func(t *testing.T, tel testTelemetry, 
 }
 
 func setupTelemetry(t *testing.T, useOtel bool) testTelemetry {
-	views := MetricViews()
+	// Unregister the views first since they are registered by the init, this way we reset them.
+	views := metricViews()
+	view.Unregister(views...)
 	require.NoError(t, view.Register(views...))
-	t.Cleanup(func() { view.Unregister(views...) })
 
 	telemetry := testTelemetry{
+		meter:   view.NewMeter(),
 		useOtel: useOtel,
 	}
 
@@ -137,7 +140,7 @@ func (tt *testTelemetry) NewProcessorCreateSettings() processor.CreateSettings {
 }
 
 func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
-	for _, v := range MetricViews() {
+	for _, v := range metricViews() {
 		// Forces a flush for the opencensus view data.
 		_, _ = view.RetrieveData(v.Name)
 	}

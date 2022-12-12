@@ -55,8 +55,16 @@ const (
 	triggerBatchSize
 )
 
+func init() {
+	// TODO: Find a way to handle the error.
+	_ = view.Register(metricViews()...)
+}
+
+// Deprecated: [v0.68.0] will be removed soon, views are initialize in init.
+var MetricViews = metricViews
+
 // MetricViews returns the metrics views related to batching
-func MetricViews() []*view.View {
+func metricViews() []*view.View {
 	processorTagKeys := []tag.Key{processorTagKey}
 
 	countBatchSizeTriggerSendView := &view.View{
@@ -101,6 +109,7 @@ func MetricViews() []*view.View {
 	}
 }
 
+// Deprecated: [v0.68.0] will be removed soon, views are initialize in the service for the moment until a generic solution is provided.
 func OtelMetricsViews() ([]otelview.View, error) {
 	var views []otelview.View
 	var err error
