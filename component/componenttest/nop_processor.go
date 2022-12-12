@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor"
@@ -32,19 +31,11 @@ func NewNopProcessorCreateSettings() processor.CreateSettings {
 	}
 }
 
-type nopProcessorConfig struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
-
 // Deprecated: [v0.68.0] use processortest.NewNopFactory.
 func NewNopProcessorFactory() processor.Factory {
 	return processor.NewFactory(
 		"nop",
-		func() component.Config {
-			return &nopProcessorConfig{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
-			}
-		},
+		func() component.Config { return &nopConfig{} },
 		processor.WithTraces(createTracesProcessor, component.StabilityLevelStable),
 		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelStable),
 		processor.WithLogs(createLogsProcessor, component.StabilityLevelStable),

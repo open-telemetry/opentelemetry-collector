@@ -27,7 +27,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -123,9 +122,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	mp, err := processorhelper.NewMetricsProcessor(
 		context.Background(),
 		processortest.NewNopCreateSettings(),
-		&Config{
-			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		},
+		&Config{},
 		consumertest.NewNop(),
 		ml.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
@@ -194,9 +191,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	tp, err := processorhelper.NewTracesProcessor(
 		context.Background(),
 		processortest.NewNopCreateSettings(),
-		&Config{
-			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		},
+		&Config{},
 		consumertest.NewNop(),
 		ml.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
@@ -265,9 +260,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	lp, err := processorhelper.NewLogsProcessor(
 		context.Background(),
 		processortest.NewNopCreateSettings(),
-		&Config{
-			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		},
+		&Config{},
 		consumertest.NewNop(),
 		ml.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),

@@ -38,7 +38,6 @@ func TestProcessorsUnmarshal(t *testing.T) {
 	require.NoError(t, procs.Unmarshal(conf))
 
 	cfgWithName := factories["nop"].CreateDefaultConfig()
-	cfgWithName.SetIDName("myprocessor") //nolint:staticcheck
 	assert.Equal(t, map[component.ID]component.Config{
 		component.NewID("nop"):                        factories["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myprocessor"): cfgWithName,

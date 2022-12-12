@@ -37,8 +37,8 @@ var (
 
 // Config defines configuration for logging exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
+	// Deprecated: [v0.68.0] will be removed soon.
+	config.ExporterSettings `mapstructure:",squash"`
 	// LogLevel defines log level of the logging exporter; options are debug, info, warn, error.
 	// Deprecated: Use `Verbosity` instead.
 	LogLevel zapcore.Level `mapstructure:"loglevel"`

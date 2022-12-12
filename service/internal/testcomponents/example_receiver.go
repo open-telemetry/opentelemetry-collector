@@ -18,17 +18,11 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 )
 
 const receiverType = component.Type("examplereceiver")
-
-// ExampleReceiverConfig config for ExampleReceiver.
-type ExampleReceiverConfig struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
 var ExampleReceiverFactory = receiver.NewFactory(
@@ -39,9 +33,7 @@ var ExampleReceiverFactory = receiver.NewFactory(
 	receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment))
 
 func createReceiverDefaultConfig() component.Config {
-	return &ExampleReceiverConfig{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(receiverType)),
-	}
+	return &struct{}{}
 }
 
 // createTracesReceiver creates a trace receiver based on this config.

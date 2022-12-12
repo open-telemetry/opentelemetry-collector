@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -33,18 +32,14 @@ func NewNopCreateSettings() connector.CreateSettings {
 	}
 }
 
-type nopConfig struct {
-	config.ConnectorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
+type nopConfig struct{}
 
 // NewNopFactory returns a connector.Factory that constructs nop processors.
 func NewNopFactory() connector.Factory {
 	return connector.NewFactory(
 		"nop",
 		func() component.Config {
-			return &nopConfig{
-				ConnectorSettings: config.NewConnectorSettings(component.NewID("nop")),
-			}
+			return &nopConfig{}
 		},
 		connector.WithTracesToTraces(createTracesToTracesConnector, component.StabilityLevelDevelopment),
 		connector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelDevelopment),

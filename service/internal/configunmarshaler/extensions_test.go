@@ -38,7 +38,6 @@ func TestExtensionsUnmarshal(t *testing.T) {
 	require.NoError(t, exts.Unmarshal(conf))
 
 	cfgWithName := factories["nop"].CreateDefaultConfig()
-	cfgWithName.SetIDName("myextension") //nolint:staticcheck
 	assert.Equal(t, map[component.ID]component.Config{
 		component.NewID("nop"):                        factories["nop"].CreateDefaultConfig(),
 		component.NewIDWithName("nop", "myextension"): cfgWithName,

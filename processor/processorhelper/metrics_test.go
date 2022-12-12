@@ -24,14 +24,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-var testMetricsCfg = config.NewProcessorSettings(component.NewID("test"))
+var testMetricsCfg = struct{}{}
 
 func TestNewMetricsProcessor(t *testing.T) {
 	mp, err := NewMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), &testMetricsCfg, consumertest.NewNop(), newTestMProcessor(nil))

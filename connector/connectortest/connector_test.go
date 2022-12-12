@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,7 +34,7 @@ func TestNewNopConnectorFactory(t *testing.T) {
 	require.NotNil(t, factory)
 	assert.Equal(t, component.Type("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &nopConfig{ConnectorSettings: config.NewConnectorSettings(component.NewID("nop"))}, cfg)
+	assert.Equal(t, &nopConfig{}, cfg)
 
 	tracesToTraces, err := factory.CreateTracesToTraces(context.Background(), NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)

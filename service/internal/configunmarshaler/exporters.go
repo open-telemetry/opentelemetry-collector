@@ -54,7 +54,6 @@ func (e *Exporters) Unmarshal(conf *confmap.Conf) error {
 
 		// Create the default config for this exporter.
 		exporterCfg := factory.CreateDefaultConfig()
-		exporterCfg.SetIDName(id.Name()) //nolint:staticcheck
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.

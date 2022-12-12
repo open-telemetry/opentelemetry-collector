@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension"
 )
 
@@ -30,18 +29,12 @@ func NewNopExtensionCreateSettings() extension.CreateSettings {
 	}
 }
 
-type nopExtensionConfig struct {
-	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
-
 // Deprecated: [v0.67.0] use extensiontest.NewNopFactory.
 func NewNopExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		"nop",
 		func() component.Config {
-			return &nopExtensionConfig{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
-			}
+			return &nopConfig{}
 		},
 		func(context.Context, component.ExtensionCreateSettings, component.Config) (component.Extension, error) {
 			return nopExtensionInstance, nil
