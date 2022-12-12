@@ -191,9 +191,8 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
 	var views []*view.View
-	obsMetrics := obsreportconfig.Configure(cfg.Metrics.Level)
 	views = append(views, batchprocessor.MetricViews()...)
-	views = append(views, obsMetrics.Views...)
+	views = append(views, obsreportconfig.AllViews(cfg.Metrics.Level)...)
 
 	tel.views = views
 	if err := view.Register(views...); err != nil {
