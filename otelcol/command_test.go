@@ -22,10 +22,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestNewCommandVersion(t *testing.T) {
@@ -34,7 +34,7 @@ func TestNewCommandVersion(t *testing.T) {
 }
 
 func TestNewCommandNoConfigURI(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 
 	cmd := NewCommand(CollectorSettings{Factories: factories})
@@ -42,7 +42,7 @@ func TestNewCommandNoConfigURI(t *testing.T) {
 }
 
 func TestNewCommandInvalidComponent(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 
 	cfgProvider, err := NewConfigProvider(

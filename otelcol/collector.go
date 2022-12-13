@@ -59,8 +59,8 @@ func (s State) String() string {
 
 // CollectorSettings holds configuration for creating a new Collector.
 type CollectorSettings struct {
-	// Factories component factories.
-	Factories component.Factories
+	// Factories service factories.
+	Factories service.Factories
 
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo

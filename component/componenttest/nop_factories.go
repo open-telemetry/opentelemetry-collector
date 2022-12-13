@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// NopFactories returns a component.Factories with all nop factories.
+// Deprecated: [v0.68.0] use servicetest.NopFactories.
 func NopFactories() (component.Factories, error) {
 	var factories component.Factories
 	var err error

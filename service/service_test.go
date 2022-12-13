@@ -30,7 +30,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -41,6 +40,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/servicetest"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -138,7 +138,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 }
 
 func TestService_GetFactory(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 	srv := createExampleService(t, factories)
 
@@ -164,7 +164,7 @@ func TestService_GetFactory(t *testing.T) {
 }
 
 func TestServiceGetExtensions(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 	srv := createExampleService(t, factories)
 
@@ -180,7 +180,7 @@ func TestServiceGetExtensions(t *testing.T) {
 }
 
 func TestServiceGetExporters(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 	srv := createExampleService(t, factories)
 
@@ -202,7 +202,7 @@ func TestServiceGetExporters(t *testing.T) {
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 
 	invalidCfg := newNopConfig()
@@ -246,7 +246,7 @@ func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
 }
 
 func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMetricsTestCase) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	zpagesExt := zpagesextension.NewFactory()
 	factories.Extensions[zpagesExt.Type()] = zpagesExt
 	require.NoError(t, err)
@@ -299,7 +299,7 @@ func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMet
 
 // TestServiceTelemetryRestart tests that the service correctly restarts the telemetry server.
 func TestServiceTelemetryRestart(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 
 	// Create a service
@@ -348,7 +348,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvTwo.Shutdown(context.Background()))
 }
 
-func createExampleService(t *testing.T, factories component.Factories) *Service {
+func createExampleService(t *testing.T, factories Factories) *Service {
 	srv, err := New(Settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,

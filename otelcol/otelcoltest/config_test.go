@@ -22,12 +22,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	assert.NoError(t, err)
 
 	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigAndValidate(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	assert.NoError(t, err)
 
 	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
