@@ -101,7 +101,7 @@ key:
 Use the sub command build-info. Below is an example:
 
 ```bash
-   ./otelcorecol build-info
+   ./otelcorecol components
 ```
 Sample output:
 
