@@ -32,15 +32,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/service/servicetest"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -137,10 +140,10 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 		}}
 }
 
-func TestService_GetFactory(t *testing.T) {
-	factories, err := servicetest.NopFactories()
+func TestServiceGetFactory(t *testing.T) {
+	set := newNopSettings()
+	srv, err := New(context.Background(), set, newNopConfig())
 	require.NoError(t, err)
-	srv := createExampleService(t, factories)
 
 	assert.NoError(t, srv.Start(context.Background()))
 	t.Cleanup(func() {
@@ -148,25 +151,24 @@ func TestService_GetFactory(t *testing.T) {
 	})
 
 	assert.Nil(t, srv.host.GetFactory(component.KindReceiver, "wrongtype"))
-	assert.Equal(t, factories.Receivers["nop"], srv.host.GetFactory(component.KindReceiver, "nop"))
+	assert.Equal(t, set.ReceiverFactories["nop"], srv.host.GetFactory(component.KindReceiver, "nop"))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindProcessor, "wrongtype"))
-	assert.Equal(t, factories.Processors["nop"], srv.host.GetFactory(component.KindProcessor, "nop"))
+	assert.Equal(t, set.ProcessorFactories["nop"], srv.host.GetFactory(component.KindProcessor, "nop"))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExporter, "wrongtype"))
-	assert.Equal(t, factories.Exporters["nop"], srv.host.GetFactory(component.KindExporter, "nop"))
+	assert.Equal(t, set.ExporterFactories["nop"], srv.host.GetFactory(component.KindExporter, "nop"))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExtension, "wrongtype"))
-	assert.Equal(t, factories.Extensions["nop"], srv.host.GetFactory(component.KindExtension, "nop"))
+	assert.Equal(t, set.ExtensionFactories["nop"], srv.host.GetFactory(component.KindExtension, "nop"))
 
 	// Try retrieve non existing component.Kind.
 	assert.Nil(t, srv.host.GetFactory(42, "nop"))
 }
 
 func TestServiceGetExtensions(t *testing.T) {
-	factories, err := servicetest.NopFactories()
+	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
 	require.NoError(t, err)
-	srv := createExampleService(t, factories)
 
 	assert.NoError(t, srv.Start(context.Background()))
 	t.Cleanup(func() {
@@ -180,9 +182,8 @@ func TestServiceGetExtensions(t *testing.T) {
 }
 
 func TestServiceGetExporters(t *testing.T) {
-	factories, err := servicetest.NopFactories()
+	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
 	require.NoError(t, err)
-	srv := createExampleService(t, factories)
 
 	assert.NoError(t, srv.Start(context.Background()))
 	t.Cleanup(func() {
@@ -202,25 +203,14 @@ func TestServiceGetExporters(t *testing.T) {
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
 // and another service with a valid config can be started right after.
 func TestServiceTelemetryCleanupOnError(t *testing.T) {
-	factories, err := servicetest.NopFactories()
-	require.NoError(t, err)
-
 	invalidCfg := newNopConfig()
-	invalidCfg.Service.Pipelines[component.NewID("traces")].Processors[0] = component.NewID("invalid")
+	invalidCfg.Pipelines[component.NewID("traces")].Processors[0] = component.NewID("invalid")
 	// Create a service with an invalid config and expect an error
-	_, err = New(Settings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		Config:    invalidCfg,
-	})
+	_, err := New(context.Background(), newNopSettings(), invalidCfg)
 	require.Error(t, err)
 
 	// Create a service with a valid config and expect no error
-	srv, err := New(Settings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		Config:    newNopConfig(),
-	})
+	srv, err := New(context.Background(), newNopSettings(), newNopConfig())
 	require.NoError(t, err)
 	assert.NoError(t, srv.Shutdown(context.Background()))
 }
@@ -246,10 +236,6 @@ func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
 }
 
 func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMetricsTestCase) {
-	factories, err := servicetest.NopFactories()
-	zpagesExt := zpagesextension.NewFactory()
-	factories.Extensions[zpagesExt.Type()] = zpagesExt
-	require.NoError(t, err)
 	var once sync.Once
 	loggingHookCalled := false
 	hook := func(entry zapcore.Entry) error {
@@ -262,29 +248,29 @@ func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMet
 	metricsAddr := testutil.GetAvailableLocalAddress(t)
 	zpagesAddr := testutil.GetAvailableLocalAddress(t)
 
-	cfg := newNopConfig()
-	cfg.Extensions[component.NewID("zpages")] = &zpagesextension.Config{
+	set := newNopSettings()
+	set.BuildInfo = component.BuildInfo{Version: "test version"}
+	set.ExtensionConfigs[component.NewID("zpages")] = &zpagesextension.Config{
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: zpagesAddr,
 		},
 	}
-	cfg.Service.Extensions = []component.ID{component.NewID("nop"), component.NewID("zpages")}
-	cfg.Service.Telemetry.Metrics.Address = metricsAddr
-	cfg.Service.Telemetry.Resource = make(map[string]*string)
+	set.ExtensionFactories["zpages"] = zpagesextension.NewFactory()
+	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
+	set.registry = reg
+
+	cfg := newNopConfig()
+	cfg.Extensions = []component.ID{component.NewID("nop"), component.NewID("zpages")}
+	cfg.Telemetry.Metrics.Address = metricsAddr
+	cfg.Telemetry.Resource = make(map[string]*string)
 	// Include resource attributes under the service::telemetry::resource key.
 	for k, v := range tc.userDefinedResource {
-		cfg.Service.Telemetry.Resource[k] = v
+		cfg.Telemetry.Resource[k] = v
 	}
 
 	// Create a service, check for metrics, shutdown and repeat to ensure that telemetry can be started/shutdown and started again.
 	for i := 0; i < 2; i++ {
-		srv, err := New(Settings{
-			BuildInfo:      component.BuildInfo{Version: "test version"},
-			Factories:      factories,
-			Config:         cfg,
-			LoggingOptions: []zap.Option{zap.Hooks(hook)},
-			registry:       reg,
-		})
+		srv, err := New(context.Background(), set, cfg)
 		require.NoError(t, err)
 
 		require.NoError(t, srv.Start(context.Background()))
@@ -299,15 +285,8 @@ func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMet
 
 // TestServiceTelemetryRestart tests that the service correctly restarts the telemetry server.
 func TestServiceTelemetryRestart(t *testing.T) {
-	factories, err := servicetest.NopFactories()
-	require.NoError(t, err)
-
 	// Create a service
-	srvOne, err := New(Settings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		Config:    newNopConfig(),
-	})
+	srvOne, err := New(context.Background(), newNopSettings(), newNopConfig())
 	require.NoError(t, err)
 
 	// URL of the telemetry service metrics endpoint
@@ -328,11 +307,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvOne.Shutdown(context.Background()))
 
 	// Create a new service with the same telemetry
-	srvTwo, err := New(Settings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		Config:    newNopConfig(),
-	})
+	srvTwo, err := New(context.Background(), newNopSettings(), newNopConfig())
 	require.NoError(t, err)
 
 	// Start the new service
@@ -346,16 +321,6 @@ func TestServiceTelemetryRestart(t *testing.T) {
 
 	// Shutdown the new service
 	require.NoError(t, srvTwo.Shutdown(context.Background()))
-}
-
-func createExampleService(t *testing.T, factories Factories) *Service {
-	srv, err := New(Settings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		Config:    newNopConfig(),
-	})
-	require.NoError(t, err)
-	return srv
 }
 
 func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]labelValue) {
@@ -428,50 +393,58 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 	}
 }
 
-func newNopConfig() *Config {
-	return &Config{
-		Receivers:  map[component.ID]component.Config{component.NewID("nop"): receivertest.NewNopFactory().CreateDefaultConfig()},
-		Processors: map[component.ID]component.Config{component.NewID("nop"): processortest.NewNopFactory().CreateDefaultConfig()},
-		Exporters:  map[component.ID]component.Config{component.NewID("nop"): exportertest.NewNopFactory().CreateDefaultConfig()},
-		Extensions: map[component.ID]component.Config{component.NewID("nop"): extensiontest.NewNopFactory().CreateDefaultConfig()},
-		Service: ConfigService{
-			Extensions: []component.ID{component.NewID("nop")},
-			Pipelines: map[component.ID]*ConfigServicePipeline{
-				component.NewID("traces"): {
-					Receivers:  []component.ID{component.NewID("nop")},
-					Processors: []component.ID{component.NewID("nop")},
-					Exporters:  []component.ID{component.NewID("nop")},
-				},
-				component.NewID("metrics"): {
-					Receivers:  []component.ID{component.NewID("nop")},
-					Processors: []component.ID{component.NewID("nop")},
-					Exporters:  []component.ID{component.NewID("nop")},
-				},
-				component.NewID("logs"): {
-					Receivers:  []component.ID{component.NewID("nop")},
-					Processors: []component.ID{component.NewID("nop")},
-					Exporters:  []component.ID{component.NewID("nop")},
-				},
+func newNopSettings() Settings {
+	return Settings{
+		BuildInfo:          component.NewDefaultBuildInfo(),
+		ReceiverFactories:  map[component.Type]receiver.Factory{"nop": receivertest.NewNopFactory()},
+		ReceiverConfigs:    map[component.ID]component.Config{component.NewID("nop"): receivertest.NewNopFactory().CreateDefaultConfig()},
+		ProcessorFactories: map[component.Type]processor.Factory{"nop": processortest.NewNopFactory()},
+		ProcessorConfigs:   map[component.ID]component.Config{component.NewID("nop"): processortest.NewNopFactory().CreateDefaultConfig()},
+		ExporterFactories:  map[component.Type]exporter.Factory{"nop": exportertest.NewNopFactory()},
+		ExporterConfigs:    map[component.ID]component.Config{component.NewID("nop"): exportertest.NewNopFactory().CreateDefaultConfig()},
+		ExtensionFactories: map[component.Type]extension.Factory{"nop": extensiontest.NewNopFactory()},
+		ExtensionConfigs:   map[component.ID]component.Config{component.NewID("nop"): extensiontest.NewNopFactory().CreateDefaultConfig()},
+	}
+}
+
+func newNopConfig() ConfigService {
+	return ConfigService{
+		Extensions: []component.ID{component.NewID("nop")},
+		Pipelines: map[component.ID]*ConfigServicePipeline{
+			component.NewID("traces"): {
+				Receivers:  []component.ID{component.NewID("nop")},
+				Processors: []component.ID{component.NewID("nop")},
+				Exporters:  []component.ID{component.NewID("nop")},
 			},
-			Telemetry: telemetry.Config{
-				Logs: telemetry.LogsConfig{
-					Level:       zapcore.InfoLevel,
-					Development: false,
-					Encoding:    "console",
-					Sampling: &telemetry.LogsSamplingConfig{
-						Initial:    100,
-						Thereafter: 100,
-					},
-					OutputPaths:       []string{"stderr"},
-					ErrorOutputPaths:  []string{"stderr"},
-					DisableCaller:     false,
-					DisableStacktrace: false,
-					InitialFields:     map[string]interface{}(nil),
+			component.NewID("metrics"): {
+				Receivers:  []component.ID{component.NewID("nop")},
+				Processors: []component.ID{component.NewID("nop")},
+				Exporters:  []component.ID{component.NewID("nop")},
+			},
+			component.NewID("logs"): {
+				Receivers:  []component.ID{component.NewID("nop")},
+				Processors: []component.ID{component.NewID("nop")},
+				Exporters:  []component.ID{component.NewID("nop")},
+			},
+		},
+		Telemetry: telemetry.Config{
+			Logs: telemetry.LogsConfig{
+				Level:       zapcore.InfoLevel,
+				Development: false,
+				Encoding:    "console",
+				Sampling: &telemetry.LogsSamplingConfig{
+					Initial:    100,
+					Thereafter: 100,
 				},
-				Metrics: telemetry.MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Address: "localhost:8888",
-				},
+				OutputPaths:       []string{"stderr"},
+				ErrorOutputPaths:  []string{"stderr"},
+				DisableCaller:     false,
+				DisableStacktrace: false,
+				InitialFields:     map[string]interface{}(nil),
+			},
+			Metrics: telemetry.MetricsConfig{
+				Level:   configtelemetry.LevelBasic,
+				Address: "localhost:8888",
 			},
 		},
 	}

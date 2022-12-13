@@ -25,7 +25,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -33,14 +37,32 @@ import (
 
 // Settings holds configuration for building a new service.
 type Settings struct {
-	// Factories component factories.
-	Factories Factories
-
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
 
-	// Config represents the configuration of the service.
-	Config *Config
+	// ReceiverFactories maps receiver type names in the config to the respective receiver.Factory.
+	ReceiverFactories map[component.Type]receiver.Factory
+
+	// ReceiverConfigs is a map of component.ID to receivers component.Config.
+	ReceiverConfigs map[component.ID]component.Config
+
+	// ProcessorFactories maps processor type names in the config to the respective component.ProcessorFactory.
+	ProcessorFactories map[component.Type]processor.Factory
+
+	// ProcessorConfigs is a map of component.ID to processors component.Config.
+	ProcessorConfigs map[component.ID]component.Config
+
+	// ExporterFactories maps exporter type names in the config to the respective exporter.Factory.
+	ExporterFactories map[component.Type]exporter.Factory
+
+	// ExporterConfigs is a map of component.ID to exporters component.Config.
+	ExporterConfigs map[component.ID]component.Config
+
+	// ExtensionConfigs is a map of component.ID to extensions component.Config.
+	ExtensionConfigs map[component.ID]component.Config
+
+	// ExtensionFactories maps extension type names in the config to the respective extension.Factory.
+	ExtensionFactories map[component.Type]extension.Factory
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
@@ -55,30 +77,31 @@ type Settings struct {
 // Service represents the implementation of a component.Host.
 type Service struct {
 	buildInfo            component.BuildInfo
-	config               *Config
 	telemetry            *telemetry.Telemetry
 	telemetrySettings    component.TelemetrySettings
 	host                 *serviceHost
 	telemetryInitializer *telemetryInitializer
 }
 
-func New(set Settings) (*Service, error) {
+func New(ctx context.Context, set Settings, cfg ConfigService) (*Service, error) {
 	reg := set.registry
 	if reg == nil {
 		reg = featuregate.GetRegistry()
 	}
 	srv := &Service{
 		buildInfo: set.BuildInfo,
-		config:    set.Config,
 		host: &serviceHost{
-			factories:         set.Factories,
-			buildInfo:         set.BuildInfo,
-			asyncErrorChannel: set.AsyncErrorChannel,
+			receiverFactories:  set.ReceiverFactories,
+			processorFactories: set.ProcessorFactories,
+			exporterFactories:  set.ExporterFactories,
+			extensionFactories: set.ExtensionFactories,
+			buildInfo:          set.BuildInfo,
+			asyncErrorChannel:  set.AsyncErrorChannel,
 		},
 		telemetryInitializer: newColTelemetry(reg),
 	}
 	var err error
-	srv.telemetry, err = telemetry.New(context.Background(), telemetry.Settings{ZapOptions: set.LoggingOptions}, set.Config.Service.Telemetry)
+	srv.telemetry, err = telemetry.New(ctx, telemetry.Settings{ZapOptions: set.LoggingOptions}, cfg.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
@@ -86,16 +109,16 @@ func New(set Settings) (*Service, error) {
 		Logger:         srv.telemetry.Logger(),
 		TracerProvider: srv.telemetry.TracerProvider(),
 		MeterProvider:  metric.NewNoopMeterProvider(),
-		MetricsLevel:   set.Config.Service.Telemetry.Metrics.Level,
+		MetricsLevel:   cfg.Telemetry.Metrics.Level,
 	}
 
-	if err = srv.telemetryInitializer.init(set.BuildInfo, srv.telemetrySettings.Logger, set.Config.Service.Telemetry, set.AsyncErrorChannel); err != nil {
+	if err = srv.telemetryInitializer.init(set.BuildInfo, srv.telemetrySettings.Logger, cfg.Telemetry, set.AsyncErrorChannel); err != nil {
 		return nil, fmt.Errorf("failed to initialize telemetry: %w", err)
 	}
 	srv.telemetrySettings.MeterProvider = srv.telemetryInitializer.mp
 
 	// process the configuration and initialize the pipeline
-	if err = srv.initExtensionsAndPipeline(set); err != nil {
+	if err = srv.initExtensionsAndPipeline(ctx, set, cfg); err != nil {
 		// If pipeline initialization fails then shut down the telemetry server
 		if shutdownErr := srv.telemetryInitializer.shutdown(); shutdownErr != nil {
 			err = multierr.Append(err, fmt.Errorf("failed to shutdown collector telemetry: %w", shutdownErr))
@@ -161,34 +184,34 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-func (srv *Service) initExtensionsAndPipeline(set Settings) error {
+func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings, cfg ConfigService) error {
 	var err error
 	extensionsSettings := extensions.Settings{
 		Telemetry: srv.telemetrySettings,
 		BuildInfo: srv.buildInfo,
-		Configs:   srv.config.Extensions,
-		Factories: srv.host.factories.Extensions,
+		Configs:   set.ExtensionConfigs,
+		Factories: srv.host.extensionFactories,
 	}
-	if srv.host.extensions, err = extensions.New(context.Background(), extensionsSettings, srv.config.Service.Extensions); err != nil {
+	if srv.host.extensions, err = extensions.New(ctx, extensionsSettings, cfg.Extensions); err != nil {
 		return fmt.Errorf("failed build extensions: %w", err)
 	}
 
 	pSet := pipelinesSettings{
 		Telemetry:          srv.telemetrySettings,
 		BuildInfo:          srv.buildInfo,
-		ReceiverFactories:  srv.host.factories.Receivers,
-		ReceiverConfigs:    srv.config.Receivers,
-		ProcessorFactories: srv.host.factories.Processors,
-		ProcessorConfigs:   srv.config.Processors,
-		ExporterFactories:  srv.host.factories.Exporters,
-		ExporterConfigs:    srv.config.Exporters,
-		PipelineConfigs:    srv.config.Service.Pipelines,
+		ReceiverFactories:  srv.host.receiverFactories,
+		ReceiverConfigs:    set.ReceiverConfigs,
+		ProcessorFactories: srv.host.processorFactories,
+		ProcessorConfigs:   set.ProcessorConfigs,
+		ExporterFactories:  srv.host.exporterFactories,
+		ExporterConfigs:    set.ExporterConfigs,
+		PipelineConfigs:    cfg.Pipelines,
 	}
-	if srv.host.pipelines, err = buildPipelines(context.Background(), pSet); err != nil {
+	if srv.host.pipelines, err = buildPipelines(ctx, pSet); err != nil {
 		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
 
-	if set.Config.Service.Telemetry.Metrics.Level != configtelemetry.LevelNone && set.Config.Service.Telemetry.Metrics.Address != "" {
+	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && cfg.Telemetry.Metrics.Address != "" {
 		// The process telemetry initialization requires the ballast size, which is available after the extensions are initialized.
 		if err = proctelemetry.RegisterProcessMetrics(srv.telemetryInitializer.ocRegistry, getBallastSize(srv.host)); err != nil {
 			return fmt.Errorf("failed to register process metrics: %w", err)
