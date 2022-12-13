@@ -156,13 +156,19 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
-	col.service, err = service.New(service.Settings{
-		BuildInfo:         col.set.BuildInfo,
-		Factories:         col.set.Factories,
-		Config:            cfg,
-		AsyncErrorChannel: col.asyncErrorChannel,
-		LoggingOptions:    col.set.LoggingOptions,
-	})
+	col.service, err = service.New(ctx, service.Settings{
+		BuildInfo:          col.set.BuildInfo,
+		ReceiverFactories:  col.set.Factories.Receivers,
+		ReceiverConfigs:    cfg.Receivers,
+		ProcessorFactories: col.set.Factories.Processors,
+		ProcessorConfigs:   cfg.Processors,
+		ExporterFactories:  col.set.Factories.Exporters,
+		ExporterConfigs:    cfg.Exporters,
+		ExtensionFactories: col.set.Factories.Extensions,
+		ExtensionConfigs:   cfg.Extensions,
+		AsyncErrorChannel:  col.asyncErrorChannel,
+		LoggingOptions:     col.set.LoggingOptions,
+	}, cfg.Service)
 	if err != nil {
 		return err
 	}
