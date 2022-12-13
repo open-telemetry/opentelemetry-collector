@@ -59,8 +59,8 @@ func (f *forwardFactory) createTracesToTraces(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (connector.Traces, error) {
-	comp := f.GetOrAdd(cfg, func() component.Component {
-		return &forward{}
+	comp, _ := f.GetOrAdd(cfg, func() (component.Component, error) {
+		return &forward{}, nil
 	})
 
 	conn := comp.Unwrap().(*forward)
@@ -75,8 +75,8 @@ func (f *forwardFactory) createMetricsToMetrics(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (connector.Metrics, error) {
-	comp := f.GetOrAdd(cfg, func() component.Component {
-		return &forward{}
+	comp, _ := f.GetOrAdd(cfg, func() (component.Component, error) {
+		return &forward{}, nil
 	})
 
 	conn := comp.Unwrap().(*forward)
@@ -91,8 +91,8 @@ func (f *forwardFactory) createLogsToLogs(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (connector.Logs, error) {
-	comp := f.GetOrAdd(cfg, func() component.Component {
-		return &forward{}
+	comp, _ := f.GetOrAdd(cfg, func() (component.Component, error) {
+		return &forward{}, nil
 	})
 
 	conn := comp.Unwrap().(*forward)
