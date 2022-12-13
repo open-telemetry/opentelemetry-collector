@@ -24,12 +24,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/servicetest"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func TestUnmarshalEmpty(t *testing.T) {
-	factories, err := servicetest.NopFactories()
+	factories, err := nopFactories()
 	assert.NoError(t, err)
 
 	_, err = unmarshal(confmap.New(), factories)
@@ -37,7 +36,7 @@ func TestUnmarshalEmpty(t *testing.T) {
 }
 
 func TestUnmarshalEmptyAllSections(t *testing.T) {
-	factories, err := servicetest.NopFactories()
+	factories, err := nopFactories()
 	assert.NoError(t, err)
 
 	conf := confmap.NewFromStringMap(map[string]interface{}{
@@ -68,7 +67,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 }
 
 func TestUnmarshalUnknownTopLevel(t *testing.T) {
-	factories, err := servicetest.NopFactories()
+	factories, err := nopFactories()
 	assert.NoError(t, err)
 
 	conf := confmap.NewFromStringMap(map[string]interface{}{

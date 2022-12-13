@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service"
-	"go.opentelemetry.io/collector/service/servicetest"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -101,7 +100,7 @@ func TestConfigProviderYaml(t *testing.T) {
 	cp, err := NewConfigProvider(set)
 	require.NoError(t, err)
 
-	factories, err := servicetest.NopFactories()
+	factories, err := nopFactories()
 	require.NoError(t, err)
 
 	cfg, err := cp.Get(context.Background(), factories)
@@ -122,7 +121,7 @@ func TestConfigProviderFile(t *testing.T) {
 	cp, err := NewConfigProvider(set)
 	require.NoError(t, err)
 
-	factories, err := servicetest.NopFactories()
+	factories, err := nopFactories()
 	require.NoError(t, err)
 
 	cfg, err := cp.Get(context.Background(), factories)

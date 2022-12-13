@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service // import "go.opentelemetry.io/collector/service"
+package otelcoltest // import "go.opentelemetry.io/collector/otelcol/otelcoltest"
 
-import (
-	"go.opentelemetry.io/collector/component"
-)
+import "go.opentelemetry.io/collector/component/componenttest"
 
-// Factories struct holds in a single type all component factories that
-// can be handled by the Config.
-type Factories = component.Factories // nolint:staticcheck
+// NopFactories returns a otelcol.Factories with all nop factories.
+var NopFactories = componenttest.NopFactories // nolint:staticcheck
