@@ -44,7 +44,7 @@ __IMPORTANT__: TLS 1.0 and 1.1 are deprecated due to known vulnerabilities and s
 - `max_version` (default = "" handled by [crypto/tls](https://github.com/golang/go/blob/master/src/crypto/tls/common.go#L700) - currently TLS 1.3): Maximum acceptable TLS version.
   - options: ["1.0", "1.1", "1.2", "1.3"]
 
-Additionally certifaces may be reloaded by setting the below configuration.
+Additionally certificates may be reloaded by setting the below configuration.
 
 - `reload_interval` (optional) : ReloadInterval specifies the duration after which the certificate will be reloaded.
    If not set, it will never be reloaded.
