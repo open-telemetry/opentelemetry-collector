@@ -307,6 +307,36 @@ func TestMap(t *testing.T) {
 	assert.EqualValues(t, NewMap(), sortMap)
 }
 
+func TestMapEqual(t *testing.T) {
+	m1 := generateTestMap()
+	m2 := generateTestMap()
+	assert.True(t, m1.Equal(m2))
+	assert.True(t, m2.Equal(m1))
+
+	v, ok := m1.Get("strKey")
+	require.True(t, ok)
+	v.SetStr("nawStrVal")
+	assert.False(t, m1.Equal(m2))
+	assert.False(t, m2.Equal(m1))
+
+	v.SetStr("strVal")
+	assert.True(t, m1.Equal(m2))
+	assert.True(t, m2.Equal(m1))
+
+	m1.Remove("intKey")
+	assert.False(t, m1.Equal(m2))
+	assert.False(t, m2.Equal(m1))
+
+	m1.PutInt("anotherIntKey", 1)
+	assert.False(t, m1.Equal(m2))
+	assert.False(t, m2.Equal(m1))
+
+	m1.Remove("anotherIntKey")
+	m1.PutInt("intKey", 7)
+	assert.True(t, m1.Equal(m2))
+	assert.True(t, m2.Equal(m1))
+}
+
 func TestMapPutEmpty(t *testing.T) {
 	m := NewMap()
 	v := m.PutEmpty("k1")
@@ -1083,22 +1113,27 @@ func TestNewValueFromRawInvalid(t *testing.T) {
 
 func generateTestValueMap() Value {
 	ret := NewValueMap()
-	attrMap := ret.Map()
-	attrMap.PutStr("strKey", "strVal")
-	attrMap.PutInt("intKey", 7)
-	attrMap.PutDouble("floatKey", 18.6)
-	attrMap.PutBool("boolKey", false)
-	attrMap.PutEmpty("nullKey")
+	generateTestMap().CopyTo(ret.Map())
+	return ret
+}
 
-	m := attrMap.PutEmptyMap("mapKey")
-	m.PutStr("keyOne", "valOne")
-	m.PutStr("keyTwo", "valTwo")
+func generateTestMap() Map {
+	m := NewMap()
+	m.PutStr("strKey", "strVal")
+	m.PutInt("intKey", 7)
+	m.PutDouble("floatKey", 18.6)
+	m.PutBool("boolKey", false)
+	m.PutEmpty("nullKey")
 
-	s := attrMap.PutEmptySlice("arrKey")
+	em := m.PutEmptyMap("mapKey")
+	em.PutStr("keyOne", "valOne")
+	em.PutStr("keyTwo", "valTwo")
+
+	s := m.PutEmptySlice("arrKey")
 	s.AppendEmpty().SetStr("strOne")
 	s.AppendEmpty().SetStr("strTwo")
 
-	return ret
+	return m
 }
 
 func generateTestValueSlice() Value {
@@ -1116,4 +1151,16 @@ func generateTestValueBytes() Value {
 	v := NewValueBytes()
 	v.Bytes().FromRaw([]byte("String bytes"))
 	return v
+}
+
+func BenchmarkValueEqual(b *testing.B) {
+	b.ReportAllocs()
+
+	v1 := generateTestValueMap()
+	v2 := generateTestValueMap()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		assert.True(b, v1.Equal(v2))
+	}
 }

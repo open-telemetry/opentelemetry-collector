@@ -402,25 +402,7 @@ func (v Value) Equal(av Value) bool {
 		}
 		return true
 	case *otlpcommon.AnyValue_KvlistValue:
-		cc := v.KvlistValue.GetValues()
-		avv := av.getOrig().GetKvlistValue().GetValues()
-		if len(cc) != len(avv) {
-			return false
-		}
-
-		m := newMap(&avv)
-
-		for i := range cc {
-			newAv, ok := m.Get(cc[i].Key)
-			if !ok {
-				return false
-			}
-
-			if !newAv.Equal(newValue(&cc[i].Value)) {
-				return false
-			}
-		}
-		return true
+		return newMap(&v.KvlistValue.Values).Equal(av.Map())
 	case *otlpcommon.AnyValue_BytesValue:
 		return bytes.Equal(v.BytesValue, av.getOrig().GetBytesValue())
 	}
@@ -576,6 +558,27 @@ func (m Map) EnsureCapacity(capacity int) {
 	oldOrig := *m.getOrig()
 	*m.getOrig() = make([]otlpcommon.KeyValue, 0, capacity)
 	copy(*m.getOrig(), oldOrig)
+}
+
+// Equal checks if the map is equal to another map.
+// It ignores order of the key-value pairs in the underlying data model.
+func (m Map) Equal(am Map) bool {
+	if m.Len() != am.Len() {
+		return false
+	}
+
+	for _, mkv := range *m.getOrig() {
+		amv, ok := am.Get(mkv.Key)
+		if !ok {
+			return false
+		}
+
+		if !amv.Equal(newValue(&mkv.Value)) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Get returns the Value associated with the key and true. Returned
