@@ -228,13 +228,10 @@ func (srv *Service) Logger() *zap.Logger {
 }
 
 func getBallastSize(host component.Host) uint64 {
-	var ballastSize uint64
-	extensions := host.GetExtensions()
-	for _, extension := range extensions {
-		if ext, ok := extension.(interface{ GetBallastSize() uint64 }); ok {
-			ballastSize = ext.GetBallastSize()
-			break
+	for _, ext := range host.GetExtensions() {
+		if bExt, ok := ext.(interface{ GetBallastSize() uint64 }); ok {
+			return bExt.GetBallastSize()
 		}
 	}
-	return ballastSize
+	return 0
 }
