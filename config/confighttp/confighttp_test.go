@@ -824,41 +824,20 @@ func ExampleHTTPServerSettings() {
 
 func TestHttpHeaders(t *testing.T) {
 	tests := []struct {
-		name          string
-		headers       map[string]string
-		opaqueHeaders map[string]configopaque.String
-		shouldErr     bool
+		name    string
+		headers map[string]configopaque.String
 	}{
 		{
 			name: "with_headers",
-			headers: map[string]string{
+			headers: map[string]configopaque.String{
 				"header1": "value1",
 			},
-		},
-		{
-			name: "with__opaque_headers",
-			opaqueHeaders: map[string]configopaque.String{
-				"header1": "value1",
-			},
-		},
-		{
-			name: "with_both",
-			headers: map[string]string{
-				"header1": "value1",
-			},
-			opaqueHeaders: map[string]configopaque.String{
-				"header1": "value1",
-			},
-			shouldErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				for k, v := range tt.headers {
-					assert.Equal(t, r.Header.Get(k), v)
-				}
-				for k, v := range tt.opaqueHeaders {
 					assert.Equal(t, r.Header.Get(k), string(v))
 				}
 				w.WriteHeader(200)
@@ -872,13 +851,8 @@ func TestHttpHeaders(t *testing.T) {
 				WriteBufferSize: 0,
 				Timeout:         0,
 				Headers:         tt.headers,
-				OpaqueHeaders:   tt.opaqueHeaders,
 			}
-			client, err := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-			if tt.shouldErr {
-				assert.Error(t, err)
-				return
-			}
+			client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)
 			assert.NoError(t, err)
 			_, err = client.Do(req)

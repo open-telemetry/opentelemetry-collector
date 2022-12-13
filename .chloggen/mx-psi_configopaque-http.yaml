@@ -1,11 +1,11 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: deprecation
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
 component: config/confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate confighttp.HTTPClientSettings.Headers in favor of confighttp.HTTPClientSettings.OpaqueHeaders
+note: Change confighttp.HTTPClientSettings.Headers type to map[string]configopaque.String
 
 # One or more tracking issues or pull requests related to the change
 issues: [5653]

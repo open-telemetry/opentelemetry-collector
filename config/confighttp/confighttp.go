@@ -17,7 +17,6 @@ package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -55,13 +54,10 @@ type HTTPClientSettings struct {
 	// Timeout parameter configures `http.Client.Timeout`.
 	Timeout time.Duration `mapstructure:"timeout"`
 
-	// Deprecated: [v0.67.0] Use OpaqueHeaders instead.
-	Headers map[string]string `mapstructure:"-"`
-
 	// Additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
 	// Header values are opaque since they may be sensitive.
-	OpaqueHeaders map[string]configopaque.String `mapstructure:"headers"`
+	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Custom Round Tripper to allow for individual components to intercept HTTP requests
 	CustomRoundTripper func(next http.RoundTripper) (http.RoundTripper, error)
@@ -138,28 +134,11 @@ func (hcs *HTTPClientSettings) ToClient(host component.Host, settings component.
 		transport.IdleConnTimeout = *hcs.IdleConnTimeout
 	}
 
-	if len(hcs.Headers) > 0 && len(hcs.OpaqueHeaders) > 0 {
-		return nil, fmt.Errorf("fields Headers and OpaqueHeaders were set at the same time, use only OpaqueHeaders")
-	}
-
-	headers := map[string]configopaque.String{}
-
-	if len(hcs.OpaqueHeaders) > 0 {
-		headers = hcs.OpaqueHeaders
-	}
-
-	if len(hcs.Headers) > 0 {
-		for k, v := range hcs.Headers {
-			headers[k] = configopaque.String(v)
-		}
-		settings.Logger.Warn("confighttp.HTTPClientSettings.Headers is deprecated in favor of confighttp.HTTPClientSettings.OpaqueHeaders")
-	}
-
 	clientTransport := (http.RoundTripper)(transport)
-	if len(headers) > 0 {
+	if len(hcs.Headers) > 0 {
 		clientTransport = &headerRoundTripper{
 			transport: transport,
-			headers:   headers,
+			headers:   hcs.Headers,
 		}
 	}
 	// wrapping http transport with otelhttp transport to enable otel instrumenetation

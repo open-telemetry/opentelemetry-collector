@@ -51,10 +51,9 @@ func createDefaultConfig() component.Config {
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint:      "",
-			Timeout:       30 * time.Second,
-			Headers:       map[string]string{},
-			OpaqueHeaders: map[string]configopaque.String{},
+			Endpoint: "",
+			Timeout:  30 * time.Second,
+			Headers:  map[string]configopaque.String{},
 			// Default to gzip compression
 			Compression: configcompression.Gzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.

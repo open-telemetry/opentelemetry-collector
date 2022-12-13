@@ -98,7 +98,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: endpoint,
-					OpaqueHeaders: map[string]configopaque.String{
+					Headers: map[string]configopaque.String{
 						"hdr1": "val1",
 						"hdr2": "val2",
 					},
