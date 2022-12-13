@@ -16,23 +16,19 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"errors"
+	"flag"
 
 	"github.com/spf13/cobra"
-
-	"go.opentelemetry.io/collector/featuregate"
 )
 
-// NewCommand constructs a new cobra.Command using the given CollectorSettings.
-func NewCommand(set CollectorSettings) *cobra.Command {
-	flagSet := flags()
-	rootCmd := &cobra.Command{
-		Use:          set.BuildInfo.Command,
-		Version:      set.BuildInfo.Version,
-		SilenceUsage: true,
+// newValidateSubCommand constructs a new validate sub command using the given CollectorSettings.
+func newValidateSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
+	validateCmd := &cobra.Command{
+		Use:   "validate",
+		Short: "Validates the config without running the collector",
+		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := featuregate.GetRegistry().Apply(getFeatureGatesFlag(flagSet)); err != nil {
-				return err
-			}
+
 			if set.ConfigProvider == nil {
 				var err error
 
@@ -50,14 +46,8 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if dryRun {
-				return col.DryRun(cmd.Context())
-			}
-			return col.Run(cmd.Context())
+			return col.DryRun(cmd.Context())
 		},
 	}
-	rootCmd.AddCommand(newValidateSubCommand(set, flagSet))
-	rootCmd.AddCommand(newComponentsSubCommand(set))
-	rootCmd.Flags().AddGoFlagSet(flagSet)
-	return rootCmd
+	return validateCmd
 }

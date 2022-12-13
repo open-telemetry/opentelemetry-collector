@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-func TestNewBuildSubCommand(t *testing.T) {
+func TestNewComponentsSubCommand(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 

@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFlag(t *testing.T) {
+func TestSetFlag(t *testing.T) {
 	tests := []struct {
 		name            string
 		args            []string
@@ -32,10 +32,6 @@ func TestFlag(t *testing.T) {
 			name:            "simple set",
 			args:            []string{"--set=key=value"},
 			expectedConfigs: []string{"yaml:key: value"},
-		},
-		{
-			name: "Test dry run flag",
-			args: []string{"--dry-run"},
 		},
 		{
 			name:            "complex nested key",
@@ -63,10 +59,6 @@ func TestFlag(t *testing.T) {
 			expectedConfigs: []string{"file:testdata/otelcol-nop.yaml", "yaml:key: value"},
 		},
 		{
-			name: "Test dry run flag",
-			args: []string{"--config=file:testdata/otelcol-nop.yaml", "--dry-run"},
-		},
-		{
 			name:        "invalid set",
 			args:        []string{"--set=key:name"},
 			expectedErr: `invalid value "key:name" for flag -set: missing equal sign`,
@@ -82,9 +74,7 @@ func TestFlag(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			if len(tt.expectedConfigs) != 0 {
-				assert.Equal(t, tt.expectedConfigs, getConfigFlag(flgs))
-			}
+			assert.Equal(t, tt.expectedConfigs, getConfigFlag(flgs))
 		})
 	}
 }

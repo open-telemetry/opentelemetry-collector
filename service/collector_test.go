@@ -543,8 +543,9 @@ func TestCollectorDryRun(t *testing.T) {
 			col, err := New(set)
 			require.NoError(t, err)
 
-			col.DryRun(context.Background())
-			assert.Equal(t, Starting, col.GetState())
+			err = col.DryRun(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, StateStarting, col.GetState())
 		})
 	}
 }
