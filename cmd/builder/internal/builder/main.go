@@ -90,7 +90,7 @@ func Compile(cfg Config) error {
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)
 	}
-	// #nosec G204
+	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path and the caller is  assumed to have carried out necessary input validation
 	cmd := exec.Command(cfg.Distribution.Go, args...)
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -108,7 +108,7 @@ func GetModules(cfg Config) error {
 		return nil
 	}
 
-	// #nosec G204
+	// #nosec G204 -- cfg.Distribution.Go is trusted to be a safe path
 	cmd := exec.Command(cfg.Distribution.Go, "mod", "tidy", "-compat=1.18")
 	cmd.Dir = cfg.Distribution.OutputPath
 	if out, err := cmd.CombinedOutput(); err != nil {
