@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: Move tests back to component package after config.*Settings are removed.
-
 package exporter
 
 import (
