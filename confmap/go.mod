@@ -7,7 +7,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/featuregate v0.67.0
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.9.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

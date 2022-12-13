@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.67.0
 	go.opentelemetry.io/otel/metric v0.34.0
 	go.opentelemetry.io/otel/trace v1.11.2
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 )
 
