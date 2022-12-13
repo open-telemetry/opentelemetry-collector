@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"unicode"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
@@ -69,8 +68,7 @@ type telemetryInitializer struct {
 	ocRegistry *ocmetric.Registry
 	mp         metric.MeterProvider
 
-	server     *http.Server
-	doInitOnce sync.Once
+	server *http.Server
 }
 
 func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
@@ -81,33 +79,15 @@ func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
 }
 
 func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
-	var err error
-	tel.doInitOnce.Do(
-		func() {
-			if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
-				logger.Info(
-					"Skipping telemetry setup.",
-					zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
-					zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
-				)
-				return
-			}
+	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
+		logger.Info(
+			"Skipping telemetry setup.",
+			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
+			zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
+		)
+		return nil
+	}
 
-			err = tel.initOnce(buildInfo, logger, cfg)
-			if err == nil {
-				go func() {
-					if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
-						asyncErrorChannel <- serveErr
-					}
-				}()
-			}
-
-		},
-	)
-	return err
-}
-
-func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config) error {
 	logger.Info("Setting up own telemetry...")
 
 	// Construct telemetry attributes from build info and config's resource attributes.
@@ -151,6 +131,12 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 		Addr:    cfg.Metrics.Address,
 		Handler: mux,
 	}
+
+	go func() {
+		if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			asyncErrorChannel <- serveErr
+		}
+	}()
 
 	return nil
 }

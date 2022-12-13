@@ -17,7 +17,6 @@ package service
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -207,44 +206,34 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	invalidCfg, err := invalidProvider.Get(context.Background(), factories)
 	require.NoError(t, err)
 
+	// Create a service with an invalid config and expect an error
+	_, err = newService(&settings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: factories,
+		Config:    invalidCfg,
+	})
+	require.Error(t, err)
+
 	// Read valid yaml config from file
 	validProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
 	validCfg, err := validProvider.Get(context.Background(), factories)
 	require.NoError(t, err)
 
-	// Create a service with an invalid config and expect an error
-	telemetryOne := newColTelemetry(featuregate.NewRegistry())
-	_, err = newService(&settings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: factories,
-		Config:    invalidCfg,
-		telemetry: telemetryOne,
-	})
-	require.Error(t, err)
-
 	// Create a service with a valid config and expect no error
-	telemetryTwo := newColTelemetry(featuregate.NewRegistry())
 	srv, err := newService(&settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
 		Config:    validCfg,
-		telemetry: telemetryTwo,
 	})
 	require.NoError(t, err)
-
-	// For safety ensure everything is cleaned up
-	t.Cleanup(func() {
-		assert.NoError(t, telemetryOne.shutdown())
-		assert.NoError(t, telemetryTwo.shutdown())
-		assert.NoError(t, srv.Shutdown(context.Background()))
-	})
+	assert.NoError(t, srv.Shutdown(context.Background()))
 }
 
 func TestServiceTelemetryWithOpenCensusMetrics(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			testCollectorStartHelper(t, newColTelemetry(featuregate.NewRegistry()), tc)
+			testCollectorStartHelper(t, featuregate.NewRegistry(), tc)
 		})
 	}
 }
@@ -256,12 +245,12 @@ func TestServiceTelemetryWithOpenTelemetryMetrics(t *testing.T) {
 			obsreportconfig.RegisterInternalMetricFeatureGate(registry)
 			colTel := newColTelemetry(registry)
 			require.NoError(t, colTel.registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
-			testCollectorStartHelper(t, colTel, tc)
+			testCollectorStartHelper(t, registry, tc)
 		})
 	}
 }
 
-func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc ownMetricsTestCase) {
+func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMetricsTestCase) {
 	factories, err := componenttest.NopFactories()
 	zpagesExt := zpagesextension.NewFactory()
 	factories.Extensions[zpagesExt.Type()] = zpagesExt
@@ -301,27 +290,29 @@ func testCollectorStartHelper(t *testing.T, telemetry *telemetryInitializer, tc 
 	cfg, err := cfgProvider.Get(context.Background(), factories)
 	require.NoError(t, err)
 
-	srv, err := newService(&settings{
-		BuildInfo:      component.BuildInfo{Version: "test version"},
-		Factories:      factories,
-		Config:         cfg,
-		LoggingOptions: []zap.Option{zap.Hooks(hook)},
-		telemetry:      telemetry,
-	})
-	require.NoError(t, err)
+	// Create a service, check for metrics, shutdown and repeat to ensure that telemetry can be started/shutdown and started again.
+	for i := 0; i < 2; i++ {
+		srv, err := newService(&settings{
+			BuildInfo:      component.BuildInfo{Version: "test version"},
+			Factories:      factories,
+			Config:         cfg,
+			LoggingOptions: []zap.Option{zap.Hooks(hook)},
+			registry:       reg,
+		})
+		require.NoError(t, err)
 
-	require.NoError(t, srv.Start(context.Background()))
-	// Sleep for 1 second to ensure the http server is started.
-	time.Sleep(1 * time.Second)
-	assert.True(t, loggingHookCalled)
-	assertMetrics(t, metricsAddr, tc.expectedLabels)
-	assertZPages(t, zpagesAddr)
-	require.NoError(t, srv.Shutdown(context.Background()))
-	require.NoError(t, telemetry.shutdown())
+		require.NoError(t, srv.Start(context.Background()))
+		// Sleep for 1 second to ensure the http server is started.
+		time.Sleep(1 * time.Second)
+		assert.True(t, loggingHookCalled)
+		assertMetrics(t, metricsAddr, tc.expectedLabels)
+		assertZPages(t, zpagesAddr)
+		require.NoError(t, srv.Shutdown(context.Background()))
+	}
 }
 
-// TestServiceTelemetryReusable tests that a single telemetryInitializer can be reused in multiple services
-func TestServiceTelemetryReusable(t *testing.T) {
+// TestServiceTelemetryRestart tests that the service correctly restarts the telemetry server.
+func TestServiceTelemetryRestart(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
@@ -332,22 +323,15 @@ func TestServiceTelemetryReusable(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a service
-	telemetry := newColTelemetry(featuregate.NewRegistry())
-	// For safety ensure everything is cleaned up
-	t.Cleanup(func() {
-		assert.NoError(t, telemetry.shutdown())
-	})
-
 	srvOne, err := newService(&settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
 		Config:    validCfg,
-		telemetry: telemetry,
 	})
 	require.NoError(t, err)
 
 	// URL of the telemetry service metrics endpoint
-	telemetryURL := fmt.Sprintf("http://%s/metrics", telemetry.server.Addr)
+	telemetryURL := "http://localhost:8888/metrics"
 
 	// Start the service
 	require.NoError(t, srvOne.Start(context.Background()))
@@ -368,7 +352,6 @@ func TestServiceTelemetryReusable(t *testing.T) {
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
 		Config:    validCfg,
-		telemetry: telemetry,
 	})
 	require.NoError(t, err)
 
@@ -392,17 +375,12 @@ func createExampleService(t *testing.T, factories component.Factories) *service 
 	cfg, err := prov.Get(context.Background(), factories)
 	require.NoError(t, err)
 
-	telemetry := newColTelemetry(featuregate.NewRegistry())
 	srv, err := newService(&settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
 		Config:    cfg,
-		telemetry: telemetry,
 	})
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, telemetry.shutdown())
-	})
 	return srv
 }
 
