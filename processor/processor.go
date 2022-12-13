@@ -60,7 +60,6 @@ var WithLogs = component.WithLogsProcessor //nolint:staticcheck
 // NewFactory returns a Factory.
 var NewFactory = component.NewProcessorFactory //nolint:staticcheck
 
-// MakeFactoryMap takes a list of processor factories and returns a map
-// with factory type as keys. It returns a non-nil error when more than one factories
-// have the same type.
+// MakeFactoryMap takes a list of factories and returns a map with Factory type as keys.
+// It returns a non-nil error when there are factories with duplicate type.
 var MakeFactoryMap = component.MakeProcessorFactoryMap //nolint:staticcheck

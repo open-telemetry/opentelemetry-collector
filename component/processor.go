@@ -20,12 +20,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// Deprecated: [v0.67.0] use Config.
-type ProcessorConfig = Config
-
-// Deprecated: [v0.67.0] use UnmarshalConfig.
-var UnmarshalProcessorConfig = UnmarshalConfig
-
 // Deprecated: [v0.68.0] use processor.Traces.
 type TracesProcessor interface {
 	Component
@@ -83,9 +77,6 @@ type ProcessorFactory interface {
 	// LogsProcessorStability gets the stability level of the LogsProcessor.
 	LogsProcessorStability() StabilityLevel
 }
-
-// Deprecated: [v0.67.0] use CreateDefaultConfigFunc.
-type ProcessorCreateDefaultConfigFunc = CreateDefaultConfigFunc
 
 // Deprecated: [v0.68.0] use processor.FactoryOption.
 type ProcessorFactoryOption interface {
