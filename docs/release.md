@@ -42,7 +42,9 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
     * Update the version numbers in `cmd/builder/test/core.builder.yaml`
 
-    * Run `make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0`
+    * Run `make prepare-release PREVIOUS_VERSION=1.0.0 RELEASE_CANDIDATE=1.1.0 MODSET=stable`
+
+    * Run `make prepare-release PREVIOUS_VERSION=0.52.0 RELEASE_CANDIDATE=0.53.0 MODSET=beta`
 
     * Ensure the `main` branch builds successfully.
 
