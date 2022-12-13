@@ -41,7 +41,7 @@ type Config struct {
 	// Extensions is a map of ComponentID to extensions.
 	Extensions map[component.ID]component.Config
 
-	Service service.ConfigService
+	Service service.Config
 }
 
 // Validate returns an error if the config is invalid.

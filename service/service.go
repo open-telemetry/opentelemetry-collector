@@ -83,7 +83,7 @@ type Service struct {
 	telemetryInitializer *telemetryInitializer
 }
 
-func New(ctx context.Context, set Settings, cfg ConfigService) (*Service, error) {
+func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	reg := set.registry
 	if reg == nil {
 		reg = featuregate.GetRegistry()
@@ -184,7 +184,7 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings, cfg ConfigService) error {
+func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings, cfg Config) error {
 	var err error
 	extensionsSettings := extensions.Settings{
 		Telemetry: srv.telemetrySettings,

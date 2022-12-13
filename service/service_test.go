@@ -407,10 +407,10 @@ func newNopSettings() Settings {
 	}
 }
 
-func newNopConfig() ConfigService {
-	return ConfigService{
+func newNopConfig() Config {
+	return Config{
 		Extensions: []component.ID{component.NewID("nop")},
-		Pipelines: map[component.ID]*ConfigServicePipeline{
+		Pipelines: map[component.ID]*PipelineConfig{
 			component.NewID("traces"): {
 				Receivers:  []component.ID{component.NewID("nop")},
 				Processors: []component.ID{component.NewID("nop")},

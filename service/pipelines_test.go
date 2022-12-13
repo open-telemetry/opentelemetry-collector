@@ -42,12 +42,12 @@ func TestBuildPipelines(t *testing.T) {
 		receiverIDs      []component.ID
 		processorIDs     []component.ID
 		exporterIDs      []component.ID
-		pipelineConfigs  map[component.ID]*ConfigServicePipeline
+		pipelineConfigs  map[component.ID]*PipelineConfig
 		expectedRequests int
 	}{
 		{
 			name: "pipelines_simple",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor")},
@@ -68,7 +68,7 @@ func TestBuildPipelines(t *testing.T) {
 		},
 		{
 			name: "pipelines_simple_multi_proc",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver")},
 					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
@@ -89,7 +89,7 @@ func TestBuildPipelines(t *testing.T) {
 		},
 		{
 			name: "pipelines_simple_no_proc",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers: []component.ID{component.NewID("examplereceiver")},
 					Exporters: []component.ID{component.NewID("exampleexporter")},
@@ -107,7 +107,7 @@ func TestBuildPipelines(t *testing.T) {
 		},
 		{
 			name: "pipelines_multi",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
 					Processors: []component.ID{component.NewID("exampleprocessor"), component.NewIDWithName("exampleprocessor", "1")},
@@ -128,7 +128,7 @@ func TestBuildPipelines(t *testing.T) {
 		},
 		{
 			name: "pipelines_multi_no_proc",
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers: []component.ID{component.NewID("examplereceiver"), component.NewIDWithName("examplereceiver", "1")},
 					Exporters: []component.ID{component.NewID("exampleexporter"), component.NewIDWithName("exampleexporter", "1")},
@@ -148,7 +148,7 @@ func TestBuildPipelines(t *testing.T) {
 			name:        "pipelines_exporter_multi_pipeline",
 			receiverIDs: []component.ID{component.NewID("examplereceiver")},
 			exporterIDs: []component.ID{component.NewID("exampleexporter")},
-			pipelineConfigs: map[component.ID]*ConfigServicePipeline{
+			pipelineConfigs: map[component.ID]*PipelineConfig{
 				component.NewID("traces"): {
 					Receivers: []component.ID{component.NewID("examplereceiver")},
 					Exporters: []component.ID{component.NewID("exampleexporter")},
@@ -313,7 +313,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("bf"): badExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("logs"): {
 						Receivers: []component.ID{component.NewID("nop")},
 						Exporters: []component.ID{component.NewID("bf")},
@@ -331,7 +331,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("bf"): badExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("metrics"): {
 						Receivers: []component.ID{component.NewID("nop")},
 						Exporters: []component.ID{component.NewID("bf")},
@@ -349,7 +349,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("bf"): badExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("traces"): {
 						Receivers: []component.ID{component.NewID("nop")},
 						Exporters: []component.ID{component.NewID("bf")},
@@ -370,7 +370,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("logs"): {
 						Receivers:  []component.ID{component.NewID("nop")},
 						Processors: []component.ID{component.NewID("bf")},
@@ -392,7 +392,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("metrics"): {
 						Receivers:  []component.ID{component.NewID("nop")},
 						Processors: []component.ID{component.NewID("bf")},
@@ -414,7 +414,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("traces"): {
 						Receivers:  []component.ID{component.NewID("nop")},
 						Processors: []component.ID{component.NewID("bf")},
@@ -433,7 +433,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("logs"): {
 						Receivers: []component.ID{component.NewID("bf")},
 						Exporters: []component.ID{component.NewID("nop")},
@@ -451,7 +451,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("metrics"): {
 						Receivers: []component.ID{component.NewID("bf")},
 						Exporters: []component.ID{component.NewID("nop")},
@@ -469,7 +469,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("traces"): {
 						Receivers: []component.ID{component.NewID("bf")},
 						Exporters: []component.ID{component.NewID("nop")},
@@ -487,7 +487,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("traces"): {
 						Receivers: []component.ID{component.NewID("nop")},
 						Exporters: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
@@ -505,7 +505,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("unknown"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("traces"): {
 						Receivers: []component.ID{component.NewID("nop")},
 						Exporters: []component.ID{component.NewID("unknown")},
@@ -526,7 +526,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("metrics"): {
 						Receivers:  []component.ID{component.NewID("nop")},
 						Processors: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
@@ -548,7 +548,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("metrics"): {
 						Receivers:  []component.ID{component.NewID("nop")},
 						Processors: []component.ID{component.NewID("unknown")},
@@ -567,7 +567,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("logs"): {
 						Receivers: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
 						Exporters: []component.ID{component.NewID("nop")},
@@ -585,7 +585,7 @@ func TestBuildErrors(t *testing.T) {
 				ExporterConfigs: map[component.ID]component.Config{
 					component.NewID("nop"): nopExporterFactory.CreateDefaultConfig(),
 				},
-				PipelineConfigs: map[component.ID]*ConfigServicePipeline{
+				PipelineConfigs: map[component.ID]*PipelineConfig{
 					component.NewID("logs"): {
 						Receivers: []component.ID{component.NewID("unknown")},
 						Exporters: []component.ID{component.NewID("nop")},
@@ -659,7 +659,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 
 	for _, dt := range []component.DataType{component.DataTypeTraces, component.DataTypeMetrics, component.DataTypeLogs} {
 		t.Run(string(dt)+"/receiver", func(t *testing.T) {
-			set.PipelineConfigs = map[component.ID]*ConfigServicePipeline{
+			set.PipelineConfigs = map[component.ID]*PipelineConfig{
 				component.NewID(dt): {
 					Receivers:  []component.ID{component.NewID("nop"), component.NewID("err")},
 					Processors: []component.ID{component.NewID("nop")},
@@ -673,7 +673,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 		})
 
 		t.Run(string(dt)+"/processor", func(t *testing.T) {
-			set.PipelineConfigs = map[component.ID]*ConfigServicePipeline{
+			set.PipelineConfigs = map[component.ID]*PipelineConfig{
 				component.NewID(dt): {
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop"), component.NewID("err")},
@@ -687,7 +687,7 @@ func TestFailToStartAndShutdown(t *testing.T) {
 		})
 
 		t.Run(string(dt)+"/exporter", func(t *testing.T) {
-			set.PipelineConfigs = map[component.ID]*ConfigServicePipeline{
+			set.PipelineConfigs = map[component.ID]*PipelineConfig{
 				component.NewID(dt): {
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop")},
