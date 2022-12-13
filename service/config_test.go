@@ -144,8 +144,7 @@ func TestConfigDryValidate(t *testing.T) {
 				cfg := generateConfig()
 				cfg.Receivers = nil
 				cfg.Exporters[component.NewID("nop")] = &nopExpConfig{
-					ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
-					validateErr:      errInvalidExpConfig,
+					validateErr: errInvalidExpConfig,
 				}
 				pipe := cfg.Service.Pipelines[component.NewID("traces")]
 				pipe.Receivers = nil
@@ -160,12 +159,10 @@ func TestConfigDryValidate(t *testing.T) {
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Processors[component.NewID("nop")] = &nopProcConfig{
-					ProcessorSettings: config.NewProcessorSettings(component.NewID("nop")),
-					validateErr:       errInvalidProcConfig,
+					validateErr: errInvalidProcConfig,
 				}
 				cfg.Receivers[component.NewID("nop")] = &nopRecvConfig{
-					ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
-					validateErr:      errInvalidRecvConfig,
+					validateErr: errInvalidRecvConfig,
 				}
 				pipe := cfg.Service.Pipelines[component.NewID("traces")]
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
@@ -182,8 +179,7 @@ func TestConfigDryValidate(t *testing.T) {
 				pipe := cfg.Service.Pipelines[component.NewID("traces")]
 				pipe.Exporters = nil
 				cfg.Extensions[component.NewID("nop")] = &nopExtConfig{
-					ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
-					validateErr:       errInvalidExtConfig,
+					validateErr: errInvalidExtConfig,
 				}
 				return cfg
 			},

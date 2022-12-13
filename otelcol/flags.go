@@ -14,10 +14,7 @@ import (
 const (
 	configFlag       = "config"
 	featureGatesFlag = "feature-gates"
-	dryRunFlag       = "dry-run"
 )
-
-var dryRun bool
 
 type configFlagValue struct {
 	values []string
