@@ -134,9 +134,9 @@ func TestConfigDryValidate(t *testing.T) {
 			},
 			expected: fmt.Sprintf(
 				`**..%v
-**..service references extension "nop/2" which does not exist
-**..pipeline "traces" references receiver "nop/2" which does not exist
-**..pipeline "traces" references exporter "nop" which does not exist`, errMissingExporters),
+**..service::extensions: references extension "nop/2" which is not configured
+**..service::pipeline::traces: references receiver "nop/2" which is not configured
+**..service::pipeline::traces: references exporter "nop" which is not configured`, errMissingExporters),
 		},
 		{
 			name: "missing-receivers, invalid-exporter-config, missing-pipeline-receivers",
@@ -152,8 +152,8 @@ func TestConfigDryValidate(t *testing.T) {
 				return cfg
 			},
 			expected: fmt.Sprintf(`**..%v
-**..exporter "nop" has invalid configuration: %v
-**..pipeline "traces" must have at least one receiver`, errMissingReceivers, errInvalidExpConfig),
+**..exporters::nop: %v
+**..service::pipeline::traces: %v`, errMissingReceivers, errInvalidExpConfig, errMissingServicePipelineReceivers),
 		},
 		{
 			name: "invalid-exporter-reference, invalid-processor-config, invalid-receiver-config",
@@ -171,12 +171,12 @@ func TestConfigDryValidate(t *testing.T) {
 				pipe.Exporters = append(pipe.Exporters, component.NewIDWithName("nop", "2"))
 				return cfg
 			},
-			expected: fmt.Sprintf(`**..receiver "nop" has invalid configuration: %v
-**..processor "nop" has invalid configuration: %v
-**..pipeline "traces" references exporter "nop/2" which does not exist`, errInvalidRecvConfig, errInvalidProcConfig),
+			expected: fmt.Sprintf(`**..receivers::nop: %v
+**..processors::nop: %v
+**..service::pipeline::traces: references exporter "nop/2" which is not configured`, errInvalidRecvConfig, errInvalidProcConfig),
 		},
 		{
-			name: "missing-pipeline-exporters, invalid-extension-config ",
+			name: "missing-pipeline-exporters, invalid-extension-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				pipe := cfg.Service.Pipelines[component.NewID("traces")]
@@ -187,8 +187,8 @@ func TestConfigDryValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: fmt.Sprintf(`**..extension "nop" has invalid configuration: %v
-**..pipeline "traces" must have at least one exporter`, errInvalidExtConfig),
+			expected: fmt.Sprintf(`**..extensions::nop: %v
+**..service::pipeline::traces: %v`, errInvalidExtConfig, errMissingServicePipelineExporters),
 		},
 	}
 
