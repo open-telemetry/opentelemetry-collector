@@ -16,6 +16,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor"
@@ -30,6 +31,7 @@ type serviceHost struct {
 	receivers         *receiver.Builder
 	processors        *processor.Builder
 	exporters         *exporter.Builder
+	connectors        *connector.Builder
 	extensions        *extension.Builder
 
 	buildInfo component.BuildInfo
@@ -53,6 +55,8 @@ func (host *serviceHost) GetFactory(kind component.Kind, componentType component
 		return host.processors.Factory(componentType)
 	case component.KindExporter:
 		return host.exporters.Factory(componentType)
+	case component.KindConnector:
+		return host.connectors.Factory(componentType)
 	case component.KindExtension:
 		return host.extensions.Factory(componentType)
 	}

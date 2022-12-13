@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
@@ -48,6 +49,9 @@ type Settings struct {
 
 	// Exporters builder for exporters.
 	Exporters *exporter.Builder
+
+	// Connectors builder for connectors.
+	Connectors *connector.Builder
 
 	// Extensions builder for extensions.
 	Extensions *extension.Builder
@@ -82,6 +86,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			receivers:         set.Receivers,
 			processors:        set.Processors,
 			exporters:         set.Exporters,
+			connectors:        set.Connectors,
 			extensions:        set.Extensions,
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,

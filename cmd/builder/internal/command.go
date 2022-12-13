@@ -166,6 +166,7 @@ func applyCfgFromFile(flags *flag.FlagSet, cfgFromFile builder.Config) {
 	cfg.Extensions = cfgFromFile.Extensions
 	cfg.Receivers = cfgFromFile.Receivers
 	cfg.Processors = cfgFromFile.Processors
+	cfg.Connectors = cfgFromFile.Connectors
 	cfg.Replaces = cfgFromFile.Replaces
 	cfg.Excludes = cfgFromFile.Excludes
 

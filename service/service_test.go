@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -155,6 +156,9 @@ func TestServiceGetFactory(t *testing.T) {
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExporter, "wrongtype"))
 	assert.Equal(t, set.Exporters.Factory("nop"), srv.host.GetFactory(component.KindExporter, "nop"))
+
+	assert.Nil(t, srv.host.GetFactory(component.KindConnector, "wrongtype"))
+	assert.Equal(t, set.Connectors.Factory("nop"), srv.host.GetFactory(component.KindConnector, "nop"))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExtension, "wrongtype"))
 	assert.Equal(t, set.Extensions.Factory("nop"), srv.host.GetFactory(component.KindExtension, "nop"))
@@ -393,6 +397,7 @@ func newNopSettings() Settings {
 		Receivers:  receivertest.NewNopBuilder(),
 		Processors: processortest.NewNopBuilder(),
 		Exporters:  exportertest.NewNopBuilder(),
+		Connectors: connectortest.NewNopBuilder(),
 		Extensions: extensiontest.NewNopBuilder(),
 	}
 }

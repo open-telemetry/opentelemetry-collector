@@ -45,4 +45,9 @@ func TestNopFactories(t *testing.T) {
 	nopExtensionFactory, ok := nopFactories.Extensions["nop"]
 	require.True(t, ok)
 	require.Equal(t, component.Type("nop"), nopExtensionFactory.Type())
+
+	require.Equal(t, 1, len(nopFactories.Connectors))
+	nopConnectorFactory, ok := nopFactories.Connectors["nop"]
+	require.True(t, ok)
+	require.Equal(t, component.Type("nop"), nopConnectorFactory.Type())
 }
