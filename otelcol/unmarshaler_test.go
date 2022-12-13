@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package otelcol
 
 import (
 	"testing"
@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -141,7 +142,7 @@ func TestConfigServicePipelineUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			pipelines := make(map[component.ID]ConfigServicePipeline)
+			pipelines := make(map[component.ID]service.ConfigServicePipeline)
 			err := tt.conf.Unmarshal(&pipelines, confmap.WithErrorUnused())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
@@ -210,7 +211,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.conf.Unmarshal(&ConfigService{}, confmap.WithErrorUnused())
+			err := tt.conf.Unmarshal(&service.ConfigService{}, confmap.WithErrorUnused())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
 		})
