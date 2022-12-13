@@ -21,14 +21,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 )
 
-// Deprecated: [v0.67.0] use extensiontest.NewNopCreateSettings.
-func NewNopExtensionCreateSettings() extension.CreateSettings {
-	return extension.CreateSettings{
-		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
 // Deprecated: [v0.67.0] use extensiontest.NewNopFactory.
 func NewNopExtensionFactory() extension.Factory {
 	return extension.NewFactory(

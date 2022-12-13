@@ -15,11 +15,18 @@
 package exportertest // import "go.opentelemetry.io/collector/exporter/exportertest"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 // NewNopCreateSettings returns a new nop settings for Create*Exporter functions.
-var NewNopCreateSettings = componenttest.NewNopExporterCreateSettings //nolint:staticcheck
+func NewNopCreateSettings() exporter.CreateSettings {
+	return exporter.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
+}
 
 // NewNopFactory returns an exporter.Factory that constructs nop exporters.
 var NewNopFactory = componenttest.NewNopExporterFactory //nolint:staticcheck
