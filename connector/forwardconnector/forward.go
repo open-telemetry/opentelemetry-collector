@@ -32,12 +32,12 @@ type forwardFactory struct {
 	// We maintain this map because the Factory is asked trace, metric, and log receivers
 	// separately but they must not create separate objects. When the connector is shutdown
 	// it should be removed from this map so the same configuration can be recreated successfully.
-	*sharedcomponent.SharedComponents
+	components *sharedcomponent.SharedComponents[component.ID, *forward]
 }
 
 // NewFactory returns a connector.Factory.
 func NewFactory() connector.Factory {
-	f := &forwardFactory{sharedcomponent.NewSharedComponents()}
+	f := &forwardFactory{components: sharedcomponent.NewSharedComponents[component.ID, *forward]()}
 	return connector.NewFactory(
 		typeStr,
 		createDefaultConfig,
@@ -59,11 +59,11 @@ func (f *forwardFactory) createTracesToTraces(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (connector.Traces, error) {
-	comp, _ := f.GetOrAdd(cfg, func() (component.Component, error) {
+	comp, _ := f.components.GetOrAdd(set.ID, func() (*forward, error) {
 		return &forward{}, nil
 	})
 
-	conn := comp.Unwrap().(*forward)
+	conn := comp.Unwrap()
 	conn.Traces = nextConsumer
 	return conn, nil
 }
@@ -75,11 +75,11 @@ func (f *forwardFactory) createMetricsToMetrics(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (connector.Metrics, error) {
-	comp, _ := f.GetOrAdd(cfg, func() (component.Component, error) {
+	comp, _ := f.components.GetOrAdd(set.ID, func() (*forward, error) {
 		return &forward{}, nil
 	})
 
-	conn := comp.Unwrap().(*forward)
+	conn := comp.Unwrap()
 	conn.Metrics = nextConsumer
 	return conn, nil
 }
@@ -91,11 +91,11 @@ func (f *forwardFactory) createLogsToLogs(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (connector.Logs, error) {
-	comp, _ := f.GetOrAdd(cfg, func() (component.Component, error) {
+	comp, _ := f.components.GetOrAdd(set.ID, func() (*forward, error) {
 		return &forward{}, nil
 	})
 
-	conn := comp.Unwrap().(*forward)
+	conn := comp.Unwrap()
 	conn.Logs = nextConsumer
 	return conn, nil
 }
