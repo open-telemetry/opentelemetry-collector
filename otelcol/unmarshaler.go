@@ -34,7 +34,7 @@ type configSettings struct {
 
 // unmarshal the configSettings from a confmap.Conf.
 // After the config is unmarshalled, `Validate()` must be called to validate.
-func unmarshal(v *confmap.Conf, factories service.Factories) (*configSettings, error) {
+func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 	// Unmarshal top level sections and validate.
 	cfg := &configSettings{
 		Receivers:  configunmarshaler.NewReceivers(factories.Receivers),
