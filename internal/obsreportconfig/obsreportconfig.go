@@ -44,25 +44,12 @@ func RegisterInternalMetricFeatureGate(registry *featuregate.Registry) {
 	)
 }
 
-// ObsMetrics wraps OpenCensus View for Collector observability metrics
-type ObsMetrics struct {
-	Views []*view.View
-}
-
-// Configure is used to control the settings that will be used by the obsreport
-// package.
-func Configure(level configtelemetry.Level) *ObsMetrics {
-	ret := &ObsMetrics{}
+// AllViews returns all the OpenCensus views requires by obsreport package.
+func AllViews(level configtelemetry.Level) []*view.View {
 	if level == configtelemetry.LevelNone {
-		return ret
+		return nil
 	}
 
-	ret.Views = allViews()
-	return ret
-}
-
-// allViews return the list of all views that needs to be configured.
-func allViews() []*view.View {
 	var views []*view.View
 	var measures []*stats.Int64Measure
 	var tagKeys []tag.Key

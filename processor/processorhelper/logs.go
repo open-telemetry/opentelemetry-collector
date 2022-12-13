@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 )
 
 // ProcessLogsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
@@ -38,12 +39,12 @@ type logProcessor struct {
 // NewLogsProcessor creates a component.LogsProcessor that ensure context propagation and the right tags are set.
 func NewLogsProcessor(
 	_ context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	_ component.Config,
 	nextConsumer consumer.Logs,
 	logsFunc ProcessLogsFunc,
 	options ...Option,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	// TODO: Add observability metrics support
 	if logsFunc == nil {
 		return nil, errors.New("nil logsFunc")

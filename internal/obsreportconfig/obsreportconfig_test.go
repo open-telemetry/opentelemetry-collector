@@ -18,41 +18,39 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opencensus.io/stats/view"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func TestConfigure(t *testing.T) {
 	tests := []struct {
-		name      string
-		level     configtelemetry.Level
-		wantViews []*view.View
+		name         string
+		level        configtelemetry.Level
+		wantViewsLen int
 	}{
 		{
 			name:  "none",
 			level: configtelemetry.LevelNone,
 		},
 		{
-			name:      "basic",
-			level:     configtelemetry.LevelBasic,
-			wantViews: allViews(),
+			name:         "basic",
+			level:        configtelemetry.LevelBasic,
+			wantViewsLen: 24,
 		},
 		{
-			name:      "normal",
-			level:     configtelemetry.LevelNormal,
-			wantViews: allViews(),
+			name:         "normal",
+			level:        configtelemetry.LevelNormal,
+			wantViewsLen: 24,
 		},
 		{
-			name:      "detailed",
-			level:     configtelemetry.LevelDetailed,
-			wantViews: allViews(),
+			name:         "detailed",
+			level:        configtelemetry.LevelDetailed,
+			wantViewsLen: 24,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotViews := Configure(tt.level)
-			assert.Equal(t, tt.wantViews, gotViews.Views)
+			assert.Len(t, AllViews(tt.level), tt.wantViewsLen)
 		})
 	}
 }

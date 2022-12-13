@@ -122,16 +122,8 @@ func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 // Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
 // provided less function so that two instances of ResourceLogsSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ResourceLogs) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) ResourceLogsSlice {
+func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -322,16 +314,8 @@ func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 // Sort sorts the ScopeLogs elements within ScopeLogsSlice given the
 // provided less function so that two instances of ScopeLogsSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ScopeLogs) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) ScopeLogsSlice {
+func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -522,16 +506,8 @@ func (es LogRecordSlice) AppendEmpty() LogRecord {
 // Sort sorts the LogRecord elements within LogRecordSlice given the
 // provided less function so that two instances of LogRecordSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b LogRecord) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) LogRecordSlice {
+func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

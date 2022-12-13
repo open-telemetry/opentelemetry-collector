@@ -122,16 +122,8 @@ func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 // Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the
 // provided less function so that two instances of ResourceMetricsSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ResourceMetrics) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) ResourceMetricsSlice {
+func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -322,16 +314,8 @@ func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
 // Sort sorts the ScopeMetrics elements within ScopeMetricsSlice given the
 // provided less function so that two instances of ScopeMetricsSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ScopeMetrics) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) ScopeMetricsSlice {
+func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -522,16 +506,8 @@ func (es MetricSlice) AppendEmpty() Metric {
 // Sort sorts the Metric elements within MetricSlice given the
 // provided less function so that two instances of MetricSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b Metric) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es MetricSlice) Sort(less func(a, b Metric) bool) MetricSlice {
+func (es MetricSlice) Sort(less func(a, b Metric) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1149,16 +1125,8 @@ func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 // Sort sorts the NumberDataPoint elements within NumberDataPointSlice given the
 // provided less function so that two instances of NumberDataPointSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b NumberDataPoint) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) NumberDataPointSlice {
+func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1414,16 +1382,8 @@ func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 // Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the
 // provided less function so that two instances of HistogramDataPointSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b HistogramDataPoint) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) HistogramDataPointSlice {
+func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1734,16 +1694,8 @@ func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramD
 // Sort sorts the ExponentialHistogramDataPoint elements within ExponentialHistogramDataPointSlice given the
 // provided less function so that two instances of ExponentialHistogramDataPointSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ExponentialHistogramDataPoint) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ExponentialHistogramDataPointSlice) Sort(less func(a, b ExponentialHistogramDataPoint) bool) ExponentialHistogramDataPointSlice {
+func (es ExponentialHistogramDataPointSlice) Sort(less func(a, b ExponentialHistogramDataPoint) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2133,16 +2085,8 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 // Sort sorts the SummaryDataPoint elements within SummaryDataPointSlice given the
 // provided less function so that two instances of SummaryDataPointSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b SummaryDataPoint) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) SummaryDataPointSlice {
+func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -2377,16 +2321,8 @@ func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointVal
 // Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the
 // provided less function so that two instances of SummaryDataPointValueAtQuantileSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b SummaryDataPointValueAtQuantile) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) SummaryDataPointValueAtQuantileSlice {
+func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

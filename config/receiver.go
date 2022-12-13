@@ -13,23 +13,15 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+
 import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// ReceiverSettings defines common settings for a component.Receiver configuration.
-// Specific receivers can embed this struct and extend it with more fields if needed.
-//
-// It is highly recommended to "override" the Validate() function.
-//
-// When embedded in the receiver config it must be with `mapstructure:",squash"` tag.
-type ReceiverSettings struct {
-	settings
-}
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
+type ReceiverSettings struct{}
 
-// NewReceiverSettings return a new ReceiverSettings with the given ID.
-func NewReceiverSettings(id component.ID) ReceiverSettings {
-	return ReceiverSettings{settings: newSettings(id)}
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
+func NewReceiverSettings(component.ID) ReceiverSettings {
+	return ReceiverSettings{}
 }
-
-var _ component.Config = (*ReceiverSettings)(nil)

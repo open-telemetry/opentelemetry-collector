@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
@@ -39,7 +38,7 @@ func TestBuildExtensions(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		factories         component.Factories
+		factories         map[component.Type]extension.Factory
 		extensionsConfigs map[component.ID]component.Config
 		serviceExtensions []component.ID
 		wantErrMsg        string
@@ -63,10 +62,8 @@ func TestBuildExtensions(t *testing.T) {
 		},
 		{
 			name: "error_on_create_extension",
-			factories: component.Factories{
-				Extensions: map[component.Type]extension.Factory{
-					errExtensionFactory.Type(): errExtensionFactory,
-				},
+			factories: map[component.Type]extension.Factory{
+				errExtensionFactory.Type(): errExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
 				component.NewID(errExtensionFactory.Type()): errExtensionConfig,
@@ -78,10 +75,8 @@ func TestBuildExtensions(t *testing.T) {
 		},
 		{
 			name: "bad_factory",
-			factories: component.Factories{
-				Extensions: map[component.Type]extension.Factory{
-					badExtensionFactory.Type(): badExtensionFactory,
-				},
+			factories: map[component.Type]extension.Factory{
+				badExtensionFactory.Type(): badExtensionFactory,
 			},
 			extensionsConfigs: map[component.ID]component.Config{
 				component.NewID(badExtensionFactory.Type()): badExtensionCfg,
@@ -99,7 +94,7 @@ func TestBuildExtensions(t *testing.T) {
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Configs:   tt.extensionsConfigs,
-				Factories: tt.factories.Extensions,
+				Factories: tt.factories,
 			}, tt.serviceExtensions)
 			require.Error(t, err)
 			assert.EqualError(t, err, tt.wantErrMsg)
@@ -111,11 +106,7 @@ func newBadExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		"bf",
 		func() component.Config {
-			return &struct {
-				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-			}{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("bf")),
-			}
+			return &struct{}{}
 		},
 		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
 			return nil, nil
@@ -128,11 +119,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		"err",
 		func() component.Config {
-			return &struct {
-				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-			}{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("err")),
-			}
+			return &struct{}{}
 		},
 		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")

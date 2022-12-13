@@ -25,13 +25,35 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-// service represents the implementation of a component.Host.
-type service struct {
+// Settings holds configuration for building a new service.
+type Settings struct {
+	// Factories component factories.
+	Factories Factories
+
+	// BuildInfo provides collector start information.
+	BuildInfo component.BuildInfo
+
+	// Config represents the configuration of the service.
+	Config *Config
+
+	// AsyncErrorChannel is the channel that is used to report fatal errors.
+	AsyncErrorChannel chan error
+
+	// LoggingOptions provides a way to change behavior of zap logging.
+	LoggingOptions []zap.Option
+
+	// For testing purpose only.
+	registry *featuregate.Registry
+}
+
+// Service represents the implementation of a component.Host.
+type Service struct {
 	buildInfo            component.BuildInfo
 	config               *Config
 	telemetry            *telemetry.Telemetry
@@ -40,8 +62,12 @@ type service struct {
 	telemetryInitializer *telemetryInitializer
 }
 
-func newService(set *settings) (*service, error) {
-	srv := &service{
+func New(set Settings) (*Service, error) {
+	reg := set.registry
+	if reg == nil {
+		reg = featuregate.GetRegistry()
+	}
+	srv := &Service{
 		buildInfo: set.BuildInfo,
 		config:    set.Config,
 		host: &serviceHost{
@@ -49,12 +75,10 @@ func newService(set *settings) (*service, error) {
 			buildInfo:         set.BuildInfo,
 			asyncErrorChannel: set.AsyncErrorChannel,
 		},
-		telemetryInitializer: set.telemetry,
+		telemetryInitializer: newColTelemetry(reg),
 	}
-
 	var err error
-	srv.telemetry, err = telemetry.New(context.Background(), telemetry.Settings{
-		ZapOptions: set.LoggingOptions}, set.Config.Service.Telemetry)
+	srv.telemetry, err = telemetry.New(context.Background(), telemetry.Settings{ZapOptions: set.LoggingOptions}, set.Config.Service.Telemetry)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logger: %w", err)
 	}
@@ -84,7 +108,7 @@ func newService(set *settings) (*service, error) {
 }
 
 // Start starts the extensions and pipelines. If Start fails Shutdown should be called to ensure a clean state.
-func (srv *service) Start(ctx context.Context) error {
+func (srv *Service) Start(ctx context.Context) error {
 	srv.telemetrySettings.Logger.Info("Starting "+srv.buildInfo.Command+"...",
 		zap.String("Version", srv.buildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
@@ -106,7 +130,7 @@ func (srv *service) Start(ctx context.Context) error {
 	return nil
 }
 
-func (srv *service) Shutdown(ctx context.Context) error {
+func (srv *Service) Shutdown(ctx context.Context) error {
 	// Accumulate errors and proceed with shutting down remaining components.
 	var errs error
 
@@ -131,11 +155,13 @@ func (srv *service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
 	}
 
-	// TODO: Shutdown MeterProvider.
+	if err := srv.telemetryInitializer.shutdown(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown collector telemetry: %w", err))
+	}
 	return errs
 }
 
-func (srv *service) initExtensionsAndPipeline(set *settings) error {
+func (srv *Service) initExtensionsAndPipeline(set Settings) error {
 	var err error
 	extensionsSettings := extensions.Settings{
 		Telemetry: srv.telemetrySettings,
@@ -147,7 +173,7 @@ func (srv *service) initExtensionsAndPipeline(set *settings) error {
 		return fmt.Errorf("failed build extensions: %w", err)
 	}
 
-	pipelinesSettings := Settings{
+	pSet := pipelinesSettings{
 		Telemetry:          srv.telemetrySettings,
 		BuildInfo:          srv.buildInfo,
 		ReceiverFactories:  srv.host.factories.Receivers,
@@ -158,7 +184,7 @@ func (srv *service) initExtensionsAndPipeline(set *settings) error {
 		ExporterConfigs:    srv.config.Exporters,
 		PipelineConfigs:    srv.config.Service.Pipelines,
 	}
-	if srv.host.pipelines, err = buildPipelines(context.Background(), pipelinesSettings); err != nil {
+	if srv.host.pipelines, err = buildPipelines(context.Background(), pSet); err != nil {
 		return fmt.Errorf("cannot build pipelines: %w", err)
 	}
 
@@ -170,4 +196,22 @@ func (srv *service) initExtensionsAndPipeline(set *settings) error {
 	}
 
 	return nil
+}
+
+// Logger returns the logger created for this service.
+// This is a temporary API that may be removed soon after investigating how the collector should record different events.
+func (srv *Service) Logger() *zap.Logger {
+	return srv.telemetrySettings.Logger
+}
+
+func getBallastSize(host component.Host) uint64 {
+	var ballastSize uint64
+	extensions := host.GetExtensions()
+	for _, extension := range extensions {
+		if ext, ok := extension.(interface{ GetBallastSize() uint64 }); ok {
+			ballastSize = ext.GetBallastSize()
+			break
+		}
+	}
+	return ballastSize
 }

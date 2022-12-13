@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -41,7 +42,7 @@ const (
 	receiverScope = scopeName + nameSep + receiverName
 )
 
-// Receiver is a helper to add observability to a component.Receiver.
+// Receiver is a helper to add observability to a receiver.Receiver.
 type Receiver struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
@@ -73,7 +74,7 @@ type ReceiverSettings struct {
 	// eg.: a gRPC stream, for which many batches of data are received in individual
 	// operations without a corresponding new context per operation.
 	LongLivedCtx           bool
-	ReceiverCreateSettings component.ReceiverCreateSettings
+	ReceiverCreateSettings receiver.CreateSettings
 }
 
 // NewReceiver creates a new Receiver.

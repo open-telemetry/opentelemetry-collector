@@ -302,7 +302,9 @@ func TestMap(t *testing.T) {
 	assert.EqualValues(t, NewMap(), removeMap)
 
 	// Test Sort
-	assert.EqualValues(t, NewMap(), NewMap().Sort())
+	sortMap := NewMap()
+	sortMap.Sort()
+	assert.EqualValues(t, NewMap(), sortMap)
 }
 
 func TestMapPutEmpty(t *testing.T) {
@@ -501,7 +503,8 @@ func TestMapWithEmpty(t *testing.T) {
 	assert.False(t, exist)
 
 	// Test Sort
-	assert.EqualValues(t, newMap(&origWithNil), sm.Sort())
+	sm.Sort()
+	assert.EqualValues(t, newMap(&origWithNil), sm)
 }
 
 func TestMapIterationNil(t *testing.T) {

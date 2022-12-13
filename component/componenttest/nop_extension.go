@@ -18,32 +18,17 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension"
 )
-
-// Deprecated: [v0.67.0] use extensiontest.NewNopCreateSettings.
-func NewNopExtensionCreateSettings() extension.CreateSettings {
-	return extension.CreateSettings{
-		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
-type nopExtensionConfig struct {
-	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
 
 // Deprecated: [v0.67.0] use extensiontest.NewNopFactory.
 func NewNopExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		"nop",
 		func() component.Config {
-			return &nopExtensionConfig{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("nop")),
-			}
+			return &nopConfig{}
 		},
-		func(context.Context, component.ExtensionCreateSettings, component.Config) (component.Extension, error) {
+		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelStable)

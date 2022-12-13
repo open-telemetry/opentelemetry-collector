@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"unicode"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
@@ -36,7 +35,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	otelview "go.opentelemetry.io/otel/sdk/metric/view"
+	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
@@ -44,7 +43,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/obsreport"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -69,8 +68,7 @@ type telemetryInitializer struct {
 	ocRegistry *ocmetric.Registry
 	mp         metric.MeterProvider
 
-	server     *http.Server
-	doInitOnce sync.Once
+	server *http.Server
 }
 
 func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
@@ -81,33 +79,15 @@ func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
 }
 
 func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
-	var err error
-	tel.doInitOnce.Do(
-		func() {
-			if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
-				logger.Info(
-					"Skipping telemetry setup.",
-					zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
-					zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
-				)
-				return
-			}
+	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
+		logger.Info(
+			"Skipping telemetry setup.",
+			zap.String(zapKeyTelemetryAddress, cfg.Metrics.Address),
+			zap.String(zapKeyTelemetryLevel, cfg.Metrics.Level.String()),
+		)
+		return nil
+	}
 
-			err = tel.initOnce(buildInfo, logger, cfg)
-			if err == nil {
-				go func() {
-					if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
-						asyncErrorChannel <- serveErr
-					}
-				}()
-			}
-
-		},
-	)
-	return err
-}
-
-func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config) error {
 	logger.Info("Setting up own telemetry...")
 
 	// Construct telemetry attributes from build info and config's resource attributes.
@@ -152,6 +132,12 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 		Handler: mux,
 	}
 
+	go func() {
+		if serveErr := tel.server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			asyncErrorChannel <- serveErr
+		}
+	}()
+
 	return nil
 }
 
@@ -190,13 +176,8 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
-	var views []*view.View
-	obsMetrics := obsreportconfig.Configure(cfg.Metrics.Level)
-	views = append(views, batchprocessor.MetricViews()...)
-	views = append(views, obsMetrics.Views...)
-
-	tel.views = views
-	if err := view.Register(views...); err != nil {
+	tel.views = obsreportconfig.AllViews(cfg.Metrics.Level)
+	if err := view.Register(tel.views...); err != nil {
 		return nil, err
 	}
 
@@ -230,14 +211,6 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 		resAttrs = append(resAttrs, attribute.String(k, v))
 	}
 
-	var views []otelview.View
-
-	batchViews, err := batchprocessor.OtelMetricsViews()
-	if err != nil {
-		return fmt.Errorf("error creating otel metrics views for batch processor: %w", err)
-	}
-	views = append(views, batchViews...)
-
 	res, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
 	if err != nil {
 		return fmt.Errorf("error creating otel resources: %w", err)
@@ -247,13 +220,18 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, prom
 	// We can remove `otelprom.WithoutUnits()` when the otel-go start exposing prometheus metrics using the OpenMetrics format
 	// which includes metric units that prometheusreceiver uses to trim unit's suffixes from metric names.
 	// https://github.com/open-telemetry/opentelemetry-go/issues/3468
-	exporter, err := otelprom.New(otelprom.WithRegisterer(wrappedRegisterer), otelprom.WithoutUnits())
+	exporter, err := otelprom.New(
+		otelprom.WithRegisterer(wrappedRegisterer),
+		otelprom.WithoutUnits(),
+		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
+		otelprom.WithoutScopeInfo())
 	if err != nil {
 		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
 	}
 	tel.mp = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
-		sdkmetric.WithReader(exporter, views...),
+		sdkmetric.WithReader(exporter),
+		sdkmetric.WithView(batchViews()...),
 	)
 
 	return nil
@@ -294,4 +272,23 @@ func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator,
 		}
 	}
 	return propagation.NewCompositeTextMapPropagator(textMapPropagators...), nil
+}
+
+func batchViews() []sdkmetric.View {
+	return []sdkmetric.View{
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size")},
+			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+			}},
+		),
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size_bytes")},
+			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+			}},
+		),
+	}
 }

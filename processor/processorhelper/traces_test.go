@@ -24,16 +24,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-var testTracesCfg = config.NewProcessorSettings(component.NewID("test"))
+var testTracesCfg = struct{}{}
 
 func TestNewTracesProcessor(t *testing.T) {
-	tp, err := NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))
+	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, tp.Capabilities().MutatesData)
@@ -44,7 +44,7 @@ func TestNewTracesProcessor(t *testing.T) {
 
 func TestNewTracesProcessor_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	tp, err := NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil),
+	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -56,22 +56,22 @@ func TestNewTracesProcessor_WithOptions(t *testing.T) {
 }
 
 func TestNewTracesProcessor_NilRequiredFields(t *testing.T) {
-	_, err := NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testTracesCfg, consumertest.NewNop(), nil)
+	_, err := NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &testTracesCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 
-	_, err = NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testTracesCfg, nil, newTestTProcessor(nil))
+	_, err = NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &testTracesCfg, nil, newTestTProcessor(nil))
 	assert.Equal(t, component.ErrNilNextConsumer, err)
 }
 
 func TestNewTracesProcessor_ProcessTraceError(t *testing.T) {
 	want := errors.New("my_error")
-	tp, err := NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(want))
+	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
 
 func TestNewTracesProcessor_ProcessTracesErrSkipProcessingData(t *testing.T) {
-	tp, err := NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
+	tp, err := NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.Equal(t, nil, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }

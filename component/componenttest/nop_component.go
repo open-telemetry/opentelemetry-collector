@@ -22,3 +22,5 @@ type nopComponent struct {
 	component.StartFunc
 	component.ShutdownFunc
 }
+
+type nopConfig struct{}

@@ -122,16 +122,8 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 // Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
 // provided less function so that two instances of ResourceSpansSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ResourceSpans) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) ResourceSpansSlice {
+func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -322,16 +314,8 @@ func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 // Sort sorts the ScopeSpans elements within ScopeSpansSlice given the
 // provided less function so that two instances of ScopeSpansSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ScopeSpans) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) ScopeSpansSlice {
+func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -522,16 +506,8 @@ func (es SpanSlice) AppendEmpty() Span {
 // Sort sorts the Span elements within SpanSlice given the
 // provided less function so that two instances of SpanSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b Span) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es SpanSlice) Sort(less func(a, b Span) bool) SpanSlice {
+func (es SpanSlice) Sort(less func(a, b Span) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -840,16 +816,8 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 // Sort sorts the SpanEvent elements within SpanEventSlice given the
 // provided less function so that two instances of SpanEventSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b SpanEvent) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) SpanEventSlice {
+func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1057,16 +1025,8 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 // Sort sorts the SpanLink elements within SpanLinkSlice given the
 // provided less function so that two instances of SpanLinkSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b SpanLink) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) SpanLinkSlice {
+func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.

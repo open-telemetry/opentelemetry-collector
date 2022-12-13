@@ -20,31 +20,25 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-// Deprecated: [v0.67.0] use Config.
-type ExporterConfig = Config
-
-// Deprecated: [v0.67.0] use UnmarshalConfig.
-var UnmarshalExporterConfig = UnmarshalConfig
-
-// TracesExporter is an Exporter that can consume traces.
+// Deprecated: [v0.67.0] use exporter.Traces.
 type TracesExporter interface {
 	Component
 	consumer.Traces
 }
 
-// MetricsExporter is an Exporter that can consume metrics.
+// Deprecated: [v0.67.0] use exporter.Metrics.
 type MetricsExporter interface {
 	Component
 	consumer.Metrics
 }
 
-// LogsExporter is an Exporter that can consume logs.
+// Deprecated: [v0.67.0] use exporter.Logs.
 type LogsExporter interface {
 	Component
 	consumer.Logs
 }
 
-// ExporterCreateSettings configures Exporter creators.
+// Deprecated: [v0.67.0] use exporter.CreateSettings.
 type ExporterCreateSettings struct {
 	// ID returns the ID of the component that will be created.
 	ID ID
@@ -55,10 +49,7 @@ type ExporterCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// ExporterFactory is factory interface for exporters.
-//
-// This interface cannot be directly implemented. Implementations must
-// use the NewExporterFactory to implement it.
+// Deprecated: [v0.67.0] use exporter.Factory.
 type ExporterFactory interface {
 	Factory
 
@@ -85,115 +76,4 @@ type ExporterFactory interface {
 
 	// LogsExporterStability gets the stability level of the LogsExporter.
 	LogsExporterStability() StabilityLevel
-}
-
-// ExporterFactoryOption apply changes to ExporterOptions.
-type ExporterFactoryOption interface {
-	// applyExporterFactoryOption applies the option.
-	applyExporterFactoryOption(o *exporterFactory)
-}
-
-var _ ExporterFactoryOption = (*exporterFactoryOptionFunc)(nil)
-
-// exporterFactoryOptionFunc is an ExporterFactoryOption created through a function.
-type exporterFactoryOptionFunc func(*exporterFactory)
-
-func (f exporterFactoryOptionFunc) applyExporterFactoryOption(o *exporterFactory) {
-	f(o)
-}
-
-// Deprecated: [v0.67.0] use CreateDefaultConfigFunc.
-type ExporterCreateDefaultConfigFunc = CreateDefaultConfigFunc
-
-// CreateTracesExporterFunc is the equivalent of ExporterFactory.CreateTracesExporter().
-type CreateTracesExporterFunc func(context.Context, ExporterCreateSettings, Config) (TracesExporter, error)
-
-// CreateTracesExporter implements ExporterFactory.CreateTracesExporter().
-func (f CreateTracesExporterFunc) CreateTracesExporter(ctx context.Context, set ExporterCreateSettings, cfg Config) (TracesExporter, error) {
-	if f == nil {
-		return nil, ErrDataTypeIsNotSupported
-	}
-	return f(ctx, set, cfg)
-}
-
-// CreateMetricsExporterFunc is the equivalent of ExporterFactory.CreateMetricsExporter().
-type CreateMetricsExporterFunc func(context.Context, ExporterCreateSettings, Config) (MetricsExporter, error)
-
-// CreateMetricsExporter implements ExporterFactory.CreateMetricsExporter().
-func (f CreateMetricsExporterFunc) CreateMetricsExporter(ctx context.Context, set ExporterCreateSettings, cfg Config) (MetricsExporter, error) {
-	if f == nil {
-		return nil, ErrDataTypeIsNotSupported
-	}
-	return f(ctx, set, cfg)
-}
-
-// CreateLogsExporterFunc is the equivalent of ExporterFactory.CreateLogsExporter().
-type CreateLogsExporterFunc func(context.Context, ExporterCreateSettings, Config) (LogsExporter, error)
-
-// CreateLogsExporter implements ExporterFactory.CreateLogsExporter().
-func (f CreateLogsExporterFunc) CreateLogsExporter(ctx context.Context, set ExporterCreateSettings, cfg Config) (LogsExporter, error) {
-	if f == nil {
-		return nil, ErrDataTypeIsNotSupported
-	}
-	return f(ctx, set, cfg)
-}
-
-type exporterFactory struct {
-	baseFactory
-	CreateTracesExporterFunc
-	tracesStabilityLevel StabilityLevel
-	CreateMetricsExporterFunc
-	metricsStabilityLevel StabilityLevel
-	CreateLogsExporterFunc
-	logsStabilityLevel StabilityLevel
-}
-
-func (e exporterFactory) TracesExporterStability() StabilityLevel {
-	return e.tracesStabilityLevel
-}
-
-func (e exporterFactory) MetricsExporterStability() StabilityLevel {
-	return e.metricsStabilityLevel
-}
-
-func (e exporterFactory) LogsExporterStability() StabilityLevel {
-	return e.logsStabilityLevel
-}
-
-// WithTracesExporter overrides the default "error not supported" implementation for CreateTracesExporter and the default "undefined" stability level.
-func WithTracesExporter(createTracesExporter CreateTracesExporterFunc, sl StabilityLevel) ExporterFactoryOption {
-	return exporterFactoryOptionFunc(func(o *exporterFactory) {
-		o.tracesStabilityLevel = sl
-		o.CreateTracesExporterFunc = createTracesExporter
-	})
-}
-
-// WithMetricsExporter overrides the default "error not supported" implementation for CreateMetricsExporter and the default "undefined" stability level.
-func WithMetricsExporter(createMetricsExporter CreateMetricsExporterFunc, sl StabilityLevel) ExporterFactoryOption {
-	return exporterFactoryOptionFunc(func(o *exporterFactory) {
-		o.metricsStabilityLevel = sl
-		o.CreateMetricsExporterFunc = createMetricsExporter
-	})
-}
-
-// WithLogsExporter overrides the default "error not supported" implementation for CreateLogsExporter and the default "undefined" stability level.
-func WithLogsExporter(createLogsExporter CreateLogsExporterFunc, sl StabilityLevel) ExporterFactoryOption {
-	return exporterFactoryOptionFunc(func(o *exporterFactory) {
-		o.logsStabilityLevel = sl
-		o.CreateLogsExporterFunc = createLogsExporter
-	})
-}
-
-// NewExporterFactory returns a ExporterFactory.
-func NewExporterFactory(cfgType Type, createDefaultConfig CreateDefaultConfigFunc, options ...ExporterFactoryOption) ExporterFactory {
-	f := &exporterFactory{
-		baseFactory: baseFactory{
-			cfgType:                 cfgType,
-			CreateDefaultConfigFunc: createDefaultConfig,
-		},
-	}
-	for _, opt := range options {
-		opt.applyExporterFactoryOption(f)
-	}
-	return f
 }

@@ -32,8 +32,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/internal/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -152,9 +154,13 @@ func TestTelemetryInit(t *testing.T) {
 				Resource: map[string]*string{
 					semconv.AttributeServiceInstanceID: &testInstanceID,
 				},
+				Metrics: telemetry.MetricsConfig{
+					Level:   configtelemetry.LevelDetailed,
+					Address: testutil.GetAvailableLocalAddress(t),
+				},
 			}
 
-			err := tel.initOnce(buildInfo, zap.NewNop(), cfg)
+			err := tel.init(buildInfo, zap.NewNop(), cfg, make(chan error))
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, tel.shutdown())

@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -135,7 +136,7 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("receiver"))
+			tt, err := obsreporttest.SetupTelemetry(component.NewID("receiver"))
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -287,7 +288,7 @@ func assertReceiverViews(t *testing.T, tt obsreporttest.TestTelemetry, sink *con
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
 	}
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, component.NewID("receiver"), "", int64(dataPointCount), 0))
+	require.NoError(t, tt.CheckReceiverMetrics("", int64(dataPointCount), 0))
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
@@ -340,7 +341,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		new(consumertest.MetricsSink),
 		AddScraper(scp),
 		WithTickerChannel(tickerCh),

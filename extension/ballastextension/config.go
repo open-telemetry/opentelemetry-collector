@@ -22,7 +22,8 @@ import (
 
 // Config has the configuration for the ballast extension.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// Deprecated: [v0.68.0] will be removed soon.
+	config.ExtensionSettings `mapstructure:",squash"`
 
 	// SizeMiB is the size, in MiB, of the memory ballast
 	// to be created for this process.

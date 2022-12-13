@@ -28,8 +28,8 @@ type Host interface {
 	// GetFactory of the specified kind. Returns the factory for a component type.
 	// This allows components to create other components. For example:
 	//   func (r MyReceiver) Start(host component.Host) error {
-	//     apacheFactory := host.GetFactory(KindReceiver,"apache").(component.ReceiverFactory)
-	//     receiver, err := apacheFactory.CreateMetricsReceiver(...)
+	//     apacheFactory := host.GetFactory(KindReceiver,"apache").(receiver.Factory)
+	//     receiver, err := apacheFactory.CreateMetrics(...)
 	//     ...
 	//   }
 	//

@@ -17,10 +17,10 @@ package metrics // import "go.opentelemetry.io/collector/receiver/otlpreceiver/i
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -35,7 +35,7 @@ type Receiver struct {
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Metrics, set component.ReceiverCreateSettings) (*Receiver, error) {
+func New(nextConsumer consumer.Metrics, set receiver.CreateSettings) (*Receiver, error) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             set.ID,
 		Transport:              receiverTransport,

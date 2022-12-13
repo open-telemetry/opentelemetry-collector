@@ -1,0 +1,24 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
+component: component
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Remove deprecated funcs/types from component package
+
+# One or more tracking issues or pull requests related to the change
+issues: [6769]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |-
+  - `component.[Exporter|Processor|Receiver|Extension]Config`
+  - `component.Unmarshal[Exporter|Processor|Receiver|Extension]Config`
+  - `component.[Exporter|Processor|Receiver|Extension]CreateDefaultConfigFunc`
+  - `component.[Exporter|Receiver|Extension]FactoryOption`
+  - `component.New[Exporter|Receiver|Extension]Factory`
+  - `component.With[Traces|Metrics|Logs][Exporter|Receiver]`
+  - `component.Create[Traces|Metrics|Logs][Exporter|Receiver]Func`
+  - `component.CreateExtensionFunc`

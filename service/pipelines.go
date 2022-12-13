@@ -25,6 +25,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/fanoutconsumer"
@@ -177,25 +180,25 @@ func (bps *builtPipelines) HandleZPages(w http.ResponseWriter, r *http.Request) 
 	zpages.WriteHTMLPageFooter(w)
 }
 
-// Settings holds configuration for building builtPipelines.
-type Settings struct {
+// pipelinesSettings holds configuration for building builtPipelines.
+type pipelinesSettings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	// ReceiverFactories maps receiver type names in the config to the respective component.ReceiverFactory.
-	ReceiverFactories map[component.Type]component.ReceiverFactory
+	// ReceiverFactories maps receiver type names in the config to the respective receiver.Factory.
+	ReceiverFactories map[component.Type]receiver.Factory
 
 	// ReceiverConfigs is a map of component.ID to component.Config.
 	ReceiverConfigs map[component.ID]component.Config
 
 	// ProcessorFactories maps processor type names in the config to the respective component.ProcessorFactory.
-	ProcessorFactories map[component.Type]component.ProcessorFactory
+	ProcessorFactories map[component.Type]processor.Factory
 
 	// ProcessorConfigs is a map of component.ID to component.Config.
 	ProcessorConfigs map[component.ID]component.Config
 
-	// ExporterFactories maps exporter type names in the config to the respective component.ExporterFactory.
-	ExporterFactories map[component.Type]component.ExporterFactory
+	// ExporterFactories maps exporter type names in the config to the respective exporter.Factory.
+	ExporterFactories map[component.Type]exporter.Factory
 
 	// ExporterConfigs is a map of component.ID to component.Config.
 	ExporterConfigs map[component.ID]component.Config
@@ -205,7 +208,7 @@ type Settings struct {
 }
 
 // buildPipelines builds all pipelines from config.
-func buildPipelines(ctx context.Context, set Settings) (*builtPipelines, error) {
+func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines, error) {
 	exps := &builtPipelines{
 		telemetry:    set.Telemetry,
 		allReceivers: make(map[component.DataType]map[component.ID]component.Component),
@@ -336,7 +339,7 @@ func buildExporter(
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	cfgs map[component.ID]component.Config,
-	factories map[component.Type]component.ExporterFactory,
+	factories map[component.Type]exporter.Factory,
 	id component.ID,
 	pipelineID component.ID,
 ) (component.Component, error) {
@@ -350,7 +353,7 @@ func buildExporter(
 		return nil, fmt.Errorf("exporter factory not available for: %q", id)
 	}
 
-	set := component.ExporterCreateSettings{
+	set := exporter.CreateSettings{
 		ID:                id,
 		TelemetrySettings: settings,
 		BuildInfo:         buildInfo,
@@ -366,7 +369,7 @@ func buildExporter(
 	return exp, nil
 }
 
-func createExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, factory component.ExporterFactory) (component.Component, error) {
+func createExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, factory exporter.Factory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		return factory.CreateTracesExporter(ctx, set, cfg)
@@ -414,7 +417,7 @@ func exporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 		zap.String(components.ZapNameKey, id.String()))
 }
 
-func getExporterStabilityLevel(factory component.ExporterFactory, dt component.DataType) component.StabilityLevel {
+func getExporterStabilityLevel(factory exporter.Factory, dt component.DataType) component.StabilityLevel {
 	switch dt {
 	case component.DataTypeTraces:
 		return factory.TracesExporterStability()
@@ -430,7 +433,7 @@ func buildProcessor(ctx context.Context,
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	cfgs map[component.ID]component.Config,
-	factories map[component.Type]component.ProcessorFactory,
+	factories map[component.Type]processor.Factory,
 	id component.ID,
 	pipelineID component.ID,
 	next baseConsumer,
@@ -445,7 +448,7 @@ func buildProcessor(ctx context.Context,
 		return nil, fmt.Errorf("processor factory not available for: %q", id)
 	}
 
-	set := component.ProcessorCreateSettings{
+	set := processor.CreateSettings{
 		ID:                id,
 		TelemetrySettings: settings,
 		BuildInfo:         buildInfo,
@@ -460,7 +463,7 @@ func buildProcessor(ctx context.Context,
 	return proc, nil
 }
 
-func createProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, next baseConsumer, factory component.ProcessorFactory) (component.Component, error) {
+func createProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, next baseConsumer, factory processor.Factory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		return factory.CreateTracesProcessor(ctx, set, cfg, next.(consumer.Traces))
@@ -481,7 +484,7 @@ func processorLogger(logger *zap.Logger, procID component.ID, pipelineID compone
 		zap.String(components.ZapKindPipeline, pipelineID.String()))
 }
 
-func getProcessorStabilityLevel(factory component.ProcessorFactory, dt component.DataType) component.StabilityLevel {
+func getProcessorStabilityLevel(factory processor.Factory, dt component.DataType) component.StabilityLevel {
 	switch dt {
 	case component.DataTypeTraces:
 		return factory.TracesProcessorStability()
@@ -497,7 +500,7 @@ func buildReceiver(ctx context.Context,
 	settings component.TelemetrySettings,
 	buildInfo component.BuildInfo,
 	cfgs map[component.ID]component.Config,
-	factories map[component.Type]component.ReceiverFactory,
+	factories map[component.Type]receiver.Factory,
 	id component.ID,
 	pipelineID component.ID,
 	nexts []baseConsumer,
@@ -512,7 +515,7 @@ func buildReceiver(ctx context.Context,
 		return nil, fmt.Errorf("receiver factory not available for: %q", id)
 	}
 
-	set := component.ReceiverCreateSettings{
+	set := receiver.CreateSettings{
 		ID:                id,
 		TelemetrySettings: settings,
 		BuildInfo:         buildInfo,
@@ -528,7 +531,7 @@ func buildReceiver(ctx context.Context,
 	return recv, nil
 }
 
-func createReceiver(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory component.ReceiverFactory) (component.Component, error) {
+func createReceiver(ctx context.Context, set receiver.CreateSettings, cfg component.Config, id component.ID, pipelineID component.ID, nexts []baseConsumer, factory receiver.Factory) (component.Component, error) {
 	switch pipelineID.Type() {
 	case component.DataTypeTraces:
 		var consumers []consumer.Traces
@@ -559,7 +562,7 @@ func receiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 		zap.String(components.ZapKindPipeline, string(dt)))
 }
 
-func getReceiverStabilityLevel(factory component.ReceiverFactory, dt component.DataType) component.StabilityLevel {
+func getReceiverStabilityLevel(factory receiver.Factory, dt component.DataType) component.StabilityLevel {
 	switch dt {
 	case component.DataTypeTraces:
 		return factory.TracesReceiverStability()

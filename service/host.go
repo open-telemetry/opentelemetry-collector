@@ -23,7 +23,7 @@ var _ component.Host = (*serviceHost)(nil)
 
 type serviceHost struct {
 	asyncErrorChannel chan error
-	factories         component.Factories
+	factories         Factories
 	buildInfo         component.BuildInfo
 
 	pipelines  *builtPipelines

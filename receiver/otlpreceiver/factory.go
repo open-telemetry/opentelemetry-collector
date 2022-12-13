@@ -18,12 +18,12 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -34,19 +34,18 @@ const (
 )
 
 // NewFactory creates a new OTLP receiver factory.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelStable),
-		component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelStable),
-		component.WithLogsReceiver(createLogReceiver, component.StabilityLevelBeta))
+		receiver.WithTraces(createTraces, component.StabilityLevelStable),
+		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
+		receiver.WithLogs(createLog, component.StabilityLevelBeta))
 }
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
@@ -63,13 +62,13 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// createTracesReceiver creates a trace receiver based on provided config.
-func createTracesReceiver(
+// createTraces creates a trace receiver based on provided config.
+func createTraces(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		return newOtlpReceiver(cfg.(*Config), set)
 	})
@@ -80,13 +79,13 @@ func createTracesReceiver(
 	return r, nil
 }
 
-// createMetricsReceiver creates a metrics receiver based on provided config.
-func createMetricsReceiver(
+// createMetrics creates a metrics receiver based on provided config.
+func createMetrics(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		return newOtlpReceiver(cfg.(*Config), set)
 	})
@@ -97,13 +96,13 @@ func createMetricsReceiver(
 	return r, nil
 }
 
-// createLogReceiver creates a log receiver based on provided config.
-func createLogReceiver(
+// createLog creates a log receiver based on provided config.
+func createLog(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		return newOtlpReceiver(cfg.(*Config), set)
 	})

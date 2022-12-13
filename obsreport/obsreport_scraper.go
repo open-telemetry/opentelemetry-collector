@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -61,7 +62,7 @@ type Scraper struct {
 type ScraperSettings struct {
 	ReceiverID             component.ID
 	Scraper                component.ID
-	ReceiverCreateSettings component.ReceiverCreateSettings
+	ReceiverCreateSettings receiver.CreateSettings
 }
 
 // NewScraper creates a new Scraper.
