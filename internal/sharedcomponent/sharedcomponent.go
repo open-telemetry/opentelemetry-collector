@@ -38,18 +38,22 @@ func NewSharedComponents() *SharedComponents {
 
 // GetOrAdd returns the already created instance if exists, otherwise creates a new instance
 // and adds it to the map of references.
-func (scs *SharedComponents) GetOrAdd(key interface{}, create func() component.Component) *SharedComponent {
+func (scs *SharedComponents) GetOrAdd(key interface{}, create func() (component.Component, error)) (*SharedComponent, error) {
 	if c, ok := scs.comps[key]; ok {
-		return c
+		return c, nil
+	}
+	comp, err := create()
+	if err != nil {
+		return nil, err
 	}
 	newComp := &SharedComponent{
-		Component: create(),
+		Component: comp,
 		removeFunc: func() {
 			delete(scs.comps, key)
 		},
 	}
 	scs.comps[key] = newComp
-	return newComp
+	return newComp, nil
 }
 
 // SharedComponent ensures that the wrapped component is started and stopped only once.
