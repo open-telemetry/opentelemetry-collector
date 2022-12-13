@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package collector handles the command-line, configuration, and runs the OC collector.
-package service
+package otelcol
 
 import (
 	"context"
@@ -51,7 +51,7 @@ func TestCollectorStartAsGoRoutine(t *testing.T) {
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
 	}
-	col, err := New(set)
+	col, err := NewCollector(set)
 	require.NoError(t, err)
 
 	wg := startCollector(context.Background(), t, col)
@@ -78,7 +78,7 @@ func TestCollectorCancelContext(t *testing.T) {
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
 	}
-	col, err := New(set)
+	col, err := NewCollector(set)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -110,7 +110,7 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 	require.NoError(t, err)
 
 	watcher := make(chan error, 1)
-	col, err := New(CollectorSettings{
+	col, err := NewCollector(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: &mockCfgProvider{ConfigProvider: provider, watcher: watcher},
@@ -142,7 +142,7 @@ func TestCollectorReportError(t *testing.T) {
 	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
 
-	col, err := New(CollectorSettings{
+	col, err := NewCollector(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
@@ -155,7 +155,7 @@ func TestCollectorReportError(t *testing.T) {
 		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
-	col.service.host.ReportFatalError(errors.New("err2"))
+	col.asyncErrorChannel <- errors.New("err2")
 
 	wg.Wait()
 	assert.Equal(t, StateClosed, col.GetState())
@@ -168,7 +168,7 @@ func TestCollectorSendSignal(t *testing.T) {
 	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
 
-	col, err := New(CollectorSettings{
+	col, err := NewCollector(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
@@ -201,7 +201,7 @@ func TestCollectorFailedShutdown(t *testing.T) {
 	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
 
-	col, err := New(CollectorSettings{
+	col, err := NewCollector(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
@@ -232,7 +232,7 @@ func TestCollectorStartInvalidConfig(t *testing.T) {
 	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
 	require.NoError(t, err)
 
-	col, err := New(CollectorSettings{
+	col, err := NewCollector(CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
@@ -265,7 +265,7 @@ func TestCollectorStartWithTraceContextPropagation(t *testing.T) {
 				ConfigProvider: cfgProvider,
 			}
 
-			col, err := New(set)
+			col, err := NewCollector(set)
 			require.NoError(t, err)
 
 			if tt.errExpected {
@@ -302,7 +302,7 @@ func TestCollectorRun(t *testing.T) {
 				Factories:      factories,
 				ConfigProvider: cfgProvider,
 			}
-			col, err := New(set)
+			col, err := NewCollector(set)
 			require.NoError(t, err)
 
 			wg := startCollector(context.Background(), t, col)
@@ -326,7 +326,7 @@ func TestCollectorShutdownBeforeRun(t *testing.T) {
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
 	}
-	col, err := New(set)
+	col, err := NewCollector(set)
 	require.NoError(t, err)
 
 	// Calling shutdown before collector is running should cause it to return quickly
@@ -352,7 +352,7 @@ func TestCollectorClosedStateOnStartUpError(t *testing.T) {
 		Factories:      factories,
 		ConfigProvider: cfgProvider,
 	}
-	col, err := New(set)
+	col, err := NewCollector(set)
 	require.NoError(t, err)
 
 	// Expect run to error

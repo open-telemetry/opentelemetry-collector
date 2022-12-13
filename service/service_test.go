@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"context"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -32,11 +31,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testutil"
+	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 type labelState int
@@ -200,31 +205,21 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
-	// Read invalid yaml config from file
-	invalidProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-invalid.yaml")}))
-	require.NoError(t, err)
-	invalidCfg, err := invalidProvider.Get(context.Background(), factories)
-	require.NoError(t, err)
-
+	invalidCfg := newNopConfig()
+	invalidCfg.Service.Pipelines[component.NewID("traces")].Processors[0] = component.NewID("invalid")
 	// Create a service with an invalid config and expect an error
-	_, err = newService(&settings{
+	_, err = New(Settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
 		Config:    invalidCfg,
 	})
 	require.Error(t, err)
 
-	// Read valid yaml config from file
-	validProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-	validCfg, err := validProvider.Get(context.Background(), factories)
-	require.NoError(t, err)
-
 	// Create a service with a valid config and expect no error
-	srv, err := newService(&settings{
+	srv, err := New(Settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
-		Config:    validCfg,
+		Config:    newNopConfig(),
 	})
 	require.NoError(t, err)
 	assert.NoError(t, srv.Shutdown(context.Background()))
@@ -266,33 +261,24 @@ func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMet
 
 	metricsAddr := testutil.GetAvailableLocalAddress(t)
 	zpagesAddr := testutil.GetAvailableLocalAddress(t)
-	// Prepare config properties to be merged with the main config.
-	extraCfgAsProps := map[string]interface{}{
-		// Setup the zpages extension.
-		"extensions::zpages::endpoint": zpagesAddr,
-		"service::extensions":          "nop, zpages",
-		// Set the metrics address to expose own metrics on.
-		"service::telemetry::metrics::address": metricsAddr,
+
+	cfg := newNopConfig()
+	cfg.Extensions[component.NewID("zpages")] = &zpagesextension.Config{
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: zpagesAddr,
+		},
 	}
-	// Also include resource attributes under the service::telemetry::resource key.
+	cfg.Service.Extensions = []component.ID{component.NewID("nop"), component.NewID("zpages")}
+	cfg.Service.Telemetry.Metrics.Address = metricsAddr
+	cfg.Service.Telemetry.Resource = make(map[string]*string)
+	// Include resource attributes under the service::telemetry::resource key.
 	for k, v := range tc.userDefinedResource {
-		extraCfgAsProps["service::telemetry::resource::"+k] = v
+		cfg.Service.Telemetry.Resource[k] = v
 	}
-
-	cfgSet := newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")})
-	cfgSet.ResolverSettings.Converters = append([]confmap.Converter{
-		mapConverter{extraCfgAsProps}},
-		cfgSet.ResolverSettings.Converters...,
-	)
-	cfgProvider, err := NewConfigProvider(cfgSet)
-	require.NoError(t, err)
-
-	cfg, err := cfgProvider.Get(context.Background(), factories)
-	require.NoError(t, err)
 
 	// Create a service, check for metrics, shutdown and repeat to ensure that telemetry can be started/shutdown and started again.
 	for i := 0; i < 2; i++ {
-		srv, err := newService(&settings{
+		srv, err := New(Settings{
 			BuildInfo:      component.BuildInfo{Version: "test version"},
 			Factories:      factories,
 			Config:         cfg,
@@ -316,17 +302,11 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
-	// Read valid yaml config from file
-	validProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-	validCfg, err := validProvider.Get(context.Background(), factories)
-	require.NoError(t, err)
-
 	// Create a service
-	srvOne, err := newService(&settings{
+	srvOne, err := New(Settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
-		Config:    validCfg,
+		Config:    newNopConfig(),
 	})
 	require.NoError(t, err)
 
@@ -348,10 +328,10 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvOne.Shutdown(context.Background()))
 
 	// Create a new service with the same telemetry
-	srvTwo, err := newService(&settings{
+	srvTwo, err := New(Settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
-		Config:    validCfg,
+		Config:    newNopConfig(),
 	})
 	require.NoError(t, err)
 
@@ -368,17 +348,11 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvTwo.Shutdown(context.Background()))
 }
 
-func createExampleService(t *testing.T, factories component.Factories) *service {
-	// Read yaml config from file
-	prov, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-	cfg, err := prov.Get(context.Background(), factories)
-	require.NoError(t, err)
-
-	srv, err := newService(&settings{
+func createExampleService(t *testing.T, factories component.Factories) *Service {
+	srv, err := New(Settings{
 		BuildInfo: component.NewDefaultBuildInfo(),
 		Factories: factories,
-		Config:    cfg,
+		Config:    newNopConfig(),
 	})
 	require.NoError(t, err)
 	return srv
@@ -454,12 +428,51 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 	}
 }
 
-// mapConverter applies extraMap of config settings. Useful for overriding the config
-// for testing purposes. Keys must use "::" delimiter between levels.
-type mapConverter struct {
-	extraMap map[string]interface{}
-}
-
-func (m mapConverter) Convert(ctx context.Context, conf *confmap.Conf) error {
-	return conf.Merge(confmap.NewFromStringMap(m.extraMap))
+func newNopConfig() *Config {
+	return &Config{
+		Receivers:  map[component.ID]component.Config{component.NewID("nop"): receivertest.NewNopFactory().CreateDefaultConfig()},
+		Processors: map[component.ID]component.Config{component.NewID("nop"): processortest.NewNopFactory().CreateDefaultConfig()},
+		Exporters:  map[component.ID]component.Config{component.NewID("nop"): exportertest.NewNopFactory().CreateDefaultConfig()},
+		Extensions: map[component.ID]component.Config{component.NewID("nop"): extensiontest.NewNopFactory().CreateDefaultConfig()},
+		Service: ConfigService{
+			Extensions: []component.ID{component.NewID("nop")},
+			Pipelines: map[component.ID]*ConfigServicePipeline{
+				component.NewID("traces"): {
+					Receivers:  []component.ID{component.NewID("nop")},
+					Processors: []component.ID{component.NewID("nop")},
+					Exporters:  []component.ID{component.NewID("nop")},
+				},
+				component.NewID("metrics"): {
+					Receivers:  []component.ID{component.NewID("nop")},
+					Processors: []component.ID{component.NewID("nop")},
+					Exporters:  []component.ID{component.NewID("nop")},
+				},
+				component.NewID("logs"): {
+					Receivers:  []component.ID{component.NewID("nop")},
+					Processors: []component.ID{component.NewID("nop")},
+					Exporters:  []component.ID{component.NewID("nop")},
+				},
+			},
+			Telemetry: telemetry.Config{
+				Logs: telemetry.LogsConfig{
+					Level:       zapcore.InfoLevel,
+					Development: false,
+					Encoding:    "console",
+					Sampling: &telemetry.LogsSamplingConfig{
+						Initial:    100,
+						Thereafter: 100,
+					},
+					OutputPaths:       []string{"stderr"},
+					ErrorOutputPaths:  []string{"stderr"},
+					DisableCaller:     false,
+					DisableStacktrace: false,
+					InitialFields:     map[string]interface{}(nil),
+				},
+				Metrics: telemetry.MetricsConfig{
+					Level:   configtelemetry.LevelBasic,
+					Address: "localhost:8888",
+				},
+			},
+		},
+	}
 }

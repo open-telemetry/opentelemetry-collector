@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grpclog // import "go.opentelemetry.io/collector/service/internal/grpclog"
+package grpclog // import "go.opentelemetry.io/collector/otelcol/internal/grpclog"
 
 import (
 	"go.uber.org/zap"

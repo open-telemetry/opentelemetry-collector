@@ -17,74 +17,8 @@
 package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
-	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/service"
 )
 
-// State defines Collector's state.
-type State = service.State //nolint:staticcheck
-
-const (
-	StateStarting = service.StateStarting //nolint:staticcheck
-	StateRunning  = service.StateRunning  //nolint:staticcheck
-	StateClosing  = service.StateClosing  //nolint:staticcheck
-	StateClosed   = service.StateClosed   //nolint:staticcheck
-)
-
-// Collector represents a server providing the OpenTelemetry Collector service.
-type Collector = service.Collector //nolint:staticcheck
-
-// NewCollector creates and returns a new instance of Collector.
-var NewCollector = service.New //nolint:staticcheck
-
-// CollectorSettings holds configuration for creating a new Collector.
-type CollectorSettings = service.CollectorSettings //nolint:staticcheck
-
-// ConfigProvider provides the service configuration.
-//
-// The typical usage is the following:
-//
-//	cfgProvider.Get(...)
-//	cfgProvider.Watch() // wait for an event.
-//	cfgProvider.Get(...)
-//	cfgProvider.Watch() // wait for an event.
-//	// repeat Get/Watch cycle until it is time to shut down the Collector process.
-//	cfgProvider.Shutdown()
-type ConfigProvider = service.ConfigProvider //nolint:staticcheck
-
-// ConfigProviderSettings are the settings to configure the behavior of the ConfigProvider.
-type ConfigProviderSettings = service.ConfigProviderSettings //nolint:staticcheck
-
-// NewConfigProvider returns a new ConfigProvider that provides the service configuration:
-// * Initially it resolves the "configuration map":
-//   - Retrieve the confmap.Conf by merging all retrieved maps from the given `locations` in order.
-//   - Then applies all the confmap.Converter in the given order.
-//
-// * Then unmarshalls the confmap.Conf into the service Config.
-var NewConfigProvider = service.NewConfigProvider //nolint:staticcheck
-
 // Config defines the configuration for the various elements of collector or agent.
 type Config = service.Config //nolint:staticcheck
-
-func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
-	return ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs:       uris,
-			Providers:  makeMapProvidersMap(fileprovider.New(), envprovider.New(), yamlprovider.New(), httpprovider.New()),
-			Converters: []confmap.Converter{expandconverter.New()},
-		},
-	}
-}
-
-func makeMapProvidersMap(providers ...confmap.Provider) map[string]confmap.Provider {
-	ret := make(map[string]confmap.Provider, len(providers))
-	for _, provider := range providers {
-		ret[provider.Scheme()] = provider
-	}
-	return ret
-}
