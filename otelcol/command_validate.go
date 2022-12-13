@@ -48,5 +48,6 @@ func newValidateSubCommand(set CollectorSettings) *cobra.Command {
 			return col.DryRun(cmd.Context())
 		},
 	}
+	validateCmd.Flags().AddGoFlagSet(flagSet)
 	return validateCmd
 }
