@@ -34,48 +34,12 @@ type Factories struct {
 	Extensions map[Type]ExtensionFactory
 }
 
-// Deprecated: [v0.67.0] use receiver.MakeFactoryMap
-func MakeReceiverFactoryMap(factories ...ReceiverFactory) (map[Type]ReceiverFactory, error) {
-	fMap := map[Type]ReceiverFactory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate receiver factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
-}
-
 // Deprecated: [v0.68.0] use processor.MakeFactoryMap
 func MakeProcessorFactoryMap(factories ...ProcessorFactory) (map[Type]ProcessorFactory, error) {
 	fMap := map[Type]ProcessorFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate processor factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
-}
-
-// Deprecated: [v0.67.0] use exporter.MakeFactoryMap
-func MakeExporterFactoryMap(factories ...ExporterFactory) (map[Type]ExporterFactory, error) {
-	fMap := map[Type]ExporterFactory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate exporter factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
-}
-
-// Deprecated: [v0.67.0] use extension.MakeFactoryMap
-func MakeExtensionFactoryMap(factories ...ExtensionFactory) (map[Type]ExtensionFactory, error) {
-	fMap := map[Type]ExtensionFactory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate extension factory %q", f.Type())
 		}
 		fMap[f.Type()] = f
 	}

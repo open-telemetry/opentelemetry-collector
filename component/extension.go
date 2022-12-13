@@ -18,31 +18,8 @@ import (
 	"context"
 )
 
-// Deprecated: [v0.67.0] use Config.
-type ExtensionConfig = Config
-
-// Deprecated: [v0.67.0] use UnmarshalConfig.
-var UnmarshalExtensionConfig = UnmarshalConfig
-
-// Deprecated: [v0.67.0] use CreateDefaultConfigFunc.
-type ExtensionCreateDefaultConfigFunc = CreateDefaultConfigFunc
-
 // Deprecated: [v0.67.0] use extension.Extension.
 type Extension = Component
-
-// Deprecated: [v0.67.0] use extension.PipelineWatcher.
-type PipelineWatcher interface {
-	// Ready notifies the Extension that all pipelines were built and the
-	// receivers were started, i.e.: the service is ready to receive data
-	// (note that it may already have received data when this method is called).
-	Ready() error
-
-	// NotReady notifies the Extension that all receivers are about to be stopped,
-	// i.e.: pipeline receivers will not accept new data.
-	// This is sent before receivers are stopped, so the Extension can take any
-	// appropriate actions before that happens.
-	NotReady() error
-}
 
 // Deprecated: [v0.67.0] use extension.CreateSettings.
 type ExtensionCreateSettings struct {
@@ -55,14 +32,6 @@ type ExtensionCreateSettings struct {
 	BuildInfo BuildInfo
 }
 
-// Deprecated: [v0.67.0] use extension.CreateFunc.
-type CreateExtensionFunc func(context.Context, ExtensionCreateSettings, Config) (Extension, error)
-
-// CreateExtension implements ExtensionFactory.CreateExtension.
-func (f CreateExtensionFunc) CreateExtension(ctx context.Context, set ExtensionCreateSettings, cfg Config) (Extension, error) {
-	return f(ctx, set, cfg)
-}
-
 // Deprecated: [v0.67.0] use extension.Factory.
 type ExtensionFactory interface {
 	Factory
@@ -72,30 +41,4 @@ type ExtensionFactory interface {
 
 	// ExtensionStability gets the stability level of the Extension.
 	ExtensionStability() StabilityLevel
-}
-
-type extensionFactory struct {
-	baseFactory
-	CreateExtensionFunc
-	extensionStability StabilityLevel
-}
-
-func (ef *extensionFactory) ExtensionStability() StabilityLevel {
-	return ef.extensionStability
-}
-
-// Deprecated: [v0.67.0] use extension.NewFactory.
-func NewExtensionFactory(
-	cfgType Type,
-	createDefaultConfig CreateDefaultConfigFunc,
-	createServiceExtension CreateExtensionFunc,
-	sl StabilityLevel) ExtensionFactory {
-	return &extensionFactory{
-		baseFactory: baseFactory{
-			cfgType:                 cfgType,
-			CreateDefaultConfigFunc: createDefaultConfig,
-		},
-		CreateExtensionFunc: createServiceExtension,
-		extensionStability:  sl,
-	}
 }

@@ -28,7 +28,7 @@ func NewNopExtensionFactory() extension.Factory {
 		func() component.Config {
 			return &nopConfig{}
 		},
-		func(context.Context, component.ExtensionCreateSettings, component.Config) (component.Extension, error) {
+		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelStable)

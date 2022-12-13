@@ -72,7 +72,7 @@ func (tts *TestTelemetry) ToExporterCreateSettings() exporter.CreateSettings {
 	return set
 }
 
-// ToProcessorCreateSettings returns a component.ProcessorCreateSettings with configured TelemetrySettings.
+// ToProcessorCreateSettings returns a processor.CreateSettings with configured TelemetrySettings.
 func (tts *TestTelemetry) ToProcessorCreateSettings() processor.CreateSettings {
 	set := processortest.NewNopCreateSettings()
 	set.TelemetrySettings = tts.TelemetrySettings
