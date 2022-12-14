@@ -22,49 +22,49 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-type Configs struct {
+type Configs[F component.Factory] struct {
 	cfgs map[component.ID]component.Config
 
-	factories map[component.Type]component.Factory
+	factories map[component.Type]F
 }
 
-func NewConfigs(factories map[component.Type]component.Factory) *Configs {
-	return &Configs{factories: factories}
+func NewConfigs[F component.Factory](factories map[component.Type]F) *Configs[F] {
+	return &Configs[F]{factories: factories}
 }
 
-func (p *Configs) Unmarshal(conf *confmap.Conf) error {
-	rawProcs := make(map[component.ID]map[string]interface{})
-	if err := conf.Unmarshal(&rawProcs, confmap.WithErrorUnused()); err != nil {
+func (c *Configs[F]) Unmarshal(conf *confmap.Conf) error {
+	rawCfgs := make(map[component.ID]map[string]interface{})
+	if err := conf.Unmarshal(&rawCfgs, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 
 	// Prepare resulting map.
-	p.cfgs = make(map[component.ID]component.Config)
-	// Iterate over processors and create a config for each.
-	for id, value := range rawProcs {
-		// Find processor factory based on "type" that we read from config source.
-		factory := p.factories[id.Type()]
-		if factory == nil {
-			return errorUnknownType(id, reflect.ValueOf(p.factories).MapKeys())
+	c.cfgs = make(map[component.ID]component.Config)
+	// Iterate over raw configs and create a config for each.
+	for id, value := range rawCfgs {
+		// Find factory based on component kind and type that we read from config source.
+		factory, ok := c.factories[id.Type()]
+		if !ok {
+			return errorUnknownType(id, reflect.ValueOf(c.factories).MapKeys())
 		}
 
-		// Create the default config for this processor.
-		processorCfg := factory.CreateDefaultConfig()
+		// Create the default config for this component.
+		cfg := factory.CreateDefaultConfig()
 
 		// Now that the default config struct is created we can Unmarshal into it,
 		// and it will apply user-defined config on top of the default.
-		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), processorCfg); err != nil {
+		if err := component.UnmarshalConfig(confmap.NewFromStringMap(value), cfg); err != nil {
 			return errorUnmarshalError(id, err)
 		}
 
-		p.cfgs[id] = processorCfg
+		c.cfgs[id] = cfg
 	}
 
 	return nil
 }
 
-func (p *Configs) Configs() map[component.ID]component.Config {
-	return p.cfgs
+func (c *Configs[F]) Configs() map[component.ID]component.Config {
+	return c.cfgs
 }
 
 func errorUnknownType(id component.ID, factories []reflect.Value) error {

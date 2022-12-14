@@ -23,94 +23,125 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func TestProcessorsUnmarshal(t *testing.T) {
-	factories := map[component.Type]component.Factory{
-		"nop": processortest.NewNopFactory(),
-	}
-
-	procs := NewConfigs(factories)
-	conf := confmap.NewFromStringMap(map[string]interface{}{
-		"nop":             nil,
-		"nop/myprocessor": nil,
-	})
-	require.NoError(t, procs.Unmarshal(conf))
-
-	cfgWithName := factories["nop"].CreateDefaultConfig()
-	assert.Equal(t, map[component.ID]component.Config{
-		component.NewID("nop"):                        factories["nop"].CreateDefaultConfig(),
-		component.NewIDWithName("nop", "myprocessor"): cfgWithName,
-	}, procs.cfgs)
+var testKinds = []struct {
+	kind      string
+	factories map[component.Type]component.Factory
+}{
+	{
+		kind: "receiver",
+		factories: map[component.Type]component.Factory{
+			"nop": receivertest.NewNopFactory(),
+		},
+	},
+	{
+		kind: "processor",
+		factories: map[component.Type]component.Factory{
+			"nop": processortest.NewNopFactory(),
+		},
+	},
+	{
+		kind: "exporter",
+		factories: map[component.Type]component.Factory{
+			"nop": exportertest.NewNopFactory(),
+		},
+	},
+	{
+		kind: "extension",
+		factories: map[component.Type]component.Factory{
+			"nop": extensiontest.NewNopFactory(),
+		},
+	},
 }
 
-func TestProcessorsUnmarshalError(t *testing.T) {
-	var testCases = []struct {
-		name string
-		conf *confmap.Conf
-		// string that the error must contain
-		expectedError string
-	}{
-		{
-			name: "invalid-type",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"nop":     nil,
-				"/custom": nil,
-			}),
-			expectedError: "the part before / should not be empty",
-		},
-		{
-			name: "invalid-name-after-slash",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"nop":  nil,
-				"nop/": nil,
-			}),
-			expectedError: "the part after / should not be empty",
-		},
-		{
-			name: "unknown-type",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"nosuchprocessor": nil,
-			}),
-			expectedError: "unknown type: \"nosuchprocessor\"",
-		},
-		{
-			name: "duplicate",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"nop /exp ": nil,
-				" nop/ exp": nil,
-			}),
-			expectedError: "duplicate name",
-		},
-		{
-			name: "invalid-section",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"nop": map[string]interface{}{
-					"unknown_section": "processor",
+func TestUnmarshal(t *testing.T) {
+	for _, tk := range testKinds {
+		t.Run(tk.kind, func(t *testing.T) {
+			cfgs := NewConfigs(tk.factories)
+			conf := confmap.NewFromStringMap(map[string]interface{}{
+				"nop":              nil,
+				"nop/my" + tk.kind: nil,
+			})
+			require.NoError(t, cfgs.Unmarshal(conf))
+
+			assert.Equal(t, map[component.ID]component.Config{
+				component.NewID("nop"):                       tk.factories["nop"].CreateDefaultConfig(),
+				component.NewIDWithName("nop", "my"+tk.kind): tk.factories["nop"].CreateDefaultConfig(),
+			}, cfgs.Configs())
+		})
+	}
+}
+
+func TestUnmarshalError(t *testing.T) {
+	for _, tk := range testKinds {
+		t.Run(tk.kind, func(t *testing.T) {
+			var testCases = []struct {
+				name string
+				conf *confmap.Conf
+				// string that the error must contain
+				expectedError string
+			}{
+				{
+					name: "invalid-type",
+					conf: confmap.NewFromStringMap(map[string]interface{}{
+						"nop":     nil,
+						"/custom": nil,
+					}),
+					expectedError: "the part before / should not be empty",
 				},
-			}),
-			expectedError: "error reading configuration for \"nop\"",
-		},
-		{
-			name: "invalid-processor-sub-config",
-			conf: confmap.NewFromStringMap(map[string]interface{}{
-				"nop": "tests",
-			}),
-			expectedError: "'[nop]' expected a map, got 'string'",
-		},
-	}
+				{
+					name: "invalid-name-after-slash",
+					conf: confmap.NewFromStringMap(map[string]interface{}{
+						"nop":  nil,
+						"nop/": nil,
+					}),
+					expectedError: "the part after / should not be empty",
+				},
+				{
+					name: "unknown-type",
+					conf: confmap.NewFromStringMap(map[string]interface{}{
+						"nosuch" + tk.kind: nil,
+					}),
+					expectedError: "unknown type: \"nosuch" + tk.kind + "\"",
+				},
+				{
+					name: "duplicate",
+					conf: confmap.NewFromStringMap(map[string]interface{}{
+						"nop /my" + tk.kind + " ": nil,
+						" nop/ my" + tk.kind:      nil,
+					}),
+					expectedError: "duplicate name",
+				},
+				{
+					name: "invalid-section",
+					conf: confmap.NewFromStringMap(map[string]interface{}{
+						"nop": map[string]interface{}{
+							"unknown_section": tk.kind,
+						},
+					}),
+					expectedError: "error reading configuration for \"nop\"",
+				},
+				{
+					name: "invalid-sub-config",
+					conf: confmap.NewFromStringMap(map[string]interface{}{
+						"nop": "tests",
+					}),
+					expectedError: "'[nop]' expected a map, got 'string'",
+				},
+			}
 
-	factories := map[component.Type]component.Factory{
-		"nop": exportertest.NewNopFactory(),
-	}
-
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			procs := NewConfigs(factories)
-			err := procs.Unmarshal(tt.conf)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tt.expectedError)
+			for _, tt := range testCases {
+				t.Run(tt.name, func(t *testing.T) {
+					cfgs := NewConfigs(tk.factories)
+					err := cfgs.Unmarshal(tt.conf)
+					require.Error(t, err)
+					assert.Contains(t, err.Error(), tt.expectedError)
+				})
+			}
 		})
 	}
 }
