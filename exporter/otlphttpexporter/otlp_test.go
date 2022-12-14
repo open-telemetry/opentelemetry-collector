@@ -37,12 +37,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -50,6 +51,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestInvalidConfig(t *testing.T) {
@@ -59,7 +61,7 @@ func TestInvalidConfig(t *testing.T) {
 		},
 	}
 	f := NewFactory()
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	_, err := f.CreateTracesExporter(context.Background(), set, config)
 	require.Error(t, err)
 	_, err = f.CreateMetricsExporter(context.Background(), set, config)
@@ -258,11 +260,13 @@ func TestIssue_4221(t *testing.T) {
 		assert.Equal(t, "CscBCkkKIAoMc2VydmljZS5uYW1lEhAKDnVvcC5zdGFnZS1ldS0xCiUKGW91dHN5c3RlbXMubW9kdWxlLnZlcnNpb24SCAoGOTAzMzg2EnoKEQoMdW9wX2NhbmFyaWVzEgExEmUKEEMDhT8Ib0+Mhs8Zi2VR34QSCOVRPDJ5XEG5IgA5QE41aASRrxZBQE41aASRrxZKEAoKc3Bhbl9pbmRleBICGANKHwoNY29kZS5mdW5jdGlvbhIOCgxteUZ1bmN0aW9uMzZ6AA==", base64Data)
 		unbase64Data, err := base64.StdEncoding.DecodeString(base64Data)
 		require.NoError(t, err)
-		tr := ptraceotlp.NewRequest()
+		tr := ptraceotlp.NewExportRequest()
 		require.NoError(t, tr.UnmarshalProto(unbase64Data))
 		span := tr.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
-		assert.Equal(t, "e5513c32795c41b9", span.SpanID().HexString())
+		traceID := span.TraceID()
+		assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", hex.EncodeToString(traceID[:]))
+		spanID := span.SpanID()
+		assert.Equal(t, "e5513c32795c41b9", hex.EncodeToString(spanID[:]))
 	}))
 
 	exp := startTracesExporter(t, "", svr.URL)
@@ -281,14 +285,16 @@ func TestIssue_4221(t *testing.T) {
 	require.NoError(t, err)
 	copy(traceIDBytes[:], traceIDBytesSlice)
 	span.SetTraceID(traceIDBytes)
-	assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", span.TraceID().HexString())
+	traceID := span.TraceID()
+	assert.Equal(t, "4303853f086f4f8c86cf198b6551df84", hex.EncodeToString(traceID[:]))
 
 	var spanIDBytes [8]byte
 	spanIDBytesSlice, err := hex.DecodeString("e5513c32795c41b9")
 	require.NoError(t, err)
 	copy(spanIDBytes[:], spanIDBytesSlice)
 	span.SetSpanID(spanIDBytes)
-	assert.Equal(t, "e5513c32795c41b9", span.SpanID().HexString())
+	spanID := span.SpanID()
+	assert.Equal(t, "e5513c32795c41b9", hex.EncodeToString(spanID[:]))
 
 	span.SetEndTimestamp(1634684637873000000)
 	span.Attributes().PutInt("span_index", 3)
@@ -298,37 +304,37 @@ func TestIssue_4221(t *testing.T) {
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), md))
 }
 
-func startTracesExporter(t *testing.T, baseURL string, overrideURL string) component.TracesExporter {
+func startTracesExporter(t *testing.T, baseURL string, overrideURL string) exporter.Traces {
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.TracesEndpoint = overrideURL
-	exp, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
 }
 
-func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) component.MetricsExporter {
+func startMetricsExporter(t *testing.T, baseURL string, overrideURL string) exporter.Metrics {
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.MetricsEndpoint = overrideURL
-	exp, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
 }
 
-func startLogsExporter(t *testing.T, baseURL string, overrideURL string) component.LogsExporter {
+func startLogsExporter(t *testing.T, baseURL string, overrideURL string) exporter.Logs {
 	factory := NewFactory()
 	cfg := createExporterConfig(baseURL, factory.CreateDefaultConfig())
 	cfg.LogsEndpoint = overrideURL
-	exp, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	startAndCleanup(t, exp)
 	return exp
 }
 
-func createExporterConfig(baseURL string, defaultCfg config.Exporter) *Config {
+func createExporterConfig(baseURL string, defaultCfg component.Config) *Config {
 	cfg := defaultCfg.(*Config)
 	cfg.Endpoint = baseURL
 	cfg.QueueSettings.Enabled = false
@@ -339,7 +345,7 @@ func createExporterConfig(baseURL string, defaultCfg config.Exporter) *Config {
 func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, next)
+	recv, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }
@@ -347,7 +353,7 @@ func startTracesReceiver(t *testing.T, addr string, next consumer.Traces) {
 func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, next)
+	recv, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }
@@ -355,12 +361,12 @@ func startMetricsReceiver(t *testing.T, addr string, next consumer.Metrics) {
 func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 	factory := otlpreceiver.NewFactory()
 	cfg := createReceiverConfig(addr, factory.CreateDefaultConfig())
-	recv, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, next)
+	recv, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, next)
 	require.NoError(t, err)
 	startAndCleanup(t, recv)
 }
 
-func createReceiverConfig(addr string, defaultCfg config.Receiver) *otlpreceiver.Config {
+func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
 	cfg.HTTP.Endpoint = addr
 	cfg.GRPC = nil
@@ -481,12 +487,11 @@ func TestErrorResponses(t *testing.T) {
 			}()
 
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
+				TracesEndpoint: fmt.Sprintf("http://%s/v1/traces", addr),
 				// Create without QueueSettings and RetrySettings so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
-			exp, err := createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+			exp, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
 
 			// start the exporter
@@ -514,7 +519,7 @@ func TestErrorResponses(t *testing.T) {
 
 func TestUserAgent(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 
@@ -558,8 +563,7 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					TracesEndpoint:   fmt.Sprintf("http://%s/v1/traces", addr),
+					TracesEndpoint: fmt.Sprintf("http://%s/v1/traces", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
 					},
@@ -603,8 +607,7 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					MetricsEndpoint:  fmt.Sprintf("http://%s/v1/metrics", addr),
+					MetricsEndpoint: fmt.Sprintf("http://%s/v1/metrics", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
 					},
@@ -648,8 +651,7 @@ func TestUserAgent(t *testing.T) {
 				}()
 
 				cfg := &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					LogsEndpoint:     fmt.Sprintf("http://%s/v1/logs", addr),
+					LogsEndpoint: fmt.Sprintf("http://%s/v1/logs", addr),
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Headers: test.headers,
 					},
@@ -670,7 +672,6 @@ func TestUserAgent(t *testing.T) {
 				require.NoError(t, err)
 
 				srv.Close()
-
 			})
 		}
 	})

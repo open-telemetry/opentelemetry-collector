@@ -18,41 +18,34 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 )
 
 const procType = "exampleprocessor"
 
-// ExampleProcessorConfig config for ExampleProcessor.
-type ExampleProcessorConfig struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
-
 // ExampleProcessorFactory is factory for ExampleProcessor.
-var ExampleProcessorFactory = component.NewProcessorFactory(
+var ExampleProcessorFactory = processor.NewFactory(
 	procType,
 	createDefaultConfig,
-	component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelInDevelopment),
-	component.WithMetricsProcessor(createMetricsProcessor, component.StabilityLevelInDevelopment),
-	component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelInDevelopment))
+	processor.WithTraces(createTracesProcessor, component.StabilityLevelDevelopment),
+	processor.WithMetrics(createMetricsProcessor, component.StabilityLevelDevelopment),
+	processor.WithLogs(createLogsProcessor, component.StabilityLevelDevelopment))
 
 // CreateDefaultConfig creates the default configuration for the Processor.
-func createDefaultConfig() config.Processor {
-	return &ExampleProcessorConfig{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(procType)),
-	}
+func createDefaultConfig() component.Config {
+	return &struct{}{}
 }
 
-func createTracesProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	return &ExampleProcessor{Traces: nextConsumer}, nil
 }
 
-func createMetricsProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ config.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
 	return &ExampleProcessor{Metrics: nextConsumer}, nil
 }
 
-func createLogsProcessor(_ context.Context, _ component.ProcessorCreateSettings, _ config.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(_ context.Context, _ processor.CreateSettings, _ component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
 	return &ExampleProcessor{Logs: nextConsumer}, nil
 }
 

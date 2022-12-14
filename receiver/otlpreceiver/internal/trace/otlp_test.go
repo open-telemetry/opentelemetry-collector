@@ -25,17 +25,18 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestExport(t *testing.T) {
 	td := testdata.GenerateTraces(1)
-	req := ptraceotlp.NewRequestFromTraces(td)
+	req := ptraceotlp.NewExportRequestFromTraces(td)
 
 	traceSink := new(consumertest.TracesSink)
 	traceClient := makeTraceServiceClient(t, traceSink)
@@ -50,19 +51,19 @@ func TestExport(t *testing.T) {
 func TestExport_EmptyRequest(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 	traceClient := makeTraceServiceClient(t, traceSink)
-	resp, err := traceClient.Export(context.Background(), ptraceotlp.NewRequest())
+	resp, err := traceClient.Export(context.Background(), ptraceotlp.NewExportRequest())
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
 	td := testdata.GenerateTraces(1)
-	req := ptraceotlp.NewRequestFromTraces(td)
+	req := ptraceotlp.NewExportRequestFromTraces(td)
 
 	traceClient := makeTraceServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := traceClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
-	assert.Equal(t, ptraceotlp.Response{}, resp)
+	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 }
 
 func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCClient {
@@ -73,7 +74,7 @@ func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCCli
 		require.NoError(t, cc.Close())
 	})
 
-	return ptraceotlp.NewClient(cc)
+	return ptraceotlp.NewGRPCClient(cc)
 }
 
 func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
@@ -84,7 +85,15 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	r := New(config.NewComponentIDWithName("otlp", "trace"), tc, componenttest.NewNopReceiverCreateSettings())
+	set := receivertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("otlp", "trace")
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              "grpc",
+		ReceiverCreateSettings: set,
+	})
+	require.NoError(t, err)
+	r := New(tc, obsrecv)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	ptraceotlp.RegisterGRPCServer(srv, r)

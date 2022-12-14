@@ -69,7 +69,7 @@ func (es ResourceLogsSlice) At(ix int) ResourceLogs {
 	return newResourceLogs((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -122,16 +122,8 @@ func (es ResourceLogsSlice) AppendEmpty() ResourceLogs {
 // Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
 // provided less function so that two instances of ResourceLogsSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ResourceLogs) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) ResourceLogsSlice {
+func (es ResourceLogsSlice) Sort(less func(a, b ResourceLogs) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -192,7 +184,7 @@ func NewResourceLogs() ResourceLogs {
 	return newResourceLogs(&otlplogs.ResourceLogs{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceLogs) MoveTo(dest ResourceLogs) {
 	*dest.getOrig() = *ms.getOrig()
@@ -219,7 +211,7 @@ func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
 	return ScopeLogsSlice(internal.NewScopeLogsSlice(&ms.getOrig().ScopeLogs))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -269,7 +261,7 @@ func (es ScopeLogsSlice) At(ix int) ScopeLogs {
 	return newScopeLogs((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -322,16 +314,8 @@ func (es ScopeLogsSlice) AppendEmpty() ScopeLogs {
 // Sort sorts the ScopeLogs elements within ScopeLogsSlice given the
 // provided less function so that two instances of ScopeLogsSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ScopeLogs) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) ScopeLogsSlice {
+func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -392,7 +376,7 @@ func NewScopeLogs() ScopeLogs {
 	return newScopeLogs(&otlplogs.ScopeLogs{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeLogs) MoveTo(dest ScopeLogs) {
 	*dest.getOrig() = *ms.getOrig()
@@ -419,7 +403,7 @@ func (ms ScopeLogs) LogRecords() LogRecordSlice {
 	return LogRecordSlice(internal.NewLogRecordSlice(&ms.getOrig().LogRecords))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -469,7 +453,7 @@ func (es LogRecordSlice) At(ix int) LogRecord {
 	return newLogRecord((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -522,16 +506,8 @@ func (es LogRecordSlice) AppendEmpty() LogRecord {
 // Sort sorts the LogRecord elements within LogRecordSlice given the
 // provided less function so that two instances of LogRecordSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b LogRecord) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) LogRecordSlice {
+func (es LogRecordSlice) Sort(less func(a, b LogRecord) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -593,7 +569,7 @@ func NewLogRecord() LogRecord {
 	return newLogRecord(&otlplogs.LogRecord{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms LogRecord) MoveTo(dest LogRecord) {
 	*dest.getOrig() = *ms.getOrig()
@@ -690,7 +666,7 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.SetObservedTimestamp(ms.ObservedTimestamp())
 	dest.SetTimestamp(ms.Timestamp())

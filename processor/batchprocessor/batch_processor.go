@@ -16,20 +16,20 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 )
 
 // batch_processor is a component that accepts spans and metrics, places them
@@ -54,7 +54,7 @@ type batchProcessor struct {
 	shutdownC  chan struct{}
 	goroutines sync.WaitGroup
 
-	telemetryLevel configtelemetry.Level
+	telemetry *batchProcessorTelemetry
 }
 
 type batch interface {
@@ -72,15 +72,16 @@ var _ consumer.Traces = (*batchProcessor)(nil)
 var _ consumer.Metrics = (*batchProcessor)(nil)
 var _ consumer.Logs = (*batchProcessor)(nil)
 
-func newBatchProcessor(set component.ProcessorCreateSettings, cfg *Config, batch batch, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, cfg.ID().String()))
+func newBatchProcessor(set processor.CreateSettings, cfg *Config, batch batch, registry *featuregate.Registry) (*batchProcessor, error) {
+	bpt, err := newBatchProcessorTelemetry(set, registry)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error to create batch processor telemetry %w", err)
 	}
+
 	return &batchProcessor{
-		logger:         set.Logger,
-		exportCtx:      exportCtx,
-		telemetryLevel: telemetryLevel,
+		logger:    set.Logger,
+		exportCtx: bpt.exportCtx,
+		telemetry: bpt,
 
 		sendBatchSize:    int(cfg.SendBatchSize),
 		sendBatchMaxSize: int(cfg.SendBatchMaxSize),
@@ -130,7 +131,7 @@ func (bp *batchProcessor) startProcessingCycle() {
 			if bp.batch.itemCount() > 0 {
 				// TODO: Set a timeout on sendTraces or
 				// make it cancellable using the context that Shutdown gets as a parameter
-				bp.sendItems(statTimeoutTriggerSend)
+				bp.sendItems(triggerTimeout)
 			}
 			return
 		case item := <-bp.newItem:
@@ -140,7 +141,7 @@ func (bp *batchProcessor) startProcessingCycle() {
 			bp.processItem(item)
 		case <-bp.timer.C:
 			if bp.batch.itemCount() > 0 {
-				bp.sendItems(statTimeoutTriggerSend)
+				bp.sendItems(triggerTimeout)
 			}
 			bp.resetTimer()
 		}
@@ -152,7 +153,7 @@ func (bp *batchProcessor) processItem(item interface{}) {
 	sent := false
 	for bp.batch.itemCount() >= bp.sendBatchSize {
 		sent = true
-		bp.sendItems(statBatchSizeTriggerSend)
+		bp.sendItems(triggerBatchSize)
 	}
 
 	if sent {
@@ -171,17 +172,12 @@ func (bp *batchProcessor) resetTimer() {
 	bp.timer.Reset(bp.timeout)
 }
 
-func (bp *batchProcessor) sendItems(triggerMeasure *stats.Int64Measure) {
-	detailed := bp.telemetryLevel == configtelemetry.LevelDetailed
-	sent, bytes, err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize, detailed)
+func (bp *batchProcessor) sendItems(trigger trigger) {
+	sent, bytes, err := bp.batch.export(bp.exportCtx, bp.sendBatchMaxSize, bp.telemetry.detailed)
 	if err != nil {
 		bp.logger.Warn("Sender failed", zap.Error(err))
 	} else {
-		// Add that it came form the trace pipeline?
-		stats.Record(bp.exportCtx, triggerMeasure.M(1), statBatchSendSize.M(int64(sent)))
-		if detailed {
-			stats.Record(bp.exportCtx, statBatchSendSizeBytes.M(int64(bytes)))
-		}
+		bp.telemetry.record(trigger, int64(sent), int64(bytes))
 	}
 }
 
@@ -205,18 +201,18 @@ func (bp *batchProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 }
 
 // newBatchTracesProcessor creates a new batch processor that batches traces by size or with timeout
-func newBatchTracesProcessor(set component.ProcessorCreateSettings, next consumer.Traces, cfg *Config, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, newBatchTraces(next), telemetryLevel)
+func newBatchTracesProcessor(set processor.CreateSettings, next consumer.Traces, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, newBatchTraces(next), registry)
 }
 
 // newBatchMetricsProcessor creates a new batch processor that batches metrics by size or with timeout
-func newBatchMetricsProcessor(set component.ProcessorCreateSettings, next consumer.Metrics, cfg *Config, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, newBatchMetrics(next), telemetryLevel)
+func newBatchMetricsProcessor(set processor.CreateSettings, next consumer.Metrics, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, newBatchMetrics(next), registry)
 }
 
 // newBatchLogsProcessor creates a new batch processor that batches logs by size or with timeout
-func newBatchLogsProcessor(set component.ProcessorCreateSettings, next consumer.Logs, cfg *Config, telemetryLevel configtelemetry.Level) (*batchProcessor, error) {
-	return newBatchProcessor(set, cfg, newBatchLogs(next), telemetryLevel)
+func newBatchLogsProcessor(set processor.CreateSettings, next consumer.Logs, cfg *Config, registry *featuregate.Registry) (*batchProcessor, error) {
+	return newBatchProcessor(set, cfg, newBatchLogs(next), registry)
 }
 
 type batchTraces struct {
@@ -227,7 +223,7 @@ type batchTraces struct {
 }
 
 func newBatchTraces(nextConsumer consumer.Traces) *batchTraces {
-	return &batchTraces{nextConsumer: nextConsumer, traceData: ptrace.NewTraces(), sizer: ptrace.NewProtoMarshaler()}
+	return &batchTraces{nextConsumer: nextConsumer, traceData: ptrace.NewTraces(), sizer: &ptrace.ProtoMarshaler{}}
 }
 
 // add updates current batchTraces by adding new TraceData object
@@ -274,7 +270,7 @@ type batchMetrics struct {
 }
 
 func newBatchMetrics(nextConsumer consumer.Metrics) *batchMetrics {
-	return &batchMetrics{nextConsumer: nextConsumer, metricData: pmetric.NewMetrics(), sizer: pmetric.NewProtoMarshaler()}
+	return &batchMetrics{nextConsumer: nextConsumer, metricData: pmetric.NewMetrics(), sizer: &pmetric.ProtoMarshaler{}}
 }
 
 func (bm *batchMetrics) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {
@@ -320,7 +316,7 @@ type batchLogs struct {
 }
 
 func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
-	return &batchLogs{nextConsumer: nextConsumer, logData: plog.NewLogs(), sizer: plog.NewProtoMarshaler()}
+	return &batchLogs{nextConsumer: nextConsumer, logData: plog.NewLogs(), sizer: &plog.ProtoMarshaler{}}
 }
 
 func (bl *batchLogs) export(ctx context.Context, sendBatchMaxSize int, returnBytes bool) (int, int, error) {

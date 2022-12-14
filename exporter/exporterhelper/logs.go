@@ -19,15 +19,15 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var logsMarshaler = plog.NewProtoMarshaler()
-var logsUnmarshaler = plog.NewProtoUnmarshaler()
+var logsMarshaler = &plog.ProtoMarshaler{}
+var logsUnmarshaler = &plog.ProtoUnmarshaler{}
 
 type logsRequest struct {
 	baseRequest
@@ -78,14 +78,14 @@ type logsExporter struct {
 	consumer.Logs
 }
 
-// NewLogsExporter creates a component.LogsExporter that records observability metrics and wraps every request with a Span.
+// NewLogsExporter creates a exporter.Logs that records observability metrics and wraps every request with a Span.
 func NewLogsExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	set exporter.CreateSettings,
+	cfg component.Config,
 	pusher consumer.ConsumeLogsFunc,
 	options ...Option,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	if cfg == nil {
 		return nil, errNilConfig
 	}
@@ -99,7 +99,10 @@ func NewLogsExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set, bs, config.LogsDataType, newLogsRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, bs, component.DataTypeLogs, newLogsRequestUnmarshalerFunc(pusher))
+	if err != nil {
+		return nil, err
+	}
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &logsExporterWithObservability{
 			obsrep:     be.obsrep,
@@ -109,11 +112,11 @@ func NewLogsExporter(
 
 	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		req := newLogsRequest(ctx, ld, pusher)
-		err := be.sender.send(req)
-		if errors.Is(err, errSendingQueueIsFull) {
+		serr := be.sender.send(req)
+		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordLogsEnqueueFailure(req.Context(), int64(req.Count()))
 		}
-		return err
+		return serr
 	}, bs.consumerOptions...)
 
 	return &logsExporter{

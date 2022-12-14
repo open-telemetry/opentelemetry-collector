@@ -134,7 +134,7 @@ func setupTestPayloads() []testPayload {
 	payloads := make([]testPayload, 0)
 
 	// log payloads
-	logMarshaler := &logMarshaler{plog.NewProtoMarshaler()}
+	logMarshaler := &logMarshaler{Marshaler: &plog.ProtoMarshaler{}}
 	payloads = append(payloads, testPayload{
 		name:      "sm_log_request",
 		message:   testdata.GenerateLogs(1),
@@ -149,7 +149,7 @@ func setupTestPayloads() []testPayload {
 		marshaler: logMarshaler})
 
 	// trace payloads
-	tracesMarshaler := &traceMarshaler{ptrace.NewProtoMarshaler()}
+	tracesMarshaler := &traceMarshaler{Marshaler: &ptrace.ProtoMarshaler{}}
 	payloads = append(payloads, testPayload{
 		name:      "sm_trace_request",
 		message:   testdata.GenerateTraces(1),
@@ -164,7 +164,7 @@ func setupTestPayloads() []testPayload {
 		marshaler: tracesMarshaler})
 
 	// metric payloads
-	metricsMarshaler := &metricsMarshaler{pmetric.NewProtoMarshaler()}
+	metricsMarshaler := &metricsMarshaler{Marshaler: &pmetric.ProtoMarshaler{}}
 	payloads = append(payloads, testPayload{
 		name:      "sm_metric_request",
 		message:   testdata.GenerateMetrics(1),

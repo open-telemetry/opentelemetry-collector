@@ -37,14 +37,14 @@ func NewLogs() Logs {
 	return newLogs(&otlpcollectorlog.ExportLogsServiceRequest{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Logs instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Logs) MoveTo(dest Logs) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcollectorlog.ExportLogsServiceRequest{}
 }
 
-// CopyTo copies all logs from ms to dest.
+// CopyTo copies the Logs instance overriding the destination.
 func (ms Logs) CopyTo(dest Logs) {
 	ms.ResourceLogs().CopyTo(dest.ResourceLogs())
 }
@@ -100,8 +100,59 @@ const (
 	SeverityNumberFatal4      = SeverityNumber(otlplogs.SeverityNumber_SEVERITY_NUMBER_FATAL4)
 )
 
-// Deprecated: [v0.62.0] Use SeverityNumberUnspecified instead.
-const SeverityNumberUndefined = SeverityNumberUnspecified
-
 // String returns the string representation of the SeverityNumber.
-func (sn SeverityNumber) String() string { return otlplogs.SeverityNumber(sn).String() }
+func (sn SeverityNumber) String() string {
+	switch sn {
+	case SeverityNumberUnspecified:
+		return "Unspecified"
+	case SeverityNumberTrace:
+		return "Trace"
+	case SeverityNumberTrace2:
+		return "Trace2"
+	case SeverityNumberTrace3:
+		return "Trace3"
+	case SeverityNumberTrace4:
+		return "Trace4"
+	case SeverityNumberDebug:
+		return "Debug"
+	case SeverityNumberDebug2:
+		return "Debug2"
+	case SeverityNumberDebug3:
+		return "Debug3"
+	case SeverityNumberDebug4:
+		return "Debug4"
+	case SeverityNumberInfo:
+		return "Info"
+	case SeverityNumberInfo2:
+		return "Info2"
+	case SeverityNumberInfo3:
+		return "Info3"
+	case SeverityNumberInfo4:
+		return "Info4"
+	case SeverityNumberWarn:
+		return "Warn"
+	case SeverityNumberWarn2:
+		return "Warn2"
+	case SeverityNumberWarn3:
+		return "Warn3"
+	case SeverityNumberWarn4:
+		return "Warn4"
+	case SeverityNumberError:
+		return "Error"
+	case SeverityNumberError2:
+		return "Error2"
+	case SeverityNumberError3:
+		return "Error3"
+	case SeverityNumberError4:
+		return "Error4"
+	case SeverityNumberFatal:
+		return "Fatal"
+	case SeverityNumberFatal2:
+		return "Fatal2"
+	case SeverityNumberFatal3:
+		return "Fatal3"
+	case SeverityNumberFatal4:
+		return "Fatal4"
+	}
+	return ""
+}

@@ -92,18 +92,23 @@ type obsExporter struct {
 }
 
 // newObsExporter creates a new observability exporter.
-func newObsExporter(cfg obsreport.ExporterSettings, insts *instruments) *obsExporter {
+func newObsExporter(cfg obsreport.ExporterSettings, insts *instruments) (*obsExporter, error) {
 	labelValue := metricdata.NewLabelValue(cfg.ExporterID.String())
 	failedToEnqueueTraceSpansEntry, _ := insts.failedToEnqueueTraceSpans.GetEntry(labelValue)
 	failedToEnqueueMetricPointsEntry, _ := insts.failedToEnqueueMetricPoints.GetEntry(labelValue)
 	failedToEnqueueLogRecordsEntry, _ := insts.failedToEnqueueLogRecords.GetEntry(labelValue)
 
+	exp, err := obsreport.NewExporter(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	return &obsExporter{
-		Exporter:                         obsreport.NewExporter(cfg),
+		Exporter:                         exp,
 		failedToEnqueueTraceSpansEntry:   failedToEnqueueTraceSpansEntry,
 		failedToEnqueueMetricPointsEntry: failedToEnqueueMetricPointsEntry,
 		failedToEnqueueLogRecordsEntry:   failedToEnqueueLogRecordsEntry,
-	}
+	}, nil
 }
 
 // recordTracesEnqueueFailure records number of spans that failed to be added to the sending queue.

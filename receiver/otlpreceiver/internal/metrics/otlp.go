@@ -17,8 +17,6 @@ package metrics // import "go.opentelemetry.io/collector/receiver/otlpreceiver/i
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -36,28 +34,24 @@ type Receiver struct {
 }
 
 // New creates a new Receiver reference.
-func New(id config.ComponentID, nextConsumer consumer.Metrics, set component.ReceiverCreateSettings) *Receiver {
+func New(nextConsumer consumer.Metrics, obsrecv *obsreport.Receiver) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              receiverTransport,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:      obsrecv,
 	}
 }
 
 // Export implements the service Export metrics func.
-func (r *Receiver) Export(ctx context.Context, req pmetricotlp.Request) (pmetricotlp.Response, error) {
+func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
 	md := req.Metrics()
 	dataPointCount := md.DataPointCount()
 	if dataPointCount == 0 {
-		return pmetricotlp.NewResponse(), nil
+		return pmetricotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartMetricsOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
 
-	return pmetricotlp.NewResponse(), err
+	return pmetricotlp.NewExportResponse(), err
 }

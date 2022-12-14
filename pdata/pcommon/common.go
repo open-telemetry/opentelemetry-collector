@@ -26,6 +26,8 @@ import (
 	"sort"
 	"strconv"
 
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
@@ -95,9 +97,6 @@ func NewValueStr(v string) Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}})
 }
 
-// Deprecated: [v0.62.0] Use NewValueStr instead.
-var NewValueString = NewValueStr
-
 // NewValueInt creates a new Value with the given int64 value.
 func NewValueInt(v int64) Value {
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: v}})
@@ -136,7 +135,7 @@ func (v Value) getOrig() *otlpcommon.AnyValue {
 	return internal.GetOrigValue(internal.Value(v))
 }
 
-func (v Value) FromRaw(iv interface{}) {
+func (v Value) FromRaw(iv any) error {
 	switch tv := iv.(type) {
 	case nil:
 		v.getOrig().Value = nil
@@ -170,13 +169,14 @@ func (v Value) FromRaw(iv interface{}) {
 		v.SetBool(tv)
 	case []byte:
 		v.SetEmptyBytes().FromRaw(tv)
-	case map[string]interface{}:
-		v.SetEmptyMap().FromRaw(tv)
-	case []interface{}:
-		v.SetEmptySlice().FromRaw(tv)
+	case map[string]any:
+		return v.SetEmptyMap().FromRaw(tv)
+	case []any:
+		return v.SetEmptySlice().FromRaw(tv)
 	default:
-		v.SetStr(fmt.Sprintf("<Invalid value type %T>", tv))
+		return fmt.Errorf("<Invalid value type %T>", tv)
 	}
+	return nil
 }
 
 // Type returns the type of the value for this Value.
@@ -323,7 +323,7 @@ func (v Value) SetEmptySlice() Slice {
 	return newSlice(&av.ArrayValue.Values)
 }
 
-// CopyTo copies the attribute to a destination.
+// CopyTo copies the Value instance overriding the destination.
 func (v Value) CopyTo(dest Value) {
 	destOrig := dest.getOrig()
 	switch ov := v.getOrig().Value.(type) {
@@ -495,7 +495,7 @@ func float64AsString(f float64) string {
 	return string(b)
 }
 
-func (v Value) AsRaw() interface{} {
+func (v Value) AsRaw() any {
 	switch v.Type() {
 	case ValueTypeEmpty:
 		return nil
@@ -650,14 +650,6 @@ func (m Map) PutStr(k string, v string) {
 	}
 }
 
-// PutString performs the Insert or Update action. The Value is
-// inserted to the map that did not originally have the key. The key/value is
-// updated to the map where the key already existed.
-// Deprecated: [v0.62.0] Use PutStr instead.
-func (m Map) PutString(k string, v string) {
-	m.PutStr(k, v)
-}
-
 // PutInt performs the Insert or Update action. The int Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
@@ -725,15 +717,14 @@ func (m Map) PutEmptySlice(k string) Slice {
 }
 
 // Sort sorts the entries in the Map so two instances can be compared.
-// Returns the same instance to allow nicer code like:
 //
-//	assert.EqualValues(t, expected.Sort(), actual.Sort())
-func (m Map) Sort() Map {
+// IMPORTANT: Sort mutates the data, if you call this function in a consumer,
+// the consumer must be configured that it mutates data.
+func (m Map) Sort() {
 	// Intention is to move the nil values at the end.
 	sort.SliceStable(*m.getOrig(), func(i, j int) bool {
 		return (*m.getOrig())[i].Key < (*m.getOrig())[j].Key
 	})
-	return m
 }
 
 // Len returns the length of this map.
@@ -760,7 +751,7 @@ func (m Map) Range(f func(k string, v Value) bool) {
 	}
 }
 
-// CopyTo copies all elements from the current map to the dest.
+// CopyTo copies all elements from the current map overriding the destination.
 func (m Map) CopyTo(dest Map) {
 	newLen := len(*m.getOrig())
 	oldCap := cap(*dest.getOrig())
@@ -787,8 +778,8 @@ func (m Map) CopyTo(dest Map) {
 }
 
 // AsRaw converts an OTLP Map to a standard go map
-func (m Map) AsRaw() map[string]interface{} {
-	rawMap := make(map[string]interface{})
+func (m Map) AsRaw() map[string]any {
+	rawMap := make(map[string]any)
 	m.Range(func(k string, v Value) bool {
 		rawMap[k] = v.AsRaw()
 		return true
@@ -796,40 +787,44 @@ func (m Map) AsRaw() map[string]interface{} {
 	return rawMap
 }
 
-func (m Map) FromRaw(rawMap map[string]interface{}) {
+func (m Map) FromRaw(rawMap map[string]any) error {
 	if len(rawMap) == 0 {
 		*m.getOrig() = nil
-		return
+		return nil
 	}
 
+	var errs error
 	origs := make([]otlpcommon.KeyValue, len(rawMap))
 	ix := 0
 	for k, iv := range rawMap {
 		origs[ix].Key = k
-		newValue(&origs[ix].Value).FromRaw(iv)
+		errs = multierr.Append(errs, newValue(&origs[ix].Value).FromRaw(iv))
 		ix++
 	}
 	*m.getOrig() = origs
+	return errs
 }
 
-// AsRaw return []interface{} copy of the Slice.
-func (es Slice) AsRaw() []interface{} {
-	rawSlice := make([]interface{}, 0, es.Len())
+// AsRaw return []any copy of the Slice.
+func (es Slice) AsRaw() []any {
+	rawSlice := make([]any, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		rawSlice = append(rawSlice, es.At(i).AsRaw())
 	}
 	return rawSlice
 }
 
-// FromRaw copies []interface{} into the Slice.
-func (es Slice) FromRaw(rawSlice []interface{}) {
+// FromRaw copies []any into the Slice.
+func (es Slice) FromRaw(rawSlice []any) error {
 	if len(rawSlice) == 0 {
 		*es.getOrig() = nil
-		return
+		return nil
 	}
+	var errs error
 	origs := make([]otlpcommon.AnyValue, len(rawSlice))
 	for ix, iv := range rawSlice {
-		newValue(&origs[ix]).FromRaw(iv)
+		errs = multierr.Append(errs, newValue(&origs[ix]).FromRaw(iv))
 	}
 	*es.getOrig() = origs
+	return errs
 }

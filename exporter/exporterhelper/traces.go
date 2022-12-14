@@ -19,15 +19,15 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var tracesMarshaler = ptrace.NewProtoMarshaler()
-var tracesUnmarshaler = ptrace.NewProtoUnmarshaler()
+var tracesMarshaler = &ptrace.ProtoMarshaler{}
+var tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
 
 type tracesRequest struct {
 	baseRequest
@@ -79,14 +79,14 @@ type traceExporter struct {
 	consumer.Traces
 }
 
-// NewTracesExporter creates a component.TracesExporter that records observability metrics and wraps every request with a Span.
+// NewTracesExporter creates a exporter.Traces that records observability metrics and wraps every request with a Span.
 func NewTracesExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	set exporter.CreateSettings,
+	cfg component.Config,
 	pusher consumer.ConsumeTracesFunc,
 	options ...Option,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	if cfg == nil {
 		return nil, errNilConfig
 	}
@@ -100,7 +100,10 @@ func NewTracesExporter(
 	}
 
 	bs := fromOptions(options...)
-	be := newBaseExporter(cfg, set, bs, config.TracesDataType, newTraceRequestUnmarshalerFunc(pusher))
+	be, err := newBaseExporter(set, bs, component.DataTypeTraces, newTraceRequestUnmarshalerFunc(pusher))
+	if err != nil {
+		return nil, err
+	}
 	be.wrapConsumerSender(func(nextSender requestSender) requestSender {
 		return &tracesExporterWithObservability{
 			obsrep:     be.obsrep,
@@ -110,11 +113,11 @@ func NewTracesExporter(
 
 	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		req := newTracesRequest(ctx, td, pusher)
-		err := be.sender.send(req)
-		if errors.Is(err, errSendingQueueIsFull) {
+		serr := be.sender.send(req)
+		if errors.Is(serr, errSendingQueueIsFull) {
 			be.obsrep.recordTracesEnqueueFailure(req.Context(), int64(req.Count()))
 		}
-		return err
+		return serr
 	}, bs.consumerOptions...)
 
 	return &traceExporter{

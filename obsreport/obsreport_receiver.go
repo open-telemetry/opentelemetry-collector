@@ -25,14 +25,15 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -41,7 +42,7 @@ const (
 	receiverScope = scopeName + nameSep + receiverName
 )
 
-// Receiver is a helper to add observability to a component.Receiver.
+// Receiver is a helper to add observability to a receiver.Receiver.
 type Receiver struct {
 	level          configtelemetry.Level
 	spanNamePrefix string
@@ -65,7 +66,7 @@ type Receiver struct {
 
 // ReceiverSettings are settings for creating an Receiver.
 type ReceiverSettings struct {
-	ReceiverID config.ComponentID
+	ReceiverID component.ID
 	Transport  string
 	// LongLivedCtx when true indicates that the context passed in the call
 	// outlives the individual receive operation.
@@ -73,11 +74,15 @@ type ReceiverSettings struct {
 	// eg.: a gRPC stream, for which many batches of data are received in individual
 	// operations without a corresponding new context per operation.
 	LongLivedCtx           bool
-	ReceiverCreateSettings component.ReceiverCreateSettings
+	ReceiverCreateSettings receiver.CreateSettings
 }
 
 // NewReceiver creates a new Receiver.
-func NewReceiver(cfg ReceiverSettings) *Receiver {
+func NewReceiver(cfg ReceiverSettings) (*Receiver, error) {
+	return newReceiver(cfg, featuregate.GetRegistry())
+}
+
+func newReceiver(cfg ReceiverSettings, registry *featuregate.Registry) (*Receiver, error) {
 	rec := &Receiver{
 		level:          cfg.ReceiverCreateSettings.TelemetrySettings.MetricsLevel,
 		spanNamePrefix: obsmetrics.ReceiverPrefix + cfg.ReceiverID.String(),
@@ -91,71 +96,70 @@ func NewReceiver(cfg ReceiverSettings) *Receiver {
 		meter:  cfg.ReceiverCreateSettings.MeterProvider.Meter(receiverScope),
 		logger: cfg.ReceiverCreateSettings.Logger,
 
-		useOtelForMetrics: featuregate.GetRegistry().IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
+		useOtelForMetrics: registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID),
 		otelAttrs: []attribute.KeyValue{
 			attribute.String(obsmetrics.ReceiverKey, cfg.ReceiverID.String()),
 			attribute.String(obsmetrics.TransportKey, cfg.Transport),
 		},
 	}
 
-	rec.createOtelMetrics()
+	if err := rec.createOtelMetrics(); err != nil {
+		return nil, err
+	}
 
-	return rec
+	return rec, nil
 }
 
-func (rec *Receiver) createOtelMetrics() {
+func (rec *Receiver) createOtelMetrics() error {
 	if !rec.useOtelForMetrics {
-		return
+		return nil
 	}
 
-	var err error
-	handleError := func(metricName string, err error) {
-		if err != nil {
-			rec.logger.Warn("failed to create otel instrument", zap.Error(err), zap.String("metric", metricName))
-		}
-	}
+	var errors, err error
 
 	rec.acceptedSpansCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedSpansKey,
 		instrument.WithDescription("Number of spans successfully pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.AcceptedSpansKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.refusedSpansCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey,
 		instrument.WithDescription("Number of spans that could not be pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.RefusedSpansKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.acceptedMetricPointsCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey,
 		instrument.WithDescription("Number of metric points successfully pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.AcceptedMetricPointsKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.refusedMetricPointsCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey,
 		instrument.WithDescription("Number of metric points that could not be pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.RefusedMetricPointsKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.acceptedLogRecordsCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey,
 		instrument.WithDescription("Number of log records successfully pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.AcceptedLogRecordsKey, err)
+	errors = multierr.Append(errors, err)
 
 	rec.refusedLogRecordsCounter, err = rec.meter.SyncInt64().Counter(
 		obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey,
 		instrument.WithDescription("Number of log records that could not be pushed into the pipeline."),
 		instrument.WithUnit(unit.Dimensionless),
 	)
-	handleError(obsmetrics.ReceiverPrefix+obsmetrics.RefusedLogRecordsKey, err)
+	errors = multierr.Append(errors, err)
+
+	return errors
 }
 
 // StartTracesOp is called when a request is received from a client.
@@ -173,7 +177,7 @@ func (rec *Receiver) EndTracesOp(
 	numReceivedSpans int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedSpans, err, config.TracesDataType)
+	rec.endOp(receiverCtx, format, numReceivedSpans, err, component.DataTypeTraces)
 }
 
 // StartLogsOp is called when a request is received from a client.
@@ -191,7 +195,7 @@ func (rec *Receiver) EndLogsOp(
 	numReceivedLogRecords int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, config.LogsDataType)
+	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, component.DataTypeLogs)
 }
 
 // StartMetricsOp is called when a request is received from a client.
@@ -209,7 +213,7 @@ func (rec *Receiver) EndMetricsOp(
 	numReceivedPoints int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedPoints, err, config.MetricsDataType)
+	rec.endOp(receiverCtx, format, numReceivedPoints, err, component.DataTypeMetrics)
 }
 
 // startOp creates the span used to trace the operation. Returning
@@ -243,7 +247,7 @@ func (rec *Receiver) endOp(
 	format string,
 	numReceivedItems int,
 	err error,
-	dataType config.DataType,
+	dataType component.DataType,
 ) {
 	numAccepted := numReceivedItems
 	numRefused := 0
@@ -262,13 +266,13 @@ func (rec *Receiver) endOp(
 	if span.IsRecording() {
 		var acceptedItemsKey, refusedItemsKey string
 		switch dataType {
-		case config.TracesDataType:
+		case component.DataTypeTraces:
 			acceptedItemsKey = obsmetrics.AcceptedSpansKey
 			refusedItemsKey = obsmetrics.RefusedSpansKey
-		case config.MetricsDataType:
+		case component.DataTypeMetrics:
 			acceptedItemsKey = obsmetrics.AcceptedMetricPointsKey
 			refusedItemsKey = obsmetrics.RefusedMetricPointsKey
-		case config.LogsDataType:
+		case component.DataTypeLogs:
 			acceptedItemsKey = obsmetrics.AcceptedLogRecordsKey
 			refusedItemsKey = obsmetrics.RefusedLogRecordsKey
 		}
@@ -283,7 +287,7 @@ func (rec *Receiver) endOp(
 	span.End()
 }
 
-func (rec *Receiver) recordMetrics(receiverCtx context.Context, dataType config.DataType, numAccepted, numRefused int) {
+func (rec *Receiver) recordMetrics(receiverCtx context.Context, dataType component.DataType, numAccepted, numRefused int) {
 	if rec.useOtelForMetrics {
 		rec.recordWithOtel(receiverCtx, dataType, numAccepted, numRefused)
 	} else {
@@ -291,16 +295,16 @@ func (rec *Receiver) recordMetrics(receiverCtx context.Context, dataType config.
 	}
 }
 
-func (rec *Receiver) recordWithOtel(receiverCtx context.Context, dataType config.DataType, numAccepted, numRefused int) {
+func (rec *Receiver) recordWithOtel(receiverCtx context.Context, dataType component.DataType, numAccepted, numRefused int) {
 	var acceptedMeasure, refusedMeasure syncint64.Counter
 	switch dataType {
-	case config.TracesDataType:
+	case component.DataTypeTraces:
 		acceptedMeasure = rec.acceptedSpansCounter
 		refusedMeasure = rec.refusedSpansCounter
-	case config.MetricsDataType:
+	case component.DataTypeMetrics:
 		acceptedMeasure = rec.acceptedMetricPointsCounter
 		refusedMeasure = rec.refusedMetricPointsCounter
-	case config.LogsDataType:
+	case component.DataTypeLogs:
 		acceptedMeasure = rec.acceptedLogRecordsCounter
 		refusedMeasure = rec.refusedLogRecordsCounter
 	}
@@ -309,16 +313,16 @@ func (rec *Receiver) recordWithOtel(receiverCtx context.Context, dataType config
 	refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs...)
 }
 
-func (rec *Receiver) recordWithOC(receiverCtx context.Context, dataType config.DataType, numAccepted, numRefused int) {
+func (rec *Receiver) recordWithOC(receiverCtx context.Context, dataType component.DataType, numAccepted, numRefused int) {
 	var acceptedMeasure, refusedMeasure *stats.Int64Measure
 	switch dataType {
-	case config.TracesDataType:
+	case component.DataTypeTraces:
 		acceptedMeasure = obsmetrics.ReceiverAcceptedSpans
 		refusedMeasure = obsmetrics.ReceiverRefusedSpans
-	case config.MetricsDataType:
+	case component.DataTypeMetrics:
 		acceptedMeasure = obsmetrics.ReceiverAcceptedMetricPoints
 		refusedMeasure = obsmetrics.ReceiverRefusedMetricPoints
-	case config.LogsDataType:
+	case component.DataTypeLogs:
 		acceptedMeasure = obsmetrics.ReceiverAcceptedLogRecords
 		refusedMeasure = obsmetrics.ReceiverRefusedLogRecords
 	}

@@ -28,11 +28,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -136,7 +136,7 @@ func TestScrapeController(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			tt, err := obsreporttest.SetupTelemetry()
+			tt, err := obsreporttest.SetupTelemetry(component.NewID("receiver"))
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -288,7 +288,7 @@ func assertReceiverViews(t *testing.T, tt obsreporttest.TestTelemetry, sink *con
 	for _, md := range sink.AllMetrics() {
 		dataPointCount += md.DataPointCount()
 	}
-	require.NoError(t, obsreporttest.CheckReceiverMetrics(tt, config.NewComponentID("receiver"), "", int64(dataPointCount), 0))
+	require.NoError(t, tt.CheckReceiverMetrics("", int64(dataPointCount), 0))
 }
 
 func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnlySpan) {
@@ -324,7 +324,7 @@ func assertScraperViews(t *testing.T, tt obsreporttest.TestTelemetry, expectedEr
 		}
 	}
 
-	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, config.NewComponentID("receiver"), config.NewComponentID("scraper"), expectedScraped, expectedErrored))
+	require.NoError(t, obsreporttest.CheckScraperMetrics(tt, component.NewID("receiver"), component.NewID("scraper"), expectedScraped, expectedErrored))
 }
 
 func TestSingleScrapePerTick(t *testing.T) {
@@ -341,7 +341,7 @@ func TestSingleScrapePerTick(t *testing.T) {
 
 	receiver, err := NewScraperControllerReceiver(
 		cfg,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		new(consumertest.MetricsSink),
 		AddScraper(scp),
 		WithTickerChannel(tickerCh),

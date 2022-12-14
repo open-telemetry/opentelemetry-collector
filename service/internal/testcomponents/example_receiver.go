@@ -18,79 +18,72 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
-const receiverType = config.Type("examplereceiver")
-
-// ExampleReceiverConfig config for ExampleReceiver.
-type ExampleReceiverConfig struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
+const receiverType = component.Type("examplereceiver")
 
 // ExampleReceiverFactory is factory for ExampleReceiver.
-var ExampleReceiverFactory = component.NewReceiverFactory(
+var ExampleReceiverFactory = receiver.NewFactory(
 	receiverType,
 	createReceiverDefaultConfig,
-	component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelInDevelopment),
-	component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelInDevelopment),
-	component.WithLogsReceiver(createLogsReceiver, component.StabilityLevelInDevelopment))
+	receiver.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
+	receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
+	receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment))
 
-func createReceiverDefaultConfig() config.Receiver {
-	return &ExampleReceiverConfig{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(receiverType)),
-	}
+func createReceiverDefaultConfig() component.Config {
+	return &struct{}{}
 }
 
 // createTracesReceiver creates a trace receiver based on this config.
 func createTracesReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	_ receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
-	receiver := createReceiver(cfg)
-	receiver.Traces = nextConsumer
-	return receiver, nil
+) (receiver.Traces, error) {
+	tr := createReceiver(cfg)
+	tr.Traces = nextConsumer
+	return tr, nil
 }
 
 // createMetricsReceiver creates a metrics receiver based on this config.
 func createMetricsReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	_ receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
-	receiver := createReceiver(cfg)
-	receiver.Metrics = nextConsumer
-	return receiver, nil
+) (receiver.Metrics, error) {
+	mr := createReceiver(cfg)
+	mr.Metrics = nextConsumer
+	return mr, nil
 }
 
 func createLogsReceiver(
 	_ context.Context,
-	_ component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	_ receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
-	receiver := createReceiver(cfg)
-	receiver.Logs = nextConsumer
-	return receiver, nil
+) (receiver.Logs, error) {
+	lr := createReceiver(cfg)
+	lr.Logs = nextConsumer
+	return lr, nil
 }
 
-func createReceiver(cfg config.Receiver) *ExampleReceiver {
+func createReceiver(cfg component.Config) *ExampleReceiver {
 	// There must be one receiver for all data types. We maintain a map of
 	// receivers per config.
 
 	// Check to see if there is already a receiver for this config.
-	receiver, ok := exampleReceivers[cfg]
+	er, ok := exampleReceivers[cfg]
 	if !ok {
-		receiver = &ExampleReceiver{}
+		er = &ExampleReceiver{}
 		// Remember the receiver in the map
-		exampleReceivers[cfg] = receiver
+		exampleReceivers[cfg] = er
 	}
 
-	return receiver
+	return er
 }
 
 // ExampleReceiver allows producing traces and metrics for testing purposes.
@@ -118,4 +111,4 @@ func (erp *ExampleReceiver) Shutdown(context.Context) error {
 // We maintain this map because the ReceiverFactory is asked trace and metric receivers separately
 // when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one Receiver object per configuration.
-var exampleReceivers = map[config.Receiver]*ExampleReceiver{}
+var exampleReceivers = map[component.Config]*ExampleReceiver{}

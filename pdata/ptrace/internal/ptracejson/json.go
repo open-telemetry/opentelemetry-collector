@@ -17,6 +17,7 @@ package ptracejson // import "go.opentelemetry.io/collector/pdata/ptrace/interna
 import (
 	"fmt"
 
+	"github.com/gogo/protobuf/jsonpb"
 	jsoniter "github.com/json-iterator/go"
 
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
@@ -24,6 +25,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
+
+var JSONMarshaler = &jsonpb.Marshaler{
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/2758
+	EnumsAsInts: true,
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/2829
+	OrigName: false,
+}
 
 func UnmarshalTraceData(buf []byte, dest *otlptrace.TracesData) error {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
@@ -60,6 +68,21 @@ func UnmarshalExportTraceServiceRequest(buf []byte, dest *otlpcollectortrace.Exp
 		return true
 	})
 	otlp.MigrateTraces(dest.ResourceSpans)
+	return iter.Error
+}
+
+func UnmarshalExportTraceServiceResponse(buf []byte, dest *otlpcollectortrace.ExportTraceServiceResponse) error {
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "partial_success", "partialSuccess":
+			dest.PartialSuccess = readExportTracePartialSuccess(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 	return iter.Error
 }
 
@@ -226,4 +249,20 @@ func readSpanEvent(iter *jsoniter.Iterator) *otlptrace.Span_Event {
 		return true
 	})
 	return event
+}
+
+func readExportTracePartialSuccess(iter *jsoniter.Iterator) otlpcollectortrace.ExportTracePartialSuccess {
+	lpr := otlpcollectortrace.ExportTracePartialSuccess{}
+	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "rejected_spans", "rejectedSpans":
+			lpr.RejectedSpans = json.ReadInt64(iter)
+		case "error_message", "errorMessage":
+			lpr.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return lpr
 }

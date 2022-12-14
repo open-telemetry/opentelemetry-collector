@@ -37,14 +37,14 @@ func NewTraces() Traces {
 	return newTraces(&otlpcollectortrace.ExportTraceServiceRequest{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Traces instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Traces) MoveTo(dest Traces) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcollectortrace.ExportTraceServiceRequest{}
 }
 
-// CopyTo copies all logs from ms to dest.
+// CopyTo copies the Traces instance overriding the destination.
 func (ms Traces) CopyTo(dest Traces) {
 	ms.ResourceSpans().CopyTo(dest.ResourceSpans())
 }
@@ -72,9 +72,6 @@ func (ms Traces) ResourceSpans() ResourceSpansSlice {
 // in addition to a parent/child relationship.
 type SpanKind int32
 
-// String returns the string representation of the SpanKind.
-func (sk SpanKind) String() string { return otlptrace.Span_SpanKind(sk).String() }
-
 const (
 	// SpanKindUnspecified represents that the SpanKind is unspecified, it MUST NOT be used.
 	SpanKindUnspecified = SpanKind(otlptrace.Span_SPAN_KIND_UNSPECIFIED)
@@ -98,6 +95,25 @@ const (
 	SpanKindConsumer = SpanKind(otlptrace.Span_SPAN_KIND_CONSUMER)
 )
 
+// String returns the string representation of the SpanKind.
+func (sk SpanKind) String() string {
+	switch sk {
+	case SpanKindUnspecified:
+		return "Unspecified"
+	case SpanKindInternal:
+		return "Internal"
+	case SpanKindServer:
+		return "Server"
+	case SpanKindClient:
+		return "Client"
+	case SpanKindProducer:
+		return "Producer"
+	case SpanKindConsumer:
+		return "Consumer"
+	}
+	return ""
+}
+
 // StatusCode mirrors the codes defined at
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
 type StatusCode int32
@@ -109,10 +125,14 @@ const (
 )
 
 // String returns the string representation of the StatusCode.
-func (sc StatusCode) String() string { return otlptrace.Status_StatusCode(sc).String() }
-
-// Deprecated: [v0.62.0] Use Status instead.
-type SpanStatus = Status
-
-// Deprecated: [v0.62.0] Use NewStatus instead.
-var NewSpanStatus = NewStatus
+func (sc StatusCode) String() string {
+	switch sc {
+	case StatusCodeUnset:
+		return "Unset"
+	case StatusCodeOk:
+		return "Ok"
+	case StatusCodeError:
+		return "Error"
+	}
+	return ""
+}

@@ -19,8 +19,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/processor"
 )
 
 const (
@@ -32,49 +33,45 @@ const (
 )
 
 // NewFactory returns a new factory for the Batch processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, component.StabilityLevelStable),
-		component.WithMetricsProcessor(createMetricsProcessor, component.StabilityLevelStable),
-		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelStable))
+		processor.WithTraces(createTraces, component.StabilityLevelStable),
+		processor.WithMetrics(createMetrics, component.StabilityLevelStable),
+		processor.WithLogs(createLogs, component.StabilityLevelStable))
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		SendBatchSize:     defaultSendBatchSize,
-		Timeout:           defaultTimeout,
+		SendBatchSize: defaultSendBatchSize,
+		Timeout:       defaultTimeout,
 	}
 }
 
-func createTracesProcessor(
+func createTraces(
 	_ context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
-	level := set.MetricsLevel
-	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), level)
+) (processor.Traces, error) {
+	return newBatchTracesProcessor(set, nextConsumer, cfg.(*Config), featuregate.GetRegistry())
 }
 
-func createMetricsProcessor(
+func createMetrics(
 	_ context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
-	level := set.MetricsLevel
-	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), level)
+) (processor.Metrics, error) {
+	return newBatchMetricsProcessor(set, nextConsumer, cfg.(*Config), featuregate.GetRegistry())
 }
 
-func createLogsProcessor(
+func createLogs(
 	_ context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
-	level := set.MetricsLevel
-	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), level)
+) (processor.Logs, error) {
+	return newBatchLogsProcessor(set, nextConsumer, cfg.(*Config), featuregate.GetRegistry())
 }

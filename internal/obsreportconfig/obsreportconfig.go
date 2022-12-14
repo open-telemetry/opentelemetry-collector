@@ -37,32 +37,19 @@ func init() {
 
 // RegisterInternalMetricFeatureGate registers the Internal Metric feature gate to the passed in registry
 func RegisterInternalMetricFeatureGate(registry *featuregate.Registry) {
-	registry.MustRegister(featuregate.Gate{
-		ID:          UseOtelForInternalMetricsfeatureGateID,
-		Description: "controls whether the collector uses OpenTelemetry for internal metrics",
-		Enabled:     false,
-	})
+	registry.MustRegisterID(
+		UseOtelForInternalMetricsfeatureGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("controls whether the collector uses OpenTelemetry for internal metrics"),
+	)
 }
 
-// ObsMetrics wraps OpenCensus View for Collector observability metrics
-type ObsMetrics struct {
-	Views []*view.View
-}
-
-// Configure is used to control the settings that will be used by the obsreport
-// package.
-func Configure(level configtelemetry.Level) *ObsMetrics {
-	ret := &ObsMetrics{}
+// AllViews returns all the OpenCensus views requires by obsreport package.
+func AllViews(level configtelemetry.Level) []*view.View {
 	if level == configtelemetry.LevelNone {
-		return ret
+		return nil
 	}
 
-	ret.Views = allViews()
-	return ret
-}
-
-// allViews return the list of all views that needs to be configured.
-func allViews() []*view.View {
 	var views []*view.View
 	var measures []*stats.Int64Measure
 	var tagKeys []tag.Key
@@ -71,12 +58,7 @@ func allViews() []*view.View {
 	views = append(views, receiverViews()...)
 
 	// Scraper views.
-	measures = []*stats.Int64Measure{
-		obsmetrics.ScraperScrapedMetricPoints,
-		obsmetrics.ScraperErroredMetricPoints,
-	}
-	tagKeys = []tag.Key{obsmetrics.TagKeyReceiver, obsmetrics.TagKeyScraper}
-	views = append(views, genViews(measures, tagKeys, view.Sum())...)
+	views = append(views, scraperViews()...)
 
 	// Exporter views.
 	measures = []*stats.Int64Measure{
@@ -132,6 +114,20 @@ func receiverViews() []*view.View {
 	tagKeys := []tag.Key{
 		obsmetrics.TagKeyReceiver, obsmetrics.TagKeyTransport,
 	}
+
+	return genViews(measures, tagKeys, view.Sum())
+}
+
+func scraperViews() []*view.View {
+	if featuregate.GetRegistry().IsEnabled(UseOtelForInternalMetricsfeatureGateID) {
+		return nil
+	}
+
+	measures := []*stats.Int64Measure{
+		obsmetrics.ScraperScrapedMetricPoints,
+		obsmetrics.ScraperErroredMetricPoints,
+	}
+	tagKeys := []tag.Key{obsmetrics.TagKeyReceiver, obsmetrics.TagKeyScraper}
 
 	return genViews(measures, tagKeys, view.Sum())
 }

@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -37,7 +36,7 @@ type Scraper interface {
 	component.Component
 
 	// ID returns the scraper id.
-	ID() config.ComponentID
+	ID() component.ID
 	Scrape(context.Context) (pmetric.Metrics, error)
 }
 
@@ -64,10 +63,10 @@ type baseScraper struct {
 	component.StartFunc
 	component.ShutdownFunc
 	ScrapeFunc
-	id config.ComponentID
+	id component.ID
 }
 
-func (b *baseScraper) ID() config.ComponentID {
+func (b *baseScraper) ID() component.ID {
 	return b.id
 }
 
@@ -79,7 +78,7 @@ func NewScraper(name string, scrape ScrapeFunc, options ...ScraperOption) (Scrap
 	}
 	bs := &baseScraper{
 		ScrapeFunc: scrape,
-		id:         config.NewComponentID(config.Type(name)),
+		id:         component.NewID(component.Type(name)),
 	}
 	for _, op := range options {
 		op(bs)

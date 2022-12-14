@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -34,12 +33,12 @@ import (
 func createTestQueue(extension storage.Extension, capacity int) *persistentQueue {
 	logger := zap.NewNop()
 
-	client, err := extension.GetClient(context.Background(), component.KindReceiver, config.ComponentID{}, "")
+	client, err := extension.GetClient(context.Background(), component.KindReceiver, component.ID{}, "")
 	if err != nil {
 		panic(err)
 	}
 
-	wq := NewPersistentQueue(context.Background(), "foo", config.TracesDataType, capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
+	wq := NewPersistentQueue(context.Background(), "foo", component.DataTypeTraces, capacity, logger, client, newFakeTracesRequestUnmarshalerFunc())
 	return wq.(*persistentQueue)
 }
 
@@ -101,6 +100,42 @@ func TestPersistentQueue_Close(t *testing.T) {
 		wq.Stop()
 		return true
 	}, 5*time.Second, 10*time.Millisecond)
+}
+
+// Verify storage closes after queue consumers. If not in this order, successfully consumed items won't be updated in storage
+func TestPersistentQueue_Close_StorageCloseAfterConsumers(t *testing.T) {
+	path := t.TempDir()
+
+	ext := createStorageExtension(path)
+	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })
+
+	wq := createTestQueue(ext, 1001)
+	traces := newTraces(1, 10)
+
+	lastRequestProcessedTime := time.Now()
+	req := newFakeTracesRequest(traces)
+	req.processingFinishedCallback = func() {
+		lastRequestProcessedTime = time.Now()
+	}
+
+	fnBefore := stopStorage
+	stopStorageTime := time.Now()
+	stopStorage = func(queue *persistentQueue) {
+		stopStorageTime = time.Now()
+		queue.storage.stop()
+	}
+
+	wq.StartConsumers(1, func(item Request) {})
+
+	for i := 0; i < 1000; i++ {
+		wq.Produce(req)
+	}
+	require.Eventually(t, func() bool {
+		wq.Stop()
+		return true
+	}, 5*time.Second, 10*time.Millisecond)
+	require.True(t, stopStorageTime.After(lastRequestProcessedTime), "storage stop time should be after last request processed time")
+	stopStorage = fnBefore
 }
 
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {

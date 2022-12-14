@@ -11,10 +11,10 @@ import (
 
 	"golang.org/x/sys/windows/svc"
 
-	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/otelcol"
 )
 
-func run(params service.CollectorSettings) error {
+func run(params otelcol.CollectorSettings) error {
 	if useInteractiveMode, err := checkUseInteractiveMode(); err != nil {
 		return err
 	} else if useInteractiveMode {
@@ -40,9 +40,9 @@ func checkUseInteractiveMode() (bool, error) {
 	return isInteractiveSession, nil
 }
 
-func runService(params service.CollectorSettings) error {
+func runService(params otelcol.CollectorSettings) error {
 	// do not need to supply service name when startup is invoked through Service Control Manager directly
-	if err := svc.Run("", service.NewSvcHandler(params)); err != nil {
+	if err := svc.Run("", otelcol.NewSvcHandler(params)); err != nil {
 		return fmt.Errorf("failed to start collector server: %w", err)
 	}
 

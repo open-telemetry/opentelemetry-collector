@@ -15,11 +15,83 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
-	"go.opentelemetry.io/collector/config"
+	"errors"
+	"fmt"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-type Config = config.Config
+var (
+	errMissingServicePipelines         = errors.New("service must have at least one pipeline")
+	errMissingServicePipelineReceivers = errors.New("must have at least one receiver")
+	errMissingServicePipelineExporters = errors.New("must have at least one exporter")
+)
 
-type ConfigService = config.Service
+// ConfigService defines the configurable components of the service.
+type ConfigService struct {
+	// Telemetry is the configuration for collector's own telemetry.
+	Telemetry telemetry.Config `mapstructure:"telemetry"`
 
-type ConfigServicePipeline = config.Pipeline
+	// Extensions are the ordered list of extensions configured for the service.
+	Extensions []component.ID `mapstructure:"extensions"`
+
+	// Pipelines are the set of data pipelines configured for the service.
+	Pipelines map[component.ID]*ConfigServicePipeline `mapstructure:"pipelines"`
+}
+
+func (cfg *ConfigService) Validate() error {
+	// Must have at least one pipeline.
+	if len(cfg.Pipelines) == 0 {
+		return errMissingServicePipelines
+	}
+
+	// Check that all pipelines have at least one receiver and one exporter, and they reference
+	// only configured components.
+	for pipelineID, pipeline := range cfg.Pipelines {
+		if pipelineID.Type() != component.DataTypeTraces && pipelineID.Type() != component.DataTypeMetrics && pipelineID.Type() != component.DataTypeLogs {
+			return fmt.Errorf("service::pipeline::%s: unknown datatype %q", pipelineID, pipelineID.Type())
+		}
+
+		// Validate pipeline has at least one receiver.
+		if err := pipeline.Validate(); err != nil {
+			return fmt.Errorf("service::pipeline::%s: %w", pipelineID, err)
+		}
+	}
+
+	if err := cfg.Telemetry.Validate(); err != nil {
+		fmt.Printf("service::telemetry config validation failed, %v\n", err)
+	}
+
+	return nil
+}
+
+type ConfigServicePipeline struct {
+	Receivers  []component.ID `mapstructure:"receivers"`
+	Processors []component.ID `mapstructure:"processors"`
+	Exporters  []component.ID `mapstructure:"exporters"`
+}
+
+func (cfg *ConfigServicePipeline) Validate() error {
+	// Validate pipeline has at least one receiver.
+	if len(cfg.Receivers) == 0 {
+		return errMissingServicePipelineReceivers
+	}
+
+	// Validate pipeline has at least one exporter.
+	if len(cfg.Exporters) == 0 {
+		return errMissingServicePipelineExporters
+	}
+
+	// Validate no processors are duplicated within a pipeline.
+	procSet := make(map[component.ID]struct{}, len(cfg.Processors))
+	for _, ref := range cfg.Processors {
+		// Ensure no processors are duplicated within the pipeline
+		if _, exists := procSet[ref]; exists {
+			return fmt.Errorf("references processor %q multiple times", ref)
+		}
+		procSet[ref] = struct{}{}
+	}
+
+	return nil
+}

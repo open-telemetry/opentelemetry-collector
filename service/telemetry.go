@@ -20,13 +20,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"unicode"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	ocmetric "go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
@@ -37,6 +35,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
@@ -44,7 +43,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/obsreport"
 	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -69,8 +68,7 @@ type telemetryInitializer struct {
 	ocRegistry *ocmetric.Registry
 	mp         metric.MeterProvider
 
-	server     *http.Server
-	doInitOnce sync.Once
+	server *http.Server
 }
 
 func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
@@ -81,16 +79,6 @@ func newColTelemetry(registry *featuregate.Registry) *telemetryInitializer {
 }
 
 func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
-	var err error
-	tel.doInitOnce.Do(
-		func() {
-			err = tel.initOnce(buildInfo, logger, cfg, asyncErrorChannel)
-		},
-	)
-	return err
-}
-
-func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger *zap.Logger, cfg telemetry.Config, asyncErrorChannel chan error) error {
 	if cfg.Metrics.Level == configtelemetry.LevelNone || cfg.Metrics.Address == "" {
 		logger.Info(
 			"Skipping telemetry setup.",
@@ -113,11 +101,19 @@ func (tel *telemetryInitializer) initOnce(buildInfo component.BuildInfo, logger 
 
 	var pe http.Handler
 	var err error
+	// This prometheus registry is shared between OpenCensus and OpenTelemetry exporters,
+	// acting as a bridge between OC and Otel.
+	// This is used as a path to migrate the existing OpenCensus instrumentation
+	// to the OpenTelemetry Go SDK without breaking existing metrics.
+	promRegistry := prometheus.NewRegistry()
 	if tel.registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID) {
-		pe, err = tel.initOpenTelemetry(telAttrs)
-	} else {
-		pe, err = tel.initOpenCensus(cfg, telAttrs)
+		err = tel.initOpenTelemetry(telAttrs, promRegistry)
+		if err != nil {
+			return err
+		}
 	}
+
+	pe, err = tel.initOpenCensus(cfg, telAttrs, promRegistry)
 	if err != nil {
 		return err
 	}
@@ -176,23 +172,19 @@ func buildTelAttrs(buildInfo component.BuildInfo, cfg telemetry.Config) map[stri
 	return telAttrs
 }
 
-func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs map[string]string) (http.Handler, error) {
+func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs map[string]string, promRegistry *prometheus.Registry) (http.Handler, error) {
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
-	var views []*view.View
-	obsMetrics := obsreportconfig.Configure(cfg.Metrics.Level)
-	views = append(views, batchprocessor.MetricViews()...)
-	views = append(views, obsMetrics.Views...)
-
-	tel.views = views
-	if err := view.Register(views...); err != nil {
+	tel.views = obsreportconfig.AllViews(cfg.Metrics.Level)
+	if err := view.Register(tel.views...); err != nil {
 		return nil, err
 	}
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
 	opts := ocprom.Options{
 		Namespace: "otelcol",
+		Registry:  promRegistry,
 	}
 
 	opts.ConstLabels = make(map[string]string)
@@ -210,7 +202,7 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 	return pe, nil
 }
 
-func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string) (http.Handler, error) {
+func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, promRegistry prometheus.Registerer) error {
 	// Initialize the ocRegistry, still used by the process metrics.
 	tel.ocRegistry = ocmetric.NewRegistry()
 
@@ -221,23 +213,28 @@ func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string) (htt
 
 	res, err := resource.New(context.Background(), resource.WithAttributes(resAttrs...))
 	if err != nil {
-		return nil, fmt.Errorf("error creating otel resources: %w", err)
+		return fmt.Errorf("error creating otel resources: %w", err)
 	}
 
-	exporter := otelprom.New()
+	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", promRegistry)
+	// We can remove `otelprom.WithoutUnits()` when the otel-go start exposing prometheus metrics using the OpenMetrics format
+	// which includes metric units that prometheusreceiver uses to trim unit's suffixes from metric names.
+	// https://github.com/open-telemetry/opentelemetry-go/issues/3468
+	exporter, err := otelprom.New(
+		otelprom.WithRegisterer(wrappedRegisterer),
+		otelprom.WithoutUnits(),
+		// Disabled for the moment until this becomes stable, and we are ready to break backwards compatibility.
+		otelprom.WithoutScopeInfo())
+	if err != nil {
+		return fmt.Errorf("error creating otel prometheus exporter: %w", err)
+	}
 	tel.mp = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
 		sdkmetric.WithReader(exporter),
+		sdkmetric.WithView(batchViews()...),
 	)
 
-	registry := prometheus.NewRegistry()
-
-	wrappedRegisterer := prometheus.WrapRegistererWithPrefix("otelcol_", registry)
-	if err := wrappedRegisterer.Register(exporter.Collector); err != nil {
-		return nil, fmt.Errorf("failed to register prometheus collector: %w", err)
-	}
-
-	return promhttp.HandlerFor(registry, promhttp.HandlerOpts{}), nil
+	return nil
 }
 
 func (tel *telemetryInitializer) shutdown() error {
@@ -275,4 +272,23 @@ func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator,
 		}
 	}
 	return propagation.NewCompositeTextMapPropagator(textMapPropagators...), nil
+}
+
+func batchViews() []sdkmetric.View {
+	return []sdkmetric.View{
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size")},
+			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
+			}},
+		),
+		sdkmetric.NewView(
+			sdkmetric.Instrument{Name: obsreport.BuildProcessorCustomMetricName("batch", "batch_send_size_bytes")},
+			sdkmetric.Stream{Aggregation: aggregation.ExplicitBucketHistogram{
+				Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
+					100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
+					1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
+			}},
+		),
+	}
 }

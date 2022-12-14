@@ -15,8 +15,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
+	"bytes"
 	"os"
-	"strings"
 )
 
 const messageValueTemplate = `${description}
@@ -27,14 +27,14 @@ const messageValueTemplate = `${description}
 // Must use New${structName} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 
-type ${structName} internal.${structName}
+type ${structName} internal.${internalStructName}
 
 func new${structName}(orig *${originName}) ${structName} {
-	return ${structName}(internal.New${structName}(orig))
+	return ${structName}(internal.New${internalStructName}(orig))
 }
 
 func (ms ${structName}) getOrig() *${originName} {
-	return internal.GetOrig${structName}(internal.${structName}(ms))
+	return internal.GetOrig${internalStructName}(internal.${internalStructName}(ms))
 }
 
 // New${structName} creates a new empty ${structName}.
@@ -45,25 +45,25 @@ func New${structName}() ${structName} {
 	return new${structName}(&${originName}{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ${structName}) MoveTo(dest ${structName}) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = ${originName}{}
 }`
 
-const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct to the dest.
+const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ${structName}) CopyTo(dest ${structName}) {`
 
 const messageValueCopyToFooterTemplate = `}`
 
 const messageValueTestTemplate = `
 func Test${structName}_MoveTo(t *testing.T) {
-	ms := ${structName}(internal.GenerateTest${structName}())
+	ms := ${structName}(internal.GenerateTest${internalStructName}())
 	dest := New${structName}()
 	ms.MoveTo(dest)
 	assert.Equal(t, New${structName}(), ms)
-	assert.Equal(t, ${structName}(internal.GenerateTest${structName}()), dest)
+	assert.Equal(t, ${structName}(internal.GenerateTest${internalStructName}()), dest)
 }
 
 func Test${structName}_CopyTo(t *testing.T) {
@@ -71,32 +71,32 @@ func Test${structName}_CopyTo(t *testing.T) {
 	orig := New${structName}()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ${structName}(internal.GenerateTest${structName}())
+	orig = ${structName}(internal.GenerateTest${internalStructName}())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }`
 
-const messageValueGenerateTestTemplate = `func GenerateTest${structName}() ${structName} {
+const messageValueGenerateTestTemplate = `func GenerateTest${internalStructName}() ${internalStructName} {
 	orig := ${originName}{}
-	tv := New${structName}(&orig)
-	FillTest${structName}(tv)
+	tv := New${internalStructName}(&orig)
+	FillTest${internalStructName}(tv)
 	return tv
 }`
 
-const messageValueFillTestHeaderTemplate = `func FillTest${structName}(tv ${structName}) {`
+const messageValueFillTestHeaderTemplate = `func FillTest${internalStructName}(tv ${internalStructName}) {`
 const messageValueFillTestFooterTemplate = `}`
 
 const messageValueAliasTemplate = `
-type ${structName} struct {
+type ${internalStructName} struct {
 	orig *${originName}
 }
 
-func GetOrig${structName}(ms ${structName}) *${originName} {
+func GetOrig${internalStructName}(ms ${internalStructName}) *${originName} {
 	return ms.orig
 }
 
-func New${structName}(orig *${originName}) ${structName} {
-	return ${structName}{orig: orig}
+func New${internalStructName}(orig *${originName}) ${internalStructName} {
+	return ${internalStructName}{orig: orig}
 }`
 
 const newLine = "\n"
@@ -106,24 +106,32 @@ type baseStruct interface {
 
 	getPackageName() string
 
-	generateStruct(sb *strings.Builder)
+	generateStruct(sb *bytes.Buffer)
 
-	generateTests(sb *strings.Builder)
+	generateTests(sb *bytes.Buffer)
 
-	generateTestValueHelpers(sb *strings.Builder)
+	generateTestValueHelpers(sb *bytes.Buffer)
 
-	generateInternal(sb *strings.Builder)
+	generateInternal(sb *bytes.Buffer)
 }
 
 type messageValueStruct struct {
-	structName     string
-	packageName    string
-	description    string
-	originFullName string
-	fields         []baseField
+	structName         string
+	internalStructName string
+	packageName        string
+	description        string
+	originFullName     string
+	fields             []baseField
 }
 
 func (ms *messageValueStruct) getName() string {
+	return ms.structName
+}
+
+func (ms *messageValueStruct) getInternalName() string {
+	if ms.internalStructName != "" {
+		return ms.internalStructName
+	}
 	return ms.structName
 }
 
@@ -131,11 +139,13 @@ func (ms *messageValueStruct) getPackageName() string {
 	return ms.packageName
 }
 
-func (ms *messageValueStruct) generateStruct(sb *strings.Builder) {
+func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
+		case "internalStructName":
+			return ms.getInternalName()
 		case "originName":
 			return ms.originFullName
 		case "description":
@@ -169,11 +179,13 @@ func (ms *messageValueStruct) generateStruct(sb *strings.Builder) {
 	}))
 }
 
-func (ms *messageValueStruct) generateTests(sb *strings.Builder) {
+func (ms *messageValueStruct) generateTests(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.structName
+		case "internalStructName":
+			return ms.getInternalName()
 		default:
 			panic(name)
 		}
@@ -186,11 +198,11 @@ func (ms *messageValueStruct) generateTests(sb *strings.Builder) {
 	}
 }
 
-func (ms *messageValueStruct) generateTestValueHelpers(sb *strings.Builder) {
+func (ms *messageValueStruct) generateTestValueHelpers(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueGenerateTestTemplate, func(name string) string {
 		switch name {
-		case "structName":
-			return ms.structName
+		case "internalStructName":
+			return ms.getInternalName()
 		case "originName":
 			return ms.originFullName
 		default:
@@ -200,8 +212,8 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *strings.Builder) {
 	sb.WriteString(newLine + newLine)
 	sb.WriteString(os.Expand(messageValueFillTestHeaderTemplate, func(name string) string {
 		switch name {
-		case "structName":
-			return ms.structName
+		case "internalStructName":
+			return ms.getInternalName()
 		default:
 			panic(name)
 		}
@@ -217,11 +229,11 @@ func (ms *messageValueStruct) generateTestValueHelpers(sb *strings.Builder) {
 	}))
 }
 
-func (ms *messageValueStruct) generateInternal(sb *strings.Builder) {
+func (ms *messageValueStruct) generateInternal(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(messageValueAliasTemplate, func(name string) string {
 		switch name {
-		case "structName":
-			return ms.structName
+		case "internalStructName":
+			return ms.getInternalName()
 		case "originName":
 			return ms.originFullName
 		default:

@@ -69,7 +69,7 @@ func (es ResourceSpansSlice) At(ix int) ResourceSpans {
 	return newResourceSpans((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -122,16 +122,8 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 // Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
 // provided less function so that two instances of ResourceSpansSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ResourceSpans) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) ResourceSpansSlice {
+func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -192,7 +184,7 @@ func NewResourceSpans() ResourceSpans {
 	return newResourceSpans(&otlptrace.ResourceSpans{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
 	*dest.getOrig() = *ms.getOrig()
@@ -219,7 +211,7 @@ func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
 	return ScopeSpansSlice(internal.NewScopeSpansSlice(&ms.getOrig().ScopeSpans))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -269,7 +261,7 @@ func (es ScopeSpansSlice) At(ix int) ScopeSpans {
 	return newScopeSpans((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -322,16 +314,8 @@ func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 // Sort sorts the ScopeSpans elements within ScopeSpansSlice given the
 // provided less function so that two instances of ScopeSpansSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b ScopeSpans) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) ScopeSpansSlice {
+func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -392,7 +376,7 @@ func NewScopeSpans() ScopeSpans {
 	return newScopeSpans(&otlptrace.ScopeSpans{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms ScopeSpans) MoveTo(dest ScopeSpans) {
 	*dest.getOrig() = *ms.getOrig()
@@ -419,7 +403,7 @@ func (ms ScopeSpans) Spans() SpanSlice {
 	return SpanSlice(internal.NewSpanSlice(&ms.getOrig().Spans))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeSpans) CopyTo(dest ScopeSpans) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
@@ -469,7 +453,7 @@ func (es SpanSlice) At(ix int) Span {
 	return newSpan((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanSlice) CopyTo(dest SpanSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -522,16 +506,8 @@ func (es SpanSlice) AppendEmpty() Span {
 // Sort sorts the Span elements within SpanSlice given the
 // provided less function so that two instances of SpanSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b Span) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es SpanSlice) Sort(less func(a, b Span) bool) SpanSlice {
+func (es SpanSlice) Sort(less func(a, b Span) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -593,7 +569,7 @@ func NewSpan() Span {
 	return newSpan(&otlptrace.Span{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Span) MoveTo(dest Span) {
 	*dest.getOrig() = *ms.getOrig()
@@ -725,7 +701,7 @@ func (ms Span) Status() Status {
 	return Status(internal.NewStatus(&ms.getOrig().Status))
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Span) CopyTo(dest Span) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
@@ -787,7 +763,7 @@ func (es SpanEventSlice) At(ix int) SpanEvent {
 	return newSpanEvent((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -840,16 +816,8 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 // Sort sorts the SpanEvent elements within SpanEventSlice given the
 // provided less function so that two instances of SpanEventSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b SpanEvent) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) SpanEventSlice {
+func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -911,7 +879,7 @@ func NewSpanEvent() SpanEvent {
 	return newSpanEvent(&otlptrace.Span_Event{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SpanEvent) MoveTo(dest SpanEvent) {
 	*dest.getOrig() = *ms.getOrig()
@@ -953,7 +921,7 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetName(ms.Name())
@@ -1004,7 +972,7 @@ func (es SpanLinkSlice) At(ix int) SpanLink {
 	return newSpanLink((*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
@@ -1057,16 +1025,8 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 // Sort sorts the SpanLink elements within SpanLinkSlice given the
 // provided less function so that two instances of SpanLinkSlice
 // can be compared.
-//
-// Returns the same instance to allow nicer code like:
-//
-//	lessFunc := func(a, b SpanLink) bool {
-//	  return a.Name() < b.Name() // choose any comparison here
-//	}
-//	assert.Equal(t, expected.Sort(lessFunc), actual.Sort(lessFunc))
-func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) SpanLinkSlice {
+func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
-	return es
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
@@ -1129,7 +1089,7 @@ func NewSpanLink() SpanLink {
 	return newSpanLink(&otlptrace.Span_Link{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms SpanLink) MoveTo(dest SpanLink) {
 	*dest.getOrig() = *ms.getOrig()
@@ -1176,7 +1136,7 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
@@ -1212,7 +1172,7 @@ func NewStatus() Status {
 	return newStatus(&otlptrace.Status{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms Status) MoveTo(dest Status) {
 	*dest.getOrig() = *ms.getOrig()
@@ -1239,7 +1199,7 @@ func (ms Status) SetMessage(v string) {
 	ms.getOrig().Message = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms Status) CopyTo(dest Status) {
 	dest.SetCode(ms.Code())
 	dest.SetMessage(ms.Message())

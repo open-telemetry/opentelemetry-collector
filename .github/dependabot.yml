@@ -19,11 +19,63 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/component"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/confmap"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/connector/forwardconnector"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/consumer"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/loggingexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/otlpexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/otlphttpexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/ballastextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/zpagesextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/featuregate"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/tools"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pdata"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/batchprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/memorylimiterprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/otlpreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

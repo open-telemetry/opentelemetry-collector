@@ -28,7 +28,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -51,7 +50,7 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue
-	StorageID *config.ComponentID `mapstructure:"storage"`
+	StorageID *component.ID `mapstructure:"storage"`
 }
 
 // NewDefaultQueueSettings returns the default settings for QueueSettings.
@@ -82,8 +81,8 @@ func (qCfg *QueueSettings) Validate() error {
 
 type queuedRetrySender struct {
 	fullName           string
-	id                 config.ComponentID
-	signal             config.DataType
+	id                 component.ID
+	signal             component.DataType
 	cfg                QueueSettings
 	consumerSender     requestSender
 	queue              internal.ProducerConsumerQueue
@@ -94,7 +93,7 @@ type queuedRetrySender struct {
 	requestUnmarshaler internal.RequestUnmarshaler
 }
 
-func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
+func newQueuedRetrySender(id component.ID, signal component.DataType, qCfg QueueSettings, rCfg RetrySettings, reqUnmarshaler internal.RequestUnmarshaler, nextSender requestSender, logger *zap.Logger) *queuedRetrySender {
 	retryStopCh := make(chan struct{})
 	sampledLogger := createSampledLogger(logger)
 	traceAttr := attribute.String(obsmetrics.ExporterKey, id.String())
@@ -128,7 +127,7 @@ func newQueuedRetrySender(id config.ComponentID, signal config.DataType, qCfg Qu
 	return qrs
 }
 
-func getStorageExtension(extensions map[config.ComponentID]component.Extension, storageID config.ComponentID) (storage.Extension, error) {
+func getStorageExtension(extensions map[component.ID]component.Component, storageID component.ID) (storage.Extension, error) {
 	if ext, found := extensions[storageID]; found {
 		if storageExt, ok := ext.(storage.Extension); ok {
 			return storageExt, nil
@@ -138,7 +137,7 @@ func getStorageExtension(extensions map[config.ComponentID]component.Extension, 
 	return nil, errNoStorageClient
 }
 
-func toStorageClient(ctx context.Context, storageID config.ComponentID, host component.Host, ownerID config.ComponentID, signal config.DataType) (storage.Client, error) {
+func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal component.DataType) (storage.Client, error) {
 	extension, err := getStorageExtension(host.GetExtensions(), storageID)
 	if err != nil {
 		return nil, err

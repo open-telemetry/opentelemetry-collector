@@ -15,6 +15,7 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
+	"bytes"
 	"os"
 	"strings"
 )
@@ -167,24 +168,41 @@ const accessorsOptionalPrimitiveValueTemplate = `// ${fieldName} returns the ${l
 func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ms.getOrig().Get${fieldName}()
 }
+
 // Has${fieldName} returns true if the ${structName} contains a
 // ${fieldName} value, false otherwise.
 func (ms ${structName}) Has${fieldName}() bool {
 	return ms.getOrig().${fieldName}_ != nil
 }
+
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) Set${fieldName}(v ${returnType}) {
 	ms.getOrig().${fieldName}_ = &${originStructType}{${fieldName}: v}
+}
+
+// Remove${fieldName} removes the ${lowerFieldName} associated with this ${structName}.
+func (ms ${structName}) Remove${fieldName}() {
+	ms.getOrig().${fieldName}_ = nil
+}`
+
+const accessorsOptionalPrimitiveTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
+	ms := New${structName}()
+	assert.Equal(t, ${defaultVal}, ms.${fieldName}())
+	ms.Set${fieldName}(${testValue})
+	assert.True(t, ms.Has${fieldName}())
+	assert.Equal(t, ${testValue}, ms.${fieldName}())
+	ms.Remove${fieldName}()
+	assert.False(t, ms.Has${fieldName}())
 }`
 
 type baseField interface {
-	generateAccessors(ms baseStruct, sb *strings.Builder)
+	generateAccessors(ms baseStruct, sb *bytes.Buffer)
 
-	generateAccessorsTest(ms baseStruct, sb *strings.Builder)
+	generateAccessorsTest(ms baseStruct, sb *bytes.Buffer)
 
-	generateSetWithTestValue(sb *strings.Builder)
+	generateSetWithTestValue(sb *bytes.Buffer)
 
-	generateCopyToValue(ms baseStruct, sb *strings.Builder)
+	generateCopyToValue(ms baseStruct, sb *bytes.Buffer)
 }
 
 type sliceField struct {
@@ -192,7 +210,7 @@ type sliceField struct {
 	returnSlice baseSlice
 }
 
-func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (sf *sliceField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorSliceTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -212,7 +230,7 @@ func (sf *sliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 	}))
 }
 
-func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsSliceTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -232,11 +250,11 @@ func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) 
 	}))
 }
 
-func (sf *sliceField) generateSetWithTestValue(sb *strings.Builder) {
+func (sf *sliceField) generateSetWithTestValue(sb *bytes.Buffer) {
 	sb.WriteString("\tFillTest" + sf.returnSlice.getName() + "(New" + sf.returnSlice.getName() + "(&tv.orig." + sf.fieldName + "))")
 }
 
-func (sf *sliceField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
+func (sf *sliceField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
 	sb.WriteString("\tms." + sf.fieldName + "().CopyTo(dest." + sf.fieldName + "())")
 }
 
@@ -247,7 +265,7 @@ type messageValueField struct {
 	returnMessage baseStruct
 }
 
-func (mf *messageValueField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (mf *messageValueField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsMessageValueTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -269,7 +287,7 @@ func (mf *messageValueField) generateAccessors(ms baseStruct, sb *strings.Builde
 	}))
 }
 
-func (mf *messageValueField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (mf *messageValueField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsMessageValueTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -289,11 +307,11 @@ func (mf *messageValueField) generateAccessorsTest(ms baseStruct, sb *strings.Bu
 	}))
 }
 
-func (mf *messageValueField) generateSetWithTestValue(sb *strings.Builder) {
+func (mf *messageValueField) generateSetWithTestValue(sb *bytes.Buffer) {
 	sb.WriteString("\tFillTest" + mf.returnMessage.getName() + "(New" + mf.returnMessage.getName() + "(&tv.orig." + mf.fieldName + "))")
 }
 
-func (mf *messageValueField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
+func (mf *messageValueField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
 	sb.WriteString("\tms." + mf.fieldName + "().CopyTo(dest." + mf.fieldName + "())")
 }
 
@@ -306,7 +324,7 @@ type primitiveField struct {
 	testVal    string
 }
 
-func (pf *primitiveField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (pf *primitiveField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsPrimitiveTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -325,7 +343,7 @@ func (pf *primitiveField) generateAccessors(ms baseStruct, sb *strings.Builder) 
 	}))
 }
 
-func (pf *primitiveField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (pf *primitiveField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -344,11 +362,11 @@ func (pf *primitiveField) generateAccessorsTest(ms baseStruct, sb *strings.Build
 	}))
 }
 
-func (pf *primitiveField) generateSetWithTestValue(sb *strings.Builder) {
+func (pf *primitiveField) generateSetWithTestValue(sb *bytes.Buffer) {
 	sb.WriteString("\ttv.orig." + pf.fieldName + " = " + pf.testVal)
 }
 
-func (pf *primitiveField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
+func (pf *primitiveField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
 	sb.WriteString("\tdest.Set" + pf.fieldName + "(ms." + pf.fieldName + "())")
 }
 
@@ -369,7 +387,7 @@ type primitiveTypedField struct {
 	returnType      *primitiveType
 }
 
-func (ptf *primitiveTypedField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (ptf *primitiveTypedField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsPrimitiveTypedTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -398,7 +416,7 @@ func (ptf *primitiveTypedField) generateAccessors(ms baseStruct, sb *strings.Bui
 	}))
 }
 
-func (ptf *primitiveTypedField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (ptf *primitiveTypedField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsPrimitiveTypedTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -422,7 +440,7 @@ func (ptf *primitiveTypedField) generateAccessorsTest(ms baseStruct, sb *strings
 	}))
 }
 
-func (ptf *primitiveTypedField) generateSetWithTestValue(sb *strings.Builder) {
+func (ptf *primitiveTypedField) generateSetWithTestValue(sb *bytes.Buffer) {
 	originFieldName := ptf.fieldName
 	if ptf.originFieldName != "" {
 		originFieldName = ptf.originFieldName
@@ -430,7 +448,7 @@ func (ptf *primitiveTypedField) generateSetWithTestValue(sb *strings.Builder) {
 	sb.WriteString("\ttv.orig." + originFieldName + " = " + ptf.returnType.testVal)
 }
 
-func (ptf *primitiveTypedField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
+func (ptf *primitiveTypedField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
 	sb.WriteString("\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())")
 }
 
@@ -446,7 +464,7 @@ type primitiveSliceField struct {
 	testVal           string
 }
 
-func (psf *primitiveSliceField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (psf *primitiveSliceField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsPrimitiveSliceTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -468,7 +486,7 @@ func (psf *primitiveSliceField) generateAccessors(ms baseStruct, sb *strings.Bui
 	}))
 }
 
-func (psf *primitiveSliceField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (psf *primitiveSliceField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsPrimitiveSliceTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -492,11 +510,11 @@ func (psf *primitiveSliceField) generateAccessorsTest(ms baseStruct, sb *strings
 	}))
 }
 
-func (psf *primitiveSliceField) generateSetWithTestValue(sb *strings.Builder) {
+func (psf *primitiveSliceField) generateSetWithTestValue(sb *bytes.Buffer) {
 	sb.WriteString("\ttv.orig." + psf.fieldName + " = " + psf.testVal)
 }
 
-func (psf *primitiveSliceField) generateCopyToValue(ms baseStruct, sb *strings.Builder) {
+func (psf *primitiveSliceField) generateCopyToValue(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString("\tms." + psf.fieldName + "().CopyTo(dest." + psf.fieldName + "())")
 }
 
@@ -511,7 +529,7 @@ type oneOfField struct {
 	omitOriginFieldNameInNames bool
 }
 
-func (of *oneOfField) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (of *oneOfField) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
 	of.generateTypeAccessors(ms, sb)
 	sb.WriteString("\n")
 	for _, v := range of.values {
@@ -520,7 +538,7 @@ func (of *oneOfField) generateAccessors(ms baseStruct, sb *strings.Builder) {
 	}
 }
 
-func (of *oneOfField) generateTypeAccessors(ms baseStruct, sb *strings.Builder) {
+func (of *oneOfField) generateTypeAccessors(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(oneOfTypeAccessorHeaderTemplate, func(name string) string {
 		switch name {
 		case "lowerOriginFieldName":
@@ -554,7 +572,7 @@ func (of *oneOfField) typeFuncName() string {
 	return of.originFieldName + typeSuffix
 }
 
-func (of *oneOfField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
+func (of *oneOfField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(oneOfTypeAccessorHeaderTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -574,11 +592,11 @@ func (of *oneOfField) generateAccessorsTest(ms baseStruct, sb *strings.Builder) 
 	}
 }
 
-func (of *oneOfField) generateSetWithTestValue(sb *strings.Builder) {
+func (of *oneOfField) generateSetWithTestValue(sb *bytes.Buffer) {
 	of.values[of.testValueIdx].generateSetWithTestValue(of, sb)
 }
 
-func (of *oneOfField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
+func (of *oneOfField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
 	sb.WriteString("\tswitch ms." + of.typeFuncName() + "() {\n")
 	for _, v := range of.values {
 		v.generateCopyToValue(of, sb)
@@ -589,11 +607,11 @@ func (of *oneOfField) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
 var _ baseField = (*oneOfField)(nil)
 
 type oneOfValue interface {
-	generateAccessors(ms baseStruct, of *oneOfField, sb *strings.Builder)
-	generateTests(ms baseStruct, of *oneOfField, sb *strings.Builder)
-	generateSetWithTestValue(of *oneOfField, sb *strings.Builder)
-	generateCopyToValue(of *oneOfField, sb *strings.Builder)
-	generateTypeSwitchCase(of *oneOfField, sb *strings.Builder)
+	generateAccessors(ms baseStruct, of *oneOfField, sb *bytes.Buffer)
+	generateTests(ms baseStruct, of *oneOfField, sb *bytes.Buffer)
+	generateSetWithTestValue(of *oneOfField, sb *bytes.Buffer)
+	generateCopyToValue(of *oneOfField, sb *bytes.Buffer)
+	generateTypeSwitchCase(of *oneOfField, sb *bytes.Buffer)
 }
 
 type oneOfPrimitiveValue struct {
@@ -604,7 +622,7 @@ type oneOfPrimitiveValue struct {
 	originFieldName string
 }
 
-func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField, sb *strings.Builder) {
+func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsOneOfPrimitiveTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -628,7 +646,7 @@ func (opv *oneOfPrimitiveValue) generateAccessors(ms baseStruct, of *oneOfField,
 	sb.WriteString("\n")
 }
 
-func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, of *oneOfField, sb *strings.Builder) {
+func (opv *oneOfPrimitiveValue) generateTests(ms baseStruct, of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsOneOfPrimitiveTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -659,16 +677,16 @@ func (opv *oneOfPrimitiveValue) accessorFieldName(of *oneOfField) string {
 	return opv.fieldName + of.originFieldName
 }
 
-func (opv *oneOfPrimitiveValue) generateSetWithTestValue(of *oneOfField, sb *strings.Builder) {
+func (opv *oneOfPrimitiveValue) generateSetWithTestValue(of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString("\ttv.orig." + of.originFieldName + " = &" + of.originTypePrefix + opv.originFieldName + "{" + opv.originFieldName + ":" + opv.testVal + "}")
 }
 
-func (opv *oneOfPrimitiveValue) generateCopyToValue(of *oneOfField, sb *strings.Builder) {
+func (opv *oneOfPrimitiveValue) generateCopyToValue(of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString("\tcase " + of.typeName + opv.fieldName + ":\n")
 	sb.WriteString("\tdest.Set" + opv.accessorFieldName(of) + "(ms." + opv.accessorFieldName(of) + "())\n")
 }
 
-func (opv *oneOfPrimitiveValue) generateTypeSwitchCase(of *oneOfField, sb *strings.Builder) {
+func (opv *oneOfPrimitiveValue) generateTypeSwitchCase(of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString("\tcase *" + of.originTypePrefix + opv.originFieldName + ":\n")
 	sb.WriteString("\t\treturn " + of.typeName + opv.fieldName + "\n")
 }
@@ -681,7 +699,7 @@ type oneOfMessageValue struct {
 	returnMessage          *messageValueStruct
 }
 
-func (omv *oneOfMessageValue) generateAccessors(ms baseStruct, of *oneOfField, sb *strings.Builder) {
+func (omv *oneOfMessageValue) generateAccessors(ms baseStruct, of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsOneOfMessageTemplate, func(name string) string {
 		switch name {
 		case "fieldName":
@@ -709,7 +727,7 @@ func (omv *oneOfMessageValue) generateAccessors(ms baseStruct, of *oneOfField, s
 	sb.WriteString("\n")
 }
 
-func (omv *oneOfMessageValue) generateTests(ms baseStruct, of *oneOfField, sb *strings.Builder) {
+func (omv *oneOfMessageValue) generateTests(ms baseStruct, of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsOneOfMessageTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -729,12 +747,12 @@ func (omv *oneOfMessageValue) generateTests(ms baseStruct, of *oneOfField, sb *s
 	sb.WriteString("\n")
 }
 
-func (omv *oneOfMessageValue) generateSetWithTestValue(of *oneOfField, sb *strings.Builder) {
+func (omv *oneOfMessageValue) generateSetWithTestValue(of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString("\ttv.orig." + of.originFieldName + " = &" + of.originTypePrefix + omv.fieldName + "{" + omv.fieldName + ": &" + omv.originFieldPackageName + "." + omv.fieldName + "{}}\n")
 	sb.WriteString("\tFillTest" + omv.returnMessage.structName + "(New" + omv.fieldName + "(tv.orig.Get" + omv.fieldName + "()))")
 }
 
-func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *strings.Builder) {
+func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(copyToValueOneOfMessageTemplate, func(name string) string {
 		switch name {
 		case "fieldName":
@@ -750,7 +768,7 @@ func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *strings.Bu
 	sb.WriteString("\n")
 }
 
-func (omv *oneOfMessageValue) generateTypeSwitchCase(of *oneOfField, sb *strings.Builder) {
+func (omv *oneOfMessageValue) generateTypeSwitchCase(of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString("\tcase *" + of.originTypePrefix + omv.fieldName + ":\n")
 	sb.WriteString("\t\treturn " + of.typeName + omv.fieldName + "\n")
 }
@@ -765,7 +783,7 @@ type optionalPrimitiveValue struct {
 	originTypePrefix string
 }
 
-func (opv *optionalPrimitiveValue) generateAccessors(ms baseStruct, sb *strings.Builder) {
+func (opv *optionalPrimitiveValue) generateAccessors(ms baseStruct, sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(accessorsOptionalPrimitiveValueTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -785,8 +803,8 @@ func (opv *optionalPrimitiveValue) generateAccessors(ms baseStruct, sb *strings.
 	sb.WriteString("\n")
 }
 
-func (opv *optionalPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *strings.Builder) {
-	sb.WriteString(os.Expand(accessorsPrimitiveTestTemplate, func(name string) string {
+func (opv *optionalPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
+	sb.WriteString(os.Expand(accessorsOptionalPrimitiveTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
 			return ms.getName()
@@ -805,11 +823,11 @@ func (opv *optionalPrimitiveValue) generateAccessorsTest(ms baseStruct, sb *stri
 	sb.WriteString("\n")
 }
 
-func (opv *optionalPrimitiveValue) generateSetWithTestValue(sb *strings.Builder) {
+func (opv *optionalPrimitiveValue) generateSetWithTestValue(sb *bytes.Buffer) {
 	sb.WriteString("\ttv.orig." + opv.fieldName + "_ = &" + opv.originTypePrefix + opv.fieldName + "{" + opv.fieldName + ":" + opv.testVal + "}")
 }
 
-func (opv *optionalPrimitiveValue) generateCopyToValue(_ baseStruct, sb *strings.Builder) {
+func (opv *optionalPrimitiveValue) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
 	sb.WriteString("if ms.Has" + opv.fieldName + "(){\n")
 	sb.WriteString("\tdest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n")
 	sb.WriteString("}\n")

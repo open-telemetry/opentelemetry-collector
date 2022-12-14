@@ -17,6 +17,7 @@ package pmetricjson // import "go.opentelemetry.io/collector/pdata/pmetric/inter
 import (
 	"fmt"
 
+	"github.com/gogo/protobuf/jsonpb"
 	jsoniter "github.com/json-iterator/go"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
@@ -24,6 +25,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
+
+var JSONMarshaler = &jsonpb.Marshaler{
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/2758
+	EnumsAsInts: true,
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/2829
+	OrigName: false,
+}
 
 func UnmarshalMetricsData(buf []byte, dest *otlpmetrics.MetricsData) error {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
@@ -60,6 +68,21 @@ func UnmarshalExportMetricsServiceRequest(buf []byte, dest *otlpcollectormetrics
 		return true
 	})
 	otlp.MigrateMetrics(dest.ResourceMetrics)
+	return iter.Error
+}
+
+func UnmarshalExportMetricsServiceResponse(buf []byte, dest *otlpcollectormetrics.ExportMetricsServiceResponse) error {
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "partial_success", "partialSuccess":
+			dest.PartialSuccess = readExportMetricsPartialSuccess(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 	return iter.Error
 }
 
@@ -485,4 +508,20 @@ func readQuantileValue(iter *jsoniter.Iterator) *otlpmetrics.SummaryDataPoint_Va
 
 func readAggregationTemporality(iter *jsoniter.Iterator) otlpmetrics.AggregationTemporality {
 	return otlpmetrics.AggregationTemporality(json.ReadEnumValue(iter, otlpmetrics.AggregationTemporality_value))
+}
+
+func readExportMetricsPartialSuccess(iter *jsoniter.Iterator) otlpcollectormetrics.ExportMetricsPartialSuccess {
+	lpr := otlpcollectormetrics.ExportMetricsPartialSuccess{}
+	iter.ReadObjectCB(func(iterator *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "rejected_data_points", "rejectedDataPoints":
+			lpr.RejectedDataPoints = json.ReadInt64(iter)
+		case "error_message", "errorMessage":
+			lpr.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return lpr
 }

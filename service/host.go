@@ -16,19 +16,25 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/extensions"
-	"go.opentelemetry.io/collector/service/internal/pipelines"
 )
 
 var _ component.Host = (*serviceHost)(nil)
 
 type serviceHost struct {
-	asyncErrorChannel chan error
-	factories         component.Factories
-	buildInfo         component.BuildInfo
+	asyncErrorChannel  chan error
+	receiverFactories  map[component.Type]receiver.Factory
+	processorFactories map[component.Type]processor.Factory
+	exporterFactories  map[component.Type]exporter.Factory
+	extensionFactories map[component.Type]extension.Factory
 
-	pipelines  *pipelines.Pipelines
+	buildInfo component.BuildInfo
+
+	pipelines  *builtPipelines
 	extensions *extensions.Extensions
 }
 
@@ -39,24 +45,24 @@ func (host *serviceHost) ReportFatalError(err error) {
 	host.asyncErrorChannel <- err
 }
 
-func (host *serviceHost) GetFactory(kind component.Kind, componentType config.Type) component.Factory {
+func (host *serviceHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
-		return host.factories.Receivers[componentType]
+		return host.receiverFactories[componentType]
 	case component.KindProcessor:
-		return host.factories.Processors[componentType]
+		return host.processorFactories[componentType]
 	case component.KindExporter:
-		return host.factories.Exporters[componentType]
+		return host.exporterFactories[componentType]
 	case component.KindExtension:
-		return host.factories.Extensions[componentType]
+		return host.extensionFactories[componentType]
 	}
 	return nil
 }
 
-func (host *serviceHost) GetExtensions() map[config.ComponentID]component.Extension {
+func (host *serviceHost) GetExtensions() map[component.ID]component.Component {
 	return host.extensions.GetExtensions()
 }
 
-func (host *serviceHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
+func (host *serviceHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return host.pipelines.GetExporters()
 }

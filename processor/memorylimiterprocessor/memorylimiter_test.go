@@ -25,18 +25,18 @@ import (
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/internal/iruntime"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestNew(t *testing.T) {
@@ -92,7 +92,7 @@ func TestNew(t *testing.T) {
 			cfg.CheckInterval = tt.args.checkInterval
 			cfg.MemoryLimitMiB = tt.args.memoryLimitMiB
 			cfg.MemorySpikeLimitMiB = tt.args.memorySpikeLimitMiB
-			got, err := newMemoryLimiter(componenttest.NewNopProcessorCreateSettings(), cfg)
+			got, err := newMemoryLimiter(processortest.NewNopCreateSettings(), cfg)
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
 				return
@@ -116,15 +116,13 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: newObsReport(),
+		obsrep: newObsReport(t),
 		logger: zap.NewNop(),
 	}
 	mp, err := processorhelper.NewMetricsProcessor(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
-		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		},
+		processortest.NewNopCreateSettings(),
+		&Config{},
 		consumertest.NewNop(),
 		ml.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
@@ -187,15 +185,13 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: newObsReport(),
+		obsrep: newObsReport(t),
 		logger: zap.NewNop(),
 	}
 	tp, err := processorhelper.NewTracesProcessor(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
-		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		},
+		processortest.NewNopCreateSettings(),
+		&Config{},
 		consumertest.NewNop(),
 		ml.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
@@ -258,15 +254,13 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 		readMemStatsFn: func(ms *runtime.MemStats) {
 			ms.Alloc = currentMemAlloc
 		},
-		obsrep: newObsReport(),
+		obsrep: newObsReport(t),
 		logger: zap.NewNop(),
 	}
 	lp, err := processorhelper.NewLogsProcessor(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
-		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		},
+		processortest.NewNopCreateSettings(),
+		&Config{},
 		consumertest.NewNop(),
 		ml.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities),
@@ -414,49 +408,47 @@ func TestDropDecision(t *testing.T) {
 	}
 }
 
-func TestBallastSizeMiB(t *testing.T) {
-	ctx := context.Background()
-	ballastExtFactory := ballastextension.NewFactory()
-	ballastExtCfg := ballastExtFactory.CreateDefaultConfig().(*ballastextension.Config)
-	ballastExtCfg.SizeMiB = 100
-	extCreateSet := componenttest.NewNopExtensionCreateSettings()
-
-	tests := []struct {
-		name                          string
-		ballastExtBallastSizeSetting  uint64
-		expectedMemLimiterBallastSize uint64
-		expectResult                  bool
-	}{
-		{
-			name:                          "ballast size matched",
-			ballastExtBallastSizeSetting:  100,
-			expectedMemLimiterBallastSize: 100,
-			expectResult:                  true,
-		},
-		{
-			name:                          "ballast size not matched",
-			ballastExtBallastSizeSetting:  1000,
-			expectedMemLimiterBallastSize: 100,
-			expectResult:                  false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ballastExtCfg.SizeMiB = tt.ballastExtBallastSizeSetting
-			ballastExt, _ := ballastExtFactory.CreateExtension(ctx, extCreateSet, ballastExtCfg)
-			require.NoError(t, ballastExt.Start(ctx, nil))
-			assert.Equal(t, tt.expectResult, tt.expectedMemLimiterBallastSize*mibBytes == ballastExt.(*ballastextension.MemoryBallast).GetBallastSize())
-		})
-	}
+func TestBallastSize(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.CheckInterval = 10 * time.Second
+	cfg.MemoryLimitMiB = 1024
+	got, err := newMemoryLimiter(processortest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, got.start(context.Background(), &host{ballastSize: 113}))
+	assert.Equal(t, uint64(113), got.ballastSize)
+	require.NoError(t, got.shutdown(context.Background()))
 }
 
-func newObsReport() *obsreport.Processor {
+type host struct {
+	ballastSize uint64
+	component.Host
+}
+
+func (h *host) GetExtensions() map[component.ID]component.Component {
+	ret := make(map[component.ID]component.Component)
+	ret[component.NewID("ballast")] = &ballastExtension{ballastSize: h.ballastSize}
+	return ret
+}
+
+type ballastExtension struct {
+	ballastSize uint64
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (be *ballastExtension) GetBallastSize() uint64 {
+	return be.ballastSize
+}
+
+func newObsReport(t *testing.T) *obsreport.Processor {
 	set := obsreport.ProcessorSettings{
-		ProcessorID:             config.NewComponentID(typeStr),
-		ProcessorCreateSettings: componenttest.NewNopProcessorCreateSettings(),
+		ProcessorID:             component.NewID(typeStr),
+		ProcessorCreateSettings: processortest.NewNopCreateSettings(),
 	}
 	set.ProcessorCreateSettings.MetricsLevel = configtelemetry.LevelNone
 
-	return obsreport.NewProcessor(set)
+	proc, err := obsreport.NewProcessor(set)
+	require.NoError(t, err)
+
+	return proc
 }

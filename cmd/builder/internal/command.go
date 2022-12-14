@@ -69,6 +69,10 @@ configuration is provided, ocb will generate a default Collector.
 				return fmt.Errorf("invalid configuration: %w", err)
 			}
 
+			if err := cfg.SetGoPath(); err != nil {
+				return fmt.Errorf("go not found: %w", err)
+			}
+
 			if err := cfg.ParseModules(); err != nil {
 				return fmt.Errorf("invalid module configuration: %w", err)
 			}

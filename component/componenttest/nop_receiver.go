@@ -18,45 +18,29 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
-// NewNopReceiverCreateSettings returns a new nop settings for Create*Receiver functions.
-func NewNopReceiverCreateSettings() component.ReceiverCreateSettings {
-	return component.ReceiverCreateSettings{
-		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
-type nopReceiverConfig struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
-
-// NewNopReceiverFactory returns a component.ReceiverFactory that constructs nop receivers.
-func NewNopReceiverFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+// Deprecated: [v0.67.0] use receivertest.NewNopFactory
+func NewNopReceiverFactory() receiver.Factory {
+	return receiver.NewFactory(
 		"nop",
-		func() config.Receiver {
-			return &nopReceiverConfig{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("nop")),
-			}
-		},
-		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelStable),
-		component.WithMetricsReceiver(createMetricsReceiver, component.StabilityLevelStable),
-		component.WithLogsReceiver(createLogsReceiver, component.StabilityLevelStable))
+		func() component.Config { return &nopConfig{} },
+		receiver.WithTraces(createTraces, component.StabilityLevelStable),
+		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
+		receiver.WithLogs(createLogs, component.StabilityLevelStable))
 }
 
-func createTracesReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Traces) (component.TracesReceiver, error) {
+func createTraces(context.Context, receiver.CreateSettings, component.Config, consumer.Traces) (receiver.Traces, error) {
 	return nopReceiverInstance, nil
 }
 
-func createMetricsReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetrics(context.Context, receiver.CreateSettings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
 	return nopReceiverInstance, nil
 }
 
-func createLogsReceiver(context.Context, component.ReceiverCreateSettings, config.Receiver, consumer.Logs) (component.LogsReceiver, error) {
+func createLogs(context.Context, receiver.CreateSettings, component.Config, consumer.Logs) (receiver.Logs, error) {
 	return nopReceiverInstance, nil
 }
 

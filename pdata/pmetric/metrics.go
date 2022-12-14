@@ -37,12 +37,12 @@ func NewMetrics() Metrics {
 	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{})
 }
 
-// CopyTo copies all metrics from ms to dest.
+// CopyTo copies the Metrics instance overriding the destination.
 func (ms Metrics) CopyTo(dest Metrics) {
 	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves the Metrics instance overriding the destination and
 // resetting the current instance to its zero value.
 func (ms Metrics) MoveTo(dest Metrics) {
 	*dest.getOrig() = *ms.getOrig()
@@ -111,9 +111,6 @@ const (
 	MetricTypeSummary
 )
 
-// Deprecated: [0.62.0] Use MetricTypeEmpty instead.
-const MetricTypeNone = MetricTypeEmpty
-
 // String returns the string representation of the MetricType.
 func (mdt MetricType) String() string {
 	switch mdt {
@@ -159,20 +156,6 @@ func (at AggregationTemporality) String() string {
 	return ""
 }
 
-// Deprecated: [v0.62.0] Use AggregationTemporality instead.
-type MetricAggregationTemporality = AggregationTemporality
-
-const (
-	// Deprecated: [v0.62.0] Use AggregationTemporalityUnspecified instead.
-	MetricAggregationTemporalityUnspecified = AggregationTemporalityUnspecified
-
-	// Deprecated: [v0.62.0] Use AggregationTemporalityDelta instead.
-	MetricAggregationTemporalityDelta = AggregationTemporalityDelta
-
-	// Deprecated: [v0.62.0] Use AggregationTemporalityCumulative instead.
-	MetricAggregationTemporalityCumulative = AggregationTemporalityCumulative
-)
-
 // NumberDataPointValueType specifies the type of NumberDataPoint value.
 type NumberDataPointValueType int32
 
@@ -182,9 +165,6 @@ const (
 	NumberDataPointValueTypeInt
 	NumberDataPointValueTypeDouble
 )
-
-// Deprecated: [0.62.0] Use NumberDataPointValueTypeEmpty instead.
-const NumberDataPointValueTypeNone = NumberDataPointValueTypeEmpty
 
 // String returns the string representation of the NumberDataPointValueType.
 func (nt NumberDataPointValueType) String() string {
@@ -209,9 +189,6 @@ const (
 	ExemplarValueTypeDouble
 )
 
-// Deprecated: [0.62.0] Use ExemplarValueTypeEmpty instead.
-const ExemplarValueTypeNone = ExemplarValueTypeEmpty
-
 // String returns the string representation of the ExemplarValueType.
 func (nt ExemplarValueType) String() string {
 	switch nt {
@@ -224,21 +201,3 @@ func (nt ExemplarValueType) String() string {
 	}
 	return ""
 }
-
-// Deprecated: [v0.62.0] Use ExponentialHistogramDataPointBuckets instead.
-type Buckets = ExponentialHistogramDataPointBuckets
-
-// Deprecated: [v0.62.0] Use NewExponentialHistogramDataPointBuckets instead.
-var NewBuckets = NewExponentialHistogramDataPointBuckets
-
-// Deprecated: [v0.62.0] Use SummaryDataPointValueAtQuantile instead.
-type ValueAtQuantile = SummaryDataPointValueAtQuantile
-
-// Deprecated: [v0.62.0] Use NewSummaryDataPointValueAtQuantile instead.
-var NewValueAtQuantile = NewSummaryDataPointValueAtQuantile
-
-// Deprecated: [v0.62.0] Use SummaryDataPointValueAtQuantileSlice instead.
-type ValueAtQuantileSlice = SummaryDataPointValueAtQuantileSlice
-
-// Deprecated: [v0.62.0] Use NewSummaryDataPointValueAtQuantileSlice instead.
-var NewValueAtQuantileSlice = NewSummaryDataPointValueAtQuantileSlice

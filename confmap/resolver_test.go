@@ -106,16 +106,17 @@ func TestResolverErrors(t *testing.T) {
 		locations         []string
 		providers         []Provider
 		converters        []Converter
+		expectBuildErr    bool
 		expectResolveErr  bool
 		expectWatchErr    bool
 		expectCloseErr    bool
 		expectShutdownErr bool
 	}{
 		{
-			name:             "unsupported location scheme",
-			locations:        []string{"mock:", "notsupported:"},
-			providers:        []Provider{&mockProvider{}},
-			expectResolveErr: true,
+			name:           "unsupported location scheme",
+			locations:      []string{"mock:", "notsupported:"},
+			providers:      []Provider{&mockProvider{}},
+			expectBuildErr: true,
 		},
 		{
 			name:      "retrieve location config error",
@@ -173,7 +174,11 @@ func TestResolverErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resolver, err := NewResolver(ResolverSettings{URIs: tt.locations, Providers: makeMapProvidersMap(tt.providers...), Converters: tt.converters})
-			assert.NoError(t, err)
+			if tt.expectBuildErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 
 			_, errN := resolver.Resolve(context.Background())
 			if tt.expectResolveErr {
@@ -208,9 +213,10 @@ func TestResolverErrors(t *testing.T) {
 
 func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 	tests := []struct {
-		name       string
-		location   string
-		errMessage string
+		name           string
+		location       string
+		errMessage     string
+		expectBuildErr bool
 	}{
 		{
 			name:       "unix",
@@ -238,21 +244,27 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 			errMessage: `file:C:\test`,
 		},
 		{
-			name:       "invalid_scheme",
-			location:   `LL:\test`,
-			errMessage: `scheme "LL" is not supported for uri "LL:\\test"`,
+			name:           "invalid_scheme",
+			location:       `LL:\test`,
+			expectBuildErr: true,
 		},
 	}
 	for _, tt := range tests {
-		resolver, err := NewResolver(ResolverSettings{
-			URIs: []string{tt.location},
-			Providers: makeMapProvidersMap(newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
-				return nil, errors.New(uri)
-			})),
-			Converters: nil})
-		assert.NoError(t, err)
-		_, err = resolver.Resolve(context.Background())
-		assert.Contains(t, err.Error(), tt.errMessage, tt.name)
+		t.Run(tt.name, func(t *testing.T) {
+			resolver, err := NewResolver(ResolverSettings{
+				URIs: []string{tt.location},
+				Providers: makeMapProvidersMap(newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
+					return nil, errors.New(uri)
+				})),
+				Converters: nil})
+			if tt.expectBuildErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			_, err = resolver.Resolve(context.Background())
+			assert.Contains(t, err.Error(), tt.errMessage, tt.name)
+		})
 	}
 }
 
@@ -278,6 +290,14 @@ func TestResolver(t *testing.T) {
 
 	errC := resolver.Shutdown(context.Background())
 	assert.NoError(t, errC)
+}
+
+func TestResolverNewLinesInOpaqueValue(t *testing.T) {
+	_, err := NewResolver(ResolverSettings{
+		URIs:       []string{"mock:receivers:\n nop:\n"},
+		Providers:  makeMapProvidersMap(&mockProvider{retM: newConfFromFile(t, filepath.Join("testdata", "config.yaml"))}),
+		Converters: nil})
+	assert.NoError(t, err)
 }
 
 func TestResolverNoLocations(t *testing.T) {
@@ -360,7 +380,7 @@ func TestResolverExpandEnvVars(t *testing.T) {
 }
 
 func TestResolverDoneNotExpandOldEnvVars(t *testing.T) {
-	expectedCfgMap := map[string]interface{}{"test.1": "${EXTRA}", "test.2": "$EXTRA"}
+	expectedCfgMap := map[string]interface{}{"test.1": "${EXTRA}", "test.2": "$EXTRA", "test.3": "${EXTRA}:${EXTRA}"}
 	fileProvider := newFakeProvider("test", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
 		return NewRetrieved(expectedCfgMap)
 	})
@@ -466,7 +486,9 @@ func TestResolverExpandInvalidScheme(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = resolver.Resolve(context.Background())
-	assert.EqualError(t, err, `invalid uri: "g_c_s:VALUE"`)
+	// TODO: Investigate how to return an error like `invalid uri: "g_c_s:VALUE"` and keep the legacy behavior
+	//  for cases like "${HOST}:${PORT}"
+	assert.NoError(t, err)
 }
 
 func TestResolverExpandInvalidOpaqueValue(t *testing.T) {

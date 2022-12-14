@@ -22,49 +22,46 @@ import (
 
 func TestUnmarshalText(t *testing.T) {
 	tests := []struct {
-		str   string
+		str   []string
 		level Level
 		err   bool
 	}{
 		{
-			str:   "",
+			str:   []string{"", "other_string"},
 			level: LevelNone,
 			err:   true,
 		},
 		{
-			str:   "other_string",
-			level: LevelNone,
-			err:   true,
-		},
-		{
-			str:   levelNoneStr,
+			str:   []string{"none", "None", "NONE"},
 			level: LevelNone,
 		},
 		{
-			str:   levelBasicStr,
+			str:   []string{"basic", "Basic", "BASIC"},
 			level: LevelBasic,
 		},
 		{
-			str:   levelNormalStr,
+			str:   []string{"normal", "Normal", "NORMAL"},
 			level: LevelNormal,
 		},
 		{
-			str:   levelDetailedStr,
+			str:   []string{"detailed", "Detailed", "DETAILED"},
 			level: LevelDetailed,
 		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.str, func(t *testing.T) {
-			var lvl Level
-			err := lvl.UnmarshalText([]byte(test.str))
-			if test.err {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, test.level, lvl)
-			}
-		})
+		for _, str := range test.str {
+			t.Run(str, func(t *testing.T) {
+				var lvl Level
+				err := lvl.UnmarshalText([]byte(str))
+				if test.err {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+					assert.Equal(t, test.level, lvl)
+				}
+			})
+		}
 	}
 }
 
@@ -73,14 +70,14 @@ func TestUnmarshalTextNilLevel(t *testing.T) {
 	assert.Error(t, lvl.UnmarshalText([]byte(levelNormalStr)))
 }
 
-func TestLevelString(t *testing.T) {
+func TestLevelStringMarshal(t *testing.T) {
 	tests := []struct {
 		str   string
 		level Level
 		err   bool
 	}{
 		{
-			str:   "unknown",
+			str:   "",
 			level: Level(-10),
 		},
 		{

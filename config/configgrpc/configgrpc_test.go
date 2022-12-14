@@ -26,6 +26,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -33,17 +35,18 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -52,13 +55,13 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+	opts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
 
 func TestAllGrpcClientSettings(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -87,11 +90,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("testauth")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
-				ext: map[config.ComponentID]component.Extension{
-					config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{},
+				ext: map[component.ID]component.Component{
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -115,11 +118,11 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("testauth")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
-				ext: map[config.ComponentID]component.Extension{
-					config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{},
+				ext: map[component.ID]component.Component{
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
@@ -143,18 +146,18 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WriteBufferSize: 1024,
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorID: config.NewComponentID("testauth")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("testauth")},
 			},
 			host: &mockHost{
-				ext: map[config.ComponentID]component.Extension{
-					config.NewComponentID("testauth"): &configauth.MockClientAuthenticator{},
+				ext: map[component.ID]component.Component{
+					component.NewID("testauth"): &authtest.MockClient{},
 				},
 			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			opts, err := test.settings.ToDialOptions(test.host, tt.TelemetrySettings)
+			opts, err := test.settings.toDialOptions(test.host, tt.TelemetrySettings)
 			assert.NoError(t, err)
 			assert.Len(t, opts, 9)
 		})
@@ -162,10 +165,12 @@ func TestAllGrpcClientSettings(t *testing.T) {
 }
 
 func TestDefaultGrpcServerSettings(t *testing.T) {
-	gss := &GRPCServerSettings{}
-	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-	_ = grpc.NewServer(opts...)
-
+	gss := &GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint: "0.0.0.0:1234",
+		},
+	}
+	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 2)
 }
@@ -198,39 +203,32 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-	_ = grpc.NewServer(opts...)
-
+	opts, err := gss.toServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 	assert.Len(t, opts, 9)
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {
-	gss := &GRPCServerSettings{}
-
-	// sanity check
-	_, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
-	// test
-	gss.Auth = &configauth.Authentication{
-		AuthenticatorID: config.NewComponentID("mock"),
-	}
-	host := &mockHost{
-		ext: map[config.ComponentID]component.Extension{
-			config.NewComponentID("mock"): configauth.NewServerAuthenticator(),
+	gss := &GRPCServerSettings{
+		NetAddr: confignet.NetAddr{
+			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	opts, err := gss.ToServerOption(host, componenttest.NewNopTelemetrySettings())
-	_ = grpc.NewServer(opts...)
-
-	// verify
+	gss.Auth = &configauth.Authentication{
+		AuthenticatorID: component.NewID("mock"),
+	}
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			component.NewID("mock"): auth.NewServer(),
+		},
+	}
+	srv, err := gss.ToServer(host, componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
-	assert.NotNil(t, opts)
+	assert.NotNil(t, srv)
 }
 
 func TestGRPCClientSettingsError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -297,15 +295,15 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("doesntexist")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
 			},
-			host: &mockHost{ext: map[config.ComponentID]component.Extension{}},
+			host: &mockHost{ext: map[component.ID]component.Component{}},
 		},
 		{
 			err: "no extensions configuration available",
 			settings: GRPCClientSettings{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: config.NewComponentID("doesntexist")},
+				Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("doesntexist")},
 			},
 			host: &mockHost{},
 		},
@@ -345,8 +343,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToDialOptions(test.host, tt.TelemetrySettings)
-			assert.Nil(t, opts)
+			_, err := test.settings.ToClientConn(context.Background(), test.host, tt.TelemetrySettings)
 			assert.Error(t, err)
 			assert.Regexp(t, test.err, err)
 		})
@@ -354,7 +351,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 }
 
 func TestUseSecure(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -365,9 +362,60 @@ func TestUseSecure(t *testing.T) {
 		TLSSetting:  configtls.TLSClientSetting{},
 		Keepalive:   nil,
 	}
-	dialOpts, err := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+	dialOpts, err := gcs.toDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, err)
 	assert.Len(t, dialOpts, 3)
+}
+
+func TestGRPCServerWarning(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings GRPCServerSettings
+		len      int
+	}{
+		{
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:1234",
+					Transport: "tcp",
+				},
+			},
+			len: 1,
+		},
+		{
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "127.0.0.1:1234",
+					Transport: "tcp",
+				},
+			},
+			len: 0,
+		},
+		{
+			settings: GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  "0.0.0.0:1234",
+					Transport: "unix",
+				},
+			},
+			len: 0,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			set := componenttest.NewNopTelemetrySettings()
+			logger, observed := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
+
+			opts, err := test.settings.toServerOption(componenttest.NewNopHost(), set)
+			require.NoError(t, err)
+			require.NotNil(t, opts)
+			_ = grpc.NewServer(opts...)
+
+			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), test.len)
+		})
+	}
+
 }
 
 func TestGRPCServerSettingsError(t *testing.T) {
@@ -418,9 +466,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			opts, err := test.settings.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-			_ = grpc.NewServer(opts...)
-
+			_, err := test.settings.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.Regexp(t, test.err, err)
 		})
 	}
@@ -444,7 +490,7 @@ func TestGRPCServerSettings_ToListener_Error(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -563,9 +609,8 @@ func TestHttpReception(t *testing.T) {
 			}
 			ln, err := gss.ToListener()
 			assert.NoError(t, err)
-			opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			s, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
-			s := grpc.NewServer(opts...)
 			ptraceotlp.RegisterGRPCServer(s, &grpcTraceServer{})
 
 			go func() {
@@ -576,13 +621,11 @@ func TestHttpReception(t *testing.T) {
 				Endpoint:   ln.Addr().String(),
 				TLSSetting: *test.tlsClientCreds,
 			}
-			clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+			grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 			assert.NoError(t, errClient)
-			grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
-			assert.NoError(t, errDial)
-			client := ptraceotlp.NewClient(grpcClientConn)
+			c := ptraceotlp.NewGRPCClient(grpcClientConn)
 			ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-			resp, errResp := client.Export(ctx, ptraceotlp.NewRequest(), grpc.WaitForReady(true))
+			resp, errResp := c.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
 			if test.hasError {
 				assert.Error(t, errResp)
 			} else {
@@ -599,7 +642,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on windows")
 	}
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -612,13 +655,12 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 	}
 	ln, err := gss.ToListener()
 	assert.NoError(t, err)
-	opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	srv, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
-	s := grpc.NewServer(opts...)
-	ptraceotlp.RegisterGRPCServer(s, &grpcTraceServer{})
+	ptraceotlp.RegisterGRPCServer(srv, &grpcTraceServer{})
 
 	go func() {
-		_ = s.Serve(ln)
+		_ = srv.Serve(ln)
 	}()
 
 	gcs := &GRPCClientSettings{
@@ -627,17 +669,15 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 	assert.NoError(t, errClient)
-	grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
-	assert.NoError(t, errDial)
-	client := ptraceotlp.NewClient(grpcClientConn)
+	c := ptraceotlp.NewGRPCClient(grpcClientConn)
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
-	resp, errResp := client.Export(ctx, ptraceotlp.NewRequest(), grpc.WaitForReady(true))
+	resp, errResp := c.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
 	assert.NoError(t, errResp)
 	assert.NotNil(t, resp)
 	cancelFunc()
-	s.Stop()
+	srv.Stop()
 }
 
 func TestContextWithClient(t *testing.T) {
@@ -789,7 +829,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 			// to test with streaming services
 			desc: "unary",
 			tester: func(ctx context.Context, cl ptraceotlp.GRPCClient) {
-				resp, errResp := cl.Export(ctx, ptraceotlp.NewRequest())
+				resp, errResp := cl.Export(ctx, ptraceotlp.NewExportRequest())
 				require.NoError(t, errResp)
 				require.NotNil(t, resp)
 			},
@@ -808,9 +848,8 @@ func TestClientInfoInterceptors(t *testing.T) {
 						Transport: "tcp",
 					},
 				}
-				opts, err := gss.ToServerOption(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+				srv, err := gss.ToServer(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 				require.NoError(t, err)
-				srv := grpc.NewServer(opts...)
 				ptraceotlp.RegisterGRPCServer(srv, mock)
 
 				defer srv.Stop()
@@ -832,19 +871,16 @@ func TestClientInfoInterceptors(t *testing.T) {
 					},
 				}
 
-				tt, err := obsreporttest.SetupTelemetry()
+				tt, err := obsreporttest.SetupTelemetry(component.NewID("component"))
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, tt.Shutdown(context.Background()))
 				}()
 
-				clientOpts, errClient := gcs.ToDialOptions(componenttest.NewNopHost(), tt.TelemetrySettings)
+				grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), tt.TelemetrySettings)
 				require.NoError(t, errClient)
 
-				grpcClientConn, errDial := grpc.Dial(gcs.Endpoint, clientOpts...)
-				require.NoError(t, errDial)
-
-				cl := ptraceotlp.NewClient(grpcClientConn)
+				cl := ptraceotlp.NewGRPCClient(grpcClientConn)
 				ctx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancelFunc()
 
@@ -882,7 +918,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -906,7 +942,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -926,7 +962,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, authFunc)
+	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -957,7 +993,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.NoError(t, err)
@@ -983,7 +1019,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Equal(t, expectedErr, err)
@@ -1005,7 +1041,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, authFunc)
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, auth.NewServer(auth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)
@@ -1024,9 +1060,9 @@ type grpcTraceServer struct {
 	recordedContext context.Context
 }
 
-func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.Request) (ptraceotlp.Response, error) {
+func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	gts.recordedContext = ctx
-	return ptraceotlp.NewResponse(), nil
+	return ptraceotlp.NewExportResponse(), nil
 }
 
 // tempSocketName provides a temporary Unix socket name for testing.
@@ -1041,9 +1077,9 @@ func tempSocketName(t *testing.T) string {
 
 type mockHost struct {
 	component.Host
-	ext map[config.ComponentID]component.Extension
+	ext map[component.ID]component.Component
 }
 
-func (nh *mockHost) GetExtensions() map[config.ComponentID]component.Extension {
+func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nh.ext
 }

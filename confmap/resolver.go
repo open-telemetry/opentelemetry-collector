@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 
 	"go.uber.org/multierr"
 
@@ -29,12 +28,13 @@ import (
 
 var (
 	// follows drive-letter specification:
-	// https://tools.ietf.org/id/draft-kerwin-file-scheme-07.html#syntax
+	// https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
 	driverLetterRegexp = regexp.MustCompile("^[A-z]:")
 
 	// Scheme name consist of a sequence of characters beginning with a letter and followed by any
 	// combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
-	locationRegexp = regexp.MustCompile(`^(?P<Scheme>[A-Za-z][A-Za-z0-9+.-]+):(?P<OpaqueValue>.*)$`)
+	// Need to match new line as well in the OpaqueValue, so setting the "s" flag. See https://pkg.go.dev/regexp/syntax.
+	locationRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>[A-Za-z][A-Za-z0-9+.-]+):(?P<OpaqueValue>.*)$)`)
 
 	errTooManyRecursiveExpansions = errors.New("too many recursive expansions")
 )
@@ -43,11 +43,11 @@ const expandEnabled = "confmap.expandEnabled"
 
 func init() {
 	// TODO: Remove this if by v0.64.0 no complains from distros.
-	featuregate.GetRegistry().MustRegister(featuregate.Gate{
-		ID:          expandEnabled,
-		Description: "controls whether expending embedded external config providers URIs",
-		Enabled:     true,
-	})
+	featuregate.GetRegistry().MustRegisterID(
+		expandEnabled,
+		featuregate.StageBeta,
+		featuregate.WithRegisterDescription("controls whether expending embedded external config providers URIs"),
+	)
 }
 
 // Resolver resolves a configuration as a Conf.
@@ -56,7 +56,6 @@ type Resolver struct {
 	providers  map[string]Provider
 	converters []Converter
 
-	sync.Mutex
 	closers []CloseFunc
 	watcher chan error
 }
@@ -116,6 +115,9 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		lURI, err := newLocation(uri)
 		if err != nil {
 			return nil, err
+		}
+		if _, ok := set.Providers[lURI.scheme]; !ok {
+			return nil, fmt.Errorf("unsupported scheme on URI %q", uri)
 		}
 		uris[i] = lURI
 	}
@@ -243,7 +245,9 @@ func (mr *Resolver) expandValue(ctx context.Context, value interface{}) (interfa
 		}
 		lURI, err := newLocation(v[2 : len(v)-1])
 		if err != nil {
-			return nil, false, err
+			// Cannot return error, since a case like "${HOST}:${PORT}" is invalid location,
+			// but is supported in the legacy implementation.
+			return value, false, nil
 		}
 		if strings.Contains(lURI.opaqueValue, "$") {
 			return nil, false, fmt.Errorf("the uri %q contains unsupported characters ('$')", lURI.asString())

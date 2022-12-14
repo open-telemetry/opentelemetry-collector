@@ -21,7 +21,7 @@ import (
 )
 
 // LogStabilityLevel logs the stability level of a component. The log level is set to info for
-// undefined, unmaintained, deprecated and in development. The log level is set to debug
+// undefined, unmaintained, deprecated and development. The log level is set to debug
 // for alpha, beta and stable.
 func LogStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
 	if sl >= component.StabilityLevelAlpha {

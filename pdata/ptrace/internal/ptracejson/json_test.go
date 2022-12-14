@@ -24,39 +24,46 @@ import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
-func TestReadTraceDataUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
+func TestReadTraceData(t *testing.T) {
+	jsonStr := `{"extra":"", "resourceSpans": [{"extra":""}]}`
 	value := &otlptrace.TracesData{}
 	assert.NoError(t, UnmarshalTraceData([]byte(jsonStr), value))
-	assert.Equal(t, &otlptrace.TracesData{}, value)
+	assert.Equal(t, &otlptrace.TracesData{ResourceSpans: []*otlptrace.ResourceSpans{{}}}, value)
 }
 
-func TestReadExportTraceServiceRequestUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
+func TestReadExportTraceServiceRequest(t *testing.T) {
+	jsonStr := `{"extra":"", "resourceSpans": [{"extra":""}]}`
 	value := &otlpcollectortrace.ExportTraceServiceRequest{}
 	assert.NoError(t, UnmarshalExportTraceServiceRequest([]byte(jsonStr), value))
-	assert.Equal(t, &otlpcollectortrace.ExportTraceServiceRequest{}, value)
+	assert.Equal(t, &otlpcollectortrace.ExportTraceServiceRequest{ResourceSpans: []*otlptrace.ResourceSpans{{}}}, value)
 }
 
-func TestReadResourceSpansUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
+func TestReadExportTraceServiceResponse(t *testing.T) {
+	jsonStr := `{"extra":"", "partialSuccess": {}}`
+	value := &otlpcollectortrace.ExportTraceServiceResponse{}
+	assert.NoError(t, UnmarshalExportTraceServiceResponse([]byte(jsonStr), value))
+	assert.Equal(t, &otlpcollectortrace.ExportTraceServiceResponse{}, value)
+}
+
+func TestReadResourceSpans(t *testing.T) {
+	jsonStr := `{"extra":"", "resource": {}, "schemaUrl": "schema", "scopeSpans": []}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := readResourceSpans(iter)
 	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.ResourceSpans{}, val)
+	assert.Equal(t, &otlptrace.ResourceSpans{SchemaUrl: "schema"}, val)
 }
 
-func TestReadScopeSpansUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
+func TestReadScopeSpans(t *testing.T) {
+	jsonStr := `{"extra":"", "scope": {}, "logRecords": [], "schemaUrl": "schema"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := readScopeSpans(iter)
 	assert.NoError(t, iter.Error)
-	assert.Equal(t, &otlptrace.ScopeSpans{}, val)
+	assert.Equal(t, &otlptrace.ScopeSpans{SchemaUrl: "schema"}, val)
 }
 
-func TestReadSpanUnknownField(t *testing.T) {
+func TestReadSpan(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
@@ -65,7 +72,7 @@ func TestReadSpanUnknownField(t *testing.T) {
 	assert.Equal(t, &otlptrace.Span{}, val)
 }
 
-func TestReadSpanUnknownStatusField(t *testing.T) {
+func TestReadSpanStatus(t *testing.T) {
 	jsonStr := `{"status":{"extra":""}}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
@@ -104,7 +111,7 @@ func TestReadSpanInvalidParentSpanIDField(t *testing.T) {
 	}
 }
 
-func TestReadSpanLinkUnknownField(t *testing.T) {
+func TestReadSpanLink(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
@@ -133,11 +140,20 @@ func TestReadSpanLinkInvalidSpanIDField(t *testing.T) {
 	}
 }
 
-func TestReadSpanEventUnknownField(t *testing.T) {
+func TestReadSpanEvent(t *testing.T) {
 	jsonStr := `{"extra":""}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := readSpanEvent(iter)
 	assert.NoError(t, iter.Error)
 	assert.Equal(t, &otlptrace.Span_Event{}, val)
+}
+
+func TestReadExportTracePartialSuccess(t *testing.T) {
+	jsonStr := `{"extra":"", "rejectedSpans":1, "errorMessage":"nothing"}`
+	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	value := readExportTracePartialSuccess(iter)
+	assert.NoError(t, iter.Error)
+	assert.Equal(t, otlpcollectortrace.ExportTracePartialSuccess{RejectedSpans: 1, ErrorMessage: "nothing"}, value)
 }

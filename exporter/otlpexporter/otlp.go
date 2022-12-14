@@ -28,8 +28,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -39,7 +39,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
-type exporter struct {
+type baseExporter struct {
 	// Input configuration.
 	config *Config
 
@@ -59,7 +59,7 @@ type exporter struct {
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*exporter, error) {
+func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
@@ -69,25 +69,18 @@ func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*ex
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &exporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
+	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
-	dialOpts, err := e.config.GRPCClientSettings.ToDialOptions(host, e.settings)
-	if err != nil {
+func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
+	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
-	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
-
-	if e.clientConn, err = grpc.DialContext(ctx, e.config.GRPCClientSettings.SanitizedEndpoint(), dialOpts...); err != nil {
-		return err
-	}
-
-	e.traceExporter = ptraceotlp.NewClient(e.clientConn)
-	e.metricExporter = pmetricotlp.NewClient(e.clientConn)
-	e.logExporter = plogotlp.NewClient(e.clientConn)
+	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
+	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
+	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	e.metadata = metadata.New(e.config.GRPCClientSettings.Headers)
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
@@ -96,29 +89,32 @@ func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 	return
 }
 
-func (e *exporter) shutdown(context.Context) error {
-	return e.clientConn.Close()
+func (e *baseExporter) shutdown(context.Context) error {
+	if e.clientConn != nil {
+		return e.clientConn.Close()
+	}
+	return nil
 }
 
-func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	req := ptraceotlp.NewRequestFromTraces(td)
+func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	req := ptraceotlp.NewExportRequestFromTraces(td)
 	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	req := pmetricotlp.NewRequestFromMetrics(md)
+func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
-func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-	req := plogotlp.NewRequestFromLogs(ld)
+func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+	req := plogotlp.NewExportRequestFromLogs(ld)
 	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
-func (e *exporter) enhanceContext(ctx context.Context) context.Context {
+func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
 	if e.metadata.Len() > 0 {
 		return metadata.NewOutgoingContext(ctx, e.metadata)
 	}

@@ -18,18 +18,18 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // Extension is the interface that storage extensions must implement
 type Extension interface {
-	component.Extension
+	extension.Extension
 
 	// GetClient will create a client for use by the specified component.
 	// Each component can have multiple storages (e.g. one for each signal),
 	// which can be identified using storageName parameter.
 	// The component can use the client to manage state
-	GetClient(ctx context.Context, kind component.Kind, id config.ComponentID, storageName string) (Client, error)
+	GetClient(ctx context.Context, kind component.Kind, id component.ID, storageName string) (Client, error)
 }
 
 // Client is the interface that storage clients must implement

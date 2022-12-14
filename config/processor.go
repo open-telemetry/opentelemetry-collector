@@ -13,56 +13,15 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+
 import (
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/component"
 )
 
-// Processor is the configuration of a component.Processor. Specific extensions must implement
-// this interface and must embed ProcessorSettings struct or a struct that extends it.
-type Processor interface {
-	identifiable
-	validatable
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
+type ProcessorSettings struct{}
 
-	privateConfigProcessor()
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
+func NewProcessorSettings(component.ID) ProcessorSettings {
+	return ProcessorSettings{}
 }
-
-// UnmarshalProcessor helper function to unmarshal a Processor config.
-// It checks if the config implements confmap.Unmarshaler and uses that if available,
-// otherwise uses Map.UnmarshalExact, erroring if a field is nonexistent.
-func UnmarshalProcessor(conf *confmap.Conf, cfg Processor) error {
-	return unmarshal(conf, cfg)
-}
-
-// ProcessorSettings defines common settings for a component.Processor configuration.
-// Specific processors can embed this struct and extend it with more fields if needed.
-//
-// It is highly recommended to "override" the Validate() function.
-//
-// When embedded in the processor config it must be with `mapstructure:",squash"` tag.
-type ProcessorSettings struct {
-	id ComponentID `mapstructure:"-"`
-}
-
-// NewProcessorSettings return a new ProcessorSettings with the given ComponentID.
-func NewProcessorSettings(id ComponentID) ProcessorSettings {
-	return ProcessorSettings{id: ComponentID{typeVal: id.Type(), nameVal: id.Name()}}
-}
-
-var _ Processor = (*ProcessorSettings)(nil)
-
-// ID returns the receiver ComponentID.
-func (ps *ProcessorSettings) ID() ComponentID {
-	return ps.id
-}
-
-// SetIDName sets the receiver name.
-func (ps *ProcessorSettings) SetIDName(idName string) {
-	ps.id.nameVal = idName
-}
-
-// Validate validates the configuration and returns an error if invalid.
-func (ps *ProcessorSettings) Validate() error {
-	return nil
-}
-
-func (ps *ProcessorSettings) privateConfigProcessor() {}

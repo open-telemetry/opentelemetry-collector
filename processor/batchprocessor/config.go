@@ -18,12 +18,14 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for batch processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// Deprecated: [v0.68.0] will be removed soon.
+	config.ProcessorSettings `mapstructure:",squash"`
 
 	// Timeout sets the time after which a batch will be sent regardless of size.
 	Timeout time.Duration `mapstructure:"timeout"`
@@ -37,7 +39,7 @@ type Config struct {
 	SendBatchMaxSize uint32 `mapstructure:"send_batch_max_size"`
 }
 
-var _ config.Processor = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {

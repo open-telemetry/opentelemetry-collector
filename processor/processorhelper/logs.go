@@ -21,9 +21,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 )
 
 // ProcessLogsFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
@@ -39,12 +39,12 @@ type logProcessor struct {
 // NewLogsProcessor creates a component.LogsProcessor that ensure context propagation and the right tags are set.
 func NewLogsProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	_ component.Config,
 	nextConsumer consumer.Logs,
 	logsFunc ProcessLogsFunc,
 	options ...Option,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	// TODO: Add observability metrics support
 	if logsFunc == nil {
 		return nil, errors.New("nil logsFunc")
@@ -54,7 +54,7 @@ func NewLogsProcessor(
 		return nil, component.ErrNilNextConsumer
 	}
 
-	eventOptions := spanAttributes(cfg.ID())
+	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)

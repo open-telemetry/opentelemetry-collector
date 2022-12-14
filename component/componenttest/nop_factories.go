@@ -16,26 +16,30 @@ package componenttest // import "go.opentelemetry.io/collector/component/compone
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 )
 
-// NopFactories returns a component.Factories with all nop factories.
+// Deprecated: [v0.68.0] use otelcoltest.NopFactories.
 func NopFactories() (component.Factories, error) {
 	var factories component.Factories
 	var err error
 
-	if factories.Extensions, err = component.MakeExtensionFactoryMap(NewNopExtensionFactory()); err != nil {
+	if factories.Extensions, err = extension.MakeFactoryMap(NewNopExtensionFactory()); err != nil {
 		return component.Factories{}, err
 	}
 
-	if factories.Receivers, err = component.MakeReceiverFactoryMap(NewNopReceiverFactory()); err != nil {
+	if factories.Receivers, err = receiver.MakeFactoryMap(NewNopReceiverFactory()); err != nil {
 		return component.Factories{}, err
 	}
 
-	if factories.Exporters, err = component.MakeExporterFactoryMap(NewNopExporterFactory()); err != nil {
+	if factories.Exporters, err = exporter.MakeFactoryMap(NewNopExporterFactory()); err != nil {
 		return component.Factories{}, err
 	}
 
-	if factories.Processors, err = component.MakeProcessorFactoryMap(NewNopProcessorFactory()); err != nil {
+	if factories.Processors, err = processor.MakeFactoryMap(NewNopProcessorFactory()); err != nil {
 		return component.Factories{}, err
 	}
 

@@ -4,15 +4,11 @@ on:
   # on changes to the main branch touching the builder
   push:
     branches: [ main ]
-    paths:
-      - 'cmd/builder/**'
 
   # on PRs touching the builder
   pull_request:
     branches: [ main ]
-    paths:
-      - 'cmd/builder/**'
-  
+
   # once a day at 6:17 AM UTC
   schedule:
     - cron: '17 6 * * *'

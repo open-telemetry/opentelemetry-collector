@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -27,38 +27,31 @@ import (
 
 const (
 	typeStr   = "exampleexporter"
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
-
-// ExampleExporterConfig config for ExampleExporter.
-type ExampleExporterConfig struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
 
 // ExampleExporterFactory is factory for ExampleExporter.
-var ExampleExporterFactory = component.NewExporterFactory(
+var ExampleExporterFactory = exporter.NewFactory(
 	typeStr,
 	createExporterDefaultConfig,
-	component.WithTracesExporter(createTracesExporter, stability),
-	component.WithMetricsExporter(createMetricsExporter, stability),
-	component.WithLogsExporter(createLogsExporter, stability),
+	exporter.WithTraces(createTracesExporter, stability),
+	exporter.WithMetrics(createMetricsExporter, stability),
+	exporter.WithLogs(createLogsExporter, stability),
 )
 
-func createExporterDefaultConfig() config.Exporter {
-	return &ExampleExporterConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-	}
+func createExporterDefaultConfig() component.Config {
+	return &struct{}{}
 }
 
-func createTracesExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(context.Context, exporter.CreateSettings, component.Config) (exporter.Traces, error) {
 	return &ExampleExporter{}, nil
 }
 
-func createMetricsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(context.Context, exporter.CreateSettings, component.Config) (exporter.Metrics, error) {
 	return &ExampleExporter{}, nil
 }
 
-func createLogsExporter(context.Context, component.ExporterCreateSettings, config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(context.Context, exporter.CreateSettings, component.Config) (exporter.Logs, error) {
 	return &ExampleExporter{}, nil
 }
 

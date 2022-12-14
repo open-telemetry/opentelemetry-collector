@@ -47,7 +47,7 @@ func TestLogStabilityLevel(t *testing.T) {
 		LogStabilityLevel(logger, component.StabilityLevelUndefined)
 		LogStabilityLevel(logger, component.StabilityLevelUnmaintained)
 		LogStabilityLevel(logger, component.StabilityLevelDeprecated)
-		LogStabilityLevel(logger, component.StabilityLevelInDevelopment)
+		LogStabilityLevel(logger, component.StabilityLevelDevelopment)
 		LogStabilityLevel(logger, component.StabilityLevelAlpha)
 		LogStabilityLevel(logger, component.StabilityLevelBeta)
 		LogStabilityLevel(logger, component.StabilityLevelStable)

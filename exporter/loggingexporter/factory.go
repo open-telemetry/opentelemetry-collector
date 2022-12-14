@@ -16,14 +16,16 @@ package loggingexporter // import "go.opentelemetry.io/collector/exporter/loggin
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -34,30 +36,32 @@ const (
 	defaultSamplingThereafter = 500
 )
 
+var onceWarnLogLevel sync.Once
+
 // NewFactory creates a factory for Logging exporter
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, component.StabilityLevelInDevelopment),
-		component.WithMetricsExporter(createMetricsExporter, component.StabilityLevelInDevelopment),
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelInDevelopment),
+		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
+		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
+		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		LogLevel:           zapcore.InfoLevel,
+		Verbosity:          configtelemetry.LevelNormal,
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 	}
 }
 
-func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
+	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewTracesExporter(ctx, set, cfg,
 		s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -69,10 +73,10 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 	)
 }
 
-func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
+	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
 		s.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -84,10 +88,10 @@ func createMetricsExporter(ctx context.Context, set component.ExporterCreateSett
 	)
 }
 
-func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	s := newLoggingExporter(exporterLogger, cfg.LogLevel)
+	s := newLoggingExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewLogsExporter(ctx, set, cfg,
 		s.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -100,6 +104,16 @@ func createLogsExporter(ctx context.Context, set component.ExporterCreateSetting
 }
 
 func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
+	if cfg.warnLogLevel {
+		onceWarnLogLevel.Do(func() {
+			logger.Warn(
+				"'loglevel' option is deprecated in favor of 'verbosity'. Set 'verbosity' to equivalent value to preserve behavior.",
+				zap.Stringer("loglevel", cfg.LogLevel),
+				zap.Stringer("equivalent verbosity level", cfg.Verbosity),
+			)
+		})
+	}
+
 	core := zapcore.NewSamplerWithOptions(
 		logger.Core(),
 		1*time.Second,

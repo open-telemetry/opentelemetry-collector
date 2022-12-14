@@ -15,6 +15,7 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
+	"bytes"
 	"os"
 	"strings"
 )
@@ -87,13 +88,14 @@ func (ms ${structName}) Append(elms ...${itemType}) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
-// MoveTo moves ${structName} to another instance.
+// MoveTo moves all elements from the current slice overriding the destination and 
+// resetting the current instance to its zero value.
 func (ms ${structName}) MoveTo(dest ${structName}) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
-// CopyTo copies ${structName} to another instance.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (ms ${structName}) CopyTo(dest ${structName}) {
 	*dest.getOrig() = copy${structName}(*dest.getOrig(), *ms.getOrig())
 }
@@ -177,7 +179,7 @@ func (iss *primitiveSliceStruct) getPackageName() string {
 	return iss.packageName
 }
 
-func (iss *primitiveSliceStruct) generateStruct(sb *strings.Builder) {
+func (iss *primitiveSliceStruct) generateStruct(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(primitiveSliceTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -192,7 +194,7 @@ func (iss *primitiveSliceStruct) generateStruct(sb *strings.Builder) {
 	}))
 }
 
-func (iss *primitiveSliceStruct) generateTests(sb *strings.Builder) {
+func (iss *primitiveSliceStruct) generateTests(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(immutableSliceTestTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -205,9 +207,9 @@ func (iss *primitiveSliceStruct) generateTests(sb *strings.Builder) {
 	}))
 }
 
-func (iss *primitiveSliceStruct) generateTestValueHelpers(*strings.Builder) {}
+func (iss *primitiveSliceStruct) generateTestValueHelpers(*bytes.Buffer) {}
 
-func (iss *primitiveSliceStruct) generateInternal(sb *strings.Builder) {
+func (iss *primitiveSliceStruct) generateInternal(sb *bytes.Buffer) {
 	sb.WriteString(os.Expand(primitiveSliceInternalTemplate, func(name string) string {
 		switch name {
 		case "structName":
@@ -221,6 +223,7 @@ func (iss *primitiveSliceStruct) generateInternal(sb *strings.Builder) {
 }
 
 var primitiveSliceFile = &File{
+	Path:        "pdata",
 	Name:        "primitive_slice",
 	PackageName: "pcommon",
 	testImports: []string{

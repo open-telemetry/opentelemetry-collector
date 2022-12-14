@@ -21,9 +21,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 )
 
 // ProcessTracesFunc is a helper function that processes the incoming data and returns the data to be sent to the next component.
@@ -39,12 +39,12 @@ type tracesProcessor struct {
 // NewTracesProcessor creates a component.TracesProcessor that ensure context propagation and the right tags are set.
 func NewTracesProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	_ component.Config,
 	nextConsumer consumer.Traces,
 	tracesFunc ProcessTracesFunc,
 	options ...Option,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	// TODO: Add observability Traces support
 	if tracesFunc == nil {
 		return nil, errors.New("nil tracesFunc")
@@ -54,7 +54,7 @@ func NewTracesProcessor(
 		return nil, component.ErrNilNextConsumer
 	}
 
-	eventOptions := spanAttributes(cfg.ID())
+	eventOptions := spanAttributes(set.ID)
 	bs := fromOptions(options)
 	traceConsumer, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		span := trace.SpanFromContext(ctx)

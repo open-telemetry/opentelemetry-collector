@@ -48,7 +48,7 @@ func NewInstrumentationScope() InstrumentationScope {
 	return newInstrumentationScope(&otlpcommon.InstrumentationScope{})
 }
 
-// MoveTo moves all properties from the current struct to dest
+// MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
 func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
 	*dest.getOrig() = *ms.getOrig()
@@ -90,7 +90,7 @@ func (ms InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
-// CopyTo copies all properties from the current struct to the dest.
+// CopyTo copies all properties from the current struct overriding the destination.
 func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
 	dest.SetName(ms.Name())
 	dest.SetVersion(ms.Version())
@@ -141,7 +141,7 @@ func (es Slice) At(ix int) Value {
 	return newValue(&(*es.getOrig())[ix])
 }
 
-// CopyTo copies all elements from the current slice to the dest.
+// CopyTo copies all elements from the current slice overriding the destination.
 func (es Slice) CopyTo(dest Slice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
