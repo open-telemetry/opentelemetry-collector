@@ -17,6 +17,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/otelcol/internal/configunmarshaler"
@@ -25,11 +26,11 @@ import (
 )
 
 type configSettings struct {
-	Receivers  *configunmarshaler.Receivers  `mapstructure:"receivers"`
-	Processors *configunmarshaler.Processors `mapstructure:"processors"`
-	Exporters  *configunmarshaler.Exporters  `mapstructure:"exporters"`
-	Extensions *configunmarshaler.Extensions `mapstructure:"extensions"`
-	Service    service.ConfigService         `mapstructure:"service"`
+	Receivers  *configunmarshaler.Configs `mapstructure:"receivers"`
+	Processors *configunmarshaler.Configs `mapstructure:"processors"`
+	Exporters  *configunmarshaler.Configs `mapstructure:"exporters"`
+	Extensions *configunmarshaler.Configs `mapstructure:"extensions"`
+	Service    service.ConfigService      `mapstructure:"service"`
 }
 
 // unmarshal the configSettings from a confmap.Conf.
@@ -37,10 +38,10 @@ type configSettings struct {
 func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 	// Unmarshal top level sections and validate.
 	cfg := &configSettings{
-		Receivers:  configunmarshaler.NewReceivers(factories.Receivers),
-		Processors: configunmarshaler.NewProcessors(factories.Processors),
-		Exporters:  configunmarshaler.NewExporters(factories.Exporters),
-		Extensions: configunmarshaler.NewExtensions(factories.Extensions),
+		Receivers:  configunmarshaler.NewConfigs(toFactoryMap(factories.Receivers)),
+		Processors: configunmarshaler.NewConfigs(toFactoryMap(factories.Processors)),
+		Exporters:  configunmarshaler.NewConfigs(toFactoryMap(factories.Exporters)),
+		Extensions: configunmarshaler.NewConfigs(toFactoryMap(factories.Extensions)),
 		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
 		Service: service.ConfigService{
 			Telemetry: telemetry.Config{
@@ -67,4 +68,12 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 	}
 
 	return cfg, v.Unmarshal(&cfg, confmap.WithErrorUnused())
+}
+
+func toFactoryMap[F component.Factory](factories map[component.Type]F) map[component.Type]component.Factory {
+	ret := make(map[component.Type]component.Factory, len(factories))
+	for k := range factories {
+		ret[k] = factories[k]
+	}
+	return ret
 }
