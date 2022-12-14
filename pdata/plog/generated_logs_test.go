@@ -41,7 +41,7 @@ func TestResourceLogsSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestResourceLogs(internal.ResourceLogs(el))
+		internal.FillTestResourceLogs(internal.MutableResourceLogs(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -139,11 +139,11 @@ func TestResourceLogsSlice_RemoveIf(t *testing.T) {
 }
 
 func TestResourceLogs_MoveTo(t *testing.T) {
-	ms := ResourceLogs(internal.GenerateTestResourceLogs())
+	ms := MutableResourceLogs{internal.GenerateTestResourceLogs()}
 	dest := NewResourceLogs()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResourceLogs(), ms)
-	assert.Equal(t, ResourceLogs(internal.GenerateTestResourceLogs()), dest)
+	assert.Equal(t, MutableResourceLogs(internal.GenerateTestResourceLogs()), dest)
 }
 
 func TestResourceLogs_CopyTo(t *testing.T) {
@@ -151,7 +151,7 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 	orig := NewResourceLogs()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ResourceLogs(internal.GenerateTestResourceLogs())
+	orig = MutableResourceLogs(internal.GenerateTestResourceLogs())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -189,7 +189,7 @@ func TestScopeLogsSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestScopeLogs(internal.ScopeLogs(el))
+		internal.FillTestScopeLogs(internal.MutableScopeLogs(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -287,11 +287,11 @@ func TestScopeLogsSlice_RemoveIf(t *testing.T) {
 }
 
 func TestScopeLogs_MoveTo(t *testing.T) {
-	ms := ScopeLogs(internal.GenerateTestScopeLogs())
+	ms := MutableScopeLogs{internal.GenerateTestScopeLogs()}
 	dest := NewScopeLogs()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeLogs(), ms)
-	assert.Equal(t, ScopeLogs(internal.GenerateTestScopeLogs()), dest)
+	assert.Equal(t, MutableScopeLogs(internal.GenerateTestScopeLogs()), dest)
 }
 
 func TestScopeLogs_CopyTo(t *testing.T) {
@@ -299,7 +299,7 @@ func TestScopeLogs_CopyTo(t *testing.T) {
 	orig := NewScopeLogs()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ScopeLogs(internal.GenerateTestScopeLogs())
+	orig = MutableScopeLogs(internal.GenerateTestScopeLogs())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -337,7 +337,7 @@ func TestLogRecordSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestLogRecord(internal.LogRecord(el))
+		internal.FillTestLogRecord(internal.MutableLogRecord(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -435,11 +435,11 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 }
 
 func TestLogRecord_MoveTo(t *testing.T) {
-	ms := LogRecord(internal.GenerateTestLogRecord())
+	ms := MutableLogRecord{internal.GenerateTestLogRecord()}
 	dest := NewLogRecord()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewLogRecord(), ms)
-	assert.Equal(t, LogRecord(internal.GenerateTestLogRecord()), dest)
+	assert.Equal(t, MutableLogRecord(internal.GenerateTestLogRecord()), dest)
 }
 
 func TestLogRecord_CopyTo(t *testing.T) {
@@ -447,7 +447,7 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	orig := NewLogRecord()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = LogRecord(internal.GenerateTestLogRecord())
+	orig = MutableLogRecord(internal.GenerateTestLogRecord())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }

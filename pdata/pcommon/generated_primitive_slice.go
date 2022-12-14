@@ -26,14 +26,24 @@ import "go.opentelemetry.io/collector/pdata/internal"
 // Important: zero-initialized instance is not valid for use.
 type ByteSlice internal.ByteSlice
 
+type MutableByteSlice internal.MutableByteSlice
+
 func (ms ByteSlice) getOrig() *[]byte {
 	return internal.GetOrigByteSlice(internal.ByteSlice(ms))
 }
 
+func (ms MutableByteSlice) getOrig() *[]byte {
+	return internal.GetMutableOrigByteSlice(internal.MutableByteSlice(ms))
+}
+
+func (ms MutableByteSlice) immutable() ByteSlice {
+	return ByteSlice(internal.NewByteSlice(ms.getOrig()))
+}
+
 // NewByteSlice creates a new empty ByteSlice.
-func NewByteSlice() ByteSlice {
+func NewByteSlice() MutableByteSlice {
 	orig := []byte(nil)
-	return ByteSlice(internal.NewByteSlice(&orig))
+	return MutableByteSlice(internal.NewMutableByteSlice(&orig))
 }
 
 // AsRaw returns a copy of the []byte slice.
@@ -41,8 +51,12 @@ func (ms ByteSlice) AsRaw() []byte {
 	return copyByteSlice(nil, *ms.getOrig())
 }
 
+func (ms MutableByteSlice) AsRaw() []byte {
+	return ms.immutable().AsRaw()
+}
+
 // FromRaw copies raw []byte into the slice ByteSlice.
-func (ms ByteSlice) FromRaw(val []byte) {
+func (ms MutableByteSlice) FromRaw(val []byte) {
 	*ms.getOrig() = copyByteSlice(*ms.getOrig(), val)
 }
 
@@ -52,15 +66,23 @@ func (ms ByteSlice) Len() int {
 	return len(*ms.getOrig())
 }
 
+func (ms MutableByteSlice) Len() int {
+	return ms.immutable().Len()
+}
+
 // At returns an item from particular index.
 // Equivalent of byteSlice[i].
 func (ms ByteSlice) At(i int) byte {
 	return (*ms.getOrig())[i]
 }
 
+func (ms MutableByteSlice) At(i int) byte {
+	return ms.immutable().At(i)
+}
+
 // SetAt sets byte item at particular index.
 // Equivalent of byteSlice[i] = val
-func (ms ByteSlice) SetAt(i int, val byte) {
+func (ms MutableByteSlice) SetAt(i int, val byte) {
 	(*ms.getOrig())[i] = val
 }
 
@@ -70,7 +92,7 @@ func (ms ByteSlice) SetAt(i int, val byte) {
 //     buf := make([]byte, len(byteSlice), newCap)
 //     copy(buf, byteSlice)
 //     byteSlice = buf
-func (ms ByteSlice) EnsureCapacity(newCap int) {
+func (ms MutableByteSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
 		return
@@ -83,20 +105,24 @@ func (ms ByteSlice) EnsureCapacity(newCap int) {
 
 // Append appends extra elements to ByteSlice.
 // Equivalent of byteSlice = append(byteSlice, elms...)
-func (ms ByteSlice) Append(elms ...byte) {
+func (ms MutableByteSlice) Append(elms ...byte) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
 // resetting the current instance to its zero value.
-func (ms ByteSlice) MoveTo(dest ByteSlice) {
+func (ms MutableByteSlice) MoveTo(dest MutableByteSlice) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (ms ByteSlice) CopyTo(dest ByteSlice) {
+func (ms ByteSlice) CopyTo(dest MutableByteSlice) {
 	*dest.getOrig() = copyByteSlice(*dest.getOrig(), *ms.getOrig())
+}
+
+func (ms MutableByteSlice) CopyTo(dest MutableByteSlice) {
+	ms.immutable().CopyTo(dest)
 }
 
 func copyByteSlice(dst, src []byte) []byte {
@@ -111,14 +137,24 @@ func copyByteSlice(dst, src []byte) []byte {
 // Important: zero-initialized instance is not valid for use.
 type Float64Slice internal.Float64Slice
 
+type MutableFloat64Slice internal.MutableFloat64Slice
+
 func (ms Float64Slice) getOrig() *[]float64 {
 	return internal.GetOrigFloat64Slice(internal.Float64Slice(ms))
 }
 
+func (ms MutableFloat64Slice) getOrig() *[]float64 {
+	return internal.GetMutableOrigFloat64Slice(internal.MutableFloat64Slice(ms))
+}
+
+func (ms MutableFloat64Slice) immutable() Float64Slice {
+	return Float64Slice(internal.NewFloat64Slice(ms.getOrig()))
+}
+
 // NewFloat64Slice creates a new empty Float64Slice.
-func NewFloat64Slice() Float64Slice {
+func NewFloat64Slice() MutableFloat64Slice {
 	orig := []float64(nil)
-	return Float64Slice(internal.NewFloat64Slice(&orig))
+	return MutableFloat64Slice(internal.NewMutableFloat64Slice(&orig))
 }
 
 // AsRaw returns a copy of the []float64 slice.
@@ -126,8 +162,12 @@ func (ms Float64Slice) AsRaw() []float64 {
 	return copyFloat64Slice(nil, *ms.getOrig())
 }
 
+func (ms MutableFloat64Slice) AsRaw() []float64 {
+	return ms.immutable().AsRaw()
+}
+
 // FromRaw copies raw []float64 into the slice Float64Slice.
-func (ms Float64Slice) FromRaw(val []float64) {
+func (ms MutableFloat64Slice) FromRaw(val []float64) {
 	*ms.getOrig() = copyFloat64Slice(*ms.getOrig(), val)
 }
 
@@ -137,15 +177,23 @@ func (ms Float64Slice) Len() int {
 	return len(*ms.getOrig())
 }
 
+func (ms MutableFloat64Slice) Len() int {
+	return ms.immutable().Len()
+}
+
 // At returns an item from particular index.
 // Equivalent of float64Slice[i].
 func (ms Float64Slice) At(i int) float64 {
 	return (*ms.getOrig())[i]
 }
 
+func (ms MutableFloat64Slice) At(i int) float64 {
+	return ms.immutable().At(i)
+}
+
 // SetAt sets float64 item at particular index.
 // Equivalent of float64Slice[i] = val
-func (ms Float64Slice) SetAt(i int, val float64) {
+func (ms MutableFloat64Slice) SetAt(i int, val float64) {
 	(*ms.getOrig())[i] = val
 }
 
@@ -155,7 +203,7 @@ func (ms Float64Slice) SetAt(i int, val float64) {
 //     buf := make([]float64, len(float64Slice), newCap)
 //     copy(buf, float64Slice)
 //     float64Slice = buf
-func (ms Float64Slice) EnsureCapacity(newCap int) {
+func (ms MutableFloat64Slice) EnsureCapacity(newCap int) {
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
 		return
@@ -168,20 +216,24 @@ func (ms Float64Slice) EnsureCapacity(newCap int) {
 
 // Append appends extra elements to Float64Slice.
 // Equivalent of float64Slice = append(float64Slice, elms...)
-func (ms Float64Slice) Append(elms ...float64) {
+func (ms MutableFloat64Slice) Append(elms ...float64) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
 // resetting the current instance to its zero value.
-func (ms Float64Slice) MoveTo(dest Float64Slice) {
+func (ms MutableFloat64Slice) MoveTo(dest MutableFloat64Slice) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (ms Float64Slice) CopyTo(dest Float64Slice) {
+func (ms Float64Slice) CopyTo(dest MutableFloat64Slice) {
 	*dest.getOrig() = copyFloat64Slice(*dest.getOrig(), *ms.getOrig())
+}
+
+func (ms MutableFloat64Slice) CopyTo(dest MutableFloat64Slice) {
+	ms.immutable().CopyTo(dest)
 }
 
 func copyFloat64Slice(dst, src []float64) []float64 {
@@ -196,14 +248,24 @@ func copyFloat64Slice(dst, src []float64) []float64 {
 // Important: zero-initialized instance is not valid for use.
 type UInt64Slice internal.UInt64Slice
 
+type MutableUInt64Slice internal.MutableUInt64Slice
+
 func (ms UInt64Slice) getOrig() *[]uint64 {
 	return internal.GetOrigUInt64Slice(internal.UInt64Slice(ms))
 }
 
+func (ms MutableUInt64Slice) getOrig() *[]uint64 {
+	return internal.GetMutableOrigUInt64Slice(internal.MutableUInt64Slice(ms))
+}
+
+func (ms MutableUInt64Slice) immutable() UInt64Slice {
+	return UInt64Slice(internal.NewUInt64Slice(ms.getOrig()))
+}
+
 // NewUInt64Slice creates a new empty UInt64Slice.
-func NewUInt64Slice() UInt64Slice {
+func NewUInt64Slice() MutableUInt64Slice {
 	orig := []uint64(nil)
-	return UInt64Slice(internal.NewUInt64Slice(&orig))
+	return MutableUInt64Slice(internal.NewMutableUInt64Slice(&orig))
 }
 
 // AsRaw returns a copy of the []uint64 slice.
@@ -211,8 +273,12 @@ func (ms UInt64Slice) AsRaw() []uint64 {
 	return copyUInt64Slice(nil, *ms.getOrig())
 }
 
+func (ms MutableUInt64Slice) AsRaw() []uint64 {
+	return ms.immutable().AsRaw()
+}
+
 // FromRaw copies raw []uint64 into the slice UInt64Slice.
-func (ms UInt64Slice) FromRaw(val []uint64) {
+func (ms MutableUInt64Slice) FromRaw(val []uint64) {
 	*ms.getOrig() = copyUInt64Slice(*ms.getOrig(), val)
 }
 
@@ -222,15 +288,23 @@ func (ms UInt64Slice) Len() int {
 	return len(*ms.getOrig())
 }
 
+func (ms MutableUInt64Slice) Len() int {
+	return ms.immutable().Len()
+}
+
 // At returns an item from particular index.
 // Equivalent of uInt64Slice[i].
 func (ms UInt64Slice) At(i int) uint64 {
 	return (*ms.getOrig())[i]
 }
 
+func (ms MutableUInt64Slice) At(i int) uint64 {
+	return ms.immutable().At(i)
+}
+
 // SetAt sets uint64 item at particular index.
 // Equivalent of uInt64Slice[i] = val
-func (ms UInt64Slice) SetAt(i int, val uint64) {
+func (ms MutableUInt64Slice) SetAt(i int, val uint64) {
 	(*ms.getOrig())[i] = val
 }
 
@@ -240,7 +314,7 @@ func (ms UInt64Slice) SetAt(i int, val uint64) {
 //     buf := make([]uint64, len(uInt64Slice), newCap)
 //     copy(buf, uInt64Slice)
 //     uInt64Slice = buf
-func (ms UInt64Slice) EnsureCapacity(newCap int) {
+func (ms MutableUInt64Slice) EnsureCapacity(newCap int) {
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
 		return
@@ -253,20 +327,24 @@ func (ms UInt64Slice) EnsureCapacity(newCap int) {
 
 // Append appends extra elements to UInt64Slice.
 // Equivalent of uInt64Slice = append(uInt64Slice, elms...)
-func (ms UInt64Slice) Append(elms ...uint64) {
+func (ms MutableUInt64Slice) Append(elms ...uint64) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
 // resetting the current instance to its zero value.
-func (ms UInt64Slice) MoveTo(dest UInt64Slice) {
+func (ms MutableUInt64Slice) MoveTo(dest MutableUInt64Slice) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
+func (ms UInt64Slice) CopyTo(dest MutableUInt64Slice) {
 	*dest.getOrig() = copyUInt64Slice(*dest.getOrig(), *ms.getOrig())
+}
+
+func (ms MutableUInt64Slice) CopyTo(dest MutableUInt64Slice) {
+	ms.immutable().CopyTo(dest)
 }
 
 func copyUInt64Slice(dst, src []uint64) []uint64 {

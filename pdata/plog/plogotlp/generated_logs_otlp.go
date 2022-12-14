@@ -32,25 +32,35 @@ import (
 
 type ExportPartialSuccess internal.LogsExportPartialSuccess
 
+type MutableExportPartialSuccess internal.MutableLogsExportPartialSuccess
+
 func newExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) ExportPartialSuccess {
 	return ExportPartialSuccess(internal.NewLogsExportPartialSuccess(orig))
+}
+
+func newMutableExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) MutableExportPartialSuccess {
+	return MutableExportPartialSuccess(internal.NewLogsExportPartialSuccess(orig))
 }
 
 func (ms ExportPartialSuccess) getOrig() *otlpcollectorlog.ExportLogsPartialSuccess {
 	return internal.GetOrigLogsExportPartialSuccess(internal.LogsExportPartialSuccess(ms))
 }
 
+func (ms MutableExportPartialSuccess) getOrig() *otlpcollectorlog.ExportLogsPartialSuccess {
+	return internal.GetMutableOrigLogsExportPartialSuccess(internal.MutableLogsExportPartialSuccess(ms))
+}
+
 // NewExportPartialSuccess creates a new empty ExportPartialSuccess.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExportPartialSuccess() ExportPartialSuccess {
-	return newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{})
+func NewExportPartialSuccess() MutableExportPartialSuccess {
+	return newMutableExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
+func (ms MutableExportPartialSuccess) MoveTo(dest MutableExportPartialSuccess) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcollectorlog.ExportLogsPartialSuccess{}
 }
@@ -60,8 +70,13 @@ func (ms ExportPartialSuccess) RejectedLogRecords() int64 {
 	return ms.getOrig().RejectedLogRecords
 }
 
+// MutableRejectedLogRecords returns the rejectedlogrecords associated with this ExportPartialSuccess.
+func (ms MutableExportPartialSuccess) RejectedLogRecords() int64 {
+	return ms.getOrig().RejectedLogRecords
+}
+
 // SetRejectedLogRecords replaces the rejectedlogrecords associated with this ExportPartialSuccess.
-func (ms ExportPartialSuccess) SetRejectedLogRecords(v int64) {
+func (ms MutableExportPartialSuccess) SetRejectedLogRecords(v int64) {
 	ms.getOrig().RejectedLogRecords = v
 }
 
@@ -70,13 +85,23 @@ func (ms ExportPartialSuccess) ErrorMessage() string {
 	return ms.getOrig().ErrorMessage
 }
 
+// MutableErrorMessage returns the errormessage associated with this ExportPartialSuccess.
+func (ms MutableExportPartialSuccess) ErrorMessage() string {
+	return ms.getOrig().ErrorMessage
+}
+
 // SetErrorMessage replaces the errormessage associated with this ExportPartialSuccess.
-func (ms ExportPartialSuccess) SetErrorMessage(v string) {
+func (ms MutableExportPartialSuccess) SetErrorMessage(v string) {
 	ms.getOrig().ErrorMessage = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
+func (ms ExportPartialSuccess) CopyTo(dest MutableExportPartialSuccess) {
 	dest.SetRejectedLogRecords(ms.RejectedLogRecords())
 	dest.SetErrorMessage(ms.ErrorMessage())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableExportPartialSuccess) CopyTo(dest MutableExportPartialSuccess) {
+	newExportPartialSuccess(ms.getOrig()).CopyTo(dest)
 }

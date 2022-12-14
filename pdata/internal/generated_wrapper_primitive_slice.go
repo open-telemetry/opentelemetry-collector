@@ -21,34 +21,70 @@ type ByteSlice struct {
 	orig *[]byte
 }
 
+type MutableByteSlice struct {
+	mo *[]byte
+}
+
 func GetOrigByteSlice(ms ByteSlice) *[]byte {
 	return ms.orig
+}
+
+func GetMutableOrigByteSlice(ms MutableByteSlice) *[]byte {
+	return ms.mo
 }
 
 func NewByteSlice(orig *[]byte) ByteSlice {
 	return ByteSlice{orig: orig}
 }
 
+func NewMutableByteSlice(orig *[]byte) MutableByteSlice {
+	return MutableByteSlice{mo: orig}
+}
+
 type Float64Slice struct {
 	orig *[]float64
+}
+
+type MutableFloat64Slice struct {
+	mo *[]float64
 }
 
 func GetOrigFloat64Slice(ms Float64Slice) *[]float64 {
 	return ms.orig
 }
 
+func GetMutableOrigFloat64Slice(ms MutableFloat64Slice) *[]float64 {
+	return ms.mo
+}
+
 func NewFloat64Slice(orig *[]float64) Float64Slice {
 	return Float64Slice{orig: orig}
+}
+
+func NewMutableFloat64Slice(orig *[]float64) MutableFloat64Slice {
+	return MutableFloat64Slice{mo: orig}
 }
 
 type UInt64Slice struct {
 	orig *[]uint64
 }
 
+type MutableUInt64Slice struct {
+	mo *[]uint64
+}
+
 func GetOrigUInt64Slice(ms UInt64Slice) *[]uint64 {
 	return ms.orig
 }
 
+func GetMutableOrigUInt64Slice(ms MutableUInt64Slice) *[]uint64 {
+	return ms.mo
+}
+
 func NewUInt64Slice(orig *[]uint64) UInt64Slice {
 	return UInt64Slice{orig: orig}
+}
+
+func NewMutableUInt64Slice(orig *[]uint64) MutableUInt64Slice {
+	return MutableUInt64Slice{mo: orig}
 }

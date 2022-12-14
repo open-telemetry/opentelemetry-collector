@@ -35,25 +35,39 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ResourceSpansSlice internal.ResourceSpansSlice
 
+type MutableResourceSpansSlice internal.MutableResourceSpansSlice
+
 func newResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) ResourceSpansSlice {
 	return ResourceSpansSlice(internal.NewResourceSpansSlice(orig))
+}
+
+func newMutableResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) MutableResourceSpansSlice {
+	return MutableResourceSpansSlice(internal.NewResourceSpansSlice(orig))
 }
 
 func (ms ResourceSpansSlice) getOrig() *[]*otlptrace.ResourceSpans {
 	return internal.GetOrigResourceSpansSlice(internal.ResourceSpansSlice(ms))
 }
 
+func (ms MutableResourceSpansSlice) getOrig() *[]*otlptrace.ResourceSpans {
+	return internal.GetMutableOrigResourceSpansSlice(internal.MutableResourceSpansSlice(ms))
+}
+
 // NewResourceSpansSlice creates a ResourceSpansSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewResourceSpansSlice() ResourceSpansSlice {
+func NewResourceSpansSlice() MutableResourceSpansSlice {
 	orig := []*otlptrace.ResourceSpans(nil)
-	return newResourceSpansSlice(&orig)
+	return newMutableResourceSpansSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewResourceSpansSlice()".
 func (es ResourceSpansSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableResourceSpansSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -69,14 +83,18 @@ func (es ResourceSpansSlice) At(ix int) ResourceSpans {
 	return newResourceSpans((*es.getOrig())[ix])
 }
 
+func (es MutableResourceSpansSlice) At(ix int) MutableResourceSpans {
+	return newMutableResourceSpans((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
+func (es ResourceSpansSlice) CopyTo(dest MutableResourceSpansSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newResourceSpans((*es.getOrig())[i]).CopyTo(newResourceSpans((*dest.getOrig())[i]))
+			newResourceSpans((*es.getOrig())[i]).CopyTo(newMutableResourceSpans((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -84,9 +102,14 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	wrappers := make([]*otlptrace.ResourceSpans, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newResourceSpans((*es.getOrig())[i]).CopyTo(newResourceSpans(wrappers[i]))
+		newResourceSpans((*es.getOrig())[i]).CopyTo(newMutableResourceSpans(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableResourceSpansSlice) CopyTo(dest MutableResourceSpansSlice) {
+	newResourceSpansSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -101,7 +124,7 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
+func (es MutableResourceSpansSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -114,7 +137,7 @@ func (es ResourceSpansSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ResourceSpans.
 // It returns the newly added ResourceSpans.
-func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
+func (es MutableResourceSpansSlice) AppendEmpty() MutableResourceSpans {
 	*es.getOrig() = append(*es.getOrig(), &otlptrace.ResourceSpans{})
 	return es.At(es.Len() - 1)
 }
@@ -122,13 +145,13 @@ func (es ResourceSpansSlice) AppendEmpty() ResourceSpans {
 // Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
 // provided less function so that two instances of ResourceSpansSlice
 // can be compared.
-func (es ResourceSpansSlice) Sort(less func(a, b ResourceSpans) bool) {
+func (es MutableResourceSpansSlice) Sort(less func(a, b MutableResourceSpans) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
+func (es MutableResourceSpansSlice) MoveAndAppendTo(dest MutableResourceSpansSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -140,7 +163,7 @@ func (es ResourceSpansSlice) MoveAndAppendTo(dest ResourceSpansSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
+func (es MutableResourceSpansSlice) RemoveIf(f func(MutableResourceSpans) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -168,25 +191,35 @@ func (es ResourceSpansSlice) RemoveIf(f func(ResourceSpans) bool) {
 
 type ResourceSpans internal.ResourceSpans
 
+type MutableResourceSpans internal.MutableResourceSpans
+
 func newResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
 	return ResourceSpans(internal.NewResourceSpans(orig))
+}
+
+func newMutableResourceSpans(orig *otlptrace.ResourceSpans) MutableResourceSpans {
+	return MutableResourceSpans(internal.NewResourceSpans(orig))
 }
 
 func (ms ResourceSpans) getOrig() *otlptrace.ResourceSpans {
 	return internal.GetOrigResourceSpans(internal.ResourceSpans(ms))
 }
 
+func (ms MutableResourceSpans) getOrig() *otlptrace.ResourceSpans {
+	return internal.GetMutableOrigResourceSpans(internal.MutableResourceSpans(ms))
+}
+
 // NewResourceSpans creates a new empty ResourceSpans.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewResourceSpans() ResourceSpans {
-	return newResourceSpans(&otlptrace.ResourceSpans{})
+func NewResourceSpans() MutableResourceSpans {
+	return newMutableResourceSpans(&otlptrace.ResourceSpans{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
+func (ms MutableResourceSpans) MoveTo(dest MutableResourceSpans) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlptrace.ResourceSpans{}
 }
@@ -196,13 +229,23 @@ func (ms ResourceSpans) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.getOrig().Resource))
 }
 
+// Resource returns the resource associated with this ResourceSpans.
+func (ms MutableResourceSpans) Resource() pcommon.MutableResource {
+	return pcommon.MutableResource(internal.NewMutableResource(&ms.getOrig().Resource))
+}
+
 // SchemaUrl returns the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SchemaUrl() string {
 	return ms.getOrig().SchemaUrl
 }
 
+// MutableSchemaUrl returns the schemaurl associated with this ResourceSpans.
+func (ms MutableResourceSpans) SchemaUrl() string {
+	return ms.getOrig().SchemaUrl
+}
+
 // SetSchemaUrl replaces the schemaurl associated with this ResourceSpans.
-func (ms ResourceSpans) SetSchemaUrl(v string) {
+func (ms MutableResourceSpans) SetSchemaUrl(v string) {
 	ms.getOrig().SchemaUrl = v
 }
 
@@ -211,11 +254,21 @@ func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
 	return ScopeSpansSlice(internal.NewScopeSpansSlice(&ms.getOrig().ScopeSpans))
 }
 
+// ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
+func (ms MutableResourceSpans) ScopeSpans() MutableScopeSpansSlice {
+	return MutableScopeSpansSlice(internal.NewMutableScopeSpansSlice(&ms.getOrig().ScopeSpans))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
+func (ms ResourceSpans) CopyTo(dest MutableResourceSpans) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeSpans().CopyTo(dest.ScopeSpans())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableResourceSpans) CopyTo(dest MutableResourceSpans) {
+	newResourceSpans(ms.getOrig()).CopyTo(dest)
 }
 
 // ScopeSpansSlice logically represents a slice of ScopeSpans.
@@ -227,25 +280,39 @@ func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 // Important: zero-initialized instance is not valid for use.
 type ScopeSpansSlice internal.ScopeSpansSlice
 
+type MutableScopeSpansSlice internal.MutableScopeSpansSlice
+
 func newScopeSpansSlice(orig *[]*otlptrace.ScopeSpans) ScopeSpansSlice {
 	return ScopeSpansSlice(internal.NewScopeSpansSlice(orig))
+}
+
+func newMutableScopeSpansSlice(orig *[]*otlptrace.ScopeSpans) MutableScopeSpansSlice {
+	return MutableScopeSpansSlice(internal.NewScopeSpansSlice(orig))
 }
 
 func (ms ScopeSpansSlice) getOrig() *[]*otlptrace.ScopeSpans {
 	return internal.GetOrigScopeSpansSlice(internal.ScopeSpansSlice(ms))
 }
 
+func (ms MutableScopeSpansSlice) getOrig() *[]*otlptrace.ScopeSpans {
+	return internal.GetMutableOrigScopeSpansSlice(internal.MutableScopeSpansSlice(ms))
+}
+
 // NewScopeSpansSlice creates a ScopeSpansSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewScopeSpansSlice() ScopeSpansSlice {
+func NewScopeSpansSlice() MutableScopeSpansSlice {
 	orig := []*otlptrace.ScopeSpans(nil)
-	return newScopeSpansSlice(&orig)
+	return newMutableScopeSpansSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewScopeSpansSlice()".
 func (es ScopeSpansSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableScopeSpansSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -261,14 +328,18 @@ func (es ScopeSpansSlice) At(ix int) ScopeSpans {
 	return newScopeSpans((*es.getOrig())[ix])
 }
 
+func (es MutableScopeSpansSlice) At(ix int) MutableScopeSpans {
+	return newMutableScopeSpans((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
+func (es ScopeSpansSlice) CopyTo(dest MutableScopeSpansSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newScopeSpans((*es.getOrig())[i]).CopyTo(newScopeSpans((*dest.getOrig())[i]))
+			newScopeSpans((*es.getOrig())[i]).CopyTo(newMutableScopeSpans((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -276,9 +347,14 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 	wrappers := make([]*otlptrace.ScopeSpans, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newScopeSpans((*es.getOrig())[i]).CopyTo(newScopeSpans(wrappers[i]))
+		newScopeSpans((*es.getOrig())[i]).CopyTo(newMutableScopeSpans(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableScopeSpansSlice) CopyTo(dest MutableScopeSpansSlice) {
+	newScopeSpansSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -293,7 +369,7 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
+func (es MutableScopeSpansSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -306,7 +382,7 @@ func (es ScopeSpansSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ScopeSpans.
 // It returns the newly added ScopeSpans.
-func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
+func (es MutableScopeSpansSlice) AppendEmpty() MutableScopeSpans {
 	*es.getOrig() = append(*es.getOrig(), &otlptrace.ScopeSpans{})
 	return es.At(es.Len() - 1)
 }
@@ -314,13 +390,13 @@ func (es ScopeSpansSlice) AppendEmpty() ScopeSpans {
 // Sort sorts the ScopeSpans elements within ScopeSpansSlice given the
 // provided less function so that two instances of ScopeSpansSlice
 // can be compared.
-func (es ScopeSpansSlice) Sort(less func(a, b ScopeSpans) bool) {
+func (es MutableScopeSpansSlice) Sort(less func(a, b MutableScopeSpans) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ScopeSpansSlice) MoveAndAppendTo(dest ScopeSpansSlice) {
+func (es MutableScopeSpansSlice) MoveAndAppendTo(dest MutableScopeSpansSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -332,7 +408,7 @@ func (es ScopeSpansSlice) MoveAndAppendTo(dest ScopeSpansSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
+func (es MutableScopeSpansSlice) RemoveIf(f func(MutableScopeSpans) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -360,25 +436,35 @@ func (es ScopeSpansSlice) RemoveIf(f func(ScopeSpans) bool) {
 
 type ScopeSpans internal.ScopeSpans
 
+type MutableScopeSpans internal.MutableScopeSpans
+
 func newScopeSpans(orig *otlptrace.ScopeSpans) ScopeSpans {
 	return ScopeSpans(internal.NewScopeSpans(orig))
+}
+
+func newMutableScopeSpans(orig *otlptrace.ScopeSpans) MutableScopeSpans {
+	return MutableScopeSpans(internal.NewScopeSpans(orig))
 }
 
 func (ms ScopeSpans) getOrig() *otlptrace.ScopeSpans {
 	return internal.GetOrigScopeSpans(internal.ScopeSpans(ms))
 }
 
+func (ms MutableScopeSpans) getOrig() *otlptrace.ScopeSpans {
+	return internal.GetMutableOrigScopeSpans(internal.MutableScopeSpans(ms))
+}
+
 // NewScopeSpans creates a new empty ScopeSpans.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewScopeSpans() ScopeSpans {
-	return newScopeSpans(&otlptrace.ScopeSpans{})
+func NewScopeSpans() MutableScopeSpans {
+	return newMutableScopeSpans(&otlptrace.ScopeSpans{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ScopeSpans) MoveTo(dest ScopeSpans) {
+func (ms MutableScopeSpans) MoveTo(dest MutableScopeSpans) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlptrace.ScopeSpans{}
 }
@@ -388,13 +474,23 @@ func (ms ScopeSpans) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.getOrig().Scope))
 }
 
+// Scope returns the scope associated with this ScopeSpans.
+func (ms MutableScopeSpans) Scope() pcommon.MutableInstrumentationScope {
+	return pcommon.MutableInstrumentationScope(internal.NewMutableInstrumentationScope(&ms.getOrig().Scope))
+}
+
 // SchemaUrl returns the schemaurl associated with this ScopeSpans.
 func (ms ScopeSpans) SchemaUrl() string {
 	return ms.getOrig().SchemaUrl
 }
 
+// MutableSchemaUrl returns the schemaurl associated with this ScopeSpans.
+func (ms MutableScopeSpans) SchemaUrl() string {
+	return ms.getOrig().SchemaUrl
+}
+
 // SetSchemaUrl replaces the schemaurl associated with this ScopeSpans.
-func (ms ScopeSpans) SetSchemaUrl(v string) {
+func (ms MutableScopeSpans) SetSchemaUrl(v string) {
 	ms.getOrig().SchemaUrl = v
 }
 
@@ -403,11 +499,21 @@ func (ms ScopeSpans) Spans() SpanSlice {
 	return SpanSlice(internal.NewSpanSlice(&ms.getOrig().Spans))
 }
 
+// Spans returns the Spans associated with this ScopeSpans.
+func (ms MutableScopeSpans) Spans() MutableSpanSlice {
+	return MutableSpanSlice(internal.NewMutableSpanSlice(&ms.getOrig().Spans))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ScopeSpans) CopyTo(dest ScopeSpans) {
+func (ms ScopeSpans) CopyTo(dest MutableScopeSpans) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Spans().CopyTo(dest.Spans())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableScopeSpans) CopyTo(dest MutableScopeSpans) {
+	newScopeSpans(ms.getOrig()).CopyTo(dest)
 }
 
 // SpanSlice logically represents a slice of Span.
@@ -419,25 +525,39 @@ func (ms ScopeSpans) CopyTo(dest ScopeSpans) {
 // Important: zero-initialized instance is not valid for use.
 type SpanSlice internal.SpanSlice
 
+type MutableSpanSlice internal.MutableSpanSlice
+
 func newSpanSlice(orig *[]*otlptrace.Span) SpanSlice {
 	return SpanSlice(internal.NewSpanSlice(orig))
+}
+
+func newMutableSpanSlice(orig *[]*otlptrace.Span) MutableSpanSlice {
+	return MutableSpanSlice(internal.NewSpanSlice(orig))
 }
 
 func (ms SpanSlice) getOrig() *[]*otlptrace.Span {
 	return internal.GetOrigSpanSlice(internal.SpanSlice(ms))
 }
 
+func (ms MutableSpanSlice) getOrig() *[]*otlptrace.Span {
+	return internal.GetMutableOrigSpanSlice(internal.MutableSpanSlice(ms))
+}
+
 // NewSpanSlice creates a SpanSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewSpanSlice() SpanSlice {
+func NewSpanSlice() MutableSpanSlice {
 	orig := []*otlptrace.Span(nil)
-	return newSpanSlice(&orig)
+	return newMutableSpanSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewSpanSlice()".
 func (es SpanSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableSpanSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -453,14 +573,18 @@ func (es SpanSlice) At(ix int) Span {
 	return newSpan((*es.getOrig())[ix])
 }
 
+func (es MutableSpanSlice) At(ix int) MutableSpan {
+	return newMutableSpan((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es SpanSlice) CopyTo(dest SpanSlice) {
+func (es SpanSlice) CopyTo(dest MutableSpanSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newSpan((*es.getOrig())[i]).CopyTo(newSpan((*dest.getOrig())[i]))
+			newSpan((*es.getOrig())[i]).CopyTo(newMutableSpan((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -468,9 +592,14 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 	wrappers := make([]*otlptrace.Span, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newSpan((*es.getOrig())[i]).CopyTo(newSpan(wrappers[i]))
+		newSpan((*es.getOrig())[i]).CopyTo(newMutableSpan(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableSpanSlice) CopyTo(dest MutableSpanSlice) {
+	newSpanSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -485,7 +614,7 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es SpanSlice) EnsureCapacity(newCap int) {
+func (es MutableSpanSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -498,7 +627,7 @@ func (es SpanSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty Span.
 // It returns the newly added Span.
-func (es SpanSlice) AppendEmpty() Span {
+func (es MutableSpanSlice) AppendEmpty() MutableSpan {
 	*es.getOrig() = append(*es.getOrig(), &otlptrace.Span{})
 	return es.At(es.Len() - 1)
 }
@@ -506,13 +635,13 @@ func (es SpanSlice) AppendEmpty() Span {
 // Sort sorts the Span elements within SpanSlice given the
 // provided less function so that two instances of SpanSlice
 // can be compared.
-func (es SpanSlice) Sort(less func(a, b Span) bool) {
+func (es MutableSpanSlice) Sort(less func(a, b MutableSpan) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
+func (es MutableSpanSlice) MoveAndAppendTo(dest MutableSpanSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -524,7 +653,7 @@ func (es SpanSlice) MoveAndAppendTo(dest SpanSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es SpanSlice) RemoveIf(f func(Span) bool) {
+func (es MutableSpanSlice) RemoveIf(f func(MutableSpan) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -553,25 +682,35 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 
 type Span internal.Span
 
+type MutableSpan internal.MutableSpan
+
 func newSpan(orig *otlptrace.Span) Span {
 	return Span(internal.NewSpan(orig))
+}
+
+func newMutableSpan(orig *otlptrace.Span) MutableSpan {
+	return MutableSpan(internal.NewSpan(orig))
 }
 
 func (ms Span) getOrig() *otlptrace.Span {
 	return internal.GetOrigSpan(internal.Span(ms))
 }
 
+func (ms MutableSpan) getOrig() *otlptrace.Span {
+	return internal.GetMutableOrigSpan(internal.MutableSpan(ms))
+}
+
 // NewSpan creates a new empty Span.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSpan() Span {
-	return newSpan(&otlptrace.Span{})
+func NewSpan() MutableSpan {
+	return newMutableSpan(&otlptrace.Span{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Span) MoveTo(dest Span) {
+func (ms MutableSpan) MoveTo(dest MutableSpan) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlptrace.Span{}
 }
@@ -581,8 +720,13 @@ func (ms Span) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
+// TraceID returns the traceid associated with this Span.
+func (ms MutableSpan) TraceID() pcommon.TraceID {
+	return pcommon.TraceID(ms.getOrig().TraceId)
+}
+
 // SetTraceID replaces the traceid associated with this Span.
-func (ms Span) SetTraceID(v pcommon.TraceID) {
+func (ms MutableSpan) SetTraceID(v pcommon.TraceID) {
 	ms.getOrig().TraceId = data.TraceID(v)
 }
 
@@ -591,8 +735,13 @@ func (ms Span) SpanID() pcommon.SpanID {
 	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
+// SpanID returns the spanid associated with this Span.
+func (ms MutableSpan) SpanID() pcommon.SpanID {
+	return pcommon.SpanID(ms.getOrig().SpanId)
+}
+
 // SetSpanID replaces the spanid associated with this Span.
-func (ms Span) SetSpanID(v pcommon.SpanID) {
+func (ms MutableSpan) SetSpanID(v pcommon.SpanID) {
 	ms.getOrig().SpanId = data.SpanID(v)
 }
 
@@ -601,13 +750,23 @@ func (ms Span) TraceState() pcommon.TraceState {
 	return pcommon.TraceState(internal.NewTraceState(&ms.getOrig().TraceState))
 }
 
+// TraceState returns the tracestate associated with this Span.
+func (ms MutableSpan) TraceState() pcommon.MutableTraceState {
+	return pcommon.MutableTraceState(internal.NewMutableTraceState(&ms.getOrig().TraceState))
+}
+
 // ParentSpanID returns the parentspanid associated with this Span.
 func (ms Span) ParentSpanID() pcommon.SpanID {
 	return pcommon.SpanID(ms.getOrig().ParentSpanId)
 }
 
+// ParentSpanID returns the parentspanid associated with this Span.
+func (ms MutableSpan) ParentSpanID() pcommon.SpanID {
+	return pcommon.SpanID(ms.getOrig().ParentSpanId)
+}
+
 // SetParentSpanID replaces the parentspanid associated with this Span.
-func (ms Span) SetParentSpanID(v pcommon.SpanID) {
+func (ms MutableSpan) SetParentSpanID(v pcommon.SpanID) {
 	ms.getOrig().ParentSpanId = data.SpanID(v)
 }
 
@@ -616,8 +775,13 @@ func (ms Span) Name() string {
 	return ms.getOrig().Name
 }
 
+// MutableName returns the name associated with this Span.
+func (ms MutableSpan) Name() string {
+	return ms.getOrig().Name
+}
+
 // SetName replaces the name associated with this Span.
-func (ms Span) SetName(v string) {
+func (ms MutableSpan) SetName(v string) {
 	ms.getOrig().Name = v
 }
 
@@ -626,8 +790,13 @@ func (ms Span) Kind() SpanKind {
 	return SpanKind(ms.getOrig().Kind)
 }
 
+// Kind returns the kind associated with this Span.
+func (ms MutableSpan) Kind() SpanKind {
+	return SpanKind(ms.getOrig().Kind)
+}
+
 // SetKind replaces the kind associated with this Span.
-func (ms Span) SetKind(v SpanKind) {
+func (ms MutableSpan) SetKind(v SpanKind) {
 	ms.getOrig().Kind = otlptrace.Span_SpanKind(v)
 }
 
@@ -636,8 +805,13 @@ func (ms Span) StartTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
 }
 
+// StartTimestamp returns the starttimestamp associated with this Span.
+func (ms MutableSpan) StartTimestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
+}
+
 // SetStartTimestamp replaces the starttimestamp associated with this Span.
-func (ms Span) SetStartTimestamp(v pcommon.Timestamp) {
+func (ms MutableSpan) SetStartTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().StartTimeUnixNano = uint64(v)
 }
 
@@ -646,8 +820,13 @@ func (ms Span) EndTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().EndTimeUnixNano)
 }
 
+// EndTimestamp returns the endtimestamp associated with this Span.
+func (ms MutableSpan) EndTimestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().EndTimeUnixNano)
+}
+
 // SetEndTimestamp replaces the endtimestamp associated with this Span.
-func (ms Span) SetEndTimestamp(v pcommon.Timestamp) {
+func (ms MutableSpan) SetEndTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().EndTimeUnixNano = uint64(v)
 }
 
@@ -656,13 +835,23 @@ func (ms Span) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
 }
 
+// Attributes returns the Attributes associated with this Span.
+func (ms MutableSpan) Attributes() pcommon.MutableMap {
+	return pcommon.MutableMap(internal.NewMutableMap(&ms.getOrig().Attributes))
+}
+
 // DroppedAttributesCount returns the droppedattributescount associated with this Span.
 func (ms Span) DroppedAttributesCount() uint32 {
 	return ms.getOrig().DroppedAttributesCount
 }
 
+// MutableDroppedAttributesCount returns the droppedattributescount associated with this Span.
+func (ms MutableSpan) DroppedAttributesCount() uint32 {
+	return ms.getOrig().DroppedAttributesCount
+}
+
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this Span.
-func (ms Span) SetDroppedAttributesCount(v uint32) {
+func (ms MutableSpan) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
@@ -671,13 +860,23 @@ func (ms Span) Events() SpanEventSlice {
 	return SpanEventSlice(internal.NewSpanEventSlice(&ms.getOrig().Events))
 }
 
+// Events returns the Events associated with this Span.
+func (ms MutableSpan) Events() MutableSpanEventSlice {
+	return MutableSpanEventSlice(internal.NewMutableSpanEventSlice(&ms.getOrig().Events))
+}
+
 // DroppedEventsCount returns the droppedeventscount associated with this Span.
 func (ms Span) DroppedEventsCount() uint32 {
 	return ms.getOrig().DroppedEventsCount
 }
 
+// MutableDroppedEventsCount returns the droppedeventscount associated with this Span.
+func (ms MutableSpan) DroppedEventsCount() uint32 {
+	return ms.getOrig().DroppedEventsCount
+}
+
 // SetDroppedEventsCount replaces the droppedeventscount associated with this Span.
-func (ms Span) SetDroppedEventsCount(v uint32) {
+func (ms MutableSpan) SetDroppedEventsCount(v uint32) {
 	ms.getOrig().DroppedEventsCount = v
 }
 
@@ -686,13 +885,23 @@ func (ms Span) Links() SpanLinkSlice {
 	return SpanLinkSlice(internal.NewSpanLinkSlice(&ms.getOrig().Links))
 }
 
+// Links returns the Links associated with this Span.
+func (ms MutableSpan) Links() MutableSpanLinkSlice {
+	return MutableSpanLinkSlice(internal.NewMutableSpanLinkSlice(&ms.getOrig().Links))
+}
+
 // DroppedLinksCount returns the droppedlinkscount associated with this Span.
 func (ms Span) DroppedLinksCount() uint32 {
 	return ms.getOrig().DroppedLinksCount
 }
 
+// MutableDroppedLinksCount returns the droppedlinkscount associated with this Span.
+func (ms MutableSpan) DroppedLinksCount() uint32 {
+	return ms.getOrig().DroppedLinksCount
+}
+
 // SetDroppedLinksCount replaces the droppedlinkscount associated with this Span.
-func (ms Span) SetDroppedLinksCount(v uint32) {
+func (ms MutableSpan) SetDroppedLinksCount(v uint32) {
 	ms.getOrig().DroppedLinksCount = v
 }
 
@@ -701,8 +910,13 @@ func (ms Span) Status() Status {
 	return Status(internal.NewStatus(&ms.getOrig().Status))
 }
 
+// Status returns the status associated with this Span.
+func (ms MutableSpan) Status() MutableStatus {
+	return MutableStatus(internal.NewMutableStatus(&ms.getOrig().Status))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Span) CopyTo(dest Span) {
+func (ms Span) CopyTo(dest MutableSpan) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	ms.TraceState().CopyTo(dest.TraceState())
@@ -720,6 +934,11 @@ func (ms Span) CopyTo(dest Span) {
 	ms.Status().CopyTo(dest.Status())
 }
 
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableSpan) CopyTo(dest MutableSpan) {
+	newSpan(ms.getOrig()).CopyTo(dest)
+}
+
 // SpanEventSlice logically represents a slice of SpanEvent.
 //
 // This is a reference type. If passed by value and callee modifies it, the
@@ -729,25 +948,39 @@ func (ms Span) CopyTo(dest Span) {
 // Important: zero-initialized instance is not valid for use.
 type SpanEventSlice internal.SpanEventSlice
 
+type MutableSpanEventSlice internal.MutableSpanEventSlice
+
 func newSpanEventSlice(orig *[]*otlptrace.Span_Event) SpanEventSlice {
 	return SpanEventSlice(internal.NewSpanEventSlice(orig))
+}
+
+func newMutableSpanEventSlice(orig *[]*otlptrace.Span_Event) MutableSpanEventSlice {
+	return MutableSpanEventSlice(internal.NewSpanEventSlice(orig))
 }
 
 func (ms SpanEventSlice) getOrig() *[]*otlptrace.Span_Event {
 	return internal.GetOrigSpanEventSlice(internal.SpanEventSlice(ms))
 }
 
+func (ms MutableSpanEventSlice) getOrig() *[]*otlptrace.Span_Event {
+	return internal.GetMutableOrigSpanEventSlice(internal.MutableSpanEventSlice(ms))
+}
+
 // NewSpanEventSlice creates a SpanEventSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewSpanEventSlice() SpanEventSlice {
+func NewSpanEventSlice() MutableSpanEventSlice {
 	orig := []*otlptrace.Span_Event(nil)
-	return newSpanEventSlice(&orig)
+	return newMutableSpanEventSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewSpanEventSlice()".
 func (es SpanEventSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableSpanEventSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -763,14 +996,18 @@ func (es SpanEventSlice) At(ix int) SpanEvent {
 	return newSpanEvent((*es.getOrig())[ix])
 }
 
+func (es MutableSpanEventSlice) At(ix int) MutableSpanEvent {
+	return newMutableSpanEvent((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
+func (es SpanEventSlice) CopyTo(dest MutableSpanEventSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newSpanEvent((*es.getOrig())[i]).CopyTo(newSpanEvent((*dest.getOrig())[i]))
+			newSpanEvent((*es.getOrig())[i]).CopyTo(newMutableSpanEvent((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -778,9 +1015,14 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	wrappers := make([]*otlptrace.Span_Event, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newSpanEvent((*es.getOrig())[i]).CopyTo(newSpanEvent(wrappers[i]))
+		newSpanEvent((*es.getOrig())[i]).CopyTo(newMutableSpanEvent(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableSpanEventSlice) CopyTo(dest MutableSpanEventSlice) {
+	newSpanEventSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -795,7 +1037,7 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es SpanEventSlice) EnsureCapacity(newCap int) {
+func (es MutableSpanEventSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -808,7 +1050,7 @@ func (es SpanEventSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty SpanEvent.
 // It returns the newly added SpanEvent.
-func (es SpanEventSlice) AppendEmpty() SpanEvent {
+func (es MutableSpanEventSlice) AppendEmpty() MutableSpanEvent {
 	*es.getOrig() = append(*es.getOrig(), &otlptrace.Span_Event{})
 	return es.At(es.Len() - 1)
 }
@@ -816,13 +1058,13 @@ func (es SpanEventSlice) AppendEmpty() SpanEvent {
 // Sort sorts the SpanEvent elements within SpanEventSlice given the
 // provided less function so that two instances of SpanEventSlice
 // can be compared.
-func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
+func (es MutableSpanEventSlice) Sort(less func(a, b MutableSpanEvent) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
+func (es MutableSpanEventSlice) MoveAndAppendTo(dest MutableSpanEventSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -834,7 +1076,7 @@ func (es SpanEventSlice) MoveAndAppendTo(dest SpanEventSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
+func (es MutableSpanEventSlice) RemoveIf(f func(MutableSpanEvent) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -863,25 +1105,35 @@ func (es SpanEventSlice) RemoveIf(f func(SpanEvent) bool) {
 
 type SpanEvent internal.SpanEvent
 
+type MutableSpanEvent internal.MutableSpanEvent
+
 func newSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
 	return SpanEvent(internal.NewSpanEvent(orig))
+}
+
+func newMutableSpanEvent(orig *otlptrace.Span_Event) MutableSpanEvent {
+	return MutableSpanEvent(internal.NewSpanEvent(orig))
 }
 
 func (ms SpanEvent) getOrig() *otlptrace.Span_Event {
 	return internal.GetOrigSpanEvent(internal.SpanEvent(ms))
 }
 
+func (ms MutableSpanEvent) getOrig() *otlptrace.Span_Event {
+	return internal.GetMutableOrigSpanEvent(internal.MutableSpanEvent(ms))
+}
+
 // NewSpanEvent creates a new empty SpanEvent.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSpanEvent() SpanEvent {
-	return newSpanEvent(&otlptrace.Span_Event{})
+func NewSpanEvent() MutableSpanEvent {
+	return newMutableSpanEvent(&otlptrace.Span_Event{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms SpanEvent) MoveTo(dest SpanEvent) {
+func (ms MutableSpanEvent) MoveTo(dest MutableSpanEvent) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlptrace.Span_Event{}
 }
@@ -891,8 +1143,13 @@ func (ms SpanEvent) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
+// Timestamp returns the timestamp associated with this SpanEvent.
+func (ms MutableSpanEvent) Timestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+}
+
 // SetTimestamp replaces the timestamp associated with this SpanEvent.
-func (ms SpanEvent) SetTimestamp(v pcommon.Timestamp) {
+func (ms MutableSpanEvent) SetTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
@@ -901,8 +1158,13 @@ func (ms SpanEvent) Name() string {
 	return ms.getOrig().Name
 }
 
+// MutableName returns the name associated with this SpanEvent.
+func (ms MutableSpanEvent) Name() string {
+	return ms.getOrig().Name
+}
+
 // SetName replaces the name associated with this SpanEvent.
-func (ms SpanEvent) SetName(v string) {
+func (ms MutableSpanEvent) SetName(v string) {
 	ms.getOrig().Name = v
 }
 
@@ -911,22 +1173,37 @@ func (ms SpanEvent) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
 }
 
+// Attributes returns the Attributes associated with this SpanEvent.
+func (ms MutableSpanEvent) Attributes() pcommon.MutableMap {
+	return pcommon.MutableMap(internal.NewMutableMap(&ms.getOrig().Attributes))
+}
+
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
 func (ms SpanEvent) DroppedAttributesCount() uint32 {
 	return ms.getOrig().DroppedAttributesCount
 }
 
+// MutableDroppedAttributesCount returns the droppedattributescount associated with this SpanEvent.
+func (ms MutableSpanEvent) DroppedAttributesCount() uint32 {
+	return ms.getOrig().DroppedAttributesCount
+}
+
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanEvent.
-func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
+func (ms MutableSpanEvent) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms SpanEvent) CopyTo(dest SpanEvent) {
+func (ms SpanEvent) CopyTo(dest MutableSpanEvent) {
 	dest.SetTimestamp(ms.Timestamp())
 	dest.SetName(ms.Name())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableSpanEvent) CopyTo(dest MutableSpanEvent) {
+	newSpanEvent(ms.getOrig()).CopyTo(dest)
 }
 
 // SpanLinkSlice logically represents a slice of SpanLink.
@@ -938,25 +1215,39 @@ func (ms SpanEvent) CopyTo(dest SpanEvent) {
 // Important: zero-initialized instance is not valid for use.
 type SpanLinkSlice internal.SpanLinkSlice
 
+type MutableSpanLinkSlice internal.MutableSpanLinkSlice
+
 func newSpanLinkSlice(orig *[]*otlptrace.Span_Link) SpanLinkSlice {
 	return SpanLinkSlice(internal.NewSpanLinkSlice(orig))
+}
+
+func newMutableSpanLinkSlice(orig *[]*otlptrace.Span_Link) MutableSpanLinkSlice {
+	return MutableSpanLinkSlice(internal.NewSpanLinkSlice(orig))
 }
 
 func (ms SpanLinkSlice) getOrig() *[]*otlptrace.Span_Link {
 	return internal.GetOrigSpanLinkSlice(internal.SpanLinkSlice(ms))
 }
 
+func (ms MutableSpanLinkSlice) getOrig() *[]*otlptrace.Span_Link {
+	return internal.GetMutableOrigSpanLinkSlice(internal.MutableSpanLinkSlice(ms))
+}
+
 // NewSpanLinkSlice creates a SpanLinkSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewSpanLinkSlice() SpanLinkSlice {
+func NewSpanLinkSlice() MutableSpanLinkSlice {
 	orig := []*otlptrace.Span_Link(nil)
-	return newSpanLinkSlice(&orig)
+	return newMutableSpanLinkSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewSpanLinkSlice()".
 func (es SpanLinkSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableSpanLinkSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -972,14 +1263,18 @@ func (es SpanLinkSlice) At(ix int) SpanLink {
 	return newSpanLink((*es.getOrig())[ix])
 }
 
+func (es MutableSpanLinkSlice) At(ix int) MutableSpanLink {
+	return newMutableSpanLink((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
+func (es SpanLinkSlice) CopyTo(dest MutableSpanLinkSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newSpanLink((*es.getOrig())[i]).CopyTo(newSpanLink((*dest.getOrig())[i]))
+			newSpanLink((*es.getOrig())[i]).CopyTo(newMutableSpanLink((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -987,9 +1282,14 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	wrappers := make([]*otlptrace.Span_Link, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newSpanLink((*es.getOrig())[i]).CopyTo(newSpanLink(wrappers[i]))
+		newSpanLink((*es.getOrig())[i]).CopyTo(newMutableSpanLink(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableSpanLinkSlice) CopyTo(dest MutableSpanLinkSlice) {
+	newSpanLinkSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -1004,7 +1304,7 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es SpanLinkSlice) EnsureCapacity(newCap int) {
+func (es MutableSpanLinkSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -1017,7 +1317,7 @@ func (es SpanLinkSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty SpanLink.
 // It returns the newly added SpanLink.
-func (es SpanLinkSlice) AppendEmpty() SpanLink {
+func (es MutableSpanLinkSlice) AppendEmpty() MutableSpanLink {
 	*es.getOrig() = append(*es.getOrig(), &otlptrace.Span_Link{})
 	return es.At(es.Len() - 1)
 }
@@ -1025,13 +1325,13 @@ func (es SpanLinkSlice) AppendEmpty() SpanLink {
 // Sort sorts the SpanLink elements within SpanLinkSlice given the
 // provided less function so that two instances of SpanLinkSlice
 // can be compared.
-func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) {
+func (es MutableSpanLinkSlice) Sort(less func(a, b MutableSpanLink) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
+func (es MutableSpanLinkSlice) MoveAndAppendTo(dest MutableSpanLinkSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -1043,7 +1343,7 @@ func (es SpanLinkSlice) MoveAndAppendTo(dest SpanLinkSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
+func (es MutableSpanLinkSlice) RemoveIf(f func(MutableSpanLink) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -1073,25 +1373,35 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 
 type SpanLink internal.SpanLink
 
+type MutableSpanLink internal.MutableSpanLink
+
 func newSpanLink(orig *otlptrace.Span_Link) SpanLink {
 	return SpanLink(internal.NewSpanLink(orig))
+}
+
+func newMutableSpanLink(orig *otlptrace.Span_Link) MutableSpanLink {
+	return MutableSpanLink(internal.NewSpanLink(orig))
 }
 
 func (ms SpanLink) getOrig() *otlptrace.Span_Link {
 	return internal.GetOrigSpanLink(internal.SpanLink(ms))
 }
 
+func (ms MutableSpanLink) getOrig() *otlptrace.Span_Link {
+	return internal.GetMutableOrigSpanLink(internal.MutableSpanLink(ms))
+}
+
 // NewSpanLink creates a new empty SpanLink.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSpanLink() SpanLink {
-	return newSpanLink(&otlptrace.Span_Link{})
+func NewSpanLink() MutableSpanLink {
+	return newMutableSpanLink(&otlptrace.Span_Link{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms SpanLink) MoveTo(dest SpanLink) {
+func (ms MutableSpanLink) MoveTo(dest MutableSpanLink) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlptrace.Span_Link{}
 }
@@ -1101,8 +1411,13 @@ func (ms SpanLink) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
+// TraceID returns the traceid associated with this SpanLink.
+func (ms MutableSpanLink) TraceID() pcommon.TraceID {
+	return pcommon.TraceID(ms.getOrig().TraceId)
+}
+
 // SetTraceID replaces the traceid associated with this SpanLink.
-func (ms SpanLink) SetTraceID(v pcommon.TraceID) {
+func (ms MutableSpanLink) SetTraceID(v pcommon.TraceID) {
 	ms.getOrig().TraceId = data.TraceID(v)
 }
 
@@ -1111,8 +1426,13 @@ func (ms SpanLink) SpanID() pcommon.SpanID {
 	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
+// SpanID returns the spanid associated with this SpanLink.
+func (ms MutableSpanLink) SpanID() pcommon.SpanID {
+	return pcommon.SpanID(ms.getOrig().SpanId)
+}
+
 // SetSpanID replaces the spanid associated with this SpanLink.
-func (ms SpanLink) SetSpanID(v pcommon.SpanID) {
+func (ms MutableSpanLink) SetSpanID(v pcommon.SpanID) {
 	ms.getOrig().SpanId = data.SpanID(v)
 }
 
@@ -1121,9 +1441,19 @@ func (ms SpanLink) TraceState() pcommon.TraceState {
 	return pcommon.TraceState(internal.NewTraceState(&ms.getOrig().TraceState))
 }
 
+// TraceState returns the tracestate associated with this SpanLink.
+func (ms MutableSpanLink) TraceState() pcommon.MutableTraceState {
+	return pcommon.MutableTraceState(internal.NewMutableTraceState(&ms.getOrig().TraceState))
+}
+
 // Attributes returns the Attributes associated with this SpanLink.
 func (ms SpanLink) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
+}
+
+// Attributes returns the Attributes associated with this SpanLink.
+func (ms MutableSpanLink) Attributes() pcommon.MutableMap {
+	return pcommon.MutableMap(internal.NewMutableMap(&ms.getOrig().Attributes))
 }
 
 // DroppedAttributesCount returns the droppedattributescount associated with this SpanLink.
@@ -1131,18 +1461,28 @@ func (ms SpanLink) DroppedAttributesCount() uint32 {
 	return ms.getOrig().DroppedAttributesCount
 }
 
+// MutableDroppedAttributesCount returns the droppedattributescount associated with this SpanLink.
+func (ms MutableSpanLink) DroppedAttributesCount() uint32 {
+	return ms.getOrig().DroppedAttributesCount
+}
+
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this SpanLink.
-func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
+func (ms MutableSpanLink) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms SpanLink) CopyTo(dest SpanLink) {
+func (ms SpanLink) CopyTo(dest MutableSpanLink) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 	ms.TraceState().CopyTo(dest.TraceState())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableSpanLink) CopyTo(dest MutableSpanLink) {
+	newSpanLink(ms.getOrig()).CopyTo(dest)
 }
 
 // Status is an optional final status for this span. Semantically, when Status was not
@@ -1156,25 +1496,35 @@ func (ms SpanLink) CopyTo(dest SpanLink) {
 
 type Status internal.Status
 
+type MutableStatus internal.MutableStatus
+
 func newStatus(orig *otlptrace.Status) Status {
 	return Status(internal.NewStatus(orig))
+}
+
+func newMutableStatus(orig *otlptrace.Status) MutableStatus {
+	return MutableStatus(internal.NewStatus(orig))
 }
 
 func (ms Status) getOrig() *otlptrace.Status {
 	return internal.GetOrigStatus(internal.Status(ms))
 }
 
+func (ms MutableStatus) getOrig() *otlptrace.Status {
+	return internal.GetMutableOrigStatus(internal.MutableStatus(ms))
+}
+
 // NewStatus creates a new empty Status.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewStatus() Status {
-	return newStatus(&otlptrace.Status{})
+func NewStatus() MutableStatus {
+	return newMutableStatus(&otlptrace.Status{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Status) MoveTo(dest Status) {
+func (ms MutableStatus) MoveTo(dest MutableStatus) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlptrace.Status{}
 }
@@ -1184,8 +1534,13 @@ func (ms Status) Code() StatusCode {
 	return StatusCode(ms.getOrig().Code)
 }
 
+// Code returns the code associated with this Status.
+func (ms MutableStatus) Code() StatusCode {
+	return StatusCode(ms.getOrig().Code)
+}
+
 // SetCode replaces the code associated with this Status.
-func (ms Status) SetCode(v StatusCode) {
+func (ms MutableStatus) SetCode(v StatusCode) {
 	ms.getOrig().Code = otlptrace.Status_StatusCode(v)
 }
 
@@ -1194,13 +1549,23 @@ func (ms Status) Message() string {
 	return ms.getOrig().Message
 }
 
+// MutableMessage returns the message associated with this Status.
+func (ms MutableStatus) Message() string {
+	return ms.getOrig().Message
+}
+
 // SetMessage replaces the message associated with this Status.
-func (ms Status) SetMessage(v string) {
+func (ms MutableStatus) SetMessage(v string) {
 	ms.getOrig().Message = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Status) CopyTo(dest Status) {
+func (ms Status) CopyTo(dest MutableStatus) {
 	dest.SetCode(ms.Code())
 	dest.SetMessage(ms.Message())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableStatus) CopyTo(dest MutableStatus) {
+	newStatus(ms.getOrig()).CopyTo(dest)
 }

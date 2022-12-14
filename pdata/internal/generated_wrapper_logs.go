@@ -26,7 +26,15 @@ type ResourceLogsSlice struct {
 	orig *[]*otlplogs.ResourceLogs
 }
 
+type MutableResourceLogsSlice struct {
+	orig *[]*otlplogs.ResourceLogs
+}
+
 func GetOrigResourceLogsSlice(ms ResourceLogsSlice) *[]*otlplogs.ResourceLogs {
+	return ms.orig
+}
+
+func GetMutableOrigResourceLogsSlice(ms MutableResourceLogsSlice) *[]*otlplogs.ResourceLogs {
 	return ms.orig
 }
 
@@ -34,7 +42,15 @@ func NewResourceLogsSlice(orig *[]*otlplogs.ResourceLogs) ResourceLogsSlice {
 	return ResourceLogsSlice{orig: orig}
 }
 
+func NewMutableResourceLogsSlice(orig *[]*otlplogs.ResourceLogs) MutableResourceLogsSlice {
+	return MutableResourceLogsSlice{orig: orig}
+}
+
 type ResourceLogs struct {
+	orig *otlplogs.ResourceLogs
+}
+
+type MutableResourceLogs struct {
 	orig *otlplogs.ResourceLogs
 }
 
@@ -42,11 +58,23 @@ func GetOrigResourceLogs(ms ResourceLogs) *otlplogs.ResourceLogs {
 	return ms.orig
 }
 
+func GetMutableOrigResourceLogs(ms MutableResourceLogs) *otlplogs.ResourceLogs {
+	return ms.orig
+}
+
 func NewResourceLogs(orig *otlplogs.ResourceLogs) ResourceLogs {
 	return ResourceLogs{orig: orig}
 }
 
+func NewMutableResourceLogs(orig *otlplogs.ResourceLogs) MutableResourceLogs {
+	return MutableResourceLogs{orig: orig}
+}
+
 type ScopeLogsSlice struct {
+	orig *[]*otlplogs.ScopeLogs
+}
+
+type MutableScopeLogsSlice struct {
 	orig *[]*otlplogs.ScopeLogs
 }
 
@@ -54,11 +82,23 @@ func GetOrigScopeLogsSlice(ms ScopeLogsSlice) *[]*otlplogs.ScopeLogs {
 	return ms.orig
 }
 
+func GetMutableOrigScopeLogsSlice(ms MutableScopeLogsSlice) *[]*otlplogs.ScopeLogs {
+	return ms.orig
+}
+
 func NewScopeLogsSlice(orig *[]*otlplogs.ScopeLogs) ScopeLogsSlice {
 	return ScopeLogsSlice{orig: orig}
 }
 
+func NewMutableScopeLogsSlice(orig *[]*otlplogs.ScopeLogs) MutableScopeLogsSlice {
+	return MutableScopeLogsSlice{orig: orig}
+}
+
 type ScopeLogs struct {
+	orig *otlplogs.ScopeLogs
+}
+
+type MutableScopeLogs struct {
 	orig *otlplogs.ScopeLogs
 }
 
@@ -66,11 +106,23 @@ func GetOrigScopeLogs(ms ScopeLogs) *otlplogs.ScopeLogs {
 	return ms.orig
 }
 
+func GetMutableOrigScopeLogs(ms MutableScopeLogs) *otlplogs.ScopeLogs {
+	return ms.orig
+}
+
 func NewScopeLogs(orig *otlplogs.ScopeLogs) ScopeLogs {
 	return ScopeLogs{orig: orig}
 }
 
+func NewMutableScopeLogs(orig *otlplogs.ScopeLogs) MutableScopeLogs {
+	return MutableScopeLogs{orig: orig}
+}
+
 type LogRecordSlice struct {
+	orig *[]*otlplogs.LogRecord
+}
+
+type MutableLogRecordSlice struct {
 	orig *[]*otlplogs.LogRecord
 }
 
@@ -78,11 +130,23 @@ func GetOrigLogRecordSlice(ms LogRecordSlice) *[]*otlplogs.LogRecord {
 	return ms.orig
 }
 
+func GetMutableOrigLogRecordSlice(ms MutableLogRecordSlice) *[]*otlplogs.LogRecord {
+	return ms.orig
+}
+
 func NewLogRecordSlice(orig *[]*otlplogs.LogRecord) LogRecordSlice {
 	return LogRecordSlice{orig: orig}
 }
 
+func NewMutableLogRecordSlice(orig *[]*otlplogs.LogRecord) MutableLogRecordSlice {
+	return MutableLogRecordSlice{orig: orig}
+}
+
 type LogRecord struct {
+	orig *otlplogs.LogRecord
+}
+
+type MutableLogRecord struct {
 	orig *otlplogs.LogRecord
 }
 
@@ -90,89 +154,97 @@ func GetOrigLogRecord(ms LogRecord) *otlplogs.LogRecord {
 	return ms.orig
 }
 
+func GetMutableOrigLogRecord(ms MutableLogRecord) *otlplogs.LogRecord {
+	return ms.orig
+}
+
 func NewLogRecord(orig *otlplogs.LogRecord) LogRecord {
 	return LogRecord{orig: orig}
 }
 
-func GenerateTestResourceLogsSlice() ResourceLogsSlice {
+func NewMutableLogRecord(orig *otlplogs.LogRecord) MutableLogRecord {
+	return MutableLogRecord{orig: orig}
+}
+
+func GenerateTestResourceLogsSlice() MutableResourceLogsSlice {
 	orig := []*otlplogs.ResourceLogs{}
-	tv := NewResourceLogsSlice(&orig)
+	tv := NewMutableResourceLogsSlice(&orig)
 	FillTestResourceLogsSlice(tv)
 	return tv
 }
 
-func FillTestResourceLogsSlice(tv ResourceLogsSlice) {
+func FillTestResourceLogsSlice(tv MutableResourceLogsSlice) {
 	*tv.orig = make([]*otlplogs.ResourceLogs, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlplogs.ResourceLogs{}
-		FillTestResourceLogs(NewResourceLogs((*tv.orig)[i]))
+		FillTestResourceLogs(NewMutableResourceLogs((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestResourceLogs() ResourceLogs {
+func GenerateTestResourceLogs() MutableResourceLogs {
 	orig := otlplogs.ResourceLogs{}
-	tv := NewResourceLogs(&orig)
+	tv := NewMutableResourceLogs(&orig)
 	FillTestResourceLogs(tv)
 	return tv
 }
 
-func FillTestResourceLogs(tv ResourceLogs) {
-	FillTestResource(NewResource(&tv.orig.Resource))
+func FillTestResourceLogs(tv MutableResourceLogs) {
+	FillTestResource(NewMutableResource(&tv.orig.Resource))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	FillTestScopeLogsSlice(NewScopeLogsSlice(&tv.orig.ScopeLogs))
+	FillTestScopeLogsSlice(NewMutableScopeLogsSlice(&tv.orig.ScopeLogs))
 }
 
-func GenerateTestScopeLogsSlice() ScopeLogsSlice {
+func GenerateTestScopeLogsSlice() MutableScopeLogsSlice {
 	orig := []*otlplogs.ScopeLogs{}
-	tv := NewScopeLogsSlice(&orig)
+	tv := NewMutableScopeLogsSlice(&orig)
 	FillTestScopeLogsSlice(tv)
 	return tv
 }
 
-func FillTestScopeLogsSlice(tv ScopeLogsSlice) {
+func FillTestScopeLogsSlice(tv MutableScopeLogsSlice) {
 	*tv.orig = make([]*otlplogs.ScopeLogs, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlplogs.ScopeLogs{}
-		FillTestScopeLogs(NewScopeLogs((*tv.orig)[i]))
+		FillTestScopeLogs(NewMutableScopeLogs((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestScopeLogs() ScopeLogs {
+func GenerateTestScopeLogs() MutableScopeLogs {
 	orig := otlplogs.ScopeLogs{}
-	tv := NewScopeLogs(&orig)
+	tv := NewMutableScopeLogs(&orig)
 	FillTestScopeLogs(tv)
 	return tv
 }
 
-func FillTestScopeLogs(tv ScopeLogs) {
-	FillTestInstrumentationScope(NewInstrumentationScope(&tv.orig.Scope))
+func FillTestScopeLogs(tv MutableScopeLogs) {
+	FillTestInstrumentationScope(NewMutableInstrumentationScope(&tv.orig.Scope))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	FillTestLogRecordSlice(NewLogRecordSlice(&tv.orig.LogRecords))
+	FillTestLogRecordSlice(NewMutableLogRecordSlice(&tv.orig.LogRecords))
 }
 
-func GenerateTestLogRecordSlice() LogRecordSlice {
+func GenerateTestLogRecordSlice() MutableLogRecordSlice {
 	orig := []*otlplogs.LogRecord{}
-	tv := NewLogRecordSlice(&orig)
+	tv := NewMutableLogRecordSlice(&orig)
 	FillTestLogRecordSlice(tv)
 	return tv
 }
 
-func FillTestLogRecordSlice(tv LogRecordSlice) {
+func FillTestLogRecordSlice(tv MutableLogRecordSlice) {
 	*tv.orig = make([]*otlplogs.LogRecord, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlplogs.LogRecord{}
-		FillTestLogRecord(NewLogRecord((*tv.orig)[i]))
+		FillTestLogRecord(NewMutableLogRecord((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestLogRecord() LogRecord {
+func GenerateTestLogRecord() MutableLogRecord {
 	orig := otlplogs.LogRecord{}
-	tv := NewLogRecord(&orig)
+	tv := NewMutableLogRecord(&orig)
 	FillTestLogRecord(tv)
 	return tv
 }
 
-func FillTestLogRecord(tv LogRecord) {
+func FillTestLogRecord(tv MutableLogRecord) {
 	tv.orig.ObservedTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
@@ -180,7 +252,7 @@ func FillTestLogRecord(tv LogRecord) {
 	tv.orig.Flags = 1
 	tv.orig.SeverityText = "INFO"
 	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)
-	FillTestValue(NewValue(&tv.orig.Body))
-	FillTestMap(NewMap(&tv.orig.Attributes))
+	FillTestValue(NewMutableValue(&tv.orig.Body))
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }

@@ -22,7 +22,15 @@ type Value struct {
 	orig *otlpcommon.AnyValue
 }
 
+type MutableValue struct {
+	orig *otlpcommon.AnyValue
+}
+
 func GetOrigValue(ms Value) *otlpcommon.AnyValue {
+	return ms.orig
+}
+
+func GetMutableOrigValue(ms MutableValue) *otlpcommon.AnyValue {
 	return ms.orig
 }
 
@@ -30,13 +38,17 @@ func NewValue(orig *otlpcommon.AnyValue) Value {
 	return Value{orig: orig}
 }
 
-func FillTestValue(dest Value) {
+func NewMutableValue(orig *otlpcommon.AnyValue) MutableValue {
+	return MutableValue{orig: orig}
+}
+
+func FillTestValue(dest MutableValue) {
 	dest.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
 }
 
-func GenerateTestValue() Value {
+func GenerateTestValue() MutableValue {
 	var orig otlpcommon.AnyValue
-	ms := NewValue(&orig)
+	ms := NewMutableValue(&orig)
 	FillTestValue(ms)
 	return ms
 }
@@ -45,24 +57,36 @@ type Map struct {
 	orig *[]otlpcommon.KeyValue
 }
 
+type MutableMap struct {
+	mo *[]otlpcommon.KeyValue
+}
+
 func GetOrigMap(ms Map) *[]otlpcommon.KeyValue {
 	return ms.orig
+}
+
+func GetMutableOrigMap(ms MutableMap) *[]otlpcommon.KeyValue {
+	return ms.mo
 }
 
 func NewMap(orig *[]otlpcommon.KeyValue) Map {
 	return Map{orig: orig}
 }
 
-func GenerateTestMap() Map {
+func NewMutableMap(orig *[]otlpcommon.KeyValue) MutableMap {
+	return MutableMap{mo: orig}
+}
+
+func GenerateTestMap() MutableMap {
 	var orig []otlpcommon.KeyValue
-	ms := NewMap(&orig)
+	ms := NewMutableMap(&orig)
 	FillTestMap(ms)
 	return ms
 }
 
-func FillTestMap(dest Map) {
-	*dest.orig = nil
-	*dest.orig = append(*dest.orig, otlpcommon.KeyValue{Key: "k", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}})
+func FillTestMap(dest MutableMap) {
+	*dest.mo = nil
+	*dest.mo = append(*dest.mo, otlpcommon.KeyValue{Key: "k", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}})
 }
 
 type TraceState struct {

@@ -23,6 +23,11 @@ import (
 const accessorSliceTemplate = `// ${fieldName} returns the ${fieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
 	return ${packageName}${returnType}(internal.New${returnType}(&ms.getOrig().${fieldName}))
+}
+
+// ${fieldName} returns the ${fieldName} associated with this ${structName}.
+func (ms Mutable${structName}) ${fieldName}() ${packageName}Mutable${returnType} {
+	return ${packageName}Mutable${returnType}(internal.NewMutable${returnType}(&ms.getOrig().${fieldName}))
 }`
 
 const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
@@ -35,6 +40,11 @@ const accessorsSliceTestTemplate = `func Test${structName}_${fieldName}(t *testi
 const accessorsMessageValueTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
 	return ${packageName}${returnType}(internal.New${returnType}(&ms.getOrig().${fieldName}))
+}
+
+// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms Mutable${structName}) ${fieldName}() ${packageName}Mutable${returnType} {
+	return ${packageName}Mutable${returnType}(internal.NewMutable${returnType}(&ms.getOrig().${fieldName}))
 }`
 
 const accessorsMessageValueTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
@@ -48,14 +58,24 @@ func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
 	return ms.getOrig().${fieldName}
 }
 
+// Mutable${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms Mutable${structName}) ${fieldName}() ${packageName}${returnType} {
+	return ms.getOrig().${fieldName}
+}
+
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+func (ms Mutable${structName}) Set${fieldName}(v ${returnType}) {
 	ms.getOrig().${fieldName} = v
 }`
 
 const accessorsPrimitiveSliceTemplate = `// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
 func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
 	return ${packageName}${returnType}(internal.New${returnType}(&ms.getOrig().${fieldName}))
+}
+
+// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms Mutable${structName}) ${fieldName}() ${packageName}Mutable${returnType} {
+	return ${packageName}Mutable${returnType}(internal.NewMutable${returnType}(&ms.getOrig().${fieldName}))
 }`
 
 const oneOfTypeAccessorHeaderTemplate = `// ${typeFuncName} returns the type of the ${lowerOriginFieldName} for this ${structName}.
@@ -87,11 +107,11 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 //
 // After this, ${originOneOfTypeFuncName}() function will return ${typeName}".
 //
-// Calling this function on zero-initialized ${structName} will cause a panic.
-func (ms ${structName}) SetEmpty${fieldName}() ${returnType} {
+// Calling this function on zero-initialized Mutable${structName} will cause a panic.
+func (ms Mutable${structName}) SetEmpty${fieldName}() Mutable${returnType} {
 	val := &${originFieldPackageName}.${fieldName}{}
 	ms.getOrig().${originOneOfFieldName} = &${originStructType}{${fieldName}: val}
-	return new${returnType}(val)
+	return newMutable${returnType}(val)
 }`
 
 const accessorsOneOfMessageTestTemplate = `func Test${structName}_${fieldName}(t *testing.T) {
@@ -117,8 +137,12 @@ func (ms ${structName}) ${accessorFieldName}() ${returnType} {
 	return ms.getOrig().Get${originFieldName}()
 }
 
+func (ms Mutable${structName}) ${accessorFieldName}() ${returnType} {
+	return ms.getOrig().Get${originFieldName}()
+}
+
 // Set${accessorFieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${accessorFieldName}(v ${returnType}) {
+func (ms Mutable${structName}) Set${accessorFieldName}(v ${returnType}) {
 	ms.getOrig().${originOneOfFieldName} = &${originStructType}{
 		${originFieldName}: v,
 	}
@@ -144,8 +168,13 @@ func (ms ${structName}) ${fieldName}() ${packageName}${returnType} {
 	return ${packageName}${returnType}(ms.getOrig().${originFieldName})
 }
 
+// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms Mutable${structName}) ${fieldName}() ${packageName}${returnType} {
+	return ${packageName}${returnType}(ms.getOrig().${originFieldName})
+}
+
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${packageName}${returnType}) {
+func (ms Mutable${structName}) Set${fieldName}(v ${packageName}${returnType}) {
 	ms.getOrig().${originFieldName} = ${rawType}(v)
 }`
 
@@ -169,19 +198,31 @@ func (ms ${structName}) ${fieldName}() ${returnType} {
 	return ms.getOrig().Get${fieldName}()
 }
 
+// ${fieldName} returns the ${lowerFieldName} associated with this ${structName}.
+func (ms Mutable${structName}) ${fieldName}() ${returnType} {
+	return ms.getOrig().Get${fieldName}()
+}
+
 // Has${fieldName} returns true if the ${structName} contains a
 // ${fieldName} value, false otherwise.
 func (ms ${structName}) Has${fieldName}() bool {
 	return ms.getOrig().${fieldName}_ != nil
 }
 
+// Has${fieldName} returns true if the ${structName} contains a
+// ${fieldName} value, false otherwise.
+func (ms Mutable${structName}) Has${fieldName}() bool {
+	return ms.getOrig().${fieldName}_ != nil
+}
+
+
 // Set${fieldName} replaces the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Set${fieldName}(v ${returnType}) {
+func (ms Mutable${structName}) Set${fieldName}(v ${returnType}) {
 	ms.getOrig().${fieldName}_ = &${originStructType}{${fieldName}: v}
 }
 
 // Remove${fieldName} removes the ${lowerFieldName} associated with this ${structName}.
-func (ms ${structName}) Remove${fieldName}() {
+func (ms Mutable${structName}) Remove${fieldName}() {
 	ms.getOrig().${fieldName}_ = nil
 }`
 
@@ -251,7 +292,7 @@ func (sf *sliceField) generateAccessorsTest(ms baseStruct, sb *bytes.Buffer) {
 }
 
 func (sf *sliceField) generateSetWithTestValue(sb *bytes.Buffer) {
-	sb.WriteString("\tFillTest" + sf.returnSlice.getName() + "(New" + sf.returnSlice.getName() + "(&tv.orig." + sf.fieldName + "))")
+	sb.WriteString("\tFillTest" + sf.returnSlice.getName() + "(NewMutable" + sf.returnSlice.getName() + "(&tv.orig." + sf.fieldName + "))")
 }
 
 func (sf *sliceField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
@@ -308,7 +349,7 @@ func (mf *messageValueField) generateAccessorsTest(ms baseStruct, sb *bytes.Buff
 }
 
 func (mf *messageValueField) generateSetWithTestValue(sb *bytes.Buffer) {
-	sb.WriteString("\tFillTest" + mf.returnMessage.getName() + "(New" + mf.returnMessage.getName() + "(&tv.orig." + mf.fieldName + "))")
+	sb.WriteString("\tFillTest" + mf.returnMessage.getName() + "(NewMutable" + mf.returnMessage.getName() + "(&tv.orig." + mf.fieldName + "))")
 }
 
 func (mf *messageValueField) generateCopyToValue(_ baseStruct, sb *bytes.Buffer) {
@@ -749,7 +790,7 @@ func (omv *oneOfMessageValue) generateTests(ms baseStruct, of *oneOfField, sb *b
 
 func (omv *oneOfMessageValue) generateSetWithTestValue(of *oneOfField, sb *bytes.Buffer) {
 	sb.WriteString("\ttv.orig." + of.originFieldName + " = &" + of.originTypePrefix + omv.fieldName + "{" + omv.fieldName + ": &" + omv.originFieldPackageName + "." + omv.fieldName + "{}}\n")
-	sb.WriteString("\tFillTest" + omv.returnMessage.structName + "(New" + omv.fieldName + "(tv.orig.Get" + omv.fieldName + "()))")
+	sb.WriteString("\tFillTest" + omv.returnMessage.structName + "(NewMutable" + omv.fieldName + "(tv.orig.Get" + omv.fieldName + "()))")
 }
 
 func (omv *oneOfMessageValue) generateCopyToValue(of *oneOfField, sb *bytes.Buffer) {

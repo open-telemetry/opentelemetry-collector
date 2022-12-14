@@ -32,25 +32,35 @@ import (
 
 type InstrumentationScope internal.InstrumentationScope
 
+type MutableInstrumentationScope internal.MutableInstrumentationScope
+
 func newInstrumentationScope(orig *otlpcommon.InstrumentationScope) InstrumentationScope {
 	return InstrumentationScope(internal.NewInstrumentationScope(orig))
+}
+
+func newMutableInstrumentationScope(orig *otlpcommon.InstrumentationScope) MutableInstrumentationScope {
+	return MutableInstrumentationScope(internal.NewInstrumentationScope(orig))
 }
 
 func (ms InstrumentationScope) getOrig() *otlpcommon.InstrumentationScope {
 	return internal.GetOrigInstrumentationScope(internal.InstrumentationScope(ms))
 }
 
+func (ms MutableInstrumentationScope) getOrig() *otlpcommon.InstrumentationScope {
+	return internal.GetMutableOrigInstrumentationScope(internal.MutableInstrumentationScope(ms))
+}
+
 // NewInstrumentationScope creates a new empty InstrumentationScope.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewInstrumentationScope() InstrumentationScope {
-	return newInstrumentationScope(&otlpcommon.InstrumentationScope{})
+func NewInstrumentationScope() MutableInstrumentationScope {
+	return newMutableInstrumentationScope(&otlpcommon.InstrumentationScope{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
+func (ms MutableInstrumentationScope) MoveTo(dest MutableInstrumentationScope) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpcommon.InstrumentationScope{}
 }
@@ -60,8 +70,13 @@ func (ms InstrumentationScope) Name() string {
 	return ms.getOrig().Name
 }
 
+// MutableName returns the name associated with this InstrumentationScope.
+func (ms MutableInstrumentationScope) Name() string {
+	return ms.getOrig().Name
+}
+
 // SetName replaces the name associated with this InstrumentationScope.
-func (ms InstrumentationScope) SetName(v string) {
+func (ms MutableInstrumentationScope) SetName(v string) {
 	ms.getOrig().Name = v
 }
 
@@ -70,8 +85,13 @@ func (ms InstrumentationScope) Version() string {
 	return ms.getOrig().Version
 }
 
+// MutableVersion returns the version associated with this InstrumentationScope.
+func (ms MutableInstrumentationScope) Version() string {
+	return ms.getOrig().Version
+}
+
 // SetVersion replaces the version associated with this InstrumentationScope.
-func (ms InstrumentationScope) SetVersion(v string) {
+func (ms MutableInstrumentationScope) SetVersion(v string) {
 	ms.getOrig().Version = v
 }
 
@@ -80,22 +100,37 @@ func (ms InstrumentationScope) Attributes() Map {
 	return Map(internal.NewMap(&ms.getOrig().Attributes))
 }
 
+// Attributes returns the Attributes associated with this InstrumentationScope.
+func (ms MutableInstrumentationScope) Attributes() MutableMap {
+	return MutableMap(internal.NewMutableMap(&ms.getOrig().Attributes))
+}
+
 // DroppedAttributesCount returns the droppedattributescount associated with this InstrumentationScope.
 func (ms InstrumentationScope) DroppedAttributesCount() uint32 {
 	return ms.getOrig().DroppedAttributesCount
 }
 
+// MutableDroppedAttributesCount returns the droppedattributescount associated with this InstrumentationScope.
+func (ms MutableInstrumentationScope) DroppedAttributesCount() uint32 {
+	return ms.getOrig().DroppedAttributesCount
+}
+
 // SetDroppedAttributesCount replaces the droppedattributescount associated with this InstrumentationScope.
-func (ms InstrumentationScope) SetDroppedAttributesCount(v uint32) {
+func (ms MutableInstrumentationScope) SetDroppedAttributesCount(v uint32) {
 	ms.getOrig().DroppedAttributesCount = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
+func (ms InstrumentationScope) CopyTo(dest MutableInstrumentationScope) {
 	dest.SetName(ms.Name())
 	dest.SetVersion(ms.Version())
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableInstrumentationScope) CopyTo(dest MutableInstrumentationScope) {
+	newInstrumentationScope(ms.getOrig()).CopyTo(dest)
 }
 
 // Slice logically represents a slice of Value.
@@ -107,19 +142,33 @@ func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
 // Important: zero-initialized instance is not valid for use.
 type Slice internal.Slice
 
+type MutableSlice internal.MutableSlice
+
 func newSlice(orig *[]otlpcommon.AnyValue) Slice {
 	return Slice(internal.NewSlice(orig))
+}
+
+func newMutableSlice(orig *[]otlpcommon.AnyValue) MutableSlice {
+	return MutableSlice(internal.NewSlice(orig))
 }
 
 func (ms Slice) getOrig() *[]otlpcommon.AnyValue {
 	return internal.GetOrigSlice(internal.Slice(ms))
 }
 
+func (ms MutableSlice) getOrig() *[]otlpcommon.AnyValue {
+	return internal.GetMutableOrigSlice(internal.MutableSlice(ms))
+}
+
+func (ms MutableSlice) immutable() Slice {
+	return newSlice(ms.getOrig())
+}
+
 // NewSlice creates a Slice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewSlice() Slice {
+func NewSlice() MutableSlice {
 	orig := []otlpcommon.AnyValue(nil)
-	return Slice(internal.NewSlice(&orig))
+	return MutableSlice(internal.NewSlice(&orig))
 }
 
 // Len returns the number of elements in the slice.
@@ -127,6 +176,10 @@ func NewSlice() Slice {
 // Returns "0" for a newly instance created with "NewSlice()".
 func (es Slice) Len() int {
 	return len(*es.getOrig())
+}
+
+func (es MutableSlice) Len() int {
+	return newMutableSlice(es.getOrig()).Len()
 }
 
 // At returns the element at the given index.
@@ -141,8 +194,12 @@ func (es Slice) At(ix int) Value {
 	return newValue(&(*es.getOrig())[ix])
 }
 
+func (es MutableSlice) At(ix int) MutableValue {
+	return newMutableValue(&(*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es Slice) CopyTo(dest Slice) {
+func (es Slice) CopyTo(dest MutableSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
@@ -152,8 +209,13 @@ func (es Slice) CopyTo(dest Slice) {
 	}
 
 	for i := range *es.getOrig() {
-		newValue(&(*es.getOrig())[i]).CopyTo(newValue(&(*dest.getOrig())[i]))
+		newValue(&(*es.getOrig())[i]).CopyTo(newMutableValue(&(*dest.getOrig())[i]))
 	}
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableSlice) CopyTo(dest MutableSlice) {
+	newSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -168,7 +230,7 @@ func (es Slice) CopyTo(dest Slice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es Slice) EnsureCapacity(newCap int) {
+func (es MutableSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -181,14 +243,14 @@ func (es Slice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty Value.
 // It returns the newly added Value.
-func (es Slice) AppendEmpty() Value {
+func (es MutableSlice) AppendEmpty() MutableValue {
 	*es.getOrig() = append(*es.getOrig(), otlpcommon.AnyValue{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es Slice) MoveAndAppendTo(dest Slice) {
+func (es MutableSlice) MoveAndAppendTo(dest MutableSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -200,7 +262,7 @@ func (es Slice) MoveAndAppendTo(dest Slice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es Slice) RemoveIf(f func(Value) bool) {
+func (es MutableSlice) RemoveIf(f func(MutableValue) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {

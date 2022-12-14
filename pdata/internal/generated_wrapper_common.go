@@ -25,7 +25,15 @@ type InstrumentationScope struct {
 	orig *otlpcommon.InstrumentationScope
 }
 
+type MutableInstrumentationScope struct {
+	orig *otlpcommon.InstrumentationScope
+}
+
 func GetOrigInstrumentationScope(ms InstrumentationScope) *otlpcommon.InstrumentationScope {
+	return ms.orig
+}
+
+func GetMutableOrigInstrumentationScope(ms MutableInstrumentationScope) *otlpcommon.InstrumentationScope {
 	return ms.orig
 }
 
@@ -33,7 +41,15 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope) Instrumentat
 	return InstrumentationScope{orig: orig}
 }
 
+func NewMutableInstrumentationScope(orig *otlpcommon.InstrumentationScope) MutableInstrumentationScope {
+	return MutableInstrumentationScope{orig: orig}
+}
+
 type Slice struct {
+	orig *[]otlpcommon.AnyValue
+}
+
+type MutableSlice struct {
 	orig *[]otlpcommon.AnyValue
 }
 
@@ -41,34 +57,42 @@ func GetOrigSlice(ms Slice) *[]otlpcommon.AnyValue {
 	return ms.orig
 }
 
+func GetMutableOrigSlice(ms MutableSlice) *[]otlpcommon.AnyValue {
+	return ms.orig
+}
+
 func NewSlice(orig *[]otlpcommon.AnyValue) Slice {
 	return Slice{orig: orig}
 }
 
-func GenerateTestInstrumentationScope() InstrumentationScope {
+func NewMutableSlice(orig *[]otlpcommon.AnyValue) MutableSlice {
+	return MutableSlice{orig: orig}
+}
+
+func GenerateTestInstrumentationScope() MutableInstrumentationScope {
 	orig := otlpcommon.InstrumentationScope{}
-	tv := NewInstrumentationScope(&orig)
+	tv := NewMutableInstrumentationScope(&orig)
 	FillTestInstrumentationScope(tv)
 	return tv
 }
 
-func FillTestInstrumentationScope(tv InstrumentationScope) {
+func FillTestInstrumentationScope(tv MutableInstrumentationScope) {
 	tv.orig.Name = "test_name"
 	tv.orig.Version = "test_version"
-	FillTestMap(NewMap(&tv.orig.Attributes))
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }
 
-func GenerateTestSlice() Slice {
+func GenerateTestSlice() MutableSlice {
 	orig := []otlpcommon.AnyValue{}
-	tv := NewSlice(&orig)
+	tv := NewMutableSlice(&orig)
 	FillTestSlice(tv)
 	return tv
 }
 
-func FillTestSlice(tv Slice) {
+func FillTestSlice(tv MutableSlice) {
 	*tv.orig = make([]otlpcommon.AnyValue, 7)
 	for i := 0; i < 7; i++ {
-		FillTestValue(NewValue(&(*tv.orig)[i]))
+		FillTestValue(NewMutableValue(&(*tv.orig)[i]))
 	}
 }

@@ -26,7 +26,15 @@ type ResourceSpansSlice struct {
 	orig *[]*otlptrace.ResourceSpans
 }
 
+type MutableResourceSpansSlice struct {
+	orig *[]*otlptrace.ResourceSpans
+}
+
 func GetOrigResourceSpansSlice(ms ResourceSpansSlice) *[]*otlptrace.ResourceSpans {
+	return ms.orig
+}
+
+func GetMutableOrigResourceSpansSlice(ms MutableResourceSpansSlice) *[]*otlptrace.ResourceSpans {
 	return ms.orig
 }
 
@@ -34,7 +42,15 @@ func NewResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) ResourceSpansSlice 
 	return ResourceSpansSlice{orig: orig}
 }
 
+func NewMutableResourceSpansSlice(orig *[]*otlptrace.ResourceSpans) MutableResourceSpansSlice {
+	return MutableResourceSpansSlice{orig: orig}
+}
+
 type ResourceSpans struct {
+	orig *otlptrace.ResourceSpans
+}
+
+type MutableResourceSpans struct {
 	orig *otlptrace.ResourceSpans
 }
 
@@ -42,11 +58,23 @@ func GetOrigResourceSpans(ms ResourceSpans) *otlptrace.ResourceSpans {
 	return ms.orig
 }
 
+func GetMutableOrigResourceSpans(ms MutableResourceSpans) *otlptrace.ResourceSpans {
+	return ms.orig
+}
+
 func NewResourceSpans(orig *otlptrace.ResourceSpans) ResourceSpans {
 	return ResourceSpans{orig: orig}
 }
 
+func NewMutableResourceSpans(orig *otlptrace.ResourceSpans) MutableResourceSpans {
+	return MutableResourceSpans{orig: orig}
+}
+
 type ScopeSpansSlice struct {
+	orig *[]*otlptrace.ScopeSpans
+}
+
+type MutableScopeSpansSlice struct {
 	orig *[]*otlptrace.ScopeSpans
 }
 
@@ -54,11 +82,23 @@ func GetOrigScopeSpansSlice(ms ScopeSpansSlice) *[]*otlptrace.ScopeSpans {
 	return ms.orig
 }
 
+func GetMutableOrigScopeSpansSlice(ms MutableScopeSpansSlice) *[]*otlptrace.ScopeSpans {
+	return ms.orig
+}
+
 func NewScopeSpansSlice(orig *[]*otlptrace.ScopeSpans) ScopeSpansSlice {
 	return ScopeSpansSlice{orig: orig}
 }
 
+func NewMutableScopeSpansSlice(orig *[]*otlptrace.ScopeSpans) MutableScopeSpansSlice {
+	return MutableScopeSpansSlice{orig: orig}
+}
+
 type ScopeSpans struct {
+	orig *otlptrace.ScopeSpans
+}
+
+type MutableScopeSpans struct {
 	orig *otlptrace.ScopeSpans
 }
 
@@ -66,11 +106,23 @@ func GetOrigScopeSpans(ms ScopeSpans) *otlptrace.ScopeSpans {
 	return ms.orig
 }
 
+func GetMutableOrigScopeSpans(ms MutableScopeSpans) *otlptrace.ScopeSpans {
+	return ms.orig
+}
+
 func NewScopeSpans(orig *otlptrace.ScopeSpans) ScopeSpans {
 	return ScopeSpans{orig: orig}
 }
 
+func NewMutableScopeSpans(orig *otlptrace.ScopeSpans) MutableScopeSpans {
+	return MutableScopeSpans{orig: orig}
+}
+
 type SpanSlice struct {
+	orig *[]*otlptrace.Span
+}
+
+type MutableSpanSlice struct {
 	orig *[]*otlptrace.Span
 }
 
@@ -78,11 +130,23 @@ func GetOrigSpanSlice(ms SpanSlice) *[]*otlptrace.Span {
 	return ms.orig
 }
 
+func GetMutableOrigSpanSlice(ms MutableSpanSlice) *[]*otlptrace.Span {
+	return ms.orig
+}
+
 func NewSpanSlice(orig *[]*otlptrace.Span) SpanSlice {
 	return SpanSlice{orig: orig}
 }
 
+func NewMutableSpanSlice(orig *[]*otlptrace.Span) MutableSpanSlice {
+	return MutableSpanSlice{orig: orig}
+}
+
 type Span struct {
+	orig *otlptrace.Span
+}
+
+type MutableSpan struct {
 	orig *otlptrace.Span
 }
 
@@ -90,11 +154,23 @@ func GetOrigSpan(ms Span) *otlptrace.Span {
 	return ms.orig
 }
 
+func GetMutableOrigSpan(ms MutableSpan) *otlptrace.Span {
+	return ms.orig
+}
+
 func NewSpan(orig *otlptrace.Span) Span {
 	return Span{orig: orig}
 }
 
+func NewMutableSpan(orig *otlptrace.Span) MutableSpan {
+	return MutableSpan{orig: orig}
+}
+
 type SpanEventSlice struct {
+	orig *[]*otlptrace.Span_Event
+}
+
+type MutableSpanEventSlice struct {
 	orig *[]*otlptrace.Span_Event
 }
 
@@ -102,11 +178,23 @@ func GetOrigSpanEventSlice(ms SpanEventSlice) *[]*otlptrace.Span_Event {
 	return ms.orig
 }
 
+func GetMutableOrigSpanEventSlice(ms MutableSpanEventSlice) *[]*otlptrace.Span_Event {
+	return ms.orig
+}
+
 func NewSpanEventSlice(orig *[]*otlptrace.Span_Event) SpanEventSlice {
 	return SpanEventSlice{orig: orig}
 }
 
+func NewMutableSpanEventSlice(orig *[]*otlptrace.Span_Event) MutableSpanEventSlice {
+	return MutableSpanEventSlice{orig: orig}
+}
+
 type SpanEvent struct {
+	orig *otlptrace.Span_Event
+}
+
+type MutableSpanEvent struct {
 	orig *otlptrace.Span_Event
 }
 
@@ -114,11 +202,23 @@ func GetOrigSpanEvent(ms SpanEvent) *otlptrace.Span_Event {
 	return ms.orig
 }
 
+func GetMutableOrigSpanEvent(ms MutableSpanEvent) *otlptrace.Span_Event {
+	return ms.orig
+}
+
 func NewSpanEvent(orig *otlptrace.Span_Event) SpanEvent {
 	return SpanEvent{orig: orig}
 }
 
+func NewMutableSpanEvent(orig *otlptrace.Span_Event) MutableSpanEvent {
+	return MutableSpanEvent{orig: orig}
+}
+
 type SpanLinkSlice struct {
+	orig *[]*otlptrace.Span_Link
+}
+
+type MutableSpanLinkSlice struct {
 	orig *[]*otlptrace.Span_Link
 }
 
@@ -126,11 +226,23 @@ func GetOrigSpanLinkSlice(ms SpanLinkSlice) *[]*otlptrace.Span_Link {
 	return ms.orig
 }
 
+func GetMutableOrigSpanLinkSlice(ms MutableSpanLinkSlice) *[]*otlptrace.Span_Link {
+	return ms.orig
+}
+
 func NewSpanLinkSlice(orig *[]*otlptrace.Span_Link) SpanLinkSlice {
 	return SpanLinkSlice{orig: orig}
 }
 
+func NewMutableSpanLinkSlice(orig *[]*otlptrace.Span_Link) MutableSpanLinkSlice {
+	return MutableSpanLinkSlice{orig: orig}
+}
+
 type SpanLink struct {
+	orig *otlptrace.Span_Link
+}
+
+type MutableSpanLink struct {
 	orig *otlptrace.Span_Link
 }
 
@@ -138,11 +250,23 @@ func GetOrigSpanLink(ms SpanLink) *otlptrace.Span_Link {
 	return ms.orig
 }
 
+func GetMutableOrigSpanLink(ms MutableSpanLink) *otlptrace.Span_Link {
+	return ms.orig
+}
+
 func NewSpanLink(orig *otlptrace.Span_Link) SpanLink {
 	return SpanLink{orig: orig}
 }
 
+func NewMutableSpanLink(orig *otlptrace.Span_Link) MutableSpanLink {
+	return MutableSpanLink{orig: orig}
+}
+
 type Status struct {
+	orig *otlptrace.Status
+}
+
+type MutableStatus struct {
 	orig *otlptrace.Status
 }
 
@@ -150,173 +274,181 @@ func GetOrigStatus(ms Status) *otlptrace.Status {
 	return ms.orig
 }
 
+func GetMutableOrigStatus(ms MutableStatus) *otlptrace.Status {
+	return ms.orig
+}
+
 func NewStatus(orig *otlptrace.Status) Status {
 	return Status{orig: orig}
 }
 
-func GenerateTestResourceSpansSlice() ResourceSpansSlice {
+func NewMutableStatus(orig *otlptrace.Status) MutableStatus {
+	return MutableStatus{orig: orig}
+}
+
+func GenerateTestResourceSpansSlice() MutableResourceSpansSlice {
 	orig := []*otlptrace.ResourceSpans{}
-	tv := NewResourceSpansSlice(&orig)
+	tv := NewMutableResourceSpansSlice(&orig)
 	FillTestResourceSpansSlice(tv)
 	return tv
 }
 
-func FillTestResourceSpansSlice(tv ResourceSpansSlice) {
+func FillTestResourceSpansSlice(tv MutableResourceSpansSlice) {
 	*tv.orig = make([]*otlptrace.ResourceSpans, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlptrace.ResourceSpans{}
-		FillTestResourceSpans(NewResourceSpans((*tv.orig)[i]))
+		FillTestResourceSpans(NewMutableResourceSpans((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestResourceSpans() ResourceSpans {
+func GenerateTestResourceSpans() MutableResourceSpans {
 	orig := otlptrace.ResourceSpans{}
-	tv := NewResourceSpans(&orig)
+	tv := NewMutableResourceSpans(&orig)
 	FillTestResourceSpans(tv)
 	return tv
 }
 
-func FillTestResourceSpans(tv ResourceSpans) {
-	FillTestResource(NewResource(&tv.orig.Resource))
+func FillTestResourceSpans(tv MutableResourceSpans) {
+	FillTestResource(NewMutableResource(&tv.orig.Resource))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	FillTestScopeSpansSlice(NewScopeSpansSlice(&tv.orig.ScopeSpans))
+	FillTestScopeSpansSlice(NewMutableScopeSpansSlice(&tv.orig.ScopeSpans))
 }
 
-func GenerateTestScopeSpansSlice() ScopeSpansSlice {
+func GenerateTestScopeSpansSlice() MutableScopeSpansSlice {
 	orig := []*otlptrace.ScopeSpans{}
-	tv := NewScopeSpansSlice(&orig)
+	tv := NewMutableScopeSpansSlice(&orig)
 	FillTestScopeSpansSlice(tv)
 	return tv
 }
 
-func FillTestScopeSpansSlice(tv ScopeSpansSlice) {
+func FillTestScopeSpansSlice(tv MutableScopeSpansSlice) {
 	*tv.orig = make([]*otlptrace.ScopeSpans, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlptrace.ScopeSpans{}
-		FillTestScopeSpans(NewScopeSpans((*tv.orig)[i]))
+		FillTestScopeSpans(NewMutableScopeSpans((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestScopeSpans() ScopeSpans {
+func GenerateTestScopeSpans() MutableScopeSpans {
 	orig := otlptrace.ScopeSpans{}
-	tv := NewScopeSpans(&orig)
+	tv := NewMutableScopeSpans(&orig)
 	FillTestScopeSpans(tv)
 	return tv
 }
 
-func FillTestScopeSpans(tv ScopeSpans) {
-	FillTestInstrumentationScope(NewInstrumentationScope(&tv.orig.Scope))
+func FillTestScopeSpans(tv MutableScopeSpans) {
+	FillTestInstrumentationScope(NewMutableInstrumentationScope(&tv.orig.Scope))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	FillTestSpanSlice(NewSpanSlice(&tv.orig.Spans))
+	FillTestSpanSlice(NewMutableSpanSlice(&tv.orig.Spans))
 }
 
-func GenerateTestSpanSlice() SpanSlice {
+func GenerateTestSpanSlice() MutableSpanSlice {
 	orig := []*otlptrace.Span{}
-	tv := NewSpanSlice(&orig)
+	tv := NewMutableSpanSlice(&orig)
 	FillTestSpanSlice(tv)
 	return tv
 }
 
-func FillTestSpanSlice(tv SpanSlice) {
+func FillTestSpanSlice(tv MutableSpanSlice) {
 	*tv.orig = make([]*otlptrace.Span, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlptrace.Span{}
-		FillTestSpan(NewSpan((*tv.orig)[i]))
+		FillTestSpan(NewMutableSpan((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestSpan() Span {
+func GenerateTestSpan() MutableSpan {
 	orig := otlptrace.Span{}
-	tv := NewSpan(&orig)
+	tv := NewMutableSpan(&orig)
 	FillTestSpan(tv)
 	return tv
 }
 
-func FillTestSpan(tv Span) {
+func FillTestSpan(tv MutableSpan) {
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	FillTestTraceState(NewTraceState(&tv.orig.TraceState))
+	FillTestTraceState(NewMutableTraceState(&tv.orig.TraceState))
 	tv.orig.ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.Name = "test_name"
 	tv.orig.Kind = otlptrace.Span_SpanKind(3)
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.EndTimeUnixNano = 1234567890
-	FillTestMap(NewMap(&tv.orig.Attributes))
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
-	FillTestSpanEventSlice(NewSpanEventSlice(&tv.orig.Events))
+	FillTestSpanEventSlice(NewMutableSpanEventSlice(&tv.orig.Events))
 	tv.orig.DroppedEventsCount = uint32(17)
-	FillTestSpanLinkSlice(NewSpanLinkSlice(&tv.orig.Links))
+	FillTestSpanLinkSlice(NewMutableSpanLinkSlice(&tv.orig.Links))
 	tv.orig.DroppedLinksCount = uint32(17)
-	FillTestStatus(NewStatus(&tv.orig.Status))
+	FillTestStatus(NewMutableStatus(&tv.orig.Status))
 }
 
-func GenerateTestSpanEventSlice() SpanEventSlice {
+func GenerateTestSpanEventSlice() MutableSpanEventSlice {
 	orig := []*otlptrace.Span_Event{}
-	tv := NewSpanEventSlice(&orig)
+	tv := NewMutableSpanEventSlice(&orig)
 	FillTestSpanEventSlice(tv)
 	return tv
 }
 
-func FillTestSpanEventSlice(tv SpanEventSlice) {
+func FillTestSpanEventSlice(tv MutableSpanEventSlice) {
 	*tv.orig = make([]*otlptrace.Span_Event, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlptrace.Span_Event{}
-		FillTestSpanEvent(NewSpanEvent((*tv.orig)[i]))
+		FillTestSpanEvent(NewMutableSpanEvent((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestSpanEvent() SpanEvent {
+func GenerateTestSpanEvent() MutableSpanEvent {
 	orig := otlptrace.Span_Event{}
-	tv := NewSpanEvent(&orig)
+	tv := NewMutableSpanEvent(&orig)
 	FillTestSpanEvent(tv)
 	return tv
 }
 
-func FillTestSpanEvent(tv SpanEvent) {
+func FillTestSpanEvent(tv MutableSpanEvent) {
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Name = "test_name"
-	FillTestMap(NewMap(&tv.orig.Attributes))
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }
 
-func GenerateTestSpanLinkSlice() SpanLinkSlice {
+func GenerateTestSpanLinkSlice() MutableSpanLinkSlice {
 	orig := []*otlptrace.Span_Link{}
-	tv := NewSpanLinkSlice(&orig)
+	tv := NewMutableSpanLinkSlice(&orig)
 	FillTestSpanLinkSlice(tv)
 	return tv
 }
 
-func FillTestSpanLinkSlice(tv SpanLinkSlice) {
+func FillTestSpanLinkSlice(tv MutableSpanLinkSlice) {
 	*tv.orig = make([]*otlptrace.Span_Link, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlptrace.Span_Link{}
-		FillTestSpanLink(NewSpanLink((*tv.orig)[i]))
+		FillTestSpanLink(NewMutableSpanLink((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestSpanLink() SpanLink {
+func GenerateTestSpanLink() MutableSpanLink {
 	orig := otlptrace.Span_Link{}
-	tv := NewSpanLink(&orig)
+	tv := NewMutableSpanLink(&orig)
 	FillTestSpanLink(tv)
 	return tv
 }
 
-func FillTestSpanLink(tv SpanLink) {
+func FillTestSpanLink(tv MutableSpanLink) {
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	FillTestTraceState(NewTraceState(&tv.orig.TraceState))
-	FillTestMap(NewMap(&tv.orig.Attributes))
+	FillTestTraceState(NewMutableTraceState(&tv.orig.TraceState))
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }
 
-func GenerateTestStatus() Status {
+func GenerateTestStatus() MutableStatus {
 	orig := otlptrace.Status{}
-	tv := NewStatus(&orig)
+	tv := NewMutableStatus(&orig)
 	FillTestStatus(tv)
 	return tv
 }
 
-func FillTestStatus(tv Status) {
+func FillTestStatus(tv MutableStatus) {
 	tv.orig.Code = 1
 	tv.orig.Message = "cancelled"
 }

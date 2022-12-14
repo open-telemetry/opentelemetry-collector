@@ -26,11 +26,11 @@ import (
 )
 
 func TestResource_MoveTo(t *testing.T) {
-	ms := Resource(internal.GenerateTestResource())
+	ms := MutableResource{internal.GenerateTestResource()}
 	dest := NewResource()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResource(), ms)
-	assert.Equal(t, Resource(internal.GenerateTestResource()), dest)
+	assert.Equal(t, MutableResource(internal.GenerateTestResource()), dest)
 }
 
 func TestResource_CopyTo(t *testing.T) {
@@ -38,7 +38,7 @@ func TestResource_CopyTo(t *testing.T) {
 	orig := NewResource()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Resource(internal.GenerateTestResource())
+	orig = MutableResource(internal.GenerateTestResource())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }

@@ -27,14 +27,24 @@ const primitiveSliceTemplate = `// ${structName} represents a []${itemType} slic
 // Important: zero-initialized instance is not valid for use.
 type ${structName} internal.${structName}
 
+type Mutable${structName} internal.Mutable${structName}
+
 func (ms ${structName}) getOrig() *[]${itemType} {
 	return internal.GetOrig${structName}(internal.${structName}(ms))
 }
 
+func (ms Mutable${structName}) getOrig() *[]${itemType} {
+	return internal.GetMutableOrig${structName}(internal.Mutable${structName}(ms))
+}
+
+func (ms Mutable${structName}) immutable() ${structName} {
+	return ${structName}(internal.New${structName}(ms.getOrig()))
+}
+
 // New${structName} creates a new empty ${structName}.
-func New${structName}() ${structName} {
+func New${structName}() Mutable${structName} {
 	orig := []${itemType}(nil)
-	return ${structName}(internal.New${structName}(&orig))
+	return Mutable${structName}(internal.NewMutable${structName}(&orig))
 }
 
 // AsRaw returns a copy of the []${itemType} slice.
@@ -42,8 +52,12 @@ func (ms ${structName}) AsRaw() []${itemType} {
 	return copy${structName}(nil, *ms.getOrig())
 }
 
+func (ms Mutable${structName}) AsRaw() []${itemType} {
+	return ms.immutable().AsRaw()
+}
+
 // FromRaw copies raw []${itemType} into the slice ${structName}.
-func (ms ${structName}) FromRaw(val []${itemType}) {
+func (ms Mutable${structName}) FromRaw(val []${itemType}) {
 	*ms.getOrig() = copy${structName}(*ms.getOrig(), val)
 }
 
@@ -53,15 +67,23 @@ func (ms ${structName}) Len() int {
 	return len(*ms.getOrig())
 }
 
+func (ms Mutable${structName}) Len() int {
+	return ms.immutable().Len()
+}
+
 // At returns an item from particular index.
 // Equivalent of ${lowerStructName}[i].
 func (ms ${structName}) At(i int) ${itemType} {
 	return (*ms.getOrig())[i]
 }
 
+func (ms Mutable${structName}) At(i int) ${itemType} {
+	return ms.immutable().At(i)
+}
+
 // SetAt sets ${itemType} item at particular index.
 // Equivalent of ${lowerStructName}[i] = val
-func (ms ${structName}) SetAt(i int, val ${itemType}) {
+func (ms Mutable${structName}) SetAt(i int, val ${itemType}) {
 	(*ms.getOrig())[i] = val
 }
 
@@ -71,7 +93,7 @@ func (ms ${structName}) SetAt(i int, val ${itemType}) {
 //	buf := make([]${itemType}, len(${lowerStructName}), newCap)
 //	copy(buf, ${lowerStructName})
 //	${lowerStructName} = buf
-func (ms ${structName}) EnsureCapacity(newCap int) {
+func (ms Mutable${structName}) EnsureCapacity(newCap int) {
 	oldCap := cap(*ms.getOrig())
 	if newCap <= oldCap {
 		return
@@ -84,20 +106,24 @@ func (ms ${structName}) EnsureCapacity(newCap int) {
 
 // Append appends extra elements to ${structName}.
 // Equivalent of ${lowerStructName} = append(${lowerStructName}, elms...) 
-func (ms ${structName}) Append(elms ...${itemType}) {
+func (ms Mutable${structName}) Append(elms ...${itemType}) {
 	*ms.getOrig() = append(*ms.getOrig(), elms...)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and 
 // resetting the current instance to its zero value.
-func (ms ${structName}) MoveTo(dest ${structName}) {
+func (ms Mutable${structName}) MoveTo(dest Mutable${structName}) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
 
 // CopyTo copies all elements from the current slice overriding the destination.
-func (ms ${structName}) CopyTo(dest ${structName}) {
+func (ms ${structName}) CopyTo(dest Mutable${structName}) {
 	*dest.getOrig() = copy${structName}(*dest.getOrig(), *ms.getOrig())
+}
+
+func (ms Mutable${structName}) CopyTo(dest Mutable${structName}) {
+	ms.immutable().CopyTo(dest)
 }
 
 func copy${structName}(dst, src []${itemType}) []${itemType} {
@@ -157,12 +183,24 @@ type ${structName} struct {
 	orig *[]${itemType}
 }
 
+type Mutable${structName} struct {
+	mo *[]${itemType}
+}
+
 func GetOrig${structName}(ms ${structName}) *[]${itemType} {
 	return ms.orig
 }
 
+func GetMutableOrig${structName}(ms Mutable${structName}) *[]${itemType} {
+	return ms.mo
+}
+
 func New${structName}(orig *[]${itemType}) ${structName} {
 	return ${structName}{orig: orig}
+}
+
+func NewMutable${structName}(orig *[]${itemType}) Mutable${structName} {
+	return Mutable${structName}{mo: orig}
 }`
 
 type primitiveSliceStruct struct {

@@ -25,7 +25,15 @@ type MetricsExportPartialSuccess struct {
 	orig *otlpcollectormetrics.ExportMetricsPartialSuccess
 }
 
+type MutableMetricsExportPartialSuccess struct {
+	orig *otlpcollectormetrics.ExportMetricsPartialSuccess
+}
+
 func GetOrigMetricsExportPartialSuccess(ms MetricsExportPartialSuccess) *otlpcollectormetrics.ExportMetricsPartialSuccess {
+	return ms.orig
+}
+
+func GetMutableOrigMetricsExportPartialSuccess(ms MutableMetricsExportPartialSuccess) *otlpcollectormetrics.ExportMetricsPartialSuccess {
 	return ms.orig
 }
 
@@ -33,14 +41,18 @@ func NewMetricsExportPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPart
 	return MetricsExportPartialSuccess{orig: orig}
 }
 
-func GenerateTestMetricsExportPartialSuccess() MetricsExportPartialSuccess {
+func NewMutableMetricsExportPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) MutableMetricsExportPartialSuccess {
+	return MutableMetricsExportPartialSuccess{orig: orig}
+}
+
+func GenerateTestMetricsExportPartialSuccess() MutableMetricsExportPartialSuccess {
 	orig := otlpcollectormetrics.ExportMetricsPartialSuccess{}
-	tv := NewMetricsExportPartialSuccess(&orig)
+	tv := NewMutableMetricsExportPartialSuccess(&orig)
 	FillTestMetricsExportPartialSuccess(tv)
 	return tv
 }
 
-func FillTestMetricsExportPartialSuccess(tv MetricsExportPartialSuccess) {
+func FillTestMetricsExportPartialSuccess(tv MutableMetricsExportPartialSuccess) {
 	tv.orig.RejectedDataPoints = int64(13)
 	tv.orig.ErrorMessage = "error message"
 }

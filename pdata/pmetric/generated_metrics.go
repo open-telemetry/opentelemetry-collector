@@ -35,25 +35,39 @@ import (
 // Important: zero-initialized instance is not valid for use.
 type ResourceMetricsSlice internal.ResourceMetricsSlice
 
+type MutableResourceMetricsSlice internal.MutableResourceMetricsSlice
+
 func newResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetricsSlice {
 	return ResourceMetricsSlice(internal.NewResourceMetricsSlice(orig))
+}
+
+func newMutableResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) MutableResourceMetricsSlice {
+	return MutableResourceMetricsSlice(internal.NewResourceMetricsSlice(orig))
 }
 
 func (ms ResourceMetricsSlice) getOrig() *[]*otlpmetrics.ResourceMetrics {
 	return internal.GetOrigResourceMetricsSlice(internal.ResourceMetricsSlice(ms))
 }
 
+func (ms MutableResourceMetricsSlice) getOrig() *[]*otlpmetrics.ResourceMetrics {
+	return internal.GetMutableOrigResourceMetricsSlice(internal.MutableResourceMetricsSlice(ms))
+}
+
 // NewResourceMetricsSlice creates a ResourceMetricsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewResourceMetricsSlice() ResourceMetricsSlice {
+func NewResourceMetricsSlice() MutableResourceMetricsSlice {
 	orig := []*otlpmetrics.ResourceMetrics(nil)
-	return newResourceMetricsSlice(&orig)
+	return newMutableResourceMetricsSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewResourceMetricsSlice()".
 func (es ResourceMetricsSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableResourceMetricsSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -69,14 +83,18 @@ func (es ResourceMetricsSlice) At(ix int) ResourceMetrics {
 	return newResourceMetrics((*es.getOrig())[ix])
 }
 
+func (es MutableResourceMetricsSlice) At(ix int) MutableResourceMetrics {
+	return newMutableResourceMetrics((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
+func (es ResourceMetricsSlice) CopyTo(dest MutableResourceMetricsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newResourceMetrics((*es.getOrig())[i]).CopyTo(newResourceMetrics((*dest.getOrig())[i]))
+			newResourceMetrics((*es.getOrig())[i]).CopyTo(newMutableResourceMetrics((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -84,9 +102,14 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	wrappers := make([]*otlpmetrics.ResourceMetrics, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newResourceMetrics((*es.getOrig())[i]).CopyTo(newResourceMetrics(wrappers[i]))
+		newResourceMetrics((*es.getOrig())[i]).CopyTo(newMutableResourceMetrics(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableResourceMetricsSlice) CopyTo(dest MutableResourceMetricsSlice) {
+	newResourceMetricsSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -101,7 +124,7 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
+func (es MutableResourceMetricsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -114,7 +137,7 @@ func (es ResourceMetricsSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ResourceMetrics.
 // It returns the newly added ResourceMetrics.
-func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
+func (es MutableResourceMetricsSlice) AppendEmpty() MutableResourceMetrics {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.ResourceMetrics{})
 	return es.At(es.Len() - 1)
 }
@@ -122,13 +145,13 @@ func (es ResourceMetricsSlice) AppendEmpty() ResourceMetrics {
 // Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the
 // provided less function so that two instances of ResourceMetricsSlice
 // can be compared.
-func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
+func (es MutableResourceMetricsSlice) Sort(less func(a, b MutableResourceMetrics) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
+func (es MutableResourceMetricsSlice) MoveAndAppendTo(dest MutableResourceMetricsSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -140,7 +163,7 @@ func (es ResourceMetricsSlice) MoveAndAppendTo(dest ResourceMetricsSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
+func (es MutableResourceMetricsSlice) RemoveIf(f func(MutableResourceMetrics) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -168,25 +191,35 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 
 type ResourceMetrics internal.ResourceMetrics
 
+type MutableResourceMetrics internal.MutableResourceMetrics
+
 func newResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
 	return ResourceMetrics(internal.NewResourceMetrics(orig))
+}
+
+func newMutableResourceMetrics(orig *otlpmetrics.ResourceMetrics) MutableResourceMetrics {
+	return MutableResourceMetrics(internal.NewResourceMetrics(orig))
 }
 
 func (ms ResourceMetrics) getOrig() *otlpmetrics.ResourceMetrics {
 	return internal.GetOrigResourceMetrics(internal.ResourceMetrics(ms))
 }
 
+func (ms MutableResourceMetrics) getOrig() *otlpmetrics.ResourceMetrics {
+	return internal.GetMutableOrigResourceMetrics(internal.MutableResourceMetrics(ms))
+}
+
 // NewResourceMetrics creates a new empty ResourceMetrics.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewResourceMetrics() ResourceMetrics {
-	return newResourceMetrics(&otlpmetrics.ResourceMetrics{})
+func NewResourceMetrics() MutableResourceMetrics {
+	return newMutableResourceMetrics(&otlpmetrics.ResourceMetrics{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ResourceMetrics) MoveTo(dest ResourceMetrics) {
+func (ms MutableResourceMetrics) MoveTo(dest MutableResourceMetrics) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.ResourceMetrics{}
 }
@@ -196,13 +229,23 @@ func (ms ResourceMetrics) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.getOrig().Resource))
 }
 
+// Resource returns the resource associated with this ResourceMetrics.
+func (ms MutableResourceMetrics) Resource() pcommon.MutableResource {
+	return pcommon.MutableResource(internal.NewMutableResource(&ms.getOrig().Resource))
+}
+
 // SchemaUrl returns the schemaurl associated with this ResourceMetrics.
 func (ms ResourceMetrics) SchemaUrl() string {
 	return ms.getOrig().SchemaUrl
 }
 
+// MutableSchemaUrl returns the schemaurl associated with this ResourceMetrics.
+func (ms MutableResourceMetrics) SchemaUrl() string {
+	return ms.getOrig().SchemaUrl
+}
+
 // SetSchemaUrl replaces the schemaurl associated with this ResourceMetrics.
-func (ms ResourceMetrics) SetSchemaUrl(v string) {
+func (ms MutableResourceMetrics) SetSchemaUrl(v string) {
 	ms.getOrig().SchemaUrl = v
 }
 
@@ -211,11 +254,21 @@ func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
 	return ScopeMetricsSlice(internal.NewScopeMetricsSlice(&ms.getOrig().ScopeMetrics))
 }
 
+// ScopeMetrics returns the ScopeMetrics associated with this ResourceMetrics.
+func (ms MutableResourceMetrics) ScopeMetrics() MutableScopeMetricsSlice {
+	return MutableScopeMetricsSlice(internal.NewMutableScopeMetricsSlice(&ms.getOrig().ScopeMetrics))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
+func (ms ResourceMetrics) CopyTo(dest MutableResourceMetrics) {
 	ms.Resource().CopyTo(dest.Resource())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeMetrics().CopyTo(dest.ScopeMetrics())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableResourceMetrics) CopyTo(dest MutableResourceMetrics) {
+	newResourceMetrics(ms.getOrig()).CopyTo(dest)
 }
 
 // ScopeMetricsSlice logically represents a slice of ScopeMetrics.
@@ -227,25 +280,39 @@ func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 // Important: zero-initialized instance is not valid for use.
 type ScopeMetricsSlice internal.ScopeMetricsSlice
 
+type MutableScopeMetricsSlice internal.MutableScopeMetricsSlice
+
 func newScopeMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics) ScopeMetricsSlice {
 	return ScopeMetricsSlice(internal.NewScopeMetricsSlice(orig))
+}
+
+func newMutableScopeMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics) MutableScopeMetricsSlice {
+	return MutableScopeMetricsSlice(internal.NewScopeMetricsSlice(orig))
 }
 
 func (ms ScopeMetricsSlice) getOrig() *[]*otlpmetrics.ScopeMetrics {
 	return internal.GetOrigScopeMetricsSlice(internal.ScopeMetricsSlice(ms))
 }
 
+func (ms MutableScopeMetricsSlice) getOrig() *[]*otlpmetrics.ScopeMetrics {
+	return internal.GetMutableOrigScopeMetricsSlice(internal.MutableScopeMetricsSlice(ms))
+}
+
 // NewScopeMetricsSlice creates a ScopeMetricsSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewScopeMetricsSlice() ScopeMetricsSlice {
+func NewScopeMetricsSlice() MutableScopeMetricsSlice {
 	orig := []*otlpmetrics.ScopeMetrics(nil)
-	return newScopeMetricsSlice(&orig)
+	return newMutableScopeMetricsSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewScopeMetricsSlice()".
 func (es ScopeMetricsSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableScopeMetricsSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -261,14 +328,18 @@ func (es ScopeMetricsSlice) At(ix int) ScopeMetrics {
 	return newScopeMetrics((*es.getOrig())[ix])
 }
 
+func (es MutableScopeMetricsSlice) At(ix int) MutableScopeMetrics {
+	return newMutableScopeMetrics((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
+func (es ScopeMetricsSlice) CopyTo(dest MutableScopeMetricsSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newScopeMetrics((*es.getOrig())[i]).CopyTo(newScopeMetrics((*dest.getOrig())[i]))
+			newScopeMetrics((*es.getOrig())[i]).CopyTo(newMutableScopeMetrics((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -276,9 +347,14 @@ func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
 	wrappers := make([]*otlpmetrics.ScopeMetrics, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newScopeMetrics((*es.getOrig())[i]).CopyTo(newScopeMetrics(wrappers[i]))
+		newScopeMetrics((*es.getOrig())[i]).CopyTo(newMutableScopeMetrics(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableScopeMetricsSlice) CopyTo(dest MutableScopeMetricsSlice) {
+	newScopeMetricsSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -293,7 +369,7 @@ func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ScopeMetricsSlice) EnsureCapacity(newCap int) {
+func (es MutableScopeMetricsSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -306,7 +382,7 @@ func (es ScopeMetricsSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ScopeMetrics.
 // It returns the newly added ScopeMetrics.
-func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
+func (es MutableScopeMetricsSlice) AppendEmpty() MutableScopeMetrics {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.ScopeMetrics{})
 	return es.At(es.Len() - 1)
 }
@@ -314,13 +390,13 @@ func (es ScopeMetricsSlice) AppendEmpty() ScopeMetrics {
 // Sort sorts the ScopeMetrics elements within ScopeMetricsSlice given the
 // provided less function so that two instances of ScopeMetricsSlice
 // can be compared.
-func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) {
+func (es MutableScopeMetricsSlice) Sort(less func(a, b MutableScopeMetrics) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ScopeMetricsSlice) MoveAndAppendTo(dest ScopeMetricsSlice) {
+func (es MutableScopeMetricsSlice) MoveAndAppendTo(dest MutableScopeMetricsSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -332,7 +408,7 @@ func (es ScopeMetricsSlice) MoveAndAppendTo(dest ScopeMetricsSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
+func (es MutableScopeMetricsSlice) RemoveIf(f func(MutableScopeMetrics) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -360,25 +436,35 @@ func (es ScopeMetricsSlice) RemoveIf(f func(ScopeMetrics) bool) {
 
 type ScopeMetrics internal.ScopeMetrics
 
+type MutableScopeMetrics internal.MutableScopeMetrics
+
 func newScopeMetrics(orig *otlpmetrics.ScopeMetrics) ScopeMetrics {
 	return ScopeMetrics(internal.NewScopeMetrics(orig))
+}
+
+func newMutableScopeMetrics(orig *otlpmetrics.ScopeMetrics) MutableScopeMetrics {
+	return MutableScopeMetrics(internal.NewScopeMetrics(orig))
 }
 
 func (ms ScopeMetrics) getOrig() *otlpmetrics.ScopeMetrics {
 	return internal.GetOrigScopeMetrics(internal.ScopeMetrics(ms))
 }
 
+func (ms MutableScopeMetrics) getOrig() *otlpmetrics.ScopeMetrics {
+	return internal.GetMutableOrigScopeMetrics(internal.MutableScopeMetrics(ms))
+}
+
 // NewScopeMetrics creates a new empty ScopeMetrics.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewScopeMetrics() ScopeMetrics {
-	return newScopeMetrics(&otlpmetrics.ScopeMetrics{})
+func NewScopeMetrics() MutableScopeMetrics {
+	return newMutableScopeMetrics(&otlpmetrics.ScopeMetrics{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ScopeMetrics) MoveTo(dest ScopeMetrics) {
+func (ms MutableScopeMetrics) MoveTo(dest MutableScopeMetrics) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.ScopeMetrics{}
 }
@@ -388,13 +474,23 @@ func (ms ScopeMetrics) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.getOrig().Scope))
 }
 
+// Scope returns the scope associated with this ScopeMetrics.
+func (ms MutableScopeMetrics) Scope() pcommon.MutableInstrumentationScope {
+	return pcommon.MutableInstrumentationScope(internal.NewMutableInstrumentationScope(&ms.getOrig().Scope))
+}
+
 // SchemaUrl returns the schemaurl associated with this ScopeMetrics.
 func (ms ScopeMetrics) SchemaUrl() string {
 	return ms.getOrig().SchemaUrl
 }
 
+// MutableSchemaUrl returns the schemaurl associated with this ScopeMetrics.
+func (ms MutableScopeMetrics) SchemaUrl() string {
+	return ms.getOrig().SchemaUrl
+}
+
 // SetSchemaUrl replaces the schemaurl associated with this ScopeMetrics.
-func (ms ScopeMetrics) SetSchemaUrl(v string) {
+func (ms MutableScopeMetrics) SetSchemaUrl(v string) {
 	ms.getOrig().SchemaUrl = v
 }
 
@@ -403,11 +499,21 @@ func (ms ScopeMetrics) Metrics() MetricSlice {
 	return MetricSlice(internal.NewMetricSlice(&ms.getOrig().Metrics))
 }
 
+// Metrics returns the Metrics associated with this ScopeMetrics.
+func (ms MutableScopeMetrics) Metrics() MutableMetricSlice {
+	return MutableMetricSlice(internal.NewMutableMetricSlice(&ms.getOrig().Metrics))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ScopeMetrics) CopyTo(dest ScopeMetrics) {
+func (ms ScopeMetrics) CopyTo(dest MutableScopeMetrics) {
 	ms.Scope().CopyTo(dest.Scope())
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Metrics().CopyTo(dest.Metrics())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableScopeMetrics) CopyTo(dest MutableScopeMetrics) {
+	newScopeMetrics(ms.getOrig()).CopyTo(dest)
 }
 
 // MetricSlice logically represents a slice of Metric.
@@ -419,25 +525,39 @@ func (ms ScopeMetrics) CopyTo(dest ScopeMetrics) {
 // Important: zero-initialized instance is not valid for use.
 type MetricSlice internal.MetricSlice
 
+type MutableMetricSlice internal.MutableMetricSlice
+
 func newMetricSlice(orig *[]*otlpmetrics.Metric) MetricSlice {
 	return MetricSlice(internal.NewMetricSlice(orig))
+}
+
+func newMutableMetricSlice(orig *[]*otlpmetrics.Metric) MutableMetricSlice {
+	return MutableMetricSlice(internal.NewMetricSlice(orig))
 }
 
 func (ms MetricSlice) getOrig() *[]*otlpmetrics.Metric {
 	return internal.GetOrigMetricSlice(internal.MetricSlice(ms))
 }
 
+func (ms MutableMetricSlice) getOrig() *[]*otlpmetrics.Metric {
+	return internal.GetMutableOrigMetricSlice(internal.MutableMetricSlice(ms))
+}
+
 // NewMetricSlice creates a MetricSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewMetricSlice() MetricSlice {
+func NewMetricSlice() MutableMetricSlice {
 	orig := []*otlpmetrics.Metric(nil)
-	return newMetricSlice(&orig)
+	return newMutableMetricSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewMetricSlice()".
 func (es MetricSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableMetricSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -453,14 +573,18 @@ func (es MetricSlice) At(ix int) Metric {
 	return newMetric((*es.getOrig())[ix])
 }
 
+func (es MutableMetricSlice) At(ix int) MutableMetric {
+	return newMutableMetric((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es MetricSlice) CopyTo(dest MetricSlice) {
+func (es MetricSlice) CopyTo(dest MutableMetricSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newMetric((*es.getOrig())[i]).CopyTo(newMetric((*dest.getOrig())[i]))
+			newMetric((*es.getOrig())[i]).CopyTo(newMutableMetric((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -468,9 +592,14 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 	wrappers := make([]*otlpmetrics.Metric, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newMetric((*es.getOrig())[i]).CopyTo(newMetric(wrappers[i]))
+		newMetric((*es.getOrig())[i]).CopyTo(newMutableMetric(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableMetricSlice) CopyTo(dest MutableMetricSlice) {
+	newMetricSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -485,7 +614,7 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es MetricSlice) EnsureCapacity(newCap int) {
+func (es MutableMetricSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -498,7 +627,7 @@ func (es MetricSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty Metric.
 // It returns the newly added Metric.
-func (es MetricSlice) AppendEmpty() Metric {
+func (es MutableMetricSlice) AppendEmpty() MutableMetric {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.Metric{})
 	return es.At(es.Len() - 1)
 }
@@ -506,13 +635,13 @@ func (es MetricSlice) AppendEmpty() Metric {
 // Sort sorts the Metric elements within MetricSlice given the
 // provided less function so that two instances of MetricSlice
 // can be compared.
-func (es MetricSlice) Sort(less func(a, b Metric) bool) {
+func (es MutableMetricSlice) Sort(less func(a, b MutableMetric) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
+func (es MutableMetricSlice) MoveAndAppendTo(dest MutableMetricSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -524,7 +653,7 @@ func (es MetricSlice) MoveAndAppendTo(dest MetricSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es MetricSlice) RemoveIf(f func(Metric) bool) {
+func (es MutableMetricSlice) RemoveIf(f func(MutableMetric) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -553,25 +682,35 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 
 type Metric internal.Metric
 
+type MutableMetric internal.MutableMetric
+
 func newMetric(orig *otlpmetrics.Metric) Metric {
 	return Metric(internal.NewMetric(orig))
+}
+
+func newMutableMetric(orig *otlpmetrics.Metric) MutableMetric {
+	return MutableMetric(internal.NewMetric(orig))
 }
 
 func (ms Metric) getOrig() *otlpmetrics.Metric {
 	return internal.GetOrigMetric(internal.Metric(ms))
 }
 
+func (ms MutableMetric) getOrig() *otlpmetrics.Metric {
+	return internal.GetMutableOrigMetric(internal.MutableMetric(ms))
+}
+
 // NewMetric creates a new empty Metric.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewMetric() Metric {
-	return newMetric(&otlpmetrics.Metric{})
+func NewMetric() MutableMetric {
+	return newMutableMetric(&otlpmetrics.Metric{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Metric) MoveTo(dest Metric) {
+func (ms MutableMetric) MoveTo(dest MutableMetric) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.Metric{}
 }
@@ -581,8 +720,13 @@ func (ms Metric) Name() string {
 	return ms.getOrig().Name
 }
 
+// MutableName returns the name associated with this Metric.
+func (ms MutableMetric) Name() string {
+	return ms.getOrig().Name
+}
+
 // SetName replaces the name associated with this Metric.
-func (ms Metric) SetName(v string) {
+func (ms MutableMetric) SetName(v string) {
 	ms.getOrig().Name = v
 }
 
@@ -591,8 +735,13 @@ func (ms Metric) Description() string {
 	return ms.getOrig().Description
 }
 
+// MutableDescription returns the description associated with this Metric.
+func (ms MutableMetric) Description() string {
+	return ms.getOrig().Description
+}
+
 // SetDescription replaces the description associated with this Metric.
-func (ms Metric) SetDescription(v string) {
+func (ms MutableMetric) SetDescription(v string) {
 	ms.getOrig().Description = v
 }
 
@@ -601,8 +750,13 @@ func (ms Metric) Unit() string {
 	return ms.getOrig().Unit
 }
 
+// MutableUnit returns the unit associated with this Metric.
+func (ms MutableMetric) Unit() string {
+	return ms.getOrig().Unit
+}
+
 // SetUnit replaces the unit associated with this Metric.
-func (ms Metric) SetUnit(v string) {
+func (ms MutableMetric) SetUnit(v string) {
 	ms.getOrig().Unit = v
 }
 
@@ -642,11 +796,11 @@ func (ms Metric) Gauge() Gauge {
 //
 // After this, Type() function will return MetricTypeGauge".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptyGauge() Gauge {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptyGauge() MutableGauge {
 	val := &otlpmetrics.Gauge{}
 	ms.getOrig().Data = &otlpmetrics.Metric_Gauge{Gauge: val}
-	return newGauge(val)
+	return newMutableGauge(val)
 }
 
 // Sum returns the sum associated with this Metric.
@@ -667,11 +821,11 @@ func (ms Metric) Sum() Sum {
 //
 // After this, Type() function will return MetricTypeSum".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptySum() Sum {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptySum() MutableSum {
 	val := &otlpmetrics.Sum{}
 	ms.getOrig().Data = &otlpmetrics.Metric_Sum{Sum: val}
-	return newSum(val)
+	return newMutableSum(val)
 }
 
 // Histogram returns the histogram associated with this Metric.
@@ -692,11 +846,11 @@ func (ms Metric) Histogram() Histogram {
 //
 // After this, Type() function will return MetricTypeHistogram".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptyHistogram() Histogram {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptyHistogram() MutableHistogram {
 	val := &otlpmetrics.Histogram{}
 	ms.getOrig().Data = &otlpmetrics.Metric_Histogram{Histogram: val}
-	return newHistogram(val)
+	return newMutableHistogram(val)
 }
 
 // ExponentialHistogram returns the exponentialhistogram associated with this Metric.
@@ -717,11 +871,11 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 //
 // After this, Type() function will return MetricTypeExponentialHistogram".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptyExponentialHistogram() MutableExponentialHistogram {
 	val := &otlpmetrics.ExponentialHistogram{}
 	ms.getOrig().Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
-	return newExponentialHistogram(val)
+	return newMutableExponentialHistogram(val)
 }
 
 // Summary returns the summary associated with this Metric.
@@ -742,15 +896,15 @@ func (ms Metric) Summary() Summary {
 //
 // After this, Type() function will return MetricTypeSummary".
 //
-// Calling this function on zero-initialized Metric will cause a panic.
-func (ms Metric) SetEmptySummary() Summary {
+// Calling this function on zero-initialized MutableMetric will cause a panic.
+func (ms MutableMetric) SetEmptySummary() MutableSummary {
 	val := &otlpmetrics.Summary{}
 	ms.getOrig().Data = &otlpmetrics.Metric_Summary{Summary: val}
-	return newSummary(val)
+	return newMutableSummary(val)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Metric) CopyTo(dest Metric) {
+func (ms Metric) CopyTo(dest MutableMetric) {
 	dest.SetName(ms.Name())
 	dest.SetDescription(ms.Description())
 	dest.SetUnit(ms.Unit())
@@ -769,6 +923,11 @@ func (ms Metric) CopyTo(dest Metric) {
 
 }
 
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableMetric) CopyTo(dest MutableMetric) {
+	newMetric(ms.getOrig()).CopyTo(dest)
+}
+
 // Gauge represents the type of a numeric metric that always exports the "current value" for every data point.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -779,25 +938,35 @@ func (ms Metric) CopyTo(dest Metric) {
 
 type Gauge internal.Gauge
 
+type MutableGauge internal.MutableGauge
+
 func newGauge(orig *otlpmetrics.Gauge) Gauge {
 	return Gauge(internal.NewGauge(orig))
+}
+
+func newMutableGauge(orig *otlpmetrics.Gauge) MutableGauge {
+	return MutableGauge(internal.NewGauge(orig))
 }
 
 func (ms Gauge) getOrig() *otlpmetrics.Gauge {
 	return internal.GetOrigGauge(internal.Gauge(ms))
 }
 
+func (ms MutableGauge) getOrig() *otlpmetrics.Gauge {
+	return internal.GetMutableOrigGauge(internal.MutableGauge(ms))
+}
+
 // NewGauge creates a new empty Gauge.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewGauge() Gauge {
-	return newGauge(&otlpmetrics.Gauge{})
+func NewGauge() MutableGauge {
+	return newMutableGauge(&otlpmetrics.Gauge{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Gauge) MoveTo(dest Gauge) {
+func (ms MutableGauge) MoveTo(dest MutableGauge) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.Gauge{}
 }
@@ -807,9 +976,19 @@ func (ms Gauge) DataPoints() NumberDataPointSlice {
 	return NumberDataPointSlice(internal.NewNumberDataPointSlice(&ms.getOrig().DataPoints))
 }
 
+// DataPoints returns the DataPoints associated with this Gauge.
+func (ms MutableGauge) DataPoints() MutableNumberDataPointSlice {
+	return MutableNumberDataPointSlice(internal.NewMutableNumberDataPointSlice(&ms.getOrig().DataPoints))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Gauge) CopyTo(dest Gauge) {
+func (ms Gauge) CopyTo(dest MutableGauge) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableGauge) CopyTo(dest MutableGauge) {
+	newGauge(ms.getOrig()).CopyTo(dest)
 }
 
 // Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.
@@ -822,25 +1001,35 @@ func (ms Gauge) CopyTo(dest Gauge) {
 
 type Sum internal.Sum
 
+type MutableSum internal.MutableSum
+
 func newSum(orig *otlpmetrics.Sum) Sum {
 	return Sum(internal.NewSum(orig))
+}
+
+func newMutableSum(orig *otlpmetrics.Sum) MutableSum {
+	return MutableSum(internal.NewSum(orig))
 }
 
 func (ms Sum) getOrig() *otlpmetrics.Sum {
 	return internal.GetOrigSum(internal.Sum(ms))
 }
 
+func (ms MutableSum) getOrig() *otlpmetrics.Sum {
+	return internal.GetMutableOrigSum(internal.MutableSum(ms))
+}
+
 // NewSum creates a new empty Sum.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSum() Sum {
-	return newSum(&otlpmetrics.Sum{})
+func NewSum() MutableSum {
+	return newMutableSum(&otlpmetrics.Sum{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Sum) MoveTo(dest Sum) {
+func (ms MutableSum) MoveTo(dest MutableSum) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.Sum{}
 }
@@ -850,8 +1039,13 @@ func (ms Sum) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.getOrig().AggregationTemporality)
 }
 
+// AggregationTemporality returns the aggregationtemporality associated with this Sum.
+func (ms MutableSum) AggregationTemporality() AggregationTemporality {
+	return AggregationTemporality(ms.getOrig().AggregationTemporality)
+}
+
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Sum.
-func (ms Sum) SetAggregationTemporality(v AggregationTemporality) {
+func (ms MutableSum) SetAggregationTemporality(v AggregationTemporality) {
 	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
@@ -860,8 +1054,13 @@ func (ms Sum) IsMonotonic() bool {
 	return ms.getOrig().IsMonotonic
 }
 
+// MutableIsMonotonic returns the ismonotonic associated with this Sum.
+func (ms MutableSum) IsMonotonic() bool {
+	return ms.getOrig().IsMonotonic
+}
+
 // SetIsMonotonic replaces the ismonotonic associated with this Sum.
-func (ms Sum) SetIsMonotonic(v bool) {
+func (ms MutableSum) SetIsMonotonic(v bool) {
 	ms.getOrig().IsMonotonic = v
 }
 
@@ -870,11 +1069,21 @@ func (ms Sum) DataPoints() NumberDataPointSlice {
 	return NumberDataPointSlice(internal.NewNumberDataPointSlice(&ms.getOrig().DataPoints))
 }
 
+// DataPoints returns the DataPoints associated with this Sum.
+func (ms MutableSum) DataPoints() MutableNumberDataPointSlice {
+	return MutableNumberDataPointSlice(internal.NewMutableNumberDataPointSlice(&ms.getOrig().DataPoints))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Sum) CopyTo(dest Sum) {
+func (ms Sum) CopyTo(dest MutableSum) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	dest.SetIsMonotonic(ms.IsMonotonic())
 	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableSum) CopyTo(dest MutableSum) {
+	newSum(ms.getOrig()).CopyTo(dest)
 }
 
 // Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.
@@ -887,25 +1096,35 @@ func (ms Sum) CopyTo(dest Sum) {
 
 type Histogram internal.Histogram
 
+type MutableHistogram internal.MutableHistogram
+
 func newHistogram(orig *otlpmetrics.Histogram) Histogram {
 	return Histogram(internal.NewHistogram(orig))
+}
+
+func newMutableHistogram(orig *otlpmetrics.Histogram) MutableHistogram {
+	return MutableHistogram(internal.NewHistogram(orig))
 }
 
 func (ms Histogram) getOrig() *otlpmetrics.Histogram {
 	return internal.GetOrigHistogram(internal.Histogram(ms))
 }
 
+func (ms MutableHistogram) getOrig() *otlpmetrics.Histogram {
+	return internal.GetMutableOrigHistogram(internal.MutableHistogram(ms))
+}
+
 // NewHistogram creates a new empty Histogram.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewHistogram() Histogram {
-	return newHistogram(&otlpmetrics.Histogram{})
+func NewHistogram() MutableHistogram {
+	return newMutableHistogram(&otlpmetrics.Histogram{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Histogram) MoveTo(dest Histogram) {
+func (ms MutableHistogram) MoveTo(dest MutableHistogram) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.Histogram{}
 }
@@ -915,8 +1134,13 @@ func (ms Histogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.getOrig().AggregationTemporality)
 }
 
+// AggregationTemporality returns the aggregationtemporality associated with this Histogram.
+func (ms MutableHistogram) AggregationTemporality() AggregationTemporality {
+	return AggregationTemporality(ms.getOrig().AggregationTemporality)
+}
+
 // SetAggregationTemporality replaces the aggregationtemporality associated with this Histogram.
-func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
+func (ms MutableHistogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
@@ -925,10 +1149,20 @@ func (ms Histogram) DataPoints() HistogramDataPointSlice {
 	return HistogramDataPointSlice(internal.NewHistogramDataPointSlice(&ms.getOrig().DataPoints))
 }
 
+// DataPoints returns the DataPoints associated with this Histogram.
+func (ms MutableHistogram) DataPoints() MutableHistogramDataPointSlice {
+	return MutableHistogramDataPointSlice(internal.NewMutableHistogramDataPointSlice(&ms.getOrig().DataPoints))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Histogram) CopyTo(dest Histogram) {
+func (ms Histogram) CopyTo(dest MutableHistogram) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableHistogram) CopyTo(dest MutableHistogram) {
+	newHistogram(ms.getOrig()).CopyTo(dest)
 }
 
 // ExponentialHistogram represents the type of a metric that is calculated by aggregating
@@ -942,25 +1176,35 @@ func (ms Histogram) CopyTo(dest Histogram) {
 
 type ExponentialHistogram internal.ExponentialHistogram
 
+type MutableExponentialHistogram internal.MutableExponentialHistogram
+
 func newExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) ExponentialHistogram {
 	return ExponentialHistogram(internal.NewExponentialHistogram(orig))
+}
+
+func newMutableExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) MutableExponentialHistogram {
+	return MutableExponentialHistogram(internal.NewExponentialHistogram(orig))
 }
 
 func (ms ExponentialHistogram) getOrig() *otlpmetrics.ExponentialHistogram {
 	return internal.GetOrigExponentialHistogram(internal.ExponentialHistogram(ms))
 }
 
+func (ms MutableExponentialHistogram) getOrig() *otlpmetrics.ExponentialHistogram {
+	return internal.GetMutableOrigExponentialHistogram(internal.MutableExponentialHistogram(ms))
+}
+
 // NewExponentialHistogram creates a new empty ExponentialHistogram.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExponentialHistogram() ExponentialHistogram {
-	return newExponentialHistogram(&otlpmetrics.ExponentialHistogram{})
+func NewExponentialHistogram() MutableExponentialHistogram {
+	return newMutableExponentialHistogram(&otlpmetrics.ExponentialHistogram{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
+func (ms MutableExponentialHistogram) MoveTo(dest MutableExponentialHistogram) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.ExponentialHistogram{}
 }
@@ -970,8 +1214,13 @@ func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.getOrig().AggregationTemporality)
 }
 
+// AggregationTemporality returns the aggregationtemporality associated with this ExponentialHistogram.
+func (ms MutableExponentialHistogram) AggregationTemporality() AggregationTemporality {
+	return AggregationTemporality(ms.getOrig().AggregationTemporality)
+}
+
 // SetAggregationTemporality replaces the aggregationtemporality associated with this ExponentialHistogram.
-func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporality) {
+func (ms MutableExponentialHistogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.getOrig().AggregationTemporality = otlpmetrics.AggregationTemporality(v)
 }
 
@@ -980,10 +1229,20 @@ func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
 	return ExponentialHistogramDataPointSlice(internal.NewExponentialHistogramDataPointSlice(&ms.getOrig().DataPoints))
 }
 
+// DataPoints returns the DataPoints associated with this ExponentialHistogram.
+func (ms MutableExponentialHistogram) DataPoints() MutableExponentialHistogramDataPointSlice {
+	return MutableExponentialHistogramDataPointSlice(internal.NewMutableExponentialHistogramDataPointSlice(&ms.getOrig().DataPoints))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
+func (ms ExponentialHistogram) CopyTo(dest MutableExponentialHistogram) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableExponentialHistogram) CopyTo(dest MutableExponentialHistogram) {
+	newExponentialHistogram(ms.getOrig()).CopyTo(dest)
 }
 
 // Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.
@@ -996,25 +1255,35 @@ func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
 
 type Summary internal.Summary
 
+type MutableSummary internal.MutableSummary
+
 func newSummary(orig *otlpmetrics.Summary) Summary {
 	return Summary(internal.NewSummary(orig))
+}
+
+func newMutableSummary(orig *otlpmetrics.Summary) MutableSummary {
+	return MutableSummary(internal.NewSummary(orig))
 }
 
 func (ms Summary) getOrig() *otlpmetrics.Summary {
 	return internal.GetOrigSummary(internal.Summary(ms))
 }
 
+func (ms MutableSummary) getOrig() *otlpmetrics.Summary {
+	return internal.GetMutableOrigSummary(internal.MutableSummary(ms))
+}
+
 // NewSummary creates a new empty Summary.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSummary() Summary {
-	return newSummary(&otlpmetrics.Summary{})
+func NewSummary() MutableSummary {
+	return newMutableSummary(&otlpmetrics.Summary{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Summary) MoveTo(dest Summary) {
+func (ms MutableSummary) MoveTo(dest MutableSummary) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.Summary{}
 }
@@ -1024,9 +1293,19 @@ func (ms Summary) DataPoints() SummaryDataPointSlice {
 	return SummaryDataPointSlice(internal.NewSummaryDataPointSlice(&ms.getOrig().DataPoints))
 }
 
+// DataPoints returns the DataPoints associated with this Summary.
+func (ms MutableSummary) DataPoints() MutableSummaryDataPointSlice {
+	return MutableSummaryDataPointSlice(internal.NewMutableSummaryDataPointSlice(&ms.getOrig().DataPoints))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Summary) CopyTo(dest Summary) {
+func (ms Summary) CopyTo(dest MutableSummary) {
 	ms.DataPoints().CopyTo(dest.DataPoints())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableSummary) CopyTo(dest MutableSummary) {
+	newSummary(ms.getOrig()).CopyTo(dest)
 }
 
 // NumberDataPointSlice logically represents a slice of NumberDataPoint.
@@ -1038,25 +1317,39 @@ func (ms Summary) CopyTo(dest Summary) {
 // Important: zero-initialized instance is not valid for use.
 type NumberDataPointSlice internal.NumberDataPointSlice
 
+type MutableNumberDataPointSlice internal.MutableNumberDataPointSlice
+
 func newNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) NumberDataPointSlice {
 	return NumberDataPointSlice(internal.NewNumberDataPointSlice(orig))
+}
+
+func newMutableNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) MutableNumberDataPointSlice {
+	return MutableNumberDataPointSlice(internal.NewNumberDataPointSlice(orig))
 }
 
 func (ms NumberDataPointSlice) getOrig() *[]*otlpmetrics.NumberDataPoint {
 	return internal.GetOrigNumberDataPointSlice(internal.NumberDataPointSlice(ms))
 }
 
+func (ms MutableNumberDataPointSlice) getOrig() *[]*otlpmetrics.NumberDataPoint {
+	return internal.GetMutableOrigNumberDataPointSlice(internal.MutableNumberDataPointSlice(ms))
+}
+
 // NewNumberDataPointSlice creates a NumberDataPointSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewNumberDataPointSlice() NumberDataPointSlice {
+func NewNumberDataPointSlice() MutableNumberDataPointSlice {
 	orig := []*otlpmetrics.NumberDataPoint(nil)
-	return newNumberDataPointSlice(&orig)
+	return newMutableNumberDataPointSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewNumberDataPointSlice()".
 func (es NumberDataPointSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableNumberDataPointSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -1072,14 +1365,18 @@ func (es NumberDataPointSlice) At(ix int) NumberDataPoint {
 	return newNumberDataPoint((*es.getOrig())[ix])
 }
 
+func (es MutableNumberDataPointSlice) At(ix int) MutableNumberDataPoint {
+	return newMutableNumberDataPoint((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
+func (es NumberDataPointSlice) CopyTo(dest MutableNumberDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newNumberDataPoint((*es.getOrig())[i]).CopyTo(newNumberDataPoint((*dest.getOrig())[i]))
+			newNumberDataPoint((*es.getOrig())[i]).CopyTo(newMutableNumberDataPoint((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -1087,9 +1384,14 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 	wrappers := make([]*otlpmetrics.NumberDataPoint, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newNumberDataPoint((*es.getOrig())[i]).CopyTo(newNumberDataPoint(wrappers[i]))
+		newNumberDataPoint((*es.getOrig())[i]).CopyTo(newMutableNumberDataPoint(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableNumberDataPointSlice) CopyTo(dest MutableNumberDataPointSlice) {
+	newNumberDataPointSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -1104,7 +1406,7 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
+func (es MutableNumberDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -1117,7 +1419,7 @@ func (es NumberDataPointSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty NumberDataPoint.
 // It returns the newly added NumberDataPoint.
-func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
+func (es MutableNumberDataPointSlice) AppendEmpty() MutableNumberDataPoint {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.NumberDataPoint{})
 	return es.At(es.Len() - 1)
 }
@@ -1125,13 +1427,13 @@ func (es NumberDataPointSlice) AppendEmpty() NumberDataPoint {
 // Sort sorts the NumberDataPoint elements within NumberDataPointSlice given the
 // provided less function so that two instances of NumberDataPointSlice
 // can be compared.
-func (es NumberDataPointSlice) Sort(less func(a, b NumberDataPoint) bool) {
+func (es MutableNumberDataPointSlice) Sort(less func(a, b MutableNumberDataPoint) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es NumberDataPointSlice) MoveAndAppendTo(dest NumberDataPointSlice) {
+func (es MutableNumberDataPointSlice) MoveAndAppendTo(dest MutableNumberDataPointSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -1143,7 +1445,7 @@ func (es NumberDataPointSlice) MoveAndAppendTo(dest NumberDataPointSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
+func (es MutableNumberDataPointSlice) RemoveIf(f func(MutableNumberDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -1171,25 +1473,35 @@ func (es NumberDataPointSlice) RemoveIf(f func(NumberDataPoint) bool) {
 
 type NumberDataPoint internal.NumberDataPoint
 
+type MutableNumberDataPoint internal.MutableNumberDataPoint
+
 func newNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
 	return NumberDataPoint(internal.NewNumberDataPoint(orig))
+}
+
+func newMutableNumberDataPoint(orig *otlpmetrics.NumberDataPoint) MutableNumberDataPoint {
+	return MutableNumberDataPoint(internal.NewNumberDataPoint(orig))
 }
 
 func (ms NumberDataPoint) getOrig() *otlpmetrics.NumberDataPoint {
 	return internal.GetOrigNumberDataPoint(internal.NumberDataPoint(ms))
 }
 
+func (ms MutableNumberDataPoint) getOrig() *otlpmetrics.NumberDataPoint {
+	return internal.GetMutableOrigNumberDataPoint(internal.MutableNumberDataPoint(ms))
+}
+
 // NewNumberDataPoint creates a new empty NumberDataPoint.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewNumberDataPoint() NumberDataPoint {
-	return newNumberDataPoint(&otlpmetrics.NumberDataPoint{})
+func NewNumberDataPoint() MutableNumberDataPoint {
+	return newMutableNumberDataPoint(&otlpmetrics.NumberDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
+func (ms MutableNumberDataPoint) MoveTo(dest MutableNumberDataPoint) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.NumberDataPoint{}
 }
@@ -1199,13 +1511,23 @@ func (ms NumberDataPoint) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
 }
 
+// Attributes returns the Attributes associated with this NumberDataPoint.
+func (ms MutableNumberDataPoint) Attributes() pcommon.MutableMap {
+	return pcommon.MutableMap(internal.NewMutableMap(&ms.getOrig().Attributes))
+}
+
 // StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
 func (ms NumberDataPoint) StartTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
 }
 
+// StartTimestamp returns the starttimestamp associated with this NumberDataPoint.
+func (ms MutableNumberDataPoint) StartTimestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
+}
+
 // SetStartTimestamp replaces the starttimestamp associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
+func (ms MutableNumberDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().StartTimeUnixNano = uint64(v)
 }
 
@@ -1214,8 +1536,13 @@ func (ms NumberDataPoint) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
+// Timestamp returns the timestamp associated with this NumberDataPoint.
+func (ms MutableNumberDataPoint) Timestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+}
+
 // SetTimestamp replaces the timestamp associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetTimestamp(v pcommon.Timestamp) {
+func (ms MutableNumberDataPoint) SetTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
@@ -1236,8 +1563,12 @@ func (ms NumberDataPoint) DoubleValue() float64 {
 	return ms.getOrig().GetAsDouble()
 }
 
+func (ms MutableNumberDataPoint) DoubleValue() float64 {
+	return ms.getOrig().GetAsDouble()
+}
+
 // SetDoubleValue replaces the double associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetDoubleValue(v float64) {
+func (ms MutableNumberDataPoint) SetDoubleValue(v float64) {
 	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsDouble{
 		AsDouble: v,
 	}
@@ -1248,8 +1579,12 @@ func (ms NumberDataPoint) IntValue() int64 {
 	return ms.getOrig().GetAsInt()
 }
 
+func (ms MutableNumberDataPoint) IntValue() int64 {
+	return ms.getOrig().GetAsInt()
+}
+
 // SetIntValue replaces the int associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetIntValue(v int64) {
+func (ms MutableNumberDataPoint) SetIntValue(v int64) {
 	ms.getOrig().Value = &otlpmetrics.NumberDataPoint_AsInt{
 		AsInt: v,
 	}
@@ -1260,18 +1595,28 @@ func (ms NumberDataPoint) Exemplars() ExemplarSlice {
 	return ExemplarSlice(internal.NewExemplarSlice(&ms.getOrig().Exemplars))
 }
 
+// Exemplars returns the Exemplars associated with this NumberDataPoint.
+func (ms MutableNumberDataPoint) Exemplars() MutableExemplarSlice {
+	return MutableExemplarSlice(internal.NewMutableExemplarSlice(&ms.getOrig().Exemplars))
+}
+
 // Flags returns the flags associated with this NumberDataPoint.
 func (ms NumberDataPoint) Flags() DataPointFlags {
 	return DataPointFlags(ms.getOrig().Flags)
 }
 
+// Flags returns the flags associated with this NumberDataPoint.
+func (ms MutableNumberDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
+}
+
 // SetFlags replaces the flags associated with this NumberDataPoint.
-func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
+func (ms MutableNumberDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
+func (ms NumberDataPoint) CopyTo(dest MutableNumberDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1286,6 +1631,11 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.SetFlags(ms.Flags())
 }
 
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableNumberDataPoint) CopyTo(dest MutableNumberDataPoint) {
+	newNumberDataPoint(ms.getOrig()).CopyTo(dest)
+}
+
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
 //
 // This is a reference type. If passed by value and callee modifies it, the
@@ -1295,25 +1645,39 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 // Important: zero-initialized instance is not valid for use.
 type HistogramDataPointSlice internal.HistogramDataPointSlice
 
+type MutableHistogramDataPointSlice internal.MutableHistogramDataPointSlice
+
 func newHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint) HistogramDataPointSlice {
 	return HistogramDataPointSlice(internal.NewHistogramDataPointSlice(orig))
+}
+
+func newMutableHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint) MutableHistogramDataPointSlice {
+	return MutableHistogramDataPointSlice(internal.NewHistogramDataPointSlice(orig))
 }
 
 func (ms HistogramDataPointSlice) getOrig() *[]*otlpmetrics.HistogramDataPoint {
 	return internal.GetOrigHistogramDataPointSlice(internal.HistogramDataPointSlice(ms))
 }
 
+func (ms MutableHistogramDataPointSlice) getOrig() *[]*otlpmetrics.HistogramDataPoint {
+	return internal.GetMutableOrigHistogramDataPointSlice(internal.MutableHistogramDataPointSlice(ms))
+}
+
 // NewHistogramDataPointSlice creates a HistogramDataPointSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewHistogramDataPointSlice() HistogramDataPointSlice {
+func NewHistogramDataPointSlice() MutableHistogramDataPointSlice {
 	orig := []*otlpmetrics.HistogramDataPoint(nil)
-	return newHistogramDataPointSlice(&orig)
+	return newMutableHistogramDataPointSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewHistogramDataPointSlice()".
 func (es HistogramDataPointSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableHistogramDataPointSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -1329,14 +1693,18 @@ func (es HistogramDataPointSlice) At(ix int) HistogramDataPoint {
 	return newHistogramDataPoint((*es.getOrig())[ix])
 }
 
+func (es MutableHistogramDataPointSlice) At(ix int) MutableHistogramDataPoint {
+	return newMutableHistogramDataPoint((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
+func (es HistogramDataPointSlice) CopyTo(dest MutableHistogramDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newHistogramDataPoint((*es.getOrig())[i]).CopyTo(newHistogramDataPoint((*dest.getOrig())[i]))
+			newHistogramDataPoint((*es.getOrig())[i]).CopyTo(newMutableHistogramDataPoint((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -1344,9 +1712,14 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	wrappers := make([]*otlpmetrics.HistogramDataPoint, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newHistogramDataPoint((*es.getOrig())[i]).CopyTo(newHistogramDataPoint(wrappers[i]))
+		newHistogramDataPoint((*es.getOrig())[i]).CopyTo(newMutableHistogramDataPoint(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableHistogramDataPointSlice) CopyTo(dest MutableHistogramDataPointSlice) {
+	newHistogramDataPointSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -1361,7 +1734,7 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
+func (es MutableHistogramDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -1374,7 +1747,7 @@ func (es HistogramDataPointSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty HistogramDataPoint.
 // It returns the newly added HistogramDataPoint.
-func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
+func (es MutableHistogramDataPointSlice) AppendEmpty() MutableHistogramDataPoint {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.HistogramDataPoint{})
 	return es.At(es.Len() - 1)
 }
@@ -1382,13 +1755,13 @@ func (es HistogramDataPointSlice) AppendEmpty() HistogramDataPoint {
 // Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the
 // provided less function so that two instances of HistogramDataPointSlice
 // can be compared.
-func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) {
+func (es MutableHistogramDataPointSlice) Sort(less func(a, b MutableHistogramDataPoint) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) {
+func (es MutableHistogramDataPointSlice) MoveAndAppendTo(dest MutableHistogramDataPointSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -1400,7 +1773,7 @@ func (es HistogramDataPointSlice) MoveAndAppendTo(dest HistogramDataPointSlice) 
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
+func (es MutableHistogramDataPointSlice) RemoveIf(f func(MutableHistogramDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -1428,25 +1801,35 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 
 type HistogramDataPoint internal.HistogramDataPoint
 
+type MutableHistogramDataPoint internal.MutableHistogramDataPoint
+
 func newHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPoint {
 	return HistogramDataPoint(internal.NewHistogramDataPoint(orig))
+}
+
+func newMutableHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) MutableHistogramDataPoint {
+	return MutableHistogramDataPoint(internal.NewHistogramDataPoint(orig))
 }
 
 func (ms HistogramDataPoint) getOrig() *otlpmetrics.HistogramDataPoint {
 	return internal.GetOrigHistogramDataPoint(internal.HistogramDataPoint(ms))
 }
 
+func (ms MutableHistogramDataPoint) getOrig() *otlpmetrics.HistogramDataPoint {
+	return internal.GetMutableOrigHistogramDataPoint(internal.MutableHistogramDataPoint(ms))
+}
+
 // NewHistogramDataPoint creates a new empty HistogramDataPoint.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewHistogramDataPoint() HistogramDataPoint {
-	return newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
+func NewHistogramDataPoint() MutableHistogramDataPoint {
+	return newMutableHistogramDataPoint(&otlpmetrics.HistogramDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms HistogramDataPoint) MoveTo(dest HistogramDataPoint) {
+func (ms MutableHistogramDataPoint) MoveTo(dest MutableHistogramDataPoint) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.HistogramDataPoint{}
 }
@@ -1456,13 +1839,23 @@ func (ms HistogramDataPoint) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
 }
 
+// Attributes returns the Attributes associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) Attributes() pcommon.MutableMap {
+	return pcommon.MutableMap(internal.NewMutableMap(&ms.getOrig().Attributes))
+}
+
 // StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) StartTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
 }
 
+// StartTimestamp returns the starttimestamp associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) StartTimestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
+}
+
 // SetStartTimestamp replaces the starttimestamp associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
+func (ms MutableHistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().StartTimeUnixNano = uint64(v)
 }
 
@@ -1471,8 +1864,13 @@ func (ms HistogramDataPoint) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
+// Timestamp returns the timestamp associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) Timestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+}
+
 // SetTimestamp replaces the timestamp associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
+func (ms MutableHistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
@@ -1481,13 +1879,23 @@ func (ms HistogramDataPoint) Count() uint64 {
 	return ms.getOrig().Count
 }
 
+// MutableCount returns the count associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) Count() uint64 {
+	return ms.getOrig().Count
+}
+
 // SetCount replaces the count associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetCount(v uint64) {
+func (ms MutableHistogramDataPoint) SetCount(v uint64) {
 	ms.getOrig().Count = v
 }
 
 // Sum returns the sum associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Sum() float64 {
+	return ms.getOrig().GetSum()
+}
+
+// Sum returns the sum associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) Sum() float64 {
 	return ms.getOrig().GetSum()
 }
 
@@ -1497,13 +1905,19 @@ func (ms HistogramDataPoint) HasSum() bool {
 	return ms.getOrig().Sum_ != nil
 }
 
+// HasSum returns true if the HistogramDataPoint contains a
+// Sum value, false otherwise.
+func (ms MutableHistogramDataPoint) HasSum() bool {
+	return ms.getOrig().Sum_ != nil
+}
+
 // SetSum replaces the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetSum(v float64) {
+func (ms MutableHistogramDataPoint) SetSum(v float64) {
 	ms.getOrig().Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
 }
 
 // RemoveSum removes the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) RemoveSum() {
+func (ms MutableHistogramDataPoint) RemoveSum() {
 	ms.getOrig().Sum_ = nil
 }
 
@@ -1512,9 +1926,19 @@ func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
 }
 
+// BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) BucketCounts() pcommon.MutableUInt64Slice {
+	return pcommon.MutableUInt64Slice(internal.NewMutableUInt64Slice(&ms.getOrig().BucketCounts))
+}
+
 // ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) ExplicitBounds() pcommon.Float64Slice {
 	return pcommon.Float64Slice(internal.NewFloat64Slice(&ms.getOrig().ExplicitBounds))
+}
+
+// ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) ExplicitBounds() pcommon.MutableFloat64Slice {
+	return pcommon.MutableFloat64Slice(internal.NewMutableFloat64Slice(&ms.getOrig().ExplicitBounds))
 }
 
 // Exemplars returns the Exemplars associated with this HistogramDataPoint.
@@ -1522,18 +1946,33 @@ func (ms HistogramDataPoint) Exemplars() ExemplarSlice {
 	return ExemplarSlice(internal.NewExemplarSlice(&ms.getOrig().Exemplars))
 }
 
+// Exemplars returns the Exemplars associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) Exemplars() MutableExemplarSlice {
+	return MutableExemplarSlice(internal.NewMutableExemplarSlice(&ms.getOrig().Exemplars))
+}
+
 // Flags returns the flags associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Flags() DataPointFlags {
 	return DataPointFlags(ms.getOrig().Flags)
 }
 
+// Flags returns the flags associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
+}
+
 // SetFlags replaces the flags associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetFlags(v DataPointFlags) {
+func (ms MutableHistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
 // Min returns the min associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Min() float64 {
+	return ms.getOrig().GetMin()
+}
+
+// Min returns the min associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) Min() float64 {
 	return ms.getOrig().GetMin()
 }
 
@@ -1543,18 +1982,29 @@ func (ms HistogramDataPoint) HasMin() bool {
 	return ms.getOrig().Min_ != nil
 }
 
+// HasMin returns true if the HistogramDataPoint contains a
+// Min value, false otherwise.
+func (ms MutableHistogramDataPoint) HasMin() bool {
+	return ms.getOrig().Min_ != nil
+}
+
 // SetMin replaces the min associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetMin(v float64) {
+func (ms MutableHistogramDataPoint) SetMin(v float64) {
 	ms.getOrig().Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: v}
 }
 
 // RemoveMin removes the min associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) RemoveMin() {
+func (ms MutableHistogramDataPoint) RemoveMin() {
 	ms.getOrig().Min_ = nil
 }
 
 // Max returns the max associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) Max() float64 {
+	return ms.getOrig().GetMax()
+}
+
+// Max returns the max associated with this HistogramDataPoint.
+func (ms MutableHistogramDataPoint) Max() float64 {
 	return ms.getOrig().GetMax()
 }
 
@@ -1564,18 +2014,24 @@ func (ms HistogramDataPoint) HasMax() bool {
 	return ms.getOrig().Max_ != nil
 }
 
+// HasMax returns true if the HistogramDataPoint contains a
+// Max value, false otherwise.
+func (ms MutableHistogramDataPoint) HasMax() bool {
+	return ms.getOrig().Max_ != nil
+}
+
 // SetMax replaces the max associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetMax(v float64) {
+func (ms MutableHistogramDataPoint) SetMax(v float64) {
 	ms.getOrig().Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: v}
 }
 
 // RemoveMax removes the max associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) RemoveMax() {
+func (ms MutableHistogramDataPoint) RemoveMax() {
 	ms.getOrig().Max_ = nil
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
+func (ms HistogramDataPoint) CopyTo(dest MutableHistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1598,6 +2054,11 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 
 }
 
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableHistogramDataPoint) CopyTo(dest MutableHistogramDataPoint) {
+	newHistogramDataPoint(ms.getOrig()).CopyTo(dest)
+}
+
 // ExponentialHistogramDataPointSlice logically represents a slice of ExponentialHistogramDataPoint.
 //
 // This is a reference type. If passed by value and callee modifies it, the
@@ -1607,25 +2068,39 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 // Important: zero-initialized instance is not valid for use.
 type ExponentialHistogramDataPointSlice internal.ExponentialHistogramDataPointSlice
 
+type MutableExponentialHistogramDataPointSlice internal.MutableExponentialHistogramDataPointSlice
+
 func newExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPointSlice {
 	return ExponentialHistogramDataPointSlice(internal.NewExponentialHistogramDataPointSlice(orig))
+}
+
+func newMutableExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHistogramDataPoint) MutableExponentialHistogramDataPointSlice {
+	return MutableExponentialHistogramDataPointSlice(internal.NewExponentialHistogramDataPointSlice(orig))
 }
 
 func (ms ExponentialHistogramDataPointSlice) getOrig() *[]*otlpmetrics.ExponentialHistogramDataPoint {
 	return internal.GetOrigExponentialHistogramDataPointSlice(internal.ExponentialHistogramDataPointSlice(ms))
 }
 
+func (ms MutableExponentialHistogramDataPointSlice) getOrig() *[]*otlpmetrics.ExponentialHistogramDataPoint {
+	return internal.GetMutableOrigExponentialHistogramDataPointSlice(internal.MutableExponentialHistogramDataPointSlice(ms))
+}
+
 // NewExponentialHistogramDataPointSlice creates a ExponentialHistogramDataPointSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
+func NewExponentialHistogramDataPointSlice() MutableExponentialHistogramDataPointSlice {
 	orig := []*otlpmetrics.ExponentialHistogramDataPoint(nil)
-	return newExponentialHistogramDataPointSlice(&orig)
+	return newMutableExponentialHistogramDataPointSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewExponentialHistogramDataPointSlice()".
 func (es ExponentialHistogramDataPointSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableExponentialHistogramDataPointSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -1641,14 +2116,18 @@ func (es ExponentialHistogramDataPointSlice) At(ix int) ExponentialHistogramData
 	return newExponentialHistogramDataPoint((*es.getOrig())[ix])
 }
 
+func (es MutableExponentialHistogramDataPointSlice) At(ix int) MutableExponentialHistogramDataPoint {
+	return newMutableExponentialHistogramDataPoint((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDataPointSlice) {
+func (es ExponentialHistogramDataPointSlice) CopyTo(dest MutableExponentialHistogramDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newExponentialHistogramDataPoint((*es.getOrig())[i]).CopyTo(newExponentialHistogramDataPoint((*dest.getOrig())[i]))
+			newExponentialHistogramDataPoint((*es.getOrig())[i]).CopyTo(newMutableExponentialHistogramDataPoint((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -1656,9 +2135,14 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 	wrappers := make([]*otlpmetrics.ExponentialHistogramDataPoint, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newExponentialHistogramDataPoint((*es.getOrig())[i]).CopyTo(newExponentialHistogramDataPoint(wrappers[i]))
+		newExponentialHistogramDataPoint((*es.getOrig())[i]).CopyTo(newMutableExponentialHistogramDataPoint(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableExponentialHistogramDataPointSlice) CopyTo(dest MutableExponentialHistogramDataPointSlice) {
+	newExponentialHistogramDataPointSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -1673,7 +2157,7 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
+func (es MutableExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -1686,7 +2170,7 @@ func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty ExponentialHistogramDataPoint.
 // It returns the newly added ExponentialHistogramDataPoint.
-func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramDataPoint {
+func (es MutableExponentialHistogramDataPointSlice) AppendEmpty() MutableExponentialHistogramDataPoint {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.ExponentialHistogramDataPoint{})
 	return es.At(es.Len() - 1)
 }
@@ -1694,13 +2178,13 @@ func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramD
 // Sort sorts the ExponentialHistogramDataPoint elements within ExponentialHistogramDataPointSlice given the
 // provided less function so that two instances of ExponentialHistogramDataPointSlice
 // can be compared.
-func (es ExponentialHistogramDataPointSlice) Sort(less func(a, b ExponentialHistogramDataPoint) bool) {
+func (es MutableExponentialHistogramDataPointSlice) Sort(less func(a, b MutableExponentialHistogramDataPoint) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ExponentialHistogramDataPointSlice) MoveAndAppendTo(dest ExponentialHistogramDataPointSlice) {
+func (es MutableExponentialHistogramDataPointSlice) MoveAndAppendTo(dest MutableExponentialHistogramDataPointSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -1712,7 +2196,7 @@ func (es ExponentialHistogramDataPointSlice) MoveAndAppendTo(dest ExponentialHis
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogramDataPoint) bool) {
+func (es MutableExponentialHistogramDataPointSlice) RemoveIf(f func(MutableExponentialHistogramDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -1743,25 +2227,35 @@ func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogra
 
 type ExponentialHistogramDataPoint internal.ExponentialHistogramDataPoint
 
+type MutableExponentialHistogramDataPoint internal.MutableExponentialHistogramDataPoint
+
 func newExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPoint {
 	return ExponentialHistogramDataPoint(internal.NewExponentialHistogramDataPoint(orig))
+}
+
+func newMutableExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) MutableExponentialHistogramDataPoint {
+	return MutableExponentialHistogramDataPoint(internal.NewExponentialHistogramDataPoint(orig))
 }
 
 func (ms ExponentialHistogramDataPoint) getOrig() *otlpmetrics.ExponentialHistogramDataPoint {
 	return internal.GetOrigExponentialHistogramDataPoint(internal.ExponentialHistogramDataPoint(ms))
 }
 
+func (ms MutableExponentialHistogramDataPoint) getOrig() *otlpmetrics.ExponentialHistogramDataPoint {
+	return internal.GetMutableOrigExponentialHistogramDataPoint(internal.MutableExponentialHistogramDataPoint(ms))
+}
+
 // NewExponentialHistogramDataPoint creates a new empty ExponentialHistogramDataPoint.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
-	return newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{})
+func NewExponentialHistogramDataPoint() MutableExponentialHistogramDataPoint {
+	return newMutableExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ExponentialHistogramDataPoint) MoveTo(dest ExponentialHistogramDataPoint) {
+func (ms MutableExponentialHistogramDataPoint) MoveTo(dest MutableExponentialHistogramDataPoint) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.ExponentialHistogramDataPoint{}
 }
@@ -1771,13 +2265,23 @@ func (ms ExponentialHistogramDataPoint) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
 }
 
+// Attributes returns the Attributes associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Attributes() pcommon.MutableMap {
+	return pcommon.MutableMap(internal.NewMutableMap(&ms.getOrig().Attributes))
+}
+
 // StartTimestamp returns the starttimestamp associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) StartTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
 }
 
+// StartTimestamp returns the starttimestamp associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) StartTimestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
+}
+
 // SetStartTimestamp replaces the starttimestamp associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
+func (ms MutableExponentialHistogramDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().StartTimeUnixNano = uint64(v)
 }
 
@@ -1786,8 +2290,13 @@ func (ms ExponentialHistogramDataPoint) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
+// Timestamp returns the timestamp associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Timestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+}
+
 // SetTimestamp replaces the timestamp associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
+func (ms MutableExponentialHistogramDataPoint) SetTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
@@ -1796,13 +2305,23 @@ func (ms ExponentialHistogramDataPoint) Count() uint64 {
 	return ms.getOrig().Count
 }
 
+// MutableCount returns the count associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Count() uint64 {
+	return ms.getOrig().Count
+}
+
 // SetCount replaces the count associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetCount(v uint64) {
+func (ms MutableExponentialHistogramDataPoint) SetCount(v uint64) {
 	ms.getOrig().Count = v
 }
 
 // Sum returns the sum associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Sum() float64 {
+	return ms.getOrig().GetSum()
+}
+
+// Sum returns the sum associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Sum() float64 {
 	return ms.getOrig().GetSum()
 }
 
@@ -1812,13 +2331,19 @@ func (ms ExponentialHistogramDataPoint) HasSum() bool {
 	return ms.getOrig().Sum_ != nil
 }
 
+// HasSum returns true if the ExponentialHistogramDataPoint contains a
+// Sum value, false otherwise.
+func (ms MutableExponentialHistogramDataPoint) HasSum() bool {
+	return ms.getOrig().Sum_ != nil
+}
+
 // SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
+func (ms MutableExponentialHistogramDataPoint) SetSum(v float64) {
 	ms.getOrig().Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
 }
 
 // RemoveSum removes the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) RemoveSum() {
+func (ms MutableExponentialHistogramDataPoint) RemoveSum() {
 	ms.getOrig().Sum_ = nil
 }
 
@@ -1827,8 +2352,13 @@ func (ms ExponentialHistogramDataPoint) Scale() int32 {
 	return ms.getOrig().Scale
 }
 
+// MutableScale returns the scale associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Scale() int32 {
+	return ms.getOrig().Scale
+}
+
 // SetScale replaces the scale associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetScale(v int32) {
+func (ms MutableExponentialHistogramDataPoint) SetScale(v int32) {
 	ms.getOrig().Scale = v
 }
 
@@ -1837,8 +2367,13 @@ func (ms ExponentialHistogramDataPoint) ZeroCount() uint64 {
 	return ms.getOrig().ZeroCount
 }
 
+// MutableZeroCount returns the zerocount associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) ZeroCount() uint64 {
+	return ms.getOrig().ZeroCount
+}
+
 // SetZeroCount replaces the zerocount associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetZeroCount(v uint64) {
+func (ms MutableExponentialHistogramDataPoint) SetZeroCount(v uint64) {
 	ms.getOrig().ZeroCount = v
 }
 
@@ -1847,9 +2382,19 @@ func (ms ExponentialHistogramDataPoint) Positive() ExponentialHistogramDataPoint
 	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(&ms.getOrig().Positive))
 }
 
+// Positive returns the positive associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Positive() MutableExponentialHistogramDataPointBuckets {
+	return MutableExponentialHistogramDataPointBuckets(internal.NewMutableExponentialHistogramDataPointBuckets(&ms.getOrig().Positive))
+}
+
 // Negative returns the negative associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Negative() ExponentialHistogramDataPointBuckets {
 	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(&ms.getOrig().Negative))
+}
+
+// Negative returns the negative associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Negative() MutableExponentialHistogramDataPointBuckets {
+	return MutableExponentialHistogramDataPointBuckets(internal.NewMutableExponentialHistogramDataPointBuckets(&ms.getOrig().Negative))
 }
 
 // Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
@@ -1857,18 +2402,33 @@ func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
 	return ExemplarSlice(internal.NewExemplarSlice(&ms.getOrig().Exemplars))
 }
 
+// Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Exemplars() MutableExemplarSlice {
+	return MutableExemplarSlice(internal.NewMutableExemplarSlice(&ms.getOrig().Exemplars))
+}
+
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Flags() DataPointFlags {
 	return DataPointFlags(ms.getOrig().Flags)
 }
 
+// Flags returns the flags associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
+}
+
 // SetFlags replaces the flags associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetFlags(v DataPointFlags) {
+func (ms MutableExponentialHistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Min() float64 {
+	return ms.getOrig().GetMin()
+}
+
+// Min returns the min associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Min() float64 {
 	return ms.getOrig().GetMin()
 }
 
@@ -1878,18 +2438,29 @@ func (ms ExponentialHistogramDataPoint) HasMin() bool {
 	return ms.getOrig().Min_ != nil
 }
 
+// HasMin returns true if the ExponentialHistogramDataPoint contains a
+// Min value, false otherwise.
+func (ms MutableExponentialHistogramDataPoint) HasMin() bool {
+	return ms.getOrig().Min_ != nil
+}
+
 // SetMin replaces the min associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetMin(v float64) {
+func (ms MutableExponentialHistogramDataPoint) SetMin(v float64) {
 	ms.getOrig().Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: v}
 }
 
 // RemoveMin removes the min associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) RemoveMin() {
+func (ms MutableExponentialHistogramDataPoint) RemoveMin() {
 	ms.getOrig().Min_ = nil
 }
 
 // Max returns the max associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Max() float64 {
+	return ms.getOrig().GetMax()
+}
+
+// Max returns the max associated with this ExponentialHistogramDataPoint.
+func (ms MutableExponentialHistogramDataPoint) Max() float64 {
 	return ms.getOrig().GetMax()
 }
 
@@ -1899,18 +2470,24 @@ func (ms ExponentialHistogramDataPoint) HasMax() bool {
 	return ms.getOrig().Max_ != nil
 }
 
+// HasMax returns true if the ExponentialHistogramDataPoint contains a
+// Max value, false otherwise.
+func (ms MutableExponentialHistogramDataPoint) HasMax() bool {
+	return ms.getOrig().Max_ != nil
+}
+
 // SetMax replaces the max associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetMax(v float64) {
+func (ms MutableExponentialHistogramDataPoint) SetMax(v float64) {
 	ms.getOrig().Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: v}
 }
 
 // RemoveMax removes the max associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) RemoveMax() {
+func (ms MutableExponentialHistogramDataPoint) RemoveMax() {
 	ms.getOrig().Max_ = nil
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
+func (ms ExponentialHistogramDataPoint) CopyTo(dest MutableExponentialHistogramDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
@@ -1935,6 +2512,11 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 
 }
 
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableExponentialHistogramDataPoint) CopyTo(dest MutableExponentialHistogramDataPoint) {
+	newExponentialHistogramDataPoint(ms.getOrig()).CopyTo(dest)
+}
+
 // ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.
 //
 // This is a reference type, if passed by value and callee modifies it the
@@ -1945,25 +2527,35 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 
 type ExponentialHistogramDataPointBuckets internal.ExponentialHistogramDataPointBuckets
 
+type MutableExponentialHistogramDataPointBuckets internal.MutableExponentialHistogramDataPointBuckets
+
 func newExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ExponentialHistogramDataPointBuckets {
 	return ExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(orig))
+}
+
+func newMutableExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) MutableExponentialHistogramDataPointBuckets {
+	return MutableExponentialHistogramDataPointBuckets(internal.NewExponentialHistogramDataPointBuckets(orig))
 }
 
 func (ms ExponentialHistogramDataPointBuckets) getOrig() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
 	return internal.GetOrigExponentialHistogramDataPointBuckets(internal.ExponentialHistogramDataPointBuckets(ms))
 }
 
+func (ms MutableExponentialHistogramDataPointBuckets) getOrig() *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	return internal.GetMutableOrigExponentialHistogramDataPointBuckets(internal.MutableExponentialHistogramDataPointBuckets(ms))
+}
+
 // NewExponentialHistogramDataPointBuckets creates a new empty ExponentialHistogramDataPointBuckets.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
-	return newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
+func NewExponentialHistogramDataPointBuckets() MutableExponentialHistogramDataPointBuckets {
+	return newMutableExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ExponentialHistogramDataPointBuckets) MoveTo(dest ExponentialHistogramDataPointBuckets) {
+func (ms MutableExponentialHistogramDataPointBuckets) MoveTo(dest MutableExponentialHistogramDataPointBuckets) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
 }
@@ -1973,8 +2565,13 @@ func (ms ExponentialHistogramDataPointBuckets) Offset() int32 {
 	return ms.getOrig().Offset
 }
 
+// MutableOffset returns the offset associated with this ExponentialHistogramDataPointBuckets.
+func (ms MutableExponentialHistogramDataPointBuckets) Offset() int32 {
+	return ms.getOrig().Offset
+}
+
 // SetOffset replaces the offset associated with this ExponentialHistogramDataPointBuckets.
-func (ms ExponentialHistogramDataPointBuckets) SetOffset(v int32) {
+func (ms MutableExponentialHistogramDataPointBuckets) SetOffset(v int32) {
 	ms.getOrig().Offset = v
 }
 
@@ -1983,10 +2580,20 @@ func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slic
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.getOrig().BucketCounts))
 }
 
+// BucketCounts returns the bucketcounts associated with this ExponentialHistogramDataPointBuckets.
+func (ms MutableExponentialHistogramDataPointBuckets) BucketCounts() pcommon.MutableUInt64Slice {
+	return pcommon.MutableUInt64Slice(internal.NewMutableUInt64Slice(&ms.getOrig().BucketCounts))
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
+func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest MutableExponentialHistogramDataPointBuckets) {
 	dest.SetOffset(ms.Offset())
 	ms.BucketCounts().CopyTo(dest.BucketCounts())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableExponentialHistogramDataPointBuckets) CopyTo(dest MutableExponentialHistogramDataPointBuckets) {
+	newExponentialHistogramDataPointBuckets(ms.getOrig()).CopyTo(dest)
 }
 
 // SummaryDataPointSlice logically represents a slice of SummaryDataPoint.
@@ -1998,25 +2605,39 @@ func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramD
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPointSlice internal.SummaryDataPointSlice
 
+type MutableSummaryDataPointSlice internal.MutableSummaryDataPointSlice
+
 func newSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint) SummaryDataPointSlice {
 	return SummaryDataPointSlice(internal.NewSummaryDataPointSlice(orig))
+}
+
+func newMutableSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint) MutableSummaryDataPointSlice {
+	return MutableSummaryDataPointSlice(internal.NewSummaryDataPointSlice(orig))
 }
 
 func (ms SummaryDataPointSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint {
 	return internal.GetOrigSummaryDataPointSlice(internal.SummaryDataPointSlice(ms))
 }
 
+func (ms MutableSummaryDataPointSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint {
+	return internal.GetMutableOrigSummaryDataPointSlice(internal.MutableSummaryDataPointSlice(ms))
+}
+
 // NewSummaryDataPointSlice creates a SummaryDataPointSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewSummaryDataPointSlice() SummaryDataPointSlice {
+func NewSummaryDataPointSlice() MutableSummaryDataPointSlice {
 	orig := []*otlpmetrics.SummaryDataPoint(nil)
-	return newSummaryDataPointSlice(&orig)
+	return newMutableSummaryDataPointSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewSummaryDataPointSlice()".
 func (es SummaryDataPointSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableSummaryDataPointSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -2032,14 +2653,18 @@ func (es SummaryDataPointSlice) At(ix int) SummaryDataPoint {
 	return newSummaryDataPoint((*es.getOrig())[ix])
 }
 
+func (es MutableSummaryDataPointSlice) At(ix int) MutableSummaryDataPoint {
+	return newMutableSummaryDataPoint((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
+func (es SummaryDataPointSlice) CopyTo(dest MutableSummaryDataPointSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newSummaryDataPoint((*es.getOrig())[i]).CopyTo(newSummaryDataPoint((*dest.getOrig())[i]))
+			newSummaryDataPoint((*es.getOrig())[i]).CopyTo(newMutableSummaryDataPoint((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -2047,9 +2672,14 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	wrappers := make([]*otlpmetrics.SummaryDataPoint, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newSummaryDataPoint((*es.getOrig())[i]).CopyTo(newSummaryDataPoint(wrappers[i]))
+		newSummaryDataPoint((*es.getOrig())[i]).CopyTo(newMutableSummaryDataPoint(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableSummaryDataPointSlice) CopyTo(dest MutableSummaryDataPointSlice) {
+	newSummaryDataPointSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -2064,7 +2694,7 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es SummaryDataPointSlice) EnsureCapacity(newCap int) {
+func (es MutableSummaryDataPointSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -2077,7 +2707,7 @@ func (es SummaryDataPointSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty SummaryDataPoint.
 // It returns the newly added SummaryDataPoint.
-func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
+func (es MutableSummaryDataPointSlice) AppendEmpty() MutableSummaryDataPoint {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.SummaryDataPoint{})
 	return es.At(es.Len() - 1)
 }
@@ -2085,13 +2715,13 @@ func (es SummaryDataPointSlice) AppendEmpty() SummaryDataPoint {
 // Sort sorts the SummaryDataPoint elements within SummaryDataPointSlice given the
 // provided less function so that two instances of SummaryDataPointSlice
 // can be compared.
-func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) {
+func (es MutableSummaryDataPointSlice) Sort(less func(a, b MutableSummaryDataPoint) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
+func (es MutableSummaryDataPointSlice) MoveAndAppendTo(dest MutableSummaryDataPointSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -2103,7 +2733,7 @@ func (es SummaryDataPointSlice) MoveAndAppendTo(dest SummaryDataPointSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
+func (es MutableSummaryDataPointSlice) RemoveIf(f func(MutableSummaryDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -2131,25 +2761,35 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 
 type SummaryDataPoint internal.SummaryDataPoint
 
+type MutableSummaryDataPoint internal.MutableSummaryDataPoint
+
 func newSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
 	return SummaryDataPoint(internal.NewSummaryDataPoint(orig))
+}
+
+func newMutableSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) MutableSummaryDataPoint {
+	return MutableSummaryDataPoint(internal.NewSummaryDataPoint(orig))
 }
 
 func (ms SummaryDataPoint) getOrig() *otlpmetrics.SummaryDataPoint {
 	return internal.GetOrigSummaryDataPoint(internal.SummaryDataPoint(ms))
 }
 
+func (ms MutableSummaryDataPoint) getOrig() *otlpmetrics.SummaryDataPoint {
+	return internal.GetMutableOrigSummaryDataPoint(internal.MutableSummaryDataPoint(ms))
+}
+
 // NewSummaryDataPoint creates a new empty SummaryDataPoint.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSummaryDataPoint() SummaryDataPoint {
-	return newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
+func NewSummaryDataPoint() MutableSummaryDataPoint {
+	return newMutableSummaryDataPoint(&otlpmetrics.SummaryDataPoint{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms SummaryDataPoint) MoveTo(dest SummaryDataPoint) {
+func (ms MutableSummaryDataPoint) MoveTo(dest MutableSummaryDataPoint) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.SummaryDataPoint{}
 }
@@ -2159,13 +2799,23 @@ func (ms SummaryDataPoint) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.getOrig().Attributes))
 }
 
+// Attributes returns the Attributes associated with this SummaryDataPoint.
+func (ms MutableSummaryDataPoint) Attributes() pcommon.MutableMap {
+	return pcommon.MutableMap(internal.NewMutableMap(&ms.getOrig().Attributes))
+}
+
 // StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) StartTimestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
 }
 
+// StartTimestamp returns the starttimestamp associated with this SummaryDataPoint.
+func (ms MutableSummaryDataPoint) StartTimestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().StartTimeUnixNano)
+}
+
 // SetStartTimestamp replaces the starttimestamp associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
+func (ms MutableSummaryDataPoint) SetStartTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().StartTimeUnixNano = uint64(v)
 }
 
@@ -2174,8 +2824,13 @@ func (ms SummaryDataPoint) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
+// Timestamp returns the timestamp associated with this SummaryDataPoint.
+func (ms MutableSummaryDataPoint) Timestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+}
+
 // SetTimestamp replaces the timestamp associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetTimestamp(v pcommon.Timestamp) {
+func (ms MutableSummaryDataPoint) SetTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
@@ -2184,8 +2839,13 @@ func (ms SummaryDataPoint) Count() uint64 {
 	return ms.getOrig().Count
 }
 
+// MutableCount returns the count associated with this SummaryDataPoint.
+func (ms MutableSummaryDataPoint) Count() uint64 {
+	return ms.getOrig().Count
+}
+
 // SetCount replaces the count associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetCount(v uint64) {
+func (ms MutableSummaryDataPoint) SetCount(v uint64) {
 	ms.getOrig().Count = v
 }
 
@@ -2194,8 +2854,13 @@ func (ms SummaryDataPoint) Sum() float64 {
 	return ms.getOrig().Sum
 }
 
+// MutableSum returns the sum associated with this SummaryDataPoint.
+func (ms MutableSummaryDataPoint) Sum() float64 {
+	return ms.getOrig().Sum
+}
+
 // SetSum replaces the sum associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetSum(v float64) {
+func (ms MutableSummaryDataPoint) SetSum(v float64) {
 	ms.getOrig().Sum = v
 }
 
@@ -2204,18 +2869,28 @@ func (ms SummaryDataPoint) QuantileValues() SummaryDataPointValueAtQuantileSlice
 	return SummaryDataPointValueAtQuantileSlice(internal.NewSummaryDataPointValueAtQuantileSlice(&ms.getOrig().QuantileValues))
 }
 
+// QuantileValues returns the QuantileValues associated with this SummaryDataPoint.
+func (ms MutableSummaryDataPoint) QuantileValues() MutableSummaryDataPointValueAtQuantileSlice {
+	return MutableSummaryDataPointValueAtQuantileSlice(internal.NewMutableSummaryDataPointValueAtQuantileSlice(&ms.getOrig().QuantileValues))
+}
+
 // Flags returns the flags associated with this SummaryDataPoint.
 func (ms SummaryDataPoint) Flags() DataPointFlags {
 	return DataPointFlags(ms.getOrig().Flags)
 }
 
+// Flags returns the flags associated with this SummaryDataPoint.
+func (ms MutableSummaryDataPoint) Flags() DataPointFlags {
+	return DataPointFlags(ms.getOrig().Flags)
+}
+
 // SetFlags replaces the flags associated with this SummaryDataPoint.
-func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
+func (ms MutableSummaryDataPoint) SetFlags(v DataPointFlags) {
 	ms.getOrig().Flags = uint32(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
+func (ms SummaryDataPoint) CopyTo(dest MutableSummaryDataPoint) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetStartTimestamp(ms.StartTimestamp())
 	dest.SetTimestamp(ms.Timestamp())
@@ -2223,6 +2898,11 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.SetSum(ms.Sum())
 	ms.QuantileValues().CopyTo(dest.QuantileValues())
 	dest.SetFlags(ms.Flags())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableSummaryDataPoint) CopyTo(dest MutableSummaryDataPoint) {
+	newSummaryDataPoint(ms.getOrig()).CopyTo(dest)
 }
 
 // SummaryDataPointValueAtQuantileSlice logically represents a slice of SummaryDataPointValueAtQuantile.
@@ -2234,25 +2914,39 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 // Important: zero-initialized instance is not valid for use.
 type SummaryDataPointValueAtQuantileSlice internal.SummaryDataPointValueAtQuantileSlice
 
+type MutableSummaryDataPointValueAtQuantileSlice internal.MutableSummaryDataPointValueAtQuantileSlice
+
 func newSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantileSlice {
 	return SummaryDataPointValueAtQuantileSlice(internal.NewSummaryDataPointValueAtQuantileSlice(orig))
+}
+
+func newMutableSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) MutableSummaryDataPointValueAtQuantileSlice {
+	return MutableSummaryDataPointValueAtQuantileSlice(internal.NewSummaryDataPointValueAtQuantileSlice(orig))
 }
 
 func (ms SummaryDataPointValueAtQuantileSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return internal.GetOrigSummaryDataPointValueAtQuantileSlice(internal.SummaryDataPointValueAtQuantileSlice(ms))
 }
 
+func (ms MutableSummaryDataPointValueAtQuantileSlice) getOrig() *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return internal.GetMutableOrigSummaryDataPointValueAtQuantileSlice(internal.MutableSummaryDataPointValueAtQuantileSlice(ms))
+}
+
 // NewSummaryDataPointValueAtQuantileSlice creates a SummaryDataPointValueAtQuantileSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
+func NewSummaryDataPointValueAtQuantileSlice() MutableSummaryDataPointValueAtQuantileSlice {
 	orig := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile(nil)
-	return newSummaryDataPointValueAtQuantileSlice(&orig)
+	return newMutableSummaryDataPointValueAtQuantileSlice(&orig)
 }
 
 // Len returns the number of elements in the slice.
 //
 // Returns "0" for a newly instance created with "NewSummaryDataPointValueAtQuantileSlice()".
 func (es SummaryDataPointValueAtQuantileSlice) Len() int {
+	return len(*es.getOrig())
+}
+
+func (es MutableSummaryDataPointValueAtQuantileSlice) Len() int {
 	return len(*es.getOrig())
 }
 
@@ -2268,14 +2962,18 @@ func (es SummaryDataPointValueAtQuantileSlice) At(ix int) SummaryDataPointValueA
 	return newSummaryDataPointValueAtQuantile((*es.getOrig())[ix])
 }
 
+func (es MutableSummaryDataPointValueAtQuantileSlice) At(ix int) MutableSummaryDataPointValueAtQuantile {
+	return newMutableSummaryDataPointValueAtQuantile((*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
+func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest MutableSummaryDataPointValueAtQuantileSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
 		(*dest.getOrig()) = (*dest.getOrig())[:srcLen:destCap]
 		for i := range *es.getOrig() {
-			newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newSummaryDataPointValueAtQuantile((*dest.getOrig())[i]))
+			newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newMutableSummaryDataPointValueAtQuantile((*dest.getOrig())[i]))
 		}
 		return
 	}
@@ -2283,9 +2981,14 @@ func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValue
 	wrappers := make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, srcLen)
 	for i := range *es.getOrig() {
 		wrappers[i] = &origs[i]
-		newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newSummaryDataPointValueAtQuantile(wrappers[i]))
+		newSummaryDataPointValueAtQuantile((*es.getOrig())[i]).CopyTo(newMutableSummaryDataPointValueAtQuantile(wrappers[i]))
 	}
 	*dest.getOrig() = wrappers
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableSummaryDataPointValueAtQuantileSlice) CopyTo(dest MutableSummaryDataPointValueAtQuantileSlice) {
+	newSummaryDataPointValueAtQuantileSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -2300,7 +3003,7 @@ func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValue
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es SummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
+func (es MutableSummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -2313,7 +3016,7 @@ func (es SummaryDataPointValueAtQuantileSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty SummaryDataPointValueAtQuantile.
 // It returns the newly added SummaryDataPointValueAtQuantile.
-func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointValueAtQuantile {
+func (es MutableSummaryDataPointValueAtQuantileSlice) AppendEmpty() MutableSummaryDataPointValueAtQuantile {
 	*es.getOrig() = append(*es.getOrig(), &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 	return es.At(es.Len() - 1)
 }
@@ -2321,13 +3024,13 @@ func (es SummaryDataPointValueAtQuantileSlice) AppendEmpty() SummaryDataPointVal
 // Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the
 // provided less function so that two instances of SummaryDataPointValueAtQuantileSlice
 // can be compared.
-func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) {
+func (es MutableSummaryDataPointValueAtQuantileSlice) Sort(less func(a, b MutableSummaryDataPointValueAtQuantile) bool) {
 	sort.SliceStable(*es.getOrig(), func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es SummaryDataPointValueAtQuantileSlice) MoveAndAppendTo(dest SummaryDataPointValueAtQuantileSlice) {
+func (es MutableSummaryDataPointValueAtQuantileSlice) MoveAndAppendTo(dest MutableSummaryDataPointValueAtQuantileSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -2339,7 +3042,7 @@ func (es SummaryDataPointValueAtQuantileSlice) MoveAndAppendTo(dest SummaryDataP
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointValueAtQuantile) bool) {
+func (es MutableSummaryDataPointValueAtQuantileSlice) RemoveIf(f func(MutableSummaryDataPointValueAtQuantile) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -2367,25 +3070,35 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 
 type SummaryDataPointValueAtQuantile internal.SummaryDataPointValueAtQuantile
 
+type MutableSummaryDataPointValueAtQuantile internal.MutableSummaryDataPointValueAtQuantile
+
 func newSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
 	return SummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(orig))
+}
+
+func newMutableSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) MutableSummaryDataPointValueAtQuantile {
+	return MutableSummaryDataPointValueAtQuantile(internal.NewSummaryDataPointValueAtQuantile(orig))
 }
 
 func (ms SummaryDataPointValueAtQuantile) getOrig() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	return internal.GetOrigSummaryDataPointValueAtQuantile(internal.SummaryDataPointValueAtQuantile(ms))
 }
 
+func (ms MutableSummaryDataPointValueAtQuantile) getOrig() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return internal.GetMutableOrigSummaryDataPointValueAtQuantile(internal.MutableSummaryDataPointValueAtQuantile(ms))
+}
+
 // NewSummaryDataPointValueAtQuantile creates a new empty SummaryDataPointValueAtQuantile.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	return newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+func NewSummaryDataPointValueAtQuantile() MutableSummaryDataPointValueAtQuantile {
+	return newMutableSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQuantile) {
+func (ms MutableSummaryDataPointValueAtQuantile) MoveTo(dest MutableSummaryDataPointValueAtQuantile) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 }
@@ -2395,8 +3108,13 @@ func (ms SummaryDataPointValueAtQuantile) Quantile() float64 {
 	return ms.getOrig().Quantile
 }
 
+// MutableQuantile returns the quantile associated with this SummaryDataPointValueAtQuantile.
+func (ms MutableSummaryDataPointValueAtQuantile) Quantile() float64 {
+	return ms.getOrig().Quantile
+}
+
 // SetQuantile replaces the quantile associated with this SummaryDataPointValueAtQuantile.
-func (ms SummaryDataPointValueAtQuantile) SetQuantile(v float64) {
+func (ms MutableSummaryDataPointValueAtQuantile) SetQuantile(v float64) {
 	ms.getOrig().Quantile = v
 }
 
@@ -2405,15 +3123,25 @@ func (ms SummaryDataPointValueAtQuantile) Value() float64 {
 	return ms.getOrig().Value
 }
 
+// MutableValue returns the value associated with this SummaryDataPointValueAtQuantile.
+func (ms MutableSummaryDataPointValueAtQuantile) Value() float64 {
+	return ms.getOrig().Value
+}
+
 // SetValue replaces the value associated with this SummaryDataPointValueAtQuantile.
-func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
+func (ms MutableSummaryDataPointValueAtQuantile) SetValue(v float64) {
 	ms.getOrig().Value = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQuantile) {
+func (ms SummaryDataPointValueAtQuantile) CopyTo(dest MutableSummaryDataPointValueAtQuantile) {
 	dest.SetQuantile(ms.Quantile())
 	dest.SetValue(ms.Value())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableSummaryDataPointValueAtQuantile) CopyTo(dest MutableSummaryDataPointValueAtQuantile) {
+	newSummaryDataPointValueAtQuantile(ms.getOrig()).CopyTo(dest)
 }
 
 // ExemplarSlice logically represents a slice of Exemplar.
@@ -2425,19 +3153,33 @@ func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQua
 // Important: zero-initialized instance is not valid for use.
 type ExemplarSlice internal.ExemplarSlice
 
+type MutableExemplarSlice internal.MutableExemplarSlice
+
 func newExemplarSlice(orig *[]otlpmetrics.Exemplar) ExemplarSlice {
 	return ExemplarSlice(internal.NewExemplarSlice(orig))
+}
+
+func newMutableExemplarSlice(orig *[]otlpmetrics.Exemplar) MutableExemplarSlice {
+	return MutableExemplarSlice(internal.NewExemplarSlice(orig))
 }
 
 func (ms ExemplarSlice) getOrig() *[]otlpmetrics.Exemplar {
 	return internal.GetOrigExemplarSlice(internal.ExemplarSlice(ms))
 }
 
+func (ms MutableExemplarSlice) getOrig() *[]otlpmetrics.Exemplar {
+	return internal.GetMutableOrigExemplarSlice(internal.MutableExemplarSlice(ms))
+}
+
+func (ms MutableExemplarSlice) immutable() ExemplarSlice {
+	return newExemplarSlice(ms.getOrig())
+}
+
 // NewExemplarSlice creates a ExemplarSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
-func NewExemplarSlice() ExemplarSlice {
+func NewExemplarSlice() MutableExemplarSlice {
 	orig := []otlpmetrics.Exemplar(nil)
-	return ExemplarSlice(internal.NewExemplarSlice(&orig))
+	return MutableExemplarSlice(internal.NewExemplarSlice(&orig))
 }
 
 // Len returns the number of elements in the slice.
@@ -2445,6 +3187,10 @@ func NewExemplarSlice() ExemplarSlice {
 // Returns "0" for a newly instance created with "NewExemplarSlice()".
 func (es ExemplarSlice) Len() int {
 	return len(*es.getOrig())
+}
+
+func (es MutableExemplarSlice) Len() int {
+	return newMutableExemplarSlice(es.getOrig()).Len()
 }
 
 // At returns the element at the given index.
@@ -2459,8 +3205,12 @@ func (es ExemplarSlice) At(ix int) Exemplar {
 	return newExemplar(&(*es.getOrig())[ix])
 }
 
+func (es MutableExemplarSlice) At(ix int) MutableExemplar {
+	return newMutableExemplar(&(*es.getOrig())[ix])
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
-func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
+func (es ExemplarSlice) CopyTo(dest MutableExemplarSlice) {
 	srcLen := es.Len()
 	destCap := cap(*dest.getOrig())
 	if srcLen <= destCap {
@@ -2470,8 +3220,13 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	}
 
 	for i := range *es.getOrig() {
-		newExemplar(&(*es.getOrig())[i]).CopyTo(newExemplar(&(*dest.getOrig())[i]))
+		newExemplar(&(*es.getOrig())[i]).CopyTo(newMutableExemplar(&(*dest.getOrig())[i]))
 	}
+}
+
+// CopyTo copies all elements from the current slice overriding the destination.
+func (es MutableExemplarSlice) CopyTo(dest MutableExemplarSlice) {
+	newExemplarSlice(es.getOrig()).CopyTo(dest)
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -2486,7 +3241,7 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 //	    e := es.AppendEmpty()
 //	    // Here should set all the values for e.
 //	}
-func (es ExemplarSlice) EnsureCapacity(newCap int) {
+func (es MutableExemplarSlice) EnsureCapacity(newCap int) {
 	oldCap := cap(*es.getOrig())
 	if newCap <= oldCap {
 		return
@@ -2499,14 +3254,14 @@ func (es ExemplarSlice) EnsureCapacity(newCap int) {
 
 // AppendEmpty will append to the end of the slice an empty Exemplar.
 // It returns the newly added Exemplar.
-func (es ExemplarSlice) AppendEmpty() Exemplar {
+func (es MutableExemplarSlice) AppendEmpty() MutableExemplar {
 	*es.getOrig() = append(*es.getOrig(), otlpmetrics.Exemplar{})
 	return es.At(es.Len() - 1)
 }
 
 // MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
 // The current slice will be cleared.
-func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
+func (es MutableExemplarSlice) MoveAndAppendTo(dest MutableExemplarSlice) {
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *es.getOrig()
@@ -2518,7 +3273,7 @@ func (es ExemplarSlice) MoveAndAppendTo(dest ExemplarSlice) {
 
 // RemoveIf calls f sequentially for each element present in the slice.
 // If f returns true, the element is removed from the slice.
-func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
+func (es MutableExemplarSlice) RemoveIf(f func(MutableExemplar) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
@@ -2549,25 +3304,35 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 
 type Exemplar internal.Exemplar
 
+type MutableExemplar internal.MutableExemplar
+
 func newExemplar(orig *otlpmetrics.Exemplar) Exemplar {
 	return Exemplar(internal.NewExemplar(orig))
+}
+
+func newMutableExemplar(orig *otlpmetrics.Exemplar) MutableExemplar {
+	return MutableExemplar(internal.NewExemplar(orig))
 }
 
 func (ms Exemplar) getOrig() *otlpmetrics.Exemplar {
 	return internal.GetOrigExemplar(internal.Exemplar(ms))
 }
 
+func (ms MutableExemplar) getOrig() *otlpmetrics.Exemplar {
+	return internal.GetMutableOrigExemplar(internal.MutableExemplar(ms))
+}
+
 // NewExemplar creates a new empty Exemplar.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func NewExemplar() Exemplar {
-	return newExemplar(&otlpmetrics.Exemplar{})
+func NewExemplar() MutableExemplar {
+	return newMutableExemplar(&otlpmetrics.Exemplar{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms Exemplar) MoveTo(dest Exemplar) {
+func (ms MutableExemplar) MoveTo(dest MutableExemplar) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = otlpmetrics.Exemplar{}
 }
@@ -2577,8 +3342,13 @@ func (ms Exemplar) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
 }
 
+// Timestamp returns the timestamp associated with this Exemplar.
+func (ms MutableExemplar) Timestamp() pcommon.Timestamp {
+	return pcommon.Timestamp(ms.getOrig().TimeUnixNano)
+}
+
 // SetTimestamp replaces the timestamp associated with this Exemplar.
-func (ms Exemplar) SetTimestamp(v pcommon.Timestamp) {
+func (ms MutableExemplar) SetTimestamp(v pcommon.Timestamp) {
 	ms.getOrig().TimeUnixNano = uint64(v)
 }
 
@@ -2599,8 +3369,12 @@ func (ms Exemplar) DoubleValue() float64 {
 	return ms.getOrig().GetAsDouble()
 }
 
+func (ms MutableExemplar) DoubleValue() float64 {
+	return ms.getOrig().GetAsDouble()
+}
+
 // SetDoubleValue replaces the double associated with this Exemplar.
-func (ms Exemplar) SetDoubleValue(v float64) {
+func (ms MutableExemplar) SetDoubleValue(v float64) {
 	ms.getOrig().Value = &otlpmetrics.Exemplar_AsDouble{
 		AsDouble: v,
 	}
@@ -2611,8 +3385,12 @@ func (ms Exemplar) IntValue() int64 {
 	return ms.getOrig().GetAsInt()
 }
 
+func (ms MutableExemplar) IntValue() int64 {
+	return ms.getOrig().GetAsInt()
+}
+
 // SetIntValue replaces the int associated with this Exemplar.
-func (ms Exemplar) SetIntValue(v int64) {
+func (ms MutableExemplar) SetIntValue(v int64) {
 	ms.getOrig().Value = &otlpmetrics.Exemplar_AsInt{
 		AsInt: v,
 	}
@@ -2623,13 +3401,23 @@ func (ms Exemplar) FilteredAttributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.getOrig().FilteredAttributes))
 }
 
+// FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
+func (ms MutableExemplar) FilteredAttributes() pcommon.MutableMap {
+	return pcommon.MutableMap(internal.NewMutableMap(&ms.getOrig().FilteredAttributes))
+}
+
 // TraceID returns the traceid associated with this Exemplar.
 func (ms Exemplar) TraceID() pcommon.TraceID {
 	return pcommon.TraceID(ms.getOrig().TraceId)
 }
 
+// TraceID returns the traceid associated with this Exemplar.
+func (ms MutableExemplar) TraceID() pcommon.TraceID {
+	return pcommon.TraceID(ms.getOrig().TraceId)
+}
+
 // SetTraceID replaces the traceid associated with this Exemplar.
-func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
+func (ms MutableExemplar) SetTraceID(v pcommon.TraceID) {
 	ms.getOrig().TraceId = data.TraceID(v)
 }
 
@@ -2638,13 +3426,18 @@ func (ms Exemplar) SpanID() pcommon.SpanID {
 	return pcommon.SpanID(ms.getOrig().SpanId)
 }
 
+// SpanID returns the spanid associated with this Exemplar.
+func (ms MutableExemplar) SpanID() pcommon.SpanID {
+	return pcommon.SpanID(ms.getOrig().SpanId)
+}
+
 // SetSpanID replaces the spanid associated with this Exemplar.
-func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
+func (ms MutableExemplar) SetSpanID(v pcommon.SpanID) {
 	ms.getOrig().SpanId = data.SpanID(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
-func (ms Exemplar) CopyTo(dest Exemplar) {
+func (ms Exemplar) CopyTo(dest MutableExemplar) {
 	dest.SetTimestamp(ms.Timestamp())
 	switch ms.ValueType() {
 	case ExemplarValueTypeDouble:
@@ -2656,4 +3449,9 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
+}
+
+// CopyTo copies all properties from the current struct overriding the destination.
+func (ms MutableExemplar) CopyTo(dest MutableExemplar) {
+	newExemplar(ms.getOrig()).CopyTo(dest)
 }

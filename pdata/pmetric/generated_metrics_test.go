@@ -41,7 +41,7 @@ func TestResourceMetricsSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestResourceMetrics(internal.ResourceMetrics(el))
+		internal.FillTestResourceMetrics(internal.MutableResourceMetrics(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -139,11 +139,11 @@ func TestResourceMetricsSlice_RemoveIf(t *testing.T) {
 }
 
 func TestResourceMetrics_MoveTo(t *testing.T) {
-	ms := ResourceMetrics(internal.GenerateTestResourceMetrics())
+	ms := MutableResourceMetrics{internal.GenerateTestResourceMetrics()}
 	dest := NewResourceMetrics()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResourceMetrics(), ms)
-	assert.Equal(t, ResourceMetrics(internal.GenerateTestResourceMetrics()), dest)
+	assert.Equal(t, MutableResourceMetrics(internal.GenerateTestResourceMetrics()), dest)
 }
 
 func TestResourceMetrics_CopyTo(t *testing.T) {
@@ -151,7 +151,7 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 	orig := NewResourceMetrics()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ResourceMetrics(internal.GenerateTestResourceMetrics())
+	orig = MutableResourceMetrics(internal.GenerateTestResourceMetrics())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -189,7 +189,7 @@ func TestScopeMetricsSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestScopeMetrics(internal.ScopeMetrics(el))
+		internal.FillTestScopeMetrics(internal.MutableScopeMetrics(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -287,11 +287,11 @@ func TestScopeMetricsSlice_RemoveIf(t *testing.T) {
 }
 
 func TestScopeMetrics_MoveTo(t *testing.T) {
-	ms := ScopeMetrics(internal.GenerateTestScopeMetrics())
+	ms := MutableScopeMetrics{internal.GenerateTestScopeMetrics()}
 	dest := NewScopeMetrics()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeMetrics(), ms)
-	assert.Equal(t, ScopeMetrics(internal.GenerateTestScopeMetrics()), dest)
+	assert.Equal(t, MutableScopeMetrics(internal.GenerateTestScopeMetrics()), dest)
 }
 
 func TestScopeMetrics_CopyTo(t *testing.T) {
@@ -299,7 +299,7 @@ func TestScopeMetrics_CopyTo(t *testing.T) {
 	orig := NewScopeMetrics()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ScopeMetrics(internal.GenerateTestScopeMetrics())
+	orig = MutableScopeMetrics(internal.GenerateTestScopeMetrics())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -337,7 +337,7 @@ func TestMetricSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestMetric(internal.Metric(el))
+		internal.FillTestMetric(internal.MutableMetric(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -435,11 +435,11 @@ func TestMetricSlice_RemoveIf(t *testing.T) {
 }
 
 func TestMetric_MoveTo(t *testing.T) {
-	ms := Metric(internal.GenerateTestMetric())
+	ms := MutableMetric{internal.GenerateTestMetric()}
 	dest := NewMetric()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewMetric(), ms)
-	assert.Equal(t, Metric(internal.GenerateTestMetric()), dest)
+	assert.Equal(t, MutableMetric(internal.GenerateTestMetric()), dest)
 }
 
 func TestMetric_CopyTo(t *testing.T) {
@@ -447,7 +447,7 @@ func TestMetric_CopyTo(t *testing.T) {
 	orig := NewMetric()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Metric(internal.GenerateTestMetric())
+	orig = MutableMetric(internal.GenerateTestMetric())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -554,11 +554,11 @@ func TestMetric_CopyTo_Summary(t *testing.T) {
 }
 
 func TestGauge_MoveTo(t *testing.T) {
-	ms := Gauge(internal.GenerateTestGauge())
+	ms := MutableGauge{internal.GenerateTestGauge()}
 	dest := NewGauge()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewGauge(), ms)
-	assert.Equal(t, Gauge(internal.GenerateTestGauge()), dest)
+	assert.Equal(t, MutableGauge(internal.GenerateTestGauge()), dest)
 }
 
 func TestGauge_CopyTo(t *testing.T) {
@@ -566,7 +566,7 @@ func TestGauge_CopyTo(t *testing.T) {
 	orig := NewGauge()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Gauge(internal.GenerateTestGauge())
+	orig = MutableGauge(internal.GenerateTestGauge())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -579,11 +579,11 @@ func TestGauge_DataPoints(t *testing.T) {
 }
 
 func TestSum_MoveTo(t *testing.T) {
-	ms := Sum(internal.GenerateTestSum())
+	ms := MutableSum{internal.GenerateTestSum()}
 	dest := NewSum()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSum(), ms)
-	assert.Equal(t, Sum(internal.GenerateTestSum()), dest)
+	assert.Equal(t, MutableSum(internal.GenerateTestSum()), dest)
 }
 
 func TestSum_CopyTo(t *testing.T) {
@@ -591,7 +591,7 @@ func TestSum_CopyTo(t *testing.T) {
 	orig := NewSum()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Sum(internal.GenerateTestSum())
+	orig = MutableSum(internal.GenerateTestSum())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -619,11 +619,11 @@ func TestSum_DataPoints(t *testing.T) {
 }
 
 func TestHistogram_MoveTo(t *testing.T) {
-	ms := Histogram(internal.GenerateTestHistogram())
+	ms := MutableHistogram{internal.GenerateTestHistogram()}
 	dest := NewHistogram()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewHistogram(), ms)
-	assert.Equal(t, Histogram(internal.GenerateTestHistogram()), dest)
+	assert.Equal(t, MutableHistogram(internal.GenerateTestHistogram()), dest)
 }
 
 func TestHistogram_CopyTo(t *testing.T) {
@@ -631,7 +631,7 @@ func TestHistogram_CopyTo(t *testing.T) {
 	orig := NewHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Histogram(internal.GenerateTestHistogram())
+	orig = MutableHistogram(internal.GenerateTestHistogram())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -652,11 +652,11 @@ func TestHistogram_DataPoints(t *testing.T) {
 }
 
 func TestExponentialHistogram_MoveTo(t *testing.T) {
-	ms := ExponentialHistogram(internal.GenerateTestExponentialHistogram())
+	ms := MutableExponentialHistogram{internal.GenerateTestExponentialHistogram()}
 	dest := NewExponentialHistogram()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExponentialHistogram(), ms)
-	assert.Equal(t, ExponentialHistogram(internal.GenerateTestExponentialHistogram()), dest)
+	assert.Equal(t, MutableExponentialHistogram(internal.GenerateTestExponentialHistogram()), dest)
 }
 
 func TestExponentialHistogram_CopyTo(t *testing.T) {
@@ -664,7 +664,7 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 	orig := NewExponentialHistogram()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ExponentialHistogram(internal.GenerateTestExponentialHistogram())
+	orig = MutableExponentialHistogram(internal.GenerateTestExponentialHistogram())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -685,11 +685,11 @@ func TestExponentialHistogram_DataPoints(t *testing.T) {
 }
 
 func TestSummary_MoveTo(t *testing.T) {
-	ms := Summary(internal.GenerateTestSummary())
+	ms := MutableSummary{internal.GenerateTestSummary()}
 	dest := NewSummary()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSummary(), ms)
-	assert.Equal(t, Summary(internal.GenerateTestSummary()), dest)
+	assert.Equal(t, MutableSummary(internal.GenerateTestSummary()), dest)
 }
 
 func TestSummary_CopyTo(t *testing.T) {
@@ -697,7 +697,7 @@ func TestSummary_CopyTo(t *testing.T) {
 	orig := NewSummary()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Summary(internal.GenerateTestSummary())
+	orig = MutableSummary(internal.GenerateTestSummary())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -722,7 +722,7 @@ func TestNumberDataPointSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestNumberDataPoint(internal.NumberDataPoint(el))
+		internal.FillTestNumberDataPoint(internal.MutableNumberDataPoint(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -820,11 +820,11 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 }
 
 func TestNumberDataPoint_MoveTo(t *testing.T) {
-	ms := NumberDataPoint(internal.GenerateTestNumberDataPoint())
+	ms := MutableNumberDataPoint{internal.GenerateTestNumberDataPoint()}
 	dest := NewNumberDataPoint()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewNumberDataPoint(), ms)
-	assert.Equal(t, NumberDataPoint(internal.GenerateTestNumberDataPoint()), dest)
+	assert.Equal(t, MutableNumberDataPoint(internal.GenerateTestNumberDataPoint()), dest)
 }
 
 func TestNumberDataPoint_CopyTo(t *testing.T) {
@@ -832,7 +832,7 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	orig := NewNumberDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = NumberDataPoint(internal.GenerateTestNumberDataPoint())
+	orig = MutableNumberDataPoint(internal.GenerateTestNumberDataPoint())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -909,7 +909,7 @@ func TestHistogramDataPointSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestHistogramDataPoint(internal.HistogramDataPoint(el))
+		internal.FillTestHistogramDataPoint(internal.MutableHistogramDataPoint(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -1007,11 +1007,11 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 }
 
 func TestHistogramDataPoint_MoveTo(t *testing.T) {
-	ms := HistogramDataPoint(internal.GenerateTestHistogramDataPoint())
+	ms := MutableHistogramDataPoint{internal.GenerateTestHistogramDataPoint()}
 	dest := NewHistogramDataPoint()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewHistogramDataPoint(), ms)
-	assert.Equal(t, HistogramDataPoint(internal.GenerateTestHistogramDataPoint()), dest)
+	assert.Equal(t, MutableHistogramDataPoint(internal.GenerateTestHistogramDataPoint()), dest)
 }
 
 func TestHistogramDataPoint_CopyTo(t *testing.T) {
@@ -1019,7 +1019,7 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	orig := NewHistogramDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = HistogramDataPoint(internal.GenerateTestHistogramDataPoint())
+	orig = MutableHistogramDataPoint(internal.GenerateTestHistogramDataPoint())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -1126,7 +1126,7 @@ func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestExponentialHistogramDataPoint(internal.ExponentialHistogramDataPoint(el))
+		internal.FillTestExponentialHistogramDataPoint(internal.MutableExponentialHistogramDataPoint(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -1224,11 +1224,11 @@ func TestExponentialHistogramDataPointSlice_RemoveIf(t *testing.T) {
 }
 
 func TestExponentialHistogramDataPoint_MoveTo(t *testing.T) {
-	ms := ExponentialHistogramDataPoint(internal.GenerateTestExponentialHistogramDataPoint())
+	ms := MutableExponentialHistogramDataPoint{internal.GenerateTestExponentialHistogramDataPoint()}
 	dest := NewExponentialHistogramDataPoint()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExponentialHistogramDataPoint(), ms)
-	assert.Equal(t, ExponentialHistogramDataPoint(internal.GenerateTestExponentialHistogramDataPoint()), dest)
+	assert.Equal(t, MutableExponentialHistogramDataPoint(internal.GenerateTestExponentialHistogramDataPoint()), dest)
 }
 
 func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
@@ -1236,7 +1236,7 @@ func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
 	orig := NewExponentialHistogramDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ExponentialHistogramDataPoint(internal.GenerateTestExponentialHistogramDataPoint())
+	orig = MutableExponentialHistogramDataPoint(internal.GenerateTestExponentialHistogramDataPoint())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -1343,11 +1343,11 @@ func TestExponentialHistogramDataPoint_Max(t *testing.T) {
 }
 
 func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
-	ms := ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets())
+	ms := MutableExponentialHistogramDataPointBuckets{internal.GenerateTestExponentialHistogramDataPointBuckets()}
 	dest := NewExponentialHistogramDataPointBuckets()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms)
-	assert.Equal(t, ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets()), dest)
+	assert.Equal(t, MutableExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets()), dest)
 }
 
 func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
@@ -1355,7 +1355,7 @@ func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
 	orig := NewExponentialHistogramDataPointBuckets()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets())
+	orig = MutableExponentialHistogramDataPointBuckets(internal.GenerateTestExponentialHistogramDataPointBuckets())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -1387,7 +1387,7 @@ func TestSummaryDataPointSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestSummaryDataPoint(internal.SummaryDataPoint(el))
+		internal.FillTestSummaryDataPoint(internal.MutableSummaryDataPoint(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -1485,11 +1485,11 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 }
 
 func TestSummaryDataPoint_MoveTo(t *testing.T) {
-	ms := SummaryDataPoint(internal.GenerateTestSummaryDataPoint())
+	ms := MutableSummaryDataPoint{internal.GenerateTestSummaryDataPoint()}
 	dest := NewSummaryDataPoint()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSummaryDataPoint(), ms)
-	assert.Equal(t, SummaryDataPoint(internal.GenerateTestSummaryDataPoint()), dest)
+	assert.Equal(t, MutableSummaryDataPoint(internal.GenerateTestSummaryDataPoint()), dest)
 }
 
 func TestSummaryDataPoint_CopyTo(t *testing.T) {
@@ -1497,7 +1497,7 @@ func TestSummaryDataPoint_CopyTo(t *testing.T) {
 	orig := NewSummaryDataPoint()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = SummaryDataPoint(internal.GenerateTestSummaryDataPoint())
+	orig = MutableSummaryDataPoint(internal.GenerateTestSummaryDataPoint())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -1567,7 +1567,7 @@ func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestSummaryDataPointValueAtQuantile(internal.SummaryDataPointValueAtQuantile(el))
+		internal.FillTestSummaryDataPointValueAtQuantile(internal.MutableSummaryDataPointValueAtQuantile(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -1665,11 +1665,11 @@ func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 }
 
 func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
-	ms := SummaryDataPointValueAtQuantile(internal.GenerateTestSummaryDataPointValueAtQuantile())
+	ms := MutableSummaryDataPointValueAtQuantile{internal.GenerateTestSummaryDataPointValueAtQuantile()}
 	dest := NewSummaryDataPointValueAtQuantile()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSummaryDataPointValueAtQuantile(), ms)
-	assert.Equal(t, SummaryDataPointValueAtQuantile(internal.GenerateTestSummaryDataPointValueAtQuantile()), dest)
+	assert.Equal(t, MutableSummaryDataPointValueAtQuantile(internal.GenerateTestSummaryDataPointValueAtQuantile()), dest)
 }
 
 func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
@@ -1677,7 +1677,7 @@ func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
 	orig := NewSummaryDataPointValueAtQuantile()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = SummaryDataPointValueAtQuantile(internal.GenerateTestSummaryDataPointValueAtQuantile())
+	orig = MutableSummaryDataPointValueAtQuantile(internal.GenerateTestSummaryDataPointValueAtQuantile())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -1709,7 +1709,7 @@ func TestExemplarSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestExemplar(internal.Exemplar(el))
+		internal.FillTestExemplar(internal.MutableExemplar(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -1798,11 +1798,11 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 }
 
 func TestExemplar_MoveTo(t *testing.T) {
-	ms := Exemplar(internal.GenerateTestExemplar())
+	ms := MutableExemplar{internal.GenerateTestExemplar()}
 	dest := NewExemplar()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExemplar(), ms)
-	assert.Equal(t, Exemplar(internal.GenerateTestExemplar()), dest)
+	assert.Equal(t, MutableExemplar(internal.GenerateTestExemplar()), dest)
 }
 
 func TestExemplar_CopyTo(t *testing.T) {
@@ -1810,7 +1810,7 @@ func TestExemplar_CopyTo(t *testing.T) {
 	orig := NewExemplar()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Exemplar(internal.GenerateTestExemplar())
+	orig = MutableExemplar(internal.GenerateTestExemplar())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }

@@ -25,7 +25,15 @@ type Resource struct {
 	orig *otlpresource.Resource
 }
 
+type MutableResource struct {
+	orig *otlpresource.Resource
+}
+
 func GetOrigResource(ms Resource) *otlpresource.Resource {
+	return ms.orig
+}
+
+func GetMutableOrigResource(ms MutableResource) *otlpresource.Resource {
 	return ms.orig
 }
 
@@ -33,14 +41,18 @@ func NewResource(orig *otlpresource.Resource) Resource {
 	return Resource{orig: orig}
 }
 
-func GenerateTestResource() Resource {
+func NewMutableResource(orig *otlpresource.Resource) MutableResource {
+	return MutableResource{orig: orig}
+}
+
+func GenerateTestResource() MutableResource {
 	orig := otlpresource.Resource{}
-	tv := NewResource(&orig)
+	tv := NewMutableResource(&orig)
 	FillTestResource(tv)
 	return tv
 }
 
-func FillTestResource(tv Resource) {
-	FillTestMap(NewMap(&tv.orig.Attributes))
+func FillTestResource(tv MutableResource) {
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.DroppedAttributesCount = uint32(17)
 }

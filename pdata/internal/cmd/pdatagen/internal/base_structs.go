@@ -29,41 +29,56 @@ const messageValueTemplate = `${description}
 
 type ${structName} internal.${internalStructName}
 
+type Mutable${structName} internal.Mutable${internalStructName}
+
 func new${structName}(orig *${originName}) ${structName} {
 	return ${structName}(internal.New${internalStructName}(orig))
+}
+
+func newMutable${structName}(orig *${originName}) Mutable${structName} {
+	return Mutable${structName}(internal.New${internalStructName}(orig))
 }
 
 func (ms ${structName}) getOrig() *${originName} {
 	return internal.GetOrig${internalStructName}(internal.${internalStructName}(ms))
 }
 
+func (ms Mutable${structName}) getOrig() *${originName} {
+	return internal.GetMutableOrig${internalStructName}(internal.Mutable${internalStructName}(ms))
+}
+
 // New${structName} creates a new empty ${structName}.
 //
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
-func New${structName}() ${structName} {
-	return new${structName}(&${originName}{})
+func New${structName}() Mutable${structName} {
+	return newMutable${structName}(&${originName}{})
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
 // resetting the current instance to its zero value
-func (ms ${structName}) MoveTo(dest ${structName}) {
+func (ms Mutable${structName}) MoveTo(dest Mutable${structName}) {
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = ${originName}{}
 }`
 
 const messageValueCopyToHeaderTemplate = `// CopyTo copies all properties from the current struct overriding the destination.
-func (ms ${structName}) CopyTo(dest ${structName}) {`
+func (ms ${structName}) CopyTo(dest Mutable${structName}) {`
 
 const messageValueCopyToFooterTemplate = `}`
 
+const messageMutableValueCopyToTemplate = `// CopyTo copies all properties from the current struct overriding the destination.
+func (ms Mutable${structName}) CopyTo(dest Mutable${structName}) {
+	new${structName}(ms.getOrig()).CopyTo(dest)
+}`
+
 const messageValueTestTemplate = `
 func Test${structName}_MoveTo(t *testing.T) {
-	ms := ${structName}(internal.GenerateTest${internalStructName}())
+	ms := Mutable${structName}{internal.GenerateTest${internalStructName}()}
 	dest := New${structName}()
 	ms.MoveTo(dest)
 	assert.Equal(t, New${structName}(), ms)
-	assert.Equal(t, ${structName}(internal.GenerateTest${internalStructName}()), dest)
+	assert.Equal(t, Mutable${structName}(internal.GenerateTest${internalStructName}()), dest)
 }
 
 func Test${structName}_CopyTo(t *testing.T) {
@@ -71,19 +86,19 @@ func Test${structName}_CopyTo(t *testing.T) {
 	orig := New${structName}()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ${structName}(internal.GenerateTest${internalStructName}())
+	orig = Mutable${structName}(internal.GenerateTest${internalStructName}())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }`
 
-const messageValueGenerateTestTemplate = `func GenerateTest${internalStructName}() ${internalStructName} {
+const messageValueGenerateTestTemplate = `func GenerateTest${internalStructName}() Mutable${internalStructName} {
 	orig := ${originName}{}
-	tv := New${internalStructName}(&orig)
+	tv := NewMutable${internalStructName}(&orig)
 	FillTest${internalStructName}(tv)
 	return tv
 }`
 
-const messageValueFillTestHeaderTemplate = `func FillTest${internalStructName}(tv ${internalStructName}) {`
+const messageValueFillTestHeaderTemplate = `func FillTest${internalStructName}(tv Mutable${internalStructName}) {`
 const messageValueFillTestFooterTemplate = `}`
 
 const messageValueAliasTemplate = `
@@ -91,12 +106,24 @@ type ${internalStructName} struct {
 	orig *${originName}
 }
 
+type Mutable${internalStructName} struct {
+	orig *${originName}
+}
+
 func GetOrig${internalStructName}(ms ${internalStructName}) *${originName} {
+	return ms.orig
+}
+
+func GetMutableOrig${internalStructName}(ms Mutable${internalStructName}) *${originName} {
 	return ms.orig
 }
 
 func New${internalStructName}(orig *${originName}) ${internalStructName} {
 	return ${internalStructName}{orig: orig}
+}
+
+func NewMutable${internalStructName}(orig *${originName}) Mutable${internalStructName} {
+	return Mutable${internalStructName}{orig: orig}
 }`
 
 const newLine = "\n"
@@ -176,6 +203,15 @@ func (ms *messageValueStruct) generateStruct(sb *bytes.Buffer) {
 	sb.WriteString(newLine)
 	sb.WriteString(os.Expand(messageValueCopyToFooterTemplate, func(name string) string {
 		panic(name)
+	}))
+	sb.WriteString(newLine + newLine)
+	sb.WriteString(os.Expand(messageMutableValueCopyToTemplate, func(name string) string {
+		switch name {
+		case "structName":
+			return ms.structName
+		default:
+			panic(name)
+		}
 	}))
 }
 

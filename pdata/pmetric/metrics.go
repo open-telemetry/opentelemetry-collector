@@ -39,7 +39,7 @@ func NewMetrics() Metrics {
 
 // CopyTo copies the Metrics instance overriding the destination.
 func (ms Metrics) CopyTo(dest Metrics) {
-	ms.ResourceMetrics().CopyTo(dest.ResourceMetrics())
+	ms.ResourceMetrics().CopyTo(dest.MutableResourceMetrics())
 }
 
 // MoveTo moves the Metrics instance overriding the destination and
@@ -52,6 +52,18 @@ func (ms Metrics) MoveTo(dest Metrics) {
 // ResourceMetrics returns the ResourceMetricsSlice associated with this Metrics.
 func (ms Metrics) ResourceMetrics() ResourceMetricsSlice {
 	return newResourceMetricsSlice(&ms.getOrig().ResourceMetrics)
+}
+
+// MutableResourceMetrics returns the MutableResourceMetricsSlice associated with this Metrics object.
+// This method should be called at once per ConsumeMetrics call if the slice has to be changed,
+// otherwise use ResourceMetrics method.
+func (ms Metrics) MutableResourceMetrics() MutableResourceMetricsSlice {
+	if ms.state == pcommon.StateShared {
+		rms := NewResourceMetricsSlice()
+		newResourceMetricsSlice(&ms.getOrig().ResourceMetrics).CopyTo(rms)
+		return rms
+	}
+	return newMutableResourceMetricsSlice(&ms.getOrig().ResourceMetrics)
 }
 
 // MetricCount calculates the total number of metrics.

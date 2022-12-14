@@ -25,7 +25,15 @@ type TracesExportPartialSuccess struct {
 	orig *otlpcollectortrace.ExportTracePartialSuccess
 }
 
+type MutableTracesExportPartialSuccess struct {
+	orig *otlpcollectortrace.ExportTracePartialSuccess
+}
+
 func GetOrigTracesExportPartialSuccess(ms TracesExportPartialSuccess) *otlpcollectortrace.ExportTracePartialSuccess {
+	return ms.orig
+}
+
+func GetMutableOrigTracesExportPartialSuccess(ms MutableTracesExportPartialSuccess) *otlpcollectortrace.ExportTracePartialSuccess {
 	return ms.orig
 }
 
@@ -33,14 +41,18 @@ func NewTracesExportPartialSuccess(orig *otlpcollectortrace.ExportTracePartialSu
 	return TracesExportPartialSuccess{orig: orig}
 }
 
-func GenerateTestTracesExportPartialSuccess() TracesExportPartialSuccess {
+func NewMutableTracesExportPartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) MutableTracesExportPartialSuccess {
+	return MutableTracesExportPartialSuccess{orig: orig}
+}
+
+func GenerateTestTracesExportPartialSuccess() MutableTracesExportPartialSuccess {
 	orig := otlpcollectortrace.ExportTracePartialSuccess{}
-	tv := NewTracesExportPartialSuccess(&orig)
+	tv := NewMutableTracesExportPartialSuccess(&orig)
 	FillTestTracesExportPartialSuccess(tv)
 	return tv
 }
 
-func FillTestTracesExportPartialSuccess(tv TracesExportPartialSuccess) {
+func FillTestTracesExportPartialSuccess(tv MutableTracesExportPartialSuccess) {
 	tv.orig.RejectedSpans = int64(13)
 	tv.orig.ErrorMessage = "error message"
 }

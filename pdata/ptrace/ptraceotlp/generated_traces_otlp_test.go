@@ -26,11 +26,11 @@ import (
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
-	ms := ExportPartialSuccess(internal.GenerateTestTracesExportPartialSuccess())
+	ms := MutableExportPartialSuccess{internal.GenerateTestTracesExportPartialSuccess()}
 	dest := NewExportPartialSuccess()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExportPartialSuccess(), ms)
-	assert.Equal(t, ExportPartialSuccess(internal.GenerateTestTracesExportPartialSuccess()), dest)
+	assert.Equal(t, MutableExportPartialSuccess(internal.GenerateTestTracesExportPartialSuccess()), dest)
 }
 
 func TestExportPartialSuccess_CopyTo(t *testing.T) {
@@ -38,7 +38,7 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	orig := NewExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ExportPartialSuccess(internal.GenerateTestTracesExportPartialSuccess())
+	orig = MutableExportPartialSuccess(internal.GenerateTestTracesExportPartialSuccess())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }

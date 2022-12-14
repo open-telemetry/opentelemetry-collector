@@ -25,7 +25,15 @@ type LogsExportPartialSuccess struct {
 	orig *otlpcollectorlog.ExportLogsPartialSuccess
 }
 
+type MutableLogsExportPartialSuccess struct {
+	orig *otlpcollectorlog.ExportLogsPartialSuccess
+}
+
 func GetOrigLogsExportPartialSuccess(ms LogsExportPartialSuccess) *otlpcollectorlog.ExportLogsPartialSuccess {
+	return ms.orig
+}
+
+func GetMutableOrigLogsExportPartialSuccess(ms MutableLogsExportPartialSuccess) *otlpcollectorlog.ExportLogsPartialSuccess {
 	return ms.orig
 }
 
@@ -33,14 +41,18 @@ func NewLogsExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess
 	return LogsExportPartialSuccess{orig: orig}
 }
 
-func GenerateTestLogsExportPartialSuccess() LogsExportPartialSuccess {
+func NewMutableLogsExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) MutableLogsExportPartialSuccess {
+	return MutableLogsExportPartialSuccess{orig: orig}
+}
+
+func GenerateTestLogsExportPartialSuccess() MutableLogsExportPartialSuccess {
 	orig := otlpcollectorlog.ExportLogsPartialSuccess{}
-	tv := NewLogsExportPartialSuccess(&orig)
+	tv := NewMutableLogsExportPartialSuccess(&orig)
 	FillTestLogsExportPartialSuccess(tv)
 	return tv
 }
 
-func FillTestLogsExportPartialSuccess(tv LogsExportPartialSuccess) {
+func FillTestLogsExportPartialSuccess(tv MutableLogsExportPartialSuccess) {
 	tv.orig.RejectedLogRecords = int64(13)
 	tv.orig.ErrorMessage = "error message"
 }

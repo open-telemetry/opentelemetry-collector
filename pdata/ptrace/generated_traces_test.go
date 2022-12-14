@@ -41,7 +41,7 @@ func TestResourceSpansSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestResourceSpans(internal.ResourceSpans(el))
+		internal.FillTestResourceSpans(internal.MutableResourceSpans(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -139,11 +139,11 @@ func TestResourceSpansSlice_RemoveIf(t *testing.T) {
 }
 
 func TestResourceSpans_MoveTo(t *testing.T) {
-	ms := ResourceSpans(internal.GenerateTestResourceSpans())
+	ms := MutableResourceSpans{internal.GenerateTestResourceSpans()}
 	dest := NewResourceSpans()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResourceSpans(), ms)
-	assert.Equal(t, ResourceSpans(internal.GenerateTestResourceSpans()), dest)
+	assert.Equal(t, MutableResourceSpans(internal.GenerateTestResourceSpans()), dest)
 }
 
 func TestResourceSpans_CopyTo(t *testing.T) {
@@ -151,7 +151,7 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 	orig := NewResourceSpans()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ResourceSpans(internal.GenerateTestResourceSpans())
+	orig = MutableResourceSpans(internal.GenerateTestResourceSpans())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -189,7 +189,7 @@ func TestScopeSpansSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestScopeSpans(internal.ScopeSpans(el))
+		internal.FillTestScopeSpans(internal.MutableScopeSpans(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -287,11 +287,11 @@ func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 }
 
 func TestScopeSpans_MoveTo(t *testing.T) {
-	ms := ScopeSpans(internal.GenerateTestScopeSpans())
+	ms := MutableScopeSpans{internal.GenerateTestScopeSpans()}
 	dest := NewScopeSpans()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeSpans(), ms)
-	assert.Equal(t, ScopeSpans(internal.GenerateTestScopeSpans()), dest)
+	assert.Equal(t, MutableScopeSpans(internal.GenerateTestScopeSpans()), dest)
 }
 
 func TestScopeSpans_CopyTo(t *testing.T) {
@@ -299,7 +299,7 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 	orig := NewScopeSpans()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = ScopeSpans(internal.GenerateTestScopeSpans())
+	orig = MutableScopeSpans(internal.GenerateTestScopeSpans())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -337,7 +337,7 @@ func TestSpanSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestSpan(internal.Span(el))
+		internal.FillTestSpan(internal.MutableSpan(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -435,11 +435,11 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 }
 
 func TestSpan_MoveTo(t *testing.T) {
-	ms := Span(internal.GenerateTestSpan())
+	ms := MutableSpan{internal.GenerateTestSpan()}
 	dest := NewSpan()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSpan(), ms)
-	assert.Equal(t, Span(internal.GenerateTestSpan()), dest)
+	assert.Equal(t, MutableSpan(internal.GenerateTestSpan()), dest)
 }
 
 func TestSpan_CopyTo(t *testing.T) {
@@ -447,7 +447,7 @@ func TestSpan_CopyTo(t *testing.T) {
 	orig := NewSpan()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Span(internal.GenerateTestSpan())
+	orig = MutableSpan(internal.GenerateTestSpan())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -574,7 +574,7 @@ func TestSpanEventSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestSpanEvent(internal.SpanEvent(el))
+		internal.FillTestSpanEvent(internal.MutableSpanEvent(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -672,11 +672,11 @@ func TestSpanEventSlice_RemoveIf(t *testing.T) {
 }
 
 func TestSpanEvent_MoveTo(t *testing.T) {
-	ms := SpanEvent(internal.GenerateTestSpanEvent())
+	ms := MutableSpanEvent{internal.GenerateTestSpanEvent()}
 	dest := NewSpanEvent()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSpanEvent(), ms)
-	assert.Equal(t, SpanEvent(internal.GenerateTestSpanEvent()), dest)
+	assert.Equal(t, MutableSpanEvent(internal.GenerateTestSpanEvent()), dest)
 }
 
 func TestSpanEvent_CopyTo(t *testing.T) {
@@ -684,7 +684,7 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 	orig := NewSpanEvent()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = SpanEvent(internal.GenerateTestSpanEvent())
+	orig = MutableSpanEvent(internal.GenerateTestSpanEvent())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -731,7 +731,7 @@ func TestSpanLinkSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestSpanLink(internal.SpanLink(el))
+		internal.FillTestSpanLink(internal.MutableSpanLink(el))
 		assert.Equal(t, testVal, el)
 	}
 }
@@ -829,11 +829,11 @@ func TestSpanLinkSlice_RemoveIf(t *testing.T) {
 }
 
 func TestSpanLink_MoveTo(t *testing.T) {
-	ms := SpanLink(internal.GenerateTestSpanLink())
+	ms := MutableSpanLink{internal.GenerateTestSpanLink()}
 	dest := NewSpanLink()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSpanLink(), ms)
-	assert.Equal(t, SpanLink(internal.GenerateTestSpanLink()), dest)
+	assert.Equal(t, MutableSpanLink(internal.GenerateTestSpanLink()), dest)
 }
 
 func TestSpanLink_CopyTo(t *testing.T) {
@@ -841,7 +841,7 @@ func TestSpanLink_CopyTo(t *testing.T) {
 	orig := NewSpanLink()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = SpanLink(internal.GenerateTestSpanLink())
+	orig = MutableSpanLink(internal.GenerateTestSpanLink())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -883,11 +883,11 @@ func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 }
 
 func TestStatus_MoveTo(t *testing.T) {
-	ms := Status(internal.GenerateTestStatus())
+	ms := MutableStatus{internal.GenerateTestStatus()}
 	dest := NewStatus()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewStatus(), ms)
-	assert.Equal(t, Status(internal.GenerateTestStatus()), dest)
+	assert.Equal(t, MutableStatus(internal.GenerateTestStatus()), dest)
 }
 
 func TestStatus_CopyTo(t *testing.T) {
@@ -895,7 +895,7 @@ func TestStatus_CopyTo(t *testing.T) {
 	orig := NewStatus()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = Status(internal.GenerateTestStatus())
+	orig = MutableStatus(internal.GenerateTestStatus())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }

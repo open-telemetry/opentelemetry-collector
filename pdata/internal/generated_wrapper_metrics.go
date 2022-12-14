@@ -26,7 +26,15 @@ type ResourceMetricsSlice struct {
 	orig *[]*otlpmetrics.ResourceMetrics
 }
 
+type MutableResourceMetricsSlice struct {
+	orig *[]*otlpmetrics.ResourceMetrics
+}
+
 func GetOrigResourceMetricsSlice(ms ResourceMetricsSlice) *[]*otlpmetrics.ResourceMetrics {
+	return ms.orig
+}
+
+func GetMutableOrigResourceMetricsSlice(ms MutableResourceMetricsSlice) *[]*otlpmetrics.ResourceMetrics {
 	return ms.orig
 }
 
@@ -34,7 +42,15 @@ func NewResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) ResourceMetri
 	return ResourceMetricsSlice{orig: orig}
 }
 
+func NewMutableResourceMetricsSlice(orig *[]*otlpmetrics.ResourceMetrics) MutableResourceMetricsSlice {
+	return MutableResourceMetricsSlice{orig: orig}
+}
+
 type ResourceMetrics struct {
+	orig *otlpmetrics.ResourceMetrics
+}
+
+type MutableResourceMetrics struct {
 	orig *otlpmetrics.ResourceMetrics
 }
 
@@ -42,11 +58,23 @@ func GetOrigResourceMetrics(ms ResourceMetrics) *otlpmetrics.ResourceMetrics {
 	return ms.orig
 }
 
+func GetMutableOrigResourceMetrics(ms MutableResourceMetrics) *otlpmetrics.ResourceMetrics {
+	return ms.orig
+}
+
 func NewResourceMetrics(orig *otlpmetrics.ResourceMetrics) ResourceMetrics {
 	return ResourceMetrics{orig: orig}
 }
 
+func NewMutableResourceMetrics(orig *otlpmetrics.ResourceMetrics) MutableResourceMetrics {
+	return MutableResourceMetrics{orig: orig}
+}
+
 type ScopeMetricsSlice struct {
+	orig *[]*otlpmetrics.ScopeMetrics
+}
+
+type MutableScopeMetricsSlice struct {
 	orig *[]*otlpmetrics.ScopeMetrics
 }
 
@@ -54,11 +82,23 @@ func GetOrigScopeMetricsSlice(ms ScopeMetricsSlice) *[]*otlpmetrics.ScopeMetrics
 	return ms.orig
 }
 
+func GetMutableOrigScopeMetricsSlice(ms MutableScopeMetricsSlice) *[]*otlpmetrics.ScopeMetrics {
+	return ms.orig
+}
+
 func NewScopeMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics) ScopeMetricsSlice {
 	return ScopeMetricsSlice{orig: orig}
 }
 
+func NewMutableScopeMetricsSlice(orig *[]*otlpmetrics.ScopeMetrics) MutableScopeMetricsSlice {
+	return MutableScopeMetricsSlice{orig: orig}
+}
+
 type ScopeMetrics struct {
+	orig *otlpmetrics.ScopeMetrics
+}
+
+type MutableScopeMetrics struct {
 	orig *otlpmetrics.ScopeMetrics
 }
 
@@ -66,11 +106,23 @@ func GetOrigScopeMetrics(ms ScopeMetrics) *otlpmetrics.ScopeMetrics {
 	return ms.orig
 }
 
+func GetMutableOrigScopeMetrics(ms MutableScopeMetrics) *otlpmetrics.ScopeMetrics {
+	return ms.orig
+}
+
 func NewScopeMetrics(orig *otlpmetrics.ScopeMetrics) ScopeMetrics {
 	return ScopeMetrics{orig: orig}
 }
 
+func NewMutableScopeMetrics(orig *otlpmetrics.ScopeMetrics) MutableScopeMetrics {
+	return MutableScopeMetrics{orig: orig}
+}
+
 type MetricSlice struct {
+	orig *[]*otlpmetrics.Metric
+}
+
+type MutableMetricSlice struct {
 	orig *[]*otlpmetrics.Metric
 }
 
@@ -78,11 +130,23 @@ func GetOrigMetricSlice(ms MetricSlice) *[]*otlpmetrics.Metric {
 	return ms.orig
 }
 
+func GetMutableOrigMetricSlice(ms MutableMetricSlice) *[]*otlpmetrics.Metric {
+	return ms.orig
+}
+
 func NewMetricSlice(orig *[]*otlpmetrics.Metric) MetricSlice {
 	return MetricSlice{orig: orig}
 }
 
+func NewMutableMetricSlice(orig *[]*otlpmetrics.Metric) MutableMetricSlice {
+	return MutableMetricSlice{orig: orig}
+}
+
 type Metric struct {
+	orig *otlpmetrics.Metric
+}
+
+type MutableMetric struct {
 	orig *otlpmetrics.Metric
 }
 
@@ -90,11 +154,23 @@ func GetOrigMetric(ms Metric) *otlpmetrics.Metric {
 	return ms.orig
 }
 
+func GetMutableOrigMetric(ms MutableMetric) *otlpmetrics.Metric {
+	return ms.orig
+}
+
 func NewMetric(orig *otlpmetrics.Metric) Metric {
 	return Metric{orig: orig}
 }
 
+func NewMutableMetric(orig *otlpmetrics.Metric) MutableMetric {
+	return MutableMetric{orig: orig}
+}
+
 type Gauge struct {
+	orig *otlpmetrics.Gauge
+}
+
+type MutableGauge struct {
 	orig *otlpmetrics.Gauge
 }
 
@@ -102,11 +178,23 @@ func GetOrigGauge(ms Gauge) *otlpmetrics.Gauge {
 	return ms.orig
 }
 
+func GetMutableOrigGauge(ms MutableGauge) *otlpmetrics.Gauge {
+	return ms.orig
+}
+
 func NewGauge(orig *otlpmetrics.Gauge) Gauge {
 	return Gauge{orig: orig}
 }
 
+func NewMutableGauge(orig *otlpmetrics.Gauge) MutableGauge {
+	return MutableGauge{orig: orig}
+}
+
 type Sum struct {
+	orig *otlpmetrics.Sum
+}
+
+type MutableSum struct {
 	orig *otlpmetrics.Sum
 }
 
@@ -114,11 +202,23 @@ func GetOrigSum(ms Sum) *otlpmetrics.Sum {
 	return ms.orig
 }
 
+func GetMutableOrigSum(ms MutableSum) *otlpmetrics.Sum {
+	return ms.orig
+}
+
 func NewSum(orig *otlpmetrics.Sum) Sum {
 	return Sum{orig: orig}
 }
 
+func NewMutableSum(orig *otlpmetrics.Sum) MutableSum {
+	return MutableSum{orig: orig}
+}
+
 type Histogram struct {
+	orig *otlpmetrics.Histogram
+}
+
+type MutableHistogram struct {
 	orig *otlpmetrics.Histogram
 }
 
@@ -126,11 +226,23 @@ func GetOrigHistogram(ms Histogram) *otlpmetrics.Histogram {
 	return ms.orig
 }
 
+func GetMutableOrigHistogram(ms MutableHistogram) *otlpmetrics.Histogram {
+	return ms.orig
+}
+
 func NewHistogram(orig *otlpmetrics.Histogram) Histogram {
 	return Histogram{orig: orig}
 }
 
+func NewMutableHistogram(orig *otlpmetrics.Histogram) MutableHistogram {
+	return MutableHistogram{orig: orig}
+}
+
 type ExponentialHistogram struct {
+	orig *otlpmetrics.ExponentialHistogram
+}
+
+type MutableExponentialHistogram struct {
 	orig *otlpmetrics.ExponentialHistogram
 }
 
@@ -138,11 +250,23 @@ func GetOrigExponentialHistogram(ms ExponentialHistogram) *otlpmetrics.Exponenti
 	return ms.orig
 }
 
+func GetMutableOrigExponentialHistogram(ms MutableExponentialHistogram) *otlpmetrics.ExponentialHistogram {
+	return ms.orig
+}
+
 func NewExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) ExponentialHistogram {
 	return ExponentialHistogram{orig: orig}
 }
 
+func NewMutableExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) MutableExponentialHistogram {
+	return MutableExponentialHistogram{orig: orig}
+}
+
 type Summary struct {
+	orig *otlpmetrics.Summary
+}
+
+type MutableSummary struct {
 	orig *otlpmetrics.Summary
 }
 
@@ -150,11 +274,23 @@ func GetOrigSummary(ms Summary) *otlpmetrics.Summary {
 	return ms.orig
 }
 
+func GetMutableOrigSummary(ms MutableSummary) *otlpmetrics.Summary {
+	return ms.orig
+}
+
 func NewSummary(orig *otlpmetrics.Summary) Summary {
 	return Summary{orig: orig}
 }
 
+func NewMutableSummary(orig *otlpmetrics.Summary) MutableSummary {
+	return MutableSummary{orig: orig}
+}
+
 type NumberDataPointSlice struct {
+	orig *[]*otlpmetrics.NumberDataPoint
+}
+
+type MutableNumberDataPointSlice struct {
 	orig *[]*otlpmetrics.NumberDataPoint
 }
 
@@ -162,11 +298,23 @@ func GetOrigNumberDataPointSlice(ms NumberDataPointSlice) *[]*otlpmetrics.Number
 	return ms.orig
 }
 
+func GetMutableOrigNumberDataPointSlice(ms MutableNumberDataPointSlice) *[]*otlpmetrics.NumberDataPoint {
+	return ms.orig
+}
+
 func NewNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) NumberDataPointSlice {
 	return NumberDataPointSlice{orig: orig}
 }
 
+func NewMutableNumberDataPointSlice(orig *[]*otlpmetrics.NumberDataPoint) MutableNumberDataPointSlice {
+	return MutableNumberDataPointSlice{orig: orig}
+}
+
 type NumberDataPoint struct {
+	orig *otlpmetrics.NumberDataPoint
+}
+
+type MutableNumberDataPoint struct {
 	orig *otlpmetrics.NumberDataPoint
 }
 
@@ -174,11 +322,23 @@ func GetOrigNumberDataPoint(ms NumberDataPoint) *otlpmetrics.NumberDataPoint {
 	return ms.orig
 }
 
+func GetMutableOrigNumberDataPoint(ms MutableNumberDataPoint) *otlpmetrics.NumberDataPoint {
+	return ms.orig
+}
+
 func NewNumberDataPoint(orig *otlpmetrics.NumberDataPoint) NumberDataPoint {
 	return NumberDataPoint{orig: orig}
 }
 
+func NewMutableNumberDataPoint(orig *otlpmetrics.NumberDataPoint) MutableNumberDataPoint {
+	return MutableNumberDataPoint{orig: orig}
+}
+
 type HistogramDataPointSlice struct {
+	orig *[]*otlpmetrics.HistogramDataPoint
+}
+
+type MutableHistogramDataPointSlice struct {
 	orig *[]*otlpmetrics.HistogramDataPoint
 }
 
@@ -186,11 +346,23 @@ func GetOrigHistogramDataPointSlice(ms HistogramDataPointSlice) *[]*otlpmetrics.
 	return ms.orig
 }
 
+func GetMutableOrigHistogramDataPointSlice(ms MutableHistogramDataPointSlice) *[]*otlpmetrics.HistogramDataPoint {
+	return ms.orig
+}
+
 func NewHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint) HistogramDataPointSlice {
 	return HistogramDataPointSlice{orig: orig}
 }
 
+func NewMutableHistogramDataPointSlice(orig *[]*otlpmetrics.HistogramDataPoint) MutableHistogramDataPointSlice {
+	return MutableHistogramDataPointSlice{orig: orig}
+}
+
 type HistogramDataPoint struct {
+	orig *otlpmetrics.HistogramDataPoint
+}
+
+type MutableHistogramDataPoint struct {
 	orig *otlpmetrics.HistogramDataPoint
 }
 
@@ -198,11 +370,23 @@ func GetOrigHistogramDataPoint(ms HistogramDataPoint) *otlpmetrics.HistogramData
 	return ms.orig
 }
 
+func GetMutableOrigHistogramDataPoint(ms MutableHistogramDataPoint) *otlpmetrics.HistogramDataPoint {
+	return ms.orig
+}
+
 func NewHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) HistogramDataPoint {
 	return HistogramDataPoint{orig: orig}
 }
 
+func NewMutableHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) MutableHistogramDataPoint {
+	return MutableHistogramDataPoint{orig: orig}
+}
+
 type ExponentialHistogramDataPointSlice struct {
+	orig *[]*otlpmetrics.ExponentialHistogramDataPoint
+}
+
+type MutableExponentialHistogramDataPointSlice struct {
 	orig *[]*otlpmetrics.ExponentialHistogramDataPoint
 }
 
@@ -210,11 +394,23 @@ func GetOrigExponentialHistogramDataPointSlice(ms ExponentialHistogramDataPointS
 	return ms.orig
 }
 
+func GetMutableOrigExponentialHistogramDataPointSlice(ms MutableExponentialHistogramDataPointSlice) *[]*otlpmetrics.ExponentialHistogramDataPoint {
+	return ms.orig
+}
+
 func NewExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPointSlice {
 	return ExponentialHistogramDataPointSlice{orig: orig}
 }
 
+func NewMutableExponentialHistogramDataPointSlice(orig *[]*otlpmetrics.ExponentialHistogramDataPoint) MutableExponentialHistogramDataPointSlice {
+	return MutableExponentialHistogramDataPointSlice{orig: orig}
+}
+
 type ExponentialHistogramDataPoint struct {
+	orig *otlpmetrics.ExponentialHistogramDataPoint
+}
+
+type MutableExponentialHistogramDataPoint struct {
 	orig *otlpmetrics.ExponentialHistogramDataPoint
 }
 
@@ -222,11 +418,23 @@ func GetOrigExponentialHistogramDataPoint(ms ExponentialHistogramDataPoint) *otl
 	return ms.orig
 }
 
+func GetMutableOrigExponentialHistogramDataPoint(ms MutableExponentialHistogramDataPoint) *otlpmetrics.ExponentialHistogramDataPoint {
+	return ms.orig
+}
+
 func NewExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) ExponentialHistogramDataPoint {
 	return ExponentialHistogramDataPoint{orig: orig}
 }
 
+func NewMutableExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) MutableExponentialHistogramDataPoint {
+	return MutableExponentialHistogramDataPoint{orig: orig}
+}
+
 type ExponentialHistogramDataPointBuckets struct {
+	orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets
+}
+
+type MutableExponentialHistogramDataPointBuckets struct {
 	orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets
 }
 
@@ -234,11 +442,23 @@ func GetOrigExponentialHistogramDataPointBuckets(ms ExponentialHistogramDataPoin
 	return ms.orig
 }
 
+func GetMutableOrigExponentialHistogramDataPointBuckets(ms MutableExponentialHistogramDataPointBuckets) *otlpmetrics.ExponentialHistogramDataPoint_Buckets {
+	return ms.orig
+}
+
 func NewExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ExponentialHistogramDataPointBuckets {
 	return ExponentialHistogramDataPointBuckets{orig: orig}
 }
 
+func NewMutableExponentialHistogramDataPointBuckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) MutableExponentialHistogramDataPointBuckets {
+	return MutableExponentialHistogramDataPointBuckets{orig: orig}
+}
+
 type SummaryDataPointSlice struct {
+	orig *[]*otlpmetrics.SummaryDataPoint
+}
+
+type MutableSummaryDataPointSlice struct {
 	orig *[]*otlpmetrics.SummaryDataPoint
 }
 
@@ -246,11 +466,23 @@ func GetOrigSummaryDataPointSlice(ms SummaryDataPointSlice) *[]*otlpmetrics.Summ
 	return ms.orig
 }
 
+func GetMutableOrigSummaryDataPointSlice(ms MutableSummaryDataPointSlice) *[]*otlpmetrics.SummaryDataPoint {
+	return ms.orig
+}
+
 func NewSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint) SummaryDataPointSlice {
 	return SummaryDataPointSlice{orig: orig}
 }
 
+func NewMutableSummaryDataPointSlice(orig *[]*otlpmetrics.SummaryDataPoint) MutableSummaryDataPointSlice {
+	return MutableSummaryDataPointSlice{orig: orig}
+}
+
 type SummaryDataPoint struct {
+	orig *otlpmetrics.SummaryDataPoint
+}
+
+type MutableSummaryDataPoint struct {
 	orig *otlpmetrics.SummaryDataPoint
 }
 
@@ -258,11 +490,23 @@ func GetOrigSummaryDataPoint(ms SummaryDataPoint) *otlpmetrics.SummaryDataPoint 
 	return ms.orig
 }
 
+func GetMutableOrigSummaryDataPoint(ms MutableSummaryDataPoint) *otlpmetrics.SummaryDataPoint {
+	return ms.orig
+}
+
 func NewSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) SummaryDataPoint {
 	return SummaryDataPoint{orig: orig}
 }
 
+func NewMutableSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) MutableSummaryDataPoint {
+	return MutableSummaryDataPoint{orig: orig}
+}
+
 type SummaryDataPointValueAtQuantileSlice struct {
+	orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile
+}
+
+type MutableSummaryDataPointValueAtQuantileSlice struct {
 	orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
@@ -270,11 +514,23 @@ func GetOrigSummaryDataPointValueAtQuantileSlice(ms SummaryDataPointValueAtQuant
 	return ms.orig
 }
 
+func GetMutableOrigSummaryDataPointValueAtQuantileSlice(ms MutableSummaryDataPointValueAtQuantileSlice) *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return ms.orig
+}
+
 func NewSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantileSlice {
 	return SummaryDataPointValueAtQuantileSlice{orig: orig}
 }
 
+func NewMutableSummaryDataPointValueAtQuantileSlice(orig *[]*otlpmetrics.SummaryDataPoint_ValueAtQuantile) MutableSummaryDataPointValueAtQuantileSlice {
+	return MutableSummaryDataPointValueAtQuantileSlice{orig: orig}
+}
+
 type SummaryDataPointValueAtQuantile struct {
+	orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile
+}
+
+type MutableSummaryDataPointValueAtQuantile struct {
 	orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile
 }
 
@@ -282,11 +538,23 @@ func GetOrigSummaryDataPointValueAtQuantile(ms SummaryDataPointValueAtQuantile) 
 	return ms.orig
 }
 
+func GetMutableOrigSummaryDataPointValueAtQuantile(ms MutableSummaryDataPointValueAtQuantile) *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return ms.orig
+}
+
 func NewSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) SummaryDataPointValueAtQuantile {
 	return SummaryDataPointValueAtQuantile{orig: orig}
 }
 
+func NewMutableSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) MutableSummaryDataPointValueAtQuantile {
+	return MutableSummaryDataPointValueAtQuantile{orig: orig}
+}
+
 type ExemplarSlice struct {
+	orig *[]otlpmetrics.Exemplar
+}
+
+type MutableExemplarSlice struct {
 	orig *[]otlpmetrics.Exemplar
 }
 
@@ -294,11 +562,23 @@ func GetOrigExemplarSlice(ms ExemplarSlice) *[]otlpmetrics.Exemplar {
 	return ms.orig
 }
 
+func GetMutableOrigExemplarSlice(ms MutableExemplarSlice) *[]otlpmetrics.Exemplar {
+	return ms.orig
+}
+
 func NewExemplarSlice(orig *[]otlpmetrics.Exemplar) ExemplarSlice {
 	return ExemplarSlice{orig: orig}
 }
 
+func NewMutableExemplarSlice(orig *[]otlpmetrics.Exemplar) MutableExemplarSlice {
+	return MutableExemplarSlice{orig: orig}
+}
+
 type Exemplar struct {
+	orig *otlpmetrics.Exemplar
+}
+
+type MutableExemplar struct {
 	orig *otlpmetrics.Exemplar
 }
 
@@ -306,356 +586,364 @@ func GetOrigExemplar(ms Exemplar) *otlpmetrics.Exemplar {
 	return ms.orig
 }
 
+func GetMutableOrigExemplar(ms MutableExemplar) *otlpmetrics.Exemplar {
+	return ms.orig
+}
+
 func NewExemplar(orig *otlpmetrics.Exemplar) Exemplar {
 	return Exemplar{orig: orig}
 }
 
-func GenerateTestResourceMetricsSlice() ResourceMetricsSlice {
+func NewMutableExemplar(orig *otlpmetrics.Exemplar) MutableExemplar {
+	return MutableExemplar{orig: orig}
+}
+
+func GenerateTestResourceMetricsSlice() MutableResourceMetricsSlice {
 	orig := []*otlpmetrics.ResourceMetrics{}
-	tv := NewResourceMetricsSlice(&orig)
+	tv := NewMutableResourceMetricsSlice(&orig)
 	FillTestResourceMetricsSlice(tv)
 	return tv
 }
 
-func FillTestResourceMetricsSlice(tv ResourceMetricsSlice) {
+func FillTestResourceMetricsSlice(tv MutableResourceMetricsSlice) {
 	*tv.orig = make([]*otlpmetrics.ResourceMetrics, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.ResourceMetrics{}
-		FillTestResourceMetrics(NewResourceMetrics((*tv.orig)[i]))
+		FillTestResourceMetrics(NewMutableResourceMetrics((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestResourceMetrics() ResourceMetrics {
+func GenerateTestResourceMetrics() MutableResourceMetrics {
 	orig := otlpmetrics.ResourceMetrics{}
-	tv := NewResourceMetrics(&orig)
+	tv := NewMutableResourceMetrics(&orig)
 	FillTestResourceMetrics(tv)
 	return tv
 }
 
-func FillTestResourceMetrics(tv ResourceMetrics) {
-	FillTestResource(NewResource(&tv.orig.Resource))
+func FillTestResourceMetrics(tv MutableResourceMetrics) {
+	FillTestResource(NewMutableResource(&tv.orig.Resource))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	FillTestScopeMetricsSlice(NewScopeMetricsSlice(&tv.orig.ScopeMetrics))
+	FillTestScopeMetricsSlice(NewMutableScopeMetricsSlice(&tv.orig.ScopeMetrics))
 }
 
-func GenerateTestScopeMetricsSlice() ScopeMetricsSlice {
+func GenerateTestScopeMetricsSlice() MutableScopeMetricsSlice {
 	orig := []*otlpmetrics.ScopeMetrics{}
-	tv := NewScopeMetricsSlice(&orig)
+	tv := NewMutableScopeMetricsSlice(&orig)
 	FillTestScopeMetricsSlice(tv)
 	return tv
 }
 
-func FillTestScopeMetricsSlice(tv ScopeMetricsSlice) {
+func FillTestScopeMetricsSlice(tv MutableScopeMetricsSlice) {
 	*tv.orig = make([]*otlpmetrics.ScopeMetrics, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.ScopeMetrics{}
-		FillTestScopeMetrics(NewScopeMetrics((*tv.orig)[i]))
+		FillTestScopeMetrics(NewMutableScopeMetrics((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestScopeMetrics() ScopeMetrics {
+func GenerateTestScopeMetrics() MutableScopeMetrics {
 	orig := otlpmetrics.ScopeMetrics{}
-	tv := NewScopeMetrics(&orig)
+	tv := NewMutableScopeMetrics(&orig)
 	FillTestScopeMetrics(tv)
 	return tv
 }
 
-func FillTestScopeMetrics(tv ScopeMetrics) {
-	FillTestInstrumentationScope(NewInstrumentationScope(&tv.orig.Scope))
+func FillTestScopeMetrics(tv MutableScopeMetrics) {
+	FillTestInstrumentationScope(NewMutableInstrumentationScope(&tv.orig.Scope))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	FillTestMetricSlice(NewMetricSlice(&tv.orig.Metrics))
+	FillTestMetricSlice(NewMutableMetricSlice(&tv.orig.Metrics))
 }
 
-func GenerateTestMetricSlice() MetricSlice {
+func GenerateTestMetricSlice() MutableMetricSlice {
 	orig := []*otlpmetrics.Metric{}
-	tv := NewMetricSlice(&orig)
+	tv := NewMutableMetricSlice(&orig)
 	FillTestMetricSlice(tv)
 	return tv
 }
 
-func FillTestMetricSlice(tv MetricSlice) {
+func FillTestMetricSlice(tv MutableMetricSlice) {
 	*tv.orig = make([]*otlpmetrics.Metric, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.Metric{}
-		FillTestMetric(NewMetric((*tv.orig)[i]))
+		FillTestMetric(NewMutableMetric((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestMetric() Metric {
+func GenerateTestMetric() MutableMetric {
 	orig := otlpmetrics.Metric{}
-	tv := NewMetric(&orig)
+	tv := NewMutableMetric(&orig)
 	FillTestMetric(tv)
 	return tv
 }
 
-func FillTestMetric(tv Metric) {
+func FillTestMetric(tv MutableMetric) {
 	tv.orig.Name = "test_name"
 	tv.orig.Description = "test_description"
 	tv.orig.Unit = "1"
 	tv.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
-	FillTestSum(NewSum(tv.orig.GetSum()))
+	FillTestSum(NewMutableSum(tv.orig.GetSum()))
 }
 
-func GenerateTestGauge() Gauge {
+func GenerateTestGauge() MutableGauge {
 	orig := otlpmetrics.Gauge{}
-	tv := NewGauge(&orig)
+	tv := NewMutableGauge(&orig)
 	FillTestGauge(tv)
 	return tv
 }
 
-func FillTestGauge(tv Gauge) {
-	FillTestNumberDataPointSlice(NewNumberDataPointSlice(&tv.orig.DataPoints))
+func FillTestGauge(tv MutableGauge) {
+	FillTestNumberDataPointSlice(NewMutableNumberDataPointSlice(&tv.orig.DataPoints))
 }
 
-func GenerateTestSum() Sum {
+func GenerateTestSum() MutableSum {
 	orig := otlpmetrics.Sum{}
-	tv := NewSum(&orig)
+	tv := NewMutableSum(&orig)
 	FillTestSum(tv)
 	return tv
 }
 
-func FillTestSum(tv Sum) {
+func FillTestSum(tv MutableSum) {
 	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	tv.orig.IsMonotonic = true
-	FillTestNumberDataPointSlice(NewNumberDataPointSlice(&tv.orig.DataPoints))
+	FillTestNumberDataPointSlice(NewMutableNumberDataPointSlice(&tv.orig.DataPoints))
 }
 
-func GenerateTestHistogram() Histogram {
+func GenerateTestHistogram() MutableHistogram {
 	orig := otlpmetrics.Histogram{}
-	tv := NewHistogram(&orig)
+	tv := NewMutableHistogram(&orig)
 	FillTestHistogram(tv)
 	return tv
 }
 
-func FillTestHistogram(tv Histogram) {
+func FillTestHistogram(tv MutableHistogram) {
 	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	FillTestHistogramDataPointSlice(NewHistogramDataPointSlice(&tv.orig.DataPoints))
+	FillTestHistogramDataPointSlice(NewMutableHistogramDataPointSlice(&tv.orig.DataPoints))
 }
 
-func GenerateTestExponentialHistogram() ExponentialHistogram {
+func GenerateTestExponentialHistogram() MutableExponentialHistogram {
 	orig := otlpmetrics.ExponentialHistogram{}
-	tv := NewExponentialHistogram(&orig)
+	tv := NewMutableExponentialHistogram(&orig)
 	FillTestExponentialHistogram(tv)
 	return tv
 }
 
-func FillTestExponentialHistogram(tv ExponentialHistogram) {
+func FillTestExponentialHistogram(tv MutableExponentialHistogram) {
 	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	FillTestExponentialHistogramDataPointSlice(NewExponentialHistogramDataPointSlice(&tv.orig.DataPoints))
+	FillTestExponentialHistogramDataPointSlice(NewMutableExponentialHistogramDataPointSlice(&tv.orig.DataPoints))
 }
 
-func GenerateTestSummary() Summary {
+func GenerateTestSummary() MutableSummary {
 	orig := otlpmetrics.Summary{}
-	tv := NewSummary(&orig)
+	tv := NewMutableSummary(&orig)
 	FillTestSummary(tv)
 	return tv
 }
 
-func FillTestSummary(tv Summary) {
-	FillTestSummaryDataPointSlice(NewSummaryDataPointSlice(&tv.orig.DataPoints))
+func FillTestSummary(tv MutableSummary) {
+	FillTestSummaryDataPointSlice(NewMutableSummaryDataPointSlice(&tv.orig.DataPoints))
 }
 
-func GenerateTestNumberDataPointSlice() NumberDataPointSlice {
+func GenerateTestNumberDataPointSlice() MutableNumberDataPointSlice {
 	orig := []*otlpmetrics.NumberDataPoint{}
-	tv := NewNumberDataPointSlice(&orig)
+	tv := NewMutableNumberDataPointSlice(&orig)
 	FillTestNumberDataPointSlice(tv)
 	return tv
 }
 
-func FillTestNumberDataPointSlice(tv NumberDataPointSlice) {
+func FillTestNumberDataPointSlice(tv MutableNumberDataPointSlice) {
 	*tv.orig = make([]*otlpmetrics.NumberDataPoint, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.NumberDataPoint{}
-		FillTestNumberDataPoint(NewNumberDataPoint((*tv.orig)[i]))
+		FillTestNumberDataPoint(NewMutableNumberDataPoint((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestNumberDataPoint() NumberDataPoint {
+func GenerateTestNumberDataPoint() MutableNumberDataPoint {
 	orig := otlpmetrics.NumberDataPoint{}
-	tv := NewNumberDataPoint(&orig)
+	tv := NewMutableNumberDataPoint(&orig)
 	FillTestNumberDataPoint(tv)
 	return tv
 }
 
-func FillTestNumberDataPoint(tv NumberDataPoint) {
-	FillTestMap(NewMap(&tv.orig.Attributes))
+func FillTestNumberDataPoint(tv MutableNumberDataPoint) {
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
-	FillTestExemplarSlice(NewExemplarSlice(&tv.orig.Exemplars))
+	FillTestExemplarSlice(NewMutableExemplarSlice(&tv.orig.Exemplars))
 	tv.orig.Flags = 1
 }
 
-func GenerateTestHistogramDataPointSlice() HistogramDataPointSlice {
+func GenerateTestHistogramDataPointSlice() MutableHistogramDataPointSlice {
 	orig := []*otlpmetrics.HistogramDataPoint{}
-	tv := NewHistogramDataPointSlice(&orig)
+	tv := NewMutableHistogramDataPointSlice(&orig)
 	FillTestHistogramDataPointSlice(tv)
 	return tv
 }
 
-func FillTestHistogramDataPointSlice(tv HistogramDataPointSlice) {
+func FillTestHistogramDataPointSlice(tv MutableHistogramDataPointSlice) {
 	*tv.orig = make([]*otlpmetrics.HistogramDataPoint, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.HistogramDataPoint{}
-		FillTestHistogramDataPoint(NewHistogramDataPoint((*tv.orig)[i]))
+		FillTestHistogramDataPoint(NewMutableHistogramDataPoint((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestHistogramDataPoint() HistogramDataPoint {
+func GenerateTestHistogramDataPoint() MutableHistogramDataPoint {
 	orig := otlpmetrics.HistogramDataPoint{}
-	tv := NewHistogramDataPoint(&orig)
+	tv := NewMutableHistogramDataPoint(&orig)
 	FillTestHistogramDataPoint(tv)
 	return tv
 }
 
-func FillTestHistogramDataPoint(tv HistogramDataPoint) {
-	FillTestMap(NewMap(&tv.orig.Attributes))
+func FillTestHistogramDataPoint(tv MutableHistogramDataPoint) {
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
 	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.BucketCounts = []uint64{1, 2, 3}
 	tv.orig.ExplicitBounds = []float64{1, 2, 3}
-	FillTestExemplarSlice(NewExemplarSlice(&tv.orig.Exemplars))
+	FillTestExemplarSlice(NewMutableExemplarSlice(&tv.orig.Exemplars))
 	tv.orig.Flags = 1
 	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
 }
 
-func GenerateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
+func GenerateTestExponentialHistogramDataPointSlice() MutableExponentialHistogramDataPointSlice {
 	orig := []*otlpmetrics.ExponentialHistogramDataPoint{}
-	tv := NewExponentialHistogramDataPointSlice(&orig)
+	tv := NewMutableExponentialHistogramDataPointSlice(&orig)
 	FillTestExponentialHistogramDataPointSlice(tv)
 	return tv
 }
 
-func FillTestExponentialHistogramDataPointSlice(tv ExponentialHistogramDataPointSlice) {
+func FillTestExponentialHistogramDataPointSlice(tv MutableExponentialHistogramDataPointSlice) {
 	*tv.orig = make([]*otlpmetrics.ExponentialHistogramDataPoint, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
-		FillTestExponentialHistogramDataPoint(NewExponentialHistogramDataPoint((*tv.orig)[i]))
+		FillTestExponentialHistogramDataPoint(NewMutableExponentialHistogramDataPoint((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
+func GenerateTestExponentialHistogramDataPoint() MutableExponentialHistogramDataPoint {
 	orig := otlpmetrics.ExponentialHistogramDataPoint{}
-	tv := NewExponentialHistogramDataPoint(&orig)
+	tv := NewMutableExponentialHistogramDataPoint(&orig)
 	FillTestExponentialHistogramDataPoint(tv)
 	return tv
 }
 
-func FillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
-	FillTestMap(NewMap(&tv.orig.Attributes))
+func FillTestExponentialHistogramDataPoint(tv MutableExponentialHistogramDataPoint) {
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
 	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Scale = int32(4)
 	tv.orig.ZeroCount = uint64(201)
-	FillTestExponentialHistogramDataPointBuckets(NewExponentialHistogramDataPointBuckets(&tv.orig.Positive))
-	FillTestExponentialHistogramDataPointBuckets(NewExponentialHistogramDataPointBuckets(&tv.orig.Negative))
-	FillTestExemplarSlice(NewExemplarSlice(&tv.orig.Exemplars))
+	FillTestExponentialHistogramDataPointBuckets(NewMutableExponentialHistogramDataPointBuckets(&tv.orig.Positive))
+	FillTestExponentialHistogramDataPointBuckets(NewMutableExponentialHistogramDataPointBuckets(&tv.orig.Negative))
+	FillTestExemplarSlice(NewMutableExemplarSlice(&tv.orig.Exemplars))
 	tv.orig.Flags = 1
 	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}
 	tv.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(182.55)}
 }
 
-func GenerateTestExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
+func GenerateTestExponentialHistogramDataPointBuckets() MutableExponentialHistogramDataPointBuckets {
 	orig := otlpmetrics.ExponentialHistogramDataPoint_Buckets{}
-	tv := NewExponentialHistogramDataPointBuckets(&orig)
+	tv := NewMutableExponentialHistogramDataPointBuckets(&orig)
 	FillTestExponentialHistogramDataPointBuckets(tv)
 	return tv
 }
 
-func FillTestExponentialHistogramDataPointBuckets(tv ExponentialHistogramDataPointBuckets) {
+func FillTestExponentialHistogramDataPointBuckets(tv MutableExponentialHistogramDataPointBuckets) {
 	tv.orig.Offset = int32(909)
 	tv.orig.BucketCounts = []uint64{1, 2, 3}
 }
 
-func GenerateTestSummaryDataPointSlice() SummaryDataPointSlice {
+func GenerateTestSummaryDataPointSlice() MutableSummaryDataPointSlice {
 	orig := []*otlpmetrics.SummaryDataPoint{}
-	tv := NewSummaryDataPointSlice(&orig)
+	tv := NewMutableSummaryDataPointSlice(&orig)
 	FillTestSummaryDataPointSlice(tv)
 	return tv
 }
 
-func FillTestSummaryDataPointSlice(tv SummaryDataPointSlice) {
+func FillTestSummaryDataPointSlice(tv MutableSummaryDataPointSlice) {
 	*tv.orig = make([]*otlpmetrics.SummaryDataPoint, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.SummaryDataPoint{}
-		FillTestSummaryDataPoint(NewSummaryDataPoint((*tv.orig)[i]))
+		FillTestSummaryDataPoint(NewMutableSummaryDataPoint((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestSummaryDataPoint() SummaryDataPoint {
+func GenerateTestSummaryDataPoint() MutableSummaryDataPoint {
 	orig := otlpmetrics.SummaryDataPoint{}
-	tv := NewSummaryDataPoint(&orig)
+	tv := NewMutableSummaryDataPoint(&orig)
 	FillTestSummaryDataPoint(tv)
 	return tv
 }
 
-func FillTestSummaryDataPoint(tv SummaryDataPoint) {
-	FillTestMap(NewMap(&tv.orig.Attributes))
+func FillTestSummaryDataPoint(tv MutableSummaryDataPoint) {
+	FillTestMap(NewMutableMap(&tv.orig.Attributes))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
 	tv.orig.Sum = float64(17.13)
-	FillTestSummaryDataPointValueAtQuantileSlice(NewSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues))
+	FillTestSummaryDataPointValueAtQuantileSlice(NewMutableSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues))
 	tv.orig.Flags = 1
 }
 
-func GenerateTestSummaryDataPointValueAtQuantileSlice() SummaryDataPointValueAtQuantileSlice {
+func GenerateTestSummaryDataPointValueAtQuantileSlice() MutableSummaryDataPointValueAtQuantileSlice {
 	orig := []*otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	tv := NewSummaryDataPointValueAtQuantileSlice(&orig)
+	tv := NewMutableSummaryDataPointValueAtQuantileSlice(&orig)
 	FillTestSummaryDataPointValueAtQuantileSlice(tv)
 	return tv
 }
 
-func FillTestSummaryDataPointValueAtQuantileSlice(tv SummaryDataPointValueAtQuantileSlice) {
+func FillTestSummaryDataPointValueAtQuantileSlice(tv MutableSummaryDataPointValueAtQuantileSlice) {
 	*tv.orig = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, 7)
 	for i := 0; i < 7; i++ {
 		(*tv.orig)[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		FillTestSummaryDataPointValueAtQuantile(NewSummaryDataPointValueAtQuantile((*tv.orig)[i]))
+		FillTestSummaryDataPointValueAtQuantile(NewMutableSummaryDataPointValueAtQuantile((*tv.orig)[i]))
 	}
 }
 
-func GenerateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
+func GenerateTestSummaryDataPointValueAtQuantile() MutableSummaryDataPointValueAtQuantile {
 	orig := otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	tv := NewSummaryDataPointValueAtQuantile(&orig)
+	tv := NewMutableSummaryDataPointValueAtQuantile(&orig)
 	FillTestSummaryDataPointValueAtQuantile(tv)
 	return tv
 }
 
-func FillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
+func FillTestSummaryDataPointValueAtQuantile(tv MutableSummaryDataPointValueAtQuantile) {
 	tv.orig.Quantile = float64(17.13)
 	tv.orig.Value = float64(17.13)
 }
 
-func GenerateTestExemplarSlice() ExemplarSlice {
+func GenerateTestExemplarSlice() MutableExemplarSlice {
 	orig := []otlpmetrics.Exemplar{}
-	tv := NewExemplarSlice(&orig)
+	tv := NewMutableExemplarSlice(&orig)
 	FillTestExemplarSlice(tv)
 	return tv
 }
 
-func FillTestExemplarSlice(tv ExemplarSlice) {
+func FillTestExemplarSlice(tv MutableExemplarSlice) {
 	*tv.orig = make([]otlpmetrics.Exemplar, 7)
 	for i := 0; i < 7; i++ {
-		FillTestExemplar(NewExemplar(&(*tv.orig)[i]))
+		FillTestExemplar(NewMutableExemplar(&(*tv.orig)[i]))
 	}
 }
 
-func GenerateTestExemplar() Exemplar {
+func GenerateTestExemplar() MutableExemplar {
 	orig := otlpmetrics.Exemplar{}
-	tv := NewExemplar(&orig)
+	tv := NewMutableExemplar(&orig)
 	FillTestExemplar(tv)
 	return tv
 }
 
-func FillTestExemplar(tv Exemplar) {
+func FillTestExemplar(tv MutableExemplar) {
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
-	FillTestMap(NewMap(&tv.orig.FilteredAttributes))
+	FillTestMap(NewMutableMap(&tv.orig.FilteredAttributes))
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 }

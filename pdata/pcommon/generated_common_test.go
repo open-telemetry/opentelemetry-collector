@@ -27,11 +27,11 @@ import (
 )
 
 func TestInstrumentationScope_MoveTo(t *testing.T) {
-	ms := InstrumentationScope(internal.GenerateTestInstrumentationScope())
+	ms := MutableInstrumentationScope{internal.GenerateTestInstrumentationScope()}
 	dest := NewInstrumentationScope()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewInstrumentationScope(), ms)
-	assert.Equal(t, InstrumentationScope(internal.GenerateTestInstrumentationScope()), dest)
+	assert.Equal(t, MutableInstrumentationScope(internal.GenerateTestInstrumentationScope()), dest)
 }
 
 func TestInstrumentationScope_CopyTo(t *testing.T) {
@@ -39,7 +39,7 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 	orig := NewInstrumentationScope()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = InstrumentationScope(internal.GenerateTestInstrumentationScope())
+	orig = MutableInstrumentationScope(internal.GenerateTestInstrumentationScope())
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 }
@@ -85,7 +85,7 @@ func TestSlice(t *testing.T) {
 	for i := 0; i < es.Len(); i++ {
 		el := es.AppendEmpty()
 		assert.Equal(t, emptyVal, el)
-		internal.FillTestValue(internal.Value(el))
+		internal.FillTestValue(internal.MutableValue(el))
 		assert.Equal(t, testVal, el)
 	}
 }
