@@ -25,4 +25,5 @@ replaces:
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
   - go.opentelemetry.io/collector/processor/batchprocessor => ${WORKSPACE_DIR}/processor/batchprocessor
+  - go.opentelemetry.io/collector/receiver/otlpreceiver => ${WORKSPACE_DIR}/receiver/otlpreceiver
   - go.opentelemetry.io/collector/semconv => ${WORKSPACE_DIR}/semconv
