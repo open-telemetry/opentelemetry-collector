@@ -19,17 +19,21 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol/internal/configunmarshaler"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 type configSettings struct {
-	Receivers  *configunmarshaler.Receivers  `mapstructure:"receivers"`
-	Processors *configunmarshaler.Processors `mapstructure:"processors"`
-	Exporters  *configunmarshaler.Exporters  `mapstructure:"exporters"`
-	Extensions *configunmarshaler.Extensions `mapstructure:"extensions"`
-	Service    service.ConfigService         `mapstructure:"service"`
+	Receivers  *configunmarshaler.Configs[receiver.Factory]  `mapstructure:"receivers"`
+	Processors *configunmarshaler.Configs[processor.Factory] `mapstructure:"processors"`
+	Exporters  *configunmarshaler.Configs[exporter.Factory]  `mapstructure:"exporters"`
+	Extensions *configunmarshaler.Configs[extension.Factory] `mapstructure:"extensions"`
+	Service    service.ConfigService                         `mapstructure:"service"`
 }
 
 // unmarshal the configSettings from a confmap.Conf.
@@ -37,10 +41,10 @@ type configSettings struct {
 func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 	// Unmarshal top level sections and validate.
 	cfg := &configSettings{
-		Receivers:  configunmarshaler.NewReceivers(factories.Receivers),
-		Processors: configunmarshaler.NewProcessors(factories.Processors),
-		Exporters:  configunmarshaler.NewExporters(factories.Exporters),
-		Extensions: configunmarshaler.NewExtensions(factories.Extensions),
+		Receivers:  configunmarshaler.NewConfigs(factories.Receivers),
+		Processors: configunmarshaler.NewConfigs(factories.Processors),
+		Exporters:  configunmarshaler.NewConfigs(factories.Exporters),
+		Extensions: configunmarshaler.NewConfigs(factories.Extensions),
 		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
 		Service: service.ConfigService{
 			Telemetry: telemetry.Config{
