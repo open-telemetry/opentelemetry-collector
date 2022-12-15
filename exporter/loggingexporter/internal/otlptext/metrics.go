@@ -93,7 +93,7 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 			if neg {
 				bound = -bound
 			}
-			return fmt.Sprintf("%g", bound)
+			return fmt.Sprintf("%f", bound)
 		}
 	}
 

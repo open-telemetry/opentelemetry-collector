@@ -218,19 +218,25 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 	hdp0.SetZeroCount(1)
 	hdp0.SetScale(1)
 
-	// positive index 1 and 2 are values sqrt(2), 2 at scale 1
+	// at scale 1,
+	// postitive bucket index 0 is (1, sqrt(2)] (not represented)
+	// postitive bucket index 1 is (sqrt(2), 2]
+	// postitive bucket index 2 is (2, 2*sqrt(2)]
 	hdp0.Positive().SetOffset(1)
 	hdp0.Positive().BucketCounts().FromRaw([]uint64{1, 1})
-	// negative index -1 and 0 are values -1/sqrt(2), -1 at scale 1
+
+	// at scale 1
+	// negative bucket index 0 is -(1, sqrt(2)]
+	// negative bucket index -1 is -(sqrt(2)/2, 1]
 	hdp0.Negative().SetOffset(-1)
 	hdp0.Negative().BucketCounts().FromRaw([]uint64{1, 1})
 
 	// The above will print:
-	// Bucket (-1.414214, -1.000000], Count: 1
-	// Bucket (-1.000000, -0.707107], Count: 1
+	// Bucket [-1.414214, -1.000000), Count: 1
+	// Bucket [-1.000000, -0.707107), Count: 1
 	// Bucket [0, 0], Count: 1
-	// Bucket [0.707107, 1.000000), Count: 1
-	// Bucket [1.000000, 1.414214), Count: 1
+	// Bucket (1.414214, 2.000000], Count: 1
+	// Bucket (2.000000, 2.828427], Count: 1
 
 	hdp1 := hdps.AppendEmpty()
 	initMetricAttributes2(hdp1.Attributes())
@@ -249,8 +255,8 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 
 	// The above will print:
 	// Bucket [0, 0], Count: 1
-	// Bucket [0.250000, 1.000000), Count: 1
-	// Bucket [1.000000, 4.000000), Count: 1
+	// Bucket (0.250000, 1.000000], Count: 1
+	// Bucket (1.000000, 4.000000], Count: 1
 
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(metricExemplarTimestamp)

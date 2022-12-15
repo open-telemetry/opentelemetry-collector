@@ -3,6 +3,7 @@ module go.opentelemetry.io/collector/exporter/loggingexporter
 go 1.18
 
 require (
+	github.com/lightstep/go-expohisto v1.0.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.67.0
 	go.opentelemetry.io/collector/component v0.67.0

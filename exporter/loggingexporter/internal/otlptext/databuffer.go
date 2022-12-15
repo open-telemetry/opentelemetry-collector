@@ -178,8 +178,8 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 			pos := negB.Len() - i - 1
 			index := p.Negative().Offset() + int32(pos)
 			b.logEntry("Bucket [%s, %s), Count: %d",
-				m.stringLowerBoundary(index, true),
 				m.stringLowerBoundary(index+1, true),
+				m.stringLowerBoundary(index, true),
 				negB.At(pos))
 		}
 
