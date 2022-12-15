@@ -124,15 +124,18 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 		// necessarily invalid, but they are extra work to compute.
 		//
 		// There is one case that falls through to this branch
-		// under ordinary circumstances.  Because the value at
+		// to describe the lower boundary of a bucket
+		// containing a normal value.  Because the value at
 		// the subnormal boundary 0x1p-1022 falls into a
-		// bucket (subnormal, 0x1p-1022], where the subnormal
-		// value depends on scale.  The fallthrough here means
-		// we print that bucket as (UNDERFLOW, 0x1p-1022],
-		// which is correct for the go-expohisto reference
-		// implementation in the sense that it rounds
-		// subnormal values up => all subnormal values fall
-		// into the bucket printed as "(UNDERFLOW, 0x1p-1022]".
+		// bucket (X, 0x1p-1022], where the subnormal value X
+		// depends on scale.  The fallthrough here means we
+		// print that bucket as "(UNDERFLOW, 2.22507e-308]",
+		// (note 0x1p-1022 == 2.22507e-308).  This is correct
+		// with respect to the reference implementation, which
+		// first rounds subnormal values up to 0x1p-1022.  The
+		// result (for the reference implementation) is all
+		// subnormal values will fall into the bucket that
+		// prints "(UNDERFLOW, 2.22507e-308]".
 		s = "UNDERFLOW"
 	}
 	if neg {

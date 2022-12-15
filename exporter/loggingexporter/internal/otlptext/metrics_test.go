@@ -162,4 +162,14 @@ func TestBoundaryFormatting(t *testing.T) {
 
 	// Require the correct hard-coded value.
 	require.Equal(t, expectGreatestBoundary(), greatestBoundary)
+
+	// Verify that 0x1p-1022 falls into a bucket that formats like
+	// (UNDERFLOW, 2.22507e-308]
+	valid := newExpoHistoMapping(0)
+	boundIdx := valid.stringLowerBoundary(-1022, false)
+	lowIdx := valid.stringLowerBoundary(-1023, false)
+
+	fmt.Println("BIDX", boundIdx)
+	require.Equal(t, fmt.Sprintf(boundaryFormat, 0x1p-1022), boundIdx)
+	require.Equal(t, "UNDERFLOW", lowIdx)
 }
