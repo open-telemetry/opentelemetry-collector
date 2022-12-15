@@ -28,6 +28,10 @@ import (
 // greater than 1.  See TestLastBoundary for the definition in code.
 const greatestBoundary = "1.79769e+308"
 
+// boundaryFormat is used with Sprintf() to format exponential
+// histogram boundaries.
+const boundaryFormat = "%.6g"
+
 // NewTextMetricsMarshaler returns a pmetric.Marshaler to encode to OTLP text bytes.
 func NewTextMetricsMarshaler() pmetric.Marshaler {
 	return textMetricsMarshaler{}
@@ -91,7 +95,7 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 				if neg {
 					bound = -bound
 				}
-				return fmt.Sprintf("%f", bound)
+				return fmt.Sprintf(boundaryFormat, bound)
 			}
 		}
 	}
@@ -99,7 +103,7 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 	var s string
 	switch {
 	case idx == 0:
-		s = fmt.Sprintf("%f", 1.0)
+		s = "1"
 	case idx > 0:
 		// Note: at scale 20, the value (1<<30) leads to exponent 1024
 		// The following expression generalizes this for valid scales.
@@ -112,9 +116,9 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 			s = "OVERFLOW"
 		}
 	default:
-		// TODO: corner cases involving subnormal values may
+		// Note: corner cases involving subnormal values may
 		// be handled here.  These are considered out of range
-		// by the otel-go mapping functions, which will return
+		// by the go-expohisto mapping functions, which will return
 		// an underflow error for buckets that are entirely
 		// outside the normal range.  These measurements are not
 		// necessarily invalid, but they are extra work to compute.
@@ -122,8 +126,13 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 		// There is one case that falls through to this branch
 		// under ordinary circumstances.  Because the value at
 		// the subnormal boundary 0x1p-1022 falls into a
-		// bucket (subnormal, 0x1p-1022], we therefore print that
-		// bucket as (UNDERFLOW, 0x1p-1022].
+		// bucket (subnormal, 0x1p-1022], where the subnormal
+		// value depends on scale.  The fallthrough here means
+		// we print that bucket as (UNDERFLOW, 0x1p-1022],
+		// which is correct for the go-expohisto reference
+		// implementation in the sense that it rounds
+		// subnormal values up => all subnormal values fall
+		// into the bucket printed as "(UNDERFLOW, 0x1p-1022]".
 		s = "UNDERFLOW"
 	}
 	if neg {

@@ -109,8 +109,8 @@ func TestExpoHistoOverflowMapping(t *testing.T) {
 	require.Equal(t, "-OVERFLOW", invalid.stringLowerBoundary(1, true))
 
 	// But index 0 always works
-	require.Equal(t, "1.000000", invalid.stringLowerBoundary(0, false))
-	require.Equal(t, "-1.000000", invalid.stringLowerBoundary(0, true))
+	require.Equal(t, "1", invalid.stringLowerBoundary(0, false))
+	require.Equal(t, "-1", invalid.stringLowerBoundary(0, true))
 }
 
 func TestExpoHistoUnderflowMapping(t *testing.T) {
@@ -124,8 +124,8 @@ func TestExpoHistoUnderflowMapping(t *testing.T) {
 		lb, err := m.mapping.LowerBoundary(idx)
 		require.NoError(t, err)
 
-		require.Equal(t, fmt.Sprintf("%f", lb), m.stringLowerBoundary(idx, false))
-		require.Equal(t, fmt.Sprintf("-%f", lb), m.stringLowerBoundary(idx, true))
+		require.Equal(t, fmt.Sprintf(boundaryFormat, lb), m.stringLowerBoundary(idx, false))
+		require.Equal(t, fmt.Sprintf("-"+boundaryFormat, lb), m.stringLowerBoundary(idx, true))
 
 		require.Equal(t, "UNDERFLOW", m.stringLowerBoundary(idx-1, false))
 		require.Equal(t, "-UNDERFLOW", m.stringLowerBoundary(idx-1, true))
@@ -147,10 +147,20 @@ func expectGreatestBoundary() string {
 	return b.Text('g', 6)
 }
 
-// TestGreatestBoundary verifies greatestBoundary is hard-coded
-// correctly.
+// TestGreatestBoundary verifies greatestBoundary is hard-coded correctly.
 func TestGreatestBoundary(t *testing.T) {
 	expect := expectGreatestBoundary()
 
+	// Require that the formatting of greatestBoundary should
+	// match the formatting of normal boundaries.  Change the call
+	// to b.Text() in expectGreatestBoundary to match
+	// boundaryFormat then update this test.
+	require.Equal(t, boundaryFormat, "%.6g")
+
+	// Require the formatting of "1" to match the boundaryFormat.
+	invalid := newExpoHistoMapping(100)
+	require.Equal(t, fmt.Sprintf(boundaryFormat, 1.0), invalid.stringLowerBoundary(0, false))
+
+	// Require the correct hard-coded value.
 	require.Equal(t, expect, greatestBoundary)
 }
