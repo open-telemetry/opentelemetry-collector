@@ -24,14 +24,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// lastBoundary equals  and is the least
-// unrepresentable float64 greater than 1.
-// Can be computed using
-//
-//	b := big.NewFloat(1)
-//	b.SetMantExp(b, 1024)
-//	return b.String()
-const lastBoundary = "1.797693135e+308"
+// greatestBoundary equals and is the smallest unrepresentable float64
+// greater than 1.  See TestLastBoundary for the definition in code.
+const greatestBoundary = "1.79769e+308"
 
 // NewTextMetricsMarshaler returns a pmetric.Marshaler to encode to OTLP text bytes.
 func NewTextMetricsMarshaler() pmetric.Marshaler {
@@ -90,17 +85,21 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 	// index are in range.
 	if ehm.mapping != nil {
 		if bound, err := ehm.mapping.LowerBoundary(idx); err == nil {
-			if neg {
-				bound = -bound
+			// If the boundary is a subnormal number, fmt.Sprintf()
+			// won't help, use the generic fallback below.
+			if bound >= 0x1p-1022 {
+				if neg {
+					bound = -bound
+				}
+				return fmt.Sprintf("%f", bound)
 			}
-			return fmt.Sprintf("%f", bound)
 		}
 	}
 
 	var s string
 	switch {
 	case idx == 0:
-		s = "1"
+		s = fmt.Sprintf("%f", 1.0)
 	case idx > 0:
 		// Note: at scale 20, the value (1<<30) leads to exponent 1024
 		// The following expression generalizes this for valid scales.
@@ -108,7 +107,7 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 			// Important special case equal to 0x1p1024 is
 			// the upper boundary of the last valid bucket
 			// at all scales.
-			s = lastBoundary
+			s = greatestBoundary
 		} else {
 			s = "OVERFLOW"
 		}
@@ -119,6 +118,12 @@ func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
 		// an underflow error for buckets that are entirely
 		// outside the normal range.  These measurements are not
 		// necessarily invalid, but they are extra work to compute.
+		//
+		// There is one case that falls through to this branch
+		// under ordinary circumstances.  Because the value at
+		// the subnormal boundary 0x1p-1022 falls into a
+		// bucket (subnormal, 0x1p-1022], we therefore print that
+		// bucket as (UNDERFLOW, 0x1p-1022].
 		s = "UNDERFLOW"
 	}
 	if neg {

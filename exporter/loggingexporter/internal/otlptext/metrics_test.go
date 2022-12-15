@@ -72,9 +72,7 @@ func TestMetricsText(t *testing.T) {
 
 func TestExpoHistoOverflowMapping(t *testing.T) {
 	// Compute the string value of 0x1p+1024
-	b := big.NewFloat(1)
-	b.SetMantExp(b, 1024)
-	expect := b.String()
+	expect := expectGreatestBoundary()
 
 	// For positive scales, the +Inf threshold happens at 1024<<scale
 	for scale := logarithm.MinScale; scale <= logarithm.MaxScale; scale++ {
@@ -111,20 +109,23 @@ func TestExpoHistoOverflowMapping(t *testing.T) {
 	require.Equal(t, "-OVERFLOW", invalid.stringLowerBoundary(1, true))
 
 	// But index 0 always works
-	require.Equal(t, "1", invalid.stringLowerBoundary(0, false))
-	require.Equal(t, "-1", invalid.stringLowerBoundary(0, true))
+	require.Equal(t, "1.000000", invalid.stringLowerBoundary(0, false))
+	require.Equal(t, "-1.000000", invalid.stringLowerBoundary(0, true))
 }
 
 func TestExpoHistoUnderflowMapping(t *testing.T) {
 	// For all valid scales
 	for scale := int32(-10); scale <= 20; scale++ {
 		m := newExpoHistoMapping(scale)
-		idx := m.mapping.MapToIndex(0x1p-1022)
+
+		// The following +1 gives us the index whose lower
+		// boundary equals 0x1p-1022.
+		idx := m.mapping.MapToIndex(0x1p-1022) + 1
 		lb, err := m.mapping.LowerBoundary(idx)
 		require.NoError(t, err)
 
-		require.Equal(t, fmt.Sprintf("%g", lb), m.stringLowerBoundary(idx, false))
-		require.Equal(t, fmt.Sprintf("-%g", lb), m.stringLowerBoundary(idx, true))
+		require.Equal(t, fmt.Sprintf("%f", lb), m.stringLowerBoundary(idx, false))
+		require.Equal(t, fmt.Sprintf("-%f", lb), m.stringLowerBoundary(idx, true))
 
 		require.Equal(t, "UNDERFLOW", m.stringLowerBoundary(idx-1, false))
 		require.Equal(t, "-UNDERFLOW", m.stringLowerBoundary(idx-1, true))
@@ -135,4 +136,21 @@ func TestExpoHistoUnderflowMapping(t *testing.T) {
 
 	require.Equal(t, "UNDERFLOW", invalid.stringLowerBoundary(-1, false))
 	require.Equal(t, "-UNDERFLOW", invalid.stringLowerBoundary(-1, true))
+}
+
+// expectGreatestBoundary is the definitive logic to compute the
+// decimal value for 0x1p1024, which has float64 representation equal
+// to +Inf so we can't use ordinary logic to format.
+func expectGreatestBoundary() string {
+	b := big.NewFloat(1)
+	b.SetMantExp(b, 1024)
+	return b.Text('g', 6)
+}
+
+// TestGreatestBoundary verifies greatestBoundary is hard-coded
+// correctly.
+func TestGreatestBoundary(t *testing.T) {
+	expect := expectGreatestBoundary()
+
+	require.Equal(t, expect, greatestBoundary)
 }
