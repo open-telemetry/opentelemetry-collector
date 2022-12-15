@@ -36,7 +36,7 @@ type configSettings struct {
 	Exporters  *configunmarshaler.Configs[exporter.Factory]  `mapstructure:"exporters"`
 	Connectors *configunmarshaler.Configs[connector.Factory] `mapstructure:"connectors"`
 	Extensions *configunmarshaler.Configs[extension.Factory] `mapstructure:"extensions"`
-	Service    service.ConfigService                         `mapstructure:"service"`
+	Service    service.Config                                `mapstructure:"service"`
 }
 
 // unmarshal the configSettings from a confmap.Conf.
@@ -50,7 +50,7 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 		Connectors: configunmarshaler.NewConfigs(map[component.Type]connector.Factory{}),
 		Extensions: configunmarshaler.NewConfigs(factories.Extensions),
 		// TODO: Add a component.ServiceFactory to allow this to be defined by the Service.
-		Service: service.ConfigService{
+		Service: service.Config{
 			Telemetry: telemetry.Config{
 				Logs: telemetry.LogsConfig{
 					Level:       zapcore.InfoLevel,

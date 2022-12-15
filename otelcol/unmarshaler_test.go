@@ -79,7 +79,7 @@ func TestUnmarshalUnknownTopLevel(t *testing.T) {
 	assert.Contains(t, err.Error(), "'' has invalid keys: unknown_section")
 }
 
-func TestConfigServicePipelineUnmarshalError(t *testing.T) {
+func TestPipelineConfigUnmarshalError(t *testing.T) {
 	var testCases = []struct {
 		// test case name (also file name containing config yaml)
 		name string
@@ -142,7 +142,7 @@ func TestConfigServicePipelineUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			pipelines := make(map[component.ID]service.ConfigServicePipeline)
+			pipelines := make(map[component.ID]service.PipelineConfig)
 			err := tt.conf.Unmarshal(&pipelines, confmap.WithErrorUnused())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
@@ -211,7 +211,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.conf.Unmarshal(&service.ConfigService{}, confmap.WithErrorUnused())
+			err := tt.conf.Unmarshal(&service.Config{}, confmap.WithErrorUnused())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectError)
 		})

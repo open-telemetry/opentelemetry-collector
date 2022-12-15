@@ -42,9 +42,9 @@ var configNop = &Config{
 	Processors: map[component.ID]component.Config{component.NewID("nop"): processortest.NewNopFactory().CreateDefaultConfig()},
 	Exporters:  map[component.ID]component.Config{component.NewID("nop"): exportertest.NewNopFactory().CreateDefaultConfig()},
 	Extensions: map[component.ID]component.Config{component.NewID("nop"): extensiontest.NewNopFactory().CreateDefaultConfig()},
-	Service: service.ConfigService{
+	Service: service.Config{
 		Extensions: []component.ID{component.NewID("nop")},
-		Pipelines: map[component.ID]*service.ConfigServicePipeline{
+		Pipelines: map[component.ID]*service.PipelineConfig{
 			component.NewID("traces"): {
 				Receivers:  []component.ID{component.NewID("nop")},
 				Processors: []component.ID{component.NewID("nop")},

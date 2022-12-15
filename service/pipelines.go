@@ -203,8 +203,8 @@ type pipelinesSettings struct {
 	// ExporterConfigs is a map of component.ID to component.Config.
 	ExporterConfigs map[component.ID]component.Config
 
-	// PipelineConfigs is a map of component.ID to ConfigServicePipeline.
-	PipelineConfigs map[component.ID]*ConfigServicePipeline
+	// PipelineConfigs is a map of component.ID to PipelineConfig.
+	PipelineConfigs map[component.ID]*PipelineConfig
 }
 
 // buildPipelines builds all pipelines from config.

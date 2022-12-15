@@ -221,7 +221,7 @@ func generateConfig() *Config {
 		Extensions: map[component.ID]component.Config{
 			component.NewID("nop"): &nopExtConfig{},
 		},
-		Service: service.ConfigService{
+		Service: service.Config{
 			Telemetry: telemetry.Config{
 				Logs: telemetry.LogsConfig{
 					Level:             zapcore.DebugLevel,
@@ -239,7 +239,7 @@ func generateConfig() *Config {
 				},
 			},
 			Extensions: []component.ID{component.NewID("nop")},
-			Pipelines: map[component.ID]*service.ConfigServicePipeline{
+			Pipelines: map[component.ID]*service.PipelineConfig{
 				component.NewID("traces"): {
 					Receivers:  []component.ID{component.NewID("nop")},
 					Processors: []component.ID{component.NewID("nop")},

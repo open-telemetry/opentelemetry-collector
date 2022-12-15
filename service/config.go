@@ -28,8 +28,11 @@ var (
 	errMissingServicePipelineExporters = errors.New("must have at least one exporter")
 )
 
-// ConfigService defines the configurable components of the service.
-type ConfigService struct {
+// Deprecated: [v0.68.0] use Config.
+type ConfigService = Config
+
+// Config defines the configurable components of the Service.
+type Config struct {
 	// Telemetry is the configuration for collector's own telemetry.
 	Telemetry telemetry.Config `mapstructure:"telemetry"`
 
@@ -37,10 +40,10 @@ type ConfigService struct {
 	Extensions []component.ID `mapstructure:"extensions"`
 
 	// Pipelines are the set of data pipelines configured for the service.
-	Pipelines map[component.ID]*ConfigServicePipeline `mapstructure:"pipelines"`
+	Pipelines map[component.ID]*PipelineConfig `mapstructure:"pipelines"`
 }
 
-func (cfg *ConfigService) Validate() error {
+func (cfg *Config) Validate() error {
 	// Must have at least one pipeline.
 	if len(cfg.Pipelines) == 0 {
 		return errMissingServicePipelines
@@ -66,13 +69,17 @@ func (cfg *ConfigService) Validate() error {
 	return nil
 }
 
-type ConfigServicePipeline struct {
+// Deprecated: [v0.68.0] use PipelineConfig.
+type ConfigServicePipeline = PipelineConfig
+
+// PipelineConfig defines the configuration of a Pipeline.
+type PipelineConfig struct {
 	Receivers  []component.ID `mapstructure:"receivers"`
 	Processors []component.ID `mapstructure:"processors"`
 	Exporters  []component.ID `mapstructure:"exporters"`
 }
 
-func (cfg *ConfigServicePipeline) Validate() error {
+func (cfg *PipelineConfig) Validate() error {
 	// Validate pipeline has at least one receiver.
 	if len(cfg.Receivers) == 0 {
 		return errMissingServicePipelineReceivers
