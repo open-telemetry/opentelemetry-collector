@@ -85,7 +85,7 @@ func newExpoHistoMapping(scale int32) expoHistoMapping {
 }
 
 func (ehm expoHistoMapping) stringLowerBoundary(idx int32, neg bool) string {
-	// Use the otel-go mapping functions provided the scale and
+	// Use the go-expohisto mapping functions provided the scale and
 	// index are in range.
 	if ehm.mapping != nil {
 		if bound, err := ehm.mapping.LowerBoundary(idx); err == nil {
