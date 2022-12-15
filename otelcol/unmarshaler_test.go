@@ -43,6 +43,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 		"receivers":  nil,
 		"processors": nil,
 		"exporters":  nil,
+		"connectors": nil,
 		"extensions": nil,
 		"service":    nil,
 	})

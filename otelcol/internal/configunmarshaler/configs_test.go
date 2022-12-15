@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -48,6 +49,12 @@ var testKinds = []struct {
 		kind: "exporter",
 		factories: map[component.Type]component.Factory{
 			"nop": exportertest.NewNopFactory(),
+		},
+	},
+	{
+		kind: "connector",
+		factories: map[component.Type]component.Factory{
+			"nop": connectortest.NewNopFactory(),
 		},
 	},
 	{
