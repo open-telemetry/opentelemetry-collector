@@ -307,8 +307,9 @@ func TestQueuedRetry_DropOnFull(t *testing.T) {
 	t.Cleanup(func() {
 		assert.NoError(t, be.Shutdown(context.Background()))
 	})
-	err = be.sender.send(newMockRequest(context.Background(), 2, errors.New("transient error")))
-	require.Error(t, err)
+	ocs.run(func() {
+		require.Error(t, be.sender.send(newMockRequest(context.Background(), 2, errors.New("transient error"))))
+	})
 }
 
 func TestQueuedRetryHappyPath(t *testing.T) {
