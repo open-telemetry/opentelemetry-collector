@@ -232,11 +232,11 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 	hdp0.Negative().BucketCounts().FromRaw([]uint64{1, 1})
 
 	// The above will print:
-	// Bucket [-1.414214, -1.000000), Count: 1
-	// Bucket [-1.000000, -0.707107), Count: 1
+	// Bucket [-1.41421, -1), Count: 1
+	// Bucket [-1, -0.707107), Count: 1
 	// Bucket [0, 0], Count: 1
-	// Bucket (1.414214, 2.000000], Count: 1
-	// Bucket (2.000000, 2.828427], Count: 1
+	// Bucket (1.41421, 2], Count: 1
+	// Bucket (2, 2.82843], Count: 1
 
 	hdp1 := hdps.AppendEmpty()
 	initMetricAttributes2(hdp1.Attributes())
@@ -255,8 +255,8 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 
 	// The above will print:
 	// Bucket [0, 0], Count: 1
-	// Bucket (0.250000, 1.000000], Count: 1
-	// Bucket (1.000000, 4.000000], Count: 1
+	// Bucket (0.25, 1], Count: 1
+	// Bucket (1, 4], Count: 1
 
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(metricExemplarTimestamp)
