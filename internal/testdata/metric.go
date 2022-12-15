@@ -219,9 +219,9 @@ func initExponentialHistogramMetric(hm pmetric.Metric) {
 	hdp0.SetScale(1)
 
 	// at scale 1,
-	// postitive bucket index 0 is (1, sqrt(2)] (not represented)
-	// postitive bucket index 1 is (sqrt(2), 2]
-	// postitive bucket index 2 is (2, 2*sqrt(2)]
+	// positive bucket index 0 is (1, sqrt(2)] (not represented)
+	// positive bucket index 1 is (sqrt(2), 2]
+	// positive bucket index 2 is (2, 2*sqrt(2)]
 	hdp0.Positive().SetOffset(1)
 	hdp0.Positive().BucketCounts().FromRaw([]uint64{1, 1})
 
