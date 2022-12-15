@@ -40,29 +40,17 @@ type Settings struct {
 	// BuildInfo provides collector start information.
 	BuildInfo component.BuildInfo
 
-	// ReceiverFactories maps receiver type names in the config to the respective receiver.Factory.
-	ReceiverFactories map[component.Type]receiver.Factory
+	// Receivers builder for receivers.
+	Receivers *receiver.Builder
 
-	// ReceiverConfigs is a map of component.ID to receivers component.Config.
-	ReceiverConfigs map[component.ID]component.Config
+	// Processors builder for processors.
+	Processors *processor.Builder
 
-	// ProcessorFactories maps processor type names in the config to the respective component.ProcessorFactory.
-	ProcessorFactories map[component.Type]processor.Factory
+	// Exporters builder for exporters.
+	Exporters *exporter.Builder
 
-	// ProcessorConfigs is a map of component.ID to processors component.Config.
-	ProcessorConfigs map[component.ID]component.Config
-
-	// ExporterFactories maps exporter type names in the config to the respective exporter.Factory.
-	ExporterFactories map[component.Type]exporter.Factory
-
-	// ExporterConfigs is a map of component.ID to exporters component.Config.
-	ExporterConfigs map[component.ID]component.Config
-
-	// ExtensionConfigs is a map of component.ID to extensions component.Config.
-	ExtensionConfigs map[component.ID]component.Config
-
-	// ExtensionFactories maps extension type names in the config to the respective extension.Factory.
-	ExtensionFactories map[component.Type]extension.Factory
+	// Extensions builder for extensions.
+	Extensions *extension.Builder
 
 	// AsyncErrorChannel is the channel that is used to report fatal errors.
 	AsyncErrorChannel chan error
@@ -91,12 +79,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	srv := &Service{
 		buildInfo: set.BuildInfo,
 		host: &serviceHost{
-			receiverFactories:  set.ReceiverFactories,
-			processorFactories: set.ProcessorFactories,
-			exporterFactories:  set.ExporterFactories,
-			extensionFactories: set.ExtensionFactories,
-			buildInfo:          set.BuildInfo,
-			asyncErrorChannel:  set.AsyncErrorChannel,
+			receivers:         set.Receivers,
+			processors:        set.Processors,
+			exporters:         set.Exporters,
+			extensions:        set.Extensions,
+			buildInfo:         set.BuildInfo,
+			asyncErrorChannel: set.AsyncErrorChannel,
 		},
 		telemetryInitializer: newColTelemetry(reg),
 	}
@@ -137,7 +125,7 @@ func (srv *Service) Start(ctx context.Context) error {
 		zap.Int("NumCPU", runtime.NumCPU()),
 	)
 
-	if err := srv.host.extensions.Start(ctx, srv.host); err != nil {
+	if err := srv.host.serviceExtensions.Start(ctx, srv.host); err != nil {
 		return fmt.Errorf("failed to start extensions: %w", err)
 	}
 
@@ -145,7 +133,7 @@ func (srv *Service) Start(ctx context.Context) error {
 		return fmt.Errorf("cannot start pipelines: %w", err)
 	}
 
-	if err := srv.host.extensions.NotifyPipelineReady(); err != nil {
+	if err := srv.host.serviceExtensions.NotifyPipelineReady(); err != nil {
 		return err
 	}
 
@@ -160,7 +148,7 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 	// Begin shutdown sequence.
 	srv.telemetrySettings.Logger.Info("Starting shutdown...")
 
-	if err := srv.host.extensions.NotifyPipelineNotReady(); err != nil {
+	if err := srv.host.serviceExtensions.NotifyPipelineNotReady(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to notify that pipeline is not ready: %w", err))
 	}
 
@@ -168,7 +156,7 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown pipelines: %w", err))
 	}
 
-	if err := srv.host.extensions.Shutdown(ctx); err != nil {
+	if err := srv.host.serviceExtensions.Shutdown(ctx); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown extensions: %w", err))
 	}
 
@@ -187,25 +175,21 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 func (srv *Service) initExtensionsAndPipeline(ctx context.Context, set Settings, cfg Config) error {
 	var err error
 	extensionsSettings := extensions.Settings{
-		Telemetry: srv.telemetrySettings,
-		BuildInfo: srv.buildInfo,
-		Configs:   set.ExtensionConfigs,
-		Factories: srv.host.extensionFactories,
+		Telemetry:  srv.telemetrySettings,
+		BuildInfo:  srv.buildInfo,
+		Extensions: srv.host.extensions,
 	}
-	if srv.host.extensions, err = extensions.New(ctx, extensionsSettings, cfg.Extensions); err != nil {
+	if srv.host.serviceExtensions, err = extensions.New(ctx, extensionsSettings, cfg.Extensions); err != nil {
 		return fmt.Errorf("failed build extensions: %w", err)
 	}
 
 	pSet := pipelinesSettings{
-		Telemetry:          srv.telemetrySettings,
-		BuildInfo:          srv.buildInfo,
-		ReceiverFactories:  srv.host.receiverFactories,
-		ReceiverConfigs:    set.ReceiverConfigs,
-		ProcessorFactories: srv.host.processorFactories,
-		ProcessorConfigs:   set.ProcessorConfigs,
-		ExporterFactories:  srv.host.exporterFactories,
-		ExporterConfigs:    set.ExporterConfigs,
-		PipelineConfigs:    cfg.Pipelines,
+		Telemetry:       srv.telemetrySettings,
+		BuildInfo:       srv.buildInfo,
+		Receivers:       set.Receivers,
+		Processors:      set.Processors,
+		Exporters:       set.Exporters,
+		PipelineConfigs: cfg.Pipelines,
 	}
 	if srv.host.pipelines, err = buildPipelines(ctx, pSet); err != nil {
 		return fmt.Errorf("cannot build pipelines: %w", err)

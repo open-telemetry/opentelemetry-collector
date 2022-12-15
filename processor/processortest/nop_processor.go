@@ -15,11 +15,23 @@
 package processortest // import "go.opentelemetry.io/collector/processor/processortest"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/processor"
 )
+
+const typeStr = "nop"
 
 // NewNopCreateSettings returns a new nop settings for Create* functions.
 var NewNopCreateSettings = componenttest.NewNopProcessorCreateSettings //nolint:staticcheck
 
 // NewNopFactory returns a component.ProcessorFactory that constructs nop processors.
 var NewNopFactory = componenttest.NewNopProcessorFactory //nolint:staticcheck
+
+// NewNopBuilder returns a processor.Builder that constructs nop receivers.
+func NewNopBuilder() *processor.Builder {
+	nopFactory := NewNopFactory()
+	return processor.NewBuilder(
+		map[component.ID]component.Config{component.NewID(typeStr): nopFactory.CreateDefaultConfig()},
+		map[component.Type]processor.Factory{typeStr: nopFactory})
+}

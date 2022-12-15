@@ -48,7 +48,7 @@ func TestBuildExtensions(t *testing.T) {
 			serviceExtensions: []component.ID{
 				component.NewID("myextension"),
 			},
-			wantErrMsg: "extension \"myextension\" is not configured",
+			wantErrMsg: "failed to create extension \"myextension\": extension \"myextension\" is not configured",
 		},
 		{
 			name: "missing_extension_factory",
@@ -58,7 +58,7 @@ func TestBuildExtensions(t *testing.T) {
 			serviceExtensions: []component.ID{
 				component.NewID("unknown"),
 			},
-			wantErrMsg: "extension factory for type \"unknown\" is not configured",
+			wantErrMsg: "failed to create extension \"unknown\": extension factory not available for: \"unknown\"",
 		},
 		{
 			name: "error_on_create_extension",

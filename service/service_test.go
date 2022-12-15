@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -40,9 +39,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
@@ -151,16 +148,16 @@ func TestServiceGetFactory(t *testing.T) {
 	})
 
 	assert.Nil(t, srv.host.GetFactory(component.KindReceiver, "wrongtype"))
-	assert.Equal(t, set.ReceiverFactories["nop"], srv.host.GetFactory(component.KindReceiver, "nop"))
+	assert.Equal(t, set.Receivers.Factory("nop"), srv.host.GetFactory(component.KindReceiver, "nop"))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindProcessor, "wrongtype"))
-	assert.Equal(t, set.ProcessorFactories["nop"], srv.host.GetFactory(component.KindProcessor, "nop"))
+	assert.Equal(t, set.Processors.Factory("nop"), srv.host.GetFactory(component.KindProcessor, "nop"))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExporter, "wrongtype"))
-	assert.Equal(t, set.ExporterFactories["nop"], srv.host.GetFactory(component.KindExporter, "nop"))
+	assert.Equal(t, set.Exporters.Factory("nop"), srv.host.GetFactory(component.KindExporter, "nop"))
 
 	assert.Nil(t, srv.host.GetFactory(component.KindExtension, "wrongtype"))
-	assert.Equal(t, set.ExtensionFactories["nop"], srv.host.GetFactory(component.KindExtension, "nop"))
+	assert.Equal(t, set.Extensions.Factory("nop"), srv.host.GetFactory(component.KindExtension, "nop"))
 
 	// Try retrieve non existing component.Kind.
 	assert.Nil(t, srv.host.GetFactory(42, "nop"))
@@ -250,17 +247,14 @@ func testCollectorStartHelper(t *testing.T, reg *featuregate.Registry, tc ownMet
 
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version"}
-	set.ExtensionConfigs[component.NewID("zpages")] = &zpagesextension.Config{
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: zpagesAddr,
-		},
-	}
-	set.ExtensionFactories["zpages"] = zpagesextension.NewFactory()
+	set.Extensions = extension.NewBuilder(
+		map[component.ID]component.Config{component.NewID("zpages"): &zpagesextension.Config{TCPAddr: confignet.TCPAddr{Endpoint: zpagesAddr}}},
+		map[component.Type]extension.Factory{"zpages": zpagesextension.NewFactory()})
 	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
 	set.registry = reg
 
 	cfg := newNopConfig()
-	cfg.Extensions = []component.ID{component.NewID("nop"), component.NewID("zpages")}
+	cfg.Extensions = []component.ID{component.NewID("zpages")}
 	cfg.Telemetry.Metrics.Address = metricsAddr
 	cfg.Telemetry.Resource = make(map[string]*string)
 	// Include resource attributes under the service::telemetry::resource key.
@@ -395,15 +389,11 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 
 func newNopSettings() Settings {
 	return Settings{
-		BuildInfo:          component.NewDefaultBuildInfo(),
-		ReceiverFactories:  map[component.Type]receiver.Factory{"nop": receivertest.NewNopFactory()},
-		ReceiverConfigs:    map[component.ID]component.Config{component.NewID("nop"): receivertest.NewNopFactory().CreateDefaultConfig()},
-		ProcessorFactories: map[component.Type]processor.Factory{"nop": processortest.NewNopFactory()},
-		ProcessorConfigs:   map[component.ID]component.Config{component.NewID("nop"): processortest.NewNopFactory().CreateDefaultConfig()},
-		ExporterFactories:  map[component.Type]exporter.Factory{"nop": exportertest.NewNopFactory()},
-		ExporterConfigs:    map[component.ID]component.Config{component.NewID("nop"): exportertest.NewNopFactory().CreateDefaultConfig()},
-		ExtensionFactories: map[component.Type]extension.Factory{"nop": extensiontest.NewNopFactory()},
-		ExtensionConfigs:   map[component.ID]component.Config{component.NewID("nop"): extensiontest.NewNopFactory().CreateDefaultConfig()},
+		BuildInfo:  component.NewDefaultBuildInfo(),
+		Receivers:  receivertest.NewNopBuilder(),
+		Processors: processortest.NewNopBuilder(),
+		Exporters:  exportertest.NewNopBuilder(),
+		Extensions: extensiontest.NewNopBuilder(),
 	}
 }
 

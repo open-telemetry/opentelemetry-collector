@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/extension"
 )
 
+const typeStr = "nop"
+
 // NewNopCreateSettings returns a new nop settings for extension.Factory Create* functions.
 func NewNopCreateSettings() extension.CreateSettings {
 	return extension.CreateSettings{
@@ -30,3 +32,11 @@ func NewNopCreateSettings() extension.CreateSettings {
 
 // NewNopFactory returns an extension.Factory that constructs nop extensions.
 var NewNopFactory = componenttest.NewNopExtensionFactory //nolint:staticcheck
+
+// NewNopBuilder returns a extension.Builder that constructs nop receivers.
+func NewNopBuilder() *extension.Builder {
+	nopFactory := NewNopFactory()
+	return extension.NewBuilder(
+		map[component.ID]component.Config{component.NewID(typeStr): nopFactory.CreateDefaultConfig()},
+		map[component.Type]extension.Factory{typeStr: nopFactory})
+}

@@ -34,7 +34,7 @@ const (
 func (host *serviceHost) RegisterZPages(mux *http.ServeMux, pathPrefix string) {
 	mux.HandleFunc(path.Join(pathPrefix, servicezPath), host.zPagesRequest)
 	mux.HandleFunc(path.Join(pathPrefix, pipelinezPath), host.pipelines.HandleZPages)
-	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), host.extensions.HandleZPages)
+	mux.HandleFunc(path.Join(pathPrefix, extensionzPath), host.serviceExtensions.HandleZPages)
 	mux.HandleFunc(path.Join(pathPrefix, featurezPath), handleFeaturezRequest)
 }
 
