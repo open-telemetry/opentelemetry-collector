@@ -25,13 +25,6 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-// Monkey patching for unit test
-var (
-	stopStorage = func(queue *persistentQueue) {
-		queue.storage.stop()
-	}
-)
-
 // persistentQueue holds the queue backed by file storage
 type persistentQueue struct {
 	logger     *zap.Logger
@@ -87,10 +80,9 @@ func (pq *persistentQueue) Produce(item Request) bool {
 // Stop stops accepting items, shuts down the queue and closes the persistent queue
 func (pq *persistentQueue) Stop() {
 	pq.stopOnce.Do(func() {
-		// stop the consumers before the storage or the successful processing result will fail to write to persistent storage
+		pq.storage.stop()
 		close(pq.stopChan)
 		pq.stopWG.Wait()
-		stopStorage(pq)
 	})
 }
 
