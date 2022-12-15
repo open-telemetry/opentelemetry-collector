@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-func TestNewConnectorFactory_NoOptions(t *testing.T) {
+func TestNewFactoryNoOptions(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := struct{}{}
 	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg })
@@ -53,7 +53,7 @@ func TestNewConnectorFactory_NoOptions(t *testing.T) {
 	assert.Equal(t, err, errLogsToLogs)
 }
 
-func TestNewConnectorFactory_WithSameTypes(t *testing.T) {
+func TestNewFactoryWithSameTypes(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := struct{}{}
 	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg },
@@ -91,7 +91,7 @@ func TestNewConnectorFactory_WithSameTypes(t *testing.T) {
 	assert.Equal(t, err, errLogsToMetrics)
 }
 
-func TestNewConnectorFactory_WithTranslateTypes(t *testing.T) {
+func TestNewFactoryWithTranslateTypes(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := struct{}{}
 	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg },
@@ -136,7 +136,7 @@ func TestNewConnectorFactory_WithTranslateTypes(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestNewConnectorFactory_WithAllTypes(t *testing.T) {
+func TestNewFactoryWithAllTypes(t *testing.T) {
 	const typeStr = "test"
 	defaultCfg := struct{}{}
 	factory := NewFactory(typeStr, func() component.Config { return &defaultCfg },
