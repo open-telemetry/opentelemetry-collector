@@ -147,10 +147,9 @@ func expectGreatestBoundary() string {
 	return b.Text('g', 6)
 }
 
-// TestGreatestBoundary verifies greatestBoundary is hard-coded correctly.
-func TestGreatestBoundary(t *testing.T) {
-	expect := expectGreatestBoundary()
-
+// TestBoundaryFormatting verifies greatestBoundary is hard-coded
+// correctly and formatted like normal boundaries.
+func TestBoundaryFormatting(t *testing.T) {
 	// Require that the formatting of greatestBoundary should
 	// match the formatting of normal boundaries.  Change the call
 	// to b.Text() in expectGreatestBoundary to match
@@ -162,5 +161,5 @@ func TestGreatestBoundary(t *testing.T) {
 	require.Equal(t, fmt.Sprintf(boundaryFormat, 1.0), invalid.stringLowerBoundary(0, false))
 
 	// Require the correct hard-coded value.
-	require.Equal(t, expect, greatestBoundary)
+	require.Equal(t, expectGreatestBoundary(), greatestBoundary)
 }
