@@ -123,30 +123,26 @@ type Settings struct {
 	Telemetry component.TelemetrySettings
 	BuildInfo component.BuildInfo
 
-	// Configs is a map of component.ID to component.Config.
+	// Drepecated: [v0.68.0] use Extensions.
 	Configs map[component.ID]component.Config
 
-	// Factories maps extension type names in the config to the respective extension.Factory.
+	// Drepecated: [v0.68.0] use Extensions.
 	Factories map[component.Type]extension.Factory
+
+	// Extensions builder for extensions.
+	Extensions *extension.Builder
 }
 
 // New creates a new Extensions from Config.
 func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
+	if set.Extensions == nil {
+		set.Extensions = extension.NewBuilder(set.Configs, set.Factories)
+	}
 	exts := &Extensions{
 		telemetry: set.Telemetry,
 		extMap:    make(map[component.ID]extension.Extension),
 	}
 	for _, extID := range cfg {
-		extCfg, existsCfg := set.Configs[extID]
-		if !existsCfg {
-			return nil, fmt.Errorf("extension %q is not configured", extID)
-		}
-
-		factory, existsFactory := set.Factories[extID.Type()]
-		if !existsFactory {
-			return nil, fmt.Errorf("extension factory for type %q is not configured", extID.Type())
-		}
-
 		extSet := extension.CreateSettings{
 			ID:                extID,
 			TelemetrySettings: set.Telemetry,
@@ -154,7 +150,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 		}
 		extSet.TelemetrySettings.Logger = extensionLogger(set.Telemetry.Logger, extID)
 
-		ext, err := factory.CreateExtension(ctx, extSet, extCfg)
+		ext, err := set.Extensions.Create(ctx, extSet)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create extension %q: %w", extID, err)
 		}

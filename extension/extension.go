@@ -106,3 +106,39 @@ func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
 	}
 	return fMap, nil
 }
+
+// Builder extension is a helper struct that given a set of Configs and Factories helps with creating extensions.
+type Builder struct {
+	cfgs      map[component.ID]component.Config
+	factories map[component.Type]Factory
+}
+
+// NewBuilder creates a new extension.Builder to help with creating components form a set of configs and factories.
+func NewBuilder(cfgs map[component.ID]component.Config, factories map[component.Type]Factory) *Builder {
+	return &Builder{cfgs: cfgs, factories: factories}
+}
+
+// Create creates an extension based on the settings and configs available.
+func (b *Builder) Create(ctx context.Context, set CreateSettings) (Extension, error) {
+	cfg, existsCfg := b.cfgs[set.ID]
+	if !existsCfg {
+		return nil, fmt.Errorf("extension %q is not configured", set.ID)
+	}
+
+	f, existsFactory := b.factories[set.ID.Type()]
+	if !existsFactory {
+		return nil, fmt.Errorf("extension factory not available for: %q", set.ID)
+	}
+
+	sl := f.ExtensionStability()
+	if sl >= component.StabilityLevelAlpha {
+		set.Logger.Debug(sl.LogMessage())
+	} else {
+		set.Logger.Info(sl.LogMessage())
+	}
+	return f.CreateExtension(ctx, set, cfg)
+}
+
+func (b *Builder) Factory(componentType component.Type) component.Factory {
+	return b.factories[componentType]
+}
