@@ -18,7 +18,7 @@ import (
 	"fmt"
 )
 
-// Deprecated: [v0.68.0] use service.Factories.
+// Deprecated: [v0.68.0] use otelcol.Factories.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
 	Receivers map[Type]ReceiverFactory
