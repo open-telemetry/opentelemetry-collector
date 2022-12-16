@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
@@ -824,11 +825,11 @@ func ExampleHTTPServerSettings() {
 func TestHttpHeaders(t *testing.T) {
 	tests := []struct {
 		name    string
-		headers map[string]string
+		headers map[string]configopaque.String
 	}{
 		{
-			"with_headers",
-			map[string]string{
+			name: "with_headers",
+			headers: map[string]configopaque.String{
 				"header1": "value1",
 			},
 		},
@@ -837,7 +838,7 @@ func TestHttpHeaders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				for k, v := range tt.headers {
-					assert.Equal(t, r.Header.Get(k), v)
+					assert.Equal(t, r.Header.Get(k), string(v))
 				}
 				w.WriteHeader(200)
 			}))
@@ -849,9 +850,7 @@ func TestHttpHeaders(t *testing.T) {
 				ReadBufferSize:  0,
 				WriteBufferSize: 0,
 				Timeout:         0,
-				Headers: map[string]string{
-					"header1": "value1",
-				},
+				Headers:         tt.headers,
 			}
 			client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			req, err := http.NewRequest("GET", setting.Endpoint, nil)

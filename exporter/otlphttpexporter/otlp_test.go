@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -525,7 +526,7 @@ func TestUserAgent(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		headers    map[string]string
+		headers    map[string]configopaque.String
 		expectedUA string
 	}{
 		{
@@ -534,12 +535,12 @@ func TestUserAgent(t *testing.T) {
 		},
 		{
 			name:       "custom_user_agent",
-			headers:    map[string]string{"User-Agent": "My Custom Agent"},
+			headers:    map[string]configopaque.String{"User-Agent": "My Custom Agent"},
 			expectedUA: "My Custom Agent",
 		},
 		{
 			name:       "custom_user_agent_lowercase",
-			headers:    map[string]string{"user-agent": "My Custom Agent"},
+			headers:    map[string]configopaque.String{"user-agent": "My Custom Agent"},
 			expectedUA: "My Custom Agent",
 		},
 	}
