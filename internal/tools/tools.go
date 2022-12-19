@@ -12,6 +12,7 @@ package tools // import "go.opentelemetry.io/collector/internal/tools"
 // This ensures that all systems use the same version of tools in addition to regular dependencies.
 
 import (
+	_ "github.com/a8m/envsubst/cmd/envsubst"
 	_ "github.com/client9/misspell/cmd/misspell"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/addlicense"
