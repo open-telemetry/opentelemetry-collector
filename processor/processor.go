@@ -68,7 +68,16 @@ var NewFactory = component.NewProcessorFactory //nolint:staticcheck
 
 // MakeFactoryMap takes a list of factories and returns a map with Factory type as keys.
 // It returns a non-nil error when there are factories with duplicate type.
-var MakeFactoryMap = component.MakeProcessorFactoryMap //nolint:staticcheck
+func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
+	fMap := map[component.Type]Factory{}
+	for _, f := range factories {
+		if _, ok := fMap[f.Type()]; ok {
+			return fMap, fmt.Errorf("duplicate processor factory %q", f.Type())
+		}
+		fMap[f.Type()] = f
+	}
+	return fMap, nil
+}
 
 // Builder processor is a helper struct that given a set of Configs and Factories helps with creating processors.
 type Builder struct {
