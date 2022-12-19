@@ -20,12 +20,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
-	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
 	dataFormatProtobuf = "protobuf"
-	receiverTransport  = "grpc"
 )
 
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
@@ -35,20 +33,11 @@ type Receiver struct {
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Logs, set receiver.CreateSettings) (*Receiver, error) {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             set.ID,
-		Transport:              receiverTransport,
-		ReceiverCreateSettings: set,
-	})
-	if err != nil {
-		return nil, err
-	}
-
+func New(nextConsumer consumer.Logs, obsrecv *obsreport.Receiver) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
-	}, nil
+	}
 }
 
 // Export implements the service Export logs func.

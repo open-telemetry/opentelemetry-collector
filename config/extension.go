@@ -13,21 +13,16 @@
 // limitations under the License.
 
 package config // import "go.opentelemetry.io/collector/config"
+
 import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// ExtensionSettings defines common settings for a component.Extension configuration.
-// Specific processors can embed this struct and extend it with more fields if needed.
-//
-// When embedded in the extension config, it must be with `mapstructure:",squash"` tag.
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
 type ExtensionSettings struct {
-	settings
 }
 
-// NewExtensionSettings return a new ExtensionSettings with the given ID.
-func NewExtensionSettings(id component.ID) ExtensionSettings {
-	return ExtensionSettings{settings: newSettings(id)}
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
+func NewExtensionSettings(component.ID) ExtensionSettings {
+	return ExtensionSettings{}
 }
-
-var _ component.Config = (*ExtensionSettings)(nil)

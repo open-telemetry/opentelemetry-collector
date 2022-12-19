@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -62,7 +64,7 @@ type TestTelemetry struct {
 	ocExporter            *ocprom.Exporter
 }
 
-// ToExporterCreateSettings returns ExporterCreateSettings with configured TelemetrySettings
+// ToExporterCreateSettings returns an exporter.CreateSettings with configured TelemetrySettings.
 func (tts *TestTelemetry) ToExporterCreateSettings() exporter.CreateSettings {
 	set := exportertest.NewNopCreateSettings()
 	set.TelemetrySettings = tts.TelemetrySettings
@@ -70,15 +72,15 @@ func (tts *TestTelemetry) ToExporterCreateSettings() exporter.CreateSettings {
 	return set
 }
 
-// ToProcessorCreateSettings returns ProcessorCreateSettings with configured TelemetrySettings
-func (tts *TestTelemetry) ToProcessorCreateSettings() component.ProcessorCreateSettings {
-	set := componenttest.NewNopProcessorCreateSettings()
+// ToProcessorCreateSettings returns a processor.CreateSettings with configured TelemetrySettings.
+func (tts *TestTelemetry) ToProcessorCreateSettings() processor.CreateSettings {
+	set := processortest.NewNopCreateSettings()
 	set.TelemetrySettings = tts.TelemetrySettings
 	set.ID = tts.id
 	return set
 }
 
-// ToReceiverCreateSettings returns ReceiverCreateSettings with configured TelemetrySettings
+// ToReceiverCreateSettings returns a receiver.CreateSettings with configured TelemetrySettings.
 func (tts *TestTelemetry) ToReceiverCreateSettings() receiver.CreateSettings {
 	set := receivertest.NewNopCreateSettings()
 	set.TelemetrySettings = tts.TelemetrySettings
@@ -152,15 +154,13 @@ func (tts *TestTelemetry) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-// Deprecated: [v0.67.0] use SetupTelemetryWithID.
-func SetupTelemetry() (TestTelemetry, error) {
-	return SetupTelemetryWithID(component.NewID(""))
-}
+// Deprecated: [v0.68.0] use SetupTelemetry.
+var SetupTelemetryWithID = SetupTelemetry
 
-// SetupTelemetryWithID does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
+// SetupTelemetry does setup the testing environment to check the metrics recorded by receivers, producers or exporters.
 // The caller must pass the ID of the component that intends to test, so the CreateSettings and Check methods will use.
 // The caller should defer a call to Shutdown the returned TestTelemetry.
-func SetupTelemetryWithID(id component.ID) (TestTelemetry, error) {
+func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	sr := new(tracetest.SpanRecorder)
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 
@@ -171,8 +171,7 @@ func SetupTelemetryWithID(id component.ID) (TestTelemetry, error) {
 	}
 	settings.TelemetrySettings.TracerProvider = tp
 	settings.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
-	obsMetrics := obsreportconfig.Configure(configtelemetry.LevelNormal)
-	settings.views = obsMetrics.Views
+	settings.views = obsreportconfig.AllViews(configtelemetry.LevelNormal)
 	err := view.Register(settings.views...)
 	if err != nil {
 		return settings, err
@@ -186,65 +185,20 @@ func SetupTelemetryWithID(id component.ID) (TestTelemetry, error) {
 	}
 	view.RegisterExporter(settings.ocExporter)
 
-	exporter, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits())
+	exp, err := otelprom.New(otelprom.WithRegisterer(promReg), otelprom.WithoutUnits(), otelprom.WithoutScopeInfo())
 	if err != nil {
 		return settings, err
 	}
 
 	settings.meterProvider = sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(resource.Empty()),
-		sdkmetric.WithReader(exporter),
+		sdkmetric.WithReader(exp),
 	)
 	settings.TelemetrySettings.MeterProvider = settings.meterProvider
 
 	settings.otelPrometheusChecker = &prometheusChecker{promHandler: settings.ocExporter}
 
 	return settings, nil
-}
-
-// Deprecated: [v0.67.0] use TestTelemetry.CheckExporterTraces.
-func CheckExporterTraces(tts TestTelemetry, exporter component.ID, sentSpans, sendFailedSpans int64) error {
-	return tts.otelPrometheusChecker.checkExporterTraces(exporter, sentSpans, sendFailedSpans)
-}
-
-// Deprecated: [v0.67.0] use TestTelemetry.CheckExporterMetrics.
-func CheckExporterMetrics(tts TestTelemetry, exporter component.ID, sentMetricsPoints, sendFailedMetricsPoints int64) error {
-	return tts.otelPrometheusChecker.checkExporterMetrics(exporter, sentMetricsPoints, sendFailedMetricsPoints)
-}
-
-// Deprecated: [v0.67.0] use TestTelemetry.CheckExporterLogs.
-func CheckExporterLogs(tts TestTelemetry, exporter component.ID, sentLogRecords, sendFailedLogRecords int64) error {
-	return tts.otelPrometheusChecker.checkExporterLogs(exporter, sentLogRecords, sendFailedLogRecords)
-}
-
-// Deprecated: [v0.67.0] use TestTelemetry.CheckProcessorTraces.
-func CheckProcessorTraces(tts TestTelemetry, processor component.ID, acceptedSpans, refusedSpans, droppedSpans int64) error {
-	return tts.otelPrometheusChecker.checkProcessorTraces(processor, acceptedSpans, refusedSpans, droppedSpans)
-}
-
-// Deprecated: [v0.67.0] use TestTelemetry.CheckProcessorMetrics.
-func CheckProcessorMetrics(tts TestTelemetry, processor component.ID, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints int64) error {
-	return tts.otelPrometheusChecker.checkProcessorMetrics(processor, acceptedMetricPoints, refusedMetricPoints, droppedMetricPoints)
-}
-
-// Deprecated: [v0.67.0] use TestTelemetry.CheckProcessorLogs.
-func CheckProcessorLogs(tts TestTelemetry, processor component.ID, acceptedLogRecords, refusedLogRecords, droppedLogRecords int64) error {
-	return tts.otelPrometheusChecker.checkProcessorLogs(processor, acceptedLogRecords, refusedLogRecords, droppedLogRecords)
-}
-
-// Deprecated: [v0.67.0] use TestTelemetry.CheckReceiverTraces.
-func CheckReceiverTraces(tts TestTelemetry, receiver component.ID, protocol string, acceptedSpans, droppedSpans int64) error {
-	return tts.otelPrometheusChecker.checkReceiverTraces(receiver, protocol, acceptedSpans, droppedSpans)
-}
-
-// Deprecated: [v0.67.0] use TestTelemetry.CheckReceiverLogs.
-func CheckReceiverLogs(tts TestTelemetry, receiver component.ID, protocol string, acceptedLogRecords, droppedLogRecords int64) error {
-	return tts.otelPrometheusChecker.checkReceiverLogs(receiver, protocol, acceptedLogRecords, droppedLogRecords)
-}
-
-// Deprecated: [v0.67.0] use TestTelemetry.CheckReceiverMetrics.
-func CheckReceiverMetrics(tts TestTelemetry, receiver component.ID, protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
-	return tts.otelPrometheusChecker.checkReceiverMetrics(receiver, protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
 // CheckScraperMetrics checks that for the current exported values for metrics scraper metrics match given values.

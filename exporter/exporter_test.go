@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO: Move tests back to component package after config.*Settings are removed.
-
 package exporter
 
 import (
@@ -23,12 +21,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 func TestNewFactory(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewExporterSettings(component.NewID(typeStr))
+	defaultCfg := struct{}{}
 	factory := NewFactory(
 		typeStr,
 		func() component.Config { return &defaultCfg })
@@ -44,7 +41,7 @@ func TestNewFactory(t *testing.T) {
 
 func TestNewFactoryWithOptions(t *testing.T) {
 	const typeStr = "test"
-	defaultCfg := config.NewExporterSettings(component.NewID(typeStr))
+	defaultCfg := struct{}{}
 	factory := NewFactory(
 		typeStr,
 		func() component.Config { return &defaultCfg },

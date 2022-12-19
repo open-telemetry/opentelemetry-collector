@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -37,20 +38,33 @@ func TestNewSharedComponents(t *testing.T) {
 	assert.Len(t, comps.comps, 0)
 }
 
-func TestSharedComponents_GetOrAdd(t *testing.T) {
+func TestNewSharedComponentsCreateError(t *testing.T) {
+	comps := NewSharedComponents()
+	assert.Len(t, comps.comps, 0)
+	myErr := errors.New("my error")
+	_, err := comps.GetOrAdd(id, func() (component.Component, error) { return nil, myErr })
+	assert.ErrorIs(t, err, myErr)
+	assert.Len(t, comps.comps, 0)
+}
+
+func TestSharedComponentsGetOrAdd(t *testing.T) {
 	nop := &baseComponent{}
-	createNop := func() component.Component { return nop }
 
 	comps := NewSharedComponents()
-	got := comps.GetOrAdd(id, createNop)
+	got, err := comps.GetOrAdd(id, func() (component.Component, error) { return nop, nil })
+	require.NoError(t, err)
 	assert.Len(t, comps.comps, 1)
 	assert.Same(t, nop, got.Unwrap())
-	assert.Same(t, got, comps.GetOrAdd(id, createNop))
+	gotSecond, err := comps.GetOrAdd(id, func() (component.Component, error) { panic("should not be called") })
+	require.NoError(t, err)
+	assert.Same(t, got, gotSecond)
 
 	// Shutdown nop will remove
 	assert.NoError(t, got.Shutdown(context.Background()))
 	assert.Len(t, comps.comps, 0)
-	assert.NotSame(t, got, comps.GetOrAdd(id, createNop))
+	gotThird, err := comps.GetOrAdd(id, func() (component.Component, error) { return nop, nil })
+	require.NoError(t, err)
+	assert.NotSame(t, got, gotThird)
 }
 
 func TestSharedComponent(t *testing.T) {
@@ -66,10 +80,11 @@ func TestSharedComponent(t *testing.T) {
 			calledStop++
 			return wantErr
 		}}
-	createComp := func() component.Component { return comp }
 
 	comps := NewSharedComponents()
-	got := comps.GetOrAdd(id, createComp)
+	got, err := comps.GetOrAdd(id, func() (component.Component, error) { return comp, nil })
+	require.NoError(t, err)
+
 	assert.Equal(t, wantErr, got.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Equal(t, 1, calledStart)
 	// Second time is not called anymore.

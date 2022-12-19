@@ -19,8 +19,8 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -39,32 +39,30 @@ type factory struct {
 }
 
 // NewFactory returns a new factory for the Memory Limiter processor.
-func NewFactory() component.ProcessorFactory {
+func NewFactory() processor.Factory {
 	f := &factory{
 		memoryLimiters: map[component.Config]*memoryLimiter{},
 	}
-	return component.NewProcessorFactory(
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(f.createTracesProcessor, component.StabilityLevelBeta),
-		component.WithMetricsProcessor(f.createMetricsProcessor, component.StabilityLevelBeta),
-		component.WithLogsProcessor(f.createLogsProcessor, component.StabilityLevelBeta))
+		processor.WithTraces(f.createTracesProcessor, component.StabilityLevelBeta),
+		processor.WithMetrics(f.createMetricsProcessor, component.StabilityLevelBeta),
+		processor.WithLogs(f.createLogsProcessor, component.StabilityLevelBeta))
 }
 
 // CreateDefaultConfig creates the default configuration for processor. Notice
 // that the default configuration is expected to fail for this processor.
 func createDefaultConfig() component.Config {
-	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func (f *factory) createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {
 		return nil, err
@@ -78,10 +76,10 @@ func (f *factory) createTracesProcessor(
 
 func (f *factory) createMetricsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {
 		return nil, err
@@ -95,10 +93,10 @@ func (f *factory) createMetricsProcessor(
 
 func (f *factory) createLogsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	memLimiter, err := f.getMemoryLimiter(set, cfg)
 	if err != nil {
 		return nil, err
@@ -112,7 +110,7 @@ func (f *factory) createLogsProcessor(
 
 // getMemoryLimiter checks if we have a cached memoryLimiter with a specific config,
 // otherwise initialize and add one to the store.
-func (f *factory) getMemoryLimiter(set component.ProcessorCreateSettings, cfg component.Config) (*memoryLimiter, error) {
+func (f *factory) getMemoryLimiter(set processor.CreateSettings, cfg component.Config) (*memoryLimiter, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 

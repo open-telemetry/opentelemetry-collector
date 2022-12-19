@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -43,10 +42,9 @@ const (
 	fakeLogsParentSpanName = "fake_logs_parent_span_name"
 )
 
-var fakeLogsExporterName = component.NewIDWithName("fake_logs_exporter", "with_name")
-
 var (
-	fakeLogsExporterConfig = config.NewExporterSettings(fakeLogsExporterName)
+	fakeLogsExporterName   = component.NewIDWithName("fake_logs_exporter", "with_name")
+	fakeLogsExporterConfig = struct{}{}
 )
 
 func TestLogsRequest(t *testing.T) {
@@ -109,7 +107,7 @@ func TestLogsExporter_Default_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordLogs(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(fakeLogsExporterName)
+	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -122,7 +120,7 @@ func TestLogsExporter_WithRecordLogs(t *testing.T) {
 
 func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	tt, err := obsreporttest.SetupTelemetryWithID(fakeLogsExporterName)
+	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
@@ -134,7 +132,7 @@ func TestLogsExporter_WithRecordLogs_ReturnError(t *testing.T) {
 }
 
 func TestLogsExporter_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(fakeLogsExporterName)
+	tt, err := obsreporttest.SetupTelemetry(fakeLogsExporterName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 

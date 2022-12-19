@@ -18,17 +18,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// ExporterSettings defines common settings for a component.Exporter configuration.
-// Specific exporters can embed this struct and extend it with more fields if needed.
-//
-// When embedded in the exporter config, it must be with `mapstructure:",squash"` tag.
-type ExporterSettings struct {
-	settings
-}
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
+type ExporterSettings struct{}
 
-// NewExporterSettings return a new ExporterSettings with the given ComponentID.
+// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
 func NewExporterSettings(id component.ID) ExporterSettings {
-	return ExporterSettings{settings: newSettings(id)}
+	return ExporterSettings{}
 }
-
-var _ component.Config = (*ExporterSettings)(nil)

@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -43,27 +42,24 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-			SendBatchSize:     uint32(10000),
-			SendBatchMaxSize:  uint32(11000),
-			Timeout:           time.Second * 10,
+			SendBatchSize:    uint32(10000),
+			SendBatchMaxSize: uint32(11000),
+			Timeout:          time.Second * 10,
 		}, cfg)
 }
 
 func TestValidateConfig_DefaultBatchMaxSize(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewIDWithName(typeStr, "2")),
-		SendBatchSize:     100,
-		SendBatchMaxSize:  0,
+		SendBatchSize:    100,
+		SendBatchMaxSize: 0,
 	}
 	assert.NoError(t, cfg.Validate())
 }
 
 func TestValidateConfig_ValidBatchSizes(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewIDWithName(typeStr, "2")),
-		SendBatchSize:     100,
-		SendBatchMaxSize:  1000,
+		SendBatchSize:    100,
+		SendBatchMaxSize: 1000,
 	}
 	assert.NoError(t, cfg.Validate())
 
@@ -71,9 +67,8 @@ func TestValidateConfig_ValidBatchSizes(t *testing.T) {
 
 func TestValidateConfig_InvalidBatchSize(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewIDWithName(typeStr, "2")),
-		SendBatchSize:     1000,
-		SendBatchMaxSize:  100,
+		SendBatchSize:    1000,
+		SendBatchMaxSize: 100,
 	}
 	assert.Error(t, cfg.Validate())
 }

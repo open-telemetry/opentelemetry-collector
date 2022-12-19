@@ -18,8 +18,7 @@ import (
 	"fmt"
 )
 
-// Factories struct holds in a single type all component factories that
-// can be handled by the Config.
+// Deprecated: [v0.68.0] use otelcol.Factories.
 type Factories struct {
 	// Receivers maps receiver type names in the config to the respective factory.
 	Receivers map[Type]ReceiverFactory
@@ -34,50 +33,12 @@ type Factories struct {
 	Extensions map[Type]ExtensionFactory
 }
 
-// Deprecated: [v0.67.0] use receiver.MakeFactoryMap
-func MakeReceiverFactoryMap(factories ...ReceiverFactory) (map[Type]ReceiverFactory, error) {
-	fMap := map[Type]ReceiverFactory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate receiver factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
-}
-
-// MakeProcessorFactoryMap takes a list of processor factories and returns a map
-// with factory type as keys. It returns a non-nil error when more than one factories
-// have the same type.
+// Deprecated: [v0.68.0] use processor.MakeFactoryMap
 func MakeProcessorFactoryMap(factories ...ProcessorFactory) (map[Type]ProcessorFactory, error) {
 	fMap := map[Type]ProcessorFactory{}
 	for _, f := range factories {
 		if _, ok := fMap[f.Type()]; ok {
 			return fMap, fmt.Errorf("duplicate processor factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
-}
-
-// Deprecated: [v0.67.0] use exporter.MakeFactoryMap
-func MakeExporterFactoryMap(factories ...ExporterFactory) (map[Type]ExporterFactory, error) {
-	fMap := map[Type]ExporterFactory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate exporter factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
-}
-
-// Deprecated: [v0.67.0] use extension.MakeFactoryMap
-func MakeExtensionFactoryMap(factories ...ExtensionFactory) (map[Type]ExtensionFactory, error) {
-	fMap := map[Type]ExtensionFactory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate extension factory %q", f.Type())
 		}
 		fMap[f.Type()] = f
 	}

@@ -26,14 +26,14 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
-	otelview "go.opentelemetry.io/otel/sdk/metric/view"
+	otelview "go.opentelemetry.io/otel/sdk/metric/view" //nolint:staticcheck
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/obsreportconfig"
 	"go.opentelemetry.io/collector/internal/obsreportconfig/obsmetrics"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor"
 )
 
 const (
@@ -55,8 +55,16 @@ const (
 	triggerBatchSize
 )
 
+func init() {
+	// TODO: Find a way to handle the error.
+	_ = view.Register(metricViews()...)
+}
+
+// Deprecated: [v0.68.0] will be removed soon, views are initialized in init.
+var MetricViews = metricViews
+
 // MetricViews returns the metrics views related to batching
-func MetricViews() []*view.View {
+func metricViews() []*view.View {
 	processorTagKeys := []tag.Key{processorTagKey}
 
 	countBatchSizeTriggerSendView := &view.View{
@@ -101,6 +109,7 @@ func MetricViews() []*view.View {
 	}
 }
 
+// Deprecated: [v0.68.0] will be removed soon, views are initialized in the service for the moment until a generic solution is provided.
 func OtelMetricsViews() ([]otelview.View, error) {
 	var views []otelview.View
 	var err error
@@ -146,7 +155,7 @@ type batchProcessorTelemetry struct {
 	batchSendSizeBytes   syncint64.Histogram
 }
 
-func newBatchProcessorTelemetry(set component.ProcessorCreateSettings, registry *featuregate.Registry) (*batchProcessorTelemetry, error) {
+func newBatchProcessorTelemetry(set processor.CreateSettings, registry *featuregate.Registry) (*batchProcessorTelemetry, error) {
 	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, set.ID.String()))
 	if err != nil {
 		return nil, err

@@ -36,37 +36,6 @@ For more technical details about how configuration is resolved you can read the 
 
     `./otelcorecol --config=file:examples/local/otel-config.yaml --config="yaml:exporters::logging::loglevel: info"`
 
-
-## How to check components available in a distribution
- 
-Use the sub command build-info. Below is an example:
-
-```bash
-   ./otelcorecol build-info
-```
-Sample output:
-
-```yaml
-
-buildinfo:
-   command: otelcorecol
-   description: Local OpenTelemetry Collector binary, testing only.
-   version: 0.62.1-dev
-receivers:
-   - otlp
-processors:
-   - memory_limiter
-   - batch
-exporters:
-   - otlp
-   - otlphttp
-   - logging
-extensions:
-   - zpages
-   - memory_ballast
-
-
-```
 ## How to override config properties?
 
 The `--set` flag allows to set arbitrary config property. The `--set` values are merged into the final configuration
@@ -126,3 +95,32 @@ key:
 1. Does not support setting a key that contains a dot `.`.
 2. Does not support setting a key that contains a equal sign `=`.
 3. The configuration key separator inside the value part of the property is "::". For example `--set "name={a::b: c}"` is equivalent with `--set name.a.b=c`.
+
+## How to check components available in a distribution
+
+Use the sub command build-info. Below is an example:
+
+```bash
+   ./otelcorecol components
+```
+Sample output:
+
+```yaml
+buildinfo:
+   command: otelcorecol
+   description: Local OpenTelemetry Collector binary, testing only.
+   version: 0.62.1-dev
+receivers:
+   - otlp
+processors:
+   - memory_limiter
+   - batch
+exporters:
+   - otlp
+   - otlphttp
+   - logging
+extensions:
+   - zpages
+   - memory_ballast
+
+```

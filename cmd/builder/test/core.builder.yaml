@@ -1,20 +1,20 @@
 dist:
   module: go.opentelemetry.io/collector/builder/test/core
-  otelcol_version: 0.67.0
+  otelcol_version: 0.68.0
 
 extensions:
   - import: go.opentelemetry.io/collector/extension/zpagesextension
-    gomod: go.opentelemetry.io/collector v0.67.0
+    gomod: go.opentelemetry.io/collector v0.68.0
     path: ${WORKSPACE_DIR}
 
 receivers:
   - import: go.opentelemetry.io/collector/receiver/otlpreceiver
-    gomod: go.opentelemetry.io/collector v0.67.0
+    gomod: go.opentelemetry.io/collector v0.68.0
     path: ${WORKSPACE_DIR}
 
 exporters:
   - import: go.opentelemetry.io/collector/exporter/loggingexporter
-    gomod: go.opentelemetry.io/collector v0.67.0
+    gomod: go.opentelemetry.io/collector v0.68.0
     path: ${WORKSPACE_DIR}
 
 replaces:
@@ -25,4 +25,6 @@ replaces:
   - go.opentelemetry.io/collector/extension/zpagesextension => ${WORKSPACE_DIR}/extension/zpagesextension
   - go.opentelemetry.io/collector/featuregate => ${WORKSPACE_DIR}/featuregate
   - go.opentelemetry.io/collector/processor/batchprocessor => ${WORKSPACE_DIR}/processor/batchprocessor
+  - go.opentelemetry.io/collector/receiver/otlpreceiver => ${WORKSPACE_DIR}/receiver/otlpreceiver
   - go.opentelemetry.io/collector/semconv => ${WORKSPACE_DIR}/semconv
+  - go.opentelemetry.io/collector/pdata => ${WORKSPACE_DIR}/pdata

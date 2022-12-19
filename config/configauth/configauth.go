@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package configauth implements the configuration settings to
+// ensure authentication on incoming requests, and allows
+// exporters to add authentication on outgoing requests.
 package configauth // import "go.opentelemetry.io/collector/config/configauth"
 
 import (

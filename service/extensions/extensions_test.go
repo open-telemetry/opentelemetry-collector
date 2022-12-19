@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
@@ -49,7 +48,7 @@ func TestBuildExtensions(t *testing.T) {
 			serviceExtensions: []component.ID{
 				component.NewID("myextension"),
 			},
-			wantErrMsg: "extension \"myextension\" is not configured",
+			wantErrMsg: "failed to create extension \"myextension\": extension \"myextension\" is not configured",
 		},
 		{
 			name: "missing_extension_factory",
@@ -59,7 +58,7 @@ func TestBuildExtensions(t *testing.T) {
 			serviceExtensions: []component.ID{
 				component.NewID("unknown"),
 			},
-			wantErrMsg: "extension factory for type \"unknown\" is not configured",
+			wantErrMsg: "failed to create extension \"unknown\": extension factory not available for: \"unknown\"",
 		},
 		{
 			name: "error_on_create_extension",
@@ -107,11 +106,7 @@ func newBadExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		"bf",
 		func() component.Config {
-			return &struct {
-				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-			}{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("bf")),
-			}
+			return &struct{}{}
 		},
 		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
 			return nil, nil
@@ -124,11 +119,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 	return extension.NewFactory(
 		"err",
 		func() component.Config {
-			return &struct {
-				config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-			}{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID("err")),
-			}
+			return &struct{}{}
 		},
 		func(ctx context.Context, set extension.CreateSettings, extension component.Config) (extension.Extension, error) {
 			return nil, errors.New("cannot create \"err\" extension type")

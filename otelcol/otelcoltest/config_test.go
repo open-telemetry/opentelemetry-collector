@@ -22,12 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/service"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := NopFactories()
 	assert.NoError(t, err)
 
 	cfg, err := LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
@@ -58,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Contains(t, cfg.Service.Extensions, component.NewID("nop"))
 	require.Len(t, cfg.Service.Pipelines, 1)
 	assert.Equal(t,
-		&service.ConfigServicePipeline{
+		&service.PipelineConfig{
 			Receivers:  []component.ID{component.NewID("nop")},
 			Processors: []component.ID{component.NewID("nop")},
 			Exporters:  []component.ID{component.NewID("nop")},
@@ -68,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigAndValidate(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := NopFactories()
 	assert.NoError(t, err)
 
 	cfgValidate, errValidate := LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)

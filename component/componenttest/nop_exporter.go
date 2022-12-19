@@ -18,32 +18,15 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 )
-
-// Deprecated: [v0.67.0] use exportertest.NewNopCreateSettings.
-func NewNopExporterCreateSettings() exporter.CreateSettings {
-	return exporter.CreateSettings{
-		TelemetrySettings: NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
-type nopExporterConfig struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-}
 
 // Deprecated: [v0.67.0] use exportertest.NewNopFactory.
 func NewNopExporterFactory() exporter.Factory {
 	return exporter.NewFactory(
 		"nop",
-		func() component.Config {
-			return &nopExporterConfig{
-				ExporterSettings: config.NewExporterSettings(component.NewID("nop")),
-			}
-		},
+		func() component.Config { return &nopConfig{} },
 		exporter.WithTraces(createTracesExporter, component.StabilityLevelStable),
 		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelStable),
 		exporter.WithLogs(createLogsExporter, component.StabilityLevelStable),

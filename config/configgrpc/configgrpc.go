@@ -259,8 +259,7 @@ func (gcs *GRPCClientSettings) toDialOptions(host component.Host, settings compo
 
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
-		// otelgrpc.WithMeterProvider(settings.MeterProvider),
+		otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	}
 
@@ -373,8 +372,7 @@ func (gss *GRPCServerSettings) toServerOption(host component.Host, settings comp
 
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
-		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/4030
-		// otelgrpc.WithMeterProvider(settings.MeterProvider),
+		otelgrpc.WithMeterProvider(settings.MeterProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 	}
 

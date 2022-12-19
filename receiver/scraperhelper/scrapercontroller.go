@@ -35,15 +35,15 @@ import (
 // configuration. Scraper controller receivers can embed this struct, instead
 // of receiver.Settings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	CollectionInterval      time.Duration            `mapstructure:"collection_interval"`
+	// Deprecated: [v0.68.0] will be removed soon.
+	config.ReceiverSettings `mapstructure:",squash"`
+	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
 }
 
 // NewDefaultScraperControllerSettings returns default scraper controller
 // settings with a collection interval of one minute.
-func NewDefaultScraperControllerSettings(cfgType component.Type) ScraperControllerSettings {
+func NewDefaultScraperControllerSettings(component.Type) ScraperControllerSettings {
 	return ScraperControllerSettings{
-		ReceiverSettings:   config.NewReceiverSettings(component.NewID(cfgType)),
 		CollectionInterval: time.Minute,
 	}
 }
