@@ -104,7 +104,9 @@ func NewCGroups(procPathMountInfo, procPathCGroup string) (CGroups, error) {
 			if err != nil {
 				return err
 			}
-			cgroups[opt] = NewCGroup(cgroupPath)
+			if strings.HasPrefix(cgroupPath, "/sys") {
+				cgroups[opt] = NewCGroup(cgroupPath)
+			}
 		}
 
 		return nil
