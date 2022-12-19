@@ -70,17 +70,11 @@ func createTraces(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-<<<<<<< HEAD
 ) (receiver.Traces, error) {
-	r := receivers.GetOrAdd(cfg, func() component.Component {
-		return newOtlpReceiver(cfg.(*Config), set)
-=======
-) (component.TracesReceiver, error) {
 	var err error
 	r := receivers.GetOrAdd(cfg, func() (comp component.Component) {
 		comp, err = newOtlpReceiver(cfg.(*Config), set)
 		return comp
->>>>>>> 6f35a3a6 (Add obsreport network metrics api, OTLP-gRPC receiver/exporter support)
 	})
 	if err != nil {
 		return nil, err
@@ -98,17 +92,11 @@ func createMetrics(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,
-<<<<<<< HEAD
 ) (receiver.Metrics, error) {
-	r := receivers.GetOrAdd(cfg, func() component.Component {
-		return newOtlpReceiver(cfg.(*Config), set)
-=======
-) (component.MetricsReceiver, error) {
 	var err error
 	r := receivers.GetOrAdd(cfg, func() (comp component.Component) {
 		comp, err = newOtlpReceiver(cfg.(*Config), set)
 		return comp
->>>>>>> 6f35a3a6 (Add obsreport network metrics api, OTLP-gRPC receiver/exporter support)
 	})
 	if err != nil {
 		return nil, err
@@ -126,17 +114,11 @@ func createLog(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Logs,
-<<<<<<< HEAD
 ) (receiver.Logs, error) {
-	r := receivers.GetOrAdd(cfg, func() component.Component {
-		return newOtlpReceiver(cfg.(*Config), set)
-=======
-) (component.LogsReceiver, error) {
 	var err error
 	r := receivers.GetOrAdd(cfg, func() (comp component.Component) {
 		comp, err = newOtlpReceiver(cfg.(*Config), set)
 		return comp
->>>>>>> 6f35a3a6 (Add obsreport network metrics api, OTLP-gRPC receiver/exporter support)
 	})
 	if err != nil {
 		return nil, err
