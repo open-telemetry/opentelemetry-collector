@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.67.0
 	go.opentelemetry.io/collector/consumer v0.67.0
 	go.opentelemetry.io/collector/featuregate v0.67.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1
+	go.opentelemetry.io/collector/pdata v1.1.0-rc1
 	go.opentelemetry.io/otel v1.11.2
 	go.opentelemetry.io/otel/exporters/prometheus v0.34.0
 	go.opentelemetry.io/otel/metric v0.34.0
