@@ -149,7 +149,7 @@ func newWithWindowsEventLogCore(set CollectorSettings, flags *flag.FlagSet, elog
 			return nil, errors.New("at least one config flag must be provided")
 		}
 
-		set.ConfigProvider, err = NewConfigProvider(newDefaultConfigProviderSettings(configFlags))
+		set.ConfigProvider, err = NewConfigProvider(NewDefaultConfigProviderSettings(configFlags))
 		if err != nil {
 			return nil, err
 		}

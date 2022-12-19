@@ -115,7 +115,7 @@ func (cm *configProvider) Shutdown(ctx context.Context) error {
 	return cm.mapResolver.Shutdown(ctx)
 }
 
-func newDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
+func NewDefaultConfigProviderSettings(uris []string) ConfigProviderSettings {
 	return ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:       uris,

@@ -31,7 +31,7 @@ func TestNewBuildSubCommand(t *testing.T) {
 	factories, err := nopFactories()
 	require.NoError(t, err)
 
-	cfgProvider, err := NewConfigProvider(newDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
+	cfgProvider, err := NewConfigProvider(NewDefaultConfigProviderSettings([]string{filepath.Join("testdata", "otelcol-nop.yaml")}))
 	require.NoError(t, err)
 
 	set := CollectorSettings{

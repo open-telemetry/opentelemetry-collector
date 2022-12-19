@@ -41,7 +41,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 					return errors.New("at least one config flag must be provided")
 				}
 
-				set.ConfigProvider, err = NewConfigProvider(newDefaultConfigProviderSettings(configFlags))
+				set.ConfigProvider, err = NewConfigProvider(NewDefaultConfigProviderSettings(configFlags))
 				if err != nil {
 					return err
 				}
