@@ -36,6 +36,7 @@ IMPI        := $(TOOLS_BIN_DIR)/impi
 MISSPELL    := $(TOOLS_BIN_DIR)/misspell 
 MULTIMOD    := $(TOOLS_BIN_DIR)/multimod
 PORTO       := $(TOOLS_BIN_DIR)/porto
+ENVSUBST    := $(TOOLS_BIN_DIR)/envsubst
 
 GH := $(shell which gh)
 
