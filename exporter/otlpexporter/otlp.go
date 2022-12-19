@@ -72,30 +72,22 @@ func newExporter(cfg component.Config, set exporter.CreateSettings) (*baseExport
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-<<<<<<< HEAD
-	return &baseExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
-=======
 	obsNet, err := obsreport.NewExporterNetworkReporter(set)
 	if err != nil {
 		return nil, err
 	}
 
-	return &exporter{
+	return &baseExporter{
 		config:    oCfg,
 		settings:  set.TelemetrySettings,
 		userAgent: userAgent,
 		obsNet:    obsNet,
 	}, nil
->>>>>>> 6f35a3a6 (Add obsreport network metrics api, OTLP-gRPC receiver/exporter support)
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-<<<<<<< HEAD
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
-	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
-=======
-func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 	dialOpts := []grpc.DialOption{
 		grpc.WithUserAgent(e.userAgent),
 	}
@@ -106,7 +98,6 @@ func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 	}
 
 	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, dialOpts...); err != nil {
->>>>>>> 6f35a3a6 (Add obsreport network metrics api, OTLP-gRPC receiver/exporter support)
 		return err
 	}
 
