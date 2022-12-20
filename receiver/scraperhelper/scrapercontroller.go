@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,9 +34,7 @@ import (
 // configuration. Scraper controller receivers can embed this struct, instead
 // of receiver.Settings, and extend it with more fields if needed.
 type ScraperControllerSettings struct {
-	// Deprecated: [v0.68.0] will be removed soon.
-	config.ReceiverSettings `mapstructure:",squash"`
-	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 }
 
 // NewDefaultScraperControllerSettings returns default scraper controller

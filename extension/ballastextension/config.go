@@ -16,15 +16,10 @@ package ballastextension // import "go.opentelemetry.io/collector/extension/ball
 
 import (
 	"errors"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config has the configuration for the ballast extension.
 type Config struct {
-	// Deprecated: [v0.68.0] will be removed soon.
-	config.ExtensionSettings `mapstructure:",squash"`
-
 	// SizeMiB is the size, in MiB, of the memory ballast
 	// to be created for this process.
 	SizeMiB uint64 `mapstructure:"size_mib"`

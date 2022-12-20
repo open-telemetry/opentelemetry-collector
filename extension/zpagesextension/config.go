@@ -18,15 +18,11 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config has the configuration for the extension enabling the zPages extension.
 type Config struct {
-	// Deprecated: [v0.68.0] will be removed soon.
-	config.ExtensionSettings `mapstructure:",squash"`
-
 	// TCPAddr is the address and port in which the zPages will be listening to.
 	// Use localhost:<port> to make it available only locally, or ":<port>" to
 	// make it available on all network interfaces.
