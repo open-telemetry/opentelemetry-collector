@@ -121,7 +121,7 @@ When considering making a bugfix release on the `v0.N.x` release cycle, the bug 
     - The bug happens with the default configuration or with a commonly used one (e.g. has been reported by multiple people)
 3. The bug is sufficiently severe. For example (non-exhaustive list):
     - The bug makes the Collector crash reliably
-    - The bug makes the Collector fails to start under an accepted configuration
+    - The bug makes the Collector fail to start under an accepted configuration
     - The bug produces significant data loss
     - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
 
