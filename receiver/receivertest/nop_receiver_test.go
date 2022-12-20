@@ -31,7 +31,7 @@ func TestNewNopFactory(t *testing.T) {
 	require.NotNil(t, factory)
 	assert.Equal(t, component.Type("nop"), factory.Type())
 	cfg := factory.CreateDefaultConfig()
-	// assert.Equal(t, &nopConfig{}, cfg)
+	assert.Equal(t, &nopConfig{}, cfg)
 
 	traces, err := factory.CreateTracesReceiver(context.Background(), NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)

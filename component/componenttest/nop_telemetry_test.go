@@ -12,15 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
+package componenttest
 
 import (
-	"go.opentelemetry.io/collector/component"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-type nopComponent struct {
-	component.StartFunc
-	component.ShutdownFunc
+func TestNewNopTelemetrySettings(t *testing.T) {
+	nts := NewNopTelemetrySettings()
+	assert.NotNil(t, nts.Logger)
+	assert.NotNil(t, nts.TracerProvider)
+	assert.NotPanics(t, func() {
+		nts.TracerProvider.Tracer("test")
+	})
+	assert.NotNil(t, nts.MeterProvider)
+	assert.NotPanics(t, func() {
+		nts.MeterProvider.Meter("test")
+	})
+	assert.Equal(t, configtelemetry.LevelNone, nts.MetricsLevel)
 }
-
-type nopConfig struct{}
