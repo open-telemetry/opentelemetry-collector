@@ -582,42 +582,58 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
 }
 
-func TestQueuedRetry_shutdown_dataIsRequeued(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(defaultID)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
+func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	storageID := component.NewIDWithName("file_storage", "storage")
 
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
+	rCfg.InitialInterval = time.Hour
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-	set := tt.ToExporterCreateSettings()
-	be, err := newBaseExporter(set, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, err)
 
+	produceCounter := atomic.NewUint32(0)
+
 	var extensions = map[component.ID]component.Component{
-		storageID: &mockStorageExtension{},
+		storageID: &mockStorageExtension{
+			mockClient: internal.NewMockStorageClient(),
+		},
 	}
 	host := &mockHost{ext: extensions}
 
 	// we start correctly with a file storage extension
 	require.NoError(t, be.Start(context.Background(), host))
 
-	req := newMockRequest(context.Background(), 3, errors.New("error"))
+	// wraps original queue so we can count operations
+	be.qrSender.queue = &producerConsumerQueueWithCounter{
+		ProducerConsumerQueue: be.qrSender.queue,
+		produceCounter:        produceCounter,
+	}
+
+	// replace nextSender inside retrySender to always return error so it doesn't exit send loop
+	castedSender, ok := be.qrSender.consumerSender.(*retrySender)
+	require.True(t, ok, "consumerSender should be a retrySender type")
+	castedSender.nextSender = &ErrorRequestSender{
+		errToReturn: errors.New("some error"),
+	}
+
+	req := newMockRequest(context.Background(), 3, errors.New("some error"))
 	go func() {
 		require.NoError(t, be.sender.send(req))
 	}()
 
-	// stopping the queue manually first so item put into the queue will not be processed. This helps us to verify the size of the queue.
-	be.qrSender.queue.Stop()
+	// first wait for the item to be produced to the queue initially
+	assert.Eventually(t, func() bool {
+		return produceCounter.Load() == uint32(1)
+	}, time.Second, 1*time.Millisecond)
 
+	// shuts down and ensure the item is produced in the queue again
 	require.NoError(t, be.Shutdown(context.Background()))
 	assert.Eventually(t, func() bool {
-		return be.qrSender.queue.Size() == 1
+		return produceCounter.Load() == uint32(2)
 	}, time.Second, 1*time.Millisecond)
 }
 
@@ -799,6 +815,7 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 
 type mockStorageExtension struct {
 	GetClientError error
+	mockClient     storage.Client
 }
 
 func (mse *mockStorageExtension) Start(_ context.Context, _ component.Host) error {
@@ -813,5 +830,26 @@ func (mse *mockStorageExtension) GetClient(_ context.Context, _ component.Kind, 
 	if mse.GetClientError != nil {
 		return nil, mse.GetClientError
 	}
+	if mse.mockClient != nil {
+		return mse.mockClient, nil
+	}
 	return storage.NewNopClient(), nil
+}
+
+type producerConsumerQueueWithCounter struct {
+	internal.ProducerConsumerQueue
+	produceCounter *atomic.Uint32
+}
+
+func (pcq *producerConsumerQueueWithCounter) Produce(item internal.Request) bool {
+	pcq.produceCounter.Add(1)
+	return pcq.ProducerConsumerQueue.Produce(item)
+}
+
+type ErrorRequestSender struct {
+	errToReturn error
+}
+
+func (rs *ErrorRequestSender) send(_ internal.Request) error {
+	return rs.errToReturn
 }
