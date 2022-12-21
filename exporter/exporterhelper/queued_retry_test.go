@@ -582,6 +582,45 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
 }
 
+func TestQueuedRetry_shutdown_dataIsRequeued(t *testing.T) {
+	tt, err := obsreporttest.SetupTelemetry(defaultID)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	storageID := component.NewIDWithName("file_storage", "storage")
+
+	qCfg := NewDefaultQueueSettings()
+	qCfg.NumConsumers = 1
+	qCfg.StorageID = &storageID // enable persistence
+	rCfg := NewDefaultRetrySettings()
+	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
+
+	set := tt.ToExporterCreateSettings()
+	be, err := newBaseExporter(set, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
+	require.NoError(t, err)
+
+	var extensions = map[component.ID]component.Component{
+		storageID: &mockStorageExtension{},
+	}
+	host := &mockHost{ext: extensions}
+
+	// we start correctly with a file storage extension
+	require.NoError(t, be.Start(context.Background(), host))
+
+	req := newMockRequest(context.Background(), 3, errors.New("error"))
+	go func() {
+		require.NoError(t, be.sender.send(req))
+	}()
+
+	// stopping the queue manually first so item put into the queue will not be processed. This helps us to verify the size of the queue.
+	be.qrSender.queue.Stop()
+
+	require.NoError(t, be.Shutdown(context.Background()))
+	assert.Eventually(t, func() bool {
+		return be.qrSender.queue.Size() == 1
+	}, time.Second, 1*time.Millisecond)
+}
+
 type mockErrorRequest struct {
 	baseRequest
 }

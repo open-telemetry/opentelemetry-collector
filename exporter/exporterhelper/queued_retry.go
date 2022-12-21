@@ -435,7 +435,7 @@ func (rs *retrySender) send(req internal.Request) error {
 		case <-req.Context().Done():
 			return fmt.Errorf("Request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
-			return fmt.Errorf("interrupted due to shutdown %w", err)
+			return rs.onTemporaryFailure(rs.logger, req, fmt.Errorf("interrupted due to shutdown %w", err))
 		case <-time.After(backoffDelay):
 		}
 	}
