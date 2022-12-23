@@ -5,7 +5,7 @@ change_type: breaking
 component: componenttest
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove deprecated componenttest.NewNop*CreateSettings
+note: Remove deprecated funcs from componenttest
 
 # One or more tracking issues or pull requests related to the change
-issues: [6761]
+issues: [6836]

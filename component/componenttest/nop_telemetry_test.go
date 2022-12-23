@@ -12,17 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "go.opentelemetry.io/collector/config"
+package componenttest
 
 import (
-	"go.opentelemetry.io/collector/component"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
-type ExtensionSettings struct {
-}
-
-// Deprecated: [v0.68.0] will be removed soon, Config no longer requires to embed this.
-func NewExtensionSettings(component.ID) ExtensionSettings {
-	return ExtensionSettings{}
+func TestNewNopTelemetrySettings(t *testing.T) {
+	nts := NewNopTelemetrySettings()
+	assert.NotNil(t, nts.Logger)
+	assert.NotNil(t, nts.TracerProvider)
+	assert.NotPanics(t, func() {
+		nts.TracerProvider.Tracer("test")
+	})
+	assert.NotNil(t, nts.MeterProvider)
+	assert.NotPanics(t, func() {
+		nts.MeterProvider.Meter("test")
+	})
+	assert.Equal(t, configtelemetry.LevelNone, nts.MetricsLevel)
 }
