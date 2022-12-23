@@ -41,6 +41,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
@@ -90,7 +91,7 @@ type GRPCClientSettings struct {
 	WaitForReady bool `mapstructure:"wait_for_ready"`
 
 	// The headers associated with gRPC requests.
-	Headers map[string]string `mapstructure:"headers"`
+	Headers map[string]configopaque.String `mapstructure:"headers"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md

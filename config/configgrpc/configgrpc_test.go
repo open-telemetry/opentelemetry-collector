@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
@@ -73,7 +74,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		{
 			name: "test all with gzip compression",
 			settings: GRPCClientSettings{
-				Headers: map[string]string{
+				Headers: map[string]configopaque.String{
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
@@ -101,7 +102,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		{
 			name: "test all with snappy compression",
 			settings: GRPCClientSettings{
-				Headers: map[string]string{
+				Headers: map[string]configopaque.String{
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
@@ -129,7 +130,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 		{
 			name: "test all with zstd compression",
 			settings: GRPCClientSettings{
-				Headers: map[string]string{
+				Headers: map[string]configopaque.String{
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
@@ -272,7 +273,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 		{
 			err: "invalid balancer_name: test",
 			settings: GRPCClientSettings{
-				Headers: map[string]string{
+				Headers: map[string]configopaque.String{
 					"test": "test",
 				},
 				Endpoint:    "localhost:1234",
