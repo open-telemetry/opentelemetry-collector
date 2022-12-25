@@ -1,7 +1,6 @@
 # Exporter Helper
 
-This is a helper exporter that other exporters can depend on. Today, it
-primarily offers queued retries  and resource attributes to metric labels conversion.
+This is a helper exporter that other exporters can depend on. Today, it primarily offers queued retry capabilities.
 
 > :warning: This exporter should not be added to a service pipeline.
 
