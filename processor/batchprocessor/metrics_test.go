@@ -56,12 +56,6 @@ func TestBatchProcessorMetrics(t *testing.T) {
 	}
 }
 
-func TestOtelMetricsViews(t *testing.T) {
-	otelViews, err := OtelMetricsViews()
-	require.NoError(t, err)
-	assert.Len(t, otelViews, 2)
-}
-
 type testTelemetry struct {
 	meter         view.Meter
 	promHandler   http.Handler
