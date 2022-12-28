@@ -24,7 +24,7 @@ import (
 // Extension is the interface for objects hosted by the OpenTelemetry Collector that
 // don't participate directly on data pipelines but provide some functionality
 // to the service, examples: health check endpoint, z-pages, etc.
-type Extension = component.Extension //nolint:staticcheck
+type Extension = component.Component
 
 // PipelineWatcher is an extra interface for Extension hosted by the OpenTelemetry
 // Collector that is to be implemented by extensions interested in changes to pipeline
@@ -44,18 +44,33 @@ type PipelineWatcher interface {
 }
 
 // CreateSettings is passed to Factory.Create(...) function.
-type CreateSettings = component.ExtensionCreateSettings //nolint:staticcheck
+type CreateSettings struct {
+	// ID returns the ID of the component that will be created.
+	ID component.ID
+
+	component.TelemetrySettings
+
+	// BuildInfo can be used by components for informational purposes
+	BuildInfo component.BuildInfo
+}
 
 // CreateFunc is the equivalent of Factory.Create(...) function.
 type CreateFunc func(context.Context, CreateSettings, component.Config) (Extension, error)
 
-// CreateExtension implements ExtensionFactory.CreateExtension.
+// Create implements Factory.Create.
 func (f CreateFunc) CreateExtension(ctx context.Context, set CreateSettings, cfg component.Config) (Extension, error) {
 	return f(ctx, set, cfg)
 }
 
-// Factory is a factory for extensions to the service.
-type Factory = component.ExtensionFactory //nolint:staticcheck
+type Factory interface {
+	component.Factory
+
+	// Create creates an extension based on the given config.
+	CreateExtension(ctx context.Context, set CreateSettings, cfg component.Config) (Extension, error)
+
+	// Stability gets the stability level of the Extension.
+	ExtensionStability() component.StabilityLevel
+}
 
 type factory struct {
 	component.Factory
