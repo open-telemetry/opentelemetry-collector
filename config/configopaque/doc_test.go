@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/config/configopaque"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func Example_opaqueString() {
@@ -102,11 +102,11 @@ func Example_opaqueMap() {
 	}
 	fmt.Printf("encoded cfg (YAML) is:\n%s\n\n", string(bytes))
 	//Output: encoded cfg (YAML) is:
-	// censored:
-	//   token: '**************'
-	// uncensored:
-	//   key: cloud.zone
-	//   value: zone-1
+	//censored:
+	//     token: '**************'
+	//uncensored:
+	//     key: cloud.zone
+	//     value: zone-1
 }
 
 type ExampleConfigMap struct {
