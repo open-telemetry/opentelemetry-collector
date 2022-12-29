@@ -5,7 +5,7 @@ change_type: bug_fix
 component: config
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: set a fixed length to the asterisks string printed by configopaque.String, instead of disclosing secret length.
+note: use [REDACTED] when marshaling to text a configopaque.String, instead of disclosing secret length.
 
 # One or more tracking issues or pull requests related to the change
 issues: [6868]

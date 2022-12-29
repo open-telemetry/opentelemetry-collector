@@ -21,13 +21,13 @@ import (
 // String alias that is marshaled in an opaque way.
 type String string
 
-const maskedString = "********"
+const maskedString = "[REDACTED]"
 
 var maskedBytes = []byte(maskedString)
 
 var _ encoding.TextMarshaler = String("")
 
-// MarshalText marshals into a string of 8 '*' characters.
+// MarshalText marshals the string as `[REDACTED]`.
 func (s String) MarshalText() ([]byte, error) {
 	return maskedBytes, nil
 }

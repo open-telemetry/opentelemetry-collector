@@ -26,6 +26,6 @@ func TestStringMarshalText(t *testing.T) {
 	for _, example := range examples {
 		opaque, err := example.MarshalText()
 		require.NoError(t, err)
-		assert.Equal(t, "********", string(opaque))
+		assert.Equal(t, "[REDACTED]", string(opaque))
 	}
 }
