@@ -90,3 +90,67 @@ func TestNewNopConnectorFactory(t *testing.T) {
 	assert.NoError(t, logsToLogs.ConsumeLogs(context.Background(), plog.NewLogs()))
 	assert.NoError(t, logsToLogs.Shutdown(context.Background()))
 }
+
+func TestNewNopBuilder(t *testing.T) {
+	builder := NewNopBuilder()
+	require.NotNil(t, builder)
+
+	factory := NewNopFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := NewNopCreateSettings()
+	set.ID = component.NewID(typeStr)
+
+	tracesToTraces, err := factory.CreateTracesToTraces(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bTracesToTraces, err := builder.CreateTracesToTraces(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, tracesToTraces, bTracesToTraces)
+
+	tracesToMetrics, err := factory.CreateTracesToMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bTracesToMetrics, err := builder.CreateTracesToMetrics(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, tracesToMetrics, bTracesToMetrics)
+
+	tracesToLogs, err := factory.CreateTracesToLogs(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bTracesToLogs, err := builder.CreateTracesToLogs(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, tracesToLogs, bTracesToLogs)
+
+	metricsToTraces, err := factory.CreateMetricsToTraces(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bMetricsToTraces, err := builder.CreateMetricsToTraces(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, metricsToTraces, bMetricsToTraces)
+
+	metricsToMetrics, err := factory.CreateMetricsToMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bMetricsToMetrics, err := builder.CreateMetricsToMetrics(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, metricsToMetrics, bMetricsToMetrics)
+
+	metricsToLogs, err := factory.CreateMetricsToLogs(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bMetricsToLogs, err := builder.CreateMetricsToLogs(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, metricsToLogs, bMetricsToLogs)
+
+	logsToTraces, err := factory.CreateLogsToTraces(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bLogsToTraces, err := builder.CreateLogsToTraces(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, logsToTraces, bLogsToTraces)
+
+	logsToMetrics, err := factory.CreateLogsToMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bLogsToMetrics, err := builder.CreateLogsToMetrics(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, logsToMetrics, bLogsToMetrics)
+
+	logsToLogs, err := factory.CreateLogsToLogs(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	bLogsToLogs, err := builder.CreateLogsToLogs(context.Background(), set, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.IsType(t, logsToLogs, bLogsToLogs)
+}
