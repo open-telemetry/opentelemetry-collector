@@ -34,15 +34,15 @@ while getopts "cp:d:" o; do
 done
 shift $((OPTIND-1))
 
-if [ -z $package ]; then
+if [ -z "$package" ]; then
   usage
 fi
 
 set -e
 
-if [ -e $input_dir/$package/apidiff.state ]; then
-  changes=$(${apidiff_cmd} $input_dir/$package/apidiff.state $package)
-  if [ ! -z "$changes" -a "$changes"!=" " ]; then
+if [ -e "$input_dir"/"$package"/apidiff.state ]; then
+  changes=$(${apidiff_cmd} "$input_dir"/"$package"/apidiff.state "$package")
+  if [ -n "$changes" ] && [ "$changes" != " " ]; then
     SUB='Incompatible changes:'
     if [ $check_only = true ] && [[ "$changes" =~ .*"$SUB".* ]]; then
       echo "Incompatible Changes Found."

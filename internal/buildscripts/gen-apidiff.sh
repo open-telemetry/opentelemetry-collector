@@ -35,7 +35,7 @@ while getopts "dp:o:" o; do
 done
 shift $((OPTIND-1))
 
-if [ -z $package ]; then
+if [ -z "$package" ]; then
   usage
 fi
 
@@ -54,9 +54,9 @@ clean_up() {
 }
 trap clean_up EXIT
 
-mkdir -p $tmp_dir/$package
+mkdir -p "$tmp_dir/$package"
 
-${apidiff_cmd} -w $tmp_dir/$package/apidiff.state $package
+${apidiff_cmd} -w "$tmp_dir"/"$package"/apidiff.state "$package"
 
 # Copy files if not in dry-run mode.
 if [ $dry_run = false ]; then
