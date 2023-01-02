@@ -23,11 +23,9 @@ type String string
 
 const maskedString = "[REDACTED]"
 
-var maskedBytes = []byte(maskedString)
-
 var _ encoding.TextMarshaler = String("")
 
 // MarshalText marshals the string as `[REDACTED]`.
 func (s String) MarshalText() ([]byte, error) {
-	return maskedBytes, nil
+	return []byte(maskedString), nil
 }
