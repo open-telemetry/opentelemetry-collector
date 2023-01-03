@@ -29,30 +29,70 @@ import (
 // TracesReceiver feeds a consumer.Traces with data.
 //
 // For example, it could be Zipkin data source which translates Zipkin spans into ptrace.Traces.
-type Traces = component.TracesReceiver //nolint:staticcheck
+type Traces interface {
+	component.Component
+}
 
 // Metrics receiver receives metrics.
 // Its purpose is to translate data from any format to the collector's internal metrics format.
 // MetricsReceiver feeds a consumer.Metrics with data.
 //
 // For example, it could be Prometheus data source which translates Prometheus metrics into pmetric.Metrics.
-type Metrics = component.MetricsReceiver //nolint:staticcheck
+type Metrics interface {
+	component.Component
+}
 
 // Logs receiver receives logs.
 // Its purpose is to translate data from any format to the collector's internal logs data format.
 // LogsReceiver feeds a consumer.Logs with data.
 //
 // For example, it could be a receiver that reads syslogs and convert them into plog.Logs.
-type Logs = component.LogsReceiver //nolint:staticcheck
+type Logs interface {
+	component.Component
+}
 
 // CreateSettings configures Receiver creators.
-type CreateSettings = component.ReceiverCreateSettings //nolint:staticcheck
+type CreateSettings struct {
+	// ID returns the ID of the component that will be created.
+	ID component.ID
+
+	component.TelemetrySettings
+
+	// BuildInfo can be used by components for informational purposes.
+	BuildInfo component.BuildInfo
+}
 
 // Factory is factory interface for receivers.
 //
 // This interface cannot be directly implemented. Implementations must
 // use the NewReceiverFactory to implement it.
-type Factory = component.ReceiverFactory //nolint:staticcheck
+type Factory interface {
+	component.Factory
+
+	// CreateTracesReceiver creates a TracesReceiver based on this config.
+	// If the receiver type does not support tracing or if the config is not valid
+	// an error will be returned instead.
+	CreateTracesReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
+
+	// TracesReceiverStability gets the stability level of the TracesReceiver.
+	TracesReceiverStability() component.StabilityLevel
+
+	// CreateMetricsReceiver creates a MetricsReceiver based on this config.
+	// If the receiver type does not support metrics or if the config is not valid
+	// an error will be returned instead.
+	CreateMetricsReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
+
+	// MetricsReceiverStability gets the stability level of the MetricsReceiver.
+	MetricsReceiverStability() component.StabilityLevel
+
+	// CreateLogsReceiver creates a LogsReceiver based on this config.
+	// If the receiver type does not support the data type or if the config is not valid
+	// an error will be returned instead.
+	CreateLogsReceiver(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
+
+	// LogsReceiverStability gets the stability level of the LogsReceiver.
+	LogsReceiverStability() component.StabilityLevel
+}
 
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption interface {
