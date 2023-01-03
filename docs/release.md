@@ -113,17 +113,15 @@ Both `opentelemetry-collector` and `opentelemetry-collector-contrib` have very s
 
 When considering making a bugfix release on the `v0.N.x` release cycle, the bug in question needs to fulfill the following criteria:
 
-1. The bug was introduced on the `v0.N.x` release cycle.
-2. The bug has been reported within the first 3 working days after the official binaries were released.
-3. The bug has no workaround or the workaround is significantly harder to put in place than updating the version. Examples of simple workarounds are:
+1. The bug has no workaround or the workaround is significantly harder to put in place than updating the version. Examples of simple workarounds are:
     - Reverting a feature gate.
     - Changing the configuration to an easy to find value.
-4. The bug happens in common setups. To gauge this, maintainers can consider the following:
+2. The bug happens in common setups. To gauge this, maintainers can consider the following:
     - The bug is not specific to an uncommon platform
     - The bug happens with the default configuration or with a commonly used one (e.g. has been reported by multiple people)
-5. The bug is sufficiently severe. For example (non-exhaustive list):
+3. The bug is sufficiently severe. For example (non-exhaustive list):
     - The bug makes the Collector crash reliably
-    - The bug makes the Collector fails to start under an accepted configuration
+    - The bug makes the Collector fail to start under an accepted configuration
     - The bug produces significant data loss
     - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
 
