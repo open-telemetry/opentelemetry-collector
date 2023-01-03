@@ -193,8 +193,8 @@ func encoderConfig(rawVal interface{}) *encoder.EncoderConfig {
 // case-sensitive version of the callback to be used in the MatchName property
 // of the DecoderConfig. The default for MatchEqual is to use strings.EqualFold,
 // which is case-insensitive.
-func caseSensitiveMatchName() func(mapKey, keyName string) bool {
-	return func(mapKey, keyName string) bool { return mapKey == keyName }
+func caseSensitiveMatchName() func(a, b string) bool {
+	return func(a, b string) bool { return a == b }
 }
 
 // In cases where a config has a mapping of something to a struct pointers
