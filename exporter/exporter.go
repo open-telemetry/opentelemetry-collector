@@ -21,25 +21,69 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 )
 
 // Traces is an exporter that can consume traces.
-type Traces = component.TracesExporter //nolint:staticcheck
+type Traces interface {
+	component.Component
+	consumer.Traces
+}
 
 // Metrics is an exporter that can consume metrics.
-type Metrics = component.MetricsExporter //nolint:staticcheck
+type Metrics interface {
+	component.Component
+	consumer.Metrics
+}
 
 // Logs is an exporter that can consume logs.
-type Logs = component.LogsExporter //nolint:staticcheck
+type Logs interface {
+	component.Component
+	consumer.Logs
+}
 
 // CreateSettings configures exporter creators.
-type CreateSettings = component.ExporterCreateSettings //nolint:staticcheck
+type CreateSettings struct {
+	// ID returns the ID of the component that will be created.
+	ID component.ID
+
+	component.TelemetrySettings
+
+	// BuildInfo can be used by components for informational purposes
+	BuildInfo component.BuildInfo
+}
 
 // Factory is factory interface for exporters.
 //
 // This interface cannot be directly implemented. Implementations must
 // use the NewFactory to implement it.
-type Factory = component.ExporterFactory //nolint:staticcheck
+type Factory interface {
+	component.Factory
+
+	// CreateTracesExporter creates a TracesExporter based on this config.
+	// If the exporter type does not support tracing or if the config is not valid,
+	// an error will be returned instead.
+	CreateTracesExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Traces, error)
+
+	// TracesExporterStability gets the stability level of the TracesExporter.
+	TracesExporterStability() component.StabilityLevel
+
+	// CreateMetricsExporter creates a MetricsExporter based on this config.
+	// If the exporter type does not support metrics or if the config is not valid,
+	// an error will be returned instead.
+	CreateMetricsExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Metrics, error)
+
+	// MetricsExporterStability gets the stability level of the MetricsExporter.
+	MetricsExporterStability() component.StabilityLevel
+
+	// CreateLogsExporter creates a LogsExporter based on the config.
+	// If the exporter type does not support logs or if the config is not valid,
+	// an error will be returned instead.
+	CreateLogsExporter(ctx context.Context, set CreateSettings, cfg component.Config) (Logs, error)
+
+	// LogsExporterStability gets the stability level of the LogsExporter.
+	LogsExporterStability() component.StabilityLevel
+}
 
 // FactoryOption apply changes to Factory.
 type FactoryOption interface {
