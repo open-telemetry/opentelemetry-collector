@@ -584,31 +584,30 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 }
 
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
+	produceCounter := atomic.NewUint32(0)
+
 	req := newMockRequest(context.Background(), 3, errors.New("some error"))
-	dataRequeuedTest(t, req)
+	be := dataRequeuedTest(t, req, produceCounter)
+
+	// shuts down and ensure the item is produced in the queue again
+	require.NoError(t, be.Shutdown(context.Background()))
+	assert.Eventually(t, func() bool {
+		return produceCounter.Load() == uint32(2)
+	}, time.Second, 1*time.Millisecond)
 }
 
-func TestQueuedRetryPersistentEnabled_contextDone_dataIsRequeued(t *testing.T) {
-	ctx, cancelFn := context.WithCancel(context.Background())
-	cancelFn()
-	req := newMockRequest(ctx, 3, nil)
-	dataRequeuedTest(t, req)
-}
-
-func dataRequeuedTest(t *testing.T, req internal.Request) {
+func dataRequeuedTest(t *testing.T, req internal.Request, produceCounter *atomic.Uint32) *baseExporter {
 	storageID := component.NewIDWithName("file_storage", "storage")
 
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
-	rCfg.InitialInterval = time.Hour
+	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
 	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, err)
-
-	produceCounter := atomic.NewUint32(0)
 
 	var extensions = map[component.ID]component.Component{
 		storageID: &mockStorageExtension{
@@ -642,11 +641,7 @@ func dataRequeuedTest(t *testing.T, req internal.Request) {
 		return produceCounter.Load() == uint32(1)
 	}, time.Second, 1*time.Millisecond)
 
-	// shuts down and ensure the item is produced in the queue again
-	require.NoError(t, be.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return produceCounter.Load() == uint32(2)
-	}, time.Second, 1*time.Millisecond)
+	return be
 }
 
 type mockErrorRequest struct {

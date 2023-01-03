@@ -433,7 +433,7 @@ func (rs *retrySender) send(req internal.Request) error {
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-req.Context().Done():
-			return rs.onTemporaryFailure(rs.logger, req, fmt.Errorf("Request is cancelled or timed out %w", err))
+			return fmt.Errorf("Request is cancelled or timed out %w", err)
 		case <-rs.stopCh:
 			return rs.onTemporaryFailure(rs.logger, req, fmt.Errorf("interrupted due to shutdown %w", err))
 		case <-time.After(backoffDelay):
