@@ -28,9 +28,6 @@ var (
 	errMissingServicePipelineExporters = errors.New("must have at least one exporter")
 )
 
-// Deprecated: [v0.68.0] use Config.
-type ConfigService = Config
-
 // Config defines the configurable components of the Service.
 type Config struct {
 	// Telemetry is the configuration for collector's own telemetry.
@@ -68,9 +65,6 @@ func (cfg *Config) Validate() error {
 
 	return nil
 }
-
-// Deprecated: [v0.68.0] use PipelineConfig.
-type ConfigServicePipeline = PipelineConfig
 
 // PipelineConfig defines the configuration of a Pipeline.
 type PipelineConfig struct {
