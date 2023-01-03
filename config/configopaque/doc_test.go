@@ -42,7 +42,7 @@ func Example_opaqueString() {
 	}
 	fmt.Printf("encoded cfg (YAML) is:\n%s\n\n", string(bytes))
 	//Output: encoded cfg (YAML) is:
-	// censored: '*********'
+	// censored: '[REDACTED]'
 	// uncensored: not sensitive
 }
 
@@ -66,9 +66,9 @@ func Example_opaqueSlice() {
 	//Output: encoded cfg (JSON) is
 	// {
 	//   "Censored": [
-	//     "****",
-	//     "**",
-	//     "*********"
+	//     "[REDACTED]",
+	//     "[REDACTED]",
+	//     "[REDACTED]"
 	//   ],
 	//   "Uncensored": [
 	//     "data",
@@ -103,7 +103,7 @@ func Example_opaqueMap() {
 	fmt.Printf("encoded cfg (YAML) is:\n%s\n\n", string(bytes))
 	//Output: encoded cfg (YAML) is:
 	//censored:
-	//     token: '**************'
+	//     token: '[REDACTED]'
 	//uncensored:
 	//     key: cloud.zone
 	//     value: zone-1

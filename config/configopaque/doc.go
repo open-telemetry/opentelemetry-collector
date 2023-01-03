@@ -14,7 +14,7 @@
 
 // Package configopaque implements String type alias to mask sensitive information.
 // Use configopaque.String on the type of sensitive fields, to mask the
-// opaque string into a string of '*' of equal length.
+// opaque string as `[REDACTED]`.
 //
 // This ensure that no sensitive information is leaked when printing the
 // full Collector configurations.
