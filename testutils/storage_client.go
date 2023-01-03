@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+package testutils // import "go.opentelemetry.io/collector/testutils"
 
 import (
 	"context"
@@ -89,6 +89,7 @@ func (m *MockStorageClient) Batch(_ context.Context, ops ...storage.Operation) e
 	return nil
 }
 
-func (m *MockStorageClient) getCloseCount() uint64 {
+// GetCloseCount returns the number of times Close was invoked
+func (m *MockStorageClient) GetCloseCount() uint64 {
 	return m.closeCounter
 }

@@ -39,6 +39,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/testutils"
 )
 
 func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
@@ -583,6 +584,18 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 }
 
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
+	req := newMockRequest(context.Background(), 3, errors.New("some error"))
+	dataRequeuedTest(t, req)
+}
+
+func TestQueuedRetryPersistentEnabled_contextDone_dataIsRequeued(t *testing.T) {
+	ctx, cancelFn := context.WithCancel(context.Background())
+	cancelFn()
+	req := newMockRequest(ctx, 3, nil)
+	dataRequeuedTest(t, req)
+}
+
+func dataRequeuedTest(t *testing.T, req internal.Request) {
 	storageID := component.NewIDWithName("file_storage", "storage")
 
 	qCfg := NewDefaultQueueSettings()
@@ -599,7 +612,7 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 
 	var extensions = map[component.ID]component.Component{
 		storageID: &mockStorageExtension{
-			mockClient: internal.NewMockStorageClient(),
+			mockClient: testutils.NewMockStorageClient(),
 		},
 	}
 	host := &mockHost{ext: extensions}
@@ -620,7 +633,6 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 		errToReturn: errors.New("some error"),
 	}
 
-	req := newMockRequest(context.Background(), 3, errors.New("some error"))
 	go func() {
 		require.NoError(t, be.sender.send(req))
 	}()

@@ -11,6 +11,7 @@ IMPI=impi
 GOOS := $(shell $(GOCMD) env GOOS)
 GOARCH := $(shell $(GOCMD) env GOARCH)
 GH := $(shell which gh)
+COVERAGE_PKGS=$(shell go list ./... | grep -v testutils)
 
 .PHONY: test
 test:
@@ -18,7 +19,7 @@ test:
 
 .PHONY: test-with-cover
 test-with-cover:
-	$(GO_ACC) --output=coverage.out ./...
+	$(GO_ACC) --output=coverage.out $(COVERAGE_PKGS)
 
 .PHONY: benchmark
 benchmark:
