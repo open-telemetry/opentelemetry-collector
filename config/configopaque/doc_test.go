@@ -18,8 +18,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config/configopaque"
 	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 func Example_opaqueString() {
