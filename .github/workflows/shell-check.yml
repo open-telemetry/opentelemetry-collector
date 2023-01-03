@@ -1,0 +1,15 @@
+name: Shellcheck lint
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Shellcheck
+        uses: sudo-bot/action-shellcheck@latest
+        with:
+          cli-args: ".github/workflows/scripts/*.sh internal/buildscripts/*.sh"
