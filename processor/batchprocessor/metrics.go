@@ -25,8 +25,6 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.opentelemetry.io/otel/metric/unit"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
-	otelview "go.opentelemetry.io/otel/sdk/metric/view" //nolint:staticcheck
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
@@ -59,9 +57,6 @@ func init() {
 	// TODO: Find a way to handle the error.
 	_ = view.Register(metricViews()...)
 }
-
-// Deprecated: [v0.68.0] will be removed soon, views are initialized in init.
-var MetricViews = metricViews
 
 // MetricViews returns the metrics views related to batching
 func metricViews() []*view.View {
@@ -107,38 +102,6 @@ func metricViews() []*view.View {
 		distributionBatchSendSizeView,
 		distributionBatchSendSizeBytesView,
 	}
-}
-
-// Deprecated: [v0.68.0] will be removed soon, views are initialized in the service for the moment until a generic solution is provided.
-func OtelMetricsViews() ([]otelview.View, error) {
-	var views []otelview.View
-	var err error
-
-	v, err := otelview.New(
-		otelview.MatchInstrumentName(obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size")),
-		otelview.WithSetAggregation(aggregation.ExplicitBucketHistogram{
-			Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000},
-		}),
-	)
-	if err != nil {
-		return nil, err
-	}
-	views = append(views, v)
-
-	v, err = otelview.New(
-		otelview.MatchInstrumentName(obsreport.BuildProcessorCustomMetricName(typeStr, "batch_send_size_bytes")),
-		otelview.WithSetAggregation(aggregation.ExplicitBucketHistogram{
-			Boundaries: []float64{10, 25, 50, 75, 100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000,
-				100_000, 200_000, 300_000, 400_000, 500_000, 600_000, 700_000, 800_000, 900_000,
-				1000_000, 2000_000, 3000_000, 4000_000, 5000_000, 6000_000, 7000_000, 8000_000, 9000_000},
-		}),
-	)
-	if err != nil {
-		return nil, err
-	}
-	views = append(views, v)
-
-	return views, nil
 }
 
 type batchProcessorTelemetry struct {
