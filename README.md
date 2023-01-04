@@ -127,6 +127,7 @@ Here is a list of community roles with current and previous members:
 - Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
    - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
+   - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
    - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
    - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
