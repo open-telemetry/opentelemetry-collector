@@ -57,7 +57,7 @@ type processMetrics struct {
 	otelAllocMem      asyncint64.Gauge
 	otelTotalAllocMem asyncint64.Counter
 	otelSysMem        asyncint64.Gauge
-	otelCpuSeconds    asyncfloat64.Counter
+	otelCPUSeconds    asyncfloat64.Counter
 	otelRSSMemory     asyncint64.Gauge
 
 	meter             otelmetric.Meter
@@ -71,7 +71,7 @@ type processMetrics struct {
 
 // RegisterProcessMetrics creates a new set of processMetrics (mem, cpu) that can be used to measure
 // basic information about this process.
-func RegisterProcessMetrics(ctx context.Context, ocRegistry *metric.Registry, mp otelmetric.MeterProvider, registry *featuregate.Registry, ballastSizeBytes uint64) error {
+func RegisterProcessMetrics(ocRegistry *metric.Registry, mp otelmetric.MeterProvider, registry *featuregate.Registry, ballastSizeBytes uint64) error {
 	var err error
 	pm := &processMetrics{
 		startTimeUnixNano: time.Now().UnixNano(),
@@ -89,7 +89,7 @@ func RegisterProcessMetrics(ctx context.Context, ocRegistry *metric.Registry, mp
 	}
 
 	if pm.useOtelForMetrics {
-		return pm.recordWithOtel(ctx)
+		return pm.recordWithOtel()
 	}
 	return pm.recordWithOC(ocRegistry)
 }
@@ -166,7 +166,7 @@ func (pm *processMetrics) recordWithOC(ocRegistry *metric.Registry) error {
 	return nil
 }
 
-func (pm *processMetrics) recordWithOtel(ctx context.Context) error {
+func (pm *processMetrics) recordWithOtel() error {
 	var err error
 
 	pm.otelProcessUptime, err = pm.meter.AsyncFloat64().Counter(
@@ -225,15 +225,15 @@ func (pm *processMetrics) recordWithOtel(ctx context.Context) error {
 		return err
 	}
 
-	pm.otelCpuSeconds, err = pm.meter.AsyncFloat64().Counter(
+	pm.otelCPUSeconds, err = pm.meter.AsyncFloat64().Counter(
 		"process_cpu_seconds",
 		instrument.WithDescription("Total CPU user and system time in seconds"),
 		instrument.WithUnit(unit.Unit("s")))
 	if err != nil {
 		return err
 	}
-	err = pm.meter.RegisterCallback([]instrument.Asynchronous{pm.otelCpuSeconds}, func(ctx context.Context) {
-		pm.otelCpuSeconds.Observe(ctx, pm.updateCPUSeconds())
+	err = pm.meter.RegisterCallback([]instrument.Asynchronous{pm.otelCPUSeconds}, func(ctx context.Context) {
+		pm.otelCPUSeconds.Observe(ctx, pm.updateCPUSeconds())
 	})
 	if err != nil {
 		return err

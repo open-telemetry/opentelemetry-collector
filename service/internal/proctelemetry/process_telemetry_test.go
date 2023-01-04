@@ -119,7 +119,7 @@ func TestOtelProcessTelemetry(t *testing.T) {
 	obsreportconfig.RegisterInternalMetricFeatureGate(registry)
 	require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: true}))
 
-	require.NoError(t, RegisterProcessMetrics(context.Background(), nil, tel.MeterProvider, registry, 0))
+	require.NoError(t, RegisterProcessMetrics(nil, tel.MeterProvider, registry, 0))
 
 	mp, err := fetchPrometheusMetrics(tel.promHandler)
 	require.NoError(t, err)
@@ -149,7 +149,7 @@ func TestOCProcessTelemetry(t *testing.T) {
 	obsreportconfig.RegisterInternalMetricFeatureGate(registry)
 	require.NoError(t, registry.Apply(map[string]bool{obsreportconfig.UseOtelForInternalMetricsfeatureGateID: false}))
 
-	require.NoError(t, RegisterProcessMetrics(context.Background(), ocRegistry, otelmetric.NewNoopMeterProvider(), registry, 0))
+	require.NoError(t, RegisterProcessMetrics(ocRegistry, otelmetric.NewNoopMeterProvider(), registry, 0))
 
 	// Check that the metrics are actually filled.
 	<-time.After(200 * time.Millisecond)
@@ -190,7 +190,7 @@ func TestProcessTelemetryFailToRegister(t *testing.T) {
 			ocRegistry := metric.NewRegistry()
 			_, err := ocRegistry.AddFloat64Gauge(metricName)
 			require.NoError(t, err)
-			assert.Error(t, RegisterProcessMetrics(context.Background(), ocRegistry, otelmetric.NewNoopMeterProvider(), registry, 0))
+			assert.Error(t, RegisterProcessMetrics(ocRegistry, otelmetric.NewNoopMeterProvider(), registry, 0))
 		})
 	}
 }
