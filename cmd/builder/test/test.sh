@@ -71,7 +71,7 @@ test_build_config() {
 
             kill "${pid}"
             ret=$?
-            if [ "$ret" != 0 ]; then
+            if [ $ret -ne 0 ]; then
                 echo "Failed to stop the running instance for test ${test}. Return code: ${ret} . Skipping tests."
                 exit 4
             fi
@@ -87,7 +87,7 @@ test_build_config() {
 
             kill "${pid}"
             ret=$?
-            if [ $ret != 0 ]; then
+            if [ $ret -ne 0 ]; then
                 echo "Failed to stop the running instance for test ${test}. Return code: ${ret} . Skipping tests."
                 exit 8
             fi
