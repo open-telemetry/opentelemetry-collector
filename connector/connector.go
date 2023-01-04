@@ -453,3 +453,16 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 	}
 	return f
 }
+
+// MakeFactoryMap takes a list of connector factories and returns a map with factory type as keys.
+// It returns a non-nil error when there are factories with duplicate type.
+func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
+	fMap := map[component.Type]Factory{}
+	for _, f := range factories {
+		if _, ok := fMap[f.Type()]; ok {
+			return fMap, fmt.Errorf("duplicate connector factory %q", f.Type())
+		}
+		fMap[f.Type()] = f
+	}
+	return fMap, nil
+}

@@ -183,6 +183,44 @@ func TestNewFactoryWithAllTypes(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestMakeFactoryMap(t *testing.T) {
+	type testCase struct {
+		name string
+		in   []Factory
+		out  map[component.Type]Factory
+	}
+
+	p1 := NewFactory("p1", nil)
+	p2 := NewFactory("p2", nil)
+	testCases := []testCase{
+		{
+			name: "different names",
+			in:   []Factory{p1, p2},
+			out: map[component.Type]Factory{
+				p1.Type(): p1,
+				p2.Type(): p2,
+			},
+		},
+		{
+			name: "same name",
+			in:   []Factory{p1, p2, NewFactory("p1", nil)},
+		},
+	}
+
+	for i := range testCases {
+		tt := testCases[i]
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := MakeFactoryMap(tt.in...)
+			if tt.out == nil {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.out, out)
+		})
+	}
+}
+
 func createTracesToTraces(context.Context, CreateSettings, component.Config, consumer.Traces) (Traces, error) {
 	return nil, nil
 }
