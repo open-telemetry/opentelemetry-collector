@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -139,7 +140,13 @@ func TestOtelProcessTelemetry(t *testing.T) {
 		} else {
 			metricValue = metric.Metric[0].GetGauge().GetValue()
 		}
-		assert.True(t, metricValue > 0)
+		if strings.HasPrefix(metricName, "process_uptime") || strings.HasPrefix(metricName, "process_cpu_seconds") {
+			// This likely will still be zero when running the test.
+			assert.True(t, metricValue >= 0, metricName)
+			continue
+		}
+
+		assert.True(t, metricValue > 0, metricName)
 	}
 }
 
