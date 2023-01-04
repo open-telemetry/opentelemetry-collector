@@ -25,22 +25,65 @@ import (
 )
 
 // Traces is a processor that can consume traces.
-type Traces = component.TracesProcessor //nolint:staticcheck
+type Traces interface {
+	component.Component
+	consumer.Traces
+}
 
 // Metrics is a processor that can consume metrics.
-type Metrics = component.MetricsProcessor //nolint:staticcheck
+type Metrics interface {
+	component.Component
+	consumer.Metrics
+}
 
 // Logs is a processor that can consume logs.
-type Logs = component.LogsProcessor //nolint:staticcheck
+type Logs interface {
+	component.Component
+	consumer.Logs
+}
 
-// CreateSettings is passed to Create* functions in ProcessorFactory.
-type CreateSettings = component.ProcessorCreateSettings //nolint:staticcheck
+// CreateSettings is passed to Create* functions in Factory.
+type CreateSettings struct {
+	// ID returns the ID of the component that will be created.
+	ID component.ID
+
+	component.TelemetrySettings
+
+	// BuildInfo can be used by components for informational purposes
+	BuildInfo component.BuildInfo
+}
 
 // Factory is Factory interface for processors.
 //
 // This interface cannot be directly implemented. Implementations must
 // use the NewProcessorFactory to implement it.
-type Factory = component.ProcessorFactory //nolint:staticcheck
+type Factory interface {
+	component.Factory
+
+	// CreateTracesProcessor creates a TracesProcessor based on this config.
+	// If the processor type does not support tracing or if the config is not valid,
+	// an error will be returned instead.
+	CreateTracesProcessor(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (Traces, error)
+
+	// TracesProcessorStability gets the stability level of the TracesProcessor.
+	TracesProcessorStability() component.StabilityLevel
+
+	// CreateMetricsProcessor creates a MetricsProcessor based on this config.
+	// If the processor type does not support metrics or if the config is not valid,
+	// an error will be returned instead.
+	CreateMetricsProcessor(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (Metrics, error)
+
+	// MetricsProcessorStability gets the stability level of the MetricsProcessor.
+	MetricsProcessorStability() component.StabilityLevel
+
+	// CreateLogsProcessor creates a LogsProcessor based on the config.
+	// If the processor type does not support logs or if the config is not valid,
+	// an error will be returned instead.
+	CreateLogsProcessor(ctx context.Context, set CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (Logs, error)
+
+	// LogsProcessorStability gets the stability level of the LogsProcessor.
+	LogsProcessorStability() component.StabilityLevel
+}
 
 // FactoryOption apply changes to Options.
 type FactoryOption interface {
