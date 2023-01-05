@@ -218,7 +218,7 @@ func TestBuildPipelines(t *testing.T) {
 				// Verify exporters created, started and empty.
 				for _, expID := range pipeline.Exporters {
 					exp := pipelines.GetExporters()[dt.Type()][expID].(*testcomponents.ExampleExporter)
-					assert.True(t, exp.Started)
+					assert.True(t, exp.Started())
 					switch dt.Type() {
 					case component.DataTypeTraces:
 						assert.Len(t, exp.Traces, 0)
@@ -233,13 +233,13 @@ func TestBuildPipelines(t *testing.T) {
 				for i, procID := range pipeline.Processors {
 					processor := pipelines.pipelines[dt].processors[i]
 					assert.Equal(t, procID, processor.id)
-					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Started)
+					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Started())
 				}
 
 				// Verify receivers created, started and send data to confirm pipelines correctly connected.
 				for _, recvID := range pipeline.Receivers {
 					receiver := pipelines.allReceivers[dt.Type()][recvID].(*testcomponents.ExampleReceiver)
-					assert.True(t, receiver.Started)
+					assert.True(t, receiver.Started())
 				}
 			}
 
@@ -264,13 +264,13 @@ func TestBuildPipelines(t *testing.T) {
 				// Verify receivers shutdown.
 				for _, recvID := range pipeline.Receivers {
 					receiver := pipelines.allReceivers[dt.Type()][recvID].(*testcomponents.ExampleReceiver)
-					assert.True(t, receiver.Stopped)
+					assert.True(t, receiver.Stopped())
 				}
 
 				// Verify processors shutdown.
 				for i := range pipeline.Processors {
 					processor := pipelines.pipelines[dt].processors[i]
-					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Stopped)
+					assert.True(t, processor.comp.(*testcomponents.ExampleProcessor).Stopped())
 				}
 
 				// Now verify that exporters received data, and are shutdown.
@@ -287,7 +287,7 @@ func TestBuildPipelines(t *testing.T) {
 						require.Len(t, exp.Logs, test.expectedRequests)
 						assert.EqualValues(t, testdata.GenerateLogs(1), exp.Logs[0])
 					}
-					assert.True(t, exp.Stopped)
+					assert.True(t, exp.Stopped())
 				}
 			}
 		})
