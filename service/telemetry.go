@@ -25,6 +25,7 @@ import (
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	ocmetric "go.opencensus.io/metric"
 	"go.opencensus.io/metric/metricproducer"
 	"go.opencensus.io/stats/view"
@@ -99,22 +100,18 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 		return err
 	}
 
-	var pe http.Handler
-	var err error
 	// This prometheus registry is shared between OpenCensus and OpenTelemetry exporters,
 	// acting as a bridge between OC and Otel.
 	// This is used as a path to migrate the existing OpenCensus instrumentation
 	// to the OpenTelemetry Go SDK without breaking existing metrics.
 	promRegistry := prometheus.NewRegistry()
 	if tel.registry.IsEnabled(obsreportconfig.UseOtelForInternalMetricsfeatureGateID) {
-		err = tel.initOpenTelemetry(telAttrs, promRegistry)
-		if err != nil {
+		if err := tel.initOpenTelemetry(telAttrs, promRegistry); err != nil {
 			return err
 		}
 	}
 
-	pe, err = tel.initOpenCensus(cfg, telAttrs, promRegistry)
-	if err != nil {
+	if err := tel.initOpenCensus(cfg, telAttrs, promRegistry); err != nil {
 		return err
 	}
 
@@ -125,7 +122,7 @@ func (tel *telemetryInitializer) init(buildInfo component.BuildInfo, logger *zap
 	)
 
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", pe)
+	mux.Handle("/metrics", promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{}))
 
 	tel.server = &http.Server{
 		Addr:    cfg.Metrics.Address,
@@ -172,13 +169,13 @@ func buildTelAttrs(buildInfo component.BuildInfo, cfg telemetry.Config) map[stri
 	return telAttrs
 }
 
-func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs map[string]string, promRegistry *prometheus.Registry) (http.Handler, error) {
+func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs map[string]string, promRegistry *prometheus.Registry) error {
 	tel.ocRegistry = ocmetric.NewRegistry()
 	metricproducer.GlobalManager().AddProducer(tel.ocRegistry)
 
 	tel.views = obsreportconfig.AllViews(cfg.Metrics.Level)
 	if err := view.Register(tel.views...); err != nil {
-		return nil, err
+		return err
 	}
 
 	// Until we can use a generic metrics exporter, default to Prometheus.
@@ -195,11 +192,11 @@ func (tel *telemetryInitializer) initOpenCensus(cfg telemetry.Config, telAttrs m
 
 	pe, err := ocprom.NewExporter(opts)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	view.RegisterExporter(pe)
-	return pe, nil
+	return nil
 }
 
 func (tel *telemetryInitializer) initOpenTelemetry(attrs map[string]string, promRegistry prometheus.Registerer) error {
