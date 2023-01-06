@@ -366,7 +366,7 @@ func (v Value) CopyTo(dest Value) {
 }
 
 // Equal checks for equality, it returns true if the objects are equal otherwise false.
-// Deprecated: [1.0.0-rc2] Use v1.AsRaw() == v2.AsRaw() in tests.
+// Deprecated: [1.0.0-rc2] Use reflect.DeepEqual(v1.AsRaw(), v2.AsRaw()) in tests.
 // If you need this method where performance is critical, please share your use case in
 // https://github.com/open-telemetry/opentelemetry-collector/issues/6811
 func (v Value) Equal(av Value) bool {
