@@ -67,6 +67,7 @@ type builtPipeline struct {
 	exporters  []builtComponent
 }
 
+// builtPipelines is set of all pipelines created from exporter configs.
 type builtPipelines struct {
 	telemetry component.TelemetrySettings
 
@@ -74,13 +75,6 @@ type builtPipelines struct {
 	allExporters map[component.DataType]map[component.ID]component.Component
 
 	pipelines map[component.ID]*builtPipeline
-}
-
-type Pipelines interface {
-	StartAll(ctx context.Context, host component.Host) error
-	ShutdownAll(ctx context.Context) error
-	GetExporters() map[component.DataType]map[component.ID]component.Component
-	HandleZPages(w http.ResponseWriter, r *http.Request)
 }
 
 // StartAll starts all pipelines.
@@ -159,6 +153,7 @@ func (bps *builtPipelines) ShutdownAll(ctx context.Context) error {
 
 func (bps *builtPipelines) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	exportersMap := make(map[component.DataType]map[component.ID]component.Component)
+
 	exportersMap[component.DataTypeTraces] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeTraces]))
 	exportersMap[component.DataTypeMetrics] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeMetrics]))
 	exportersMap[component.DataTypeLogs] = make(map[component.ID]component.Component, len(bps.allExporters[component.DataTypeLogs]))

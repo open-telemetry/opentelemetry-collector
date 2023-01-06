@@ -440,8 +440,8 @@ func TestBuilderGetters(t *testing.T) {
 	cfgs := map[component.ID]component.Config{component.NewID("foo"): struct{}{}}
 	b := NewBuilder(cfgs, factories)
 
-	assert.NotNil(t, b.Config(component.NewID("foo")))
-	assert.Nil(t, b.Config(component.NewID("bar")))
+	assert.True(t, b.IsConfigured(component.NewID("foo")))
+	assert.False(t, b.IsConfigured(component.NewID("bar")))
 
 	assert.NotNil(t, b.Factory(component.NewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.NewID("bar").Type()))

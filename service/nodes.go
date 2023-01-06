@@ -48,73 +48,32 @@ type receiverNode struct {
 	nodeID
 	componentID  component.ID
 	pipelineType component.DataType
-	cfg          component.Config
-	factory      receiver.Factory
 	component.Component
 }
 
-func newReceiverNodeID(pipelineType component.DataType, recvID component.ID) nodeID {
-	return newNodeID("receiver", string(pipelineType), recvID.String())
-}
-
-func (n *receiverNode) ComponentID() component.ID {
-	return n.componentID
+func newReceiverNode(pipelineID component.ID, recvID component.ID) *receiverNode {
+	return &receiverNode{
+		nodeID:       newNodeID("receiver", string(pipelineID.Type()), recvID.String()),
+		componentID:  recvID,
+		pipelineType: pipelineID.Type(),
+	}
 }
 
 func (n *receiverNode) build(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
+	builder *receiver.Builder,
 	nexts []baseConsumer,
 ) error {
-	set := receiver.CreateSettings{ID: n.ComponentID(), TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ReceiverLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
-
-	var err error
-	switch n.pipelineType {
-	case component.DataTypeTraces:
-		var consumers []consumer.Traces
-		for _, next := range nexts {
-			tracesConsumer, ok := next.(consumer.Traces)
-			if !ok {
-				return fmt.Errorf("next component is not a traces consumer: %s", n.componentID)
-			}
-			consumers = append(consumers, tracesConsumer)
-		}
-		n.Component, err = n.factory.CreateTracesReceiver(ctx, set, n.cfg, fanoutconsumer.NewTraces(consumers))
-		if err != nil {
-			return err
-		}
-	case component.DataTypeMetrics:
-		var consumers []consumer.Metrics
-		for _, next := range nexts {
-			metricsConsumer, ok := next.(consumer.Metrics)
-			if !ok {
-				return fmt.Errorf("next component is not a metrics consumer: %s", n.componentID)
-			}
-			consumers = append(consumers, metricsConsumer)
-		}
-		n.Component, err = n.factory.CreateMetricsReceiver(ctx, set, n.cfg, fanoutconsumer.NewMetrics(consumers))
-		if err != nil {
-			return err
-		}
-	case component.DataTypeLogs:
-		var consumers []consumer.Logs
-		for _, next := range nexts {
-			logsConsumer, ok := next.(consumer.Logs)
-			if !ok {
-				return fmt.Errorf("next component is not a logs consumer: %s", n.componentID)
-			}
-			consumers = append(consumers, logsConsumer)
-		}
-		n.Component, err = n.factory.CreateLogsReceiver(ctx, set, n.cfg, fanoutconsumer.NewLogs(consumers))
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("error creating receiver %q, data type %q is not supported", n.componentID, n.pipelineType)
+	if len(nexts) == 0 {
+		return fmt.Errorf("receiver %q has no next consumer", n.componentID)
 	}
-	return nil
+	set := receiver.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ReceiverLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
+	r, err := buildReceiver(ctx, set, builder, component.NewIDWithName(n.pipelineType, "*"), nexts)
+	n.Component = r
+	return err
 }
 
 // Every processor instance is unique to one pipeline.
@@ -123,61 +82,35 @@ type processorNode struct {
 	nodeID
 	componentID component.ID
 	pipelineID  component.ID
-	cfg         component.Config
-	factory     processor.Factory
 	component.Component
 }
 
-func (n *processorNode) ComponentID() component.ID {
-	return n.componentID
-}
-
-func newProcessorNodeID(pipelineID, procID component.ID) nodeID {
-	return newNodeID("processor", pipelineID.String(), procID.String())
+func newProcessorNode(pipelineID, procID component.ID) *processorNode {
+	return &processorNode{
+		nodeID:      newNodeID("processor", pipelineID.String(), procID.String()),
+		componentID: procID,
+		pipelineID:  pipelineID,
+	}
 }
 
 func (n *processorNode) build(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
-	next baseConsumer,
+	builder *processor.Builder,
+	nexts []baseConsumer,
 ) error {
-	set := processor.CreateSettings{ID: n.ComponentID(), TelemetrySettings: tel, BuildInfo: info}
-	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
-
-	var err error
-	switch n.pipelineID.Type() {
-	case component.DataTypeTraces:
-		tracesConsumer, ok := next.(consumer.Traces)
-		if !ok {
-			return fmt.Errorf("next component is not a traces consumer: %s", n.componentID)
-		}
-		n.Component, err = n.factory.CreateTracesProcessor(ctx, set, n.cfg, tracesConsumer)
-		if err != nil {
-			return err
-		}
-	case component.DataTypeMetrics:
-		metricsConsumer, ok := next.(consumer.Metrics)
-		if !ok {
-			return fmt.Errorf("next component is not a metrics consumer: %s", n.componentID)
-		}
-		n.Component, err = n.factory.CreateMetricsProcessor(ctx, set, n.cfg, metricsConsumer)
-		if err != nil {
-			return err
-		}
-	case component.DataTypeLogs:
-		logsConsumer, ok := next.(consumer.Logs)
-		if !ok {
-			return fmt.Errorf("next component is not a logs consumer: %s", n.componentID)
-		}
-		n.Component, err = n.factory.CreateLogsProcessor(ctx, set, n.cfg, logsConsumer)
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("error creating processor %q, data type %q is not supported", n.componentID, n.pipelineID.Type())
+	if len(nexts) == 0 {
+		return fmt.Errorf("processor %q has no next consumer", n.componentID)
 	}
-	return nil
+	if len(nexts) > 1 {
+		return fmt.Errorf("processor %q has multiple consumers", n.componentID)
+	}
+	set := processor.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set.TelemetrySettings.Logger = components.ProcessorLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineID)
+	p, err := buildProcessor(ctx, set, builder, n.pipelineID, nexts[0])
+	n.Component = p
+	return err
 }
 
 // An exporter instance can be shared by multiple pipelines of the same type.
@@ -186,48 +119,28 @@ type exporterNode struct {
 	nodeID
 	componentID  component.ID
 	pipelineType component.DataType
-	cfg          component.Config
-	factory      exporter.Factory
 	component.Component
 }
 
-func (n *exporterNode) ComponentID() component.ID {
-	return n.componentID
-}
-
-func newExporterNodeID(pipelineType component.DataType, exprID component.ID) nodeID {
-	return newNodeID("exporter", string(pipelineType), exprID.String())
+func newExporterNode(pipelineID component.ID, exprID component.ID) *exporterNode {
+	return &exporterNode{
+		nodeID:       newNodeID("exporter", string(pipelineID.Type()), exprID.String()),
+		componentID:  exprID,
+		pipelineType: pipelineID.Type(),
+	}
 }
 
 func (n *exporterNode) build(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
+	builder *exporter.Builder,
 ) error {
-	set := exporter.CreateSettings{ID: n.ComponentID(), TelemetrySettings: tel, BuildInfo: info}
+	set := exporter.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ExporterLogger(set.TelemetrySettings.Logger, n.componentID, n.pipelineType)
-
-	var err error
-	switch n.pipelineType {
-	case component.DataTypeTraces:
-		n.Component, err = n.factory.CreateTracesExporter(ctx, set, n.cfg)
-		if err != nil {
-			return err
-		}
-	case component.DataTypeMetrics:
-		n.Component, err = n.factory.CreateMetricsExporter(ctx, set, n.cfg)
-		if err != nil {
-			return err
-		}
-	case component.DataTypeLogs:
-		n.Component, err = n.factory.CreateLogsExporter(ctx, set, n.cfg)
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("error creating exporter %q, data type %q is not supported", n.componentID, n.pipelineType)
-	}
-	return nil
+	e, err := buildExporter(ctx, set, builder, component.NewIDWithName(n.pipelineType, "*"))
+	n.Component = e
+	return err
 }
 
 // A connector instance connects one pipeline type to one other pipeline type.
@@ -237,26 +150,29 @@ type connectorNode struct {
 	componentID      component.ID
 	exprPipelineType component.DataType
 	rcvrPipelineType component.DataType
-	cfg              component.Config
-	factory          connector.Factory
 	component.Component
 }
 
-func (n *connectorNode) ComponentID() component.ID {
-	return n.componentID
-}
-
-func newConnectorNodeID(exprPipelineType, rcvrPipelineType component.DataType, connID component.ID) nodeID {
-	return newNodeID("connector", connID.String(), string(exprPipelineType), string(rcvrPipelineType))
+func newConnectorNode(exprPipelineType, rcvrPipelineType component.DataType, connID component.ID) *connectorNode {
+	return &connectorNode{
+		nodeID:           newNodeID("connector", connID.String(), string(exprPipelineType), string(rcvrPipelineType)),
+		componentID:      connID,
+		exprPipelineType: exprPipelineType,
+		rcvrPipelineType: rcvrPipelineType,
+	}
 }
 
 func (n *connectorNode) build(
 	ctx context.Context,
 	tel component.TelemetrySettings,
 	info component.BuildInfo,
+	builder *connector.Builder,
 	nexts []baseConsumer,
 ) error {
-	set := connector.CreateSettings{ID: n.ComponentID(), TelemetrySettings: tel, BuildInfo: info}
+	if len(nexts) == 0 {
+		return fmt.Errorf("connector %q has no next consumer", n.componentID)
+	}
+	set := connector.CreateSettings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	set.TelemetrySettings.Logger = components.ConnectorLogger(set.TelemetrySettings.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
 
 	var err error
@@ -273,20 +189,11 @@ func (n *connectorNode) build(
 		fanoutConsumer := fanoutconsumer.NewTraces(consumers)
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
-			n.Component, err = n.factory.CreateTracesToTraces(ctx, set, n.cfg, fanoutConsumer)
-			if err != nil {
-				return err
-			}
+			n.Component, err = builder.CreateTracesToTraces(ctx, set, fanoutConsumer)
 		case component.DataTypeMetrics:
-			n.Component, err = n.factory.CreateMetricsToTraces(ctx, set, n.cfg, fanoutConsumer)
-			if err != nil {
-				return err
-			}
+			n.Component, err = builder.CreateMetricsToTraces(ctx, set, fanoutConsumer)
 		case component.DataTypeLogs:
-			n.Component, err = n.factory.CreateLogsToTraces(ctx, set, n.cfg, fanoutConsumer)
-			if err != nil {
-				return err
-			}
+			n.Component, err = builder.CreateLogsToTraces(ctx, set, fanoutConsumer)
 		}
 	case component.DataTypeMetrics:
 		var consumers []consumer.Metrics
@@ -300,20 +207,11 @@ func (n *connectorNode) build(
 		fanoutConsumer := fanoutconsumer.NewMetrics(consumers)
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
-			n.Component, err = n.factory.CreateTracesToMetrics(ctx, set, n.cfg, fanoutConsumer)
-			if err != nil {
-				return err
-			}
+			n.Component, err = builder.CreateTracesToMetrics(ctx, set, fanoutConsumer)
 		case component.DataTypeMetrics:
-			n.Component, err = n.factory.CreateMetricsToMetrics(ctx, set, n.cfg, fanoutConsumer)
-			if err != nil {
-				return err
-			}
+			n.Component, err = builder.CreateMetricsToMetrics(ctx, set, fanoutConsumer)
 		case component.DataTypeLogs:
-			n.Component, err = n.factory.CreateLogsToMetrics(ctx, set, n.cfg, fanoutConsumer)
-			if err != nil {
-				return err
-			}
+			n.Component, err = builder.CreateLogsToMetrics(ctx, set, fanoutConsumer)
 		}
 	case component.DataTypeLogs:
 		var consumers []consumer.Logs
@@ -327,23 +225,14 @@ func (n *connectorNode) build(
 		fanoutConsumer := fanoutconsumer.NewLogs(consumers)
 		switch n.exprPipelineType {
 		case component.DataTypeTraces:
-			n.Component, err = n.factory.CreateTracesToLogs(ctx, set, n.cfg, fanoutConsumer)
-			if err != nil {
-				return err
-			}
+			n.Component, err = builder.CreateTracesToLogs(ctx, set, fanoutConsumer)
 		case component.DataTypeMetrics:
-			n.Component, err = n.factory.CreateMetricsToLogs(ctx, set, n.cfg, fanoutConsumer)
-			if err != nil {
-				return err
-			}
+			n.Component, err = builder.CreateMetricsToLogs(ctx, set, fanoutConsumer)
 		case component.DataTypeLogs:
-			n.Component, err = n.factory.CreateLogsToLogs(ctx, set, n.cfg, fanoutConsumer)
-			if err != nil {
-				return err
-			}
+			n.Component, err = builder.CreateLogsToLogs(ctx, set, fanoutConsumer)
 		}
 	}
-	return nil
+	return err
 }
 
 // If a pipeline has any processors, a fan-in is added before the first one.
@@ -365,12 +254,16 @@ func newFanInNode(pipelineID component.ID) *fanInNode {
 	}
 }
 
-func (n *fanInNode) build(nextConsumer baseConsumer, processors []*processorNode) {
-	n.baseConsumer = nextConsumer
+func (n *fanInNode) build(nexts []baseConsumer, processors []*processorNode) error {
+	if len(nexts) != 1 {
+		return fmt.Errorf("fan-in in pipeline %q must have one consumer", n.pipelineID)
+	}
+	n.baseConsumer = nexts[0]
 	for _, proc := range processors {
 		n.Capabilities.MutatesData = n.Capabilities.MutatesData ||
 			proc.Component.(baseConsumer).Capabilities().MutatesData
 	}
+	return nil
 }
 
 // Each pipeline has one fan-out node before exporters.
@@ -388,24 +281,27 @@ func newFanOutNode(pipelineID component.ID) *fanOutNode {
 	}
 }
 
-func (n *fanOutNode) build(nextConsumers []baseConsumer) error {
+func (n *fanOutNode) build(nexts []baseConsumer) error {
+	if len(nexts) == 0 {
+		return fmt.Errorf("fan-out in pipeline %q has no next consumer", n.pipelineID)
+	}
 	switch n.pipelineID.Type() {
 	case component.DataTypeTraces:
-		consumers := make([]consumer.Traces, 0, len(nextConsumers))
-		for _, next := range nextConsumers {
+		consumers := make([]consumer.Traces, 0, len(nexts))
+		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Traces))
 		}
 		n.baseConsumer = fanoutconsumer.NewTraces(consumers)
 	case component.DataTypeMetrics:
-		consumers := make([]consumer.Metrics, 0, len(nextConsumers))
-		for _, next := range nextConsumers {
+		consumers := make([]consumer.Metrics, 0, len(nexts))
+		for _, next := range nexts {
 
 			consumers = append(consumers, next.(consumer.Metrics))
 		}
 		n.baseConsumer = fanoutconsumer.NewMetrics(consumers)
 	case component.DataTypeLogs:
-		consumers := make([]consumer.Logs, 0, len(nextConsumers))
-		for _, next := range nextConsumers {
+		consumers := make([]consumer.Logs, 0, len(nexts))
+		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Logs))
 		}
 		n.baseConsumer = fanoutconsumer.NewLogs(consumers)

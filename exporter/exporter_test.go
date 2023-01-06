@@ -209,15 +209,12 @@ func TestBuilderMissingConfig(t *testing.T) {
 	assert.Nil(t, le)
 }
 
-func TestBuilderGetters(t *testing.T) {
+func TestBuilderFactory(t *testing.T) {
 	factories, err := MakeFactoryMap([]Factory{NewFactory("foo", nil)}...)
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.NewID("foo"): struct{}{}}
 	b := NewBuilder(cfgs, factories)
-
-	assert.NotNil(t, b.Config(component.NewID("foo")))
-	assert.Nil(t, b.Config(component.NewID("bar")))
 
 	assert.NotNil(t, b.Factory(component.NewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.NewID("bar").Type()))

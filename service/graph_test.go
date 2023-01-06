@@ -225,31 +225,31 @@ func newPipelineSpec(id component.ID) *pipelineSpec {
 
 func (ps *pipelineSpec) withExampleReceiver(name string) *pipelineSpec {
 	rID := component.NewIDWithName(component.Type("examplereceiver"), name)
-	ps.receiverIDs[newReceiverNodeID(ps.id.Type(), rID).ID()] = rID
+	ps.receiverIDs[newReceiverNode(ps.id, rID).ID()] = rID
 	return ps
 }
 
 func (ps *pipelineSpec) withExampleProcessor(name string) *pipelineSpec {
 	pID := component.NewIDWithName(component.Type("exampleprocessor"), name)
-	ps.processorIDs[newProcessorNodeID(ps.id, pID).ID()] = pID
+	ps.processorIDs[newProcessorNode(ps.id, pID).ID()] = pID
 	return ps
 }
 
 func (ps *pipelineSpec) withExampleExporter(name string) *pipelineSpec {
 	eID := component.NewIDWithName(component.Type("exampleexporter"), name)
-	ps.exporterIDs[newExporterNodeID(ps.id.Type(), eID).ID()] = eID
+	ps.exporterIDs[newExporterNode(ps.id, eID).ID()] = eID
 	return ps
 }
 
 func (ps *pipelineSpec) withExampleConnectorAsReceiver(name string, fromType component.Type) *pipelineSpec {
 	cID := component.NewIDWithName(component.Type("exampleconnector"), name)
-	ps.receiverIDs[newConnectorNodeID(fromType, ps.id.Type(), cID).ID()] = cID
+	ps.receiverIDs[newConnectorNode(fromType, ps.id.Type(), cID).ID()] = cID
 	return ps
 }
 
 func (ps *pipelineSpec) withExampleConnectorAsExporter(name string, toType component.Type) *pipelineSpec {
 	cID := component.NewIDWithName(component.Type("exampleconnector"), name)
-	ps.exporterIDs[newConnectorNodeID(ps.id.Type(), toType, cID).ID()] = cID
+	ps.exporterIDs[newConnectorNode(ps.id.Type(), toType, cID).ID()] = cID
 	return ps
 }
 
@@ -270,14 +270,14 @@ type statefulComponentPipeline struct {
 }
 
 // Extract the component from each node in the pipeline and make it available as StatefulComponent
-func (pg *pipelineGraph) toStatefulComponentPipeline() *statefulComponentPipeline {
+func (p *pipelineNodes) toStatefulComponentPipeline() *statefulComponentPipeline {
 	statefulPipeline := &statefulComponentPipeline{
 		receivers:  make(map[int64]testcomponents.StatefulComponent),
 		processors: make(map[int64]testcomponents.StatefulComponent),
 		exporters:  make(map[int64]testcomponents.StatefulComponent),
 	}
 
-	for _, r := range pg.receivers {
+	for _, r := range p.receivers {
 		switch c := r.(type) {
 		case *receiverNode:
 			statefulPipeline.receivers[c.ID()] = c.Component.(*testcomponents.ExampleReceiver)
@@ -294,12 +294,12 @@ func (pg *pipelineGraph) toStatefulComponentPipeline() *statefulComponentPipelin
 		}
 	}
 
-	for _, p := range pg.processors {
+	for _, p := range p.processors {
 		pn := p.(*processorNode)
 		statefulPipeline.processors[pn.ID()] = pn.Component.(*testcomponents.ExampleProcessor)
 	}
 
-	for _, e := range pg.exporters {
+	for _, e := range p.exporters {
 		switch c := e.(type) {
 		case *exporterNode:
 			statefulPipeline.exporters[c.ID()] = c.Component.(*testcomponents.ExampleExporter)
@@ -941,7 +941,6 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("exampleexporter")},
 				},
 			},
-
 			expectedPerExporter: 3,
 		},
 	}
@@ -949,7 +948,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Build the pipeline
-			pipelinesInterface, err := buildPipelinesGraph(context.Background(), pipelinesSettings{
+			set := pipelinesSettings{
 				Telemetry: componenttest.NewNopTelemetrySettings(),
 				BuildInfo: component.NewDefaultBuildInfo(),
 				Receivers: receiver.NewBuilder(
@@ -990,28 +989,30 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 					},
 				),
 				PipelineConfigs: test.pipelineConfigs,
-			})
+			}
+
+			pipelinesInterface, err := buildPipelinesGraph(context.Background(), set)
 			require.NoError(t, err)
 
-			allPipelines, ok := pipelinesInterface.(*pipelinesGraph)
+			pg, ok := pipelinesInterface.(*pipelinesGraph)
 			require.True(t, ok)
 
-			assert.Equal(t, len(test.pipelines), len(allPipelines.pipelineGraphs))
+			assert.Equal(t, len(test.pipelines), len(pg.pipelines))
 
 			// The entire graph of components is started topologically
-			assert.NoError(t, allPipelines.StartAll(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, pg.StartAll(context.Background(), componenttest.NewNopHost()))
 
 			// Check each pipeline individually, ensuring that all components are started
 			// and that they have observed no signals yet.
 			for pipelineID, pipeSpec := range test.pipelines.toMap() {
-				pipeline, ok := allPipelines.pipelineGraphs[pipelineID]
+				pipeline, ok := pg.pipelines[pipelineID]
 				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
 
 				require.Equal(t, len(pipeSpec.receiverIDs), len(pipeline.receivers))
 				require.Equal(t, len(pipeSpec.processorIDs), len(pipeline.processors))
 				require.Equal(t, len(pipeSpec.exporterIDs), len(pipeline.exporters))
 
-				// The pipelineGraph is cumbersome to work with in this context because
+				// The pipelineNodes is cumbersome to work with in this context because
 				// several type assertions & switches are necessary in order to access the
 				// validation functions included on the example components (Started, Stopped, etc)
 				// This gets a representation where all components are testcomponent.StatefulComponent
@@ -1043,7 +1044,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			// component graph because we do not want to duplicate signal inputs to receivers that are
 			// shared between pipelines. The `allReceivers` function also excludes connectors, which we do
 			// not want to directly inject with signals.
-			allReceivers := allPipelines.getReceivers()
+			allReceivers := pg.getReceivers()
 			for _, rcvr := range allReceivers[component.DataTypeTraces] {
 				tracesReceiver := rcvr.(*testcomponents.ExampleReceiver)
 				assert.NoError(t, tracesReceiver.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
@@ -1058,11 +1059,11 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			}
 
 			// Shut down the entire component graph
-			assert.NoError(t, allPipelines.ShutdownAll(context.Background()))
+			assert.NoError(t, pg.ShutdownAll(context.Background()))
 
 			// Check each pipeline individually, ensuring that all components are stopped.
 			for pipelineID, pipeSpec := range test.pipelines.toMap() {
-				pipeline, ok := allPipelines.pipelineGraphs[pipelineID]
+				pipeline, ok := pg.pipelines[pipelineID]
 				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
 
 				actualPipeline := pipeline.toStatefulComponentPipeline()
@@ -1088,7 +1089,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			// Get the list of exporters directly from the overall component graph. Like receivers,
 			// exclude connectors and validate each exporter once regardless of sharing between pipelines.
-			allExporters := allPipelines.GetExporters()
+			allExporters := pg.GetExporters()
 			for _, exp := range allExporters[component.DataTypeTraces] {
 				tracesExporter := exp.(*testcomponents.ExampleExporter)
 				assert.Equal(t, test.expectedPerExporter, len(tracesExporter.RecallTraces()))
@@ -1147,7 +1148,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("bf")},
 				},
 			},
-			expected: "telemetry type is not supported",
+			expected: "failed to create \"bf\" exporter, in pipeline \"logs/*\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_exporter_metrics",
@@ -1163,7 +1164,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("bf")},
 				},
 			},
-			expected: "telemetry type is not supported",
+			expected: "failed to create \"bf\" exporter, in pipeline \"metrics/*\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_exporter_traces",
@@ -1179,7 +1180,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("bf")},
 				},
 			},
-			expected: "telemetry type is not supported",
+			expected: "failed to create \"bf\" exporter, in pipeline \"traces/*\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_processor_logs",
@@ -1199,7 +1200,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "telemetry type is not supported",
+			expected: "failed to create \"bf\" processor, in pipeline \"logs\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_processor_metrics",
@@ -1219,7 +1220,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "telemetry type is not supported",
+			expected: "failed to create \"bf\" processor, in pipeline \"metrics\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_processor_traces",
@@ -1239,7 +1240,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "telemetry type is not supported",
+			expected: "failed to create \"bf\" processor, in pipeline \"traces\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_receiver_logs",
@@ -1255,7 +1256,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "telemetry type is not supported",
+			expected: "failed to create \"bf\" receiver, in pipeline \"logs/*\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_receiver_metrics",
@@ -1271,7 +1272,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "telemetry type is not supported",
+			expected: "failed to create \"bf\" receiver, in pipeline \"metrics/*\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_receiver_traces",
@@ -1287,7 +1288,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "telemetry type is not supported",
+			expected: "failed to create \"bf\" receiver, in pipeline \"traces/*\": telemetry type is not supported",
 		},
 		{
 			name: "not_supported_connector_traces_traces.yaml",
@@ -1896,7 +1897,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop"), component.NewIDWithName("nop", "1")},
 				},
 			},
-			expected: "exporter \"nop/1\" is not configured",
+			expected: "failed to create \"nop/1\" exporter, in pipeline \"traces/*\": exporter \"nop/1\" is not configured",
 		},
 		{
 			name: "unknown_exporter_factory",
@@ -1912,7 +1913,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("unknown")},
 				},
 			},
-			expected: "exporter factory not available for: \"unknown\"",
+			expected: "failed to create \"unknown\" exporter, in pipeline \"traces/*\": exporter factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_processor_config",
@@ -1932,7 +1933,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "processor \"nop/1\" is not configured",
+			expected: "failed to create \"nop/1\" processor, in pipeline \"metrics\": processor \"nop/1\" is not configured",
 		},
 		{
 			name: "unknown_processor_factory",
@@ -1952,7 +1953,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters:  []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "processor factory not available for: \"unknown\"",
+			expected: "failed to create \"unknown\" processor, in pipeline \"metrics\": processor factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_receiver_config",
@@ -1968,7 +1969,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "receiver \"nop/1\" is not configured",
+			expected: "failed to create \"nop/1\" receiver, in pipeline \"logs/*\": receiver \"nop/1\" is not configured",
 		},
 		{
 			name: "unknown_receiver_factory",
@@ -1984,31 +1985,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.NewID("nop")},
 				},
 			},
-			expected: "receiver factory not available for: \"unknown\"",
-		},
-		{
-			name: "unknown_connector_config",
-			receiverCfgs: map[component.ID]component.Config{
-				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-			},
-			exporterCfgs: map[component.ID]component.Config{
-				component.NewID("nop"): nopReceiverFactory.CreateDefaultConfig(),
-			},
-			connectorCfgs: map[component.ID]component.Config{
-				component.NewIDWithName("nop", "0"): nopConnectorFactory.CreateDefaultConfig(),
-			},
-			pipelineCfgs: map[component.ID]*PipelineConfig{
-				component.NewIDWithName("traces", "in"): {
-					Receivers: []component.ID{component.NewID("nop")},
-					Exporters: []component.ID{component.NewIDWithName("nop", "0"), component.NewIDWithName("nop", "1")},
-				},
-				component.NewIDWithName("traces", "out"): {
-					Receivers: []component.ID{component.NewIDWithName("nop", "0"), component.NewIDWithName("nop", "1")},
-					Exporters: []component.ID{component.NewID("nop")},
-				},
-			},
-			// Since nop/1 is neither a defined receiver or connector, expect "receiver" in error message
-			expected: "receiver \"nop/1\" is not configured",
+			expected: "failed to create \"unknown\" receiver, in pipeline \"logs/*\": receiver factory not available for: \"unknown\"",
 		},
 		{
 			name: "unknown_connector_factory",
@@ -2198,7 +2175,7 @@ func (g *pipelinesGraph) getReceivers() map[component.DataType]map[component.ID]
 	receiversMap[component.DataTypeMetrics] = make(map[component.ID]component.Component)
 	receiversMap[component.DataTypeLogs] = make(map[component.ID]component.Component)
 
-	for _, pg := range g.pipelineGraphs {
+	for _, pg := range g.pipelines {
 		for _, rcvrNode := range pg.receivers {
 			rcvrOrConnNode := g.componentGraph.Node(rcvrNode.ID())
 			rcvrNode, ok := rcvrOrConnNode.(*receiverNode)

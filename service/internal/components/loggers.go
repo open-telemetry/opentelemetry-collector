@@ -55,16 +55,16 @@ func ExporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) 
 		zap.String(zapNameKey, id.String()))
 }
 
+func ExtensionLogger(logger *zap.Logger, id component.ID) *zap.Logger {
+	return logger.With(
+		zap.String(zapKindKey, zapKindExtension),
+		zap.String(zapNameKey, id.String()))
+}
+
 func ConnectorLogger(logger *zap.Logger, id component.ID, expDT, rcvDT component.DataType) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, zapKindExporter),
 		zap.String(zapNameKey, id.String()),
 		zap.String(zapExporterInPipeline, string(expDT)),
 		zap.String(zapReceiverInPipeline, string(rcvDT)))
-}
-
-func ExtensionLogger(logger *zap.Logger, id component.ID) *zap.Logger {
-	return logger.With(
-		zap.String(zapKindKey, zapKindExtension),
-		zap.String(zapNameKey, id.String()))
 }
