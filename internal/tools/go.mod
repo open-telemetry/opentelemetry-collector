@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/build-tools/chloggen v0.3.0
 	go.opentelemetry.io/build-tools/crosslink v0.3.0
 	go.opentelemetry.io/build-tools/multimod v0.3.0
-	go.opentelemetry.io/build-tools/semconvgen v0.3.0
+	go.opentelemetry.io/build-tools/semconvgen v0.4.0
 	golang.org/x/exp v0.0.0-20221004215720-b9f4876ce741
 	golang.org/x/tools v0.4.0
 )
@@ -195,7 +195,7 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	gitlab.com/bosi/decorder v0.2.3 // indirect
-	go.opentelemetry.io/build-tools v0.3.0 // indirect
+	go.opentelemetry.io/build-tools v0.4.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
@@ -206,7 +206,7 @@ require (
 	golang.org/x/oauth2 v0.3.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
