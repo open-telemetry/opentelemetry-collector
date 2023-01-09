@@ -4,6 +4,31 @@
 
 <!-- next version -->
 
+## v1.0.0-RC3/v0.69.0
+
+### 🛑 Breaking changes 🛑
+
+- `component`: Remove deprecated Exporter types (#6880)
+- `component`: Remove deprecated Extension types (#6865)
+- `component`: Remove deprecated ProcessorFactoryOptions (#6881)
+- `component`: Remove deprecated Receiver types (#6882)
+- `componenttest`: Remove deprecated funcs from componenttest (#6836)
+- `batchprocessor`: Remove deprecated batchprocessor.MetricViews and batchprocessor.OtelMetricViews (#6861)
+- `component`: Remove deprecated component.[Factories|MakePorcessorFactoryMap] and componenttest.NewNopFactories (#6835)
+- `config`: Remove deprecated cofig.*Settings (#6837)
+- `obsereporttest`: Remove deprecated obsereporttest.SetupTelemetryWithID (#6861)
+- `component`: Remove deprecated component [Traces|Metrics|Logs]Processor and ProcessorFactory (#6884)
+- `service`: Remove deprecated service service.ConfigService and service.ConfigServicePipeline (#6859)
+
+### 💡 Enhancements 💡
+
+- `connector`: Add MakeFactoryMap (#6889)
+- `semconv`: Add semantic conventions for specification v1.16.0 (#6714)
+
+### 🧰 Bug fixes 🧰
+
+- `config`: use [REDACTED] when marshaling to text a configopaque.String, instead of disclosing secret length. (#6868)
+
 ## v1.0.0-RC2/v0.68.0
 
 ### 🛑 Breaking changes 🛑
