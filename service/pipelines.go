@@ -21,7 +21,6 @@ import (
 	"sort"
 
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -77,7 +76,7 @@ func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) er
 	bps.telemetry.Logger.Info("Starting exporters...")
 	for dt, expByID := range bps.allExporters {
 		for expID, exp := range expByID {
-			expLogger := exporterLogger(bps.telemetry.Logger, expID, dt)
+			expLogger := components.ExporterLogger(bps.telemetry.Logger, expID, dt)
 			expLogger.Info("Exporter is starting...")
 			if err := exp.Start(ctx, components.NewHostWrapper(host, expLogger)); err != nil {
 				return err
@@ -89,7 +88,7 @@ func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) er
 	bps.telemetry.Logger.Info("Starting processors...")
 	for pipelineID, bp := range bps.pipelines {
 		for i := len(bp.processors) - 1; i >= 0; i-- {
-			procLogger := processorLogger(bps.telemetry.Logger, bp.processors[i].id, pipelineID)
+			procLogger := components.ProcessorLogger(bps.telemetry.Logger, bp.processors[i].id, pipelineID)
 			procLogger.Info("Processor is starting...")
 			if err := bp.processors[i].comp.Start(ctx, components.NewHostWrapper(host, procLogger)); err != nil {
 				return err
@@ -101,7 +100,7 @@ func (bps *builtPipelines) StartAll(ctx context.Context, host component.Host) er
 	bps.telemetry.Logger.Info("Starting receivers...")
 	for dt, recvByID := range bps.allReceivers {
 		for recvID, recv := range recvByID {
-			recvLogger := receiverLogger(bps.telemetry.Logger, recvID, dt)
+			recvLogger := components.ReceiverLogger(bps.telemetry.Logger, recvID, dt)
 			recvLogger.Info("Receiver is starting...")
 			if err := recv.Start(ctx, components.NewHostWrapper(host, recvLogger)); err != nil {
 				return err
@@ -234,7 +233,7 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines
 				TelemetrySettings: set.Telemetry,
 				BuildInfo:         set.BuildInfo,
 			}
-			cSet.TelemetrySettings.Logger = exporterLogger(set.Telemetry.Logger, expID, pipelineID.Type())
+			cSet.TelemetrySettings.Logger = components.ExporterLogger(set.Telemetry.Logger, expID, pipelineID.Type())
 			exp, err := buildExporter(ctx, cSet, set.Exporters, pipelineID)
 			if err != nil {
 				return nil, err
@@ -268,7 +267,7 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines
 				TelemetrySettings: set.Telemetry,
 				BuildInfo:         set.BuildInfo,
 			}
-			cSet.TelemetrySettings.Logger = processorLogger(set.Telemetry.Logger, procID, pipelineID)
+			cSet.TelemetrySettings.Logger = components.ProcessorLogger(set.Telemetry.Logger, procID, pipelineID)
 			proc, err := buildProcessor(ctx, cSet, set.Processors, pipelineID, bp.lastConsumer)
 			if err != nil {
 				return nil, err
@@ -325,7 +324,7 @@ func buildPipelines(ctx context.Context, set pipelinesSettings) (*builtPipelines
 				TelemetrySettings: set.Telemetry,
 				BuildInfo:         set.BuildInfo,
 			}
-			cSet.TelemetrySettings.Logger = receiverLogger(set.Telemetry.Logger, recvID, pipelineID.Type())
+			cSet.TelemetrySettings.Logger = components.ReceiverLogger(set.Telemetry.Logger, recvID, pipelineID.Type())
 			recv, err := buildReceiver(ctx, cSet, set.Receivers, pipelineID, receiversConsumers[pipelineID.Type()][recvID])
 			if err != nil {
 				return nil, err
@@ -387,13 +386,6 @@ func buildFanOutExportersLogsConsumer(exporters []builtComponent) consumer.Logs 
 	return fanoutconsumer.NewLogs(consumers)
 }
 
-func exporterLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
-	return logger.With(
-		zap.String(components.ZapKindKey, components.ZapKindExporter),
-		zap.String(components.ZapDataTypeKey, string(dt)),
-		zap.String(components.ZapNameKey, id.String()))
-}
-
 func buildProcessor(ctx context.Context,
 	set processor.CreateSettings,
 	builder *processor.Builder,
@@ -414,13 +406,6 @@ func buildProcessor(ctx context.Context,
 		return nil, fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, pipelineID, err)
 	}
 	return proc, nil
-}
-
-func processorLogger(logger *zap.Logger, procID component.ID, pipelineID component.ID) *zap.Logger {
-	return logger.With(
-		zap.String(components.ZapKindKey, components.ZapKindProcessor),
-		zap.String(components.ZapNameKey, procID.String()),
-		zap.String(components.ZapKindPipeline, pipelineID.String()))
 }
 
 func buildReceiver(ctx context.Context,
@@ -455,13 +440,6 @@ func buildReceiver(ctx context.Context,
 		return nil, fmt.Errorf("failed to create %q receiver, in pipeline %q: %w", set.ID, pipelineID, err)
 	}
 	return recv, nil
-}
-
-func receiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
-	return logger.With(
-		zap.String(components.ZapKindKey, components.ZapKindReceiver),
-		zap.String(components.ZapNameKey, id.String()),
-		zap.String(components.ZapKindPipeline, string(dt)))
 }
 
 func (bps *builtPipelines) getPipelinesSummaryTableData() zpages.SummaryPipelinesTableData {
