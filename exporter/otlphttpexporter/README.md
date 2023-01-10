@@ -37,7 +37,7 @@ Example:
 ```yaml
 exporters:
   otlphttp:
-    endpoint: https://example.com:4318/v1/traces
+    endpoint: https://example.com:4318
 ```
 
 By default `gzip` compression is enabled. See [compression comparison](../../config/configgrpc/README.md#compression-comparison) for details benchmark information. To disable, configure as follows:
