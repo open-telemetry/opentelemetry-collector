@@ -21,15 +21,17 @@ import (
 )
 
 const (
-	zapKindKey       = "kind"
-	zapKindReceiver  = "receiver"
-	zapKindProcessor = "processor"
-	zapKindExporter  = "exporter"
-	zapKindExtension = "extension"
-	zapKindPipeline  = "pipeline"
-	zapNameKey       = "name"
-	zapDataTypeKey   = "data_type"
-	zapStabilityKey  = "stability"
+	zapKindKey            = "kind"
+	zapKindReceiver       = "receiver"
+	zapKindProcessor      = "processor"
+	zapKindExporter       = "exporter"
+	zapKindExtension      = "extension"
+	zapKindPipeline       = "pipeline"
+	zapNameKey            = "name"
+	zapDataTypeKey        = "data_type"
+	zapStabilityKey       = "stability"
+	zapExporterInPipeline = "exporter_in_pipeline"
+	zapReceiverInPipeline = "receiver_in_pipeline"
 )
 
 func ReceiverLogger(logger *zap.Logger, id component.ID, dt component.DataType) *zap.Logger {
@@ -57,4 +59,12 @@ func ExtensionLogger(logger *zap.Logger, id component.ID) *zap.Logger {
 	return logger.With(
 		zap.String(zapKindKey, zapKindExtension),
 		zap.String(zapNameKey, id.String()))
+}
+
+func ConnectorLogger(logger *zap.Logger, id component.ID, expDT, rcvDT component.DataType) *zap.Logger {
+	return logger.With(
+		zap.String(zapKindKey, zapKindExporter),
+		zap.String(zapNameKey, id.String()),
+		zap.String(zapExporterInPipeline, string(expDT)),
+		zap.String(zapReceiverInPipeline, string(rcvDT)))
 }
