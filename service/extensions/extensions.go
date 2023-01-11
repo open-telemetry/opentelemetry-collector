@@ -21,7 +21,6 @@ import (
 	"sort"
 
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -41,7 +40,7 @@ type Extensions struct {
 func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for extID, ext := range bes.extMap {
-		extLogger := extensionLogger(bes.telemetry.Logger, extID)
+		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
 		extLogger.Info("Extension is starting...")
 		if err := ext.Start(ctx, components.NewHostWrapper(host, extLogger)); err != nil {
 			return err
@@ -148,7 +147,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 			TelemetrySettings: set.Telemetry,
 			BuildInfo:         set.BuildInfo,
 		}
-		extSet.TelemetrySettings.Logger = extensionLogger(set.Telemetry.Logger, extID)
+		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)
 
 		ext, err := set.Extensions.Create(ctx, extSet)
 		if err != nil {
@@ -164,10 +163,4 @@ func New(ctx context.Context, set Settings, cfg Config) (*Extensions, error) {
 	}
 
 	return exts, nil
-}
-
-func extensionLogger(logger *zap.Logger, id component.ID) *zap.Logger {
-	return logger.With(
-		zap.String(components.ZapKindKey, components.ZapKindExtension),
-		zap.String(components.ZapNameKey, id.String()))
 }

@@ -25,8 +25,8 @@ import (
 // for alpha, beta and stable.
 func LogStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
 	if sl >= component.StabilityLevelAlpha {
-		logger.Debug(sl.LogMessage(), zap.String(ZapStabilityKey, sl.String()))
+		logger.Debug(sl.LogMessage(), zap.String(zapStabilityKey, sl.String()))
 	} else {
-		logger.Info(sl.LogMessage(), zap.String(ZapStabilityKey, sl.String()))
+		logger.Info(sl.LogMessage(), zap.String(zapStabilityKey, sl.String()))
 	}
 }
