@@ -75,7 +75,7 @@ func (fmp *provider) getHTTPSClient() (*http.Client, error) {
 		cert, err := os.ReadFile(filepath.Clean(fmp.caCertPath))
 
 		if err != nil {
-			return nil, fmt.Errorf("unable to read CA from uri: %s", fmp.caCertPath)
+			return nil, fmt.Errorf("unable to read CA from %q URI: %w", fmp.caCertPath, err)
 		}
 
 		if ok := pool.AppendCertsFromPEM(cert); !ok {
@@ -120,7 +120,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	// send a HTTP GET request
 	resp, err := client.Get(uri)
 	if err != nil {
-		return nil, fmt.Errorf("unable to download the file via HTTP GET for uri %q, with err: %w ", uri, err)
+		return nil, fmt.Errorf("unable to download the file via HTTP GET for uri %q: %w ", uri, err)
 	}
 	defer resp.Body.Close()
 
@@ -132,7 +132,7 @@ func (fmp *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFu
 	// read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("fail to read the response body from uri %q, with err: %w ", uri, err)
+		return nil, fmt.Errorf("fail to read the response body from uri %q: %w", uri, err)
 	}
 
 	return internal.NewRetrievedFromYAML(body)
