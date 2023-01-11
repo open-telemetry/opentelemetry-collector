@@ -297,6 +297,10 @@ func (b *Builder) CreateLogs(ctx context.Context, set CreateSettings, next consu
 	return f.CreateLogsReceiver(ctx, set, cfg, next)
 }
 
+func (b *Builder) Config(componentID component.ID) component.Config {
+	return b.cfgs[componentID]
+}
+
 func (b *Builder) Factory(componentType component.Type) component.Factory {
 	return b.factories[componentType]
 }
