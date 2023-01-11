@@ -24,19 +24,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-var (
-	errDataTypesNotSupported = "connection from %s to %s is not supported"
-	errTracesToTraces        = fmt.Errorf(errDataTypesNotSupported, component.DataTypeTraces, component.DataTypeTraces)
-	errTracesToMetrics       = fmt.Errorf(errDataTypesNotSupported, component.DataTypeTraces, component.DataTypeMetrics)
-	errTracesToLogs          = fmt.Errorf(errDataTypesNotSupported, component.DataTypeTraces, component.DataTypeLogs)
-	errMetricsToTraces       = fmt.Errorf(errDataTypesNotSupported, component.DataTypeMetrics, component.DataTypeTraces)
-	errMetricsToMetrics      = fmt.Errorf(errDataTypesNotSupported, component.DataTypeMetrics, component.DataTypeMetrics)
-	errMetricsToLogs         = fmt.Errorf(errDataTypesNotSupported, component.DataTypeMetrics, component.DataTypeLogs)
-	errLogsToTraces          = fmt.Errorf(errDataTypesNotSupported, component.DataTypeLogs, component.DataTypeTraces)
-	errLogsToMetrics         = fmt.Errorf(errDataTypesNotSupported, component.DataTypeLogs, component.DataTypeMetrics)
-	errLogsToLogs            = fmt.Errorf(errDataTypesNotSupported, component.DataTypeLogs, component.DataTypeLogs)
-)
-
 // A Traces connector acts as an exporter from a traces pipeline and a receiver
 // to one or more traces, metrics, or logs pipelines.
 // Traces feeds a consumer.Traces, consumer.Metrics, or consumer.Logs with data.
@@ -162,7 +149,7 @@ func (f CreateTracesToTracesFunc) CreateTracesToTraces(
 	cfg component.Config,
 	nextConsumer consumer.Traces) (Traces, error) {
 	if f == nil {
-		return nil, errTracesToTraces
+		return nil, errDataTypes(set.ID, component.DataTypeTraces, component.DataTypeTraces)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -178,7 +165,7 @@ func (f CreateTracesToMetricsFunc) CreateTracesToMetrics(
 	nextConsumer consumer.Metrics,
 ) (Traces, error) {
 	if f == nil {
-		return nil, errTracesToMetrics
+		return nil, errDataTypes(set.ID, component.DataTypeTraces, component.DataTypeMetrics)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -194,7 +181,7 @@ func (f CreateTracesToLogsFunc) CreateTracesToLogs(
 	nextConsumer consumer.Logs,
 ) (Traces, error) {
 	if f == nil {
-		return nil, errTracesToLogs
+		return nil, errDataTypes(set.ID, component.DataTypeTraces, component.DataTypeLogs)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -210,7 +197,7 @@ func (f CreateMetricsToTracesFunc) CreateMetricsToTraces(
 	nextConsumer consumer.Traces,
 ) (Metrics, error) {
 	if f == nil {
-		return nil, errMetricsToTraces
+		return nil, errDataTypes(set.ID, component.DataTypeMetrics, component.DataTypeTraces)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -226,7 +213,7 @@ func (f CreateMetricsToMetricsFunc) CreateMetricsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (Metrics, error) {
 	if f == nil {
-		return nil, errMetricsToMetrics
+		return nil, errDataTypes(set.ID, component.DataTypeMetrics, component.DataTypeMetrics)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -242,7 +229,7 @@ func (f CreateMetricsToLogsFunc) CreateMetricsToLogs(
 	nextConsumer consumer.Logs,
 ) (Metrics, error) {
 	if f == nil {
-		return nil, errMetricsToLogs
+		return nil, errDataTypes(set.ID, component.DataTypeMetrics, component.DataTypeLogs)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -258,7 +245,7 @@ func (f CreateLogsToTracesFunc) CreateLogsToTraces(
 	nextConsumer consumer.Traces,
 ) (Logs, error) {
 	if f == nil {
-		return nil, errLogsToTraces
+		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeTraces)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -274,7 +261,7 @@ func (f CreateLogsToMetricsFunc) CreateLogsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (Logs, error) {
 	if f == nil {
-		return nil, errLogsToMetrics
+		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeMetrics)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -290,7 +277,7 @@ func (f CreateLogsToLogsFunc) CreateLogsToLogs(
 	nextConsumer consumer.Logs,
 ) (Logs, error) {
 	if f == nil {
-		return nil, errLogsToLogs
+		return nil, errDataTypes(set.ID, component.DataTypeLogs, component.DataTypeLogs)
 	}
 	return f(ctx, set, cfg, nextConsumer)
 }
@@ -640,4 +627,8 @@ func logStabilityLevel(logger *zap.Logger, sl component.StabilityLevel) {
 	} else {
 		logger.Info(sl.LogMessage())
 	}
+}
+
+func errDataTypes(id component.ID, from, to component.DataType) error {
+	return fmt.Errorf("connector %q cannot connect from %s to %s: %w", id, from, to, component.ErrDataTypeIsNotSupported)
 }

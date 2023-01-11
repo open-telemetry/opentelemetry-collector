@@ -35,26 +35,28 @@ func TestNewFactoryNoOptions(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errTracesToTraces)
-	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errTracesToMetrics)
-	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errTracesToLogs)
+	testID := component.NewIDWithName("type", "name")
 
-	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errMetricsToTraces)
-	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errMetricsToMetrics)
-	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errMetricsToLogs)
+	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeTraces))
+	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeMetrics))
+	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeLogs))
 
-	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errLogsToTraces)
-	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errLogsToMetrics)
-	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errLogsToLogs)
+	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeTraces))
+	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeMetrics))
+	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeLogs))
+
+	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeTraces))
+	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeMetrics))
+	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeLogs))
 }
 
 func TestNewFactoryWithSameTypes(t *testing.T) {
@@ -67,32 +69,34 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
+	testID := component.NewIDWithName("type", "name")
+
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesToTracesStability())
-	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsToMetricsStability())
-	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsToLogsStability())
-	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
-	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errTracesToMetrics)
-	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errTracesToLogs)
+	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeMetrics))
+	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeLogs))
 
-	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errMetricsToTraces)
-	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errMetricsToLogs)
+	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeTraces))
+	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeLogs))
 
-	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errLogsToTraces)
-	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errLogsToMetrics)
+	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeTraces))
+	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeMetrics))
 }
 
 func TestNewFactoryWithTranslateTypes(t *testing.T) {
@@ -108,35 +112,37 @@ func TestNewFactoryWithTranslateTypes(t *testing.T) {
 	assert.EqualValues(t, typeStr, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errTracesToTraces)
-	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errMetricsToMetrics)
-	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
-	assert.Equal(t, err, errLogsToLogs)
+	testID := component.NewIDWithName("type", "name")
+
+	_, err := factory.CreateTracesToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeTraces, component.DataTypeTraces))
+	_, err = factory.CreateMetricsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeMetrics, component.DataTypeMetrics))
+	_, err = factory.CreateLogsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
+	assert.Equal(t, err, errDataTypes(testID, component.DataTypeLogs, component.DataTypeLogs))
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesToMetricsStability())
-	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesToLogsStability())
-	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateTracesToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsToTracesStability())
-	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelStable, factory.MetricsToLogsStability())
-	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateMetricsToLogs(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsToTracesStability())
-	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToTraces(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
 	assert.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsToMetricsStability())
-	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{}, &defaultCfg, nil)
+	_, err = factory.CreateLogsToMetrics(context.Background(), CreateSettings{ID: testID}, &defaultCfg, nil)
 	assert.NoError(t, err)
 }
 
@@ -261,7 +267,7 @@ func TestBuilder(t *testing.T) {
 			name: "err",
 			id:   component.NewID("err"),
 			err: func(expType, rcvType component.DataType) string {
-				return fmt.Sprintf("connection from %s to %s is not supported", expType, rcvType)
+				return fmt.Sprintf("connector \"err\" cannot connect from %s to %s: telemetry type is not supported", expType, rcvType)
 			},
 		},
 		{
