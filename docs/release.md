@@ -64,16 +64,17 @@ It is possible that a core approver isn't a contrib approver. In that case, the 
 
 1. Prepare Contrib for release.
 
-  * Update CHANGELOG.md file, this is done via `chloggen`. Run the following command from the root of the opentelemetry-collector-contrib repo:
+   * Update CHANGELOG.md file, this is done via `chloggen`. Run the following command from the root of the opentelemetry-collector-contrib repo:
       * `make chlog-update VERSION=v0.55.0`
 
-  * Use multimod to update the version of the collector package:
+   * Use multimod to update the version of the collector package:
 
       * Update [versions.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/versions.yaml) and commit it
 
       * Run `make multimod-prerelease`
 
-1. Update the Core dependency to the Core version we just released with `make update-otel OTEL_VERSION=v0.55.0` command. Create a PR with both the changes, get it approved and merged.
+1. Update the Core dependency to the Core version we just released with
+`make multimod-sync` command. Create a PR with both the changes, get it approved and merged.
 
 1. Create a branch named `release/<release-series>` (e.g. `release/v0.45.x`) in Contrib from the changelog update commit and push it to `open-telemetry/opentelemetry-collector-contrib`.
 
