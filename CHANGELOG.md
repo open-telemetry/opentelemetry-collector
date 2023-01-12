@@ -4,6 +4,12 @@
 
 <!-- next version -->
 
+## v0.69.1
+
+### 🧰 Bug fixes 🧰
+
+- `various modules`: Fix issue where some collector modules imported previous version of other modules (#6929)
+
 ## v1.0.0-RC3/v0.69.0
 
 ### 🛑 Breaking changes 🛑
