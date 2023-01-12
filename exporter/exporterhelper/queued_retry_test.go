@@ -34,12 +34,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/testutils"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/testdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/testutils"
 )
 
 func mockRequestUnmarshaler(mr *mockRequest) internal.RequestUnmarshaler {
@@ -632,9 +632,11 @@ func dataRequeuedTest(t *testing.T, req internal.Request, produceCounter *atomic
 		errToReturn: errors.New("some error"),
 	}
 
+	sendErrChan := make(chan error, 1)
 	go func() {
-		require.NoError(t, be.sender.send(req))
+		sendErrChan <- be.sender.send(req)
 	}()
+	require.NoError(t, <-sendErrChan)
 
 	// first wait for the item to be produced to the queue initially
 	assert.Eventually(t, func() bool {

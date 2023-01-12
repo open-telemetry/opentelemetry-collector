@@ -31,14 +31,14 @@ func NewMockStorageClient() storage.Client {
 
 // MockStorageClient is a mocked in memory storage client designed to be used in tests
 type MockStorageClient struct {
+	mu           sync.Mutex
 	st           map[string][]byte
-	mux          sync.Mutex
 	closeCounter uint64
 }
 
 func (m *MockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
-	m.mux.Lock()
-	defer m.mux.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	val, found := m.st[s]
 	if !found {
@@ -49,29 +49,32 @@ func (m *MockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
 }
 
 func (m *MockStorageClient) Set(_ context.Context, s string, bytes []byte) error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.st[s] = bytes
 	return nil
 }
 
 func (m *MockStorageClient) Delete(_ context.Context, s string) error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	delete(m.st, s)
 	return nil
 }
 
 func (m *MockStorageClient) Close(_ context.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.closeCounter++
 	return nil
 }
 
 func (m *MockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	for _, op := range ops {
 		switch op.Type {
