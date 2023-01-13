@@ -84,15 +84,14 @@ func Compile(cfg Config) error {
 		return nil
 	}
 
-	cfg.Logger.Info("Compiling")
-
 	var ldflags = "-s -w"
-
 	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
 	if cfg.Distribution.DebugCompilation {
 		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
-		ldflags = ""
+		ldflags = cfg.LDFlags
 		args = append(args, "-gcflags=all=-N -l")
+	} else if len(cfg.LDFlags) > 0 {
+		ldflags = fmt.Sprintf("%s %s", ldflags, cfg.LDFlags)
 	}
 	args = append(args, "-ldflags="+ldflags)
 	if cfg.Distribution.BuildTags != "" {

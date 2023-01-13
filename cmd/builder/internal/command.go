@@ -33,6 +33,7 @@ import (
 const (
 	skipCompilationFlag            = "skip-compilation"
 	skipGetModulesFlag             = "skip-get-modules"
+	ldflagsFlag                    = "ldflags"
 	distributionNameFlag           = "name"
 	distributionDescriptionFlag    = "description"
 	distributionVersionFlag        = "version"
@@ -86,6 +87,7 @@ configuration is provided, ocb will generate a default Collector.
 	// the distribution parameters, which we accept as CLI flags as well
 	cmd.Flags().BoolVar(&cfg.SkipCompilation, skipCompilationFlag, false, "Whether builder should only generate go code with no compile of the collector (default false)")
 	cmd.Flags().BoolVar(&cfg.SkipGetModules, skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
+	cmd.Flags().StringVar(&cfg.LDFlags, ldflagsFlag, "", `ldflags to include in the "go build" command`)
 	cmd.Flags().StringVar(&cfg.Distribution.Name, distributionNameFlag, "otelcol-custom", "The executable name for the OpenTelemetry Collector distribution")
 	if err := cmd.Flags().MarkDeprecated(distributionNameFlag, "use config distribution::name"); err != nil {
 		return nil, err
