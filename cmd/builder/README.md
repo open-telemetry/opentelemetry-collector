@@ -9,7 +9,7 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 $ GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@latest
 $ cat > otelcol-builder.yaml <<EOF
 dist:
-  name: otelcorecol
+  name: otelcol-custom
   description: Local OpenTelemetry Collector binary
   output_path: /tmp/dist
 exporters:
