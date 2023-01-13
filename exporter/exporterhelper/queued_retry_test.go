@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/testutils"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/testdata"
@@ -611,7 +610,7 @@ func dataRequeuedTest(t *testing.T, req internal.Request, produceCounter *atomic
 
 	var extensions = map[component.ID]component.Component{
 		storageID: &mockStorageExtension{
-			mockClient: testutils.NewMockStorageClient(),
+			mockClient: testutil.NewMockStorageClient(),
 		},
 	}
 	host := &mockHost{ext: extensions}
