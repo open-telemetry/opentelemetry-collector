@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -424,7 +425,7 @@ func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
 
 	ps.stop()
 
-	castedClient, ok := client.(*testutil.MockStorageClient)
+	castedClient, ok := client.(*testutil.InMemoryStorageClient)
 	require.True(t, ok, "expected client to be mockStorageClient")
 	require.Equal(t, uint64(1), castedClient.GetCloseCount())
 }
@@ -457,7 +458,7 @@ func (m mockStorageExtension) Shutdown(_ context.Context) error {
 }
 
 func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
-	return testutil.NewMockStorageClient(), nil
+	return testutil.NewInMemoryStorageClient(), nil
 }
 
 func newMockStorageExtension() storage.Extension {

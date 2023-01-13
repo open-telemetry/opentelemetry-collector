@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/testutils"
+package testutil // import "go.opentelemetry.io/collector/internal/testutil"
 
 import (
 	"context"
@@ -22,21 +22,21 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-// NewMockStorageClient creates a new instance of MockStorageClient
-func NewMockStorageClient() storage.Client {
-	return &MockStorageClient{
+// NewInMemoryStorageClient creates a new instance of InMemoryStorageClient
+func NewInMemoryStorageClient() storage.Client {
+	return &InMemoryStorageClient{
 		st: map[string][]byte{},
 	}
 }
 
-// MockStorageClient is a mocked in memory storage client designed to be used in tests
-type MockStorageClient struct {
+// InMemoryStorageClient is a mocked in memory storage client designed to be used in tests
+type InMemoryStorageClient struct {
 	mu           sync.Mutex
 	st           map[string][]byte
 	closeCounter uint64
 }
 
-func (m *MockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
+func (m *InMemoryStorageClient) Get(_ context.Context, s string) ([]byte, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -48,7 +48,7 @@ func (m *MockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
 	return val, nil
 }
 
-func (m *MockStorageClient) Set(_ context.Context, s string, bytes []byte) error {
+func (m *InMemoryStorageClient) Set(_ context.Context, s string, bytes []byte) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -56,7 +56,7 @@ func (m *MockStorageClient) Set(_ context.Context, s string, bytes []byte) error
 	return nil
 }
 
-func (m *MockStorageClient) Delete(_ context.Context, s string) error {
+func (m *InMemoryStorageClient) Delete(_ context.Context, s string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -64,7 +64,7 @@ func (m *MockStorageClient) Delete(_ context.Context, s string) error {
 	return nil
 }
 
-func (m *MockStorageClient) Close(_ context.Context) error {
+func (m *InMemoryStorageClient) Close(_ context.Context) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -72,7 +72,7 @@ func (m *MockStorageClient) Close(_ context.Context) error {
 	return nil
 }
 
-func (m *MockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (m *InMemoryStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -93,6 +93,6 @@ func (m *MockStorageClient) Batch(_ context.Context, ops ...storage.Operation) e
 }
 
 // GetCloseCount returns the number of times Close was invoked
-func (m *MockStorageClient) GetCloseCount() uint64 {
+func (m *InMemoryStorageClient) GetCloseCount() uint64 {
 	return m.closeCounter
 }

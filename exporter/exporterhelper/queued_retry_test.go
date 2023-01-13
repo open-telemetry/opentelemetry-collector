@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/testdata"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -610,7 +611,7 @@ func dataRequeuedTest(t *testing.T, req internal.Request, produceCounter *atomic
 
 	var extensions = map[component.ID]component.Component{
 		storageID: &mockStorageExtension{
-			mockClient: testutil.NewMockStorageClient(),
+			mockClient: testutil.NewInMemoryStorageClient(),
 		},
 	}
 	host := &mockHost{ext: extensions}
