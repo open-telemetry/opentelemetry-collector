@@ -13,7 +13,7 @@ dist:
   description: Local OpenTelemetry Collector binary
   output_path: /tmp/dist
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.69.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.69.0
   - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.69.1
 
 receivers:
