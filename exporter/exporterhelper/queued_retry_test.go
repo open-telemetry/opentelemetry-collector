@@ -814,7 +814,6 @@ func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
 
 type mockStorageExtension struct {
 	GetClientError error
-	mockClient     storage.Client
 }
 
 func (mse *mockStorageExtension) Start(_ context.Context, _ component.Host) error {
@@ -828,9 +827,6 @@ func (mse *mockStorageExtension) Shutdown(_ context.Context) error {
 func (mse *mockStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
 	if mse.GetClientError != nil {
 		return nil, mse.GetClientError
-	}
-	if mse.mockClient != nil {
-		return mse.mockClient, nil
 	}
 	return storage.NewNopClient(), nil
 }
