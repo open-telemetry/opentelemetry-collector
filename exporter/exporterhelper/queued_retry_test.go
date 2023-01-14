@@ -37,7 +37,6 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/testdata"
-	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -597,11 +596,8 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 }
 
 func dataRequeuedTest(t *testing.T, req internal.Request, produceCounter *atomic.Uint32) *baseExporter {
-	storageID := component.NewIDWithName("file_storage", "storage")
-
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
-	qCfg.StorageID = &storageID // enable persistence
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
@@ -609,21 +605,15 @@ func dataRequeuedTest(t *testing.T, req internal.Request, produceCounter *atomic
 	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, err)
 
-	var extensions = map[component.ID]component.Component{
-		storageID: &mockStorageExtension{
-			mockClient: testutil.NewInMemoryStorageClient(),
-		},
-	}
-	host := &mockHost{ext: extensions}
-
 	// we start correctly with a file storage extension
-	require.NoError(t, be.Start(context.Background(), host))
+	require.NoError(t, be.Start(context.Background(), &mockHost{}))
 
 	// wraps original queue so we can count operations
 	be.qrSender.queue = &producerConsumerQueueWithCounter{
 		ProducerConsumerQueue: be.qrSender.queue,
 		produceCounter:        produceCounter,
 	}
+	be.qrSender.requeuingEnabled = true
 
 	// replace nextSender inside retrySender to always return error so it doesn't exit send loop
 	castedSender, ok := be.qrSender.consumerSender.(*retrySender)

@@ -16,8 +16,10 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -26,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -425,9 +426,9 @@ func TestPersistentStorage_StopShouldCloseClient(t *testing.T) {
 
 	ps.stop()
 
-	castedClient, ok := client.(*testutil.InMemoryStorageClient)
+	castedClient, ok := client.(*mockStorageClient)
 	require.True(t, ok, "expected client to be mockStorageClient")
-	require.Equal(t, uint64(1), castedClient.GetCloseCount())
+	require.Equal(t, uint64(1), castedClient.getCloseCount())
 }
 
 func getItemFromChannel(t *testing.T, pcs *persistentContiguousStorage) Request {
@@ -458,9 +459,78 @@ func (m mockStorageExtension) Shutdown(_ context.Context) error {
 }
 
 func (m mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID, s string) (storage.Client, error) {
-	return testutil.NewInMemoryStorageClient(), nil
+	return newMockStorageClient(), nil
 }
 
 func newMockStorageExtension() storage.Extension {
 	return &mockStorageExtension{}
+}
+
+func newMockStorageClient() storage.Client {
+	return &mockStorageClient{
+		st: map[string][]byte{},
+	}
+}
+
+type mockStorageClient struct {
+	st           map[string][]byte
+	mux          sync.Mutex
+	closeCounter uint64
+}
+
+func (m *mockStorageClient) Get(_ context.Context, s string) ([]byte, error) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	val, found := m.st[s]
+	if !found {
+		return nil, nil
+	}
+
+	return val, nil
+}
+
+func (m *mockStorageClient) Set(_ context.Context, s string, bytes []byte) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	m.st[s] = bytes
+	return nil
+}
+
+func (m *mockStorageClient) Delete(_ context.Context, s string) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	delete(m.st, s)
+	return nil
+}
+
+func (m *mockStorageClient) Close(_ context.Context) error {
+	m.closeCounter++
+	return nil
+}
+
+func (m *mockStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			op.Value = m.st[op.Key]
+		case storage.Set:
+			m.st[op.Key] = op.Value
+		case storage.Delete:
+			delete(m.st, op.Key)
+		default:
+			return errors.New("wrong operation type")
+		}
+	}
+
+	return nil
+}
+
+func (m *mockStorageClient) getCloseCount() uint64 {
+	return m.closeCounter
 }
