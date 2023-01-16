@@ -612,11 +612,8 @@ func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 		errToReturn: errors.New("some error"),
 	}
 
-	sendErrChan := make(chan error, 1)
-	go func() {
-		sendErrChan <- be.sender.send(req)
-	}()
-	require.NoError(t, <-sendErrChan)
+	// Invoke queuedRetrySender so the producer will put the item for consumer to poll
+	require.NoError(t, be.sender.send(req))
 
 	// first wait for the item to be produced to the queue initially
 	assert.Eventually(t, func() bool {
