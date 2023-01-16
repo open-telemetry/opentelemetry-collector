@@ -585,27 +585,17 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 func TestQueuedRetryPersistentEnabled_shutdown_dataIsRequeued(t *testing.T) {
 	produceCounter := atomic.NewUint32(0)
 
-	req := newMockRequest(context.Background(), 3, errors.New("some error"))
-	be := dataRequeuedTest(t, req, produceCounter)
-
-	// shuts down and ensure the item is produced in the queue again
-	require.NoError(t, be.Shutdown(context.Background()))
-	assert.Eventually(t, func() bool {
-		return produceCounter.Load() == uint32(2)
-	}, time.Second, 1*time.Millisecond)
-}
-
-func dataRequeuedTest(t *testing.T, req internal.Request, produceCounter *atomic.Uint32) *baseExporter {
 	qCfg := NewDefaultQueueSettings()
 	qCfg.NumConsumers = 1
 	rCfg := NewDefaultRetrySettings()
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
+	req := newMockRequest(context.Background(), 3, errors.New("some error"))
+
 	be, err := newBaseExporter(defaultSettings, fromOptions(WithRetry(rCfg), WithQueue(qCfg)), "", nopRequestUnmarshaler())
 	require.NoError(t, err)
 
-	// we start correctly with a file storage extension
 	require.NoError(t, be.Start(context.Background(), &mockHost{}))
 
 	// wraps original queue so we can count operations
@@ -618,7 +608,7 @@ func dataRequeuedTest(t *testing.T, req internal.Request, produceCounter *atomic
 	// replace nextSender inside retrySender to always return error so it doesn't exit send loop
 	castedSender, ok := be.qrSender.consumerSender.(*retrySender)
 	require.True(t, ok, "consumerSender should be a retrySender type")
-	castedSender.nextSender = &ErrorRequestSender{
+	castedSender.nextSender = &errorRequestSender{
 		errToReturn: errors.New("some error"),
 	}
 
@@ -633,7 +623,11 @@ func dataRequeuedTest(t *testing.T, req internal.Request, produceCounter *atomic
 		return produceCounter.Load() == uint32(1)
 	}, time.Second, 1*time.Millisecond)
 
-	return be
+	// shuts down and ensure the item is produced in the queue again
+	require.NoError(t, be.Shutdown(context.Background()))
+	assert.Eventually(t, func() bool {
+		return produceCounter.Load() == uint32(2)
+	}, time.Second, 1*time.Millisecond)
 }
 
 type mockErrorRequest struct {
@@ -841,10 +835,10 @@ func (pcq *producerConsumerQueueWithCounter) Produce(item internal.Request) bool
 	return pcq.ProducerConsumerQueue.Produce(item)
 }
 
-type ErrorRequestSender struct {
+type errorRequestSender struct {
 	errToReturn error
 }
 
-func (rs *ErrorRequestSender) send(_ internal.Request) error {
+func (rs *errorRequestSender) send(_ internal.Request) error {
 	return rs.errToReturn
 }
