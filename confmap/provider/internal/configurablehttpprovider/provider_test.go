@@ -219,7 +219,8 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			fp := newConfigurableHTTPProvider(TLS)
 			// Parse url of the test server to get the port number.
-			tsURL, _ := url.Parse(ts.URL)
+			tsURL, err := url.Parse(ts.URL)
+			require.NoError(t, err)
 			if tt.useCertificate {
 				fp.caCertPath = tt.certPath
 			}
