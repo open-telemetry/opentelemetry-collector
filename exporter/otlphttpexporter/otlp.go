@@ -189,23 +189,16 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte) e
 // Does the 'code' indicate a permanent error
 func isPermanentClientFailure(code int) bool {
 	switch code {
-	case http.StatusBadRequest:
-		return true
-	case http.StatusPaymentRequired:
-		// 402 - payment required typically means that an auth token isn't valid anymore and as such, we deem it as permanent
-		return true
-	case http.StatusRequestEntityTooLarge:
-		return true
-	case http.StatusRequestURITooLong:
-		return true
-	case http.StatusRequestHeaderFieldsTooLarge:
-		return true
-	case http.StatusNotFound:
-		return true
-	case http.StatusMethodNotAllowed:
-		return true
-	default:
+	case http.StatusTooManyRequests:
 		return false
+	case http.StatusBadGateway:
+		return false
+	case http.StatusServiceUnavailable:
+		return false
+	case http.StatusGatewayTimeout:
+		return false
+	default:
+		return true
 	}
 }
 
