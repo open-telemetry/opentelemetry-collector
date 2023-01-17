@@ -84,7 +84,10 @@ func Compile(cfg Config) error {
 		return nil
 	}
 
+	cfg.Logger.Info("Compiling")
+
 	var ldflags = "-s -w"
+
 	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
 	if cfg.Distribution.DebugCompilation {
 		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
