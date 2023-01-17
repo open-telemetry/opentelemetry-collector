@@ -83,6 +83,16 @@ func TestGenerateAndCompile(t *testing.T) {
 			},
 		},
 		{
+			testCase: "LDFlags Compilation",
+			cfgBuilder: func(t *testing.T) Config {
+				cfg := NewDefaultConfig()
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.LDFlags = `-X "test.gitVersion=0743dc6c6411272b98494a9b32a63378e84c34da" -X "test.gitTag=local-testing" -X "test.goVersion=go version go1.19.4 darwin/amd64"`
+				return cfg
+			},
+		},
+		{
 			testCase: "Debug Compilation",
 			cfgBuilder: func(t *testing.T) Config {
 				cfg := NewDefaultConfig()
